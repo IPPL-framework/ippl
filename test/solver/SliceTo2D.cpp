@@ -236,9 +236,11 @@ public:
                 const value_type &val = q(i);
                 
                 // check templtes arguments for make index sequence
-                ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
+                ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args, val);
                 //ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
             });
+        IpplTimings::stopTimer(scatterTimer);
+
 
         // Collect mapping values for writing to a file
         //std::vector<unsigned int> mappingValues(this->getLocalNum());
@@ -254,6 +256,52 @@ public:
         } else {
             std::cerr << "Unable to open file for writing." << std::endl;
         }
+    }
+
+    template <size_t nSlices>
+    void gatherFromSlices(std::array<ScalarField_t<double>, nSlices>& rhos, Kokkos::Array<VectorField_t<double>::view_type, nSlices>& EViews) {
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");
+        IpplTimings::startTimer(gatherTimer);
+
+        using mesh_type = typename Field_t<2>::Mesh_t;
+        mesh_type& mesh = rhos[0].get_mesh(); // mesh is the same for all rho
+
+        using vector_type = typename mesh_type::vector_type;
+        const vector_type& dx = mesh.getMeshSpacing();
+
+        FieldLayout_t<2>& layout = rhos[0].getLayout();
+
+        const vector_type& origin = mesh.getOrigin();
+
+        const vector_type invdx      = 1.0 / dx;
+        const ippl::NDIndex<2>& lDom = layout.getLocalNDIndex();
+        const int nghost             = rhos[0].getNghost();
+
+        Kokkos::parallel_for(
+            "Gather and assign E", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+
+                vector_type pos2D = {R(i)[0], R(i)[1]}; 
+
+                // interpolation stuff
+                vector_type l = (pos2D - origin) * invdx + 0.5;
+                Vector<int, 2> index = l;
+                Vector<double, 2> whi = l - index;
+                Vector<double, 2> wlo = 1.0 - whi;
+                Vector<size_t, 2> args = index - lDom.first() + nghost;
+
+                unsigned int n = mapping(i);
+
+                //VectorField_t<double>::view_type Efield2D;
+                //Vector<double, 2> Efield2D;
+                //Efield2D = 
+                ippl::detail::gatherFromField(std::make_index_sequence<1 << 2>{}, EViews[n], wlo, whi, args);
+                
+                //E(i)[0] = Efield2D[0];
+                //E(i)[1] = Efield2D[1];
+            });
+            
+        IpplTimings::stopTimer(gatherTimer);
+
     }
 };
 
@@ -301,9 +349,15 @@ int main(int argc, char* argv[]) {
         }
 
         ippl::e_dim_tag decomp[3];
-        for (unsigned d = 0; d < 3; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        //for (unsigned d = 0; d < 3; d++) {
+        //    decomp[d] = ippl::PARALLEL;
+        //}
+        decomp[0] = ippl::SERIAL; 
+        decomp[1] = ippl::SERIAL;
+        decomp[2] = ippl::PARALLEL; //  Only want to divide up the domain along the beam axis
+        // ie ippl will divde up along the axis of the beam so that 
+        // if for example there are two ranks then the first rank will get the 
+        // the slices from s = 0 to s = (1/2)smax and the second rank will get the rest
 
         // create mesh and layout objects for this problem domain
         Vector_t<double, 3> rmin(0.0);
@@ -397,7 +451,7 @@ int main(int argc, char* argv[]) {
         Mesh_t<2> meshRho(owned, hxRho, originRho);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<2> layout(owned, decomp);
+        ippl::FieldLayout<2> layout(owned, decomp);  // 0 and 1 th element of decomp is serial
         
         std::array<ScalarField_t<double>, numSlices+1> rhos;
         Kokkos::Array<ScalarField_t<double>::view_type, numSlices+1> rhoViews;
@@ -492,8 +546,6 @@ int main(int argc, char* argv[]) {
         std::map<int, int> occurrences;
 
         // Count occurrences of each value
-        //for (int num : P->mapping) {
-
         auto mappingView = P->mapping.getView();
 
         for (size_t i = 0; i < totalP; i++) {
@@ -533,7 +585,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "g = " << g << std::endl;
         double epsilon0 = 8.8541878128e-12;
 
-        double gamma = 3/938.272 +1; // will need to be parsed from OPAL
+        double gamma = (3/938.272) +1; // will need to be parsed from OPAL
 
         std::ofstream outputFileEz("output_Ez.csv");
 
@@ -551,11 +603,14 @@ int main(int argc, char* argv[]) {
 
         // 1D SPACE CHARGE CALCULATION END
 
+        P->gatherFromSlices(rhos, EViews);
+
+
         // mayn need to im0plemnt 2d interpolate/gather, whereas 1d is discrete 
         // for each particle, add the 2 E field compoents from the interpolated hockney E feld to the P-> attribute
 
 
-        // gather 
+
 
     }
     ippl::finalize();
