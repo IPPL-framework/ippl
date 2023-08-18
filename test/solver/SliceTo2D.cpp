@@ -292,12 +292,11 @@ public:
                 unsigned int n = mapping(i);
 
                 //VectorField_t<double>::view_type Efield2D;
-                //Vector<double, 2> Efield2D;
-                //Efield2D = 
-                ippl::detail::gatherFromField(std::make_index_sequence<1 << 2>{}, EViews[n], wlo, whi, args);
-                
-                //E(i)[0] = Efield2D[0];
-                //E(i)[1] = Efield2D[1];
+                Vector<double, 2> Efield2D;
+                Efield2D = ippl::detail::gatherFromField(std::make_index_sequence<1 << 2>{}, EViews[n], wlo, whi, args);
+                //std::cerr << Efield2D[0] << " " << Efield2D[1] << std::endl;
+                E(i)[0] = Efield2D[0];
+                E(i)[1] = Efield2D[1];
             });
             
         IpplTimings::stopTimer(gatherTimer);
@@ -322,6 +321,23 @@ std::vector<double> generateRandomPointOnCylinder(double centerX, double centerY
     double y = centerY + r * std::sin(theta);
 
     return {x, y, l};
+}
+
+std::vector<double> generateRandomPointOnEllipsoid(double centreX, double centreY,double centerZ, double a, double b, double c) {
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    
+    double theta = 2 * M_PI * distribution(gen);
+    double phi = std::acos(2 * distribution(gen) - 1);
+
+    double x = a * std::sin(phi) * std::cos(theta) +centreX;
+    double y = b * std::sin(phi) * std::sin(theta)+centreY;
+    double z = c * std::cos(phi)+centerZ;
+
+
+    return {x, y, z};
 }
 
 int main(int argc, char* argv[]) {
@@ -408,7 +424,8 @@ int main(int argc, char* argv[]) {
         double centreX = (rmin[0] + rmax[0]) / 2; // make sure that the test distribution in centred on the mesh origin
         double centreY = (rmin[1] + rmax[1]) / 2;
         for (unsigned long int i = 0; i < nloc; i++) {
-            std::vector<double> point = generateRandomPointOnCylinder(centreX, centreY, radius, length);
+            //std::vector<double> point = generateRandomPointOnCylinder(centreX, centreY, radius, length);
+            std::vector<double> point = generateRandomPointOnEllipsoid(centreX, centreY, 0.5, radius, radius, length/2);            
             for (int d = 0; d < 3; d++) {
                 R_host(i)[d] = point[d];
                 sum_coord += R_host(i)[d];
@@ -437,7 +454,7 @@ int main(int argc, char* argv[]) {
 
         msg << "particles created and initial conditions assigned " << endl;
 
-        const size_t numSlices = 10; //std::atoi(argv[4]);
+        const size_t numSlices = 30; //std::atoi(argv[4]);
 
         // create mesh and initialise fields
         ippl::Index I(nr[0]);
@@ -495,20 +512,20 @@ int main(int argc, char* argv[]) {
         }
         inputFileRho.close();
 
-        std::string precision = argv[6];
+        //std::string precision = argv[6];
 
-        if (precision == "DOUBLE") {
+        //if (precision == "DOUBLE") {
         
-            params.add("algorithm", Solver_t<double>::HOCKNEY);
-            // add output type
-            params.add("output_type", Solver_t<double>::SOL_AND_GRAD);
+        params.add("algorithm", Solver_t<double>::HOCKNEY);
+        // add output type
+        params.add("output_type", Solver_t<double>::SOL_AND_GRAD);
 
-            for (size_t i = 0; i < numSlices+1; i++) {
-                Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
-                // solve the Poisson equation -> rho contains the solution (phi) now   
-                FFTsolver.solve();
-            }
+        for (size_t i = 0; i < numSlices+1; i++) {
+            Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
+            // solve the Poisson equation -> rho contains the solution (phi) now   
+            FFTsolver.solve();
         }
+        //}
         
         // else {
             // doesnt work at the moment because the fields are init as double
@@ -522,18 +539,24 @@ int main(int argc, char* argv[]) {
 
         //    FFTsolver.solve();
         //}
-        std::ofstream outputFileRho("output_rho.csv");
+        
+        for (size_t slicen = 0; slicen < numSlices+1; slicen++) {
+            auto s = std::to_string(slicen);
+            std::string filename = "output_rho_" + s +".csv";
 
-        // Write the view data to the output file
-        outputFileRho << "i,j,val\n";
-        for (size_t i = 0; i < rhos[7].getView().extent(0); i++) {
-            for (size_t j = 0; j < rhos[7].getView().extent(1); j++) {
-                outputFileRho << i <<"," << j<< "," << rhos[7](i, j) << "\n";
+            std::ofstream outputFileRho(filename);
+
+            // Write the view data to the output file
+            outputFileRho << "i,j,val\n";
+            for (size_t i = 0; i < rhos[slicen].getView().extent(0); i++) {
+                for (size_t j = 0; j < rhos[slicen].getView().extent(1); j++) {
+                    outputFileRho << i <<"," << j<< "," << rhos[slicen](i, j) << "\n";
+                }
             }
+            // Close the output file
+            outputFileRho.close();
         }
-        // Close the output file
-        outputFileRho.close();
-
+        
         // 1D SPACE CHARGE CALCULATION START 
 
         // 1d solve before gather!!
@@ -592,24 +615,44 @@ int main(int argc, char* argv[]) {
         // Write the view data to the output file
         outputFileEz << "index,val\n";
 
+        std::vector<double> EzVec;
         for (size_t i = 0; i < particlesPerSlice.size(); i++) {
 
             double Ez = elemCharge * (- g / (4 * Kokkos::numbers::pi_v<double> * epsilon0 * gamma*gamma)) * lineDensityGradient[i];
             outputFileEz << i << "," << Ez << "\n";
+            EzVec.push_back(Ez);
             //update value of E
-            P->E(i)[2] = Ez;
+            //P->E(i)[2] = Ez; // this needs to be a loop over all particles, ie all partcles in the slice need to be assigned a value of Ez
         }
         outputFileEz.close();
+
+        std::ofstream outputFileEfieldSlice("output_efieldSlices.csv");
+        outputFileEfieldSlice << "slice_index,Rx,Ry,Rz,Ex,Ey,Ez\n";
+
 
         // 1D SPACE CHARGE CALCULATION END
 
         P->gatherFromSlices(rhos, EViews);
 
+        for (size_t i = 0; i < totalP; i++) {
+            // assign the longitudinal value of Efield to the particles
+            // the i th parting is assigned the longituninal field vlaue from the nth bin according to mapping
+            P->E(i)[2] = EzVec[mappingView(i)];
+
+            outputFileEfieldSlice << mappingView(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
+        }
+        outputFileEfieldSlice.close();
 
         // mayn need to im0plemnt 2d interpolate/gather, whereas 1d is discrete 
         // for each particle, add the 2 E field compoents from the interpolated hockney E feld to the P-> attribute
+        //std::ofstream outputFileEfield("output_efield3D.csv");
+        //outputFileEfield << "Rx,Ry,Rz,Ex,Ey,Ez\n";
 
+        //for (size_t i = 0; i < totalP; i++) {
+        //    outputFileEfield << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
+        //}
 
+        //outputFileEfield.close();
 
 
     }
