@@ -71,6 +71,8 @@ namespace ippl {
 
             unsigned int getLocalNum() const { return nlocal_m; }
 
+            void loadbalance() {}
+
             template <class Distribution>
             void generate(Distribution dist_[Dim], view_type view, int seed) {
                 Kokkos::parallel_for(nlocal_m, fill_random(dist_, view, seed, umin_m, umax_m));
