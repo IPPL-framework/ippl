@@ -14,9 +14,9 @@ namespace ippl {
 
             ParticleStream(std::unique_ptr<ippl::Format> format);
 
-            void operator<<(const ParticleContainer& obj) override;
+            ParticleStream<ParticleContainer>& operator<<(const ParticleContainer& obj) override;
 
-            void operator>>(ParticleContainer& obj) override;
+            ParticleStream<ParticleContainer>& operator>>(ParticleContainer& obj) override;
         };
     }  // namespace hdf5
 }  // namespace ippl

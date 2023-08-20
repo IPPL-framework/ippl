@@ -12,7 +12,7 @@ namespace ippl {
 
         virtual ~basic_ostream() = default;
 
-        virtual void operator<<(const Object& obj) = 0;
+        virtual basic_ostream<Object>& operator<<(const Object& obj) = 0;
     };
 
     template <class Object>
@@ -22,7 +22,7 @@ namespace ippl {
 
         virtual ~basic_istream() = default;
 
-        virtual void operator>>(Object& obj) = 0;
+        virtual basic_istream<Object>& operator>>(Object& obj) = 0;
     };
 
     template <class Object>
