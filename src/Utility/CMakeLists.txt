@@ -24,6 +24,7 @@ set (_HDRS
     my_auto_ptr.h
     vmap.h
     vmap.hpp
+    Coniguration.h
     ParameterList.h
     TypeUtils.h
     )

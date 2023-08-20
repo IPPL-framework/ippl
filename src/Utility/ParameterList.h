@@ -174,7 +174,7 @@ namespace ippl {
             return os;
         }
 
-    private:
+    protected:
         std::map<std::string, variant_t> params_m;
     };
 }  // namespace ippl
