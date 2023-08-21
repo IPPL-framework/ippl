@@ -252,7 +252,7 @@ namespace ippl {
                               + beta1[2] * (view_phiN(i, j, k) + view_phiN(i, j, k - 1))
                               + beta2[2] * (view_phiNm1(i, j, k - 1));
 
-                view_phiNp1(i, j, k) = isXmin * xmin + isYmin * ymin + isZmin * zmin + isXmax * xmax
+                view_phiNp1(i, j, k) += isXmin * xmin + isYmin * ymin + isZmin * zmin + isXmax * xmax
                                        + isYmax * ymax + isZmax * zmax;
             });
 
@@ -297,7 +297,7 @@ namespace ippl {
                                   + beta1[2] * (view_aN(i, j, k)[gd] + view_aN(i, j, k - 1)[gd])
                                   + beta2[2] * (view_aNm1(i, j, k - 1)[gd]);
 
-                    view_aNp1(i, j, k)[gd] = isXmin * xmin + isYmin * ymin + isZmin * zmin
+                    view_aNp1(i, j, k)[gd] += isXmin * xmin + isYmin * ymin + isZmin * zmin
                                              + isXmax * xmax + isYmax * ymax + isZmax * zmax;
                 });
         }
@@ -321,7 +321,7 @@ namespace ippl {
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
-        (*En_mp) = (*En_mp) - (aNp1_m - aN_m) / dt - grad(phiN_m);
+        (*En_mp) = - (aNp1_m - aN_m) / dt - grad(phiN_m);
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>

@@ -37,11 +37,9 @@
 
 #include "Solver/FDTDSolver.h"
 
-/*
 KOKKOS_INLINE_FUNCTION double sine(double n, double dt) {
     return 100 * std::sin(n * dt);
 }
-*/
 
 void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>,
                          ippl::UniformCartesian<double, 3>::DefaultCentering>& E,
@@ -188,9 +186,11 @@ int main(int argc, char* argv[]) {
         current = 0.0;
 
         // turn on the seeding (gaussian pulse)
-        bool seed = true;
+        bool seed = false;
 
-        /*
+        // define an FDTDSolver object
+        ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
+
         // add pulse at center of domain
         auto view_rho    = rho.getView();
         const int nghost = rho.getNghost();
@@ -211,16 +211,6 @@ int main(int argc, char* argv[]) {
                 if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                     view_rho(i, j, k) = sine(0, dt);
             });
-        */
-
-        // define an FDTDSolver object
-        ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
-
-        // for diagnostics
-        Field_t normE;
-        normE.initialize(mesh, layout);
-        auto view_normE  = normE.getView();
-        auto view_fieldE = fieldE.getView();
 
         msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
         solver.solve();
@@ -229,7 +219,6 @@ int main(int argc, char* argv[]) {
         for (unsigned int it = 1; it < iterations; ++it) {
             msg << "Timestep number = " << it << " , time = " << it * dt << endl;
 
-            /*
             Kokkos::parallel_for(
                 "Assign sine source at center", ippl::getRangePolicy(view_rho, nghost),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -245,20 +234,10 @@ int main(int argc, char* argv[]) {
                     if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                         view_rho(i, j, k) = sine(it, dt);
                 });
-            */
 
             solver.solve();
 
-            Kokkos::parallel_for(
-                "Compute norm", normE.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    double norm_sqrd = view_fieldE(i, j, k)[0] * view_fieldE(i, j, k)[0]
-                                       + view_fieldE(i, j, k)[1] * view_fieldE(i, j, k)[1]
-                                       + view_fieldE(i, j, k)[2] * view_fieldE(i, j, k)[2];
-                    view_normE(i, j, k) = Kokkos::sqrt(norm_sqrd);
-                });
-
-            dumpVTK(normE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
+            dumpVTK(fieldE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
         }
     }
     ippl::finalize();
