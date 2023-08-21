@@ -144,16 +144,12 @@ namespace ippl {
         // interior points need to have been updated before TF/SF seed and ABCs
         Kokkos::fence();
 
-        /*
         // add seed field via TF/SF boundaries
         if (seed) {
-            std::cout << "inside seed if" << std::endl;
-
             iteration++;
 
             // the scattered field boundary is the 2nd point after the boundary
             // the total field boundary is the 3rd point after the boundary
-
             for (size_t gd = 0; gd < Dim; ++gd) {
                 Kokkos::parallel_for(
                     "Vector potential update", ippl::getRangePolicy(view_aN, nghost_a),
@@ -213,7 +209,6 @@ namespace ippl {
             }
         }
         Kokkos::fence();
-        */
 
         // apply 1st order Absorbing Boundary Conditions
         // for both scalar and vector potentials
