@@ -221,7 +221,7 @@ namespace ippl {
          */
         template <template <typename...> class Type>
         struct TypeForAllSpaces {
-            using unique_spaces = VariantFromUniqueTypes<
+            using unique_memory_spaces = VariantFromUniqueTypes<
                 Kokkos::HostSpace, Kokkos::SharedSpace, Kokkos::SharedHostPinnedSpace
 #ifdef KOKKOS_ENABLE_CUDA
                 ,
@@ -238,7 +238,43 @@ namespace ippl {
 #endif
                 >;
 
-            using type = typename Forward<Type, unique_spaces>::type;
+            using unique_exec_spaces = VariantFromUniqueTypes<Kokkos::DefaultExecutionSpace
+#ifdef KOKKOS_ENABLE_OPENMP
+                                                              ,
+                                                              Kokkos::OpenMP
+#endif
+#ifdef KOKKOS_ENABLE_OPENMPTARGET
+                                                              ,
+                                                              Kokkos::OpenMPTarget
+#endif
+#ifdef KOKKOS_ENABLE_THREADS
+                                                              ,
+                                                              Kokkos::Thread
+#endif
+#ifdef KOKKOS_ENABLE_SERIAL
+                                                              ,
+                                                              Kokkos::Serial
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+                                                              ,
+                                                              Kokkos::Cuda
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+                                                              ,
+                                                              Kokkos::HIP
+#endif
+#ifdef KOKKOS_ENABLE_SYCL
+                                                              ,
+                                                              Kokkos::Experimental::SYCL
+#endif
+#ifdef KOKKOS_ENABLE_HPX
+                                                              ,
+                                                              Kokkos::HPX
+#endif
+                                                              >;
+
+            using memory_spaces_type = typename Forward<Type, unique_memory_spaces>::type;
+            using exec_spaces_type   = typename Forward<Type, unique_exec_spaces>::type;
         };
 
         /*!
@@ -384,7 +420,7 @@ namespace ippl {
             template <typename... Spaces>
             using container_type = MultispaceContainer<Type, Spaces...>;
 
-            using type = typename TypeForAllSpaces<container_type>::type;
+            using type = typename TypeForAllSpaces<container_type>::memory_spaces_type;
         };
 
         /*!
@@ -395,7 +431,7 @@ namespace ippl {
          */
         template <typename Functor>
         void runForAllSpaces(Functor&& f) {
-            using all_spaces = typename TypeForAllSpaces<std::variant>::type;
+            using all_spaces = typename TypeForAllSpaces<std::variant>::memory_spaces_type;
             auto runner      = [&]<typename... Spaces>(const std::variant<Spaces...>&) {
                 (f.template operator()<Spaces>(), ...);
             };

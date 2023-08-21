@@ -604,6 +604,7 @@ public:
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
 
+        rho_m     = dot(E_m, E_m);
         potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
@@ -653,10 +654,9 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
-                          "Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
-                    csvout << "E" << d << "norm2, ";
+                    csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";
                 }
                 csvout << endl;
             }
