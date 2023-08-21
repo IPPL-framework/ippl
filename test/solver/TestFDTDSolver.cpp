@@ -190,12 +190,12 @@ int main(int argc, char* argv[]) {
         // turn on the seeding (gaussian pulse)
         bool seed = true;
 
+        /*
         // add pulse at center of domain
         auto view_rho    = rho.getView();
         const int nghost = rho.getNghost();
         auto ldom        = layout.getLocalNDIndex();
 
-        /*
         Kokkos::parallel_for(
             "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
