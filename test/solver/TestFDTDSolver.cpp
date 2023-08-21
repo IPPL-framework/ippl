@@ -185,42 +185,20 @@ int main(int argc, char* argv[]) {
         current.initialize(mesh, layout);
         current = 0.0;
 
-        // turn on the seeding (gaussian pulse)
+        // turn on the seeding (gaussian pulse) - if set to false, sine pulse is added on rho
         bool seed = false;
 
         // define an FDTDSolver object
         ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
 
-        // add pulse at center of domain
-        auto view_rho    = rho.getView();
-        const int nghost = rho.getNghost();
-        auto ldom        = layout.getLocalNDIndex();
-
-        Kokkos::parallel_for(
-            "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const int ig = i + ldom[0].first() - nghost;
-                const int jg = j + ldom[1].first() - nghost;
-                const int kg = k + ldom[2].first() - nghost;
-
-                // define the physical points (cell-centered)
-                double x = (ig + 0.5) * hr[0] + origin[0];
-                double y = (jg + 0.5) * hr[1] + origin[1];
-                double z = (kg + 0.5) * hr[2] + origin[2];
-
-                if ((x == 0.5) && (y == 0.5) && (z == 0.5))
-                    view_rho(i, j, k) = sine(0, dt);
-            });
-
-        msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
-        solver.solve();
-
-        // time-loop
-        for (unsigned int it = 1; it < iterations; ++it) {
-            msg << "Timestep number = " << it << " , time = " << it * dt << endl;
+        if (!seed) {
+            // add pulse at center of domain
+            auto view_rho    = rho.getView();
+            const int nghost = rho.getNghost();
+            auto ldom        = layout.getLocalNDIndex();
 
             Kokkos::parallel_for(
-                "Assign sine source at center", ippl::getRangePolicy(view_rho, nghost),
+                "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -232,8 +210,39 @@ int main(int argc, char* argv[]) {
                     double z = (kg + 0.5) * hr[2] + origin[2];
 
                     if ((x == 0.5) && (y == 0.5) && (z == 0.5))
-                        view_rho(i, j, k) = sine(it, dt);
+                        view_rho(i, j, k) = sine(0, dt);
+            });
+        }
+
+        msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
+        solver.solve();
+
+        // time-loop
+        for (unsigned int it = 1; it < iterations; ++it) {
+            msg << "Timestep number = " << it << " , time = " << it * dt << endl;
+
+            if (!seed) {
+                // add pulse at center of domain
+                auto view_rho    = rho.getView();
+                const int nghost = rho.getNghost();
+                auto ldom        = layout.getLocalNDIndex();
+
+                Kokkos::parallel_for(
+                    "Assign sine source at center", ippl::getRangePolicy(view_rho, nghost),
+                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                        const int ig = i + ldom[0].first() - nghost;
+                        const int jg = j + ldom[1].first() - nghost;
+                        const int kg = k + ldom[2].first() - nghost;
+
+                        // define the physical points (cell-centered)
+                        double x = (ig + 0.5) * hr[0] + origin[0];
+                        double y = (jg + 0.5) * hr[1] + origin[1];
+                        double z = (kg + 0.5) * hr[2] + origin[2];
+
+                        if ((x == 0.5) && (y == 0.5) && (z == 0.5))
+                            view_rho(i, j, k) = sine(it, dt);
                 });
+            }
 
             solver.solve();
 
