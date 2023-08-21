@@ -37,9 +37,11 @@
 
 #include "Solver/FDTDSolver.h"
 
+/*
 KOKKOS_INLINE_FUNCTION double sine(double n, double dt) {
     return 100 * std::sin(n * dt);
 }
+*/
 
 void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>,
                          ippl::UniformCartesian<double, 3>::DefaultCentering>& E,
@@ -186,13 +188,14 @@ int main(int argc, char* argv[]) {
         current = 0.0;
 
         // turn on the seeding (gaussian pulse)
-        bool seed = false;
+        bool seed = true;
 
         // add pulse at center of domain
         auto view_rho    = rho.getView();
         const int nghost = rho.getNghost();
         auto ldom        = layout.getLocalNDIndex();
 
+        /*
         Kokkos::parallel_for(
             "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -208,6 +211,7 @@ int main(int argc, char* argv[]) {
                 if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                     view_rho(i, j, k) = sine(0, dt);
             });
+        */
 
         // define an FDTDSolver object
         ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
@@ -225,6 +229,7 @@ int main(int argc, char* argv[]) {
         for (unsigned int it = 1; it < iterations; ++it) {
             msg << "Timestep number = " << it << " , time = " << it * dt << endl;
 
+            /*
             Kokkos::parallel_for(
                 "Assign sine source at center", ippl::getRangePolicy(view_rho, nghost),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -240,6 +245,7 @@ int main(int argc, char* argv[]) {
                     if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                         view_rho(i, j, k) = sine(it, dt);
                 });
+            */
 
             solver.solve();
 
