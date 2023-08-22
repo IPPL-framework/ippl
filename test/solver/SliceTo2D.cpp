@@ -198,6 +198,9 @@ public:
         std::cerr << "sMin = " << sMin << std::endl;
         std::cerr << "sMax = " << sMax << std::endl;
         double binWidth = (sMax - sMin) / numSlices;
+        binWidth = binWidth*1.005; // The particle at position sMax will be assined exactly numSlices+1, we actually
+                                  // want it in the final slice so artificially increses the binWifth by 0.5% to ensure 
+                                  // its within the final bin.
         std::cerr << "binWidth = " << binWidth << std::endl;
        
         //Kokkos::Array<double, nSlices - 1> binBoundaries;
@@ -241,10 +244,6 @@ public:
             });
         IpplTimings::stopTimer(scatterTimer);
 
-
-        // Collect mapping values for writing to a file
-        //std::vector<unsigned int> mappingValues(this->getLocalNum());
-        //Kokkos::deep_copy(Kokkos::View<unsigned int*>::HostMirror(mappingValues.data(), this->getLocalNum()), mapping);
         // Write mapping values to a file
         std::ofstream outFile("mapping_output.csv");
         if (outFile.is_open()) {
@@ -360,7 +359,7 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<bunch_type> P;
 
         ippl::NDIndex<3> domain;
-        for (unsigned i = 0; i < 2; i++) {
+        for (unsigned i = 0; i < 3; i++) {
             domain[i] = ippl::Index(nr[i]);
         }
 
@@ -412,7 +411,7 @@ int main(int argc, char* argv[]) {
 
         double radius = 0.05;
         double length = 0.8;
-        std::ofstream outfile("random_points_on_cylinder.csv");
+        std::ofstream outfile("distribution.csv");
         outfile << "x,y,z\n";
 
         if (!outfile) {
@@ -433,24 +432,10 @@ int main(int argc, char* argv[]) {
             outfile << point[0] << "," << point[1] << "," << point[2] << "\n";
         }
         
-        double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-
-        if (ippl::Comm->rank() == 0) {
-            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-        }
-
         Kokkos::deep_copy(P->R.getView(), R_host);
         P->q = P->Q_m;// / totalP;
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
-
-        //bunch_type bunchBuffer(PL);
-        //static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
-        //IpplTimings::startTimer(UpdateTimer);
-        //PL.update(*P, bunchBuffer);
-        //IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
 
@@ -470,13 +455,13 @@ int main(int argc, char* argv[]) {
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<2> layout(owned, decomp);  // 0 and 1 th element of decomp is serial
         
-        std::array<ScalarField_t<double>, numSlices+1> rhos;
-        Kokkos::Array<ScalarField_t<double>::view_type, numSlices+1> rhoViews;
+        std::array<ScalarField_t<double>, numSlices> rhos;
+        Kokkos::Array<ScalarField_t<double>::view_type, numSlices> rhoViews;
 
-        std::array<VectorField_t<double>, numSlices+1> Efields;
-        Kokkos::Array<VectorField_t<double>::view_type, numSlices+1> EViews;
+        std::array<VectorField_t<double>, numSlices> Efields;
+        Kokkos::Array<VectorField_t<double>::view_type, numSlices> EViews;
 
-        for (size_t i = 0; i < numSlices+1; i++) {
+        for (size_t i = 0; i < numSlices; i++) {
             rhos[i] = 0.0; // reset rho field 
 
             rhos[i].initialize(meshRho, layout);
@@ -520,11 +505,17 @@ int main(int argc, char* argv[]) {
         // add output type
         params.add("output_type", Solver_t<double>::SOL_AND_GRAD);
 
-        for (size_t i = 0; i < numSlices+1; i++) {
+        static IpplTimings::TimerRef solverTimer = IpplTimings::getTimer("solver");
+        IpplTimings::startTimer(solverTimer);
+
+        for (size_t i = 0; i < numSlices; i++) {
             Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
             // solve the Poisson equation -> rho contains the solution (phi) now   
             FFTsolver.solve();
         }
+
+        IpplTimings::stopTimer(solverTimer);
+
         //}
         
         // else {
@@ -540,7 +531,7 @@ int main(int argc, char* argv[]) {
         //    FFTsolver.solve();
         //}
         
-        for (size_t slicen = 0; slicen < numSlices+1; slicen++) {
+        for (size_t slicen = 0; slicen < numSlices; slicen++) {
             auto s = std::to_string(slicen);
             std::string filename = "output_rho_" + s +".csv";
 
@@ -629,7 +620,6 @@ int main(int argc, char* argv[]) {
         std::ofstream outputFileEfieldSlice("output_efieldSlices.csv");
         outputFileEfieldSlice << "slice_index,Rx,Ry,Rz,Ex,Ey,Ez\n";
 
-
         // 1D SPACE CHARGE CALCULATION END
 
         P->gatherFromSlices(rhos, EViews);
@@ -654,6 +644,9 @@ int main(int argc, char* argv[]) {
 
         //outputFileEfield.close();
 
+        IpplTimings::stopTimer(mainTimer);
+        //IpplTimings::print();
+        //IpplTimings::print(std::string("timing.dat"));
 
     }
     ippl::finalize();
