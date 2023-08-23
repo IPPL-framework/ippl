@@ -243,7 +243,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
 
     auto& field = this->field;
 
-    T tol                         = (std::is_same_v<T, double>) ? 5e-15 : 5e-6;
+    T tol                         = std::is_same_v<T, double> ? 5e-15 : 5e-6;
     const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
     const int shift               = field->getNghost();
 
@@ -423,6 +423,59 @@ TYPED_TEST(FieldTest, Hessian) {
             det += mirror_result(args...)[d][d];
         }
         assertEqual<T>(det, 0.);
+    });
+}
+
+TYPED_TEST(FieldTest, Laplace) {
+    auto& mesh   = this->mesh;
+    auto& layout = this->layout;
+
+    using field_type       = typename TestFixture::field_type;
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
+
+    auto& field = this->field;
+    field_type error(*mesh, *layout);
+    field_type exact(*mesh, *layout);
+
+    using bc_type = ippl::BConds<field_type, Dim>;
+    bc_type bcField;
+    for (unsigned int i = 0; i < 2 * Dim; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+    }
+
+    field->setFieldBC(bcField);
+    error.setFieldBC(bcField);
+
+    auto origin                    = mesh->getOrigin();
+    auto hr                        = mesh->getMeshSpacing();
+    const ippl::NDIndex<Dim>& lDom = layout->getLocalNDIndex();
+    const int nghost               = exact.getNghost();
+
+    auto& lhsView   = field->getView();
+    auto& exactView = exact.getView();
+
+    T pi = Kokkos::numbers::pi_v<T>;
+
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for(
+        "Set field", exact.getFieldRangePolicy(), KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::Vector<T, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+
+            ippl::apply(lhsView, args) = ippl::apply(exactView, args) = 1;
+            for (const auto& xi : args) {
+                ippl::apply(lhsView, args) *= sin(pi * xi);
+            }
+            ippl::apply(exactView, args) = -Dim * pi * pi * ippl::apply(lhsView, args);
+        });
+
+    error = (ippl::laplace(*field) - exact) / exact;
+
+    T tol       = std::is_same_v<T, double> ? 5e-15 : 5e-6;
+    auto mirror = error.getHostMirror();
+    Kokkos::deep_copy(mirror, error.getView());
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        ASSERT_NEAR(mirror(args...), 0., tol);
     });
 }
 
