@@ -185,6 +185,7 @@ public:
         const int nghost             = rhos[0].getNghost();
 
         // loop to find min and max
+
         double sMin, sMax;
         sMin = sMax = R(0)[2]; // Initialize min and max with the first element
 
@@ -199,7 +200,7 @@ public:
         std::cerr << "sMax = " << sMax << std::endl;
         double binWidth = (sMax - sMin) / numSlices;
         binWidth = binWidth*1.005; // The particle at position sMax will be assined exactly numSlices+1, we actually
-                                  // want it in the final slice so artificially increses the binWifth by 0.5% to ensure 
+                                  // want it in the final slice so artificially increase the binWidth by 0.5% to ensure 
                                   // its within the final bin.
         std::cerr << "binWidth = " << binWidth << std::endl;
        
@@ -237,7 +238,7 @@ public:
                 Vector<size_t, 2> args = index - lDom.first() + nghost;
 
                 const value_type &val = q(i);
-                
+
                 // check templtes arguments for make index sequence
                 ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args, val);
                 //ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
@@ -371,7 +372,7 @@ int main(int argc, char* argv[]) {
         decomp[1] = ippl::SERIAL;
         decomp[2] = ippl::PARALLEL; //  Only want to divide up the domain along the beam axis
         // ie ippl will divde up along the axis of the beam so that 
-        // if for example there are two ranks then the first rank will get the 
+        // if, for example, there are two ranks then the first rank will get the 
         // the slices from s = 0 to s = (1/2)smax and the second rank will get the rest
 
         // create mesh and layout objects for this problem domain
@@ -450,10 +451,14 @@ int main(int argc, char* argv[]) {
         double dyRho                      = 1.0 / nr[1];
         ippl::Vector<double, 2> hxRho     = {dxRho, dyRho};
         ippl::Vector<double, 2> originRho = {0.0, 0.0};
+        ippl::e_dim_tag decompRho[2];
+        decompRho[0] = ippl::SERIAL; 
+        decompRho[1] = ippl::SERIAL;
+
         Mesh_t<2> meshRho(owned, hxRho, originRho);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<2> layout(owned, decomp);  // 0 and 1 th element of decomp is serial
+        ippl::FieldLayout<2> layout(owned, decompRho);  // 0 and 1 th element of decomp is serial
         
         std::array<ScalarField_t<double>, numSlices> rhos;
         Kokkos::Array<ScalarField_t<double>::view_type, numSlices> rhoViews;
@@ -474,7 +479,6 @@ int main(int argc, char* argv[]) {
         
         // call slice and scatter function
         P->scatterToSlices(numSlices, rhos, rhoViews); 
-
         // 2d solve 
         ippl::ParameterList params;
 
@@ -510,7 +514,7 @@ int main(int argc, char* argv[]) {
 
         for (size_t i = 0; i < numSlices; i++) {
             Solver_t<double> FFTsolver(Efields[i], rhos[i], params);
-            // solve the Poisson equation -> rho contains the solution (phi) now   
+            // solve the Poisson equation -> rho contains the solution (phi) now
             FFTsolver.solve();
         }
 
@@ -530,7 +534,7 @@ int main(int argc, char* argv[]) {
 
         //    FFTsolver.solve();
         //}
-        
+               
         for (size_t slicen = 0; slicen < numSlices; slicen++) {
             auto s = std::to_string(slicen);
             std::string filename = "output_rho_" + s +".csv";
@@ -548,6 +552,7 @@ int main(int argc, char* argv[]) {
             outputFileRho.close();
         }
         
+        
         // 1D SPACE CHARGE CALCULATION START 
 
         // 1d solve before gather!!
@@ -560,10 +565,10 @@ int main(int argc, char* argv[]) {
         std::map<int, int> occurrences;
 
         // Count occurrences of each value
-        auto mappingView = P->mapping.getView();
+        //auto mappingView = P->mapping.getView();
 
-        for (size_t i = 0; i < totalP; i++) {
-            occurrences[mappingView(i)]++;
+        for (size_t i = 0; i < P->getLocalNum(); i++) {
+            occurrences[P->mapping(i)]++;
         }
 
         std::vector<double> particlesPerSlice;
@@ -612,8 +617,6 @@ int main(int argc, char* argv[]) {
             double Ez = elemCharge * (- g / (4 * Kokkos::numbers::pi_v<double> * epsilon0 * gamma*gamma)) * lineDensityGradient[i];
             outputFileEz << i << "," << Ez << "\n";
             EzVec.push_back(Ez);
-            //update value of E
-            //P->E(i)[2] = Ez; // this needs to be a loop over all particles, ie all partcles in the slice need to be assigned a value of Ez
         }
         outputFileEz.close();
 
@@ -624,12 +627,12 @@ int main(int argc, char* argv[]) {
 
         P->gatherFromSlices(rhos, EViews);
 
-        for (size_t i = 0; i < totalP; i++) {
+        for (size_t i = 0; i < P->getLocalNum(); i++) {
             // assign the longitudinal value of Efield to the particles
             // the i th parting is assigned the longituninal field vlaue from the nth bin according to mapping
-            P->E(i)[2] = EzVec[mappingView(i)];
+            P->E(i)[2] = EzVec[P->mapping(i)];
 
-            outputFileEfieldSlice << mappingView(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
+            outputFileEfieldSlice << P->mapping(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
         }
         outputFileEfieldSlice.close();
 
@@ -646,7 +649,7 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::stopTimer(mainTimer);
         //IpplTimings::print();
-        //IpplTimings::print(std::string("timing.dat"));
+        IpplTimings::print(std::string("timing.dat"));
 
     }
     ippl::finalize();
