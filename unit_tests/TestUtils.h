@@ -11,7 +11,6 @@
 #include "Utility/TypeUtils.h"
 #include "Utility/ViewUtils.h"
 
-#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
 /*!
