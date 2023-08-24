@@ -25,7 +25,7 @@ public:
 
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
-    using field_type     = ippl::Field<T, Dim, mesh_type, centering_type>;
+    using field_type     = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using bc_type        = ippl::BConds<field_type, Dim>;
 
     FieldBCTest()
