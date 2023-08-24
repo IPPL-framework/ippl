@@ -120,10 +120,12 @@ public:
     typedef double value_type;
 
     ParticleAttrib<double> q;                 // charge
+    double binWidth_m;                        // width of longitudinal bin
+    double globalMin_m;                       // min longitudinal coordinate across all ranks
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type R;  // particle position
     typename Base::particle_position_type E;  // electric field at particle position
-    ParticleAttrib<int> mapping; // record the bin index of the i'th particle
+    ParticleAttrib<int> mapping;              // record the bin index of the i'th particle
 
     //constexpr unsigned sliceCount;
     //std::array<Field2D_t, sliceCount> slices;
@@ -139,13 +141,15 @@ public:
     }
 
     Solve25D(PLayout& pl, Vector_t<double, 3>  hr, Vector_t<double, 3>  rmin, Vector_t<double, 3>  rmax,
-                     ippl::e_dim_tag decomp[3], double Q, std::string solver)
+                     ippl::e_dim_tag decomp[3], double Q, double binWidth, double globalMin, std::string solver)
         : Base(pl) 
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , stype_m(solver)
-        , Q_m(Q) {
+        , Q_m(Q) 
+        , binWidth_m(binWidth) 
+        , globalMin_m(globalMin) {
         registerAttributes();
         for (unsigned int i = 0; i < 3; i++) {
             decomp_m[i] = decomp[i];
@@ -164,7 +168,7 @@ public:
     ~Solve25D() {}
 
     template <size_t nSlices>
-    void scatterToSlices(int numSlices, std::array<ScalarField_t<double>, nSlices>& rhos, Kokkos::Array<Field_t<2>::view_type, nSlices>& rhoViews) {
+    void scatterToSlices(std::array<ScalarField_t<double>, nSlices>& rhos, Kokkos::Array<Field_t<2>::view_type, nSlices>& rhoViews) {
 
         // copy stuff from particleattrib.hpp
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
@@ -185,21 +189,30 @@ public:
         const int nghost             = rhos[0].getNghost();
 
         // loop to find min and max
+        auto Rview = R.getView();
 
-        double sMin, sMax;
-        sMin = sMax = R(0)[2]; // Initialize min and max with the first element
+        //double sMax;//, sMin;
+        // parallel min/max loop (will be strictly necessary when the position data is on GPUs)
+        //Kokkos::parallel_reduce(
+        //    "Find min and max s coordinate", this->getLocalNum(),
+        //    KOKKOS_LAMBDA(size_t particleIndex, double& localMax/*, double& localMin*/) {
+        //        auto position = Rview(particleIndex);
+        //        auto s = position[2];
+                //if (s < localMin) localMin = s;
+        //        if (s > localMax) localMax = s;
+        //    },
+        //    Kokkos::Max<double>(sMax)//, Kokkos::Min<double>(sMin)
+        //);
+        // may or may not be necessary depending on final design, but just in case,
+        // make sure you have the indices before continuing
+        //Kokkos::fence();
 
-        for (size_t i = 1; i < this->getLocalNum(); i++) {
-            if (R(i)[2] < sMin) {
-                sMin = R(i)[2];
-            } else if (R(i)[2] > sMax) {
-                sMax = R(i)[2];
-            }
-        }
-        std::cerr << "sMin = " << sMin << std::endl;
-        std::cerr << "sMax = " << sMax << std::endl;
-        double binWidth = (sMax - sMin) / numSlices;
-        binWidth = binWidth*1.005; // The particle at position sMax will be assined exactly numSlices+1, we actually
+        auto binWidth = this->binWidth_m;
+        auto globalMin = this->globalMin_m;
+        std::cerr << "globalMin = " << globalMin << std::endl;
+        //std::cerr << "sMax = " << sMax << std::endl;
+        //double binWidth = (sMax - sMin) / numSlices;
+        //binWidth = binWidth*1.005; // The particle at position sMax will be assined exactly numSlices+1, we actually
                                   // want it in the final slice so artificially increase the binWidth by 0.5% to ensure 
                                   // its within the final bin.
         std::cerr << "binWidth = " << binWidth << std::endl;
@@ -224,11 +237,11 @@ public:
 
                 // mapping to record which particle corresponds to which bin 
                 // ie the i'th particle corresponds to the n'th bin
-                unsigned int n = (R(i)[2] - sMin) / binWidth; 
+                unsigned int n = (Rview(i)[2] - globalMin) / binWidth; 
 
                 mapping(i) = n;
 
-                vector_type pos2D = {R(i)[0], R(i)[1]}; 
+                vector_type pos2D = {Rview(i)[0], Rview(i)[1]}; 
 
                 // interpolation stuff
                 vector_type l = (pos2D - origin) * invdx + 0.5;
@@ -277,10 +290,12 @@ public:
         const ippl::NDIndex<2>& lDom = layout.getLocalNDIndex();
         const int nghost             = rhos[0].getNghost();
 
+        auto Rview = R.getView();
+
         Kokkos::parallel_for(
             "Gather and assign E", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
 
-                vector_type pos2D = {R(i)[0], R(i)[1]}; 
+                vector_type pos2D = {Rview(i)[0], Rview(i)[1]}; 
 
                 // interpolation stuff
                 vector_type l = (pos2D - origin) * invdx + 0.5;
@@ -391,9 +406,13 @@ int main(int argc, char* argv[]) {
         PLayout_t<double, 3> PL(FL, mesh);
 
         std::string solver = argv[6];   
+        const size_t numSlices = 30; //std::atoi(argv[4]);
 
+        double globalMin = 0.1;
+        double globalMax = 0.9;
+        double binWidth = (globalMax - globalMin) / numSlices;
         double Q = 1.0;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, binWidth, globalMin, solver);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 
@@ -411,7 +430,6 @@ int main(int argc, char* argv[]) {
         typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
         double radius = 0.05;
-        double length = 0.8;
         std::ofstream outfile("distribution.csv");
         outfile << "x,y,z\n";
 
@@ -425,7 +443,7 @@ int main(int argc, char* argv[]) {
         double centreY = (rmin[1] + rmax[1]) / 2;
         for (unsigned long int i = 0; i < nloc; i++) {
             //std::vector<double> point = generateRandomPointOnCylinder(centreX, centreY, radius, length);
-            std::vector<double> point = generateRandomPointOnEllipsoid(centreX, centreY, 0.5, radius, radius, length/2);            
+            std::vector<double> point = generateRandomPointOnEllipsoid(centreX, centreY, 0.5, radius, radius, (globalMax -globalMin)/2);            
             for (int d = 0; d < 3; d++) {
                 R_host(i)[d] = point[d];
                 sum_coord += R_host(i)[d];
@@ -435,12 +453,17 @@ int main(int argc, char* argv[]) {
         
         Kokkos::deep_copy(P->R.getView(), R_host);
         P->q = P->Q_m;// / totalP;
+
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
 
-        msg << "particles created and initial conditions assigned " << endl;
+        bunch_type bunchBuffer(PL);
+        static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
+        IpplTimings::startTimer(UpdateTimer);
+        PL.update(*P, bunchBuffer);
+        IpplTimings::stopTimer(UpdateTimer);
 
-        const size_t numSlices = 30; //std::atoi(argv[4]);
+        msg << "particles created and initial conditions assigned " << endl;
 
         // create mesh and initialise fields
         ippl::Index I(nr[0]);
@@ -478,7 +501,7 @@ int main(int argc, char* argv[]) {
 
         
         // call slice and scatter function
-        P->scatterToSlices(numSlices, rhos, rhoViews); 
+        P->scatterToSlices(rhos, rhoViews); 
         // 2d solve 
         ippl::ParameterList params;
 
@@ -627,12 +650,13 @@ int main(int argc, char* argv[]) {
 
         P->gatherFromSlices(rhos, EViews);
 
-        for (size_t i = 0; i < P->getLocalNum(); i++) {
+        auto mappingView = P->mapping.getView();
+        for (size_t i = 0; i < mappingView.extent(0); i++) {
             // assign the longitudinal value of Efield to the particles
             // the i th parting is assigned the longituninal field vlaue from the nth bin according to mapping
-            P->E(i)[2] = EzVec[P->mapping(i)];
+            P->E(i)[2] = EzVec[mappingView(i)];
 
-            outputFileEfieldSlice << P->mapping(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
+            outputFileEfieldSlice << mappingView(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
         }
         outputFileEfieldSlice.close();
 
