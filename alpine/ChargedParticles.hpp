@@ -381,7 +381,7 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
         // rho = rho_e - rho_i
         double size = 1;
