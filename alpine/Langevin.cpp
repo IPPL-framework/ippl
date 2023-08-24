@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
         const std::string HESSIAN_OPERATOR = argv[17];
         const int DUMP_INTERVAL            = std::atoi(argv[18]);
         const std::string OUT_DIR          = argv[19];
+        const int NTCOL                    = std::atoi(argv[20]);
 
         using bunch_type = LangevinParticles<PLayout_t<double, Dim>, double, Dim>;
 
@@ -131,9 +132,6 @@ int main(int argc, char* argv[]) {
 
         P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-        // dumpVTKScalar(P->rho_m, hr, nr, P->rmin_m, nghost, 0, 1.0, OUT_DIR, "Rho");
-        // dumpVTKVector(P->E_m, hr, nr, P->rmin_m, 0, 1.0, OUT_DIR, "E");
-
         P->dumpBeamStatistics(0, true, OUT_DIR);
         P->dumpCollisionStatistics(0, true, OUT_DIR);
 
@@ -144,40 +142,26 @@ int main(int argc, char* argv[]) {
             // Field Solve
             P->runSpaceChargeSolver(it + 1);
 
-            // Add constant focusing term
             P->applyConstantFocusing(FOCUS_FORCE, BEAM_RADIUS, avgEF);
 
-            P->runFrictionSolver();
-            if (it == NT - 1) {
-                dumpVTKScalar(P->fv_m, P->hvInit_m, P->nv_m, P->vminInit_m, it, 1.0, OUT_DIR, "h");
-                dumpVTKVector(P->Fd_m, P->hvInit_m, P->nv_m, P->vminInit_m, it, 1.0, OUT_DIR,
-                              "F_d");
+            // subcycle collisions
+            const double COLDT = DT / NTCOL;
+            for (int ncoll = 0; ncoll < NTCOL; ncoll++) {
+                P->runFrictionSolver();
+                P->runDiffusionSolver();
+
+                // Add dynamic friction & stochastic diffusion coefficients
+                P->P = P->P + COLDT * P->p_Fd_m + P->p_QdW_m;
+
+                P->P = P->P + 0.5 * COLDT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
             }
 
-            P->runDiffusionSolver();
-
-            P->dumpCollisionStatistics(it + 1, false, OUT_DIR);
-
-            // Add dynamic friction & stochastic diffusion coefficients
-            P->P = P->P + DT * P->p_Fd_m + P->p_QdW_m;
-
-            P->P = P->P + 0.5 * DT * P->E * PARTICLE_CHARGE / PARTICLE_MASS;
             P->R = P->R + 0.5 * DT * P->P;
 
             // Dump Statistics every DUMP_INTERVAL iteration
             if (it % DUMP_INTERVAL == 0) {
                 P->dumpBeamStatistics(it + 1, false, OUT_DIR);
                 P->velocityParticleCheck();
-
-                // if (it % 200 == 0) {
-                //  dumpVTKVector(P->Fd_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "F_d");
-                //  dumpVTKScalar(P->fv_m, P->hv_m, P->nv_m, P->vmin_m, it, 1.0, OUT_DIR, "H(v)");
-                //  P->dumpFdField(it, OUT_DIR);
-                //}
-                // dumpCSVMatrixField(P->D0_m, P->D1_m, P->D2_m, P->nv_m, "D", it % 2, OUT_DIR);
-                // dumpCSVMatrixAttr(P->p_Q0_m, P->p_Q1_m, P->p_Q2_m, P->getGlobParticleNum(), "Q",
-                // it % 2,
-                //                   OUT_DIR);
 
                 msg << "Finished iteration " << it << endl;
                 auto end = std::chrono::high_resolution_clock::now();
