@@ -173,6 +173,13 @@ namespace ippl {
 
             return os;
         }
+     ParameterList& operator=(const ParameterList& other) {
+        if (this != &other) {
+            // Copy members from 'other' to 'this'
+            params_m = other.params_m;
+        }
+        return *this;
+    }
 
     private:
         std::map<std::string, variant_t> params_m;

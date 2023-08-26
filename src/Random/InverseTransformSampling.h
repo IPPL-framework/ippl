@@ -35,7 +35,7 @@ namespace ippl {
         template <typename T, unsigned Dim, class DeviceType>
         class InverseTransformSampling {
         public:
-            using view_type = ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
+            using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
 
             template <class Distribution, class RegionLayout>
             InverseTransformSampling(const Vector<T, Dim>& rmin, const Vector<T, Dim>& rmax,
@@ -73,7 +73,7 @@ namespace ippl {
 
             template <class Distribution>
             void generate(Distribution dist_[Dim], view_type view, int seed) {
-                Kokkos::parallel_for(nlocal_m, fill_random(dist_, view, seed, umin_m, umax_m));
+                Kokkos::parallel_for(nlocal_m, fill_random<Distribution>(dist_, view, seed, umin_m, umax_m));
             }
 
             template <class Distribution>
