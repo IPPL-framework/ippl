@@ -47,8 +47,10 @@ endif ()
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 find_package (MPI REQUIRED)
+message (STATUS "The C compiler identification is: ${CMAKE_C_COMPILER_ID}")
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
+message (STATUS "The MPI C compiler is: ${MPI_C_COMPILER}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
@@ -82,6 +84,13 @@ if (ENABLE_ALPINE)
     message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
 endif ()
+
+option(ENABLE_CATALYST "Build example with Catalyst enabled" ON)
+if (ENABLE_CATALYST)
+    find_package(catalyst REQUIRED
+            PATHS "${ParaView_DIR}/catalyst")
+endif ()
+
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
