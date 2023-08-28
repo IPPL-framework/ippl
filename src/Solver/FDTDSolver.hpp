@@ -307,10 +307,10 @@ namespace ippl {
         field_evaluation();
 
         // store potentials at N in Nm1, and Np1 in N
-        aNm1_m   = aN_m;
-        aN_m     = aNp1_m;
-        phiNm1_m = phiN_m;
-        phiN_m   = phiNp1_m;
+        Kokkos::deep_copy(aNm1_m.getView(), aN_m.getView());
+        Kokkos::deep_copy(aN_m.getView(), aNp1_m.getView());
+        Kokkos::deep_copy(phiNm1_m.getView(), phiN_m.getView());
+        Kokkos::deep_copy(phiN_m.getView(), phiNp1_m.getView());
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
