@@ -13,7 +13,8 @@ link_directories (
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (PenningTrap PenningTrap.cpp)
+add_executable (PenningTrap PenningTrap.cpp
+        CatalystAdaptor.h)
 target_link_libraries (PenningTrap ${IPPL_LIBS})
 
 add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
