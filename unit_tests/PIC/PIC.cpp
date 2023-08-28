@@ -32,6 +32,7 @@ protected:
 
 public:
     constexpr static unsigned dim = Dim;
+    using value_type              = T;
 
     using mesh_type      = ippl::UniformCartesian<double, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
@@ -144,7 +145,8 @@ TYPED_TEST(PICTest, Scatter) {
 
     double totalcharge = field->sum();
 
-    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
+    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
+                tolerance<typename TestFixture::value_type>);
 }
 
 TYPED_TEST(PICTest, Gather) {

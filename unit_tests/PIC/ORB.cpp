@@ -33,6 +33,7 @@ protected:
 
 public:
     constexpr static unsigned dim = Dim;
+    using value_type              = T;
 
     using mesh_type      = ippl::UniformCartesian<double, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
@@ -183,7 +184,8 @@ TYPED_TEST(ORBTest, Charge) {
 
     double totalCharge = field->sum();
 
-    ASSERT_NEAR((this->nParticles * charge - totalCharge) / totalCharge, 0., 1e-13);
+    ASSERT_NEAR((this->nParticles * charge - totalCharge) / totalCharge, 0.,
+                tolerance<typename TestFixture::value_type>);
 }
 
 int main(int argc, char* argv[]) {
