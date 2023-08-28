@@ -29,4 +29,5 @@ You can then easily pull by typing
 ```bash
 $ git pull upstream master
 ````
-
+All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please
+take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).
