@@ -46,8 +46,8 @@ namespace ippl {
         using buffer_type = Communicate::buffer_type<memory_space>;
 
         // constructor and destructor
-        FDTDSolver(Field_t charge, VField_t current, VField_t E, VField_t B, double timestep = 0.05,
-                   bool seed_ = false);
+        FDTDSolver(Field_t& charge, VField_t& current, VField_t& E, VField_t& B,
+                   double timestep = 0.05, bool seed_ = false);
         ~FDTDSolver();
 
         // finite differences time domain solver for potentials (A and phi)

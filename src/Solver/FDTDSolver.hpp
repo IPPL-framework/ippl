@@ -28,8 +28,8 @@
 namespace ippl {
 
     template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t charge, VField_t current, VField_t E,
-                                               VField_t B, double timestep, bool seed_) {
+    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t& charge, VField_t& current, VField_t& E,
+                                               VField_t& B, double timestep, bool seed_) {
         // set the rho and J fields to be references to charge and current
         // since charge and current deposition will happen at each timestep
         rhoN_mp = &charge;
@@ -252,8 +252,8 @@ namespace ippl {
                               + beta1[2] * (view_phiN(i, j, k) + view_phiN(i, j, k - 1))
                               + beta2[2] * (view_phiNm1(i, j, k - 1));
 
-                view_phiNp1(i, j, k) += isXmin * xmin + isYmin * ymin + isZmin * zmin + isXmax * xmax
-                                       + isYmax * ymax + isZmax * zmax;
+                view_phiNp1(i, j, k) += isXmin * xmin + isYmin * ymin + isZmin * zmin
+                                        + isXmax * xmax + isYmax * ymax + isZmax * zmax;
             });
 
         for (size_t gd = 0; gd < Dim; ++gd) {
@@ -298,7 +298,7 @@ namespace ippl {
                                   + beta2[2] * (view_aNm1(i, j, k - 1)[gd]);
 
                     view_aNp1(i, j, k)[gd] += isXmin * xmin + isYmin * ymin + isZmin * zmin
-                                             + isXmax * xmax + isYmax * ymax + isZmax * zmax;
+                                              + isXmax * xmax + isYmax * ymax + isZmax * zmax;
                 });
         }
         Kokkos::fence();
@@ -321,7 +321,7 @@ namespace ippl {
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
-        (*En_mp) = - (aNp1_m - aN_m) / dt - grad(phiN_m);
+        (*En_mp) = -(aNp1_m - aN_m) / dt - grad(phiN_m);
     };
 
     template <typename Tfields, unsigned Dim, class M, class C>
