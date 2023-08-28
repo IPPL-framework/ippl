@@ -25,7 +25,7 @@ namespace ippl {
 		                              unsigned int max_iter = 20) {
 			unsigned int iter = 0;
 			while (iter < max_iter && Kokkos::fabs(dist.obj_func(dim, x, u)) > atol) {
-			    // The goal is to find x, such that "cdf(x) - u = 0" for a given sample of u. Here, dist.function = 2*(cdf(x) - u)
+			    // Find x, such that "cdf(x) - u = 0" for a given sample of u~uniform(0,1)
 			    x = x - (dist.obj_func(dim, x, u) / dist.der_obj_func(dim, x));
 			    iter += 1;
 			}
@@ -97,11 +97,7 @@ namespace ippl {
 		    , unif(0.0, 1.0)
 		    , umin(umin_)
 		    , umax(umax_)
-		    , x(x_) {
-		    //for (unsigned int d = 0; d < Dim; ++d) {
-		    //    dist = dist_;
-		    //}
-		}
+		    , x(x_) {}
 
 		KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
 		    T u = 0.0;
@@ -114,7 +110,7 @@ namespace ippl {
 		        x(i)[d] = dist.estimate(d, u);
 
 		        // solve
-		        ippl::random::detail::NewtonRaphson<T, Dim> solver; // Add the dimension as a template parameter
+		        ippl::random::detail::NewtonRaphson<T, Dim> solver;
 		        solver.solve(dist, d, x(i)[d], u);
 		    }
 		}
@@ -124,7 +120,6 @@ namespace ippl {
 	    unsigned int nlocal_m;
 	    Vector<T, Dim> nr_m, dr_m, umin_m, umax_m;
 	};
-
         
         // class of uncorollated multi-dimensional pdf
         template <typename T, unsigned Dim>
@@ -180,8 +175,6 @@ namespace ippl {
            }
 
         private:
-    
-           // Array of function pointers or lambdas for user to define
            std::vector<std::function<T(T)>> cdfFunctions;
            std::vector<std::function<T(T)>> pdfFunctions;
            std::vector<std::function<T(T)>> estimationFunctions;
