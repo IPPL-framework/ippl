@@ -1,6 +1,17 @@
 # Independent Parallel Particle Layer (IPPL)
 Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of Kokkos (https://github.com/kokkos/kokkos), HeFFTe (https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs). 
 
+## Installing IPPL and its dependencies
+
+### Requirements
+The following libraries are required:
+
+* MPI
+* [Kokkos](https://github.com/kokkos) >= 4.1.00
+* [HeFFTe](https://bitbucket.org/icl/heffte/src/master/) >= 2.2.0; only required if IPPL is built with FFTs enabled (`ENABLE_FFT=ON`)
+
+To build IPPL and its dependencies, we recommend using the [IPPL build scripts](https://github.com/IPPL-framework/ippl-build-scripts). See the [documentation](https://github.com/IPPL-framework/ippl-build-scripts#readme) for more info on how to use the IPPL build script.
+
 ## IPPL Presentations
 You can find the presentations based on IPPL [here](https://github.com/IPPL-framework/ippl-presentations) 
 
