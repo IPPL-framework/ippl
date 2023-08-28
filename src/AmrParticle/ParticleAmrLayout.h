@@ -2,6 +2,10 @@
 // Class ParticleAmrLayout
 //   Particle layout for AMR particles.
 //
+// Matthias Frey (2016 - 2020)
+// Implemented as part of the PhD thesis
+// "Precise Simulations of Multibunches in High Intensity Cyclotrons"
+//
 //
 #ifndef PARTICLE_AMR_LAYOUT_H
 #define PARTICLE_AMR_LAYOUT_H

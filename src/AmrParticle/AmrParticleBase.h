@@ -3,6 +3,10 @@
 //   Ippl interface for AMR particles.
 //   The derived classes need to extend the base class by subsequent methods.
 //
+// Matthias Frey (2016 - 2020)
+// Implemented as part of the PhD thesis
+// "Precise Simulations of Multibunches in High Intensity Cyclotrons"
+//
 //   template <class FT, unsigned Dim, class PT>
 //   void scatter(const ParticleAttrib<FT>& attrib, AmrField_t& f,
 //                const ParticleAttrib<Vektor<PT, Dim> >& pp,

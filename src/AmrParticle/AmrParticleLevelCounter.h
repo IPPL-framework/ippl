@@ -7,6 +7,10 @@
 //   the key represents the level and the value is the
 //   the number of particles at that level.
 //
+// Matthias Frey (2016 - 2020)
+// Implemented as part of the PhD thesis
+// "Precise Simulations of Multibunches in High Intensity Cyclotrons"
+//
 //
 #ifndef AMR_PARTICLE_LEVEL_COUNTER_H
 #define AMR_PARTICLE_LEVEL_COUNTER_H
