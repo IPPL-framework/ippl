@@ -95,7 +95,7 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} catalyst::catalyst)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} catalyst)
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)

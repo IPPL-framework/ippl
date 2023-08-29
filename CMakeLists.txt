@@ -7,15 +7,17 @@ set (IPPL_VERSION_NAME "V${IPPL_VERSION_MAJOR}.${IPPL_VERSION_MINOR}")
 
 set (IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+include(CMakePrintHelpers)
+
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
-    set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-        "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-        FORCE
-        )
+  set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+    FORCE
+    )
 endif ()
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    add_definitions (-DNOPAssert)
+  add_definitions (-DNOPAssert)
 endif ()
 
 add_compile_options (-Wall)
@@ -39,7 +41,7 @@ set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 # Compile using C++20 for CPU builds
 if (${CMAKE_CXX_COMPILER} MATCHES ".*mpicxx")
-    set (CMAKE_CXX_STANDARD 20)
+  set (CMAKE_CXX_STANDARD 20)
 endif ()
 
 
@@ -59,9 +61,9 @@ find_package(Kokkos REQUIRED)
 
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
-    add_definitions (-DENABLE_FFT)
-    find_package(Heffte 2.2.0 REQUIRED)
-    message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
+  add_definitions (-DENABLE_FFT)
+  find_package(Heffte 2.2.0 REQUIRED)
+  message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
 option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
@@ -70,26 +72,31 @@ add_subdirectory (src)
 
 option (ENABLE_TESTS "Enable IPPL tests" OFF)
 if (ENABLE_TESTS)
-    add_subdirectory (test)
+  add_subdirectory (test)
 endif ()
 
 option (ENABLE_ALPINE, "Enable Alpine" OFF)
 if (ENABLE_ALPINE)
-    if (NOT ENABLE_SOLVERS)
-        message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
-    endif ()
-    if (NOT ENABLE_FFT)
-        message (FATAL_ERROR "Cannot enable Alpine since FFT not enabled (-DENABLE_FFT=ON)!")
-    endif ()
-    message (STATUS "Enable Alpine")
-    add_subdirectory (alpine)
+  if (NOT ENABLE_SOLVERS)
+    message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
+  endif ()
+  if (NOT ENABLE_FFT)
+    message (FATAL_ERROR "Cannot enable Alpine since FFT not enabled (-DENABLE_FFT=ON)!")
+  endif ()
+  message (STATUS "Enable Alpine")
+  add_subdirectory (alpine)
 endif ()
 
 option(ENABLE_CATALYST "Build example with Catalyst enabled" ON)
 if (ENABLE_CATALYST)
   get_property(importTargets DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
 
-  find_package(catalyst REQUIRED)
+  find_package(catalyst 2.0 REQUIRED)
+
+  cmake_print_properties(
+    TARGETS catalyst::catalyst
+    PROPERTIES POSITION_INDEPENDENT_CODE
+    )
   get_property(importTargetsAfter DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
   list(REMOVE_ITEM importTargetsAfter ${importTargets})
 
@@ -100,18 +107,18 @@ endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
-    find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
-    add_subdirectory (unit_tests)
+  find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
+  add_subdirectory (unit_tests)
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake )
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake )
 
 install (
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}"
-    RENAME ${PROJECT_NAME}Config.cmake
-    )
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}"
+  RENAME ${PROJECT_NAME}Config.cmake
+  )
 
 # vi: set et ts=4 sw=4 sts=4:
 
