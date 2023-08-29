@@ -12,17 +12,12 @@ class UniformCartesianTest;
 
 template <typename T, unsigned Dim>
 class UniformCartesianTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     constexpr static unsigned dim = Dim;
 
     UniformCartesianTest()
-        : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
-    }
+        : nPoints(getGridSizes<Dim>()) {}
 
     ippl::NDIndex<Dim> createMesh(ippl::Vector<T, Dim>& hx, ippl::Vector<T, Dim>& origin,
                                   T& cellVol, T& meshVol) {
