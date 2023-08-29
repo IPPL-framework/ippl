@@ -1,25 +1,17 @@
 #include "Ippl.h"
 
 #include "Random/InverseTransformSampling.h"    
- 
-double cdf_x(double x, double mu, double sd) {
-    return 0.5 * (1.0 + std::erf((x - mu) / (sd * sqrt(2.0))));
+
+double cdf_y(double y, double alpha, double k) {
+    return y + (alpha / k) * std::sin(k * y);
 }
-double pdf_x(double x, double mu, double sd) {
-    return (1.0 / (sd * sqrt(2.0 * M_PI))) * std::exp(-0.5 * ((x - mu) / sd) * ((x - mu) / sd));
+double pdf_y(double y, double alpha, double k) {
+    return  (1.0 + alpha * Kokkos::cos(k * y));
 }
-double cdf_y(double y, double mu, double sd) {
-    return 0.5 * (1.0 + std::erf((y - mu) / (sd * sqrt(2.0))));
+double estimate_y(double u) {
+    return u; // maybe E[x] is good enough as the first guess
 }
-double pdf_y(double y, double mu, double sd) {
-    return (1.0 / (sd * sqrt(2.0 * M_PI))) * std::exp(-0.5 * ((y - mu) / sd) * ((y - mu) / sd));
-}
-double estimate_x(double u, double mu, double sd) {
-    return (sqrt(M_PI / 2.0) * (2.0 * u - 1.0)) * sd + mu; // maybe E[x] is good enough as the first guess
-}
-double estimate_y(double u, double mu, double sd) {
-    return (sqrt(M_PI / 2.0) * (2.0 * u - 1.0)) * sd + mu; // maybe E[x] is good enough as the first guess
-}
+
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -54,28 +46,25 @@ int main(int argc, char* argv[]) {
         ippl::detail::RegionLayout<double, 2, Mesh_t> rlayout(fl, mesh);
 
         using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 2, Kokkos::Serial>;
+        
+        // Define a distribution that is normal in dim=0, and harmonic in dim=1
+        double mu = 1.0;
+        double sd = 0.5;
+        
+        double pi    = Kokkos::numbers::pi_v<double>;
+        double kw = 2.*pi/(rmax[1]-rmin[1])*4.0;
+        double alpha = 0.5;
+        
+        ippl::random::Distribution<double, 2> dist;
 
-        ippl::Vector<double, 2> mu, sd;
-        mu[0] = 1.;
-        mu[1] = -1;
-        sd[0] = 0.5;
-        sd[1] = 0.8;
-        
-        std::vector<std::function<double(double)>> cdfFunctions = {
-            [mu_x = mu[0], sd_x = sd[0]](double x) { return cdf_x(x, mu_x, sd_x); },
-            [mu_y = mu[1], sd_y = sd[1]](double y) { return cdf_y(y, mu_y, sd_y); }
-        };
-        std::vector<std::function<double(double)>> pdfFunctions = {
-            [mu_x = mu[0], sd_x = sd[0]](double x) { return pdf_x(x, mu_x, sd_x); },
-            [mu_y = mu[1], sd_y = sd[1]](double y) { return pdf_y(y, mu_y, sd_y); }
-        };
-        std::vector<std::function<double(double)>> estimationFunctions = {
-            [mu_x = mu[0], sd_x = sd[0]](double u) { return estimate_x(u, mu_x, sd_x); },
-            [mu_y = mu[1], sd_y = sd[1]](double u) { return estimate_y(u, mu_y, sd_y); }
-        };
-        
-	ippl::random::Distribution<double, 2> dist(cdfFunctions, pdfFunctions, estimationFunctions);
-    
+        // For normal distr, user can use the pre-defined distr. from the class Distribution
+	// Set a Normal Distribution for dimension 0 with mean mu and standard deviation sd
+	dist.setNormalDistribution(0, mu, sd);
+
+	// Set custom CDF and PDF functions for dimension 1
+	dist.setCdfFunction(1, [alpha, kw](double y) { return cdf_y(y, alpha, kw);});
+	dist.setPdfFunction(1, [alpha, kw](double y) { return pdf_y(y, alpha, kw);});
+        dist.setEstimationFunction(1, [](double u) { return estimate_y(u);});
 
         InvTransSampl_t its(rmin, rmax, rlayout, dist, ntotal);
 

@@ -125,15 +125,48 @@ namespace ippl {
         template <typename T, unsigned Dim>
         class Distribution {
         public:
-           // Constructor that takes arrays of user-defined CDF and PDF functions
-           Distribution(std::vector<std::function<T(T)>> userCDFs, 
-                              std::vector<std::function<T(T)>> userPDFs,
-                              std::vector<std::function<T(T)>> userEstimations)
-              : cdfFunctions(userCDFs), pdfFunctions(userPDFs) , estimationFunctions(userEstimations) {
-              if (cdfFunctions.size() != Dim || pdfFunctions.size() != Dim || estimationFunctions.size() != Dim) {
-                  throw std::invalid_argument("Invalid number of CDF or PDF functions provided.");
-             }
-           }
+           Distribution()
+           : cdfFunctions(Dim), pdfFunctions(Dim), estimationFunctions(Dim) {}
+           // Member function to set a custom CDF function for a specific dimension
+	    void setCdfFunction(unsigned dim, std::function<T(T)> cdfFunc) {
+		if (dim < Dim) {
+		    cdfFunctions[dim] = cdfFunc;
+		} else {
+		    throw std::invalid_argument("Invalid dimension specified.");
+		}
+	    }
+	    // Member function to set a custom PDF function for a specific dimension
+	    void setPdfFunction(unsigned dim, std::function<T(T)> pdfFunc) {
+		if (dim < Dim) {
+		    pdfFunctions[dim] = pdfFunc;
+		} else {
+		    throw std::invalid_argument("Invalid dimension specified.");
+		}
+	    }
+	    // Member function to set a custom estimation function for a specific dimension
+	    void setEstimationFunction(unsigned dim, std::function<T(T)> estimationFunc) {
+		if (dim < Dim) {
+		    estimationFunctions[dim] = estimationFunc;
+		} else {
+		    throw std::invalid_argument("Invalid dimension specified.");
+		}
+	    }
+            // Member function to set the Normal Distribution for a specific dimension
+	    void setNormalDistribution(unsigned dim, T mean, T stddev) {
+		if (dim < Dim) {
+		    cdfFunctions[dim] = [mean, stddev](T x) {
+		        return 0.5 * (1 + std::erf((x - mean) / (stddev * std::sqrt(2.0))));
+		    };
+		    pdfFunctions[dim] = [mean, stddev](T x) {
+		        return (1.0 / (stddev * std::sqrt(2 * M_PI))) * std::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
+		    };
+		    estimationFunctions[dim] = [mean, stddev](T u) {
+		        return (std::sqrt(M_PI / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
+		    };
+		} else {
+		    throw std::invalid_argument("Invalid dimension specified.");
+		}
+	    }
            // Member function to compute CDF for a specific dimension
            T cdf(unsigned dim, T x) {
               if (dim < Dim) {
