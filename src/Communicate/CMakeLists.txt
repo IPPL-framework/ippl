@@ -8,8 +8,6 @@ set (_HDRS
     Archive.hpp
     Communicate.h
     DataTypes.h
-#     GlobalComm.hpp
-#     GlobalComm.h
     Operations.h
     TagMaker.h
     Tags.h
