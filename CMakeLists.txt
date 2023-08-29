@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.1)
-project (IPPL CXX)
+project (IPPL LANGUAGES C CXX)
 set (IPPL_VERSION_MAJOR 3)
 set (IPPL_VERSION_MINOR 0.1)
 
