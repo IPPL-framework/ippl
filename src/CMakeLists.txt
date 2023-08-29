@@ -85,10 +85,6 @@ if (ENABLE_SOLVERS)
     add_subdirectory (Solver)
 endif ()
 
-if (ENABLE_AMR)
-    add_subdirectory(AmrParticle)
-endif ()
-
 include_directories (
     BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
     )
