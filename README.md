@@ -8,7 +8,7 @@ The following libraries are required:
 
 * MPI
 * [Kokkos](https://github.com/kokkos) >= 4.1.00
-* [HeFFTe](https://bitbucket.org/icl/heffte/src/master/) >= 2.2.0; only required if IPPL is built with FFTs enabled (`ENABLE_FFT=ON`)
+* [HeFFTe](https://github.com/icl-utk-edu/heffte) >= 2.2.0; only required if IPPL is built with FFTs enabled (`ENABLE_FFT=ON`)
 
 To build IPPL and its dependencies, we recommend using the [IPPL build scripts](https://github.com/IPPL-framework/ippl-build-scripts). See the [documentation](https://github.com/IPPL-framework/ippl-build-scripts#readme) for more info on how to use the IPPL build script.
 
