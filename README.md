@@ -12,8 +12,10 @@ The following libraries are required:
 
 To build IPPL and its dependencies, we recommend using the [IPPL build scripts](https://github.com/IPPL-framework/ippl-build-scripts). See the [documentation](https://github.com/IPPL-framework/ippl-build-scripts#readme) for more info on how to use the IPPL build script.
 
-## IPPL Presentations
-You can find the presentations based on IPPL [here](https://github.com/IPPL-framework/ippl-presentations) 
+## IPPL Tutorial and Presentations
+A brief introduction to IPPL and its functionalities can be found in this [tutorial](https://github.com/IPPL-framework/ippl-presentations/blob/master/ippl_tutorial/ippl_introduction_slides.pdf)
+
+You can find other presentations based on IPPL [here](https://github.com/IPPL-framework/ippl-presentations) 
 
 
 ## Contributions
