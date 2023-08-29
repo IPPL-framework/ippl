@@ -256,7 +256,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
 
     auto& field = this->field;
 
-    T tol                         = std::is_same_v<T, double> ? 5e-15 : 5e-6;
+    T tol                         = 5 * tolerance<T>;
     const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
     const int shift               = field->getNghost();
 
@@ -430,12 +430,13 @@ TYPED_TEST(FieldTest, Hessian) {
     auto mirror_result = Kokkos::create_mirror_view(view_result);
     Kokkos::deep_copy(mirror_result, view_result);
 
+    constexpr T tol = tolerance<T>;
     nestedViewLoop(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
         T det = 0;
         for (unsigned d = 0; d < Dim; d++) {
             det += mirror_result(args...)[d][d];
         }
-        assertEqual<T>(det, 0.);
+        ASSERT_NEAR(det, 0., tol);
     });
 }
 
@@ -486,14 +487,7 @@ TYPED_TEST(FieldTest, Laplace) {
     error = pow(ippl::laplace(*field) - exact, 2);
     exact = pow(exact, 2);
     T err = std::sqrt(error.sum() / exact.sum());
-    std::cout << "Error: " << err << std::endl;
-
-    // T tol       = std::is_same_v<T, double> ? 5e-15 : 5e-6;
-    // auto mirror = error.getHostMirror();
-    // Kokkos::deep_copy(mirror, error.getView());
-    // nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
-    //     ASSERT_NEAR(mirror(args...), 0., tol);
-    // });
+    ASSERT_NEAR(err, 0, 0.5);
 }
 
 int main(int argc, char* argv[]) {
