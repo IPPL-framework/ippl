@@ -6,7 +6,7 @@ Independent Parallel Particle Layer (IPPL) is a performance portable C++ library
 ### Requirements
 The following libraries are required:
 
-* MPI
+* MPI (GPU Aware if building for GPUs)
 * [Kokkos](https://github.com/kokkos) >= 4.1.00
 * [HeFFTe](https://github.com/icl-utk-edu/heffte) >= 2.2.0; only required if IPPL is built with FFTs enabled (`ENABLE_FFT=ON`)
 
