@@ -31,3 +31,16 @@ $ git pull upstream master
 ````
 All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please
 take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).
+
+## Citing IPPL
+
+```
+@article{muralikrishnan2022scaling,
+  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications
+         through mini-apps targeting exascale architectures},
+  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael and
+          Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas},
+  journal={arXiv preprint arXiv:2205.11052},
+  year={2022}
+}
+```
