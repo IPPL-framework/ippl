@@ -2,19 +2,6 @@
 // Unit test ParameterListTest
 //   Test functionality of the class ParameterList.
 //
-// Copyright (c) 2021, Matthias Frey, University of St Andrews, St Andrews, Scotland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
 #include "Utility/ParameterList.h"

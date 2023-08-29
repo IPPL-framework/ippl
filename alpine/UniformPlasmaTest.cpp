@@ -15,20 +15,6 @@
 //     Example:
 //     srun ./UniformPlasmaTest 128 128 128 10000 10 FFT 10 --overallocate 1.0 --info 10
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include <Kokkos_Random.hpp>
 #include <chrono>
 #include <iostream>
