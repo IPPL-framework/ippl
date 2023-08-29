@@ -13,19 +13,8 @@ link_directories (
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (PenningTrap PenningTrap.cpp
-        CatalystAdaptor.h)
-
-target_compile_definitions(PenningTrap
-        PRIVATE
-        "PARAVIEW_IMPL_DIR=\"${ParaView_CATALYST_DIR}\""
-        ENABLE_CATALYST=1)
-      # target_link_libraries(PenningTrap
-      #         PRIVATE
-      #         catalyst::catalyst
-      #         ${IPPL_LIBS})
-
-target_link_libraries (PenningTrap ${IPPL_LIBS} catalyst::catalyst)
+add_executable (PenningTrap PenningTrap.cpp)
+target_link_libraries (PenningTrap PUBLIC ${IPPL_LIBS})
 
 add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
 target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})

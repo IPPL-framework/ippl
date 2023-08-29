@@ -87,8 +87,14 @@ endif ()
 
 option(ENABLE_CATALYST "Build example with Catalyst enabled" ON)
 if (ENABLE_CATALYST)
-    find_package(catalyst REQUIRED
-            PATHS "${ParaView_DIR}/catalyst")
+  get_property(importTargets DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
+
+  find_package(catalyst REQUIRED)
+  get_property(importTargetsAfter DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
+  list(REMOVE_ITEM importTargetsAfter ${importTargets})
+
+  message("Imported Targets from catalyst:\n ${importTargetsAfter}")
+  # PATHS "${ParaView_DIR}/catalyst")
 endif ()
 
 
