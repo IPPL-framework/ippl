@@ -38,10 +38,11 @@ take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UN
 
 ```
 @article{muralikrishnan2022scaling,
-  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications
-         through mini-apps targeting exascale architectures},
-  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael and
-          Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas},
+  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics
+         applications through mini-apps targeting exascale architectures},
+  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro
+          and Ligotino, Michael and Cerfon, Antoine J and Stoyanov, Miroslav and
+          Gayatri, Rahulkumar and Adelmann, Andreas},
   journal={arXiv preprint arXiv:2205.11052},
   year={2022}
 }
