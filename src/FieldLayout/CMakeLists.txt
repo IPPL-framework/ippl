@@ -3,11 +3,8 @@ set (_SRCS
   )
 
 set (_HDRS
-  BinaryBalancer.h
-  BinaryBalancer.hpp
   FieldLayout.h
   FieldLayout.hpp
-  FieldLayoutUser.h
   )
 
 include_DIRECTORIES (
