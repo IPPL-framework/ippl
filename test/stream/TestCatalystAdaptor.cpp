@@ -1,5 +1,6 @@
 // Tests the application of various kinds of boundary conditions on fields
 #include "Ippl.h"
+#include "Stream/InSitu/CatalystAdaptor.h"
 
 #include <array>
 #include <iostream>

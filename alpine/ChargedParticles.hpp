@@ -18,10 +18,6 @@
 
 #include "Ippl.h"
 
-#ifdef ENABLE_CATALYST
-  #include <catalyst.hpp>
-#endif
-
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 
