@@ -79,6 +79,8 @@ add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
+add_subdirectory (Stream)
+add_subdirectory (Stream/InSitu)
 
 if (ENABLE_SOLVERS)
     message (STATUS "Adding Solver subdirectory")
