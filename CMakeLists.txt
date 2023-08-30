@@ -87,21 +87,11 @@ if (ENABLE_ALPINE)
   add_subdirectory (alpine)
 endif ()
 
-option(ENABLE_CATALYST "Build example with Catalyst enabled" ON)
+option(ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
 if (ENABLE_CATALYST)
-  get_property(importTargets DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
-
   find_package(catalyst 2.0 GLOBAL REQUIRED)
-
-  cmake_print_properties(
-    TARGETS catalyst::catalyst
-    PROPERTIES POSITION_INDEPENDENT_CODE
-    )
-  get_property(importTargetsAfter DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
-  list(REMOVE_ITEM importTargetsAfter ${importTargets})
-
-  message("Imported Targets from catalyst:\n ${importTargetsAfter}")
-  # PATHS "${ParaView_DIR}/catalyst")
+  message (STATUS "Enable Catalyst In-Situ Visualization")
+  message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
 endif ()
 
 
