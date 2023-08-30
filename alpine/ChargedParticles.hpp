@@ -17,7 +17,7 @@
 //
 
 #include "Ippl.h"
-#include <catalyst-2.0/catalyst.hpp>
+#include <catalyst.hpp>
 
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"

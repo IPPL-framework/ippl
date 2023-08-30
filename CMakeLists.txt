@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.24)
 project (IPPL LANGUAGES C CXX)
 set (IPPL_VERSION_MAJOR 3)
 set (IPPL_VERSION_MINOR 0.1)
@@ -91,7 +91,7 @@ option(ENABLE_CATALYST "Build example with Catalyst enabled" ON)
 if (ENABLE_CATALYST)
   get_property(importTargets DIRECTORY "${CMAKE_SOURCE_DIR}" PROPERTY IMPORTED_TARGETS)
 
-  find_package(catalyst 2.0 REQUIRED)
+  find_package(catalyst 2.0 GLOBAL REQUIRED)
 
   cmake_print_properties(
     TARGETS catalyst::catalyst
