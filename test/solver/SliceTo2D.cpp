@@ -54,57 +54,13 @@ using ScalarField_t = typename ippl::Field<T, 2, Mesh_t<2>, Centering_t<2>>;
 template <typename T>
 using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
 
-//template <typename T = double, unsigned Dim = 2>
-//using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
-//                                    ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
-
-
-/*
-//template <unsigned Dim = 3>
-//using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
-//template <typename T, unsigned Dim>
-//using playout_type = ippl::ParticleSpatialLayout<T, Dim>;
-
-//using Centering_t = typename Mesh_t::DefaultCentering;
-
-
-template <typename T, unsigned Dim = 3, class... ViewArgs>
-using Field = ippl::Field<T, Dim, Mesh_t, Centering_t, ViewArgs...>;
-
-template <unsigned Dim = 3, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template <typename T = double, unsigned Dim = 3, class... ViewArgs>
-using VField_t = Field<Vector<T, Dim>, Dim, ViewArgs...>;
-*/
-
-//    constexpr unsigned sliceCount;
-//    std::array<Field2D_t, sliceCount> slices;
-
-//    Solver_t solver;
-
-//    ScalarField_t<T> rho;
-//    VectorField_t<T> E;
 template <class PLayout>
 class Solve25D : public ippl::ParticleBase<PLayout> {
     using Base = ippl::ParticleBase<PLayout>;
 
 public:
-    // kokkos array of these types below, but not phi because, I just use that once but I need to keep E_m and rho_m
-    //VField_t<double, 2> E_m; // have an array of these, one for each slice Kokkos::Array<Field_t::view_type, slice_count> 
-    // define the R (rho) field
-
-    // need to define a Vfield and scalar field for E and rho
-    // also define a kokkos array of vfields and scalarviews' views ie
-    //Kokkos::Array<Field_t::view_type, slice_count> rhoViews; 
-
-    // std::array<Scarlfield, slices> rhos; ie relace below with <- and similarly for E field
-    //ScalarField_t<double> rho_m; // have an array of these, one for each slice Kokkos::Array<Field_t::view_type, slice_count>
 
     Field<double, 2> phi_m;
-
-    //Vector<int, 3> nr_m;
 
     ippl::e_dim_tag decomp_m[3];
 
@@ -127,13 +83,6 @@ public:
     typename Base::particle_position_type E;  // electric field at particle position
     ParticleAttrib<int> mapping;              // record the bin index of the i'th particle
 
-    //constexpr unsigned sliceCount;
-    //std::array<Field2D_t, sliceCount> slices;
-
-    //Solver_t solver;
-
-    //ScalarField_t<T> rho;
-    //VectorField_t<T> E;
     Solve25D(PLayout& pl)
         : Base(pl) {
         // register the particle attributes
@@ -188,8 +137,9 @@ public:
         const ippl::NDIndex<2>& lDom = layout.getLocalNDIndex();
         const int nghost             = rhos[0].getNghost();
 
-        // loop to find min and max
         auto Rview = R.getView();
+        auto mappingView = mapping.getView();
+        auto qView = q.getView();
 
         //double sMax;//, sMin;
         // parallel min/max loop (will be strictly necessary when the position data is on GPUs)
@@ -210,28 +160,9 @@ public:
         auto binWidth = this->binWidth_m;
         auto globalMin = this->globalMin_m;
         std::cerr << "globalMin = " << globalMin << std::endl;
-        //std::cerr << "sMax = " << sMax << std::endl;
-        //double binWidth = (sMax - sMin) / numSlices;
-        //binWidth = binWidth*1.005; // The particle at position sMax will be assined exactly numSlices+1, we actually
-                                  // want it in the final slice so artificially increase the binWidth by 0.5% to ensure 
-                                  // its within the final bin.
+
         std::cerr << "binWidth = " << binWidth << std::endl;
        
-        //Kokkos::Array<double, nSlices - 1> binBoundaries;
-        //Kokkos::View<double*> binBoundaries;
-
-        //Vector<Kokkos::View<double**>, numSlices>  binViews;
-        //Vector_t binViews;
-
-        //for (int i = 0; i < numSlices; i++){
-        //    binBoundaries[i] = sMin + i * binWidth;
-        //    std::cerr << "binBoundaries = " <<sMin + i * binWidth  << std::endl;
-        //}
-
-       // Kokkos::Array<unsigned int, 10000> mapping;
-        //Kokkos::View<unsigned int*> mapping("mapping", this->getLocalNum());
-        //Kokkos::View<unsigned int*> mapping;
-
         Kokkos::parallel_for(
             "Slice and scatter", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
 
@@ -239,22 +170,19 @@ public:
                 // ie the i'th particle corresponds to the n'th bin
                 unsigned int n = (Rview(i)[2] - globalMin) / binWidth; 
 
-                mapping(i) = n;
+                mappingView(i) = n;
 
                 vector_type pos2D = {Rview(i)[0], Rview(i)[1]}; 
 
-                // interpolation stuff
                 vector_type l = (pos2D - origin) * invdx + 0.5;
                 Vector<int, 2> index = l;
                 Vector<double, 2> whi = l - index;
                 Vector<double, 2> wlo = 1.0 - whi;
                 Vector<size_t, 2> args = index - lDom.first() + nghost;
 
-                const value_type &val = q(i);
+                const value_type &val = qView(i);
 
-                // check templtes arguments for make index sequence
                 ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args, val);
-                //ippl::detail::scatterToField(std::make_index_sequence<1 << 2>{}, rhoViews[n], wlo, whi, args ,val);
             });
         IpplTimings::stopTimer(scatterTimer);
 
@@ -263,7 +191,7 @@ public:
         if (outFile.is_open()) {
             outFile << "index,n\n";
             for (size_t i = 0; i < this->getLocalNum(); i++) {
-                outFile << i << "," << mapping(i) << "\n";
+                outFile << i << "," << mappingView(i) << "\n";
             }
             outFile.close();
         } else {
@@ -291,27 +219,27 @@ public:
         const int nghost             = rhos[0].getNghost();
 
         auto Rview = R.getView();
+        auto mappingView = mapping.getView();
+        auto Eview = E.getView();
 
         Kokkos::parallel_for(
             "Gather and assign E", this->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
 
                 vector_type pos2D = {Rview(i)[0], Rview(i)[1]}; 
 
-                // interpolation stuff
                 vector_type l = (pos2D - origin) * invdx + 0.5;
                 Vector<int, 2> index = l;
                 Vector<double, 2> whi = l - index;
                 Vector<double, 2> wlo = 1.0 - whi;
                 Vector<size_t, 2> args = index - lDom.first() + nghost;
 
-                unsigned int n = mapping(i);
+                unsigned int n = mappingView(i);
 
-                //VectorField_t<double>::view_type Efield2D;
                 Vector<double, 2> Efield2D;
                 Efield2D = ippl::detail::gatherFromField(std::make_index_sequence<1 << 2>{}, EViews[n], wlo, whi, args);
-                //std::cerr << Efield2D[0] << " " << Efield2D[1] << std::endl;
-                E(i)[0] = Efield2D[0];
-                E(i)[1] = Efield2D[1];
+
+                Eview(i)[0] = Efield2D[0];
+                Eview(i)[1] = Efield2D[1];
             });
             
         IpplTimings::stopTimer(gatherTimer);
@@ -380,9 +308,7 @@ int main(int argc, char* argv[]) {
         }
 
         ippl::e_dim_tag decomp[3];
-        //for (unsigned d = 0; d < 3; d++) {
-        //    decomp[d] = ippl::PARALLEL;
-        //}
+
         decomp[0] = ippl::SERIAL; 
         decomp[1] = ippl::SERIAL;
         decomp[2] = ippl::PARALLEL; //  Only want to divide up the domain along the beam axis
@@ -398,8 +324,6 @@ int main(int argc, char* argv[]) {
         double dz       = rmax[2] / double(nr[2]);
         Vector_t<double, 3> hr     = {dx, dy, dz};
         Vector_t<double, 3> origin = {rmin[0], rmin[1], rmin[2]};
-        //double hr_min   = std::min({dx, dy, dz});
-        //const double dt = 1.0;  // size of timestep
 
         Mesh_t<3> mesh(domain, hr, origin); // this has dim 3 as this is the 3D particle distribution
         FieldLayout_t<3> FL(domain, decomp);
@@ -452,7 +376,7 @@ int main(int argc, char* argv[]) {
         }
         
         Kokkos::deep_copy(P->R.getView(), R_host);
-        P->q = P->Q_m;// / totalP;
+        P->q = P->Q_m;
 
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
@@ -480,7 +404,6 @@ int main(int argc, char* argv[]) {
 
         Mesh_t<2> meshRho(owned, hxRho, originRho);
 
-        // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<2> layout(owned, decompRho);  // 0 and 1 th element of decomp is serial
         
         std::array<ScalarField_t<double>, numSlices> rhos;
@@ -659,17 +582,6 @@ int main(int argc, char* argv[]) {
             outputFileEfieldSlice << mappingView(i) << "," << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
         }
         outputFileEfieldSlice.close();
-
-        // mayn need to im0plemnt 2d interpolate/gather, whereas 1d is discrete 
-        // for each particle, add the 2 E field compoents from the interpolated hockney E feld to the P-> attribute
-        //std::ofstream outputFileEfield("output_efield3D.csv");
-        //outputFileEfield << "Rx,Ry,Rz,Ex,Ey,Ez\n";
-
-        //for (size_t i = 0; i < totalP; i++) {
-        //    outputFileEfield << P->R(i)[0] <<","<< P->R(i)[1]<< "," << P->R(i)[2] << "," << P->E(i)[0] <<","<< P->E(i)[1]<<"," << P->E(i)[2] << "\n";
-        //}
-
-        //outputFileEfield.close();
 
         IpplTimings::stopTimer(mainTimer);
         //IpplTimings::print();
