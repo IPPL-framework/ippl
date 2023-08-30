@@ -96,11 +96,13 @@ include_directories (
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
 if (ENABLE_CATALYST)
-  # define preprocessor macro to enable catalyst header file
-  target_compile_definitions(ippl PUBLIC -D ENABLE_CATALYST)
+    set (CATALYST_LIBRARY catalyst::catalyst)
+    target_compile_definitions(ippl PUBLIC -D ENABLE_CATALYST)
+else()
+    set (CATALYST_LIBRARY "")
 endif()
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CATALYST_LIBRARY})
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
