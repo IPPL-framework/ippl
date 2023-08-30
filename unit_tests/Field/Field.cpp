@@ -117,7 +117,6 @@ struct FieldVal {
     struct Norm {};
     struct Integral {};
     struct Hessian {};
-    struct Laplace {};
 
     const T pi = Kokkos::numbers::pi_v<T>;
 
@@ -147,16 +146,6 @@ struct FieldVal {
         view(args...)               = 1;
         for (const auto& x : coords) {
             view(args...) *= x;
-        }
-    }
-
-    template <typename... Idx>
-    KOKKOS_INLINE_FUNCTION void operator()(const Laplace&, const Idx... args) const {
-        ippl::Vector<T, Dim> coords = {static_cast<T>(args)...};
-        coords                      = (0.5 + coords + lDom.first() - shift) * hx;
-        view(args...)               = 1;
-        for (unsigned int i = 0; i < Dim; i++) {
-            view(args...) *= Kokkos::sin(2 * pi / rmax[i] * coords[i]);
         }
     }
 };
@@ -449,45 +438,27 @@ TYPED_TEST(FieldTest, Laplace) {
     using T              = typename TestFixture::value_type;
     constexpr size_t Dim = TestFixture::dim;
 
-    field_type error(*mesh, *layout);
-    field_type exact(*mesh, *layout);
+    field_type laplacian(*mesh, *layout);
+
+    const int nghost = field->getNghost();
 
     using bc_type = ippl::BConds<field_type, Dim>;
     bc_type bcField;
     for (size_t i = 0; i < 2 * Dim; ++i) {
-        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+        bcField[i] = std::make_shared<ippl::ConstantFace<field_type>>(i, 1);
     }
 
     field->setFieldBC(bcField);
-    error.setFieldBC(bcField);
+    laplacian.setFieldBC(bcField);
 
-    const auto origin              = mesh->getOrigin();
-    const auto hr                  = mesh->getMeshSpacing();
-    const ippl::NDIndex<Dim>& lDom = layout->getLocalNDIndex();
-    const int nghost               = exact.getNghost();
+    *field    = 1;
+    laplacian = ippl::laplace(*field);
 
-    const ippl::Vector<T, Dim> rmax = origin + layout->getDomain().length() * hr;
-
-    auto& lhsView = field->getView();
-
-    T pi = Kokkos::numbers::pi_v<T>;
-
-    FieldVal<TypeParam> fv(lhsView, lDom, hr, nghost, rmax);
-    Kokkos::parallel_for(
-        "Set field", field->template getFieldRangePolicy<typename FieldVal<TypeParam>::Laplace>(),
-        fv);
-
-    T factor = 0;
-    for (const auto& xi : rmax) {
-        factor += 1. / (xi * xi);
-    }
-    factor *= -4. * pi * pi;
-    exact = factor * *field;
-
-    error = pow(ippl::laplace(*field) - exact, 2);
-    exact = pow(exact, 2);
-    T err = std::sqrt(error.sum() / exact.sum());
-    ASSERT_NEAR(err, 0, 0.5);
+    auto mirror = laplacian.getHostMirror();
+    Kokkos::deep_copy(mirror, laplacian.getView());
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        assertEqual<T>(mirror(args...), 0.);
+    });
 }
 
 int main(int argc, char* argv[]) {
