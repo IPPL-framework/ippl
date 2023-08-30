@@ -196,6 +196,13 @@ namespace ippl {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
+        /*!
+         * Calls a given function for all attributes in the bunch
+         * @tparam MemorySpace the memory space of the attributes to visit (void to visit all of
+         * them)
+         * @tparam Functor the functor type
+         * @param f a functor taking a single ParticleAttrib<MemorySpace>
+         */
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) const {
             if constexpr (std::is_void_v<MemorySpace>) {
@@ -207,6 +214,7 @@ namespace ippl {
             }
         }
 
+        // Non-const variant of same function
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) {
             if constexpr (std::is_void_v<MemorySpace>) {
@@ -261,10 +269,31 @@ namespace ippl {
         template <typename... Properties>
         void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
 
+        /*!
+         * Sends particles to another rank
+         * @tparam HashType the hash view type
+         * @tparam BufferType the particle buffer type
+         * @param rank the destination rank
+         * @param tag the MPI tag
+         * @param sendNum the number of messages already sent (to distinguish the buffers)
+         * @param requests destination vector in which to store the MPI requests for polling
+         * purposes
+         * @param hash a hash view indicating which particles need to be sent to which rank
+         * @param buffer the particle buffer
+         */
         template <typename HashType, typename BufferType>
         void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
                         const HashType& hash, BufferType& buffer);
 
+        /*!
+         * Receives particles from another rank
+         * @tparam BufferType the particle buffer type
+         * @param rank the source rank
+         * @param tag the MPI tag
+         * @param recvNum the number of messages already received (to distinguish the buffers)
+         * @param nRecvs the number of particles to receive
+         * @param buffer the particle buffer
+         */
         template <typename BufferType>
         void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs, BufferType& buffer);
 
