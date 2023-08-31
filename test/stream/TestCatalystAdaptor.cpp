@@ -1,8 +1,18 @@
 // Tests the application for the Catalyst In-Situ Adaptor
 // following environment variables do need to be exported
+//
 // export CATALYST_IMPLEMENTATION_PATHS=<path-to-paraview-install>/lib/catalyst
 // export CATALYST_IMPLEMENTATION_NAME=paraview
+//
+// on juwels these both are direclty set!
+//
 // export PARARVIEW_CATALYST_DIR=<path-to-paraview-install>/lib/catalyst
+//
+// RUN
+// ./TestCatalystAdaptor ./<path-to-catalyst-pipeline>.py
+//
+// eg.
+// ./build/test/stream/TestCatalystAdaptor ./test/stream/catalyst_pipeline.py
 
 #include "Ippl.h"
 #include "Stream/InSitu/CatalystAdaptor.h"
@@ -13,6 +23,11 @@
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
+
+    CatalystAdaptor::Initialize(argc, argv);
+
+    CatalystAdaptor::Execute();
+
 
     constexpr unsigned int dim = 3;
 
@@ -106,5 +121,6 @@ int main(int argc, char* argv[]) {
         Ippl::Comm->barrier();
     }
 
+    CatalystAdaptor::Finalize();
     return 0;
 }
