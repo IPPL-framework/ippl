@@ -9,6 +9,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include "Utility/IpplException.h"
 
 namespace CatalystAdaptor
 {
@@ -28,8 +29,13 @@ namespace CatalystAdaptor
         {
             node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
         }
-        node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
-        node["catalyst_load/search_paths/paraview"] = getenv("PARAVIEW_CATALYST_DIR");
+        try {
+            node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
+            node["catalyst_load/search_paths/paraview"] = getenv("PARAVIEW_CATALYST_DIR");
+        } catch (...){
+            throw IpplException("CatalystAdaptor::Initialize", "no environmental variable for CATALYST_IMPLEMENTATION_NAME or PARAVIEW_CATALYST_DIR found");
+        }
+        // TODO: catch catalyst error also with IpplException
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {
