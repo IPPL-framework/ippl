@@ -43,14 +43,15 @@ namespace CatalystAdaptor
         }
     }
 
-    void Execute() //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
+    void Execute(int cycle, double time) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
     {
-//        conduit_cpp::Node exec_params;
-//
-//        // add time/cycle information
-//        auto state = exec_params["catalyst/state"];
-//        state["timestep"].set(cycle);
-//        state["time"].set(time);
+        //conduit_cpp::Node exec_params;
+        conduit_cpp::Node node;
+
+        // add time/cycle information
+        auto state = node["catalyst/state"];
+        state["cycle"].set(cycle);
+        state["time"].set(time);
 //
 //        // Add channels.
 //        // We have 2 channels here. First once is called 'grid'.
@@ -138,11 +139,11 @@ namespace CatalystAdaptor
 //        mesh_particles["topologies/mesh/elements/connectivity"].set_external(
 //                &connectivity[0], particles.GetNumberOfPoints());
 
-//        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&exec_params));
-//        if (err != catalyst_status_ok)
-//        {
-//            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-//        }
+        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok)
+        {
+            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        }
     }
 
     void Finalize()
