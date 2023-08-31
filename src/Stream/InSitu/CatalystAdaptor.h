@@ -28,8 +28,8 @@ namespace CatalystAdaptor
         {
             node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
         }
-        node["catalyst_load/implementation"] = "paraview";
-        //node["catalyst_load/search_paths/paraview"] = "$PATH";
+        node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
+        node["catalyst_load/search_paths/paraview"] = getenv("PARAVIEW_CATALYST_DIR");
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {

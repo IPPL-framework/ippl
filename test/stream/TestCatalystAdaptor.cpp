@@ -1,4 +1,9 @@
-// Tests the application of various kinds of boundary conditions on fields
+// Tests the application for the Catalyst In-Situ Adaptor
+// following environment variables do need to be exported
+// export CATALYST_IMPLEMENTATION_PATHS=<path-to-paraview-install>/lib/catalyst
+// export CATALYST_IMPLEMENTATION_NAME=paraview
+// export PARARVIEW_CATALYST_DIR=<path-to-paraview-install>/lib/catalyst
+
 #include "Ippl.h"
 #include "Stream/InSitu/CatalystAdaptor.h"
 
