@@ -98,13 +98,19 @@ include_directories (
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
 if (ENABLE_CATALYST)
-    set (CATALYST_LIBRARY catalyst::catalyst)
-    target_compile_definitions(ippl PUBLIC -D ENABLE_CATALYST)
-else()
-    set (CATALYST_LIBRARY "")
+    find_package(catalyst 2.0 REQUIRED)
+    message (STATUS "Enable Catalyst")
+    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
 endif()
 
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY} ${CATALYST_LIBRARY})
+target_compile_definitions(ippl PUBLIC
+  $<$<BOOL:${ENABLE_CATALYST}>:-DENABLE_CATALYST>
+  )
+
+target_link_libraries(ippl PUBLIC
+  Kokkos::kokkos
+  ${HEFFTE_LIBRARY}
+  $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>)
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)

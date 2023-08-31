@@ -7,8 +7,6 @@ set (IPPL_VERSION_NAME "V${IPPL_VERSION_MAJOR}.${IPPL_VERSION_MINOR}")
 
 set (IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-include(CMakePrintHelpers)
-
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
         "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
@@ -75,7 +73,7 @@ if (ENABLE_TESTS)
     add_subdirectory (test)
 endif ()
 
-option (ENABLE_ALPINE, "Enable Alpine" OFF)
+option (ENABLE_ALPINE "Enable Alpine" OFF)
 if (ENABLE_ALPINE)
     if (NOT ENABLE_SOLVERS)
         message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
@@ -88,12 +86,6 @@ if (ENABLE_ALPINE)
 endif ()
 
 option(ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
-if (ENABLE_CATALYST)
-    find_package(catalyst 2.0 GLOBAL REQUIRED)
-    message (STATUS "Enable Catalyst")
-    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
-endif ()
-
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
