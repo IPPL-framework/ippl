@@ -63,10 +63,9 @@ add_ippl_sources (Ippl.cpp)
 
 add_subdirectory (Communicate)
 if (ENABLE_FFT)
-    set (HEFFTE_LIBRARY Heffte::Heffte)
+    find_package(Heffte 2.2.0 REQUIRED)
+    message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
     add_subdirectory (FFT)
-else()
-    set (HEFFTE_LIBRARY "")
 endif()
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
@@ -104,13 +103,15 @@ if (ENABLE_CATALYST)
 endif()
 
 target_compile_definitions(ippl PUBLIC
+  $<$<BOOL:${ENABLE_FFT}>:-DENABLE_FFT>
   $<$<BOOL:${ENABLE_CATALYST}>:-DENABLE_CATALYST>
-  )
+)
 
 target_link_libraries(ippl PUBLIC
   Kokkos::kokkos
-  ${HEFFTE_LIBRARY}
-  $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>)
+  $<$<BOOL:${ENABLE_FFT}>:Heffte::Heffte>
+  $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>
+  )
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)

@@ -58,13 +58,8 @@ message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 find_package(Kokkos REQUIRED)
 
 option (ENABLE_FFT "Enable FFT transform" OFF)
-if (ENABLE_FFT)
-    add_definitions (-DENABLE_FFT)
-    find_package(Heffte 2.2.0 REQUIRED)
-    message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
-endif ()
-
 option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
+option (ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
 
 add_subdirectory (src)
 
@@ -85,7 +80,6 @@ if (ENABLE_ALPINE)
     add_subdirectory (alpine)
 endif ()
 
-option(ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
