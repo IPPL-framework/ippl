@@ -52,6 +52,12 @@ namespace CatalystAdaptor
         auto state = node["catalyst/state"];
         state["cycle"].set(cycle);
         state["time"].set(time);
+
+        // include information about catalyst, conduit implementation
+        catalyst_about(conduit_cpp::c_node(&node));
+
+        // print node to see what I write there
+        if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 //
 //        // Add channels.
 //        // We have 2 channels here. First once is called 'grid'.
