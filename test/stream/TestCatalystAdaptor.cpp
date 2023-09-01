@@ -39,7 +39,9 @@ int main(int argc, char* argv[]) {
     ippl::FieldLayout<dim> layout(owned, allParallel);
 
     constexpr double dx            = {1.0 / double(pt)};
-    ippl::Vector<double, 3> hx     = {dx, dx, dx};
+    constexpr double dy            = {1.0 / double(pt)};
+    constexpr double dz            = {1.0 / double(pt)};
+    ippl::Vector<double, 3> hx     = {dx, dy, dz};
     ippl::Vector<double, 3> origin = {0, 0, 0};
 
     using Mesh_t      = ippl::UniformCartesian<double, 3>;
@@ -62,9 +64,9 @@ int main(int argc, char* argv[]) {
 
 
     double time                 = {0.0};
-    const double dt                   = {0.05};
-    const unsigned int nt       = {10};
-    for (unsigned int it = 0; it < nt; it++) {
+    const double dt             = {0.05};
+    const unsigned int nt       = {5};
+    for (unsigned int it = 0; it < nt; ++it) {
 
     Kokkos::parallel_for(
         "Assign field",
@@ -85,7 +87,7 @@ int main(int argc, char* argv[]) {
         view(i, j, k) = y * time;
     });
 
-    CatalystAdaptor::Execute(it, time); //field
+    CatalystAdaptor::Execute(it, time, ippl.Comm.get()->rank(), field); //field
     // print should be same as field data
     time += dt;
 

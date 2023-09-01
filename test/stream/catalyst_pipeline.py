@@ -5,7 +5,7 @@ print("executing catalyst_pipeline")
 
 # registrationName must match the channel name used in the
 # 'CatalystAdaptor'.
-producer = TrivialProducer(registrationName="grid")
+producer = TrivialProducer(registrationName="field")
 
 def catalyst_execute(info):
     global producer

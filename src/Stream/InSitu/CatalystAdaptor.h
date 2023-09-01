@@ -4,15 +4,20 @@
 #define CatalystAdaptor_h
 
 #include <catalyst.hpp>
-
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
+
 #include "Utility/IpplException.h"
+#include "Ippl.h"
 
 namespace CatalystAdaptor
 {
+    constexpr unsigned int dim {3};
+    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    using Centering_t = Mesh_t::DefaultCentering;
+    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
 /**
  * In this example, we show how we can use Catalysts's C++
@@ -43,31 +48,53 @@ namespace CatalystAdaptor
         }
     }
 
-    void Execute(int cycle, double time) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
+    void Execute(int cycle, double time, int rank, field_type &field) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
     {
         //conduit_cpp::Node exec_params;
         conduit_cpp::Node node;
+        
+        // include information about catalyst, conduit implementation
+        catalyst_about(conduit_cpp::c_node(&node));
 
         // add time/cycle information
         auto state = node["catalyst/state"];
         state["cycle"].set(cycle);
         state["time"].set(time);
-
-        // include information about catalyst, conduit implementation
-        catalyst_about(conduit_cpp::c_node(&node));
-
-        // print node to see what I write there
-        if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        state["domain_id"].set(rank);
+         
+        
 //
 //        // Add channels.
 //        // We have 2 channels here. First once is called 'grid'.
-//        auto channel_grid = exec_params["catalyst/channels/grid"];
+        // auto field_node = node["catalyst/channels/field"];
+        auto field_node = node["catalyst/field/coordsets/coords"];
+        // field_node["type"].set_string("mesh");
+        field_node["type"].set_string("uniform");
+        
+        // number of points in specific dimension
+        auto test = field.get_mesh().getGridsize();
+
+        // number of points in specific dimension
+        field_node["dims/i"].set_string(std::to_string(field.get_mesh().getGridsize(0)));
+        field_node["dims/j"].set_string(std::to_string(field.get_mesh().getGridsize(1)));
+        field_node["dims/k"].set_string(std::to_string(field.get_mesh().getGridsize(2)));
+        
+        // origin
+        auto origin = field.get_mesh().getOrigin();
+        field_node["origin/x"].set_string(std::to_string(origin(0)));
+        field_node["origin/y"].set_string(std::to_string(origin(1)));
+        field_node["origin/z"].set_string(std::to_string(origin(2)));
+        
+        // spacing
+        field_node["spacing/dx"].set_string(std::to_string(field.get_mesh().getMeshSpacing(0)));
+        field_node["spacing/dy"].set_string(std::to_string(field.get_mesh().getMeshSpacing(1)));
+        field_node["spacing/dz"].set_string(std::to_string(field.get_mesh().getMeshSpacing(2)));
+        
 //
 //        // Since this example is using Conduit Mesh Blueprint to define the mesh,
 //        // we set the channel_grid's type to "mesh".
-//        channel_grid["type"].set_string("mesh");
-//
-//        // now create the mesh.
+
+        // now create the mesh.
 //        auto mesh_grid = channel_grid["data"];
 //
 //        // start with coordsets (of course, the sequence is not important, just make
@@ -145,6 +172,9 @@ namespace CatalystAdaptor
 //        mesh_particles["topologies/mesh/elements/connectivity"].set_external(
 //                &connectivity[0], particles.GetNumberOfPoints());
 
+        // print node to see what I write there
+        if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {
