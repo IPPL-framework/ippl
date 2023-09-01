@@ -523,7 +523,7 @@ class FieldContainer;
 
 class MyPicManager : public ippl::PicManager<ParticlesContainer, FieldContainer> {
 public:
-    MyPicManager() : PicManager(std::make_unique<ParticleContainer>(), std::make_unique<FieldContainer>()) {}
+    MyPicManager(ParticleContainer& pc, FieldContainer& fc) : PicManager(pc, fc) {}
 
     // Implement the pure virtual functions here
     void par2grid() override {
@@ -572,7 +572,10 @@ int main(int argc, char* argv[]) {
         msg << "Landau damping" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        MyPicManager manager;
+	std::shared_ptr<ParticleContainer> pc;
+	std::shared_ptr<FieldContainer> fc;
+	    
+        MyPicManager manager(pc, fc);
 
         //std::unique_ptr<bunch_type> P;
         //using PLayoutType = PLayout_t<double, 3>;
