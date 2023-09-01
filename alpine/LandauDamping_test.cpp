@@ -576,7 +576,14 @@ int main(int argc, char* argv[]) {
 	std::shared_ptr<FieldContainer> fc;
 	    
         MyPicManager manager(pc, fc);
-
+/*
+	std::string user = "LeapFrog";
+	if (user == "LeapFrog") {
+		manager.setStepper(new LeapFrog(...));
+	} else (User == "RK4") {
+		manager.setStepper(new RK4(...));
+	}
+*/
         //std::unique_ptr<bunch_type> P;
         //using PLayoutType = PLayout_t<double, 3>;
         //ippl::ParticlesContainer<PLayoutType, double, 3>* P = manager.pcontainer_m.get();
