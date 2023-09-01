@@ -29,8 +29,10 @@ int main(int argc, char* argv[]) {
     constexpr unsigned int dim {3};
 
     const int pt {4};
-    ippl::Index I(pt);
-    ippl::NDIndex<dim> owned(I, I, I);
+    ippl::Index Ix(pt);
+    ippl::Index Iy {pt+1};
+    ippl::Index Iz {pt+2};
+    ippl::NDIndex<dim> owned(Ix, Iy, Iz);
 
     ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
     for (unsigned int d = 0; d < dim; d++)
@@ -39,8 +41,8 @@ int main(int argc, char* argv[]) {
     ippl::FieldLayout<dim> layout(owned, allParallel);
 
     constexpr double dx            = {1.0 / double(pt)};
-    constexpr double dy            = {1.0 / double(pt)};
-    constexpr double dz            = {1.0 / double(pt)};
+    constexpr double dy            = {2.0 / double(pt)};
+    constexpr double dz            = {3.0 / double(pt)};
     ippl::Vector<double, 3> hx     = {dx, dy, dz};
     ippl::Vector<double, 3> origin = {0, 0, 0};
 

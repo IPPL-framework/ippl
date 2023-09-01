@@ -83,7 +83,7 @@ namespace CatalystAdaptor
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             field_node[field_node_dim].set_string(std::to_string(field.get_mesh().getGridsize(iDim)));
             field_node[field_node_origin].set_string(std::to_string(origin(iDim)));
-            field_node[field_node_spacing].set_string(std::to_string(field.get_mesh().getMeshSpacing(0)));
+            field_node[field_node_spacing].set_string(std::to_string(field.get_mesh().getMeshSpacing(iDim)));
 
             field_node_dim.back()++;
             field_node_origin.back()++;
