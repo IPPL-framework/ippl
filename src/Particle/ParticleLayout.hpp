@@ -30,47 +30,47 @@
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim, typename... Properties>
-        void ParticleLayout<T, Dim, Properties...>::applyBC(const particle_position_type& R,
-                                                            const NDRegion<T, Dim>& nr) {
-            /* loop over all faces
-             * 0: lower x-face
-             * 1: upper x-face
-             * 2: lower y-face
-             * 3: upper y-face
-             * etc...
-             */
-            Kokkos::RangePolicy<typename particle_position_type::execution_space> policy{
-                0, (unsigned)R.getParticleCount()};
-            for (unsigned face = 0; face < 2 * Dim; ++face) {
-                // unsigned face = i % Dim;
-                unsigned d   = face / 2;
-                bool isUpper = face & 1;
-                switch (bcs_m[face]) {
-                    case BC::PERIODIC:
-                        // Periodic faces come in pairs and the application of
-                        // BCs checks both sides, so there is no reason to
-                        // apply periodic conditions twice
-                        if (isUpper) {
-                            break;
-                        }
-
-                        Kokkos::parallel_for("Periodic BC", policy,
-                                             PeriodicBC(R.getView(), nr, d, isUpper));
-                        break;
-                    case BC::REFLECTIVE:
-                        Kokkos::parallel_for("Reflective BC", policy,
-                                             ReflectiveBC(R.getView(), nr, d, isUpper));
-                        break;
-                    case BC::SINK:
-                        Kokkos::parallel_for("Sink BC", policy,
-                                             SinkBC(R.getView(), nr, d, isUpper));
-                        break;
-                    case BC::NO:
-                    default:
-                        break;
-                }
-            }
-        }
+//         template <typename T, unsigned Dim, typename... Properties>
+//         void ParticleLayout<Properties...>::applyBC(const particle_position_type& R,
+//                                                             const NDRegion<T, Dim>& nr) {
+//             /* loop over all faces
+//              * 0: lower x-face
+//              * 1: upper x-face
+//              * 2: lower y-face
+//              * 3: upper y-face
+//              * etc...
+//              */
+//             Kokkos::RangePolicy<typename particle_position_type::execution_space> policy{
+//                 0, (unsigned)R.getParticleCount()};
+//             for (unsigned face = 0; face < 2 * Dim; ++face) {
+//                 // unsigned face = i % Dim;
+//                 unsigned d   = face / 2;
+//                 bool isUpper = face & 1;
+//                 switch (bcs_m[face]) {
+//                     case BC::PERIODIC:
+//                         // Periodic faces come in pairs and the application of
+//                         // BCs checks both sides, so there is no reason to
+//                         // apply periodic conditions twice
+//                         if (isUpper) {
+//                             break;
+//                         }
+//
+//                         Kokkos::parallel_for("Periodic BC", policy,
+//                                              PeriodicBC(R.getView(), nr, d, isUpper));
+//                         break;
+//                     case BC::REFLECTIVE:
+//                         Kokkos::parallel_for("Reflective BC", policy,
+//                                              ReflectiveBC(R.getView(), nr, d, isUpper));
+//                         break;
+//                     case BC::SINK:
+//                         Kokkos::parallel_for("Sink BC", policy,
+//                                              SinkBC(R.getView(), nr, d, isUpper));
+//                         break;
+//                     case BC::NO:
+//                     default:
+//                         break;
+//                 }
+//             }
+//         }
     }  // namespace detail
 }  // namespace ippl
