@@ -71,13 +71,17 @@ namespace ippl {
      * of the provided types is ippl::DisableParticleIDs, then particle
      * IDs will be disabled for the bunch)
      */
-    template <typename... IDProperties>
+    template <class PLayout, typename... IDProperties>
     class ParticleBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
-        using index_type             = std::int64_t;
+        using vector_type            = typename PLayout::vector_type;
+        using index_type             = typename PLayout::index_type;
+        using particle_position_type = typename PLayout::particle_position_type;
         using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
+
+        using Layout_t = PLayout;
 
         template <typename... Properties>
         using attribute_type = typename detail::ParticleAttribBase<Properties...>;
@@ -88,13 +92,15 @@ namespace ippl {
         using attribute_container_type =
             typename detail::ContainerForAllSpaces<container_type>::type;
 
-//         using bc_container_type = typename PLayout::bc_container_type;
+        using bc_container_type = typename PLayout::bc_container_type;
 
         using hash_container_type = typename detail::ContainerForAllSpaces<detail::hash_type>::type;
 
         using size_type = detail::size_type;
 
     public:
+        //! view of particle positions
+        particle_position_type R;
 
         //! view of particle IDs
         particle_index_type ID;
@@ -112,7 +118,7 @@ namespace ippl {
          * is null afterwards, i.e., layout == nullptr.
          * @param layout to be moved.
          */
-        ParticleBase(std::shared_ptr<ParticleLayout> layout);
+        ParticleBase(Layout_t& layout);
 
         /* cannot use '= default' since we get a
          * compiler warning otherwise:
@@ -129,7 +135,7 @@ namespace ippl {
          * when the ParticleBase instance is constructed with the
          * default ctor.
          */
-        void initialize(std::shared_ptr<ParticleLayout> layout);
+        void initialize(Layout_t& layout);
 
         /*!
          * @returns processor local number of particles
@@ -141,24 +147,24 @@ namespace ippl {
         /*!
          * @returns particle layout
          */
-        std::shared_ptr<ParticleLayout> getLayout() { return layout_m; }
+        Layout_t& getLayout() { return *layout_m; }
 
         /*!
          * @returns particle layout
          */
-        const std::shared_ptr<ParticleLayout> getLayout() const { return layout_m; }
+        const Layout_t& getLayout() const { return *layout_m; }
 
-//         /*!
-//          * Set all boundary conditions
-//          * @param bc the boundary conditions
-//          */
-//         void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
+        /*!
+         * Set all boundary conditions
+         * @param bc the boundary conditions
+         */
+        void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
 
-//         /*!
-//          * Set all boundary conditions to this BC
-//          * @param bc the boundary conditions
-//          */
-//         void setParticleBC(BC bc) { layout_m->setParticleBC(bc); }
+        /*!
+         * Set all boundary conditions to this BC
+         * @param bc the boundary conditions
+         */
+        void setParticleBC(BC bc) { layout_m->setParticleBC(bc); }
 
         /*!
          * Add particle attribute
@@ -293,7 +299,7 @@ namespace ippl {
     private:
         //! particle layout
         // cannot use std::unique_ptr due to Kokkos
-        std::shared_ptr<ParticleLayout> layout_m;
+        Layout_t* layout_m;
 
         //! processor local number of particles
         size_type localNum_m;
