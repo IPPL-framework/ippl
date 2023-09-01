@@ -405,6 +405,14 @@ namespace ippl {
         
         static double time_m = BaseManager::time_m;
 
+	//void setStepper(Stepper* stepper) {
+	// stepper_m = std::make_unique<Stepper>(stepper);
+	//};
+
+	// void setFieldSolver(...);
+
+	// void setLoadBalancer(...);
+
     protected:
      
         std::unique_ptr<FieldsContainer> fcontainer_m;
