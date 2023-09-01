@@ -391,7 +391,7 @@ namespace ippl {
  
  namespace ippl {
 
-    template <typename T = double, unsigned Dim = 3, typename PLayout = PLayout_t<T, Dim>, typename FLayout = FieldLayout_t<Dim>>
+    template <class ParticleContainer, class FieldContainer>
     class PicManager : public BaseManager {
     public:
         PicManager()
@@ -407,15 +407,15 @@ namespace ippl {
 
     protected:
      
-        std::unique_ptr<FieldsContainer<FLayout,T,Dim>> fcontainer_m;
+        std::unique_ptr<FieldsContainer> fcontainer_m;
 
-        std::unique_ptr<ParticlesContainer<PLayout, T, Dim>> pcontainer_m;
+        std::unique_ptr<ParticlesContainer> pcontainer_m;
 
         //std::unique_ptr<Stepper> stepper_m;
 
         //std::unique_ptr<LoadBalancer> loadbalancer_m;
 
-        std::unique_ptr<FieldSolver<FLayout, T, Dim>> fsolver_m;
+        //std::unique_ptr<FieldSolver<FLayout, T, Dim>> fsolver_m;
     };
 }  // namespace ippl
  
