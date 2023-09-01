@@ -89,20 +89,19 @@ namespace CatalystAdaptor
             field_node_origin.back()++;
             field_node_spacing.back()++;
         }
+
+        auto field_node_topology = node["catalyst/field/topologies/mesh"];
+        field_node_topology["type"].set_string("uniform");
+        field_node_topology["coordset"].set_string("coords");
 //         field_node["dims/j"].set_string(std::to_string(field.get_mesh().getGridsize(1))); //         field_node["dims/k"].set_string(std::to_string(field.get_mesh().getGridsize(2)));
 
+        auto field_node_fields = node["catalyst/field/fields/field"];
+        field_node_fields["association"].set_string("element");
+        field_node_fields["topology"].set_string("mesh");
+        field_node_fields["values"].set_external(field.getView().data());
+
         // origin
-//        auto origin = field.get_mesh().getOrigin();
-//        field_node["origin/x"].set_string(std::to_string(origin(0)));
-//        field_node["origin/y"].set_string(std::to_string(origin(1)));
-//        field_node["origin/z"].set_string(std::to_string(origin(2)));
 
-        // spacing
-//        field_node["spacing/dx"].set_string(std::to_string(field.get_mesh().getMeshSpacing(0)));
-//        field_node["spacing/dy"].set_string(std::to_string(field.get_mesh().getMeshSpacing(1)));
-//        field_node["spacing/dz"].set_string(std::to_string(field.get_mesh().getMeshSpacing(2)));
-
-//
 //        // Since this example is using Conduit Mesh Blueprint to define the mesh,
 //        // we set the channel_grid's type to "mesh".
 

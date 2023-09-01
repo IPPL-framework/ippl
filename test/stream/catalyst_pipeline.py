@@ -13,5 +13,5 @@ def catalyst_execute(info):
     print("-----------------------------------")
     print("executing (cycle={}, time={})".format(info.cycle, info.time))
 #    print("bounds:", producer.GetDataInformation().GetBounds())
-#    print("velocity-magnitude-range:", producer.PointData["velocity"].GetRange(-1))
+    print("field:", producer.CellData["field"])
 #    print("pressure-range:", producer.CellData["pressure"].GetRange(0))
