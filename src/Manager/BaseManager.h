@@ -1,6 +1,10 @@
 #ifndef IPPL_BASE_MANAGER_H
 #define IPPL_BASE_MANAGER_H
 
+#include "Ippl.h"
+
+
+
 namespace ippl {
 
     class BaseManager {
@@ -8,6 +12,7 @@ namespace ippl {
         BaseManager()          = default;
         virtual ~BaseManager() = default;
 
+        static double time_m;
         virtual void pre_run() { /* default does nothing */
         }
 
@@ -20,8 +25,9 @@ namespace ippl {
         virtual void post_step(double /*t*/) { /* default does nothing */
         }
 
-        virtual void advance(double t, double dt) = 0;
-
+        virtual void advance(double /*t*/, double /*dt*/) { /* default does nothing */
+        }
+        /*
         void run(double tstart, double tstop) {
             for (double t = tstart; t <= tstop; t += dt) {
                 this->pre_step(t);
@@ -31,6 +37,7 @@ namespace ippl {
                 this->post_step(t);
             }
         }
+        */
     };
 }  // namespace ippl
 
