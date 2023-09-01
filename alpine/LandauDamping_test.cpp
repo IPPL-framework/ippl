@@ -518,9 +518,12 @@ double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_
 
 const char* TestName = "LandauDamping";
 
-class MyPicManager : public ippl::PicManager<double, 3> {
+class ParticlesContainer;
+class FieldContainer;
+
+class MyPicManager : public ippl::PicManager<ParticlesContainer, FieldContainer> {
 public:
-    MyPicManager() : PicManager() {}
+    MyPicManager() : PicManager(std::make_unique<ParticleContainer>(), std::make_unique<FieldContainer>()) {}
 
     // Implement the pure virtual functions here
     void par2grid() override {
