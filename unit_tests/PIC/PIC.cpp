@@ -114,7 +114,7 @@ TYPED_TEST_CASE(PICTest, Tests);
 
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;
-    auto& bunch = this->bunch;
+    auto& bunch      = this->bunch;
     auto& nParticles = this->nParticles;
 
     *field = 0.0;
@@ -134,7 +134,7 @@ TYPED_TEST(PICTest, Scatter) {
 
 TYPED_TEST(PICTest, Gather) {
     auto& field      = this->field;
-    auto& bunch = this->bunch;
+    auto& bunch      = this->bunch;
     auto& nParticles = this->nParticles;
 
     *field = 1.0;
