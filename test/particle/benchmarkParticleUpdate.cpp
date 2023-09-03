@@ -48,18 +48,6 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type
         E;  // electric field at particle position
 
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the update function invokes this
-    */
-    ChargedParticles(PLayout& pl)
-        : ippl::ParticleBase<PLayout>(pl) {
-        // register the particle attributes
-        this->addAttribute(qm);
-        this->addAttribute(P);
-        this->addAttribute(E);
-    }
-
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)

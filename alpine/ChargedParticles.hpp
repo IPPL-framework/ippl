@@ -232,16 +232,6 @@ public:
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the bunch buffer uses this
-    */
-    ChargedParticles(PLayout& pl)
-        : Base(pl) {
-        registerAttributes();
-        setPotentialBCs();
-    }
-
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                      std::string solver)
