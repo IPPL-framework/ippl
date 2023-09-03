@@ -32,7 +32,7 @@ constexpr unsigned Dim          = DIM;
 constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
+using PLayout_t = typename ippl::ParticleBase<double, Dim, false>::Layout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
@@ -54,8 +54,7 @@ typedef Field<Vector_t, Dim> VField_t;
 
 double pi = Kokkos::numbers::pi_v<double>;
 
-template <class PLayout>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
+class ChargedParticles : public ippl::ParticleBase<double, Dim, false> {
 public:
     Field<Vector<double, Dim>, Dim> EFD_m;
     Field<double, Dim> EFDMag_m;
@@ -74,14 +73,14 @@ public:
     double Q_m;
 
 public:
-    ParticleAttrib<double> qm;                                       // charge-to-mass ratio
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
+    ParticleAttrib<double> qm;  // charge-to-mass ratio
+    typename ippl::ParticleBase<double, Dim, false>::particle_position_type P;  // particle velocity
+    typename ippl::ParticleBase<double, Dim, false>::particle_position_type
         E;  // electric field at particle position
 
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+    ChargedParticles(PLayout_t& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
-        : ippl::ParticleBase<PLayout>(pl)
+        : ippl::ParticleBase<double, Dim, false>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
@@ -106,8 +105,8 @@ public:
         this->EFDMag_m.updateLayout(fl);
 
         // Update layout with new FieldLayout
-        PLayout& layout = this->getLayout();
-        layout.updateLayout(fl, mesh);
+        PLayout_t& layout = this->getLayout();
+        layout.update(fl, &mesh);
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
@@ -213,7 +212,7 @@ public:
             KOKKOS_LAMBDA(const index_array_type& args, double& val) {
                 val += ippl::apply(viewRho, args);
             },
-            lq);
+            Kokkos::Sum<double>(lq));
         Kokkos::parallel_reduce(
             "Particle QM", viewqm.extent(0),
             KOKKOS_LAMBDA(const int i, double& val) { val += viewqm(i); }, lqm);
@@ -300,7 +299,7 @@ public:
     //        0 -> gridpoints
     void initPositions(FieldLayout_t& fl, Vector_t& hr, unsigned int nloc, int tag = 2) {
         Inform m("initPositions ");
-        typename ippl::ParticleBase<PLayout>::particle_position_type::HostMirror R_host =
+        typename ippl::ParticleBase<double, Dim, false>::particle_position_type::HostMirror R_host =
             this->R.getHostMirror();
 
         std::mt19937_64 eng[Dim];
@@ -429,9 +428,7 @@ int main(int argc, char* argv[]) {
         msg << "Particle test " << PROG_NAME << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        using bunch_type = ChargedParticles<PLayout_t>;
-
-        std::unique_ptr<bunch_type> P;
+        std::unique_ptr<ChargedParticles> P;
 
         Vector_t rmin(0.0);
         Vector_t rmax(1.0);
@@ -453,14 +450,14 @@ int main(int argc, char* argv[]) {
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
         FieldLayout_t FL(domain, decomp, isAllPeriodic);
-        PLayout_t PL(FL, mesh);
+        PLayout_t PL(FL, &mesh);
 
         /**PRINT**/
         msg << "FIELD LAYOUT (INITIAL)" << endl;
         msg << FL << endl;
 
         double Q = 1.0;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        P        = std::make_unique<ChargedParticles>(PL, hr, rmin, rmax, decomp, Q);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 

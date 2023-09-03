@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
         msg << "Landau damping" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        using bunch_type = ChargedParticles<PLayout_t<float, Dim>, float, Dim>;
+        using bunch_type = ChargedParticles<float, Dim>;
 
         std::unique_ptr<bunch_type> P;
 
@@ -198,9 +198,9 @@ int main(int argc, char* argv[]) {
         const double dt              = 0.5 * hr[0];
 
         const bool isAllPeriodic = true;
-        Mesh_t<Dim> mesh(domain, hr, origin);
+        Mesh_t<float, Dim> mesh(domain, hr, origin);
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-        PLayout_t<float, Dim> PL(FL, mesh);
+        PLayout_t<float, Dim> PL(FL, &mesh);
 
         std::string solver = argv[arg++];
         P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
@@ -245,8 +245,8 @@ int main(int argc, char* argv[]) {
         msg << "First domain decomposition done" << endl;
         IpplTimings::startTimer(particleCreation);
 
-        typedef ippl::detail::RegionLayout<float, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
-        const RegionLayout_t& RLayout                           = PL.getRegionLayout();
+        typedef ippl::RegionLayout<float, Dim>::uniform_type RegionLayout_t;
+        const PLayout_t<float, Dim>& RLayout                    = P->getLayout();
         const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
         Vector_t<float, Dim> Nr, Dr, minU, maxU;
         int myRank   = ippl::Comm->rank();

@@ -17,14 +17,14 @@
 unsigned LoggingPeriod = 1;
 
 // some typedefs
-template <unsigned Dim = 3>
-using Mesh_t = ippl::UniformCartesian<double, Dim>;
+template <typename T = double, unsigned Dim = 3>
+using Mesh_t = ippl::UniformCartesian<T, Dim>;
 
 template <typename T, unsigned Dim = 3>
-using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
+using PLayout_t = typename ippl::ParticleBase<T, Dim, false>::Layout_t;
 
-template <unsigned Dim = 3>
-using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
+template <typename T = double, unsigned Dim = 3>
+using Centering_t = typename Mesh_t<T, Dim>::DefaultCentering;
 
 template <unsigned Dim = 3>
 using FieldLayout_t = ippl::FieldLayout<Dim>;
@@ -35,7 +35,7 @@ template <typename T, unsigned Dim = 3>
 using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim = 3, class... ViewArgs>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
+using Field = ippl::Field<T, Dim, Mesh_t<double, Dim>, Centering_t<double, Dim>, ViewArgs...>;
 
 template <typename T = double, unsigned Dim = 3>
 using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
@@ -188,9 +188,9 @@ void dumpVTK(Field_t<3>& rho, int nx, int ny, int nz, int iteration, double dx, 
     }
 }
 
-template <class PLayout, typename T, unsigned Dim = 3>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
-    using Base = ippl::ParticleBase<PLayout>;
+template <typename T, unsigned Dim = 3>
+class ChargedParticles : public ippl::ParticleBase<T, Dim, false> {
+    using Base = ippl::ParticleBase<T, Dim, false>;
 
 public:
     VField_t<T, Dim> E_m;
@@ -232,9 +232,9 @@ public:
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 
-    ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                     Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
-                     std::string solver)
+    ChargedParticles(PLayout_t<double, Dim>& pl, Vector_t<double, Dim> hr,
+                     Vector_t<double, Dim> rmin, Vector_t<double, Dim> rmax,
+                     ippl::e_dim_tag decomp[Dim], double Q, std::string solver)
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -270,7 +270,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
+    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<T, Dim>& mesh, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -282,8 +282,8 @@ public:
         }
 
         // Update layout with new FieldLayout
-        PLayout& layout = this->getLayout();
-        layout.updateLayout(fl, mesh);
+        PLayout_t<double, Dim>& layout = this->getLayout();
+        layout.update(fl, &mesh);
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
@@ -293,7 +293,7 @@ public:
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
-    void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
+    void initializeFields(Mesh_t<T, Dim>& mesh, FieldLayout_t<Dim>& fl) {
         E_m.initialize(mesh, fl);
         rho_m.initialize(mesh, fl);
         if (stype_m == "CG") {
@@ -302,11 +302,11 @@ public:
         }
     }
 
-    void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh) {
+    void initializeORB(FieldLayout_t<Dim>& fl, Mesh_t<T, Dim>& mesh) {
         orb.initialize(fl, mesh, rho_m);
     }
 
-    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
+    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<T, Dim>& mesh, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 

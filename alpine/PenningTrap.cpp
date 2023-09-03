@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
         msg << "Penning Trap " << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
+        using bunch_type = ChargedParticles<double, Dim>;
 
         std::unique_ptr<bunch_type> P;
 
@@ -194,9 +194,9 @@ int main(int argc, char* argv[]) {
         const double dt              = 0.5 * dxFinest;  // size of timestep
 
         const bool isAllPeriodic = true;
-        Mesh_t<Dim> mesh(domain, hr, origin);
+        Mesh_t<double, Dim> mesh(domain, hr, origin);
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-        PLayout_t<double, Dim> PL(FL, mesh);
+        PLayout_t<double, Dim> PL(FL, &mesh);
 
         double Q           = -1562.5;
         double Bext        = 5.0;
@@ -256,8 +256,8 @@ int main(int argc, char* argv[]) {
         msg << "First domain decomposition done" << endl;
         IpplTimings::startTimer(particleCreation);
 
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
-        const RegionLayout_t& RLayout                           = PL.getRegionLayout();
+        typedef ippl::RegionLayout<double, Dim>::uniform_type RegionLayout_t;
+        const PLayout_t<double, Dim>& RLayout                   = P->getLayout();
         const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
         Vector_t<double, Dim> Nr, Dr, minU, maxU;
         int myRank = ippl::Comm->rank();

@@ -2,10 +2,11 @@
 
 #include <random>
 
-template <class PLayout>
-struct Bunch : public ippl::ParticleBase<PLayout> {
-    Bunch(PLayout& playout)
-        : ippl::ParticleBase<PLayout>(playout) {
+using PLayout_t = typename ippl::ParticleBase<double, 3, false>::Layout_t;
+
+struct Bunch : public ippl::ParticleBase<double, 3, false> {
+    Bunch(PLayout_t& playout)
+        : ippl::ParticleBase<double, 3, false>(playout) {
         this->addAttribute(Q);
     }
 
@@ -18,8 +19,6 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
-        typedef Bunch<playout_type> bunch_type;
         using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
@@ -39,9 +38,9 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 3> origin = {0, 0, 0};
         Mesh_t mesh(owned, hx, origin);
 
-        playout_type pl(layout, mesh);
+        PLayout_t pl(layout, &mesh);
 
-        bunch_type bunch(pl);
+        Bunch bunch(pl);
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field_type;
 
         field_type field;
@@ -69,8 +68,8 @@ int main(int argc, char* argv[]) {
         eng.discard(nLoc * ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-        double sum_coord                                               = 0.0;
+        typename Bunch::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
+        double sum_coord                                          = 0.0;
         for (unsigned int i = 0; i < nLoc; ++i) {
             ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
             R_host(i)                 = r;

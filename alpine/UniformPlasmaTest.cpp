@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
         msg << "Uniform Plasma Test" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        using bunch_type = ChargedParticles<PLayout_t<double, Dim>, double, Dim>;
+        using bunch_type = ChargedParticles<double, Dim>;
 
         std::unique_ptr<bunch_type> P;
 
@@ -121,9 +121,9 @@ int main(int argc, char* argv[]) {
         }
 
         const bool isAllPeriodic = true;
-        Mesh_t<Dim> mesh(domain, hr, origin);
+        Mesh_t<double, Dim> mesh(domain, hr, origin);
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
-        PLayout_t<double, Dim> PL(FL, mesh);
+        PLayout_t<double, Dim> PL(FL, &mesh);
 
         double Q           = -1562.5;
         std::string solver = argv[arg++];

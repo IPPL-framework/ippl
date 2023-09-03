@@ -17,7 +17,7 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
+using PLayout_t = typename ippl::ParticleBase<double, Dim, false>::Layout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 
@@ -29,8 +29,7 @@ using ParticleAttrib = ippl::ParticleAttrib<T>;
 
 typedef Vector<double, Dim> Vector_t;
 
-template <class PLayout>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
+class ChargedParticles : public ippl::ParticleBase<double, Dim, false> {
 public:
     Vector<int, Dim> nr_m;
 
@@ -43,14 +42,14 @@ public:
     double Q_m;
 
 public:
-    ParticleAttrib<double> qm;                                       // charge-to-mass ratio
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
+    ParticleAttrib<double> qm;  // charge-to-mass ratio
+    typename ippl::ParticleBase<double, Dim, false>::particle_position_type P;  // particle velocity
+    typename ippl::ParticleBase<double, Dim, false>::particle_position_type
         E;  // electric field at particle position
 
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+    ChargedParticles(PLayout_t& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
-        : ippl::ParticleBase<PLayout>(pl)
+        : ippl::ParticleBase<double, Dim, false>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
@@ -134,9 +133,7 @@ int main(int argc, char* argv[]) {
         msg << "benchmarkUpdate" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        using bunch_type = ChargedParticles<PLayout_t>;
-
-        std::unique_ptr<bunch_type> P;
+        std::unique_ptr<ChargedParticles> P;
 
         ippl::NDIndex<Dim> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -161,7 +158,7 @@ int main(int argc, char* argv[]) {
 
         Mesh_t mesh(domain, hr, origin);
         FieldLayout_t FL(domain, decomp);
-        PLayout_t PL(FL, mesh);
+        PLayout_t PL(FL, &mesh);
 
         /*
          * In case of periodic BC's define
@@ -169,7 +166,7 @@ int main(int argc, char* argv[]) {
          */
 
         double Q = 1e6;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        P        = std::make_unique<ChargedParticles>(PL, hr, rmin, rmax, decomp, Q);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 
@@ -184,7 +181,7 @@ int main(int argc, char* argv[]) {
         }
         std::uniform_real_distribution<double> unif(0, 1);
 
-        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+        typename ChargedParticles::particle_position_type::HostMirror R_host = P->R.getHostMirror();
 
         double sum_coord = 0.0;
         for (unsigned long int i = 0; i < nloc; i++) {
@@ -214,7 +211,7 @@ int main(int argc, char* argv[]) {
         msg << "particles created and initial conditions assigned " << endl;
 
         std::uniform_real_distribution<double> unifP(0, hr_min);
-        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
+        typename ChargedParticles::particle_position_type::HostMirror P_host = P->P.getHostMirror();
 
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
