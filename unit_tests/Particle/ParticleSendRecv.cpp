@@ -146,7 +146,7 @@ TYPED_TEST_CASE(ParticleSendRecv, Tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     const auto nParticles = this->nParticles;
-    auto& bunch = this->bunch;
+    auto& bunch           = this->bunch;
 
     bunch->update();
     // bunch->update();
