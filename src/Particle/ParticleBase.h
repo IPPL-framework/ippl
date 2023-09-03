@@ -248,12 +248,11 @@ namespace ippl {
         template <typename... Properties>
         void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
 
-        template <typename HashType, typename BufferType>
+        template <typename HashType>
         void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
-                        const HashType& hash, BufferType& buffer);
+                        const HashType& hash);
 
-        template <typename BufferType>
-        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs, BufferType& buffer);
+        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs);
 
         /*!
          * Serialize to do MPI calls.
@@ -278,23 +277,21 @@ namespace ippl {
         template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
+        void update() { layout_m->update(*this); }
+
     protected:
         /*!
          * Fill attributes of buffer.
-         * @tparam Buffer is a bunch type
          * @param buffer to send
          * @param hash function to access index.
          */
-        template <class Buffer>
-        void pack(Buffer& buffer, const hash_container_type& hash);
+        void pack(const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
-         * @tparam Buffer is a bunch type
          * @param buffer received
          */
-        template <class Buffer>
-        void unpack(Buffer& buffer, size_type nrecvs);
+        void unpack(size_type nrecvs);
 
     private:
         //! particle layout

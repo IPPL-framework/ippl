@@ -218,10 +218,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
 
-        bunch_type bunchBuffer(PL);
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
-        PL.update(*P, bunchBuffer);
+        P->update();
         IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
@@ -271,7 +270,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(RTimer);
 
             IpplTimings::startTimer(UpdateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(UpdateTimer);
 
             // advance the particle velocities

@@ -280,8 +280,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -299,7 +298,7 @@ public:
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
         if (!isFirstRepartition) {
-            layout.update(*this, buffer);
+            this->update();
         }
         IpplTimings::stopTimer(tupdatePLayout);
     }
@@ -317,8 +316,7 @@ public:
         orb.initialize(fl, mesh, rho_m);
     }
 
-    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -327,7 +325,7 @@ public:
             return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer, isFirstRepartition);
+        this->updateLayout(fl, mesh, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);

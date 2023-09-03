@@ -130,18 +130,16 @@ TYPED_TEST_CASE(ORBTest, Tests);
 TYPED_TEST(ORBTest, Volume) {
     constexpr unsigned Dim = TestFixture::dim;
 
-    auto& pl     = this->playout;
     auto& bunch  = this->bunch;
     auto& layout = this->layout;
 
     ippl::NDIndex<Dim> dom = layout.getDomain();
-    typename TestFixture::bunch_type buffer(pl);
 
-    pl.update(*bunch, buffer);
+    bunch->update();
 
     this->repartition();
 
-    pl.update(*bunch, buffer);
+    bunch->update();
 
     ippl::NDIndex<Dim> ndom = layout.getDomain();
 
@@ -149,21 +147,18 @@ TYPED_TEST(ORBTest, Volume) {
 }
 
 TYPED_TEST(ORBTest, Charge) {
-    auto& pl    = this->playout;
     auto& bunch = this->bunch;
     auto& field = this->field;
-
-    typename TestFixture::bunch_type buffer(pl);
 
     double charge = 0.5;
 
     bunch->Q = charge;
 
-    pl.update(*bunch, buffer);
+    bunch->update();
 
     this->repartition();
 
-    pl.update(*bunch, buffer);
+    bunch->update();
 
     *field = 0.0;
     scatter(bunch->Q, *field, bunch->R);

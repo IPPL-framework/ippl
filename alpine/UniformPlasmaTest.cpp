@@ -158,10 +158,8 @@ int main(int argc, char* argv[]) {
 
         P->initializeFields(mesh, FL);
 
-        bunch_type bunchBuffer(PL);
-
         IpplTimings::startTimer(updateTimer);
-        PL.update(*P, bunchBuffer);
+        P->update();
         IpplTimings::stopTimer(updateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
@@ -218,14 +216,14 @@ int main(int argc, char* argv[]) {
 
             // Since the particles have moved spatially update them to correct processors
             IpplTimings::startTimer(updateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP, it + 1)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
-                P->repartition(FL, mesh, bunchBuffer, fromAnalyticDensity);
+                P->repartition(FL, mesh, fromAnalyticDensity);
                 IpplTimings::stopTimer(domainDecomposition);
             }
 

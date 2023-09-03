@@ -110,7 +110,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -123,7 +123,7 @@ public:
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
-        layout.update(*this, buffer);
+        this->update();
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
@@ -131,7 +131,7 @@ public:
 
     ~ChargedParticles() {}
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh) {
         // Repartition the domains
         bool fromAnalyticDensity = false;
         bool res                 = orb.binaryRepartition(this->R, fl, fromAnalyticDensity);
@@ -141,7 +141,7 @@ public:
             return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer);
+        this->updateLayout(fl, mesh);
     }
 
     bool balance(unsigned int totalP) {  //, int timestep = 1) {
@@ -497,11 +497,9 @@ int main(int argc, char* argv[]) {
         P->P  = 0.0;
         IpplTimings::stopTimer(particleCreation);
 
-        bunch_type bunchBuffer(PL);
-
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
-        PL.update(*P, bunchBuffer);
+        P->update();
         IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
@@ -516,7 +514,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
         IpplTimings::startTimer(domainDecomposition0);
         if (P->balance(totalP)) {
-            P->repartition(FL, mesh, bunchBuffer);
+            P->repartition(FL, mesh);
         }
         IpplTimings::stopTimer(domainDecomposition0);
         msg << "Balancing finished" << endl;
@@ -545,14 +543,14 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(RTimer);
 
             IpplTimings::startTimer(UpdateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(UpdateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition0);
-                P->repartition(FL, mesh, bunchBuffer);
+                P->repartition(FL, mesh);
                 IpplTimings::stopTimer(domainDecomposition0);
                 // Conservations
                 // P->writePerRank();
