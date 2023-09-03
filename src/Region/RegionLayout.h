@@ -27,70 +27,65 @@
 
 #include "Utility/TypeUtils.h"
 
+#include "Meshes/Mesh.h"
 #include "Region/NDRegion.h"
 
 namespace ippl {
-    namespace detail {
+    template <typename T, unsigned Dim, class... Properties>
+    class RegionLayout {
+        template <typename... Props>
+        using base_type = RegionLayout<T, Dim, Props...>;
 
-        template <typename T, unsigned Dim, class Mesh, class... Properties>
-        class RegionLayout {
-            template <typename... Props>
-            using base_type = RegionLayout<T, Dim, Mesh, Props...>;
+    public:
+        using NDRegion_t       = NDRegion<T, Dim>;
+        using view_type        = typename detail::ViewType<NDRegion_t, 1, Properties...>::view_type;
+        using host_mirror_type = typename view_type::host_mirror_type;
 
-        public:
-            using NDRegion_t       = NDRegion<T, Dim>;
-            using view_type        = typename ViewType<NDRegion_t, 1, Properties...>::view_type;
-            using host_mirror_type = typename view_type::host_mirror_type;
+        using uniform_type = typename detail::CreateUniformType<base_type, view_type>::type;
 
-            using uniform_type = typename CreateUniformType<base_type, view_type>::type;
+        // Default constructor.  To make this class actually work, the user
+        // will have to later call 'changeDomain' to set the proper Domain
+        // and get a new partitioning.
+        RegionLayout();
 
-            // Default constructor.  To make this class actually work, the user
-            // will have to later call 'changeDomain' to set the proper Domain
-            // and get a new partitioning.
-            RegionLayout();
+        ~RegionLayout() = default;
 
-            // Constructor which takes a FieldLayout and a MeshType
-            // This one compares the domain of the FieldLayout and the domain of
-            // the MeshType to determine the centering of the index space.
-            RegionLayout(const FieldLayout<Dim>&, const Mesh&);
+        const NDRegion_t& getDomain() const { return region_m; }
 
-            ~RegionLayout() = default;
+        const view_type getdLocalRegions() const;
 
-            const NDRegion_t& getDomain() const { return region_m; }
+        const host_mirror_type gethLocalRegions() const;
 
-            const view_type getdLocalRegions() const;
+        void write(std::ostream& = std::cout) const;
 
-            const host_mirror_type gethLocalRegions() const;
+        void changeDomain(const FieldLayout<Dim>&,
+                          const Mesh<T, Dim>* mesh);  // previously private...
 
-            void write(std::ostream& = std::cout) const;
+    private:
+        NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh<T, Dim>* mesh) const;
 
-            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh);  // previously private...
+        void fillRegions(const FieldLayout<Dim>&, const Mesh<T, Dim>* mesh);
 
-        private:
-            NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh& mesh) const;
-            void fillRegions(const FieldLayout<Dim>&, const Mesh& mesh);
+        //! Offset from 'normal' Index space to 'Mesh' Index space
+        std::array<int, Dim> indexOffset_m;
 
-            //! Offset from 'normal' Index space to 'Mesh' Index space
-            std::array<int, Dim> indexOffset_m;
+        //! Offset needed between centering of Index space and Mesh points
+        std::array<bool, Dim> centerOffset_m;
 
-            //! Offset needed between centering of Index space and Mesh points
-            std::array<bool, Dim> centerOffset_m;
+        NDRegion_t region_m;
 
-            NDRegion_t region_m;
+        //! local regions (device view)
+        view_type dLocalRegions_m;
 
-            //! local regions (device view)
-            view_type dLocalRegions_m;
+        //! local regions (host mirror view)
+        host_mirror_type hLocalRegions_m;
 
-            //! local regions (host mirror view)
-            host_mirror_type hLocalRegions_m;
+        view_type subdomains_m;
+    };
 
-            view_type subdomains_m;
-        };
+    template <typename T, unsigned Dim>
+    std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim>&);
 
-        template <typename T, unsigned Dim, class Mesh>
-        std::ostream& operator<<(std::ostream&, const RegionLayout<T, Dim, Mesh>&);
-
-    }  // namespace detail
 }  // namespace ippl
 
 #include "Region/RegionLayout.hpp"

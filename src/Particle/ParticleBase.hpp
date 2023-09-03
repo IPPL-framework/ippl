@@ -51,8 +51,8 @@
 
 namespace ippl {
 
-    template <class PLayout, typename... IP>
-    ParticleBase<PLayout, IP...>::ParticleBase()
+    template <typename T, unsigned Dim, typename... IP>
+    ParticleBase<T, Dim, IP...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
         , nextID_m(Comm->rank())
@@ -63,29 +63,29 @@ namespace ippl {
         addAttribute(R);
     }
 
-    template <class PLayout, typename... IP>
-    ParticleBase<PLayout, IP...>::ParticleBase(PLayout& layout)
+    template <typename T, unsigned Dim, typename... IP>
+    ParticleBase<T, Dim, IP...>::ParticleBase(Layout_t& layout)
         : ParticleBase() {
         initialize(layout);
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename MemorySpace>
-    void ParticleBase<PLayout, IP...>::addAttribute(detail::ParticleAttribBase<MemorySpace>& pa) {
+    void ParticleBase<T, Dim, IP...>::addAttribute(detail::ParticleAttribBase<MemorySpace>& pa) {
         attributes_m.template get<MemorySpace>().push_back(&pa);
         pa.setParticleCount(localNum_m);
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::initialize(PLayout& layout) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::initialize(Layout_t& layout) {
         //         PAssert(layout_m == nullptr);
 
         // save the layout, and perform setup tasks
         layout_m = &layout;
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
         forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
@@ -110,8 +110,8 @@ namespace ippl {
         localNum_m += nLocal;
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::createWithID(index_type id) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
         // temporary change
@@ -125,8 +125,8 @@ namespace ippl {
         numNodes_m = Comm->getNodes();
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::globalCreate(size_type nTotal) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::globalCreate(size_type nTotal) {
         PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
@@ -142,10 +142,10 @@ namespace ippl {
         create(nLocal);
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename... Properties>
-    void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
-                                               const size_type destroyNum) {
+    void ParticleBase<T, Dim, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
+                                              const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
@@ -243,11 +243,11 @@ namespace ippl {
         });
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename HashType>
-    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
-                                                  std::vector<MPI_Request>& requests,
-                                                  const HashType& hash) {
+    void ParticleBase<T, Dim, IP...>::sendToRank(int rank, int tag, int sendNum,
+                                                 std::vector<MPI_Request>& requests,
+                                                 const HashType& hash) {
         size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
@@ -268,9 +268,9 @@ namespace ippl {
         });
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
-                                                    size_type nRecvs) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::recvFromRank(int rank, int tag, int recvNum,
+                                                   size_type nRecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
             if (bufSize == 0) {
@@ -285,27 +285,27 @@ namespace ippl {
         unpack(nRecvs);
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename Archive>
-    void ParticleBase<PLayout, IP...>::serialize(Archive& ar, size_type nsends) {
+    void ParticleBase<T, Dim, IP...>::serialize(Archive& ar, size_type nsends) {
         using memory_space = typename Archive::buffer_type::memory_space;
         forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
             att->serialize(ar, nsends);
         });
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename Archive>
-    void ParticleBase<PLayout, IP...>::deserialize(Archive& ar, size_type nrecvs) {
+    void ParticleBase<T, Dim, IP...>::deserialize(Archive& ar, size_type nrecvs) {
         using memory_space = typename Archive::buffer_type::memory_space;
         forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
             att->deserialize(ar, nrecvs);
         });
     }
 
-    template <class PLayout, typename... IP>
+    template <typename T, unsigned Dim, typename... IP>
     template <typename MemorySpace>
-    detail::size_type ParticleBase<PLayout, IP...>::packedSize(const size_type count) const {
+    detail::size_type ParticleBase<T, Dim, IP...>::packedSize(const size_type count) const {
         size_type total = 0;
         forAllAttributes<MemorySpace>([&]<typename Attribute>(const Attribute& att) {
             total += att->packedSize(count);
@@ -313,8 +313,8 @@ namespace ippl {
         return total;
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::pack(const hash_container_type& hash) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::pack(const hash_container_type& hash) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
@@ -323,8 +323,8 @@ namespace ippl {
         });
     }
 
-    template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::unpack(size_type nrecvs) {
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::unpack(size_type nrecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
@@ -333,4 +333,191 @@ namespace ippl {
         });
         localNum_m += nrecvs;
     }
+
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::update() {
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
+        IpplTimings::startTimer(ParticleBCTimer);
+        this->applyBC(this->R, layout_m->getDomain());
+        IpplTimings::stopTimer(ParticleBCTimer);
+
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
+        IpplTimings::startTimer(ParticleUpdateTimer);
+        int nRanks = Comm->size();
+
+        if (nRanks < 2) {
+            return;
+        }
+
+        /* particle MPI exchange:
+         *   1. figure out which particles need to go where
+         *   2. fill send buffer and send particles
+         *   3. delete invalidated particles
+         *   4. receive particles
+         */
+
+        static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(locateTimer);
+        size_type localnum = this->getLocalNum();
+
+        // 1st step
+
+        /* the values specify the rank where
+         * the particle with that index should go
+         */
+        locate_type ranks("MPI ranks", localnum);
+
+        /* 0 --> particle valid
+         * 1 --> particle invalid
+         */
+        bool_type invalid("invalid", localnum);
+
+        size_type invalidCount = locateParticles(ranks, invalid);
+        IpplTimings::stopTimer(locateTimer);
+
+        // 2nd step
+
+        // figure out how many receives
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
+        IpplTimings::startTimer(preprocTimer);
+        MPI_Win win;
+        std::vector<size_type> nRecvs(nRanks, 0);
+        MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
+                       Comm->getCommunicator(), &win);
+
+        std::vector<size_type> nSends(nRanks, 0);
+
+        MPI_Win_fence(0, win);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == Comm->rank()) {
+                // we do not need to send to ourselves
+                continue;
+            }
+            nSends[rank] = numberOfSends(rank, ranks);
+            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Comm->rank(), 1,
+                    MPI_LONG_LONG_INT, win);
+        }
+        MPI_Win_fence(0, win);
+        MPI_Win_free(&win);
+        IpplTimings::stopTimer(preprocTimer);
+
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
+        IpplTimings::startTimer(sendTimer);
+        // send
+        std::vector<MPI_Request> requests(0);
+
+        int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+
+        int sends = 0;
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nSends[rank] > 0) {
+                hash_type hash("hash", nSends[rank]);
+                fillHash(rank, ranks, hash);
+
+                this->sendToRank(rank, tag, sends++, requests, hash);
+            }
+        }
+        IpplTimings::stopTimer(sendTimer);
+
+        // 3rd step
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
+        IpplTimings::startTimer(destroyTimer);
+
+        this->destroy(invalid, invalidCount);
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(destroyTimer);
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
+        IpplTimings::startTimer(recvTimer);
+        // 4th step
+        int recvs = 0;
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nRecvs[rank] > 0) {
+                this->recvFromRank(rank, tag, recvs++, nRecvs[rank]);
+            }
+        }
+        IpplTimings::stopTimer(recvTimer);
+
+        IpplTimings::startTimer(sendTimer);
+
+        if (requests.size() > 0) {
+            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+        }
+        IpplTimings::stopTimer(sendTimer);
+
+        IpplTimings::stopTimer(ParticleUpdateTimer);
+    }
+
+    template <typename T, unsigned Dim, typename... IP>
+    template <size_t... Idx>
+    KOKKOS_INLINE_FUNCTION constexpr bool ParticleBase<T, Dim, IP...>::positionInRegion(
+        const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
+        return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
+    };
+
+    template <typename T, unsigned Dim, typename... IP>
+    detail::size_type ParticleBase<T, Dim, IP...>::locateParticles(locate_type& ranks,
+                                                                   bool_type& invalid) const {
+        auto& positions                            = this->R.getView();
+        typename RegionLayout_t::view_type Regions = layout_m->getdLocalRegions();
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
+
+        int myRank = Comm->rank();
+
+        const auto is = std::make_index_sequence<Dim>{};
+
+        size_type invalidCount = 0;
+        Kokkos::parallel_reduce(
+            "ParticleBase::locateParticles()",
+            mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
+            KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
+                bool xyz_bool = positionInRegion(is, positions(i), Regions(j));
+                if (xyz_bool) {
+                    ranks(i)   = j;
+                    invalid(i) = (myRank != ranks(i));
+                    count += invalid(i);
+                }
+            },
+            Kokkos::Sum<size_type>(invalidCount));
+        Kokkos::fence();
+
+        return invalidCount;
+    }
+
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::fillHash(int rank, const locate_type& ranks,
+                                               hash_type& hash) {
+        /* Compute the prefix sum and fill the hash
+         */
+        using policy_type = Kokkos::RangePolicy<position_execution_space>;
+        Kokkos::parallel_scan(
+            "ParticleBase::fillHash()", policy_type(0, ranks.extent(0)),
+            KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
+                if (final) {
+                    if (rank == ranks(i)) {
+                        hash(idx) = i;
+                    }
+                }
+
+                if (rank == ranks(i)) {
+                    idx += 1;
+                }
+            });
+        Kokkos::fence();
+    }
+
+    template <typename T, unsigned Dim, typename... IP>
+    size_t ParticleBase<T, Dim, IP...>::numberOfSends(int rank, const locate_type& ranks) {
+        size_t nSends     = 0;
+        using policy_type = Kokkos::RangePolicy<position_execution_space>;
+        Kokkos::parallel_reduce(
+            "ParticleBase::numberOfSends()", policy_type(0, ranks.extent(0)),
+            KOKKOS_LAMBDA(const size_t i, size_t& num) { num += size_t(rank == ranks(i)); },
+            nSends);
+        Kokkos::fence();
+        return nSends;
+    }
+
 }  // namespace ippl

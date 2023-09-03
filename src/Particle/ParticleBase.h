@@ -59,29 +59,39 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "Particle/ParticleLayout.h"
+#include "Particle/ParticleAttrib.h"
+#include "Particle/ParticleBC.h"
+#include "Region/RegionLayout.h"
 
 namespace ippl {
 
     /*!
      * @class ParticleBase
-     * @tparam PLayout the particle layout implementing an algorithm to
-     * distribute the particles among MPI ranks
      * @tparam IDProperties the view properties for particle IDs (if any
      * of the provided types is ippl::DisableParticleIDs, then particle
      * IDs will be disabled for the bunch)
      */
-    template <class PLayout, typename... IDProperties>
+    template <typename T, unsigned Dim, typename... IDProperties>
     class ParticleBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
-        using vector_type            = typename PLayout::vector_type;
-        using index_type             = typename PLayout::index_type;
-        using particle_position_type = typename PLayout::particle_position_type;
-        using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
+        using vector_type         = Vector<T, Dim>;
+        using index_type          = std::int64_t;
+        using particle_index_type = ParticleAttrib<index_type, IDProperties...>;
 
-        using Layout_t = PLayout;
+        using particle_position_type   = ParticleAttrib<vector_type>;
+        using position_memory_space    = typename particle_position_type::memory_space;
+        using position_execution_space = typename particle_position_type::execution_space;
+        using hash_type                = detail::hash_type<position_memory_space>;
+        using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
+        using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
+
+        using Layout_t = RegionLayout<T, Dim>;
+
+        using RegionLayout_t = typename RegionLayout<T, Dim, position_memory_space>::uniform_type;
+
+        using region_type = typename Layout_t::view_type::value_type;
 
         template <typename... Properties>
         using attribute_type = typename detail::ParticleAttribBase<Properties...>;
@@ -92,7 +102,7 @@ namespace ippl {
         using attribute_container_type =
             typename detail::ContainerForAllSpaces<container_type>::type;
 
-        using bc_container_type = typename PLayout::bc_container_type;
+        typedef std::array<BC, 2 * Dim> bc_container_type;
 
         using hash_container_type = typename detail::ContainerForAllSpaces<detail::hash_type>::type;
 
@@ -277,7 +287,30 @@ namespace ippl {
         template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
-        void update() { layout_m->update(*this); }
+        void update();
+
+        /*!
+         * For each particle in the bunch, determine the rank on which it should
+         * be stored based on its location
+         * @param ranks the integer view in which to store the destination ranks
+         * @param invalid the boolean view in which to store whether each particle
+         * is invalidated, i.e. needs to be sent to another rank
+         * @return The total number of invalidated particles
+         */
+        size_type locateParticles(locate_type& ranks, bool_type& invalid) const;
+
+        /*!
+         * @param rank we sent to
+         * @param ranks a container specifying where a particle at the i-th index should go.
+         * @param hash a mapping to fill the send buffer contiguously
+         */
+        void fillHash(int rank, const locate_type& ranks, hash_type& hash);
+
+        /*!
+         * @param rank we sent to
+         * @param ranks a container specifying where a particle at the i-th index should go.
+         */
+        size_t numberOfSends(int rank, const locate_type& ranks);
 
     protected:
         /*!
@@ -292,6 +325,10 @@ namespace ippl {
          * @param buffer received
          */
         void unpack(size_type nrecvs);
+
+        template <size_t... Idx>
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
+            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
     private:
         //! particle layout
