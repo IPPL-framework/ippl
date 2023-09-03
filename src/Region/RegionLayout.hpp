@@ -29,7 +29,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... Properties>
     void RegionLayout<T, Dim, Properties...>::update(const FieldLayout<Dim>& fl,
-                                                     const Mesh<T, Dim>* mesh) {
+                                                     const UniformCartesian<T, Dim>* mesh) {
         // set our index space offset
         for (unsigned int d = 0; d < Dim; ++d) {
             indexOffset_m[d]  = fl.getDomain()[d].first();
@@ -48,8 +48,8 @@ namespace ippl {
     // NOTE: THIS ASSUMES THAT REGION'S HAVE first() < last() !!
     template <typename T, unsigned Dim, class... Properties>
     typename RegionLayout<T, Dim, Properties...>::NDRegion_t
-    RegionLayout<T, Dim, Properties...>::convertNDIndex(const NDIndex<Dim>& ni,
-                                                        const Mesh<T, Dim>* mesh) const {
+    RegionLayout<T, Dim, Properties...>::convertNDIndex(
+        const NDIndex<Dim>& ni, const UniformCartesian<T, Dim>* mesh) const {
         // find first and last points in NDIndex and get coordinates from mesh
         NDIndex<Dim> firstPoint, lastPoint;
         for (unsigned int d = 0; d < Dim; d++) {
@@ -60,8 +60,8 @@ namespace ippl {
         }
 
         // convert to mesh space
-        Vector<T, Dim> firstCoord = mesh.getVertexPosition(firstPoint);
-        Vector<T, Dim> lastCoord  = mesh.getVertexPosition(lastPoint);
+        Vector<T, Dim> firstCoord = mesh->getVertexPosition(firstPoint);
+        Vector<T, Dim> lastCoord  = mesh->getVertexPosition(lastPoint);
         NDRegion_t ndregion;
         for (unsigned int d = 0; d < Dim; d++) {
             ndregion[d] = PRegion<T>(firstCoord(d), lastCoord(d));
@@ -71,7 +71,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... Properties>
     void RegionLayout<T, Dim, Properties...>::fillRegions(const FieldLayout<Dim>& fl,
-                                                          const Mesh<T, Dim>* mesh) {
+                                                          const UniformCartesian<T, Dim>* mesh) {
         using domain_type           = typename FieldLayout<Dim>::host_mirror_type;
         const domain_type& ldomains = fl.getHostLocalDomains();
 

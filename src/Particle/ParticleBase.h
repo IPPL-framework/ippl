@@ -168,13 +168,20 @@ namespace ippl {
          * Set all boundary conditions
          * @param bc the boundary conditions
          */
-        void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
+        void setParticleBC(const bc_container_type& bcs) { bcs_m = bcs; }
 
         /*!
          * Set all boundary conditions to this BC
          * @param bc the boundary conditions
          */
-        void setParticleBC(BC bc) { layout_m->setParticleBC(bc); }
+        void setParticleBC(BC bc) { bcs_m.fill(bc); }
+
+        /*!
+         * Apply the given boundary conditions to the current particle positions.
+         * @tparam nr is the NDRegion
+         * @param
+         */
+        void applyBC(const NDRegion<T, Dim>& nr);
 
         /*!
          * Add particle attribute
@@ -350,6 +357,9 @@ namespace ippl {
         //! buffers for particle partitioning
         hash_container_type deleteIndex_m;
         hash_container_type keepIndex_m;
+
+        //! the list of boundary conditions for this set of particles
+        bc_container_type bcs_m;
     };
 }  // namespace ippl
 

@@ -27,7 +27,7 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "Meshes/Mesh.h"
+#include "Meshes/UniformCartesian.h"
 #include "Region/NDRegion.h"
 
 namespace ippl {
@@ -58,12 +58,13 @@ namespace ippl {
 
         void write(std::ostream& = std::cout) const;
 
-        void update(const FieldLayout<Dim>&, const Mesh<T, Dim>* mesh);  // previously private...
+        void update(const FieldLayout<Dim>&,
+                    const UniformCartesian<T, Dim>* mesh);  // previously private...
 
     private:
-        NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh<T, Dim>* mesh) const;
+        NDRegion_t convertNDIndex(const NDIndex<Dim>&, const UniformCartesian<T, Dim>* mesh) const;
 
-        void fillRegions(const FieldLayout<Dim>&, const Mesh<T, Dim>* mesh);
+        void fillRegions(const FieldLayout<Dim>&, const UniformCartesian<T, Dim>* mesh);
 
         //! Offset from 'normal' Index space to 'Mesh' Index space
         std::array<int, Dim> indexOffset_m;

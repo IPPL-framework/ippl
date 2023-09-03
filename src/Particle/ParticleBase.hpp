@@ -338,7 +338,7 @@ namespace ippl {
     void ParticleBase<T, Dim, IP...>::update() {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        this->applyBC(this->R, layout_m->getDomain());
+        this->applyBC(layout_m->getDomain());
         IpplTimings::stopTimer(ParticleBCTimer);
 
         static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
@@ -518,6 +518,48 @@ namespace ippl {
             nSends);
         Kokkos::fence();
         return nSends;
+    }
+
+    template <typename T, unsigned Dim, typename... IP>
+    void ParticleBase<T, Dim, IP...>::applyBC(const NDRegion<T, Dim>& nr) {
+        /* loop over all faces
+         * 0: lower x-face
+         * 1: upper x-face
+         * 2: lower y-face
+         * 3: upper y-face
+         * etc...
+         */
+        Kokkos::RangePolicy<position_execution_space> policy{0,
+                                                             (unsigned)this->R.getParticleCount()};
+        for (unsigned face = 0; face < 2 * Dim; ++face) {
+            // unsigned face = i % Dim;
+            unsigned d   = face / 2;
+            bool isUpper = face & 1;
+            switch (bcs_m[face]) {
+                case BC::PERIODIC:
+                    // Periodic faces come in pairs and the application of
+                    // BCs checks both sides, so there is no reason to
+                    // apply periodic conditions twice
+                    if (isUpper) {
+                        break;
+                    }
+
+                    Kokkos::parallel_for("Periodic BC", policy,
+                                         detail::PeriodicBC(this->R.getView(), nr, d, isUpper));
+                    break;
+                case BC::REFLECTIVE:
+                    Kokkos::parallel_for("Reflective BC", policy,
+                                         detail::ReflectiveBC(this->R.getView(), nr, d, isUpper));
+                    break;
+                case BC::SINK:
+                    Kokkos::parallel_for("Sink BC", policy,
+                                         detail::SinkBC(this->R.getView(), nr, d, isUpper));
+                    break;
+                case BC::NO:
+                default:
+                    break;
+            }
+        }
     }
 
 }  // namespace ippl

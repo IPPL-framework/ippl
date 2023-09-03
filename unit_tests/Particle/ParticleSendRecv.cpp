@@ -21,15 +21,14 @@ protected:
 public:
     using flayout_type   = ippl::FieldLayout<Dim>;
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
-    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
-    using RegionLayout_t = typename playout_type::RegionLayout_t;
+    using RegionLayout_t = typename ippl::ParticleBase<T, Dim>::RegionLayout_t;
+    using Layout_t       = typename ippl::ParticleBase<T, Dim>::Layout_t;
 
     using rank_type = ippl::ParticleAttrib<int, ExecSpace>;
 
-    template <class PLayout>
-    struct Bunch : public ippl::ParticleBase<PLayout> {
-        explicit Bunch(PLayout& playout)
-            : ippl::ParticleBase<PLayout>(playout) {
+    struct Bunch : public ippl::ParticleBase<T, Dim> {
+        explicit Bunch(Layout_t& layout)
+            : ippl::ParticleBase<T, Dim>(layout) {
             this->addAttribute(expectedRank);
             this->addAttribute(Q);
         }
@@ -42,7 +41,7 @@ public:
         charge_container_type Q;
     };
 
-    using bunch_type = Bunch<playout_type>;
+    using bunch_type = Bunch;
 
     ParticleSendRecv()
         : nPoints(getGridSizes<Dim>()) {
@@ -67,10 +66,10 @@ public:
             origin[d] = 0;
         }
 
-        layout  = flayout_type(owned, domDec);
-        mesh    = mesh_type(owned, hx, origin);
-        playout = playout_type(layout, mesh);
-        bunch   = std::make_shared<bunch_type>(playout);
+        layout = flayout_type(owned, domDec);
+        mesh   = mesh_type(owned, hx, origin);
+        rlayout.update(layout, &mesh);
+        bunch = std::make_shared<bunch_type>(rlayout);
 
         using BC = ippl::BC;
 
@@ -111,7 +110,7 @@ public:
         using size_type    = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecSpace>;
 
-        RegionLayout_t RLayout           = playout.getRegionLayout();
+        Layout_t RLayout                 = bunch->getLayout();
         auto& positions                  = bunch->R.getView();
         region_view Regions              = RLayout.getdLocalRegions();
         typename rank_type::view_type ER = bunch->expectedRank.getView();
@@ -135,8 +134,8 @@ public:
     const unsigned int nParticles = 128;
     std::array<size_t, Dim> nPoints;
     std::array<T, Dim> domain;
-    playout_type playout;
 
+    Layout_t rlayout;
     flayout_type layout;
     mesh_type mesh;
 };
