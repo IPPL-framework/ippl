@@ -44,7 +44,7 @@ namespace ippl {
         using uniform_type = typename detail::CreateUniformType<base_type, view_type>::type;
 
         // Default constructor.  To make this class actually work, the user
-        // will have to later call 'changeDomain' to set the proper Domain
+        // will have to later call 'update' to set the proper Domain
         // and get a new partitioning.
         RegionLayout();
 
@@ -58,8 +58,7 @@ namespace ippl {
 
         void write(std::ostream& = std::cout) const;
 
-        void changeDomain(const FieldLayout<Dim>&,
-                          const Mesh<T, Dim>* mesh);  // previously private...
+        void update(const FieldLayout<Dim>&, const Mesh<T, Dim>* mesh);  // previously private...
 
     private:
         NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh<T, Dim>* mesh) const;
