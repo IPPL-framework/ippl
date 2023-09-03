@@ -163,9 +163,9 @@ namespace ippl {
     };
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    template <typename ParticleBunch>
+    template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
-        const ParticleBunch& pc, locate_type& ranks, bool_type& invalid) const {
+        const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
         auto& positions                            = pc.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
