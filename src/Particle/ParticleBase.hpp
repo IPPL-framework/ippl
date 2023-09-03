@@ -51,48 +51,49 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, typename... IP>
-    ParticleBase<T, Dim, IP...>::ParticleBase()
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    ParticleBase<T, Dim, EnabledIDs, Properties...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
         , nextID_m(Comm->rank())
         , numNodes_m(Comm->size()) {
-        if constexpr (EnableIDs) {
+        if constexpr (EnabledIDs) {
             addAttribute(ID);
         }
         addAttribute(R);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    ParticleBase<T, Dim, IP...>::ParticleBase(Layout_t& layout)
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    ParticleBase<T, Dim, EnabledIDs, Properties...>::ParticleBase(Layout_t& layout)
         : ParticleBase() {
         initialize(layout);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <typename MemorySpace>
-    void ParticleBase<T, Dim, IP...>::addAttribute(detail::ParticleAttribBase<MemorySpace>& pa) {
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::addAttribute(
+        detail::ParticleAttribBase<MemorySpace>& pa) {
         attributes_m.template get<MemorySpace>().push_back(&pa);
         pa.setParticleCount(localNum_m);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::initialize(Layout_t& layout) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::initialize(Layout_t& layout) {
         //         PAssert(layout_m == nullptr);
 
         // save the layout, and perform setup tasks
         layout_m = &layout;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::create(size_type nLocal) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
         forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
             attribute->create(nLocal);
         });
 
-        if constexpr (EnableIDs) {
+        if constexpr (EnabledIDs) {
             // set the unique ID value for these new particles
             using policy_type =
                 Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
@@ -110,8 +111,8 @@ namespace ippl {
         localNum_m += nLocal;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::createWithID(index_type id) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
         // temporary change
@@ -125,8 +126,8 @@ namespace ippl {
         numNodes_m = Comm->getNodes();
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::globalCreate(size_type nTotal) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::globalCreate(size_type nTotal) {
         PAssert(layout_m != nullptr);
 
         // Compute the number of particles local to each processor
@@ -142,10 +143,10 @@ namespace ippl {
         create(nLocal);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    template <typename... Properties>
-    void ParticleBase<T, Dim, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
-                                              const size_type destroyNum) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    template <typename... Props>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::destroy(
+        const Kokkos::View<bool*, Props...>& invalid, const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
@@ -161,7 +162,7 @@ namespace ippl {
             return;
         }
 
-        using view_type       = Kokkos::View<bool*, Properties...>;
+        using view_type       = Kokkos::View<bool*, Props...>;
         using memory_space    = typename view_type::memory_space;
         using execution_space = typename view_type::execution_space;
         using policy_type     = Kokkos::RangePolicy<execution_space>;
@@ -243,11 +244,10 @@ namespace ippl {
         });
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <typename HashType>
-    void ParticleBase<T, Dim, IP...>::sendToRank(int rank, int tag, int sendNum,
-                                                 std::vector<MPI_Request>& requests,
-                                                 const HashType& hash) {
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::sendToRank(
+        int rank, int tag, int sendNum, std::vector<MPI_Request>& requests, const HashType& hash) {
         size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
@@ -268,9 +268,10 @@ namespace ippl {
         });
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::recvFromRank(int rank, int tag, int recvNum,
-                                                   size_type nRecvs) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::recvFromRank(int rank, int tag,
+                                                                       int recvNum,
+                                                                       size_type nRecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
             if (bufSize == 0) {
@@ -285,27 +286,29 @@ namespace ippl {
         unpack(nRecvs);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <typename Archive>
-    void ParticleBase<T, Dim, IP...>::serialize(Archive& ar, size_type nsends) {
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::serialize(Archive& ar, size_type nsends) {
         using memory_space = typename Archive::buffer_type::memory_space;
         forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
             att->serialize(ar, nsends);
         });
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <typename Archive>
-    void ParticleBase<T, Dim, IP...>::deserialize(Archive& ar, size_type nrecvs) {
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::deserialize(Archive& ar,
+                                                                      size_type nrecvs) {
         using memory_space = typename Archive::buffer_type::memory_space;
         forAllAttributes<memory_space>([&]<typename Attribute>(Attribute& att) {
             att->deserialize(ar, nrecvs);
         });
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <typename MemorySpace>
-    detail::size_type ParticleBase<T, Dim, IP...>::packedSize(const size_type count) const {
+    detail::size_type ParticleBase<T, Dim, EnabledIDs, Properties...>::packedSize(
+        const size_type count) const {
         size_type total = 0;
         forAllAttributes<MemorySpace>([&]<typename Attribute>(const Attribute& att) {
             total += att->packedSize(count);
@@ -313,8 +316,8 @@ namespace ippl {
         return total;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::pack(const hash_container_type& hash) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::pack(const hash_container_type& hash) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
@@ -323,8 +326,8 @@ namespace ippl {
         });
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::unpack(size_type nrecvs) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::unpack(size_type nrecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
@@ -334,8 +337,8 @@ namespace ippl {
         localNum_m += nrecvs;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::update() {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::update() {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
         this->applyBC(layout_m->getDomain());
@@ -449,16 +452,17 @@ namespace ippl {
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
-    template <typename T, unsigned Dim, typename... IP>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     template <size_t... Idx>
-    KOKKOS_INLINE_FUNCTION constexpr bool ParticleBase<T, Dim, IP...>::positionInRegion(
+    KOKKOS_INLINE_FUNCTION constexpr bool
+    ParticleBase<T, Dim, EnabledIDs, Properties...>::positionInRegion(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
         return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
-    template <typename T, unsigned Dim, typename... IP>
-    detail::size_type ParticleBase<T, Dim, IP...>::locateParticles(locate_type& ranks,
-                                                                   bool_type& invalid) const {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    detail::size_type ParticleBase<T, Dim, EnabledIDs, Properties...>::locateParticles(
+        locate_type& ranks, bool_type& invalid) const {
         auto& positions                            = this->R.getView();
         typename RegionLayout_t::view_type Regions = layout_m->getdLocalRegions();
 
@@ -486,9 +490,10 @@ namespace ippl {
         return invalidCount;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::fillHash(int rank, const locate_type& ranks,
-                                               hash_type& hash) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::fillHash(int rank,
+                                                                   const locate_type& ranks,
+                                                                   hash_type& hash) {
         /* Compute the prefix sum and fill the hash
          */
         using policy_type = Kokkos::RangePolicy<position_execution_space>;
@@ -508,8 +513,9 @@ namespace ippl {
         Kokkos::fence();
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    size_t ParticleBase<T, Dim, IP...>::numberOfSends(int rank, const locate_type& ranks) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    size_t ParticleBase<T, Dim, EnabledIDs, Properties...>::numberOfSends(
+        int rank, const locate_type& ranks) {
         size_t nSends     = 0;
         using policy_type = Kokkos::RangePolicy<position_execution_space>;
         Kokkos::parallel_reduce(
@@ -520,8 +526,8 @@ namespace ippl {
         return nSends;
     }
 
-    template <typename T, unsigned Dim, typename... IP>
-    void ParticleBase<T, Dim, IP...>::applyBC(const NDRegion<T, Dim>& nr) {
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
+    void ParticleBase<T, Dim, EnabledIDs, Properties...>::applyBC(const NDRegion<T, Dim>& nr) {
         /* loop over all faces
          * 0: lower x-face
          * 1: upper x-face

@@ -21,14 +21,14 @@ protected:
 public:
     using flayout_type   = ippl::FieldLayout<Dim>;
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
-    using RegionLayout_t = typename ippl::ParticleBase<T, Dim>::RegionLayout_t;
-    using Layout_t       = typename ippl::ParticleBase<T, Dim>::Layout_t;
+    using RegionLayout_t = typename ippl::ParticleBase<T, Dim, false, ExecSpace>::RegionLayout_t;
+    using Layout_t       = typename ippl::ParticleBase<T, Dim, false, ExecSpace>::Layout_t;
 
     using rank_type = ippl::ParticleAttrib<int, ExecSpace>;
 
-    struct Bunch : public ippl::ParticleBase<T, Dim> {
+    struct Bunch : public ippl::ParticleBase<T, Dim, false, ExecSpace> {
         explicit Bunch(Layout_t& layout)
-            : ippl::ParticleBase<T, Dim>(layout) {
+            : ippl::ParticleBase<T, Dim, false, ExecSpace>(layout) {
             this->addAttribute(expectedRank);
             this->addAttribute(Q);
         }
@@ -66,10 +66,10 @@ public:
             origin[d] = 0;
         }
 
-        layout = flayout_type(owned, domDec);
-        mesh   = mesh_type(owned, hx, origin);
-        rlayout.update(layout, &mesh);
-        bunch = std::make_shared<bunch_type>(rlayout);
+        layout  = flayout_type(owned, domDec);
+        mesh    = mesh_type(owned, hx, origin);
+        rlayout = Layout_t(layout, &mesh);
+        bunch   = std::make_shared<bunch_type>(rlayout);
 
         using BC = ippl::BC;
 

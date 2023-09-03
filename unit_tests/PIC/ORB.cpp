@@ -21,17 +21,16 @@ protected:
 public:
     constexpr static unsigned dim = Dim;
 
-    using mesh_type      = ippl::UniformCartesian<double, Dim>;
+    using mesh_type      = ippl::UniformCartesian<T, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
     using flayout_type   = ippl::FieldLayout<Dim>;
-    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
+    using layout_type    = typename ippl::ParticleBase<T, Dim, false, ExecSpace>::Layout_t;
     using ORB            = ippl::OrthogonalRecursiveBisection<field_type>;
 
-    template <class PLayout>
-    struct Bunch : public ippl::ParticleBase<PLayout> {
-        explicit Bunch(PLayout& playout)
-            : ippl::ParticleBase<PLayout>(playout) {
+    struct Bunch : public ippl::ParticleBase<T, Dim, false, ExecSpace> {
+        explicit Bunch(layout_type& playout)
+            : ippl::ParticleBase<T, Dim, false, ExecSpace>(playout) {
             this->addAttribute(Q);
         }
 
@@ -40,12 +39,12 @@ public:
         ippl::ParticleAttrib<double, ExecSpace> Q;
 
         void updateLayout(flayout_type fl, mesh_type mesh) {
-            PLayout& layout = this->getLayout();
-            layout.updateLayout(fl, mesh);
+            layout_type& layout = this->getLayout();
+            layout.update(fl, &mesh);
         }
     };
 
-    using bunch_type = Bunch<playout_type>;
+    using bunch_type = Bunch;
 
     ORBTest()
         : nPoints(getGridSizes<Dim>()) {
@@ -73,8 +72,8 @@ public:
         layout                   = flayout_type(owned, allParallel, isAllPeriodic);
         mesh                     = mesh_type(owned, hx, origin);
         field                    = std::make_shared<field_type>(mesh, layout);
-        playout                  = playout_type(layout, mesh);
-        bunch                    = std::make_shared<bunch_type>(playout);
+        rlayout                  = layout_type(layout, &mesh);
+        bunch                    = std::make_shared<bunch_type>(rlayout);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -120,7 +119,7 @@ public:
 
     flayout_type layout;
     mesh_type mesh;
-    playout_type playout;
+    layout_type rlayout;
     ORB orb;
 };
 

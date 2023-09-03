@@ -20,16 +20,15 @@ protected:
 public:
     constexpr static unsigned dim = Dim;
 
-    using mesh_type      = ippl::UniformCartesian<double, Dim>;
+    using mesh_type      = ippl::UniformCartesian<T, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
     using flayout_type   = ippl::FieldLayout<Dim>;
-    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
+    using layout_type    = typename ippl::ParticleBase<T, Dim, false, ExecSpace>::Layout_t;
 
-    template <class PLayout>
-    struct Bunch : public ippl::ParticleBase<PLayout> {
-        explicit Bunch(PLayout& playout)
-            : ippl::ParticleBase<PLayout>(playout) {
+    struct Bunch : public ippl::ParticleBase<T, Dim, false, ExecSpace> {
+        explicit Bunch(layout_type& rlayout)
+            : ippl::ParticleBase<T, Dim, false, ExecSpace>(rlayout) {
             this->addAttribute(Q);
         }
 
@@ -38,7 +37,7 @@ public:
         ippl::ParticleAttrib<double, ExecSpace> Q;
     };
 
-    using bunch_type = Bunch<playout_type>;
+    using bunch_type = Bunch;
 
     PICTest()
         : nPoints(getGridSizes<Dim>()) {
@@ -63,14 +62,13 @@ public:
             origin[d] = 0;
         }
 
-        layout = flayout_type(owned, domDec);
-        mesh   = mesh_type(owned, hx, origin);
+        layout  = flayout_type(owned, domDec);
+        mesh    = mesh_type(owned, hx, origin);
+        rlayout = layout_type(layout, &mesh);
 
         field = std::make_unique<field_type>(mesh, layout);
 
-        playout = playout_type(layout, mesh);
-
-        bunch = std::make_unique<bunch_type>(playout);
+        bunch = std::make_unique<bunch_type>(rlayout);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -103,7 +101,7 @@ public:
     size_t nParticles = 32;
     std::array<size_t, Dim> nPoints;
     std::array<double, Dim> domain;
-    playout_type playout;
+    layout_type rlayout;
 
     flayout_type layout;
     mesh_type mesh;

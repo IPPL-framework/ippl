@@ -48,6 +48,8 @@ namespace ippl {
         // and get a new partitioning.
         RegionLayout();
 
+        RegionLayout(const FieldLayout<Dim>&, const UniformCartesian<T, Dim>* mesh);
+
         ~RegionLayout() = default;
 
         const NDRegion_t& getDomain() const { return region_m; }

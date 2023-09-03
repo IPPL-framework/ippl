@@ -67,20 +67,17 @@ namespace ippl {
 
     /*!
      * @class ParticleBase
-     * @tparam IDProperties the view properties for particle IDs (if any
-     * of the provided types is ippl::DisableParticleIDs, then particle
-     * IDs will be disabled for the bunch)
+     * @tparam EnabledIDs enable particle IDs
+     * @tparam Properties the view properties for particle position and IDs
      */
-    template <typename T, unsigned Dim, typename... IDProperties>
+    template <typename T, unsigned Dim, bool EnabledIDs, typename... Properties>
     class ParticleBase {
-        constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
-
     public:
         using vector_type         = Vector<T, Dim>;
         using index_type          = std::int64_t;
-        using particle_index_type = ParticleAttrib<index_type, IDProperties...>;
+        using particle_index_type = ParticleAttrib<index_type, Properties...>;
 
-        using particle_position_type   = ParticleAttrib<vector_type>;
+        using particle_position_type   = ParticleAttrib<vector_type, Properties...>;
         using position_memory_space    = typename particle_position_type::memory_space;
         using position_execution_space = typename particle_position_type::execution_space;
         using hash_type                = detail::hash_type<position_memory_space>;
@@ -93,8 +90,8 @@ namespace ippl {
 
         using region_type = typename Layout_t::view_type::value_type;
 
-        template <typename... Properties>
-        using attribute_type = typename detail::ParticleAttribBase<Properties...>;
+        template <typename... Props>
+        using attribute_type = typename detail::ParticleAttribBase<Props...>;
 
         template <typename MemorySpace>
         using container_type = std::vector<attribute_type<MemorySpace>*>;
@@ -262,8 +259,8 @@ namespace ippl {
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        template <typename... Properties>
-        void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
+        template <typename... Props>
+        void destroy(const Kokkos::View<bool*, Props...>& invalid, const size_type destroyNum);
 
         template <typename HashType>
         void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,

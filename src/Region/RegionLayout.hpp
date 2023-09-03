@@ -28,6 +28,13 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class... Properties>
+    RegionLayout<T, Dim, Properties...>::RegionLayout(const FieldLayout<Dim>& fl,
+                                                      const UniformCartesian<T, Dim>* mesh)
+        : RegionLayout() {
+        this->update(fl, mesh);
+    }
+
+    template <typename T, unsigned Dim, class... Properties>
     void RegionLayout<T, Dim, Properties...>::update(const FieldLayout<Dim>& fl,
                                                      const UniformCartesian<T, Dim>* mesh) {
         // set our index space offset

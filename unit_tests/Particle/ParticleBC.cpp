@@ -19,8 +19,8 @@ public:
     using value_type              = T;
     constexpr static unsigned dim = Dim;
 
-    using playout_type = ippl::detail::ParticleLayout<T, Dim, ExecSpace>;
-    using bunch_type   = ippl::ParticleBase<playout_type>;
+    using Layout_t   = typename ippl::ParticleBase<T, Dim, false, ExecSpace>::Layout_t;
+    using bunch_type = ippl::ParticleBase<T, Dim, false, ExecSpace>;
 
     ParticleBCTest() {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
@@ -33,7 +33,7 @@ public:
     }
 
     void setup(const ippl::Vector<T, Dim>& pos) {
-        bunch = std::make_shared<bunch_type>(playout);
+        bunch = std::make_shared<bunch_type>(rlayout);
 
         bunch->create(nParticles);
 
@@ -77,7 +77,7 @@ public:
     using mirror_type = typename bunch_type::particle_position_type::HostMirror;
     mirror_type mirror;
 
-    playout_type playout;
+    Layout_t rlayout;
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
@@ -95,7 +95,7 @@ TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
 
     bunch->setParticleBC(ippl::BC::PERIODIC);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     auto expected = this->shift;
     this->checkResult(expected);
@@ -113,7 +113,7 @@ TYPED_TEST(ParticleBCTest, UpperNoBC) {
 
     bunch->setParticleBC(ippl::BC::NO);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     this->checkResult(pos);
 }
@@ -130,7 +130,7 @@ TYPED_TEST(ParticleBCTest, UpperReflectiveBC) {
 
     bunch->setParticleBC(ippl::BC::REFLECTIVE);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     auto expected = this->len - this->shift;
     this->checkResult(expected);
@@ -148,7 +148,7 @@ TYPED_TEST(ParticleBCTest, UpperSinkBC) {
 
     bunch->setParticleBC(ippl::BC::SINK);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     this->checkResult(this->len);
 }
@@ -165,7 +165,7 @@ TYPED_TEST(ParticleBCTest, LowerPeriodicBC) {
 
     bunch->setParticleBC(ippl::BC::PERIODIC);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     auto expected = this->len - this->shift;
     this->checkResult(expected);
@@ -183,7 +183,7 @@ TYPED_TEST(ParticleBCTest, LowerNoBC) {
 
     bunch->setParticleBC(ippl::BC::NO);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     this->checkResult(pos);
 }
@@ -200,7 +200,7 @@ TYPED_TEST(ParticleBCTest, LowerReflectiveBC) {
 
     bunch->setParticleBC(ippl::BC::REFLECTIVE);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     ippl::Vector<T, Dim> expected = this->shift;
     this->checkResult(expected);
@@ -218,7 +218,7 @@ TYPED_TEST(ParticleBCTest, LowerSinkBC) {
 
     bunch->setParticleBC(ippl::BC::SINK);
 
-    bunch->getLayout().applyBC(bunch->R, nr);
+    bunch->applyBC(nr);
 
     ippl::Vector<T, Dim> expected = 0;
     this->checkResult(expected);
