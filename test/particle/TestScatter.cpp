@@ -88,8 +88,7 @@ int main(int argc, char* argv[]) {
 
         bunch.Q = 1.0;
 
-        bunch_type bunchBuffer(pl);
-        pl.update(bunch, bunchBuffer);
+        bunch.update();
 
         field = 0.0;
 
