@@ -57,64 +57,67 @@ namespace CatalystAdaptor
 // catalyst_about(conduit_cpp::c_node(&node));
 
         // add time/cycle information
-        node["catalyst/state/cycle"].set(cycle);
-        node["catalyst/state/time"].set(time);
-        node["catalyst/state/domain_id"].set(rank);
+        auto state = node["catalyst/state"];
+        state["cycle"].set(cycle);
+        state["time"].set(time);
+        state["domain_id"].set(rank);
 
 //      Add channels.
 //       auto channel_field = node["catalyst/field"]; // /coordsets/coords"];
 //        channel_field["type"].set("mesh");
-//        
+//
 //        auto field_channel_mesh = channel_field["data"];
+
+        auto channel = node["catalyst/channels/grid"];
+        channel["type"].set_string("mesh");
         
-        node["catalyst/coordsets/coords/type"].set("uniform");
+        auto mesh = channel["data"];
+        mesh["coordsets/coords/type"].set("uniform");
 
         // number of points in specific dimension
-        std::string field_node_dim {"catalyst/coordsets/coords/dims/i"};
-        std::string field_node_origin {"catalyst/coordsets/coords/origin/x"};
-        std::string field_node_spacing {"catalyst/coordsets/coords/spacing/dx"};
+        std::string field_node_dim      {"coordsets/coords/dims/i"};
+        std::string field_node_origin   {"coordsets/coords/origin/x"};
+        std::string field_node_spacing  {"coordsets/coords/spacing/dx"};
         auto origin = field.get_mesh().getOrigin();
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             // include ghost cells to the "left" and "right"
-            node[field_node_dim].set(
-                std::to_string(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost()));
+            mesh[field_node_dim].set(
+                field.get_mesh().getGridsize(iDim) + 2 * field.getNghost());
             // shift origin by one ghost cell
-            node[field_node_origin].set(
-                std::to_string(origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost()));
-            node[field_node_spacing].set(
-                std::to_string(field.get_mesh().getMeshSpacing(iDim)));
+            mesh[field_node_origin].set(
+                origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost());
+            mesh[field_node_spacing].set(
+                field.get_mesh().getMeshSpacing(iDim));
 
             ++field_node_dim.back();
             ++field_node_origin.back();
             ++field_node_spacing.back();
         }
-
-        node["catalyst/topologies/topo/type"].set("uniform");
-        node["catalyst/topologies/topo/coordset"].set("coords");
-
-        field_node_origin = "catalyst/topologies/topo/origin/x";
+        mesh["topologies/mesh/type"].set("uniform");
+        mesh["topologies/mesh/coordset"].set("coords");
+        field_node_origin = "topologies/mesh/origin/x";
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             // shift origin by one ghost cell
-            node[field_node_origin].set(
-                std::to_string(origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost()));
+            mesh[field_node_origin].set(
+                origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost());
 
             ++field_node_origin.back();
         }
 
-        node["catalyst/fields/field/association"].set("element");
-        node["catalyst/fields/field/volume_dependent"].set("false");
-        node["catalyst/fields/field/topology"].set("topo");
+        auto fields = mesh["fields"];
 
-        node["catalyst/fields/field/values"].set_external(
+        fields["density/association"].set("element");
+        fields["density/topology"].set("mesh");
+        fields["density/volume_dependent"].set("false");
+
+        fields["density/values"].set(
             field.getView().data(),
             field.getOwned().size());
 
         // print node to see what I write there
         if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
-        std::cout << node["catalyst"].number_of_children() << std::endl;
-        std::cout << node["catalyst"].number_of_elements() << std::endl;
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {

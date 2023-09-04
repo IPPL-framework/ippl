@@ -1,17 +1,12 @@
 from paraview.simple import *
 
-from paraview.catalyst import get_args
-# Greeting to ensure that ctest knows this script is being imported
 print("executing catalyst_pipeline")
-print("executing catalyst_pipeline")
-print("===================================")
-print("pipeline args={}".format(get_args()))
-print("===================================")
+
 
 
 # registrationName must match the channel name used in the
 # 'CatalystAdaptor'.
-producer = TrivialProducer()
+producer = TrivialProducer(registrationName="grid")
 
 def catalyst_execute(info):
     global producer
