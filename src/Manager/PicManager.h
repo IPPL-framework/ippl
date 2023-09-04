@@ -7,7 +7,7 @@
  
  namespace ippl {
 
-    template <class ParticleContainer, class FieldContainer>
+    template <class ParticleContainer, class FieldContainer, class FieldSolver>
     class PicManager : public BaseManager {
     public:
         PicManager()
@@ -29,15 +29,15 @@
 
     protected:
      
-        std::unique_ptr<FieldContainer> fcontainer_m;
+        std::shared_ptr<FieldContainer> fcontainer_m;
 
-        std::unique_ptr<ParticleContainer> pcontainer_m;
+        std::shared_ptr<ParticleContainer> pcontainer_m;
 
         //std::unique_ptr<Stepper> stepper_m;
 
         //std::unique_ptr<LoadBalancer> loadbalancer_m;
 
-        //std::unique_ptr<FieldSolver<FLayout, T, Dim>> fsolver_m;
+        std::shared_ptr<FieldSolver> fsolver_m;
     };
 }  // namespace ippl
  

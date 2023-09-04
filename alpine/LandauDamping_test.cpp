@@ -46,50 +46,14 @@
 
 //#include "ChargedParticles.hpp"
 #include "Manager/PicManager.h"
+#include "datatypes.h"
 #include "ParticleContainer.hpp"
 #include "FieldContainer.hpp"
-
-
-// some typedefs
-template <unsigned Dim>
-using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
-template <typename T, unsigned Dim>
-using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
-
-template <unsigned Dim>
-using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
-
-template <unsigned Dim>
-using FieldLayout_t = ippl::FieldLayout<Dim>;
-
-using size_type = ippl::detail::size_type;
-
-template <typename T, unsigned Dim>
-using Vector = ippl::Vector<T, Dim>;
-
-template <typename T, unsigned Dim= 3, class... ViewArgs>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
-
-template <typename T = double, unsigned Dim=3>
-using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
-
-template <typename T>
-using ParticleAttrib = ippl::ParticleAttrib<T>;
-
-template <typename T, unsigned Dim>
-using Vector_t = ippl::Vector<T, Dim>;
-
-template <unsigned Dim, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template <typename T = double, unsigned Dim=3, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
-                                      
-constexpr unsigned Dim = 3;
-//template <typename T = double, unsigned Dim = 3>
-
+ #include "FieldSolver.hpp"
  
+ constexpr unsigned Dim = 3;
+using T = double;
+
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -193,31 +157,36 @@ const char* TestName = "LandauDamping";
 class ParticleContainer;
 class FieldContainer;
 
-class MyPicManager : public ippl::PicManager<ParticleContainer, FieldContainer> {
+template <typename T, unsigned Dim>
+class MyPicManager : public ippl::PicManager<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>, ippl::FieldContainer<T, Dim>, ippl::FieldSolver<T, Dim>> {
 public:
-    MyPicManager(ParticleContainer& pc, FieldContainer& fc) : PicManager(pc, fc) {}
+    MyPicManager(std::shared_ptr<ippl::ParticleContainer<PLayout_t<T, Dim>, T>> pc, std::shared_ptr<ippl::FieldContainer<T, Dim>> fc, std::shared_ptr<ippl::FieldSolver<T, Dim>> fs)
+        : ippl::PicManager<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>, ippl::FieldContainer<T, Dim>, ippl::FieldSolver<T, Dim>>(),
+          pcontainer_m(pc),
+          fcontainer_m(fc),
+          fsolver_m(fs) {
+    }
 
     // Implement the pure virtual functions here
     void par2grid() override {
         // Implementation goes here
+        //scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField);
     }
 
     void grid2par() override {
         // Implementation goes here
     }
+private:
+    std::shared_ptr<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>> pcontainer_m;
+    std::shared_ptr<ippl::FieldContainer<T, Dim>> fcontainer_m;
+    std::shared_ptr<ippl::FieldSolver<T, Dim>> fsolver_m;
 };
-
-
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        //setSignalHandler();
-
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);
-
-        //auto start = std::chrono::high_resolution_clock::now();
 
         int arg = 1;
 
@@ -226,45 +195,13 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        //static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
-        //static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-        //static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
-        //static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
-        //static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
-        //static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
-        //static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
-        //static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
-        //static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
-
-        //IpplTimings::startTimer(mainTimer);
-
         const size_type totalP = std::atoll(argv[arg++]);
         const unsigned int nt  = std::atoi(argv[arg++]);
 
         msg << "Landau damping" << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-	//std::shared_ptr<ParticleContainer> pc;
-	//std::shared_ptr<FieldContainer> fc;  
-        //MyPicManager manager(pc, fc);
-        ParticleContainer pc; // Create an instance of ParticleContainer
-        FieldContainer fc;    // Create an instance of FieldContainer
-        MyPicManager manager(pc, fc); // Pass raw pointers
-
-/*
-	std::string user = "LeapFrog";
-	if (user == "LeapFrog") {
-		manager.setStepper(new LeapFrog(...));
-	} else (User == "RK4") {
-		manager.setStepper(new RK4(...));
-	}
-*/
-        //std::unique_ptr<bunch_type> P;
-        //using PLayoutType = PLayout_t<double, 3>;
-        //ippl::ParticlesContainer<PLayoutType, double, 3>* P = manager.pcontainer_m.get();
-        
-        /*
-        ippl::NDIndex<Dim> domain;
+       ippl::NDIndex<Dim> domain;
         for (unsigned i = 0; i < Dim; i++) {
             domain[i] = ippl::Index(nr[i]);
         }
@@ -273,10 +210,10 @@ int main(int argc, char* argv[]) {
         for (unsigned d = 0; d < Dim; ++d) {
             decomp[d] = ippl::PARALLEL;
         }
-
+        
         // create mesh and layout objects for this problem domain
         Vector_t<double, Dim> kw = 0.5;
-        double alpha             = 0.05;
+        //double alpha             = 0.05;
         Vector_t<double, Dim> rmin(0.0);
         Vector_t<double, Dim> rmax = 2 * pi / kw;
 
@@ -284,8 +221,8 @@ int main(int argc, char* argv[]) {
         // Q = -\int\int f dx dv
         double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
         Vector_t<double, Dim> origin = rmin;
-        const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
-
+        //const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
+        
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
         FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
@@ -297,8 +234,33 @@ int main(int argc, char* argv[]) {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
+        
+        using ParticleContainerType = ippl::ParticleContainer<ippl::ParticleSpatialLayout<T, Dim>, T, Dim>;
+        std::shared_ptr<ParticleContainerType> pc = std::make_shared<ParticleContainerType>(PL);
 
-        P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        using FieldContainerType = ippl::FieldContainer<T, Dim>;
+        std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp, Q);
+
+        using FieldSolverType = ippl::FieldSolver<T, Dim>;
+        std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->phi_m, fc->E_m);
+        
+        MyPicManager manager(pc, fc, fs);
+        manager.par2grid(); 
+        
+        fc->initializeFields(mesh, FL);
+        fs->initSolver();
+        
+
+/*
+	std::string user = "LeapFrog";
+	if (user == "LeapFrog") {
+		manager.setStepper(new LeapFrog(...));
+	} else (User == "RK4") {
+		manager.setStepper(new RK4(...));
+	}
+*/
+        
+        /*
 
         P->nr_m = nr;
 

@@ -1,5 +1,5 @@
-#ifndef IPPL_PIC_MANAGER
-#define IPPL_PIC_MANAGER
+#ifndef IPPL_PARTICLE_CONTAINER_H
+#define IPPL_PARTICLE_CONTAINER_H
 
 #include <memory>
 #include "Manager/BaseManager.h"
@@ -12,7 +12,6 @@ namespace ippl {
 
     public:
         ParticleAttrib<double> q;                 // charge
-         double Q_m;
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
         ParticleContainer(PLayout& pl)
