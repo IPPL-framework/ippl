@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 
     double time                 = {0.0};
     const double dt             = {0.05};
-    const unsigned int nt       = {2};
+    const unsigned int nt       = {1};
     for (unsigned int it = 0; it < nt; ++it) {
 
     Kokkos::parallel_for(

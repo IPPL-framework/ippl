@@ -83,7 +83,7 @@ namespace CatalystAdaptor
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             // include ghost cells to the "left" and "right"
             mesh[field_node_dim].set(
-                field.get_mesh().getGridsize(iDim) + 2 * field.getNghost());
+                int(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost()));
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
                 origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost());
@@ -111,12 +111,12 @@ namespace CatalystAdaptor
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
 
-        fields["density/values"].set(
+        fields["density/values"].set_external(
             field.getView().data(),
             field.getOwned().size());
 
         // print node to see what I write there
-        if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        if (cycle == 0) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
