@@ -54,22 +54,20 @@ namespace CatalystAdaptor
         conduit_cpp::Node node;
 
         // include information about catalyst, conduit implementation
-        catalyst_about(conduit_cpp::c_node(&node));
+// catalyst_about(conduit_cpp::c_node(&node));
 
         // add time/cycle information
-        auto state = node["catalyst/state"];
-        state["cycle"].set(cycle);
-        state["time"].set(time);
-        state["domain_id"].set(rank);
+        node["state/cycle"].set(cycle);
+        node["state/time"].set(time);
+        node["state/domain_id"].set(rank);
 
-//        // Add channels.
-//        // We have 2 channels here. First once is called 'grid'.
-        auto channel_field = node["catalyst/channels/field"]; // /coordsets/coords"];
-        channel_field["type"].set("mesh");
+//      Add channels.
+//       auto channel_field = node["catalyst/field"]; // /coordsets/coords"];
+//        channel_field["type"].set("mesh");
+//        
+//        auto field_channel_mesh = channel_field["data"];
         
-        auto field_channel_mesh = channel_field["data"];
-        
-        field_channel_mesh["coordsets/coords/type"].set("uniform");
+        node["coordsets/coords/type"].set("uniform");
 
         // number of points in specific dimension
         std::string field_node_dim {"coordsets/coords/dims/i"};
@@ -79,12 +77,12 @@ namespace CatalystAdaptor
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             // include ghost cells to the "left" and "right"
-            field_channel_mesh[field_node_dim].set(
+            node[field_node_dim].set(
                 std::to_string(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost()));
             // shift origin by one ghost cell
-            field_channel_mesh[field_node_origin].set(
+            node[field_node_origin].set(
                 std::to_string(origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost()));
-            field_channel_mesh[field_node_spacing].set(
+            node[field_node_spacing].set(
                 std::to_string(field.get_mesh().getMeshSpacing(iDim)));
 
             ++field_node_dim.back();
@@ -92,23 +90,31 @@ namespace CatalystAdaptor
             ++field_node_spacing.back();
         }
 
-        auto field_channel_topology = channel_field["data"];
-        field_channel_topology["type"].set("uniform");
-        field_channel_topology["coordset"].set("coords");
+        node["topologies/topo/type"].set("uniform");
+        node["topologies/topo/coordset"].set("coords");
 
-        auto field_channel_fields = channel_field["data/fields/density"];
-        field_channel_fields["association"].set("element");
-        field_channel_fields["volume_dependent"].set("false");
-        field_channel_fields["topology"].set("mesh");
+        field_node_origin = "topologies/topo/origin/x";
+        for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
+            // shift origin by one ghost cell
+            node[field_node_origin].set(
+                std::to_string(origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost()));
 
-        field_channel_fields["values"].set_external(
+            ++field_node_origin.back();
+        }
+
+        node["fields/field/association"].set("element");
+        node["fields/field/volume_dependent"].set("false");
+        node["fields/field/topology"].set("topo");
+
+        node["fields/field/values"].set_external(
             field.getView().data(),
-            field.getOwned().size(),
-            field.getLayout().getLocalNDIndex(rank)[1].first());
+            field.getOwned().size());
 
         // print node to see what I write there
         if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
+        std::cout << node.number_of_children() << std::endl;
+        std::cout << node.number_of_elements() << std::endl;
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {

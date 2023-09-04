@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
     constexpr unsigned int dim {3};
 
-    const int pt {4};
+    const int pt {2};
     ippl::Index Ix(pt);
     ippl::Index Iy {pt};
     ippl::Index Iz {pt};
