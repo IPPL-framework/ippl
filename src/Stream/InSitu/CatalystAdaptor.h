@@ -57,9 +57,9 @@ namespace CatalystAdaptor
 // catalyst_about(conduit_cpp::c_node(&node));
 
         // add time/cycle information
-        node["state/cycle"].set(cycle);
-        node["state/time"].set(time);
-        node["state/domain_id"].set(rank);
+        node["catalyst/state/cycle"].set(cycle);
+        node["catalyst/state/time"].set(time);
+        node["catalyst/state/domain_id"].set(rank);
 
 //      Add channels.
 //       auto channel_field = node["catalyst/field"]; // /coordsets/coords"];
@@ -67,12 +67,12 @@ namespace CatalystAdaptor
 //        
 //        auto field_channel_mesh = channel_field["data"];
         
-        node["coordsets/coords/type"].set("uniform");
+        node["catalyst/coordsets/coords/type"].set("uniform");
 
         // number of points in specific dimension
-        std::string field_node_dim {"coordsets/coords/dims/i"};
-        std::string field_node_origin {"coordsets/coords/origin/x"};
-        std::string field_node_spacing {"coordsets/coords/spacing/dx"};
+        std::string field_node_dim {"catalyst/coordsets/coords/dims/i"};
+        std::string field_node_origin {"catalyst/coordsets/coords/origin/x"};
+        std::string field_node_spacing {"catalyst/coordsets/coords/spacing/dx"};
         auto origin = field.get_mesh().getOrigin();
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
@@ -90,10 +90,10 @@ namespace CatalystAdaptor
             ++field_node_spacing.back();
         }
 
-        node["topologies/topo/type"].set("uniform");
-        node["topologies/topo/coordset"].set("coords");
+        node["catalyst/topologies/topo/type"].set("uniform");
+        node["catalyst/topologies/topo/coordset"].set("coords");
 
-        field_node_origin = "topologies/topo/origin/x";
+        field_node_origin = "catalyst/topologies/topo/origin/x";
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
             // shift origin by one ghost cell
             node[field_node_origin].set(
@@ -102,19 +102,19 @@ namespace CatalystAdaptor
             ++field_node_origin.back();
         }
 
-        node["fields/field/association"].set("element");
-        node["fields/field/volume_dependent"].set("false");
-        node["fields/field/topology"].set("topo");
+        node["catalyst/fields/field/association"].set("element");
+        node["catalyst/fields/field/volume_dependent"].set("false");
+        node["catalyst/fields/field/topology"].set("topo");
 
-        node["fields/field/values"].set_external(
+        node["catalyst/fields/field/values"].set_external(
             field.getView().data(),
             field.getOwned().size());
 
         // print node to see what I write there
         if (cycle == 1) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
-        std::cout << node.number_of_children() << std::endl;
-        std::cout << node.number_of_elements() << std::endl;
+        std::cout << node["catalyst"].number_of_children() << std::endl;
+        std::cout << node["catalyst"].number_of_elements() << std::endl;
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {
