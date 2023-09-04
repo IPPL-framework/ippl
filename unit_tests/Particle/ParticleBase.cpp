@@ -37,7 +37,7 @@ public:
 using Precisions = TestParams::Precisions;
 using Spaces     = TestParams::Spaces;
 using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
-using Combos     = CreateCombinations<Precisions, Spaces, Spaces, Ranks>::type;
+using Combos     = CreateCombinations<Precisions, Spaces, Ranks>::type;
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(ParticleBaseTest, Tests);
 TYPED_TEST_CASE(InitializationTest, Tests);
