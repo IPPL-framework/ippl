@@ -62,17 +62,12 @@ namespace CatalystAdaptor
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-
-//
 //        // Add channels.
 //        // We have 2 channels here. First once is called 'grid'.
         // auto field_node = node["catalyst/channels/field"];
-        auto field_node = node["catalyst/field/coordsets/coords"];
+        auto field_node = node["catalyst/channel/field/coordsets/coords"];
         // field_node["type"].set_string("mesh");
         field_node["type"].set_string("uniform");
-
-        // number of points in specific dimension
-        auto test = field.get_mesh().getGridsize();
 
         // number of points in specific dimension
         std::string field_node_dim {"dims/i"};
@@ -81,24 +76,46 @@ namespace CatalystAdaptor
         auto origin = field.get_mesh().getOrigin();
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
-            field_node[field_node_dim].set_string(std::to_string(field.get_mesh().getGridsize(iDim)));
-            field_node[field_node_origin].set_string(std::to_string(origin(iDim)));
-            field_node[field_node_spacing].set_string(std::to_string(field.get_mesh().getMeshSpacing(iDim)));
+            // include ghost cells to the "left" and "right"
+            field_node[field_node_dim].set_string(
+                std::to_string(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost()));
+            // shift origin by one ghost cell
+            field_node[field_node_origin].set_string(
+                std::to_string(origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost()));
+            field_node[field_node_spacing].set_string(
+                std::to_string(field.get_mesh().getMeshSpacing(iDim)));
 
-            field_node_dim.back()++;
-            field_node_origin.back()++;
-            field_node_spacing.back()++;
+            ++field_node_dim.back();
+            ++field_node_origin.back();
+            ++field_node_spacing.back();
         }
 
-        auto field_node_topology = node["catalyst/field/topologies/mesh"];
+        auto field_node_topology = node["catalyst/channel/field/topologies/mesh"];
         field_node_topology["type"].set_string("uniform");
         field_node_topology["coordset"].set_string("coords");
 //         field_node["dims/j"].set_string(std::to_string(field.get_mesh().getGridsize(1))); //         field_node["dims/k"].set_string(std::to_string(field.get_mesh().getGridsize(2)));
 
-        auto field_node_fields = node["catalyst/field/fields/field"];
+        auto field_node_fields = node["catalyst/channel/field/fields/density"];
         field_node_fields["association"].set_string("element");
+        field_node_fields["volume_dependent"].set_string("false");
         field_node_fields["topology"].set_string("mesh");
-        field_node_fields["values"].set_external(field.getView().data());
+
+        auto & layout = field.getLayout();
+        auto & view = field.getView();
+
+        field_node_fields["values"].set_external(
+            field.getView().data(),
+            field.getOwned().size(),
+            field.getLayout().getLocalNDIndex(rank)[1].first());
+            // field.getLayout().getLocalNDIndex(rank)[1].first());  // + field.getNghost());
+
+//        std::string field_node_values {"values/x"};
+//        for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
+//            field_node_fields[field_node_values].set_external(
+//                field.getView().data(), field.getOwned()[iDim].length(),
+//                field.getLayout().getLocalNDIndex(rank)[iDim].first());  // + field.getNghost());
+//            ++field_node_values.back();
+//        }
 
         // origin
 
