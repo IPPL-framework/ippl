@@ -209,4 +209,19 @@ namespace ippl {
         const {
         return indices_m + Dim;
     }
+
+    template <unsigned Dim>
+    bool operator==(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        for (unsigned d = 0; d < Dim; d++) {
+            if (nd1[d] != nd2[d]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <unsigned Dim>
+    bool operator!=(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        return !(nd1 == nd2);
+    }
 }  // namespace ippl
