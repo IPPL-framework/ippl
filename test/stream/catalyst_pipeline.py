@@ -1,13 +1,11 @@
 from paraview.simple import *
 
 print("executing catalyst_pipeline")
-import pdb
 
 
 # registrationName must match the channel name used in the
 # 'CatalystAdaptor'.
 producer = TrivialProducer(registrationName="ippl_field")
-pdb.set_trace()
 def catalyst_execute(info):
     global producer
     #SaveExtractsUsingCatalystOptions(options)

@@ -17,16 +17,8 @@ namespace CatalystAdaptor
     constexpr unsigned int dim {2};
     using Mesh_t      = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
-    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
+    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
-/**
- * In this example, we show how we can use Catalysts's C++
- * wrapper around conduit's C API to create Conduit nodes.
- * This is not required. A C++ adaptor can just as
- * conveniently use the Conduit C API to setup the
- * `conduit_node`. However, this example shows that one can
- * indeed use Catalyst's C++ API, if the developer so chooses.
- */
     void Initialize(int argc, char* argv[])
     {
         conduit_cpp::Node node;
@@ -50,11 +42,12 @@ namespace CatalystAdaptor
 
     void Execute(int cycle, double time, int rank, field_type &field) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
     {
-        //conduit_cpp::Node exec_params;
+        // catalyst blueprint definition
+        // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
+        //
+        // conduit blueprint definition (v.8.3)
+        // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
         conduit_cpp::Node node;
-
-        // include information about catalyst, conduit implementation
-// catalyst_about(conduit_cpp::c_node(&node));
 
         // add time/cycle information
         auto state = node["catalyst/state"];
@@ -62,15 +55,11 @@ namespace CatalystAdaptor
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-//      Add channels.
-//       auto channel_field = node["catalyst/field"]; // /coordsets/coords"];
-//        channel_field["type"].set("mesh");
-//
-//        auto field_channel_mesh = channel_field["data"];
-
+        // add catalyst channel named ippl_field, as fields is reserved
         auto channel = node["catalyst/channels/ippl_field"];
         channel["type"].set_string("mesh");
-        
+
+        // in data channel now we adhere to conduits mesh blueprint definition
         auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set("uniform");
 
@@ -81,7 +70,7 @@ namespace CatalystAdaptor
         auto origin = field.get_mesh().getOrigin();
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim){
-            // include ghost cells to the "left" and "right"
+            // include ghost cells to the "left" and "right" + 1 point
             mesh[field_node_dim].set(
                 int(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost()+1));
             // shift origin by one ghost cell
@@ -90,10 +79,13 @@ namespace CatalystAdaptor
             mesh[field_node_spacing].set(
                 field.get_mesh().getMeshSpacing(iDim));
 
+            // increment last char in string
             ++field_node_dim.back();
             ++field_node_origin.back();
             ++field_node_spacing.back();
         }
+
+        // add topology
         mesh["topologies/mesh/type"].set("uniform");
         mesh["topologies/mesh/coordset"].set("coords");
         field_node_origin = "topologies/mesh/origin/x";
@@ -105,17 +97,16 @@ namespace CatalystAdaptor
             ++field_node_origin.back();
         }
 
+        // add values and subscribe to data
         auto fields = mesh["fields"];
-
         fields["density/association"].set("element");
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
-
         fields["density/values"].set_external(
             field.getView().data(),
             field.getView().size());
 
-        // print node to see what I write there
+        // print node to have visual representation
         if (cycle == 0) catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
