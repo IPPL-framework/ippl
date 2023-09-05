@@ -48,19 +48,6 @@
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
@@ -266,12 +253,11 @@ namespace ippl {
         template <typename... Properties>
         void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
 
-        template <typename HashType, typename BufferType>
+        template <typename HashType>
         void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
-                        const HashType& hash, BufferType& buffer);
+                        const HashType& hash);
 
-        template <typename BufferType>
-        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs, BufferType& buffer);
+        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs);
 
         /*!
          * Serialize to do MPI calls.
@@ -296,23 +282,21 @@ namespace ippl {
         template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
+        void update() { layout_m->update(*this); }
+
     protected:
         /*!
          * Fill attributes of buffer.
-         * @tparam Buffer is a bunch type
          * @param buffer to send
          * @param hash function to access index.
          */
-        template <class Buffer>
-        void pack(Buffer& buffer, const hash_container_type& hash);
+        void pack(const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
-         * @tparam Buffer is a bunch type
          * @param buffer received
          */
-        template <class Buffer>
-        void unpack(Buffer& buffer, size_type nrecvs);
+        void unpack(size_type nrecvs);
 
     private:
         //! particle layout

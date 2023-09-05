@@ -5,22 +5,10 @@
 //   interaction, alpha is the splitting parameter, epsilon is the softening parameter,
 //   printSteps=10 prints every tenth step
 //
-// Copyright (c) 2016, Benjamin Ulmer, ETH Zürich
-// All rights reserved
-//
+// Benjamin Ulmer, ETH Zürich (2016)
 // Implemented as part of the Master thesis
 // "The P3M Model on Emerging Computer Architectures With Application to Microbunching"
 // (http://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/thesisBUlmer.pdf)
-//
-// This file is part of OPAL.
-//
-// OPAL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
 

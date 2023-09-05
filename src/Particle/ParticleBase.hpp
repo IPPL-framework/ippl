@@ -48,19 +48,6 @@
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 namespace ippl {
 
@@ -258,17 +245,17 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    template <typename HashType, typename BufferType>
+    template <typename HashType>
     void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
                                                   std::vector<MPI_Request>& requests,
-                                                  const HashType& hash, BufferType& buffer) {
+                                                  const HashType& hash) {
         size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
         auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         });
-        pack(buffer, hashes);
+        pack(hashes);
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nSends);
             if (bufSize == 0) {
@@ -277,15 +264,14 @@ namespace ippl {
 
             auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
-            Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
+            Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
         });
     }
 
     template <class PLayout, typename... IP>
-    template <typename BufferType>
     void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
-                                                    size_type nRecvs, BufferType& buffer) {
+                                                    size_type nRecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
             if (bufSize == 0) {
@@ -294,10 +280,10 @@ namespace ippl {
 
             auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
 
-            Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
+            Comm->recv(rank, tag++, *this, *buf, bufSize, nRecvs);
             buf->resetReadPos();
         });
-        unpack(buffer, nRecvs);
+        unpack(nRecvs);
     }
 
     template <class PLayout, typename... IP>
@@ -329,24 +315,21 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    template <class Buffer>
-    void ParticleBase<PLayout, IP...>::pack(Buffer& buffer, const hash_container_type& hash) {
+    void ParticleBase<PLayout, IP...>::pack(const hash_container_type& hash) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->pack(buffer.template getAttribute<MemorySpace>(j),
-                             hash.template get<MemorySpace>());
+                att[j]->pack(hash.template get<MemorySpace>());
             }
         });
     }
 
     template <class PLayout, typename... IP>
-    template <class Buffer>
-    void ParticleBase<PLayout, IP...>::unpack(Buffer& buffer, size_type nrecvs) {
+    void ParticleBase<PLayout, IP...>::unpack(size_type nrecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->unpack(buffer.template getAttribute<MemorySpace>(j), nrecvs);
+                att[j]->unpack(nrecvs);
             }
         });
         localNum_m += nrecvs;

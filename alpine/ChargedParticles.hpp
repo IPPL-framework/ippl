@@ -2,20 +2,6 @@
 //   Defines a particle attribute for charged particles to be used in
 //   test programs
 //
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
-
 #include "Ippl.h"
 
 #include <csignal>
@@ -246,16 +232,6 @@ public:
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the bunch buffer uses this
-    */
-    ChargedParticles(PLayout& pl)
-        : Base(pl) {
-        registerAttributes();
-        setPotentialBCs();
-    }
-
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
                      std::string solver)
@@ -294,8 +270,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                      ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+    void updateLayout(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -313,7 +288,7 @@ public:
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
         if (!isFirstRepartition) {
-            layout.update(*this, buffer);
+            this->update();
         }
         IpplTimings::stopTimer(tupdatePLayout);
     }
@@ -331,8 +306,7 @@ public:
         orb.initialize(fl, mesh, rho_m);
     }
 
-    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh,
-                     ChargedParticles<PLayout, T, Dim>& buffer, bool& isFirstRepartition) {
+    void repartition(FieldLayout_t<Dim>& fl, Mesh_t<Dim>& mesh, bool& isFirstRepartition) {
         // Repartition the domains
         bool res = orb.binaryRepartition(this->R, fl, isFirstRepartition);
 
@@ -341,7 +315,7 @@ public:
             return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer, isFirstRepartition);
+        this->updateLayout(fl, mesh, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (stype_m == "FFT") {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
@@ -604,6 +578,7 @@ public:
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
 
+        rho_m     = dot(E_m, E_m);
         potEnergy = 0.5 * hr_m[0] * hr_m[1] * hr_m[2] * rho_m.sum();
 
         Kokkos::parallel_reduce(
@@ -653,10 +628,9 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {
-                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2, "
-                          "Ex_norm2, Ey_norm2, Ez_norm2";
+                csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
-                    csvout << "E" << d << "norm2, ";
+                    csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";
                 }
                 csvout << endl;
             }
