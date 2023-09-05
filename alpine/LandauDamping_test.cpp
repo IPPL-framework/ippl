@@ -155,22 +155,49 @@ double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_
 const char* TestName = "LandauDamping";
 
 //template <typename T, unsigned Dim>
-class MyPicManager : public ippl::PicManager<ParticleContainer, FieldContainer, FieldSolver> {
+class MyPicManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>> {
 public:
-    MyPicManager()
-        : ippl::PicManager<ParticleContainer, FieldContainer, FieldSolver>(),
-          pcontainer_m(nullptr),
-          fcontainer_m(nullptr),
-          fsolver_m(nullptr) {
+    double Q_m;
+    MyPicManager(double Q)
+        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>>(), Q_m(Q){
     }
-    // Implement the pure virtual functions here
+
     void par2grid() override {
-        // Implementation goes here
-        //scatterCIC(size_type totalP, unsigned int iteration, Vector_t<double, Dim>& hrField);
+        scatterCIC();
     }
 
     void grid2par() override {
-        // Implementation goes here
+        gatherCIC();
+    }
+    
+    void gatherCIC() { gather(pcontainer_m->E, fcontainer_m->E_m, pcontainer_m->R); }
+    
+    void scatterCIC() {
+        Inform m("scatter ");
+
+        fcontainer_m->rho_m = 0.0;
+        scatter(pcontainer_m->q, fcontainer_m->rho_m, pcontainer_m->R);
+
+        std::cout << std::fabs((Q_m - fcontainer_m->rho_m.sum()) / Q_m)  << std::endl;
+
+        size_type Total_particles = 0;
+        size_type local_particles = pcontainer_m->getLocalNum();
+
+        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
+
+        double cellVolume =
+            std::reduce(fcontainer_m->hr_m.begin(), fcontainer_m->hr_m.end(), 1., std::multiplies<double>());
+        fcontainer_m->rho_m = fcontainer_m->rho_m / cellVolume;
+
+        // rho = rho_e - rho_i (only if periodic BCs)
+        if (fsolver_m->stype_m != "OPEN") {
+            double size = 1;
+            for (unsigned d = 0; d < Dim; d++) {
+                size *= fcontainer_m->rmax_m[d] - fcontainer_m->rmin_m[d];
+            }
+            fcontainer_m->rho_m = fcontainer_m->rho_m - (Q_m / size);
+        }
     }
 };
 
@@ -205,7 +232,7 @@ int main(int argc, char* argv[]) {
         
         // create mesh and layout objects for this problem domain
         Vector_t<double, Dim> kw = 0.5;
-        //double alpha             = 0.05;
+        double alpha             = 0.05;
         Vector_t<double, Dim> rmin(0.0);
         Vector_t<double, Dim> rmax = 2 * pi / kw;
 
@@ -213,7 +240,7 @@ int main(int argc, char* argv[]) {
         // Q = -\int\int f dx dv
         double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
         Vector_t<double, Dim> origin = rmin;
-        //const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
+        const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
         
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
@@ -227,78 +254,26 @@ int main(int argc, char* argv[]) {
                                 "Open boundaries solver incompatible with this simulation!");
         }
         
-        using ParticleContainer_t = ParticleContainer<ippl::ParticleSpatialLayout<T, Dim>, T, Dim>;
+        using ParticleContainer_t = ParticleContainer<T, Dim>;
         std::shared_ptr<ParticleContainer_t> pc = std::make_shared<ParticleContainer_t>(PL);
-
-        using FieldContainerType = FieldContainer<T, Dim>;
-        std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp, Q);
-
-        using FieldSolverType = FieldSolver<T, Dim>;
-        std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->phi_m, fc->E_m);
         
-        MyPicManager manager;
+        using FieldContainerType = FieldContainer<T, Dim>;
+        std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp);
+        
+        printf("initializeFields\n");
+        fc->initializeFields(mesh, FL);
+        
+        using FieldSolverType = FieldSolver<T, Dim>;
+        std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->E_m);
+        
+        MyPicManager manager(Q);
+        
         manager.setParticleContainer(pc);
         manager.setFieldContainer(fc);
-        manager.setFieldSover(fs);
-        
-        //manager.par2grid(); 
-        
-        fc->initializeFields(mesh, FL);
+        manager.setFieldSolver(fs);
         fs->initSolver();
         
-
-/*
-	std::string user = "LeapFrog";
-	if (user == "LeapFrog") {
-		manager.setStepper(new LeapFrog(...));
-	} else (User == "RK4") {
-		manager.setStepper(new RK4(...));
-	}
-*/
-        
-        /*
-
-        P->nr_m = nr;
-
-        P->initializeFields(mesh, FL);
-
-        bunch_type bunchBuffer(PL);
-
-        P->initSolver();
-        P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[arg++]);
-
-        bool isFirstRepartition;
-
-        if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
-            msg << "Starting first repartition" << endl;
-            IpplTimings::startTimer(domainDecomposition);
-            isFirstRepartition             = true;
-            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
-            const int nghost               = P->rho_m.getNghost();
-            auto rhoview                   = P->rho_m.getView();
-
-            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            ippl::parallel_for(
-                "Assign initial rho based on PDF", P->rho_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
-
-                    // ippl::apply accesses the view at the given indices and obtains a
-                    // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = PDF(xvec, alpha, kw, Dim);
-                });
-
-            Kokkos::fence();
-
-            P->initializeORB(FL, mesh);
-            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-            IpplTimings::stopTimer(domainDecomposition);
-        }
-
-        msg << "First domain decomposition done" << endl;
-        IpplTimings::startTimer(particleCreation);
+        //bool isFirstRepartition;
 
         typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
@@ -326,42 +301,27 @@ int main(int argc, char* argv[]) {
         if (ippl::Comm->rank() < rest) {
             ++nloc;
         }
-
-        P->create(nloc);
+        
+        pc->create(nloc);
+        
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+                      pc->R.getView(), pc->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
         Kokkos::fence();
         ippl::Comm->barrier();
-        IpplTimings::stopTimer(particleCreation);
 
-        P->q = P->Q_m / totalP;
+        pc->q = Q / totalP;
         msg << "particles created and initial conditions assigned " << endl;
-        isFirstRepartition = false;
-        // The update after the particle creation is not needed as the
-        // particles are generated locally
+        
+        fc->rho_m = 0.0;
+        fs->runSolver();
+        manager.par2grid();
+        fs->runSolver();
+        manager.grid2par();
 
-        IpplTimings::startTimer(DummySolveTimer);
-        P->rho_m = 0.0;
-        P->runSolver();
-        IpplTimings::stopTimer(DummySolveTimer);
-
-        P->scatterCIC(totalP, 0, hr);
-
-        IpplTimings::startTimer(SolveTimer);
-        P->runSolver();
-        IpplTimings::stopTimer(SolveTimer);
-
-        P->gatherCIC();
-
-        IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
-        P->gatherStatistics(totalP);
-        // P->dumpLocalDomains(FL, 0);
-        IpplTimings::stopTimer(dumpDataTimer);
-
+        
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
@@ -371,72 +331,71 @@ int main(int argc, char* argv[]) {
             // an attribute
             // kick
 
-            IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
-            IpplTimings::stopTimer(PTimer);
+            //IpplTimings::startTimer(PTimer);
+            pc->P = pc->P - 0.5 * dt * pc->E;
+            //IpplTimings::stopTimer(PTimer);
 
             // drift
-            IpplTimings::startTimer(RTimer);
-            P->R = P->R + dt * P->P;
-            IpplTimings::stopTimer(RTimer);
+            //IpplTimings::startTimer(RTimer);
+            pc->R = pc->R + dt * pc->P;
+            //IpplTimings::stopTimer(RTimer);
             // P->R.print();
 
             // Since the particles have moved spatially update them to correct processors
-            IpplTimings::startTimer(updateTimer);
-            PL.update(*P, bunchBuffer);
-            IpplTimings::stopTimer(updateTimer);
+            //IpplTimings::startTimer(updateTimer);
+            //PL.update(*P, bunchBuffer);
+            //IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
-            if (P->balance(totalP, it + 1)) {
-                msg << "Starting repartition" << endl;
-                IpplTimings::startTimer(domainDecomposition);
-                P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-                IpplTimings::stopTimer(domainDecomposition);
-                // IpplTimings::startTimer(dumpDataTimer);
-                // P->dumpLocalDomains(FL, it+1);
-                // IpplTimings::stopTimer(dumpDataTimer);
-            }
+            //if (P->balance(totalP, it + 1)) {
+            //    msg << "Starting repartition" << endl;
+            //    IpplTimings::startTimer(domainDecomposition);
+            //    P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+            //    IpplTimings::stopTimer(domainDecomposition);
+            //    // IpplTimings::startTimer(dumpDataTimer);
+            //    // P->dumpLocalDomains(FL, it+1);
+            //    // IpplTimings::stopTimer(dumpDataTimer);
+            //}
 
             // scatter the charge onto the underlying grid
-            P->scatterCIC(totalP, it + 1, hr);
-
+            manager.par2grid();
+            
             // Field solve
-            IpplTimings::startTimer(SolveTimer);
-            P->runSolver();
-            IpplTimings::stopTimer(SolveTimer);
+            //IpplTimings::startTimer(SolveTimer);
+            fs->runSolver();
+            //IpplTimings::stopTimer(SolveTimer);
 
             // gather E field
-            P->gatherCIC();
+            manager.grid2par();
 
             // kick
-            IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
-            IpplTimings::stopTimer(PTimer);
+            //IpplTimings::startTimer(PTimer);
+            pc->P = pc->P - 0.5 * dt * pc->E;
+            //IpplTimings::stopTimer(PTimer);
 
-            P->time_m += dt;
-            IpplTimings::startTimer(dumpDataTimer);
-            P->dumpLandau();
-            P->gatherStatistics(totalP);
-            IpplTimings::stopTimer(dumpDataTimer);
-            msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
+            //P->time_m += dt;
+            //IpplTimings::startTimer(dumpDataTimer);
+            //P->dumpLandau();
+            //P->gatherStatistics(totalP);
+            //IpplTimings::stopTimer(dumpDataTimer);
+            //msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-            if (checkSignalHandler()) {
-                msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
-                    << endl;
-                break;
-            }
+            //if (checkSignalHandler()) {
+            //    msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
+            //        << endl;
+            //    break;
+            //}
         }
-
         msg << "LandauDamping: End." << endl;
-        IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
-        IpplTimings::print(std::string("timing.dat"));
-        auto end = std::chrono::high_resolution_clock::now();
+        //IpplTimings::stopTimer(mainTimer);
+        //IpplTimings::print();
+        //IpplTimings::print(std::string("timing.dat"));
+        //auto end = std::chrono::high_resolution_clock::now();
 
-        std::chrono::duration<double> time_chrono =
-            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-        std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
-        */
+        //std::chrono::duration<double> time_chrono =
+        //std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        //std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
+        
     }
     ippl::finalize();
 

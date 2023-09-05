@@ -12,17 +12,16 @@
     // Define the FieldSolver class     
     template <typename T, unsigned Dim = 3>
     class FieldSolver {
-    private:
+    public:
         std::string stype_m; // Declare stype_m as a member variable
+    private:
         Solver_t<T, Dim> solver_m;
-        double time_m;
         Field_t<Dim> rho_m;
-        Field_t<Dim> phi_m;
         VField_t<T, Dim> E_m;
     
     public:
-    FieldSolver(std::string solver, Field_t<Dim> &rho, Field_t<Dim> &phi, VField_t<T, Dim> &E)
-        : stype_m(solver), rho_m(rho), phi_m(phi), E_m(E) {}
+    FieldSolver(std::string solver, Field_t<Dim> &rho, VField_t<T, Dim> &E)
+        : stype_m(solver), rho_m(rho), E_m(E) {}
     
     void initSolver() {
         Inform m("solver ");
@@ -52,15 +51,6 @@
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
-                int iterations = solver.getIterationCount();
-                // Assume the dummy solve is the first call
-                if (time_m == 0 && iterations == 0) {
-                    log << "time,residue,iterations" << endl;
-                }
-                // Don't print the dummy solve
-                if (time_m > 0 || iterations > 0) {
-                    log << time_m << "," << solver.getResidue() << "," << iterations << endl;
-                }
             }
             ippl::Comm->barrier();
         } else if (stype_m == "FFT") {
@@ -92,8 +82,8 @@
         if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
-            solver.setLhs(phi_m);
-            solver.setGradient(E_m);
+            //solver.setLhs(phi_m);
+            //solver.setGradient(E_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
             // and the P3M solver compute the electric field directly

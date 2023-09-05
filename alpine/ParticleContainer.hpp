@@ -5,15 +5,15 @@
 #include "Manager/BaseManager.h"
 
     // Define the ParticlesContainer class
-    template <class PLayout, typename T, unsigned Dim = 3>
-    class ParticleContainer : public ippl::ParticleBase<PLayout> {
-    using Base = ippl::ParticleBase<PLayout>;
+    template <typename T, unsigned Dim = 3>
+    class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{
+    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
 
     public:
         ParticleAttrib<double> q;                 // charge
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
-        ParticleContainer(PLayout& pl)
+        ParticleContainer(ippl::ParticleSpatialLayout<T, Dim>& pl)
         : Base(pl) {
         registerAttributes();
         setupBCs();

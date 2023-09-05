@@ -11,7 +11,7 @@
     class PicManager : public BaseManager {
     public:
         PicManager()
-            : BaseManager() {}
+            : BaseManager(), fcontainer_m(nullptr), pcontainer_m(nullptr), fsolver_m(nullptr) {}
 
         virtual ~PicManager() = default;
 
@@ -25,7 +25,7 @@
         void setFieldContainer(std::shared_ptr<fc> fcontainer){
             fcontainer_m = fcontainer;
         }
-        void setFieldSolver(std::unique_ptr<fs> fsolver){
+        void setFieldSolver(std::shared_ptr<fs> fsolver){
             fsolver_m = fsolver;
         }
     
@@ -36,7 +36,7 @@
 	// void setFieldSolver(...);
 
 	// void setLoadBalancer(...);
-
+          
     protected:
      
         std::shared_ptr<fc> fcontainer_m;
@@ -47,7 +47,7 @@
 
         //std::unique_ptr<LoadBalancer> loadbalancer_m;
 
-        std::unique_ptr<fs> fsolver_m;
+        std::shared_ptr<fs> fsolver_m;
     };
 }  // namespace ippl
  
