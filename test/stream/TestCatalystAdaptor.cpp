@@ -12,7 +12,9 @@
 // ./TestCatalystAdaptor ./<path-to-catalyst-pipeline>.py
 //
 // eg.
-// ./build/test/stream/TestCatalystAdaptor ./test/stream/catalyst_pipeline.py
+// ./build/test/stream/TestCatalystAdaptor ./test/stream/catalyst_pipeline.py --info 5
+//
+// when dumping of the vtk is required also --info 5 is needed
 
 #include "Ippl.h"
 

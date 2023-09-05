@@ -8,6 +8,9 @@ manual/*.lof
 manual/*.lot
 manual/ippl_user_guide.pdf
 
+# ignure vtk dump stuff
+*.vtk
+
 # CMake and Build folder
 CMakeFiles/
 build*
