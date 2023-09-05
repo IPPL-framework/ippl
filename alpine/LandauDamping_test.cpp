@@ -260,20 +260,18 @@ int main(int argc, char* argv[]) {
         using FieldContainerType = FieldContainer<T, Dim>;
         std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp);
         
-        printf("initializeFields\n");
         fc->initializeFields(mesh, FL);
         
         using FieldSolverType = FieldSolver<T, Dim>;
         std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->E_m);
         
+        fs->initSolver();
+                
         MyPicManager manager(Q);
         
         manager.setParticleContainer(pc);
         manager.setFieldContainer(fc);
         manager.setFieldSolver(fs);
-        fs->initSolver();
-        
-        //bool isFirstRepartition;
 
         typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
@@ -321,7 +319,6 @@ int main(int argc, char* argv[]) {
         fs->runSolver();
         manager.grid2par();
 
-        
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
@@ -343,7 +340,7 @@ int main(int argc, char* argv[]) {
 
             // Since the particles have moved spatially update them to correct processors
             //IpplTimings::startTimer(updateTimer);
-            //PL.update(*P, bunchBuffer);
+            pc->update();
             //IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
