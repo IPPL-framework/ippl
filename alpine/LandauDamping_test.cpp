@@ -49,7 +49,7 @@
 #include "datatypes.h"
 #include "ParticleContainer.hpp"
 #include "FieldContainer.hpp"
- #include "FieldSolver.hpp"
+#include "FieldSolver.hpp"
  
  constexpr unsigned Dim = 3;
 using T = double;
@@ -154,19 +154,15 @@ double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_
 
 const char* TestName = "LandauDamping";
 
-class ParticleContainer;
-class FieldContainer;
-
-template <typename T, unsigned Dim>
-class MyPicManager : public ippl::PicManager<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>, ippl::FieldContainer<T, Dim>, ippl::FieldSolver<T, Dim>> {
+//template <typename T, unsigned Dim>
+class MyPicManager : public ippl::PicManager<ParticleContainer, FieldContainer, FieldSolver> {
 public:
-    MyPicManager(std::shared_ptr<ippl::ParticleContainer<PLayout_t<T, Dim>, T>> pc, std::shared_ptr<ippl::FieldContainer<T, Dim>> fc, std::shared_ptr<ippl::FieldSolver<T, Dim>> fs)
-        : ippl::PicManager<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>, ippl::FieldContainer<T, Dim>, ippl::FieldSolver<T, Dim>>(),
-          pcontainer_m(pc),
-          fcontainer_m(fc),
-          fsolver_m(fs) {
+    MyPicManager()
+        : ippl::PicManager<ParticleContainer, FieldContainer, FieldSolver>(),
+          pcontainer_m(nullptr),
+          fcontainer_m(nullptr),
+          fsolver_m(nullptr) {
     }
-
     // Implement the pure virtual functions here
     void par2grid() override {
         // Implementation goes here
@@ -176,10 +172,6 @@ public:
     void grid2par() override {
         // Implementation goes here
     }
-private:
-    std::shared_ptr<ippl::ParticleContainer<PLayout_t<T, Dim>, T, Dim>> pcontainer_m;
-    std::shared_ptr<ippl::FieldContainer<T, Dim>> fcontainer_m;
-    std::shared_ptr<ippl::FieldSolver<T, Dim>> fsolver_m;
 };
 
 int main(int argc, char* argv[]) {
@@ -235,17 +227,21 @@ int main(int argc, char* argv[]) {
                                 "Open boundaries solver incompatible with this simulation!");
         }
         
-        using ParticleContainerType = ippl::ParticleContainer<ippl::ParticleSpatialLayout<T, Dim>, T, Dim>;
-        std::shared_ptr<ParticleContainerType> pc = std::make_shared<ParticleContainerType>(PL);
+        using ParticleContainer_t = ParticleContainer<ippl::ParticleSpatialLayout<T, Dim>, T, Dim>;
+        std::shared_ptr<ParticleContainer_t> pc = std::make_shared<ParticleContainer_t>(PL);
 
-        using FieldContainerType = ippl::FieldContainer<T, Dim>;
+        using FieldContainerType = FieldContainer<T, Dim>;
         std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp, Q);
 
-        using FieldSolverType = ippl::FieldSolver<T, Dim>;
+        using FieldSolverType = FieldSolver<T, Dim>;
         std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->phi_m, fc->E_m);
         
-        MyPicManager manager(pc, fc, fs);
-        manager.par2grid(); 
+        MyPicManager manager;
+        manager.setParticleContainer(pc);
+        manager.setFieldContainer(fc);
+        manager.setFieldSover(fs);
+        
+        //manager.par2grid(); 
         
         fc->initializeFields(mesh, FL);
         fs->initSolver();

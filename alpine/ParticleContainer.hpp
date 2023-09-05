@@ -4,7 +4,6 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
-namespace ippl {
     // Define the ParticlesContainer class
     template <class PLayout, typename T, unsigned Dim = 3>
     class ParticleContainer : public ippl::ParticleBase<PLayout> {
@@ -29,6 +28,5 @@ namespace ippl {
     private:
        void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
     };
-}  // namespace ippl
 
 #endif

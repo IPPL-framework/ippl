@@ -4,7 +4,6 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
-namespace ippl {
     // Define the FieldsContainer class
     template <typename T, unsigned Dim = 3>
     class FieldContainer{
@@ -39,6 +38,5 @@ namespace ippl {
     
     
     };
-}  // namespace ippl
 
 #endif

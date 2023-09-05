@@ -9,7 +9,6 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
-namespace ippl {
     // Define the FieldSolver class     
     template <typename T, unsigned Dim = 3>
     class FieldSolver {
@@ -163,5 +162,4 @@ namespace ippl {
     }
     */
     };
-}
 #endif
