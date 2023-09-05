@@ -14,8 +14,8 @@
 
 namespace CatalystAdaptor
 {
-    constexpr unsigned int dim {3};
-    using Mesh_t      = ippl::UniformCartesian<double, 3>;
+    constexpr unsigned int dim {2};
+    using Mesh_t      = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
     typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
@@ -68,7 +68,7 @@ namespace CatalystAdaptor
 //
 //        auto field_channel_mesh = channel_field["data"];
 
-        auto channel = node["catalyst/channels/grid"];
+        auto channel = node["catalyst/channels/ippl_field"];
         channel["type"].set_string("mesh");
         
         auto mesh = channel["data"];
