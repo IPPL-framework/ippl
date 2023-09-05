@@ -38,6 +38,7 @@ namespace ippl {
         using hash_type = typename Base::hash_type;
 
         using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
+
         using HostMirror = typename view_type::host_mirror_type;
 
         using memory_space    = typename view_type::memory_space;
@@ -59,16 +60,16 @@ namespace ippl {
         void destroy(const hash_type& deleteIndex, const hash_type& keepIndex,
                      size_type invalidCount) override;
 
-        void pack(void*, const hash_type&) const override;
+        void pack(const hash_type&) override;
 
-        void unpack(void*, size_type) override;
+        void unpack(size_type) override;
 
         void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
-            ar.serialize(dview_m, nsends);
+            ar.serialize(buf_m, nsends);
         }
 
         void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
-            ar.deserialize(dview_m, nrecvs);
+            ar.deserialize(buf_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
@@ -132,6 +133,7 @@ namespace ippl {
 
     private:
         view_type dview_m;
+        view_type buf_m;
     };
 }  // namespace ippl
 

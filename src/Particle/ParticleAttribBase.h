@@ -42,9 +42,9 @@ namespace ippl {
             virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
             virtual size_type packedSize(const size_type) const                 = 0;
 
-            virtual void pack(void*, const hash_type&) const = 0;
+            virtual void pack(const hash_type&) = 0;
 
-            virtual void unpack(void*, size_type) = 0;
+            virtual void unpack(size_type) = 0;
 
             virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
 

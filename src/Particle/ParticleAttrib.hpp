@@ -45,28 +45,22 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::pack(void* buffer, const hash_type& hash) const {
-        using this_type     = ParticleAttrib<T, Properties...>;
-        this_type* buffer_p = static_cast<this_type*>(buffer);
-        auto& view          = buffer_p->dview_m;
+    void ParticleAttrib<T, Properties...>::pack(const hash_type& hash) {
         auto size           = hash.extent(0);
-        if (view.extent(0) < size) {
+        if (buf_m.extent(0) < size) {
             int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(view, size * overalloc);
+            Kokkos::realloc(buf_m, size * overalloc);
         }
 
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::pack()", policy_type(0, size),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { view(i) = dview_m(hash(i)); });
+            KOKKOS_CLASS_LAMBDA(const size_t i) { buf_m(i) = dview_m(hash(i)); });
         Kokkos::fence();
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::unpack(void* buffer, size_type nrecvs) {
-        using this_type     = ParticleAttrib<T, Properties...>;
-        this_type* buffer_p = static_cast<this_type*>(buffer);
-        auto& view          = buffer_p->dview_m;
+    void ParticleAttrib<T, Properties...>::unpack(size_type nrecvs) {
         auto size           = dview_m.extent(0);
         size_type required  = *(this->localNum_mp) + nrecvs;
         if (size < required) {
@@ -78,7 +72,7 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()", policy_type(0, nrecvs),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(count + i) = view(i); });
+            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(count + i) = buf_m(i); });
         Kokkos::fence();
     }
 

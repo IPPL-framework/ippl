@@ -64,8 +64,8 @@ namespace ippl {
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
-        template <class BufferType>
-        void update(BufferType& pdata, BufferType& buffer);
+        template <class ParticleContainer>
+        void update(ParticleContainer& pc);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
@@ -83,15 +83,15 @@ namespace ippl {
         /*!
          * For each particle in the bunch, determine the rank on which it should
          * be stored based on its location
-         * @tparam ParticleBunch the bunch type
-         * @param pdata the particle bunch
+         * @tparam ParticleContainer the particle container type
+         * @param pc the particle container
          * @param ranks the integer view in which to store the destination ranks
          * @param invalid the boolean view in which to store whether each particle
          * is invalidated, i.e. needs to be sent to another rank
          * @return The total number of invalidated particles
          */
-        template <typename ParticleBunch>
-        size_type locateParticles(const ParticleBunch& pdata, locate_type& ranks,
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
                                   bool_type& invalid) const;
 
         /*!

@@ -214,8 +214,6 @@ int main(int argc, char* argv[]) {
 
         P->initializeFields(mesh, FL);
 
-        bunch_type bunchBuffer(PL);
-
         P->initSolver();
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
@@ -249,7 +247,7 @@ int main(int argc, char* argv[]) {
             Kokkos::fence();
 
             P->initializeORB(FL, mesh);
-            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+            P->repartition(FL, mesh, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
         }
 
@@ -343,14 +341,14 @@ int main(int argc, char* argv[]) {
 
             // Since the particles have moved spatially update them to correct processors
             IpplTimings::startTimer(updateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP, it + 1)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
-                P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+                P->repartition(FL, mesh, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
                 // IpplTimings::startTimer(dumpDataTimer);
                 // P->dumpLocalDomains(FL, it+1);
