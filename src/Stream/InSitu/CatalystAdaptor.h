@@ -17,7 +17,7 @@ namespace CatalystAdaptor
     constexpr unsigned int dim {2};
     using Mesh_t      = ippl::UniformCartesian<double, dim>;
     using Centering_t = Mesh_t::DefaultCentering;
-    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t>;
+    using Field_t = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
     void Initialize(int argc, char* argv[])
     {
@@ -40,7 +40,8 @@ namespace CatalystAdaptor
         }
     }
 
-    void Execute(int cycle, double time, int rank, field_type &field) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
+
+    void Execute(int cycle, double time, int rank, Field_t &field) //int cycle, double time) //, Grid& grid, Attributes& attribs, Particles& particles)
     {
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
