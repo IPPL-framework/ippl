@@ -13,5 +13,5 @@ def catalyst_execute(info):
     producer.UpdatePipeline(info.time)
 #    print("-----------------------------------")
     print("executing (cycle={}, time={})".format(info.cycle, info.time))
-    print("field:", producer.CellData["density"].GetRange(-1))
+    print("field:", producer.CellData["density"].GetRange(0))
 #    print("pressure-range:", producer.CellData["pressure"].GetRange(0))
