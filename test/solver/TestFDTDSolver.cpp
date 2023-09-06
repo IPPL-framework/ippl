@@ -31,6 +31,7 @@
 #include "Ippl.h"
 
 #include <cstdlib>
+#include <fstream>
 
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
@@ -40,10 +41,17 @@
 KOKKOS_INLINE_FUNCTION double sine(double n, double dt) {
     return 100 * std::sin(n * dt);
 }
+template<typename T>
+KOKKOS_INLINE_FUNCTION auto sq(const T& x) -> decltype(std::declval<T>() * std::declval<T>()) {
+    return x * x;
+}
+
 
 void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>,
                          ippl::UniformCartesian<double, 3>::DefaultCentering>& E,
              int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
+
+    //return;
     using Mesh_t      = ippl::UniformCartesian<double, 3>;
     using Centering_t = Mesh_t::DefaultCentering;
     typedef ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t> VField_t;
@@ -56,11 +64,12 @@ void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<doub
 
     Kokkos::deep_copy(host_view, E.getView());
 
-    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    std::ofstream vtkout(fname.str().c_str());
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
     // start with header
+    #define endl '\n'
     vtkout << "# vtk DataFile Version 2.0" << endl;
     vtkout << "TestFDTD" << endl;
     vtkout << "ASCII" << endl;
@@ -71,14 +80,16 @@ void dumpVTK(ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<doub
     vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
 
     vtkout << "VECTORS E-Field float" << endl;
+    #undef endl
     for (int z = 0; z < nz + 2; z++) {
         for (int y = 0; y < ny + 2; y++) {
             for (int x = 0; x < nx + 2; x++) {
                 vtkout << host_view(x, y, z)[0] << "\t" << host_view(x, y, z)[1] << "\t"
-                       << host_view(x, y, z)[2] << endl;
+                       << host_view(x, y, z)[2] << '\n';
             }
         }
     }
+    vtkout << std::endl;
 }
 
 void dumpVTK(ippl::Field<double, 3, ippl::UniformCartesian<double, 3>,
@@ -115,25 +126,28 @@ void dumpVTK(ippl::Field<double, 3, ippl::UniformCartesian<double, 3>,
     for (int z = 0; z < nz + 2; z++) {
         for (int y = 0; y < ny + 2; y++) {
             for (int x = 0; x < nx + 2; x++) {
-                vtkout << host_view(x, y, z) << endl;
+                vtkout << host_view(x, y, z) << '\n';
             }
         }
     }
+    vtkout << endl;
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    {
+    for(int ext = 75;ext < 80;ext += 5){
         Inform msg(argv[0]);
         Inform msg2all(argv[0], INFORM_ALL_NODES);
+
 
         const unsigned int Dim = 3;
 
         // get the gridsize from the user
-        ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+        ippl::Vector<int, Dim> nr = {ext, ext, ext};
+        //ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
 
         // get the total simulation time from the user
-        const unsigned int iterations = std::atof(argv[4]);
+        //const unsigned int iterations = std::atof(argv[4]);
 
         using Mesh_t      = ippl::UniformCartesian<double, Dim>;
         using Centering_t = Mesh_t::DefaultCentering;
@@ -164,8 +178,19 @@ int main(int argc, char* argv[]) {
         // we set a more conservative limit by choosing lambda = 0.5
         // we take h = minimum(dx, dy, dz)
         const double c = 1.0;  // 299792458.0;
-        double dt      = std::min({dx, dy, dz}) * 0.5 / c;
+        double dt      = std::min({dx, dy, dz}) * 0.1 / c;
+        
 
+        //Simulation should run for 1.0 time-units
+        const double total_time = 1.0;
+
+        //Current simulation time (will increase by dt every timestep)
+        double simulated_time = 0.0;
+
+        double timesteps_nonintegral = total_time / dt; //To be ceiled
+        double timesteps_ceiled = std::ceil(timesteps_nonintegral);
+        dt = total_time / timesteps_ceiled;
+        
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<Dim> layout(owned, decomp);
 
@@ -194,11 +219,15 @@ int main(int argc, char* argv[]) {
         if (!seed) {
             // add pulse at center of domain
             auto view_rho    = rho.getView();
+            solver.aNm1_m = 0.0;
+            auto vector_potential_at_minus_one_view = solver.aNm1_m.getView();
+            auto vector_potential_at_now_view = solver.aN_m.getView();
+
             const int nghost = rho.getNghost();
             auto ldom        = layout.getLocalNDIndex();
 
             Kokkos::parallel_for(
-                "Assign sinusoidal source at center", rho.getFieldRangePolicy(),
+                "Assign sinusoidal source at center", ippl::getRangePolicy(vector_potential_at_now_view, 0)/*rho.getFieldRangePolicy()*/,
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     const int ig = i + ldom[0].first() - nghost;
                     const int jg = j + ldom[1].first() - nghost;
@@ -208,20 +237,84 @@ int main(int argc, char* argv[]) {
                     double x = (ig + 0.5) * hr[0] + origin[0];
                     double y = (jg + 0.5) * hr[1] + origin[1];
                     double z = (kg + 0.5) * hr[2] + origin[2];
-
-                    if ((x == 0.5) && (y == 0.5) && (z == 0.5))
-                        view_rho(i, j, k) = sine(0, dt);
+                    //std::cout << y << " Y\n";
+                    if ((x == 0.5) && (y == 0.5) && (z == 0.5)){
+                        //vector_potential_at_now_view(i, j, k) = 100.0;
+                        //view_rho(i, j, k) = sine(0, dt);
+                    }
+                    if (y >= 0.4 && y <= 0.6){
+                        vector_potential_at_now_view(i, j, k) = Kokkos::exp(-sq((y - 0.5) * 20.0));
+                    }
             });
+            //vector_potential_at_now_view(7,7,0) = 1000.0;
         }
+        solver.field_evaluation();
+        {
+            auto vector_potential_at_minus_one_view = solver.aNm1_m.getView();
+            auto vector_potential_at_now_view = solver.aN_m.getView();
+            solver.field_evaluation();
+            auto electric_field_view = fieldE.getView();
+            const int nghost = rho.getNghost();
+            auto ldom        = layout.getLocalNDIndex();
+            double error_sum = 0.0;
+            Kokkos::parallel_reduce(
+                "Assign sinusoidal source at center", ippl::getRangePolicy(vector_potential_at_now_view, 1)/*rho.getFieldRangePolicy()*/,
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum_ref) {
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
+
+                    // define the physical points (cell-centered)
+                    double x = (ig + 0.5) * hr[0] + origin[0];
+                    double y = (jg + 0.5) * hr[1] + origin[1];
+                    double z = (kg + 0.5) * hr[2] + origin[2];
+
+                    if ((x == 0.5) && (y == 0.5) && (z == 0.5)){
+                        //vector_potential_at_now_view(i, j, k) = 100.0;
+                        //view_rho(i, j, k) = sine(0, dt);
+                    }
+                    ippl::Vector<double, 3> expected_E_field = 0.0;
+                    if (y >= 0.4 && y <= 0.6){
+                        expected_E_field = Kokkos::exp(-sq((y - 0.5) * 20.0));
+                    }
+                    
+                    expected_E_field[0] *= 1.0 / dt;
+                    expected_E_field[1] *= 1.0 / dt;
+                    expected_E_field[2] *= 1.0 / dt;
+
+                    ippl::Vector<double, 3> error = electric_field_view(i, j, k) - expected_E_field;
+                    //if(std::abs(error[0]) > 0.0){
+                    //    std::ostringstream ostr;
+                    //    ostr << electric_field_view(i, j, k) << " vs " << expected_E_field << "\n";
+                    //    std::cout << ostr.str();
+                    //}
+                    
+                    sum_ref += std::abs(error[0]);
+                    sum_ref += std::abs(error[1]);
+                    sum_ref += std::abs(error[2]);
+            
+            }, error_sum);
+            std::cout << ext << " Direkt nachher: " << error_sum << std::endl;
+            //return 0;
+        }
+        dumpVTK(fieldE, nr[0], nr[1], nr[2], 0, hr[0], hr[1], hr[2]);
 
         msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
         solver.solve();
+        
+        simulated_time += dt;
 
         // time-loop
-        for (unsigned int it = 1; it < iterations; ++it) {
-            msg << "Timestep number = " << it << " , time = " << it * dt << endl;
+        double every_dt_output = 0.005;
+        int every_step_output = every_dt_output / dt;
 
-            if (!seed) {
+        
+        //Simple incrementor for now
+        unsigned int it = 1;
+        for (;simulated_time < total_time;it++) {
+            msg << "Timestep number = " << it << " , time = " << it * dt << endl;
+            //solver.dt = std::min(dt, total_time - simulated_time);
+            /*if (false && !seed) {
                 // add pulse at center of domain
                 auto view_rho    = rho.getView();
                 const int nghost = rho.getNghost();
@@ -242,12 +335,67 @@ int main(int argc, char* argv[]) {
                         if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                             view_rho(i, j, k) = sine(it, dt);
                 });
-            }
-
+            }*/
+            
             solver.solve();
-
-            dumpVTK(fieldE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
+            simulated_time += solver.dt;
+            //double time = it * dt, ptime = (it - 1) * dt;
+            std::cout << it << ": " << fieldE(nr[0] / 2, nr[1] / 2, nr[2] / 2) << "\n";
+            if(it % every_step_output == 0/*std::fmod(time, every_dt_output) - std::fmod(ptime, every_dt_output) < 0*/){
+                dumpVTK(fieldE, nr[0], nr[1], nr[2], it, hr[0], hr[1], hr[2]);
+            }
+            //return 0;
         }
+        std::cout << "Simulation time: " << simulated_time << std::endl;
+        if(!seed){ // Well and otherwise there's no error analysis
+            auto vector_potential_at_minus_one_view = solver.aNm1_m.getView();
+            auto vector_potential_at_now_view = solver.aN_m.getView();
+            //solver.field_evaluation();
+            auto electric_field_view = fieldE.getView();
+            const int nghost = rho.getNghost();
+            auto ldom        = layout.getLocalNDIndex();
+            double error_sum = 0.0;
+            Kokkos::parallel_reduce(
+                "Assign sinusoidal source at center", ippl::getRangePolicy(vector_potential_at_now_view, 1)/*rho.getFieldRangePolicy()*/,
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum_ref) {
+                    const int ig = i + ldom[0].first() - nghost;
+                    const int jg = j + ldom[1].first() - nghost;
+                    const int kg = k + ldom[2].first() - nghost;
+
+                    // define the physical points (cell-centered)
+                    double x = (ig + 0.5) * hr[0] + origin[0];
+                    double y = (jg + 0.5) * hr[1] + origin[1];
+                    double z = (kg + 0.5) * hr[2] + origin[2];
+
+                    if ((x == 0.5) && (y == 0.5) && (z == 0.5)){
+                        //vector_potential_at_now_view(i, j, k) = 100.0;
+                        //view_rho(i, j, k) = sine(0, dt);
+                    }
+                    ippl::Vector<double, 3> expected_E_field = 0.0;
+                    if (y >= 0.4 && y <= 0.6){
+                        expected_E_field = Kokkos::exp(-sq((y - 0.5) * 20.0));
+                    }
+                    
+                    expected_E_field[0] *= -1.0 / dt;
+                    expected_E_field[1] *= -1.0 / dt;
+                    expected_E_field[2] *= -1.0 / dt;
+
+                    ippl::Vector<double, 3> error = electric_field_view(i, j, k) - expected_E_field;
+                    if(std::abs(error[0]) > 1.0){
+                        std::ostringstream ostr;
+                        ostr << electric_field_view(i, j, k) << " vs " << expected_E_field << "\n";
+                        //std::cout << ostr.str();
+                    }
+                    
+                    sum_ref += std::abs(error[0]);
+                    sum_ref += std::abs(error[1]);
+                    sum_ref += std::abs(error[2]);
+            
+            }, error_sum);
+            std::cout << ext << ": " << error_sum / double(ext * ext * ext) << std::endl;
+        }
+        std::cout << "Breaking after one loop\n";
+        break;
     }
     ippl::finalize();
 

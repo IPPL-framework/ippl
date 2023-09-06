@@ -118,7 +118,9 @@ namespace ippl {
 
                 view_phiNp1(i, j, k) = isInterior * interior;
             });
-
+        
+        //std::cout << nghost_a << "\n";
+        //Kokkos::deep_copy(view_aNp1, view_aN);
         for (size_t gd = 0; gd < Dim; ++gd) {
             Kokkos::parallel_for(
                 "Vector potential update", ippl::getRangePolicy(view_aN, nghost_a),
@@ -129,8 +131,8 @@ namespace ippl {
                     const int kg = k + ldom[2].first() - nghost_a;
 
                     // interior values
-                    bool isInterior = ((ig > 0) && (jg > 0) && (kg > 0) && (ig < nr_m[0] - 1)
-                                       && (jg < nr_m[1] - 1) && (kg < nr_m[2] - 1));
+                    bool isInterior = true;//((ig > 0) && (jg > 0) && (kg > 0) && (ig < nr_m[0] - 1)
+                                           //&& (jg < nr_m[1] - 1) && (kg < nr_m[2] - 1));
                     double interior = -view_aNm1(i, j, k)[gd] + a1 * view_aN(i, j, k)[gd]
                                       + a2 * (view_aN(i + 1, j, k)[gd] + view_aN(i - 1, j, k)[gd])
                                       + a4 * (view_aN(i, j + 1, k)[gd] + view_aN(i, j - 1, k)[gd])
@@ -138,6 +140,52 @@ namespace ippl {
                                       + a8 * (-view_JN(i, j, k)[gd] * mu0);
 
                     view_aNp1(i, j, k)[gd] = isInterior * interior;
+                });
+        }
+        for (size_t gd = 0; gd < Dim; ++gd) {
+            Kokkos::parallel_for(
+                "Periodic boundaryie", ippl::getRangePolicy(view_aNp1, 0),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                    size_t wraparound_i = i, wraparound_j = j, wraparound_k = k;
+                    if((int)j < nghost_a || (int)j > view_aN.extent(1) - nghost_a - 1){
+                        view_aNp1(i, j, k)[0] = 0.0;
+                        view_aNp1(i, j, k)[1] = 0.0;
+                        view_aNp1(i, j, k)[2] = 0.0;
+                        return;
+                    }
+
+                    if((int)i < nghost_a){
+                        //wraparound_k = view_aN.extent(2) - nghost_a - k - 1;
+                        wraparound_i += view_aN.extent(0) - 2 * nghost_a;
+                        //std::cout << k << " to " << wraparound_k << "\n";
+                    }
+                    else if((int)i > view_aN.extent(0) - nghost_a - 1){
+                        //wraparound_k = k - (view_aN.extent(2) - nghost_a - 1);
+                        wraparound_i -= view_aN.extent(0) - 2 * nghost_a;
+                        //std::cout << k << " to " << wraparound_k << "\n";
+                    }
+
+                    /*if((int)j < nghost_a){
+                        wraparound_j = view_aN.extent(1) - nghost_a - j - 1;
+                        
+                    }
+                    else if((int)j >= view_aN.extent(1) - nghost_a  - 1){
+                        wraparound_j = j - (view_aN.extent(1) - nghost_a - 1);
+                    }*/
+
+                    if((int)k < nghost_a){
+                        //wraparound_k = view_aN.extent(2) - nghost_a - k - 1;
+                        wraparound_k += view_aN.extent(2) - 2 * nghost_a;
+                        //std::cout << k << " to " << wraparound_k << "\n";
+                    }
+                    else if((int)k > view_aN.extent(2) - nghost_a - 1){
+                        //wraparound_k = k - (view_aN.extent(2) - nghost_a - 1);
+                        wraparound_k -= view_aN.extent(2) - 2 * nghost_a;
+                        //std::cout << k << " to " << wraparound_k << "\n";
+                    }
+                    view_aNp1(i, j, k)[0] = view_aNp1(wraparound_i, wraparound_j, wraparound_k)[0];
+                    view_aNp1(i, j, k)[1] = view_aNp1(wraparound_i, wraparound_j, wraparound_k)[1];
+                    view_aNp1(i, j, k)[2] = view_aNp1(wraparound_i, wraparound_j, wraparound_k)[2];
                 });
         }
 
@@ -212,6 +260,7 @@ namespace ippl {
 
         // apply 1st order Absorbing Boundary Conditions
         // for both scalar and vector potentials
+        if(false)
         Kokkos::parallel_for(
             "Scalar potential ABCs", ippl::getRangePolicy(view_phiN, nghost_phi),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
@@ -254,8 +303,14 @@ namespace ippl {
 
                 view_phiNp1(i, j, k) += isXmin * xmin + isYmin * ymin + isZmin * zmin
                                         + isXmax * xmax + isYmax * ymax + isZmax * zmax;
+                if(view_phiNp1(i, j, k) != 0){
+                    printf("%f\n", view_phiNp1(i, j, k));
+                }
             });
-
+        //Kokkos::View<double***> x;
+        
+        
+        if(false)
         for (size_t gd = 0; gd < Dim; ++gd) {
             Kokkos::parallel_for(
                 "Vector potential ABCs", ippl::getRangePolicy(view_aN, nghost_a),
