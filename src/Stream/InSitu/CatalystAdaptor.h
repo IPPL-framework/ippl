@@ -56,7 +56,6 @@ namespace CatalystAdaptor {
         state["cycle"].set(cycle);
         state["time"].set(time);
         state["domain_id"].set(rank);
-        state["domain_id"].set(rank);
 
         // add catalyst channel named ippl_field, as fields is reserved
         auto channel = node["catalyst/channels/ippl_field"];
