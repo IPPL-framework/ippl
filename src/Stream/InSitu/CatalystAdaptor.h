@@ -56,6 +56,7 @@ namespace CatalystAdaptor {
         state["cycle"].set(cycle);
         state["time"].set(time);
         state["domain_id"].set(rank);
+        state["domain_id"].set(rank);
 
         // add catalyst channel named ippl_field, as fields is reserved
         auto channel = node["catalyst/channels/ippl_field"];
@@ -69,15 +70,23 @@ namespace CatalystAdaptor {
         std::string field_node_dim{"coordsets/coords/dims/i"};
         std::string field_node_origin{"coordsets/coords/origin/x"};
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
-        auto origin = field.get_mesh().getOrigin();
+        // auto origin = field.get_mesh().getOrigin()[0];
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // include ghost cells to the "left" and "right" + 1 point
             mesh[field_node_dim].set(
-                int(field.get_mesh().getGridsize(iDim) + 2 * field.getNghost() + 1));
+                int(field.getLayout().getLocalNDIndex(rank).last()[iDim]
+                    + field.getNghost()  // last field point including ghost cell
+                    - field.getLayout().getLocalNDIndex(rank).first()[iDim]  // local origin
+                    + 2 * field.getNghost() + 1));  // ghost cells to left and right
+
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
-                origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost());
+                field.get_mesh().getOrigin()[iDim]  // global origin
+                + field.getLayout().getLocalNDIndex(rank)[iDim].first()
+                      * field.get_mesh().getMeshSpacing(iDim)  // shift to local index
+                - field.get_mesh().getMeshSpacing(iDim)
+                      * field.getNghost());  // move index according to ghost cells
             mesh[field_node_spacing].set(field.get_mesh().getMeshSpacing(iDim));
 
             // increment last char in string
@@ -89,13 +98,16 @@ namespace CatalystAdaptor {
         // add topology
         mesh["topologies/mesh/type"].set("uniform");
         mesh["topologies/mesh/coordset"].set("coords");
-        field_node_origin = "topologies/mesh/origin/x";
+        std::string field_node_origin_topo = "topologies/mesh/origin/x";
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // shift origin by one ghost cell
-            mesh[field_node_origin].set(
-                origin(iDim) - field.get_mesh().getMeshSpacing(iDim) * field.getNghost());
+            mesh[field_node_origin_topo].set(field.get_mesh().getOrigin()[iDim]
+                                             + field.getLayout().getLocalNDIndex(rank)[iDim].first()
+                                                   * field.get_mesh().getMeshSpacing(iDim)
+                                             - field.get_mesh().getMeshSpacing(iDim)
+                                                   * field.getNghost());
 
-            ++field_node_origin.back();
+            ++field_node_origin_topo.back();
         }
 
         // add values and subscribe to data
