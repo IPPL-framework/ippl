@@ -1,38 +1,31 @@
 // Tests the application for the Catalyst In-Situ Adaptor
-// following environment variables do need to be exported
+// following environment variables do need to be set
 //
 // export CATALYST_IMPLEMENTATION_PATHS=<path-to-paraview-install>/lib/catalyst
 // export CATALYST_IMPLEMENTATION_NAME=paraview
 //
 // on juwels these both are direclty set!
 //
-// export PARARVIEW_CATALYST_DIR=<path-to-paraview-install>/lib/catalyst
-//
 // RUN
 // ./TestCatalystAdaptor ./<path-to-catalyst-pipeline>.py
 //
-// eg.
+// for dumping vtk files
 // ./build/test/stream/TestCatalystAdaptor ./test/stream/catalyst_pipeline.py --info 5
 //
-// when dumping of the vtk is required also --info 5 is needed
 
 #include "Ippl.h"
 
-#include <array>
 #include <iostream>
-#include <typeinfo>
 
 #include "Stream/InSitu/CatalystAdaptor.h"
 
 constexpr unsigned int dim{3};
-using Mesh_t         = ippl::UniformCartesian<double, dim>;
-using Centering_t    = Mesh_t::DefaultCentering;
-using Field_t        = ippl::Field<double, dim, Mesh_t, Centering_t>;
-const char* TestName = "CatalystAdaptor";
+using Mesh_t      = ippl::UniformCartesian<double, dim>;
+using Centering_t = Mesh_t::DefaultCentering;
+using Field_t     = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
 void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
     typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
-    // auto view = rho.getHostMirror();
 
     std::stringstream fname;
     fname << "data/scalar_";
@@ -41,14 +34,14 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
 
     Kokkos::deep_copy(host_view, rho.getView());
 
-    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    Inform vtkout(nullptr, fname.str().c_str(), Inform::OVERWRITE);
     vtkout.precision(10);
     vtkout.setf(std::ios::scientific, std::ios::floatfield);
 
     if (vtkout.openedSuccessfully()) {
         // start with header
         vtkout << "# vtk DataFile Version 2.0" << endl;
-        vtkout << TestName << endl;
+        vtkout << "CatalystAdaptor" << endl;
         vtkout << "ASCII" << endl;
         vtkout << "DATASET STRUCTURED_POINTS" << endl;
         vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
@@ -74,8 +67,6 @@ int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
     CatalystAdaptor::Initialize(argc, argv);
 
-    // constexpr unsigned int dim {3};
-
     const int pt{2};
     ippl::Index Ix(pt);
     ippl::Index Iy{pt};
@@ -83,8 +74,8 @@ int main(int argc, char* argv[]) {
     ippl::NDIndex<dim> owned(Ix, Iy, Iz);
 
     ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (unsigned int d = 0; d < dim; d++)
-        allParallel[d] = ippl::PARALLEL;
+    for (auto& d : allParallel)
+        d = ippl::PARALLEL;
 
     ippl::FieldLayout<dim> layout(owned, allParallel);
 
@@ -94,12 +85,9 @@ int main(int argc, char* argv[]) {
     ippl::Vector<double, 3> hx     = {dx, dy, dz};
     ippl::Vector<double, 3> origin = {0, 0, 0};
 
-    // using Mesh_t      = ippl::UniformCartesian<double, 3>;
-    // using Centering_t = Mesh_t::DefaultCentering;
-
     Mesh_t mesh(owned, hx, origin);
 
-    typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
+    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
     std::cout << layout << std::endl;
 
@@ -126,6 +114,7 @@ int main(int argc, char* argv[]) {
                 // const size_t ig = i + lDom[0].first() - nghost;
                 const size_t jg = j + lDom[1].first() - nghost;
                 // const size_t kg = k + lDom[2].first() - nghost;
+
                 // double x = (ig + 0.5) * hx[0] + origin[0];
                 double y = (jg + 0.5) * hx[1] + origin[1];
                 // double z = (kg + 0.5) * hx[2];
@@ -136,9 +125,11 @@ int main(int argc, char* argv[]) {
                 view(i, j, k) = y * time;
             });
 
-        CatalystAdaptor::Execute(it, time, ippl.Comm.get()->rank(), field);
+        CatalystAdaptor::Execute(it, time, Ippl::Comm->rank(), field);
         // print should be same as field data
         time += dt;
+
+        // dumpVTK only works with --info 5 and higher
         dumpVTK(field, field.get_mesh().getGridsize(0), field.get_mesh().getGridsize(1),
                 field.get_mesh().getGridsize(2), it, field.get_mesh().getMeshSpacing(0),
                 field.get_mesh().getMeshSpacing(1), field.get_mesh().getMeshSpacing(2));

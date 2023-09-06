@@ -26,11 +26,11 @@ namespace CatalystAdaptor {
         }
         try {
             node["catalyst_load/implementation"]        = getenv("CATALYST_IMPLEMENTATION_NAME");
-            node["catalyst_load/search_paths/paraview"] = getenv("PARAVIEW_CATALYST_DIR");
+            node["catalyst_load/search_paths/paraview"] = getenv("CATALYST_IMPLEMENTATION_PATHS");
         } catch (...) {
             throw IpplException("CatalystAdaptor::Initialize",
                                 "no environmental variable for CATALYST_IMPLEMENTATION_NAME or "
-                                "PARAVIEW_CATALYST_DIR found");
+                                "CATALYST_IMPLEMENTATION_PATHS found");
         }
         // TODO: catch catalyst error also with IpplException
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
@@ -40,10 +40,7 @@ namespace CatalystAdaptor {
     }
 
     template <typename Field_t>
-    void Execute(int cycle, double time, int rank,
-                 Field_t& field)  // int cycle, double time) //, Grid& grid, Attributes& attribs,
-                                  // Particles& particles)
-    {
+    void Execute(int cycle, double time, int rank, Field_t& field) {
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
         //
