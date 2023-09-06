@@ -18,10 +18,22 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
-
+add_executable (TestDirac TestDirac)
+target_link_libraries (
+    TestDirac
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 add_executable (TestCGSolver TestCGSolver.cpp)
 target_link_libraries (
     TestCGSolver
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable (TestFDTDSolver TestFDTDSolver.cpp)
+target_link_libraries (
+    TestFDTDSolver
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
