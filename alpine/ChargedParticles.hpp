@@ -696,7 +696,7 @@ public:
             fname << ".csv";
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-            csvout.precision(10);
+            csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             if (time_m == 0.0) {

@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 
+#include "Ippl.h"
+
 #include "Utility/IpplTimings.h"
 
 //#include "ChargedParticles.hpp"
@@ -51,9 +53,12 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
  
- constexpr unsigned Dim = 3;
+ #include "Random/InverseTransformSampling.h"    
+ 
+constexpr unsigned Dim = 3;
 using T = double;
 
+/*
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -63,8 +68,7 @@ struct Newton1D {
     T k, alpha, u;
 
     KOKKOS_INLINE_FUNCTION Newton1D() {}
-
-    KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& alpha_, const T& u_)
+ KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& alpha_, const T& u_)
         : k(k_)
         , alpha(alpha_)
         , u(u_) {}
@@ -108,7 +112,7 @@ struct generate_random {
     T k, minU, maxU;
 
     // Initialize all members
-    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
+   generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
                     T& minU_, T& maxU_)
         : x(x_)
         , v(v_)
@@ -135,31 +139,59 @@ struct generate_random {
         rand_pool.free_state(rand_gen);
     }
 };
+*/
 
-double CDF(const double& x, const double& alpha, const double& k) {
-    double cdf = x + (alpha / k) * std::sin(k * x);
-    return cdf;
+template <typename T, class GeneratorPool, unsigned Dim>
+struct generate_random {
+    using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
+    using value_type = typename T::value_type;
+    // Output View for the random numbers
+    view_type v;
+    // The GeneratorPool
+    GeneratorPool rand_pool;
+    // Initialize all members
+    generate_random(view_type v_, GeneratorPool rand_pool_)
+        : v(v_)
+        , rand_pool(rand_pool_){}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        // Get a random number state from the pool for the active thread
+        typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+        for (unsigned d = 0; d < Dim; ++d) {
+            v(i)[d] = rand_gen.normal(0.0, 1.0);
+        }
+        // Give the state back, which will allow another thread to acquire it
+        rand_pool.free_state(rand_gen);
+    }
+};
+
+
+
+KOKKOS_FUNCTION
+double CDF(double y, double alpha, double k) {
+    return y + (alpha / k) * std::sin(k * y);
 }
 
 KOKKOS_FUNCTION
-double PDF(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
-           const unsigned Dim) {
-    double pdf = 1.0;
-
-    for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0 + alpha * Kokkos::cos(kw[d] * xvec[d]));
-    }
-    return pdf;
+double PDF(double y, double alpha, double k) {
+    return  (1.0 + alpha * Kokkos::cos(k * y));
 }
+
+KOKKOS_FUNCTION
+double ESTIMATE(double u, double alpha) {
+    return u/(1+alpha); // maybe E[x] is good enough as the first guess
+}
+
 
 const char* TestName = "LandauDamping";
 
 //template <typename T, unsigned Dim>
 class MyPicManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>> {
 public:
+    double time_m;
     double Q_m;
-    MyPicManager(double Q)
-        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>>(), Q_m(Q){
+    MyPicManager()
+        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>>(){
     }
 
     void par2grid() override {
@@ -178,7 +210,7 @@ public:
         fcontainer_m->rho_m = 0.0;
         scatter(pcontainer_m->q, fcontainer_m->rho_m, pcontainer_m->R);
 
-        std::cout << std::fabs((Q_m - fcontainer_m->rho_m.sum()) / Q_m)  << std::endl;
+         std::cout << std::fabs((Q_m - fcontainer_m->rho_m.sum()) / Q_m)  << std::endl;
 
         size_type Total_particles = 0;
         size_type local_particles = pcontainer_m->getLocalNum();
@@ -199,7 +231,63 @@ public:
             fcontainer_m->rho_m = fcontainer_m->rho_m - (Q_m / size);
         }
     }
+    
+    void dumpLandau() { dumpLandau(fcontainer_m->E_m.getView()); }
+
+    template <typename View>
+    void dumpLandau(const View& Eview) {
+        const int nghostE = fcontainer_m->E_m.getNghost();
+
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        double localEx2 = 0, localExNorm = 0;
+        ippl::parallel_reduce(
+            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
+                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double val = ippl::apply(Eview, args)[0];
+                double e2  = Kokkos::pow(val, 2);
+                E2 += e2;
+
+                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
+                if (norm > ENorm) {
+                    ENorm = norm;
+                }
+            },
+            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
+
+        double globaltemp = 0.0;
+        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
+        double fieldEnergy =
+            std::reduce(fcontainer_m->hr_m.begin(), fcontainer_m->hr_m.end(), globaltemp, std::multiplies<double>());
+
+        double ExAmp = 0.0;
+        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+
+        if (ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << ippl::Comm->size();
+            fname<<"_test";
+            fname << ".csv";
+
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(16);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+            if (time_m == 0.0) {
+                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+            }
+
+            csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
+        }
+
+        ippl::Comm->barrier();
+    }
+    
 };
+
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -267,13 +355,37 @@ int main(int argc, char* argv[]) {
         
         fs->initSolver();
                 
-        MyPicManager manager(Q);
-        
+        MyPicManager manager;
+        manager.Q_m = Q;
         manager.setParticleContainer(pc);
         manager.setFieldContainer(fc);
         manager.setFieldSolver(fs);
 
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
+         
+         // Generating particles
+         // particle positions
+         ippl::detail::RegionLayout<double, 3, Mesh_t<3>> rlayout(FL, mesh);
+         using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 3, Kokkos::DefaultExecutionSpace>;
+         ippl::random::Distribution<double, 3> distR;
+         for(int d=0; d<3; d++){
+                 double k = kw[d];
+		 distR.setCdfFunction(d, [alpha, k](double y) { return CDF(y, alpha, k);});
+		 distR.setPdfFunction(d, [alpha, k](double y) { return PDF(y, alpha, k);});
+		 distR.setEstimationFunction(d, [alpha](double u) { return ESTIMATE(u, alpha);});
+         }
+         InvTransSampl_t its(rmin, rmax, rlayout, distR, totalP);
+         unsigned int nloc = its.getLocalNum();
+         pc->create(nloc);
+         its.generate(distR, pc->R.getView(), 42);
+         
+         // particle velocity
+         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
+         Kokkos::parallel_for(
+            nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                      pc->P.getView(), rand_pool64));
+       
+       /*
+       typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
         const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
         Vector_t<double, Dim> Nr, Dr, minU, maxU;
@@ -306,7 +418,9 @@ int main(int argc, char* argv[]) {
         Kokkos::parallel_for(
             nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                       pc->R.getView(), pc->P.getView(), rand_pool64, alpha, kw, minU, maxU));
-
+        */
+    
+        
         Kokkos::fence();
         ippl::Comm->barrier();
 
@@ -319,6 +433,8 @@ int main(int argc, char* argv[]) {
         fs->runSolver();
         manager.grid2par();
 
+        manager.time_m = 0.0;
+
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
@@ -328,20 +444,13 @@ int main(int argc, char* argv[]) {
             // an attribute
             // kick
 
-            //IpplTimings::startTimer(PTimer);
             pc->P = pc->P - 0.5 * dt * pc->E;
-            //IpplTimings::stopTimer(PTimer);
 
             // drift
-            //IpplTimings::startTimer(RTimer);
             pc->R = pc->R + dt * pc->P;
-            //IpplTimings::stopTimer(RTimer);
-            // P->R.print();
 
             // Since the particles have moved spatially update them to correct processors
-            //IpplTimings::startTimer(updateTimer);
             pc->update();
-            //IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
             //if (P->balance(totalP, it + 1)) {
@@ -358,40 +467,21 @@ int main(int argc, char* argv[]) {
             manager.par2grid();
             
             // Field solve
-            //IpplTimings::startTimer(SolveTimer);
             fs->runSolver();
-            //IpplTimings::stopTimer(SolveTimer);
 
             // gather E field
             manager.grid2par();
 
             // kick
-            //IpplTimings::startTimer(PTimer);
             pc->P = pc->P - 0.5 * dt * pc->E;
-            //IpplTimings::stopTimer(PTimer);
 
-            //P->time_m += dt;
-            //IpplTimings::startTimer(dumpDataTimer);
-            //P->dumpLandau();
-            //P->gatherStatistics(totalP);
-            //IpplTimings::stopTimer(dumpDataTimer);
-            //msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
 
-            //if (checkSignalHandler()) {
-            //    msg << "Aborting timestepping loop due to signal " << interruptSignalReceived
-            //        << endl;
-            //    break;
-            //}
+            manager.time_m += dt;            
+            manager.dumpLandau();
+
+            msg << "Finished time step: " << it + 1 << " time: " << manager.time_m << endl;
         }
         msg << "LandauDamping: End." << endl;
-        //IpplTimings::stopTimer(mainTimer);
-        //IpplTimings::print();
-        //IpplTimings::print(std::string("timing.dat"));
-        //auto end = std::chrono::high_resolution_clock::now();
-
-        //std::chrono::duration<double> time_chrono =
-        //std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-        //std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
         
     }
     ippl::finalize();
