@@ -69,20 +69,18 @@ namespace CatalystAdaptor {
         std::string field_node_dim{"coordsets/coords/dims/i"};
         std::string field_node_origin{"coordsets/coords/origin/x"};
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
-        // auto origin = field.get_mesh().getOrigin()[0];
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // include ghost cells to the "left" and "right" + 1 point
             mesh[field_node_dim].set(
-                int(field.getLayout().getLocalNDIndex(rank).last()[iDim]
-                    + field.getNghost()  // last field point including ghost cell
-                    - field.getLayout().getLocalNDIndex(rank).first()[iDim]  // local origin
+                int(field.getLayout().getLocalNDIndex()[iDim].length()  // last field point
+                                                                        // including ghost cell
                     + 2 * field.getNghost() + 1));  // ghost cells to left and right
 
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
                 field.get_mesh().getOrigin()[iDim]  // global origin
-                + field.getLayout().getLocalNDIndex(rank)[iDim].first()
+                + field.getLayout().getLocalNDIndex()[iDim].first()
                       * field.get_mesh().getMeshSpacing(iDim)  // shift to local index
                 - field.get_mesh().getMeshSpacing(iDim)
                       * field.getNghost());  // move index according to ghost cells
@@ -101,7 +99,7 @@ namespace CatalystAdaptor {
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // shift origin by one ghost cell
             mesh[field_node_origin_topo].set(field.get_mesh().getOrigin()[iDim]
-                                             + field.getLayout().getLocalNDIndex(rank)[iDim].first()
+                                             + field.getLayout().getLocalNDIndex()[iDim].first()
                                                    * field.get_mesh().getMeshSpacing(iDim)
                                              - field.get_mesh().getMeshSpacing(iDim)
                                                    * field.getNghost());
