@@ -38,7 +38,7 @@ public:
 
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
-    using field_type     = ippl::Field<T, Dim, mesh_type, centering_type>;
+    using field_type     = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using bc_type        = ippl::BConds<field_type, Dim>;
 
     FieldBCTest()
@@ -96,18 +96,16 @@ public:
                     return dim == d ? 2 : HostF.extent(dim) - 1;
                 },
                 [&]<typename... Idx>(const Idx... args) {
-                    // to avoid ambiguity with MultirankUtils::apply
-                    using ippl::apply;
                     using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
 
                     index_type coords[Dim] = {args...};
                     if (checkLower) {
                         coords[d] = 0;
-                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, ippl::apply(HostF, coords));
                     }
                     if (checkUpper) {
                         coords[d] = N - 1;
-                        EXPECT_DOUBLE_EQ(expected, apply(HostF, coords));
+                        EXPECT_DOUBLE_EQ(expected, ippl::apply(HostF, coords));
                     }
                 });
         }
