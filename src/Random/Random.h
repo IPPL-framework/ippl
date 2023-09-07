@@ -96,6 +96,54 @@ namespace ippl {
             uniform_real_distribution<DeviceType, RealType> unif_m;
             RealType twopi_m;
         };
+        
+        
+        template <typename T, class DeviceType, unsigned Dim>
+	struct generate_random_normal {
+	    //using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
+	    using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
+	    
+	    view_type v;
+	    Generator<DeviceType> gen;
+            normal_distribution<DeviceType, T> randn;
+
+	    // Initialize all members
+	    generate_random_normal(view_type v_, double mean, double stddev, int seed)
+		: v(v_), gen(seed), randn(mean, stddev){}
+
+	    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+		for (unsigned d = 0; d < Dim; ++d) {
+		    v(i)[d] = randn(gen);
+		}
+	    }
+	};
+        
+        template <typename T, class GeneratorPool, unsigned Dim>
+        struct generate_random_normal_basic {
+          using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
+          // Output View for the random numbers
+          view_type v;
+          // The GeneratorPool
+          GeneratorPool rand_pool;
+           // Initialize all members
+           generate_random_normal_basic(view_type v_, GeneratorPool rand_pool_)
+           : v(v_)
+           , rand_pool(rand_pool_){}
+           
+           generate_random_normal_basic(view_type v_)
+           : v(v_){}
+
+           KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+           // Get a random number state from the pool for the active thread
+           typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+           for (unsigned d = 0; d < Dim; ++d) {
+              v(i)[d] = rand_gen.normal(0.0, 1.0);
+           }
+           // Give the state back, which will allow another thread to acquire it
+          rand_pool.free_state(rand_gen);
+    }
+    };
+
     }  // namespace random
 }  // namespace ippl
 #endif
