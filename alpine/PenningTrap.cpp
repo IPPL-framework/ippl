@@ -44,6 +44,7 @@
 #include "Utility/IpplTimings.h"
 
 #include "ChargedParticles.hpp"
+#include "Stream/InSitu/CatalystAdaptor.h"
 
 constexpr unsigned Dim = 3;
 
@@ -153,6 +154,7 @@ const char* TestName = "PenningTrap";
 int main(int argc, char* argv[]) {
     static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
+    CatalystAdaptor::Initialize(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
@@ -198,8 +200,8 @@ int main(int argc, char* argv[]) {
     Vector_t<Dim> origin = rmin;
     // unsigned int nrMax   = 2048;  // Max grid size in our studies
     // double dxFinest      = rmax[0] / nrMax;
-    //const double dt      = 0.5 * dxFinest;  // size of timestep
-    const double dt      = 0.05;  // size of timestep
+    // const double dt      = 0.5 * dxFinest;  // size of timestep
+    const double dt = 0.05;  // size of timestep
 
     const bool isAllPeriodic = true;
     Mesh_t<Dim> mesh(domain, hr, origin);
@@ -443,5 +445,6 @@ int main(int argc, char* argv[]) {
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
+    CatalystAdaptor::Finalize();
     return 0;
 }

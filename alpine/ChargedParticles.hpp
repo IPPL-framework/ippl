@@ -20,6 +20,7 @@
 
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
+#include "Stream/InSitu/CatalystAdaptor.h"
 
 // some typedefs
 template <unsigned Dim = 3>
@@ -381,7 +382,8 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
-        dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
+        CatalystAdaptor::Execute(iteration, time_m, Ippl::Comm->rank(), rho_m);
+        // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 
         // rho = rho_e - rho_i
         double size = 1;
