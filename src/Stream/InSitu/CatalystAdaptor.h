@@ -46,6 +46,9 @@ namespace CatalystAdaptor {
         //
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
+        typename Field_t::view_type::host_mirror_type host_view = field.getHostMirror();
+
+        Kokkos::deep_copy(host_view, field.getView());
         conduit_cpp::Node node;
 
         // add time/cycle information
@@ -109,7 +112,7 @@ namespace CatalystAdaptor {
         fields["density/association"].set("element");
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
-        fields["density/values"].set_external(field.getView().data(), field.getView().size());
+        fields["density/values"].set_external(host_view.data(), host_view.size());
 
         // print node to have visual representation
         if (cycle == 0)
