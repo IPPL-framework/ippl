@@ -41,22 +41,17 @@
 #include <set>
 #include <string>
 #include <vector>
-
 #include "Ippl.h"
-
 #include "Utility/IpplTimings.h"
-
-//#include "ChargedParticles.hpp"
 #include "Manager/PicManager.h"
 #include "datatypes.h"
 #include "ParticleContainer.hpp"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
- 
+#include "LoadBalancer.hpp"
+ #include "LandauDampingManager.h"
  #include "Random/InverseTransformSampling.h"    
  
-constexpr unsigned Dim = 3;
-using T = double;
 
 KOKKOS_FUNCTION
 double CDF(double y, double alpha, double k) {
@@ -73,112 +68,18 @@ double ESTIMATE(double u, double alpha) {
     return u/(1+alpha); // maybe E[x] is good enough as the first guess
 }
 
+KOKKOS_FUNCTION
+double PDF3D(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
+           const unsigned Dim) {
+    double pdf = 1.0;
+
+    for (unsigned d = 0; d < Dim; ++d) {
+        pdf *= (1.0 + alpha * Kokkos::cos(kw[d] * xvec[d]));
+    }
+    return pdf;
+}
 
 const char* TestName = "LandauDamping";
-
-//template <typename T, unsigned Dim>
-class MyPicManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>> {
-public:
-    double time_m;
-    double Q_m;
-    MyPicManager()
-        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>>(){
-    }
-
-    void par2grid() override {
-        scatterCIC();
-    }
-
-    void grid2par() override {
-        gatherCIC();
-    }
-    
-    void gatherCIC() { gather(pcontainer_m->E, fcontainer_m->E_m, pcontainer_m->R); }
-    
-    void scatterCIC() {
-        Inform m("scatter ");
-
-        fcontainer_m->rho_m = 0.0;
-        scatter(pcontainer_m->q, fcontainer_m->rho_m, pcontainer_m->R);
-
-         std::cout << std::fabs((Q_m - fcontainer_m->rho_m.sum()) / Q_m)  << std::endl;
-
-        size_type Total_particles = 0;
-        size_type local_particles = pcontainer_m->getLocalNum();
-
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-
-        double cellVolume =
-            std::reduce(fcontainer_m->hr_m.begin(), fcontainer_m->hr_m.end(), 1., std::multiplies<double>());
-        fcontainer_m->rho_m = fcontainer_m->rho_m / cellVolume;
-
-        // rho = rho_e - rho_i (only if periodic BCs)
-        if (fsolver_m->stype_m != "OPEN") {
-            double size = 1;
-            for (unsigned d = 0; d < Dim; d++) {
-                size *= fcontainer_m->rmax_m[d] - fcontainer_m->rmin_m[d];
-            }
-            fcontainer_m->rho_m = fcontainer_m->rho_m - (Q_m / size);
-        }
-    }
-    
-    void dumpLandau() { dumpLandau(fcontainer_m->E_m.getView()); }
-
-    template <typename View>
-    void dumpLandau(const View& Eview) {
-        const int nghostE = fcontainer_m->E_m.getNghost();
-
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double localEx2 = 0, localExNorm = 0;
-        ippl::parallel_reduce(
-            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double val = ippl::apply(Eview, args)[0];
-                double e2  = Kokkos::pow(val, 2);
-                E2 += e2;
-
-                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
-                if (norm > ENorm) {
-                    ENorm = norm;
-                }
-            },
-            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
-
-        double globaltemp = 0.0;
-        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-        double fieldEnergy =
-            std::reduce(fcontainer_m->hr_m.begin(), fcontainer_m->hr_m.end(), globaltemp, std::multiplies<double>());
-
-        double ExAmp = 0.0;
-        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
-
-        if (ippl::Comm->rank() == 0) {
-            std::stringstream fname;
-            fname << "data/FieldLandau_";
-            fname << ippl::Comm->size();
-            fname<<"_test";
-            fname << ".csv";
-
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-            csvout.precision(16);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-            if (time_m == 0.0) {
-                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-            }
-
-            csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
-        }
-
-        ippl::Comm->barrier();
-    }
-    
-};
-
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -227,7 +128,8 @@ int main(int argc, char* argv[]) {
         PLayout_t<double, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];
-
+        double lbs = std::atof(argv[arg++]);
+        
         if (solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -236,22 +138,53 @@ int main(int argc, char* argv[]) {
         using ParticleContainer_t = ParticleContainer<T, Dim>;
         std::shared_ptr<ParticleContainer_t> pc = std::make_shared<ParticleContainer_t>(PL);
         
-        using FieldContainerType = FieldContainer<T, Dim>;
-        std::shared_ptr<FieldContainerType> fc = std::make_shared<FieldContainerType>(hr, rmin, rmax, decomp);
+        using FieldContainer_t = FieldContainer<T, Dim>;
+        std::shared_ptr<FieldContainer_t> fc = std::make_shared<FieldContainer_t>(hr, rmin, rmax, decomp);
         
         fc->initializeFields(mesh, FL);
         
-        using FieldSolverType = FieldSolver<T, Dim>;
-        std::shared_ptr<FieldSolverType> fs = std::make_shared<FieldSolverType>(solver, fc->rho_m, fc->E_m);
+        using FieldSolver_t= FieldSolver<T, Dim>;
+        std::shared_ptr<FieldSolver_t> fs = std::make_shared<FieldSolver_t>(solver, fc->rho_m, fc->E_m);
         
+        using LoadBalancer_t= LoadBalancer<T, Dim>;
+        std::shared_ptr<LoadBalancer_t> lb = std::make_shared<LoadBalancer_t>(solver, lbs, fc->rho_m, fc->E_m, FL, pc->R);
+
         fs->initSolver();
                 
-        MyPicManager manager;
+        LandauDampingManager manager;
         manager.Q_m = Q;
         manager.setParticleContainer(pc);
         manager.setFieldContainer(fc);
         manager.setFieldSolver(fs);
+        manager.setLoadBalancer(lb);
+        
+ 	bool isFirstRepartition;
+        if ((manager.loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
+            msg << "Starting first repartition" << endl;
+            isFirstRepartition             = true;
+            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
+            const int nghost               = fc->rho_m.getNghost();
+            auto rhoview                   = fc->rho_m.getView();
 
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            ippl::parallel_for(
+                "Assign initial rho based on PDF", fc->rho_m.getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // local to global index conversion
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+
+                    // ippl::apply accesses the view at the given indices and obtains a
+                    // reference; see src/Expression/IpplOperations.h
+                    ippl::apply(rhoview, args) = PDF3D(xvec, alpha, kw, Dim);
+                });
+
+            Kokkos::fence();
+
+            lb->initializeORB(FL, mesh);
+            lb->repartition(FL, mesh, isFirstRepartition);
+        }
+        
+        
          // Sample particle positions:
          ippl::detail::RegionLayout<double, 3, Mesh_t<3>> rlayout(FL, mesh);
          using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 3, Kokkos::DefaultExecutionSpace>;
@@ -292,8 +225,9 @@ int main(int argc, char* argv[]) {
         manager.grid2par();
 
         manager.time_m = 0.0;
-
+        
         // begin main timestep loop
+        isFirstRepartition = false;
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
@@ -311,15 +245,10 @@ int main(int argc, char* argv[]) {
             pc->update();
 
             // Domain Decomposition
-            //if (P->balance(totalP, it + 1)) {
-            //    msg << "Starting repartition" << endl;
-            //    IpplTimings::startTimer(domainDecomposition);
-            //    P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
-            //    IpplTimings::stopTimer(domainDecomposition);
-            //    // IpplTimings::startTimer(dumpDataTimer);
-            //    // P->dumpLocalDomains(FL, it+1);
-            //    // IpplTimings::stopTimer(dumpDataTimer);
-            //}
+            if (lb->balance(totalP, it + 1)) {
+                msg << "Starting repartition" << endl;
+                lb->repartition(FL, mesh, isFirstRepartition);
+            }
 
             // scatter the charge onto the underlying grid
             manager.par2grid();

@@ -12,7 +12,6 @@ namespace ippl {
         BaseManager()          = default;
         virtual ~BaseManager() = default;
 
-        static double time_m;
         virtual void pre_run() { /* default does nothing */
         }
 

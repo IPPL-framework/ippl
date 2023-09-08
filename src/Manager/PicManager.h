@@ -4,14 +4,18 @@
 #include <memory>
 
 #include "Manager/BaseManager.h"
- 
+
+#include "Decomposition/OrthogonalRecursiveBisection.h"
+//#include "Decomposition/LoadBalancer.h"
+//#include "Field/Field.h"
+
  namespace ippl {
 
-    template <class pc, class fc, class fs>
+    template <class pc, class fc, class fs, class orb>
     class PicManager : public BaseManager {
     public:
         PicManager()
-            : BaseManager(), fcontainer_m(nullptr), pcontainer_m(nullptr), fsolver_m(nullptr) {}
+            : BaseManager(), fcontainer_m(nullptr), pcontainer_m(nullptr), loadbalancer_m(nullptr), fsolver_m(nullptr) {}
 
         virtual ~PicManager() = default;
 
@@ -27,6 +31,10 @@
         }
         void setFieldSolver(std::shared_ptr<fs> fsolver){
             fsolver_m = fsolver;
+        }
+        
+        void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
+            loadbalancer_m = loadbalancer;
         }
     
 	//void setStepper(Stepper* stepper) {
@@ -45,7 +53,7 @@
 
         //std::unique_ptr<Stepper> stepper_m;
 
-        //std::unique_ptr<LoadBalancer> loadbalancer_m;
+        std::shared_ptr<orb> loadbalancer_m;
 
         std::shared_ptr<fs> fsolver_m;
     };
