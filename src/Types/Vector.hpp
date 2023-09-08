@@ -14,6 +14,13 @@ namespace ippl {
     }  // namespace detail
 
     template <typename T, unsigned Dim>
+    template <typename... Args>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
+        : Vector({args...}) {
+        static_assert(Dim == sizeof...(args), "Wrong number of arguments.");
+    }
+
+    template <typename T, unsigned Dim>
     template <typename E, size_t N>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
@@ -146,6 +153,15 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end()
         const {
         return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::dot(const Vector<T, Dim>& rhs) const {
+        T res = 0.0;
+        for (unsigned i = 0; i < Dim; ++i) {
+            res += data_m[i] * rhs[i];
+        }
+        return res;
     }
 
     template <typename T, unsigned Dim>

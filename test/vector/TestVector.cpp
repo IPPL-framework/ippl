@@ -16,6 +16,12 @@ int main(int argc, char* argv[]) {
         z = a * x * y * a;
 
         std::cout << z << std::endl;
+
+        std::cout << x.dot(y) << std::endl;
+
+        vector_t w(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
+
+        std::cout << w << std::endl;
     }
     ippl::finalize();
 
