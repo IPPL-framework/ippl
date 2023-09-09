@@ -48,18 +48,6 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type
         E;  // electric field at particle position
 
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the update function invokes this
-    */
-    ChargedParticles(PLayout& pl)
-        : ippl::ParticleBase<PLayout>(pl) {
-        // register the particle attributes
-        this->addAttribute(qm);
-        this->addAttribute(P);
-        this->addAttribute(E);
-    }
-
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                      ippl::e_dim_tag decomp[Dim], double Q)
         : ippl::ParticleBase<PLayout>(pl)
@@ -218,10 +206,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(particleCreation);
         P->E = 0.0;
 
-        bunch_type bunchBuffer(PL);
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
-        PL.update(*P, bunchBuffer);
+        P->update();
         IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
@@ -271,7 +258,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(RTimer);
 
             IpplTimings::startTimer(UpdateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(UpdateTimer);
 
             // advance the particle velocities

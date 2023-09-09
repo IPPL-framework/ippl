@@ -40,11 +40,6 @@ public:
 
         rank_type expectedRank;
         charge_container_type Q;
-
-        void update() {
-            PLayout& layout = this->getLayout();
-            layout.update(*this);
-        }
     };
 
     using bunch_type = Bunch<playout_type>;
@@ -151,11 +146,9 @@ TYPED_TEST_CASE(ParticleSendRecv, Tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     const auto nParticles = this->nParticles;
-    auto& pl              = this->playout;
     auto& bunch           = this->bunch;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
     // bunch->update();
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();

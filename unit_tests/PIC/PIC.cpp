@@ -115,7 +115,6 @@ TYPED_TEST_CASE(PICTest, Tests);
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 0.0;
@@ -124,8 +123,7 @@ TYPED_TEST(PICTest, Scatter) {
 
     bunch->Q = charge;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     scatter(bunch->Q, *field, bunch->R);
 
@@ -137,15 +135,13 @@ TYPED_TEST(PICTest, Scatter) {
 TYPED_TEST(PICTest, Gather) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 1.0;
 
     bunch->Q = 0.0;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     gather(bunch->Q, *field, bunch->R);
 

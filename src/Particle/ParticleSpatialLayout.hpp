@@ -39,12 +39,11 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    template <class BufferType>
-    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::update(BufferType& pdata,
-                                                                    BufferType& buffer) {
+    template <class ParticleContainer>
+    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::update(ParticleContainer& pc) {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        this->applyBC(pdata.R, rlayout_m.getDomain());
+        this->applyBC(pc.R, rlayout_m.getDomain());
         IpplTimings::stopTimer(ParticleBCTimer);
 
         static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
@@ -64,7 +63,7 @@ namespace ippl {
 
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
-        size_type localnum = pdata.getLocalNum();
+        size_type localnum = pc.getLocalNum();
 
         // 1st step
 
@@ -78,7 +77,7 @@ namespace ippl {
          */
         bool_type invalid("invalid", localnum);
 
-        size_type invalidCount = locateParticles(pdata, ranks, invalid);
+        size_type invalidCount = locateParticles(pc, ranks, invalid);
         IpplTimings::stopTimer(locateTimer);
 
         // 2nd step
@@ -121,7 +120,7 @@ namespace ippl {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                pdata.sendToRank(rank, tag, sends++, requests, hash, buffer);
+                pc.sendToRank(rank, tag, sends++, requests, hash);
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -130,7 +129,7 @@ namespace ippl {
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        pdata.destroy(invalid, invalidCount);
+        pc.destroy(invalid, invalidCount);
         Kokkos::fence();
 
         IpplTimings::stopTimer(destroyTimer);
@@ -140,7 +139,7 @@ namespace ippl {
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                pdata.recvFromRank(rank, tag, recvs++, nRecvs[rank], buffer);
+                pc.recvFromRank(rank, tag, recvs++, nRecvs[rank]);
             }
         }
         IpplTimings::stopTimer(recvTimer);
@@ -164,10 +163,10 @@ namespace ippl {
     };
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    template <typename ParticleBunch>
+    template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
-        const ParticleBunch& pdata, locate_type& ranks, bool_type& invalid) const {
-        auto& positions                            = pdata.R.getView();
+        const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
+        auto& positions                            = pc.R.getView();
         typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
