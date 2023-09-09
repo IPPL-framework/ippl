@@ -55,6 +55,7 @@ namespace ippl {
     ParticleBase<PLayout, IP...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
+        , totalNum_m(0)
         , nextID_m(Comm->rank())
         , numNodes_m(Comm->size()) {
         if constexpr (EnableIDs) {
@@ -88,38 +89,45 @@ namespace ippl {
     void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
-            attribute->create(nLocal);
-        });
+        if (nLocal > 0) {
+            forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
+                attribute->create(nLocal);
+            });
 
-        if constexpr (EnableIDs) {
-            // set the unique ID value for these new particles
-            using policy_type =
-                Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
-            auto pIDs     = ID.getView();
-            auto nextID   = this->nextID_m;
-            auto numNodes = this->numNodes_m;
-            Kokkos::parallel_for(
-                "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
-                KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
-            // nextID_m += numNodes_m * (nLocal - localNum_m);
-            nextID_m += numNodes_m * nLocal;
+            if constexpr (EnableIDs) {
+                // set the unique ID value for these new particles
+                using policy_type =
+                    Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
+                auto pIDs     = ID.getView();
+                auto nextID   = this->nextID_m;
+                auto numNodes = this->numNodes_m;
+                Kokkos::parallel_for(
+                    "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
+                    KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
+                // nextID_m += numNodes_m * (nLocal - localNum_m);
+                nextID_m += numNodes_m * nLocal;
+            }
+
+            // remember that we're creating these new particles
+            localNum_m += nLocal;
         }
 
-        // remember that we're creating these new particles
-        localNum_m += nLocal;
+        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
+        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
     }
 
     template <class PLayout, typename... IP>
     void ParticleBase<PLayout, IP...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
+        size_type n = (id > -1) ? 1 : 0;
+
         // temporary change
         index_type tmpNextID = nextID_m;
         nextID_m             = id;
         numNodes_m           = 0;
 
-        create(1);
+        create(n);
 
         nextID_m   = tmpNextID;
         numNodes_m = Comm->getNodes();
@@ -146,6 +154,16 @@ namespace ippl {
     template <typename... Properties>
     void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
                                                const size_type destroyNum) {
+        this->internalDestroy(invalid, destroyNum);
+
+        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
+        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
+    }
+
+    template <class PLayout, typename... IP>
+    template <typename... Properties>
+    void ParticleBase<PLayout, IP...>::internalDestroy(
+        const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
