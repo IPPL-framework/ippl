@@ -129,7 +129,7 @@ namespace ippl {
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        pc.destroy(invalid, invalidCount);
+        pc.internalDestroy(invalid, invalidCount);
         Kokkos::fence();
 
         IpplTimings::stopTimer(destroyTimer);
