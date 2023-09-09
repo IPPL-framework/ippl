@@ -2,21 +2,6 @@
 //   This is the container class for the field BCs.
 //   It calls the findBCNeighbors and apply in the
 //   respective BC classes to apply field BCs
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// Matthias Frey, University of St Andrews,
-// St Andrews, Scotland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 namespace ippl {
     template <typename Field, unsigned Dim>
