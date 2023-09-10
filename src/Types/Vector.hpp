@@ -14,10 +14,9 @@ namespace ippl {
     }  // namespace detail
 
     template <typename T, unsigned Dim>
-    template <typename... Args>
+    template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
-        : Vector({args...}) {
-        static_assert(Dim == sizeof...(args), "Wrong number of arguments.");
+        : Vector({static_cast<T>(args)...}) {
     }
 
     template <typename T, unsigned Dim>

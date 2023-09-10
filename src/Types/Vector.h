@@ -29,7 +29,7 @@ namespace ippl {
         Vector()
             : Vector(value_type(0)) {}
 
-        template <typename... Args>
+        template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
         explicit KOKKOS_FUNCTION Vector(const Args&... args);
 
         template <typename E, size_t N>
