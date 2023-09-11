@@ -46,7 +46,7 @@ namespace CatalystAdaptor {
         //
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
-        typename Field_t::view_type::host_mirror_type host_view = field.getHostMirror();
+        typename Field::view_type::host_mirror_type host_view = field.getHostMirror();
 
         Kokkos::deep_copy(host_view, field.getView());
         conduit_cpp::Node node;
