@@ -74,11 +74,11 @@ struct Newton1D {
 };
 
 template <typename T, class GeneratorPool, unsigned Dim>
-struct generate_random {
+struct generate_random_position {
     using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
     using value_type = typename T::value_type;
     // Output View for the random numbers
-    view_type x, v;
+    view_type x;
 
     // The GeneratorPool
     GeneratorPool rand_pool;
@@ -88,10 +88,9 @@ struct generate_random {
     T k, minU, maxU;
 
     // Initialize all members
-    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
+    generate_random_position(view_type x_, GeneratorPool rand_pool_, value_type& alpha_, T& k_,
                     T& minU_, T& maxU_)
         : x(x_)
-        , v(v_)
         , rand_pool(rand_pool_)
         , alpha(alpha_)
         , k(k_)
@@ -108,6 +107,33 @@ struct generate_random {
             x(i)[d] = u / (1 + alpha);
             Newton1D<value_type> solver(k[d], alpha, u);
             solver.solve(x(i)[d]);
+        }
+
+        // Give the state back, which will allow another thread to acquire it
+        rand_pool.free_state(rand_gen);
+    }
+};
+
+
+template <typename T, class GeneratorPool, unsigned Dim>
+struct generate_random_velocity {
+    using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
+    // Output View for the random numbers
+    view_type v;
+
+    // The GeneratorPool
+    GeneratorPool rand_pool;
+
+    // Initialize all members
+    generate_random_velocity(view_type v_, GeneratorPool rand_pool_)
+        : v(v_)
+        , rand_pool(rand_pool_) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        // Get a random number state from the pool for the active thread
+        typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+        for (unsigned d = 0; d < Dim; ++d) {
             v(i)[d] = rand_gen.normal(0.0, 1.0);
         }
 
@@ -216,7 +242,7 @@ int main(int argc, char* argv[]) {
         P->initSolver();
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
-
+        
         bool isFirstRepartition;
 
         if ((P->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -279,9 +305,14 @@ int main(int argc, char* argv[]) {
         P->create(nloc);
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
         Kokkos::parallel_for(
-            nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      P->R.getView(), P->P.getView(), rand_pool64, alpha, kw, minU, maxU));
+            nloc, generate_random_position<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                      P->R.getView(), rand_pool64, alpha, kw, minU, maxU));
 
+       Kokkos::Random_XorShift64_Pool<> rand_pool64_((size_type)(42 + 100 * ippl::Comm->rank()));
+       Kokkos::parallel_for(
+            nloc, generate_random_velocity<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                      P->P.getView(), rand_pool64_));
+                      
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(particleCreation);
@@ -306,8 +337,8 @@ int main(int argc, char* argv[]) {
         P->gatherCIC();
 
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpLandau();
-        P->gatherStatistics(totalP);
+        //P->dumpLandau();
+        //P->gatherStatistics(totalP);
         // P->dumpLocalDomains(FL, 0);
         IpplTimings::stopTimer(dumpDataTimer);
 
@@ -336,6 +367,7 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
+            
             if (P->balance(totalP, it + 1)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);

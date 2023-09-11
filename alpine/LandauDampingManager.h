@@ -18,7 +18,7 @@ public:
     double lbs;
     double dt;
     int it;
-    public:
+ public:
     std::string solver;
 
     ippl::NDIndex<Dim> domain;
