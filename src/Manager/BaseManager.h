@@ -24,7 +24,7 @@ namespace ippl {
         virtual void post_step(double /*t*/) { /* default does nothing */
         }
 
-        virtual void advance(double /*t*/, double /*dt*/) { /* default does nothing */
+        virtual void advance() { /* default does nothing */
         }
         /*
         void run(double tstart, double tstop) {

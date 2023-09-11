@@ -9,11 +9,91 @@ class LandauDampingManager : public ippl::PicManager<ParticleContainer<double, 3
 public:
     double loadbalancethreshold_m;
     double time_m;
-    double Q_m;
     LandauDampingManager()
-        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>>(){
+        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbs(0), dt(0) {
     }
+    Vector_t<int, Dim> nr;
+    size_type totalP;
+    int nt;
+    double lbs;
+    double dt;
+    int it;
+    public:
+    std::string solver;
 
+    ippl::NDIndex<Dim> domain;
+    ippl::e_dim_tag decomp[Dim];
+    
+    Vector_t<double, Dim> kw;
+    double alpha;
+    Vector_t<double, Dim> rmin;
+     Vector_t<double, Dim> rmax;
+
+    Vector_t<double, Dim> hr;
+    double Q;
+    Vector_t<double, Dim> origin;
+
+    void pre_run() override {
+         Inform m("Pre Run");
+         for (unsigned i = 0; i < Dim; i++) {
+            this->domain[i] = ippl::Index(this->nr[i]);
+        }
+        for (unsigned d = 0; d < Dim; ++d) {
+            this->decomp[d] = ippl::PARALLEL;
+        }
+        this->kw = 0.5;
+        this->alpha = 0.05;
+        this->rmin = 0.0;
+        this->rmax = 2 * pi / this->kw;
+
+        this->hr = this->rmax / this->nr;
+        // Q = -\int\int f dx dv
+        this->Q = std::reduce(this->rmax.begin(), this->rmax.end(), -1., std::multiplies<double>());
+        this->origin = this->rmin;
+        this->dt              = std::min(.05, 0.5 * *std::min_element(this->hr.begin(), this->hr.end()));
+        this->it = 0;
+        m << "Discretization:" << endl
+            << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
+    }
+    /*
+    void advance(Mesh_t<Dim> mesh, FieldLayout_t<Dim> FL, PLayout_t<double, Dim> PL) override {
+            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+            // Here, we assume a constant charge-to-mass ratio of -1 for
+            // all the particles hence eliminating the need to store mass as
+            // an attribute
+            bool isFirstRepartition = false;
+            // kick
+
+            pcontainer_m->P = pcontainer_m->P - 0.5 * this->dt * pcontainer_m->E;
+
+            // drift
+            pcontainer_m->R = pcontainer_m->R + this->dt * pcontainer_m->P;
+
+            // Since the particles have moved spatially update them to correct processors
+            pcontainer_m->update();
+
+            // Domain Decomposition
+            if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
+                loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
+            }
+
+            // scatter the charge onto the underlying grid
+            this->par2grid();
+            
+            // Field solve
+            fcontainer_m->runSolver();
+
+            // gather E field
+            this->grid2par();
+
+            // kick
+            pcontainer_m->P = pcontainer_m->P - 0.5 * this->dt * pcontainer_m->E;
+
+
+            this->time_m += this->dt;            
+            this->dumpLandau();
+    }*/
+        
     void par2grid() override {
         scatterCIC();
     }
@@ -30,7 +110,7 @@ public:
         fcontainer_m->rho_m = 0.0;
         scatter(pcontainer_m->q, fcontainer_m->rho_m, pcontainer_m->R);
 
-         m << std::fabs((Q_m - fcontainer_m->rho_m.sum()) / Q_m)  << endl;
+         m << std::fabs((this->Q - fcontainer_m->rho_m.sum()) / this->Q)  << endl;
 
         size_type Total_particles = 0;
         size_type local_particles = pcontainer_m->getLocalNum();
@@ -48,7 +128,7 @@ public:
             for (unsigned d = 0; d < Dim; d++) {
                 size *= fcontainer_m->rmax_m[d] - fcontainer_m->rmin_m[d];
             }
-            fcontainer_m->rho_m = fcontainer_m->rho_m - (Q_m / size);
+            fcontainer_m->rho_m = fcontainer_m->rho_m - (this->Q / size);
         }
     }
     

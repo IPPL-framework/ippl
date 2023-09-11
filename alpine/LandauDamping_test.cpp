@@ -86,51 +86,28 @@ int main(int argc, char* argv[]) {
     {
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);
+        
+        LandauDampingManager manager;
 
         int arg = 1;
-
-        Vector_t<int, Dim> nr;
+        // read input arguments
         for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
+            manager.nr[d] = std::atoi(argv[arg++]);
         }
-
-        const size_type totalP = std::atoll(argv[arg++]);
-        const unsigned int nt  = std::atoi(argv[arg++]);
-
-        msg << "Landau damping" << endl
-            << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
-
-       ippl::NDIndex<Dim> domain;
-        for (unsigned i = 0; i < Dim; i++) {
-            domain[i] = ippl::Index(nr[i]);
-        }
-
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        manager.totalP = std::atoll(argv[arg++]);
+        manager.nt  = std::atoi(argv[arg++]);
+        manager.solver = argv[arg++];
+        manager.lbs = std::atof(argv[arg++]);
         
+       manager.pre_run();
         // create mesh and layout objects for this problem domain
-        Vector_t<double, Dim> kw = 0.5;
-        double alpha             = 0.05;
-        Vector_t<double, Dim> rmin(0.0);
-        Vector_t<double, Dim> rmax = 2 * pi / kw;
-
-        Vector_t<double, Dim> hr = rmax / nr;
-        // Q = -\int\int f dx dv
-        double Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
-        Vector_t<double, Dim> origin = rmin;
-        const double dt              = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
-        
         const bool isAllPeriodic = true;
-        Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        Mesh_t<Dim> mesh(manager.domain, manager.hr, manager.origin);
+        FieldLayout_t<Dim> FL(manager.domain, manager.decomp, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
-        std::string solver = argv[arg++];
-        double lbs = std::atof(argv[arg++]);
-        
-        if (solver == "OPEN") {
+
+        if (manager.solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
@@ -139,20 +116,18 @@ int main(int argc, char* argv[]) {
         std::shared_ptr<ParticleContainer_t> pc = std::make_shared<ParticleContainer_t>(PL);
         
         using FieldContainer_t = FieldContainer<T, Dim>;
-        std::shared_ptr<FieldContainer_t> fc = std::make_shared<FieldContainer_t>(hr, rmin, rmax, decomp);
+        std::shared_ptr<FieldContainer_t> fc = std::make_shared<FieldContainer_t>(manager.hr, manager.rmin, manager.rmax, manager.decomp);
         
         fc->initializeFields(mesh, FL);
         
         using FieldSolver_t= FieldSolver<T, Dim>;
-        std::shared_ptr<FieldSolver_t> fs = std::make_shared<FieldSolver_t>(solver, fc->rho_m, fc->E_m);
+        std::shared_ptr<FieldSolver_t> fs = std::make_shared<FieldSolver_t>(manager.solver, fc->rho_m, fc->E_m);
         
         using LoadBalancer_t= LoadBalancer<T, Dim>;
-        std::shared_ptr<LoadBalancer_t> lb = std::make_shared<LoadBalancer_t>(solver, lbs, fc->rho_m, fc->E_m, FL, pc->R);
+        std::shared_ptr<LoadBalancer_t> lb = std::make_shared<LoadBalancer_t>(manager.solver, manager.lbs, fc->rho_m, fc->E_m, FL, pc->R);
 
         fs->initSolver();
                 
-        LandauDampingManager manager;
-        manager.Q_m = Q;
         manager.setParticleContainer(pc);
         manager.setFieldContainer(fc);
         manager.setFieldSolver(fs);
@@ -171,11 +146,11 @@ int main(int argc, char* argv[]) {
                 "Assign initial rho based on PDF", fc->rho_m.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * manager.hr + manager.origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = PDF3D(xvec, alpha, kw, Dim);
+                    ippl::apply(rhoview, args) = PDF3D(xvec, manager.alpha, manager.kw, Dim);
                 });
 
             Kokkos::fence();
@@ -190,12 +165,13 @@ int main(int argc, char* argv[]) {
          using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 3, Kokkos::DefaultExecutionSpace>;
          ippl::random::Distribution<double, 3> distR;
          for(int d=0; d<3; d++){
-                 double k = kw[d];
+                 double k = manager.kw[d];
+                 double alpha = manager.alpha;
 		 distR.setCdfFunction(d, [alpha, k](double y) { return CDF(y, alpha, k);});
 		 distR.setPdfFunction(d, [alpha, k](double y) { return PDF(y, alpha, k);});
 		 distR.setEstimationFunction(d, [alpha](double u) { return ESTIMATE(u, alpha);});
          }
-         InvTransSampl_t its(rmin, rmax, rlayout, distR, totalP);
+         InvTransSampl_t its(manager.rmin, manager.rmax, rlayout, distR, manager.totalP);
          unsigned int nloc = its.getLocalNum();
          pc->create(nloc);
          its.generate(distR, pc->R.getView(), 42 + 100 * ippl::Comm->rank());
@@ -215,7 +191,7 @@ int main(int argc, char* argv[]) {
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        pc->q = Q / totalP;
+        pc->q = manager.Q / manager.totalP;
         msg << "particles created and initial conditions assigned " << endl;
         
         fc->rho_m = 0.0;
@@ -229,23 +205,24 @@ int main(int argc, char* argv[]) {
         // begin main timestep loop
         isFirstRepartition = false;
         msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt; it++) {
+        for (manager.it = 0; manager.it < manager.nt; manager.it++) {
+        
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
             // an attribute
             // kick
 
-            pc->P = pc->P - 0.5 * dt * pc->E;
+            pc->P = pc->P - 0.5 * manager.dt * pc->E;
 
             // drift
-            pc->R = pc->R + dt * pc->P;
+            pc->R = pc->R + manager.dt * pc->P;
 
             // Since the particles have moved spatially update them to correct processors
             pc->update();
 
             // Domain Decomposition
-            if (lb->balance(totalP, it + 1)) {
+            if (lb->balance(manager.totalP, manager.it + 1)) {
                 msg << "Starting repartition" << endl;
                 lb->repartition(FL, mesh, isFirstRepartition);
             }
@@ -260,17 +237,19 @@ int main(int argc, char* argv[]) {
             manager.grid2par();
 
             // kick
-            pc->P = pc->P - 0.5 * dt * pc->E;
+            pc->P = pc->P - 0.5 * manager.dt * pc->E;
 
 
-            manager.time_m += dt;            
+            manager.time_m += manager.dt;            
             manager.dumpLandau();
 
-            msg << "Finished time step: " << it + 1 << " time: " << manager.time_m << endl;
+            msg << "Finished time step: " << manager.it + 1 << " time: " << manager.time_m << endl;
+            
         }
         msg << "LandauDamping: End." << endl;
         
     }
+    
     ippl::finalize();
 
     return 0;
