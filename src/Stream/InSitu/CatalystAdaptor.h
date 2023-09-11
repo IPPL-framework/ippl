@@ -46,7 +46,14 @@ namespace CatalystAdaptor {
         auto tempFieldf = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
         typename Field::view_type::host_mirror_type host_view = field.getHostMirror();
 
-        Kokkos::deep_copy(host_view, field.getView());
+        using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
+        ippl::parallel_for(
+            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(field.getView(), field.getNghost()),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                ippl::apply<Field::dimension>(tempFieldf, args - field.getNghost()) = ippl::apply<Field::dimension>(field.getView(), args);
+            });
+
+//        Kokkos::deep_copy(host_view, tempFieldf);
         conduit_cpp::Node node;
 
         // add time/cycle information
