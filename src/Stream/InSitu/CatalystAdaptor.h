@@ -14,10 +14,6 @@
 #include "Utility/IpplException.h"
 
 namespace CatalystAdaptor {
-    constexpr unsigned int dim{2};
-    using Mesh_t      = ippl::UniformCartesian<double, dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
-    using Field_t     = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
@@ -46,6 +42,8 @@ namespace CatalystAdaptor {
         //
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
+
+        auto tempFieldf = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
         typename Field::view_type::host_mirror_type host_view = field.getHostMirror();
 
         Kokkos::deep_copy(host_view, field.getView());
