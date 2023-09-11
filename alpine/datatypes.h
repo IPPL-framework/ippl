@@ -2,7 +2,7 @@
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
-
+ 
 // some typedefs
 template <unsigned Dim>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
@@ -58,7 +58,6 @@ using OpenSolver_t =
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
                                              P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
-
 
 const double pi = Kokkos::numbers::pi_v<double>;
 

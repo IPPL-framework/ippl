@@ -10,7 +10,7 @@
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
 
     public:
-        ParticleAttrib<double> q;                 // charge
+        ippl::ParticleAttrib<double> q;                 // charge
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
         ParticleContainer(ippl::ParticleSpatialLayout<T, Dim>& pl)

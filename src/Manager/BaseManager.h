@@ -18,10 +18,10 @@ namespace ippl {
         virtual void post_run() { /* default does nothing */
         }
 
-        virtual void pre_step(double /*t*/) { /* default does nothing */
+        virtual void pre_step() { /* default does nothing */
         }
 
-        virtual void post_step(double /*t*/) { /* default does nothing */
+        virtual void post_step() { /* default does nothing */
         }
 
         virtual void advance() { /* default does nothing */
