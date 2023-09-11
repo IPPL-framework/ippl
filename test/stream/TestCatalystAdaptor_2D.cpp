@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     typename field_type::view_type& view = field.getView();
 
     double time           = {0.0};
-    const double dt       = {0.05};
+    const double dt       = {1};
     const unsigned int nt = {5};
     for (unsigned int it = 0; it < nt; ++it) {
         Kokkos::parallel_for(

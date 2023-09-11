@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
     typename field_type::view_type& view = field.getView();
 
     double time           = {0.0};
-    const double dt       = {0.05};
+    const double dt       = {1};
     const unsigned int nt = {10};
     for (unsigned int it = 0; it < nt; ++it) {
         Kokkos::parallel_for(
@@ -130,9 +130,9 @@ int main(int argc, char* argv[]) {
         time += dt;
 
         // dumpVTK only works with --info 5 and higher
-        dumpVTK(field, field.get_mesh().getGridsize(0), field.get_mesh().getGridsize(1),
-                field.get_mesh().getGridsize(2), it, field.get_mesh().getMeshSpacing(0),
-                field.get_mesh().getMeshSpacing(1), field.get_mesh().getMeshSpacing(2));
+//        dumpVTK(field, field.get_mesh().getGridsize(0), field.get_mesh().getGridsize(1),
+//                field.get_mesh().getGridsize(2), it, field.get_mesh().getMeshSpacing(0),
+//                field.get_mesh().getMeshSpacing(1), field.get_mesh().getMeshSpacing(2));
     }
 
     int nRanks = Ippl::Comm->size();
