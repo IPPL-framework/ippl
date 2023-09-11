@@ -23,6 +23,13 @@ target_link_libraries (
     ${HDF5_LIBRARIES}
 )
 
+add_executable (TestConfiguration TestConfiguration.cpp)
+target_link_libraries (
+    TestConfiguration
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

@@ -7,7 +7,8 @@ namespace ippl {
             : Stream<ParticleContainer>(std::move(format)) {}
 
         template <class ParticleContainer>
-        void ParticleStream<ParticleContainer>::operator<<(const ParticleContainer& obj) {
+        ParticleStream<ParticleContainer>& ParticleStream<ParticleContainer>::operator<<(
+            const ParticleContainer& obj) {
             std::cout << "This is a HDF5 stream:" << std::endl;
             size_t nAttrib = obj.getAttributeNum();
             for (size_t i = 0; i < nAttrib; ++i) {
@@ -42,10 +43,15 @@ namespace ippl {
                 }
             }
             std::cout << std::endl;
+
+            return *this;
         }
 
         template <class ParticleContainer>
-        void ParticleStream<ParticleContainer>::operator>>(ParticleContainer& /*obj*/) {}
+        ParticleStream<ParticleContainer>& ParticleStream<ParticleContainer>::operator>>(
+            ParticleContainer& /*obj*/) {
+            return *this;
+        }
 
     }  // namespace hdf5
 

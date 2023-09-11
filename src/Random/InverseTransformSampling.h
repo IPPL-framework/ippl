@@ -125,6 +125,7 @@ namespace ippl {
         template <typename T, unsigned Dim>
         class Distribution {
         public:
+<<<<<<< HEAD
            Distribution()
            : cdfFunctions(Dim), pdfFunctions(Dim), estimationFunctions(Dim) {}
            // Member function to set a custom CDF function for a specific dimension
@@ -206,6 +207,7 @@ namespace ippl {
                 throw std::invalid_argument("Invalid dimension specified.");
              }
            }
+
 
         private:
            std::vector<std::function<T(T)>> cdfFunctions;

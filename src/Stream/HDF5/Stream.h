@@ -55,7 +55,7 @@ namespace ippl {
             void close() final;
 
             template <typename T>
-            void operator<<(const std::pair<std::string, T>& pair);
+            Stream<Object>& operator<<(const std::pair<std::string, T>& pair);
 
         protected:
             H5::H5File h5file_m;
@@ -125,7 +125,7 @@ namespace ippl {
 
         template <class Object>
         template <typename T>
-        void Stream<Object>::operator<<(const std::pair<std::string, T>& pair) {
+        Stream<Object>& Stream<Object>::operator<<(const std::pair<std::string, T>& pair) {
             try {
                 const std::string& key = pair.first;
                 const T& value         = pair.second;
@@ -143,6 +143,8 @@ namespace ippl {
             } catch (...) {
                 throw IpplException("hdf5::Stream::operator<<", "Unable to write attribute");
             }
+
+            return *this;
         }
     }  // namespace hdf5
 }  // namespace ippl
