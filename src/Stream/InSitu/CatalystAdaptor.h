@@ -39,8 +39,8 @@ namespace CatalystAdaptor {
         }
     }
 
-    template <typename Field_t>
-    void Execute(int cycle, double time, int rank, Field_t& field) {
+    template <class Field>
+    void Execute(int cycle, double time, int rank, Field& field) {
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
         //
