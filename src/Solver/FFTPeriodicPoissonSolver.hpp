@@ -2,27 +2,18 @@
 // Class FFTPeriodicPoissonSolver
 //   Solves periodic electrostatics problems using Fourier transforms
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+        bool needsReinit =
+            this->rhs_mp != &rhs || (this->rhs_mp && this->rhs_mp->getLayout() != rhs.getLayout());
         Base::setRhs(rhs);
-        initialize();
+        if (needsReinit) {
+            initialize();
+        }
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -62,7 +53,7 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
-        fft_mp->transform(1, *this->rhs_mp, fieldComplex_m);
+        fft_mp->transform(FORWARD, *this->rhs_mp, fieldComplex_m);
 
         auto view        = fieldComplex_m.getView();
         const int nghost = fieldComplex_m.getNghost();
@@ -114,7 +105,7 @@ namespace ippl {
                         apply(view, args) *= factor;
                     });
 
-                fft_mp->transform(-1, *this->rhs_mp, fieldComplex_m);
+                fft_mp->transform(BACKWARD, *this->rhs_mp, fieldComplex_m);
 
                 break;
             }
@@ -161,7 +152,7 @@ namespace ippl {
                             apply(tempview, args) *= -(imag * kVec[gd] * factor);
                         });
 
-                    fft_mp->transform(-1, *this->rhs_mp, tempFieldComplex_m);
+                    fft_mp->transform(BACKWARD, *this->rhs_mp, tempFieldComplex_m);
 
                     ippl::parallel_for(
                         "Assign Gradient FFTPeriodicPoissonSolver",

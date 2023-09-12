@@ -5,19 +5,6 @@
 // domain is divided recursively so as to even weights on each side of the cut,
 // works with 2^n processors only.
 //
-// Copyright (c) 2021, Michael Ligotino, ETH, Zurich;
-// Paul Scherrer Institut, Villigen; Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
@@ -33,19 +20,19 @@
 namespace ippl {
     /*
      * @class OrthogonalRecursiveBisection
-     * @tparam Tf type of field
-     * @tparam Dim dimension
-     * @tparam M mesh
+     * @tparam Field the field type
      * @tparam Tp type of particle position. If not specified, it will be equal to the field's type
      */
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp = Tf>
+    template <class Field, class Tp = typename Field::value_type>
     class OrthogonalRecursiveBisection {
-    public:
-        using field_view_type = typename detail::ViewType<Tf, Dim>::view_type;
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using Tf                      = typename Field::value_type;
 
+    public:
         // Weight for reduction
-        Field<Tf, Dim, Mesh, Centering> bf_m;
+        Field bf_m;
 
         /*!
          * Initialize member field with mesh and field layout
@@ -53,17 +40,19 @@ namespace ippl {
          * @param mesh Mesh
          * @param rho Density field
          */
-        void initialize(FieldLayout<Dim>& fl, Mesh& mesh,
-                        const Field<Tf, Dim, Mesh, Centering>& rho);
+        void initialize(FieldLayout<Dim>& fl, mesh_type& mesh, const Field& rho);
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
          * repartitions FieldLayout's global domain
+         * @tparam Attrib the particle attribute type (memory space must be accessible to field
+         * memory)
          * @param R Weights to scatter
          * @param fl FieldLayout
          * @param isFirstRepartition boolean which tells whether to scatter or not
          */
-        bool binaryRepartition(const ParticleAttrib<Vector<Tp, Dim>>& R, FieldLayout<Dim>& fl,
+        template <typename Attrib>
+        bool binaryRepartition(const Attrib& R, FieldLayout<Dim>& fl,
                                const bool& isFirstRepartition);
 
         /*!
@@ -75,11 +64,12 @@ namespace ippl {
         /*!
          * Performs reduction on local field in all dimension except that determined
          * by cutAxis, stores result in res
-         * @param res Array giving the result of reduction
-         * @param dom Domain to reduce
+         * @param rankWeights Array giving the result of reduction
          * @param cutAxis Index of cut axis
+         * @param dom Domain to reduce
          */
-        void perpendicularReduction(std::vector<Tf>& res, unsigned int cutAxis, NDIndex<Dim>& dom);
+        void perpendicularReduction(std::vector<Tf>& rankWeights, unsigned int cutAxis,
+                                    NDIndex<Dim>& dom);
 
         /*!
          * Find median of array
@@ -101,9 +91,12 @@ namespace ippl {
 
         /*!
          * Scattering of particle positions in field using a CIC method
+         * @tparam Attrib the particle attribute type (memory space must be accessible to field
+         * memory)
          * @param r Weights
          */
-        void scatterR(const ParticleAttrib<Vector<Tp, Dim>>& r);
+        template <typename Attrib>
+        void scatterR(const Attrib& r);
 
     };  // class
 

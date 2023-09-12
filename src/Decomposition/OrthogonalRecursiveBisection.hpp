@@ -1,17 +1,18 @@
 #include "Utility/IpplTimings.h"
+
 namespace ippl {
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    void OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::initialize(
-        FieldLayout<Dim>& fl, Mesh& mesh, const Field<Tf, Dim, Mesh, Centering>& rho) {
+    template <class Field, class Tp>
+    void OrthogonalRecursiveBisection<Field, Tp>::initialize(FieldLayout<Dim>& fl, mesh_type& mesh,
+                                                             const Field& rho) {
         bf_m.initialize(mesh, fl);
         bf_m = rho;
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    bool OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::binaryRepartition(
-        const ParticleAttrib<Vector<Tp, Dim>>& R, FieldLayout<Dim>& fl,
-        const bool& isFirstRepartition) {
+    template <class Field, class Tp>
+    template <typename Attrib>
+    bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
+        const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition) {
         // Timings
         static IpplTimings::TimerRef tbasicOp       = IpplTimings::getTimer("basicOperations");
         static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");
@@ -120,8 +121,8 @@ namespace ippl {
         return true;
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    int OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::findCutAxis(NDIndex<Dim>& dom) {
+    template <class Field, class Tp>
+    int OrthogonalRecursiveBisection<Field, Tp>::findCutAxis(NDIndex<Dim>& dom) {
         // Find longest domain size
         return std::distance(dom.begin(), std::max_element(dom.begin(), dom.end(),
                                                            [&](const Index& a, const Index& b) {
@@ -129,8 +130,8 @@ namespace ippl {
                                                            }));
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    void OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::perpendicularReduction(
+    template <class Field, class Tp>
+    void OrthogonalRecursiveBisection<Field, Tp>::perpendicularReduction(
         std::vector<Tf>& rankWeights, unsigned int cutAxis, NDIndex<Dim>& dom) {
         // Check if domains overlap, if not no need for reduction
         NDIndex<Dim> lDom = bf_m.getOwned();
@@ -140,8 +141,8 @@ namespace ippl {
         }
 
         // Get field's local weights
-        int nghost                 = bf_m.getNghost();
-        const field_view_type data = bf_m.getView();
+        int nghost      = bf_m.getNghost();
+        const auto data = bf_m.getView();
 
         // Determine the iteration bounds of the reduction
         int cutAxisFirst =
@@ -156,7 +157,8 @@ namespace ippl {
         }
 
         // Find all the perpendicular axes
-        using index_type = typename RangePolicy<Dim>::index_type;
+        using exec_space = typename Field::execution_space;
+        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
         Kokkos::Array<index_type, Dim> begin, end;
         for (unsigned d = 0; d < Dim; d++) {
             if (d == cutAxis) {
@@ -183,9 +185,9 @@ namespace ippl {
             // Reducing over perpendicular plane defined by cutAxis
             Tf tempRes = Tf(0);
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_reduce(
-                "ORB weight reduction", createRangePolicy<Dim>(begin, end),
+                "ORB weight reduction", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args, Tf& weight) {
                     weight += apply(data, args);
                 },
@@ -197,8 +199,8 @@ namespace ippl {
         }
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    int OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::findMedian(std::vector<Tf>& w) {
+    template <class Field, class Tp>
+    int OrthogonalRecursiveBisection<Field, Tp>::findMedian(std::vector<Tf>& w) {
         // Special case when array must be cut in half in order to not have planes
         if (w.size() == 4) {
             return 1;
@@ -235,10 +237,10 @@ namespace ippl {
         return w.size() - 3;
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    void OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::cutDomain(
-        std::vector<NDIndex<Dim>>& domains, std::vector<int>& procs, int it, int cutAxis,
-        int median) {
+    template <class Field, class Tp>
+    void OrthogonalRecursiveBisection<Field, Tp>::cutDomain(std::vector<NDIndex<Dim>>& domains,
+                                                            std::vector<int>& procs, int it,
+                                                            int cutAxis, int median) {
         // Cut domains[it] in half at median along cutAxis
         NDIndex<Dim> leftDom, rightDom;
         domains[it].split(leftDom, rightDom, cutAxis, median + domains[it][cutAxis].first());
@@ -251,16 +253,20 @@ namespace ippl {
         procs.insert(procs.begin() + it + 1, temp - procs[it]);
     }
 
-    template <class Tf, unsigned Dim, class Mesh, class Centering, class Tp>
-    void OrthogonalRecursiveBisection<Tf, Dim, Mesh, Centering, Tp>::scatterR(
-        const ParticleAttrib<Vector<Tp, Dim>>& r) {
-        using vector_type = typename Mesh::vector_type;
+    template <class Field, class Tp>
+    template <typename Attrib>
+    void OrthogonalRecursiveBisection<Field, Tp>::scatterR(const Attrib& r) {
+        using vector_type = typename mesh_type::vector_type;
+        static_assert(
+            Kokkos::SpaceAccessibility<typename Attrib::memory_space,
+                                       typename Field::memory_space>::accessible,
+            "Particle attribute memory space must be accessible from ORB field memory space");
 
         // Reset local field
         bf_m = 0.0;
         // Get local data
-        field_view_type view           = bf_m.getView();
-        const Mesh& mesh               = bf_m.get_mesh();
+        auto view                      = bf_m.getView();
+        const mesh_type& mesh          = bf_m.get_mesh();
         const FieldLayout<Dim>& layout = bf_m.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
         const int nghost               = bf_m.getNghost();
@@ -270,8 +276,11 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx   = 1.0 / dx;
 
+        using policy_type = Kokkos::RangePolicy<size_t, typename Field::execution_space>;
+
         Kokkos::parallel_for(
-            "ParticleAttrib::scatterR", r.getParticleCount(), KOKKOS_LAMBDA(const size_t idx) {
+            "ParticleAttrib::scatterR", policy_type(0, r.getParticleCount()),
+            KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
                 Vector<Tp, Dim> l      = (r(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;

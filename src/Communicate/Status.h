@@ -2,20 +2,6 @@
 // Class Status
 //   A communication status handle for non-blocking communication.
 //
-//
-// Copyright (c) 2023, Matthias Frey, University of St Andrews, UK
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_MPI_STATUS_H
 #define IPPL_MPI_STATUS_H
 

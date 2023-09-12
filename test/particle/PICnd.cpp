@@ -10,19 +10,6 @@
 //   Usage:
 //     srun ./PICnd 128 128 128 10000 10 --info 10
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
 
@@ -49,13 +36,14 @@ typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
-typedef ippl::OrthogonalRecursiveBisection<double, Dim, Mesh_t, Centering_t> ORB;
 
 template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
 template <typename T, unsigned Dim>
 using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
+
+typedef ippl::OrthogonalRecursiveBisection<Field<double, Dim>> ORB;
 
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
@@ -91,18 +79,6 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type
         E;  // electric field at particle position
 
-    /*
-      This constructor is mandatory for all derived classes from
-      ParticleBase as the update function invokes this
-    */
-    ChargedParticles(PLayout& pl)
-        : ippl::ParticleBase<PLayout>(pl) {
-        // register the particle attributes
-        this->addAttribute(qm);
-        this->addAttribute(P);
-        this->addAttribute(E);
-    }
-
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                      std::array<bool, Dim> isParallel, double Q)
         : ippl::ParticleBase<PLayout>(pl)
@@ -120,7 +96,7 @@ public:
 
     void setupBCs() { setBCAllPeriodic(); }
 
-    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void updateLayout(FieldLayout_t& fl, Mesh_t& mesh) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -133,7 +109,7 @@ public:
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
-        layout.update(*this, buffer);
+        this->update();
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
@@ -141,7 +117,7 @@ public:
 
     ~ChargedParticles() {}
 
-    void repartition(FieldLayout_t& fl, Mesh_t& mesh, ChargedParticles<PLayout>& buffer) {
+    void repartition(FieldLayout_t& fl, Mesh_t& mesh) {
         // Repartition the domains
         bool fromAnalyticDensity = false;
         bool res                 = orb.binaryRepartition(this->R, fl, fromAnalyticDensity);
@@ -151,7 +127,7 @@ public:
             return;
         }
         // Update
-        this->updateLayout(fl, mesh, buffer);
+        this->updateLayout(fl, mesh);
     }
 
     bool balance(unsigned int totalP) {  //, int timestep = 1) {
@@ -505,11 +481,9 @@ int main(int argc, char* argv[]) {
         P->P  = 0.0;
         IpplTimings::stopTimer(particleCreation);
 
-        bunch_type bunchBuffer(PL);
-
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
-        PL.update(*P, bunchBuffer);
+        P->update();
         IpplTimings::stopTimer(UpdateTimer);
 
         msg << "particles created and initial conditions assigned " << endl;
@@ -524,7 +498,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef domainDecomposition0 = IpplTimings::getTimer("domainDecomp0");
         IpplTimings::startTimer(domainDecomposition0);
         if (P->balance(totalP)) {
-            P->repartition(FL, mesh, bunchBuffer);
+            P->repartition(FL, mesh);
         }
         IpplTimings::stopTimer(domainDecomposition0);
         msg << "Balancing finished" << endl;
@@ -553,14 +527,14 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(RTimer);
 
             IpplTimings::startTimer(UpdateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(UpdateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition0);
-                P->repartition(FL, mesh, bunchBuffer);
+                P->repartition(FL, mesh);
                 IpplTimings::stopTimer(domainDecomposition0);
                 // Conservations
                 // P->writePerRank();

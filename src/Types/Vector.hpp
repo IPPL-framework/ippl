@@ -2,19 +2,6 @@
 // Class Vector
 //   Vector class used for vector fields and particle attributes like the coordinate.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 // #include "Utility/PAssert.h"
 
 #include <iomanip>
@@ -25,6 +12,11 @@ namespace ippl {
         template <typename T, unsigned Dim>
         struct isExpression<Vector<T, Dim>> : std::true_type {};
     }  // namespace detail
+
+    template <typename T, unsigned Dim>
+    template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
+        : Vector({static_cast<T>(args)...}) {}
 
     template <typename T, unsigned Dim>
     template <typename E, size_t N>
@@ -159,6 +151,15 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::const_iterator Vector<T, Dim>::end()
         const {
         return data_m + Dim;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::dot(const Vector<T, Dim>& rhs) const {
+        T res = 0.0;
+        for (unsigned i = 0; i < Dim; ++i) {
+            res += data_m[i] * rhs[i];
+        }
+        return res;
     }
 
     template <typename T, unsigned Dim>

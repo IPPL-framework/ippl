@@ -8,19 +8,6 @@
 //   where ke = Coulomb constant,
 //         alpha = controls long-range interaction.
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 namespace ippl {
@@ -222,7 +209,7 @@ namespace ippl {
 
         // forward FFT of the charge density field on doubled grid
         rhotr_m = 0.0;
-        fft_m->transform(+1, *(this->rhs_mp), rhotr_m);
+        fft_m->transform(FORWARD, *(this->rhs_mp), rhotr_m);
 
         // call greensFunction to recompute if the mesh spacing has changed
         if (green) {
@@ -287,7 +274,7 @@ namespace ippl {
                         apply(tempview, args) *= -(isNotZero * imag * kVec[gd]);
                     });
 
-                fft_m->transform(-1, *this->rhs_mp, tempFieldComplex_m);
+                fft_m->transform(BACKWARD, *this->rhs_mp, tempFieldComplex_m);
 
                 ippl::parallel_for(
                     "Assign Gradient FFTPeriodicPoissonSolver", getRangePolicy(viewLhs, nghostL),
@@ -304,7 +291,7 @@ namespace ippl {
 
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
-            fft_m->transform(-1, *(this->rhs_mp), rhotr_m);
+            fft_m->transform(BACKWARD, *(this->rhs_mp), rhotr_m);
 
             // normalization is double counted due to 2 transforms
             *(this->rhs_mp) = *(this->rhs_mp) * nr_m[0] * nr_m[1] * nr_m[2];
@@ -358,7 +345,7 @@ namespace ippl {
             });
 
         // perform the FFT of the Green's function for the convolution
-        fft_m->transform(+1, grn_m, grntr_m);
+        fft_m->transform(FORWARD, grn_m, grntr_m);
     };
 
 }  // namespace ippl

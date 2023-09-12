@@ -2,19 +2,6 @@
 // File IpplOperations.h
 //   Expression Templates operations.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_OPERATIONS_H
 #define IPPL_OPERATIONS_H
 
@@ -79,29 +66,31 @@ namespace ippl {
         return apply_impl(view, coords, Indices{});
     }
 
-#define DefineUnaryOperation(fun, name, op1, op2)                              \
-    template <typename E>                                                      \
-    struct fun : public detail::Expression<fun<E>, sizeof(E)> {                \
-        constexpr static unsigned dim = E::dim;                                \
-                                                                               \
-        KOKKOS_FUNCTION                                                        \
-        fun(const E& u)                                                        \
-            : u_m(u) {}                                                        \
-                                                                               \
-        KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const { return op1; } \
-                                                                               \
-        template <typename... Args>                                            \
-        KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {           \
-            return op2;                                                        \
-        }                                                                      \
-                                                                               \
-    private:                                                                   \
-        const E u_m;                                                           \
-    };                                                                         \
-                                                                               \
-    template <typename E, size_t N>                                            \
-    KOKKOS_INLINE_FUNCTION fun<E> name(const detail::Expression<E, N>& u) {    \
-        return fun<E>(*static_cast<const E*>(&u));                             \
+#define DefineUnaryOperation(fun, name, op1, op2)                           \
+    template <typename E>                                                   \
+    struct fun : public detail::Expression<fun<E>, sizeof(E)> {             \
+        constexpr static unsigned dim = E::dim;                             \
+                                                                            \
+        KOKKOS_FUNCTION                                                     \
+        fun(const E& u)                                                     \
+            : u_m(u) {}                                                     \
+                                                                            \
+        KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const {            \
+            return op1;                                                     \
+        }                                                                   \
+                                                                            \
+        template <typename... Args>                                         \
+        KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {        \
+            return op2;                                                     \
+        }                                                                   \
+                                                                            \
+    private:                                                                \
+        const E u_m;                                                        \
+    };                                                                      \
+                                                                            \
+    template <typename E, size_t N>                                         \
+    KOKKOS_INLINE_FUNCTION fun<E> name(const detail::Expression<E, N>& u) { \
+        return fun<E>(*static_cast<const E*>(&u));                          \
     }
 
     /// @cond
@@ -149,7 +138,9 @@ namespace ippl {
             : u_m(u)                                                                           \
             , v_m(v) {}                                                                        \
                                                                                                \
-        KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const { return op1; }                 \
+        KOKKOS_INLINE_FUNCTION auto operator[](size_t i) const {                               \
+            return op1;                                                                        \
+        }                                                                                      \
                                                                                                \
         template <typename... Args>                                                            \
         KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {                           \

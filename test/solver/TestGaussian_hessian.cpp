@@ -11,19 +11,6 @@
 //     Example:
 //       srun ./TestGaussian_hessian HOCKNEY DOUBLE --info 5
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #include "Ippl.h"
@@ -34,7 +21,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "FFTPoissonSolver.h"
+#include "Solver/FFTPoissonSolver.h"
 
 template <typename T>
 using Mesh_t = typename ippl::UniformCartesian<T, 3>;

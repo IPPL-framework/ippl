@@ -20,10 +20,12 @@ add_subdirectory (field)
 if (ENABLE_FFT)
     add_subdirectory (FFT)
 endif()
+if (ENABLE_SOLVERS)
+    add_subdirectory (solver)
+endif()
 add_subdirectory (particle)
 add_subdirectory (region)
 add_subdirectory (serialization)
-add_subdirectory (mpi)
 
 # vi: set et ts=4 sw=4 sts=4:
 

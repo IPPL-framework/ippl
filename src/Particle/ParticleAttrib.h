@@ -13,19 +13,6 @@
 //   defines the necessary templated classes and functions to make
 //   ParticleAttrib a capable expression-template participant.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_ATTRIB_H
 #define IPPL_PARTICLE_ATTRIB_H
 
@@ -50,7 +37,8 @@ namespace ippl {
 
         using hash_type = typename Base::hash_type;
 
-        using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
+        using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
+
         using HostMirror = typename view_type::host_mirror_type;
 
         using memory_space    = typename view_type::memory_space;
@@ -72,16 +60,16 @@ namespace ippl {
         void destroy(const hash_type& deleteIndex, const hash_type& keepIndex,
                      size_type invalidCount) override;
 
-        void pack(void*, const hash_type&) const override;
+        void pack(const hash_type&) override;
 
-        void unpack(void*, size_type) override;
+        void unpack(size_type) override;
 
         void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
-            ar.serialize(dview_m, nsends);
+            ar.serialize(buf_m, nsends);
         }
 
         void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
-            ar.deserialize(dview_m, nrecvs);
+            ar.deserialize(buf_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
@@ -145,6 +133,7 @@ namespace ippl {
 
     private:
         view_type dview_m;
+        view_type buf_m;
     };
 }  // namespace ippl
 
