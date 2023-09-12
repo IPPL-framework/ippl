@@ -4,7 +4,6 @@
 #include "Ippl.h"
 
 
-
 namespace ippl {
 
     class BaseManager {
@@ -26,17 +25,17 @@ namespace ippl {
 
         virtual void advance() { /* default does nothing */
         }
-        /*
-        void run(double tstart, double tstop) {
-            for (double t = tstart; t <= tstop; t += dt) {
-                this->pre_step(t);
+        
+        void run(int nt) {
+            for (int it=0; it<nt; it++){
+                this->pre_step();
 
-                this->advance(t, dt);
+                this->advance();
 
-                this->post_step(t);
+                this->post_step();
             }
         }
-        */
+        
     };
 }  // namespace ippl
 

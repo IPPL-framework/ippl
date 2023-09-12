@@ -72,18 +72,22 @@ public:
 private:
     ippl::NDIndex<Dim> domain;
     ippl::e_dim_tag decomp[Dim];
-    Mesh_t<Dim> mesh;
-    FieldLayout_t<Dim> FL;
-    PLayout_t<T, Dim> PL;
-    ippl::detail::RegionLayout<double, 3, Mesh_t<3>> rlayout;
-    std::shared_ptr<ParticleContainer_t> pc;
-    
+
 public:
+     void pre_step() override {
+        Inform m("Pre-step");
+        m << "Done" << endl;
+    }
     void post_step() override {
         // Update time
         this->time_m += this->dt;
+        this->it ++;
         // wrtie solution to output file
         this->dumpLandau();
+        
+        Inform m("Post-step:");
+        m << "Finished time step: " << this->it << " time: " << this->time_m << endl;
+         
     }
     void pre_run() override {
          Inform m("Pre Run");
@@ -108,24 +112,30 @@ public:
         m << "Discretization:" << endl
             << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
         
-        // Create Mesh, FieldLayout, ParticleLayout
-        this->mesh = Mesh_t<Dim>(this->domain, this->hr, this->origin);
+        Mesh_t<Dim> *mesh;
+	mesh = new Mesh_t<Dim>(this->domain, this->hr, this->origin);
+
+
         this->isAllPeriodic = true;
-        this->FL = FieldLayout_t<Dim>(this->domain, this->decomp, this->isAllPeriodic);
-        this->PL = PLayout_t<T, Dim>(this->FL, this->mesh);
+        FieldLayout_t<Dim> *FL;
+	FL = new FieldLayout_t<Dim>(this->domain, this->decomp, this->isAllPeriodic);
+	
+	PLayout_t<T, Dim> *PL;
+        PL = new PLayout_t<T, Dim>(*FL, *mesh);
         
         if (this->solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
        
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(this->PL);
+        this->pcontainer_m = std::make_shared<ParticleContainer_t>(*PL);
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
-        this->fcontainer_m->initializeFields(this->mesh, this->FL);
+        this->fcontainer_m->initializeFields(*mesh, *FL);
+        
         this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, this->fcontainer_m->rho_m, this->fcontainer_m->E_m);
         this->fsolver_m->initSolver();
-        this->loadbalancer_m = std::make_shared<LoadBalancer_t>(this->solver, this->lbt, this->fcontainer_m->rho_m, this->fcontainer_m->E_m, this->FL, this->pcontainer_m->R);
-                
+        this->loadbalancer_m = std::make_shared<LoadBalancer_t>(this->solver, this->lbt, this->fcontainer_m->rho_m, this->fcontainer_m->E_m, *FL, this->pcontainer_m->R);
+        
         this->setParticleContainer(pcontainer_m);
         this->setFieldContainer(fcontainer_m);
         this->setFieldSolver(fsolver_m);
@@ -138,13 +148,16 @@ public:
         this->par2grid();
         this->fsolver_m->runSolver();
         this->grid2par();
+        m << "Done";
     }
     void initializeParticles(){
         Inform m("Initialize Particles");
+        auto mesh = fcontainer_m->rho_m.get_mesh();
+        auto FL = fcontainer_m->getLayout();
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
-            const ippl::NDIndex<Dim>& lDom = this->FL.getLocalNDIndex();
+            const ippl::NDIndex<Dim>& lDom = FL.getLocalNDIndex();
             const int nghost               = this->fcontainer_m->rho_m.getNghost();
             auto rhoview                   = this->fcontainer_m->rho_m.getView();
 
@@ -162,13 +175,13 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(this->FL, this->mesh);
-            this->loadbalancer_m->repartition(this->FL, this->mesh, this->isFirstRepartition);
+            this->loadbalancer_m->initializeORB(FL, mesh);
+            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
         }
         
-        
          // Sample particle positions:
-         this->rlayout = ippl::detail::RegionLayout<double, 3, Mesh_t<3>>(FL, mesh);
+         ippl::detail::RegionLayout<double, 3, Mesh_t<3>> rlayout;
+         rlayout = ippl::detail::RegionLayout<double, 3, Mesh_t<3>>(FL, mesh);
          using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 3, Kokkos::DefaultExecutionSpace>;
          ippl::random::Distribution<double, 3> distR;
          for(int d=0; d<3; d++){
@@ -224,7 +237,10 @@ public:
             this->pcontainer_m->update();
 
             // Domain Decomposition
+            
             if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
+                auto mesh = fcontainer_m->rho_m.get_mesh();
+                auto FL = fcontainer_m->getLayout();
                 loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
             }
 
@@ -311,6 +327,7 @@ public:
         double ExAmp = 0.0;
         MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
 
+        
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
             fname << "data/FieldLandau_";

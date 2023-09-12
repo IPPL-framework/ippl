@@ -70,19 +70,11 @@ int main(int argc, char* argv[]) {
         // Perform pre-run operations, including creating mesh, particles,...
        manager.pre_run();
        
-       // Loop over time
         manager.time_m = 0.0;
         msg << "Starting iterations ..." << endl;
-        for (manager.it = 0; manager.it < manager.nt; manager.it++) {
-            // Perfom one step of time integration
-            manager.advance();
-            
-            // Save the output, increment time                       
-            manager.post_step();
-            
-            // Print time
-            msg << "Finished time step: " << manager.it + 1 << " time: " << manager.time_m << endl;
-        }
+        
+        manager.run(manager.nt);
+        
         msg << "LandauDamping: End." << endl;
     }
     ippl::finalize();

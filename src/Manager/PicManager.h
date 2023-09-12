@@ -36,22 +36,12 @@
         void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
             loadbalancer_m = loadbalancer;
         }
-    
-	//void setStepper(Stepper* stepper) {
-	// stepper_m = std::make_unique<Stepper>(stepper);
-	//};
 
-	// void setFieldSolver(...);
-
-	// void setLoadBalancer(...);
-          
     protected:
      
         std::shared_ptr<fc> fcontainer_m;
 
         std::shared_ptr<pc> pcontainer_m;
-
-        //std::unique_ptr<Stepper> stepper_m;
 
         std::shared_ptr<orb> loadbalancer_m;
 

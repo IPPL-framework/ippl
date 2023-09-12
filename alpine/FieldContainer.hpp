@@ -19,8 +19,6 @@
     
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
-    Field_t<Dim> phi_m;
-
     Vector_t<T, Dim> nr_m;
 
     ippl::e_dim_tag decomp_m[Dim];
@@ -29,12 +27,16 @@
     Vector_t<double, Dim> rmin_m;
     Vector_t<double, Dim> rmax_m;
     
+    FieldLayout_t<Dim> *fl_m;
+    
+    // Access to the mesh
+    KOKKOS_INLINE_FUNCTION FieldLayout_t<Dim>& getLayout() const { return *fl_m; }
+        
     void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
         E_m.initialize(mesh, fl);
         rho_m.initialize(mesh, fl);
+        fl_m = &fl;
     }
-    
-    
     };
 
 #endif
