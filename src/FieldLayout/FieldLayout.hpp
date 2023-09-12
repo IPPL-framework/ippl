@@ -84,8 +84,8 @@ namespace ippl {
             return;
         }
 
-        detail::CartesianPartitioner<Dim> partitioner;
-        partitioner.partition(comm, domain, isParallel);
+        detail::Partitioner<Dim> partitioner;
+        partitioner.split(domain, hLocalDomains_m, isParallel, nRanks);
 
         Kokkos::resize(dLocalDomains_m, nRanks);
         Kokkos::resize(hLocalDomains_m, nRanks);

@@ -17,7 +17,7 @@
 
 #include "Communicate/Communicator.h"
 #include "Index/NDIndex.h"
-#include "Partition/CartesianPartitioner.h"
+#include "Partition/Partitioner.h"
 
 namespace ippl {
 
