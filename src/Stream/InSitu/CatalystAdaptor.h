@@ -44,20 +44,44 @@ namespace CatalystAdaptor {
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
 
         //auto h_view_tmp;
-        auto nGhost = field.getNghost();
-        auto host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+        unsigned int nGhost = field.getNghost();
 
-        auto host_view_striped = Kokkos::subview(host_view,
-                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[0].length() + 1)),
-                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[1].length() + 1)),
-                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[2].length() + 1)));
+        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view(field.getView());
+        Kokkos::deep_copy(host_view, field.getView());
+
+        Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left",
+                                                                                             field.getLayout().getLocalNDIndex()[0].length(),
+                                                                                             field.getLayout().getLocalNDIndex()[1].length(),
+                                                                                             field.getLayout().getLocalNDIndex()[2].length());
+
+        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i)
+        {
+            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j)
+            {
+                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k)
+                {
+                    host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
+                }
+            }
+        }
+
+
+        //Kokkos::deep_copy(host_view, field.getView());
+        //auto host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+        //Kokkos::create_mirror_view_and_copy(host_view, field.getView());
+
+//        auto host_view_striped = Kokkos::subview(host_view,
+//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[0].length() + 1)),
+//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[1].length() + 1)),
+//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[2].length() + 1)));
+
+        // Kokkos::realloc(host_view_striped, Kokkos::LayoutLeft(), Kokkos::ALL, Kokkos::ALL, Kokkos::ALL);
 
             //Kokkos::resize(host_view, Kokkos::LayoutLeft{}, field.getLayout().getLocalNDIndex()[0].length() + 1);
         //Kokkos::deep_copy(h_view, field.getView());
 
         //auto my_host_view = Kokkos::create_mirror_view_and_copy(field.getView());
-//        typename Field::view_type::host_mirror_type host_view_full = Kokkos::create_mirror(field.getView());
-//        Kokkos::deep_copy(host_view, field.getView());
+
 
         //auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
 //        auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
@@ -133,7 +157,7 @@ namespace CatalystAdaptor {
         fields["density/association"].set("element");
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
-        fields["density/values"].set_external(host_view_striped.data(), host_view_striped.size());
+        fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
 
         // print node to have visual representation
         if (cycle == 0)
