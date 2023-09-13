@@ -43,11 +43,10 @@ namespace CatalystAdaptor {
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
 
-        //auto h_view_tmp;
-        unsigned int nGhost = field.getNghost();
+       auto nGhost = field.getNghost();
 
-        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view(field.getView());
-        Kokkos::deep_copy(host_view, field.getView());
+        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, field.getView());
+        //Kokkos::deep_copy(host_view, field.getView());
 
         Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left",
                                                                                              field.getLayout().getLocalNDIndex()[0].length(),
@@ -64,42 +63,6 @@ namespace CatalystAdaptor {
                 }
             }
         }
-
-
-        //Kokkos::deep_copy(host_view, field.getView());
-        //auto host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
-        //Kokkos::create_mirror_view_and_copy(host_view, field.getView());
-
-//        auto host_view_striped = Kokkos::subview(host_view,
-//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[0].length() + 1)),
-//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[1].length() + 1)),
-//                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[2].length() + 1)));
-
-        // Kokkos::realloc(host_view_striped, Kokkos::LayoutLeft(), Kokkos::ALL, Kokkos::ALL, Kokkos::ALL);
-
-            //Kokkos::resize(host_view, Kokkos::LayoutLeft{}, field.getLayout().getLocalNDIndex()[0].length() + 1);
-        //Kokkos::deep_copy(h_view, field.getView());
-
-        //auto my_host_view = Kokkos::create_mirror_view_and_copy(field.getView());
-
-
-        //auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
-//        auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
-//
-//        using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
-//        ippl::parallel_for(
-//            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(h_view, field.getNghost()),
-//            KOKKOS_LAMBDA(const index_array_type& args) {
-//                ippl::apply<Field::dimension>(host_view, args - field.getNghost()) = ippl::apply<Field::dimension>(h_view, args);
-//            });
-
-//        using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
-//        ippl::parallel_for(
-//            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(h_view, field.getNghost()),
-//            KOKKOS_LAMBDA(const index_array_type& args) {
-//                ippl::apply<Field::dimension>(host_view, args - field.getNghost()) = ippl::apply<Field::dimension>(h_view, args);
-//            });
-//
 
         conduit_cpp::Node node;
 
