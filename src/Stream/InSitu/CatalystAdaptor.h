@@ -43,17 +43,24 @@ namespace CatalystAdaptor {
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
 
-        auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
+        //auto h_view_tmp;
+        typename Field::view_type::host_mirror_type h_view = Kokkos::create_mirror(field.getView());
+        Kokkos::deep_copy(h_view, field.getView());
+
+        //auto my_host_view = Kokkos::create_mirror_view_and_copy(field.getView());
+//        typename Field::view_type::host_mirror_type host_view_full = Kokkos::create_mirror(field.getView());
+//        Kokkos::deep_copy(host_view, field.getView());
+
+        //auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
+        auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", h_view, field.getNghost());
 
         using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
         ippl::parallel_for(
-            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(field.getView(), field.getNghost()),
+            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(h_view, field.getNghost()),
             KOKKOS_LAMBDA(const index_array_type& args) {
-                ippl::apply<Field::dimension>(host_view, args - field.getNghost()) = ippl::apply<Field::dimension>(field.getView(), args);
+                ippl::apply<Field::dimension>(host_view, args - field.getNghost()) = ippl::apply<Field::dimension>(h_view, args);
             });
 
-//        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror(host_view);
-//        Kokkos::deep_copy(host_view, host_view);
 
         conduit_cpp::Node node;
 
@@ -62,7 +69,6 @@ namespace CatalystAdaptor {
         state["cycle"].set(cycle);
         state["time"].set(time);
         state["domain_id"].set(rank);
-        // state["multiblock"].set(1);
 
         // add catalyst channel named ippl_field, as fields is reserved
         auto channel = node["catalyst/channels/ippl_field"];
@@ -78,10 +84,8 @@ namespace CatalystAdaptor {
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            // include ghost cells to the "left" and "right" + 1 point
             mesh[field_node_dim].set(
-                int(field.getLayout().getLocalNDIndex()[iDim].length() + 1)); // last field point
-                                                                        // including ghost cell
+                int(field.getLayout().getLocalNDIndex()[iDim].length() + 1));
 
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
@@ -101,7 +105,7 @@ namespace CatalystAdaptor {
         mesh["topologies/mesh/coordset"].set("coords");
         std::string field_node_origin_topo = "topologies/mesh/origin/x";
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            // shift origin by one ghost cell
+            // shift origin
             mesh[field_node_origin_topo].set(field.get_mesh().getOrigin()[iDim]
                                              + field.getLayout().getLocalNDIndex()[iDim].first()
                                                    * field.get_mesh().getMeshSpacing(iDim));
