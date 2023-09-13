@@ -43,16 +43,31 @@ namespace CatalystAdaptor {
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
 
-        auto host_view_with_ghost_cells = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
-//        typename Field::view_type::host_mirror_type h_view = Kokkos::create_mirror(field.getView());
-//        Kokkos::deep_copy(h_view, field.getView());
+        //auto h_view_tmp;
+        auto nGhost = field.getNghost();
+        auto host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+
+        auto host_view_striped = Kokkos::subview(host_view,
+                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[0].length() + 1)),
+                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[1].length() + 1)),
+                                                 Kokkos::make_pair(nGhost, int(field.getLayout().getLocalNDIndex()[2].length() + 1)));
+
+            //Kokkos::resize(host_view, Kokkos::LayoutLeft{}, field.getLayout().getLocalNDIndex()[0].length() + 1);
+        //Kokkos::deep_copy(h_view, field.getView());
 
         //auto my_host_view = Kokkos::create_mirror_view_and_copy(field.getView());
 //        typename Field::view_type::host_mirror_type host_view_full = Kokkos::create_mirror(field.getView());
 //        Kokkos::deep_copy(host_view, field.getView());
 
         //auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
-// auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", h_view, field.getNghost());
+//        auto host_view = ippl::detail::shrinkView<Field::dimension, typename Field::type>("tempFieldf", field.getView(), field.getNghost());
+//
+//        using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
+//        ippl::parallel_for(
+//            "copy from Kokkos f field in FFT", ippl::getRangePolicy<Field::dimension>(h_view, field.getNghost()),
+//            KOKKOS_LAMBDA(const index_array_type& args) {
+//                ippl::apply<Field::dimension>(host_view, args - field.getNghost()) = ippl::apply<Field::dimension>(h_view, args);
+//            });
 
 //        using index_array_type = typename ippl::RangePolicy<Field::dimension>::index_array_type;
 //        ippl::parallel_for(
@@ -118,7 +133,7 @@ namespace CatalystAdaptor {
         fields["density/association"].set("element");
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
-        fields["density/values"].set_external(host_view.data(), host_view.size());
+        fields["density/values"].set_external(host_view_striped.data(), host_view_striped.size());
 
         // print node to have visual representation
         if (cycle == 0)
