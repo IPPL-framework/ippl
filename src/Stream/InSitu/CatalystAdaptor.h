@@ -37,6 +37,7 @@ namespace CatalystAdaptor {
 
     template <class Field>
     void Execute(int cycle, double time, int rank, Field& field) {
+        static_assert(Field::dimension == 3, "CatalystAdaptor only supports 3D");
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
         //
@@ -45,7 +46,7 @@ namespace CatalystAdaptor {
 
        auto nGhost = field.getNghost();
 
-        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, field.getView());
+        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
         //Kokkos::deep_copy(host_view, field.getView());
 
         Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left",
