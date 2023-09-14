@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
         // print out info and title for the relative error (L2 norm)
         msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
             << communication << " " << reordering << ", algorithm = " << algorithm << endl;
-        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error" << endl; // ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
         ippl::NDIndex<Dim> owned;
@@ -138,9 +138,11 @@ int main(int argc, char* argv[]) {
         rho.initialize(mesh, layout);
 
         // define the Vector field E (LHS)
+        /*
         fieldV exactE, fieldE;
         exactE.initialize(mesh, layout);
         fieldE.initialize(mesh, layout);
+        */
 
         // assign the rho field with a gaussian
         auto view_rho    = rho.getView();
@@ -180,6 +182,7 @@ int main(int argc, char* argv[]) {
                 view_exact(i, j, k) = exact_fct(x, y, z);
             });
 
+        /*
         // assign the exact E field
         auto view_exactE = exactE.getView();
 
@@ -196,6 +199,7 @@ int main(int argc, char* argv[]) {
 
                 view_exactE(i, j, k) = exact_E(x, y, z);
             });
+        */
 
         // Parameter List to pass to solver
         ippl::ParameterList params;
@@ -244,10 +248,10 @@ int main(int argc, char* argv[]) {
         }
 
         // add output type
-        params.add("output_type", Solver_t::SOL_AND_GRAD);
+        params.add("output_type", Solver_t::SOL);
 
         // define an FFTPoissonSolver object
-        Solver_t FFTsolver(fieldE, rho, params);
+        Solver_t FFTsolver(rho, params); //Solver_t FFTsolver(fieldE, rho, params);
 
         // iterate over 5 timesteps
         for (int times = 0; times < 5; ++times) {
@@ -259,6 +263,7 @@ int main(int argc, char* argv[]) {
             double err = norm(rho) / norm(exact);
 
             // compute relative error norm for the E-field components
+            /*
             ippl::Vector<double, Dim> errE{0.0, 0.0, 0.0};
             fieldE = fieldE - exactE;
 
@@ -295,9 +300,10 @@ int main(int argc, char* argv[]) {
 
                 errE[d] = errorNr / errorDr;
             }
+            */
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
-                << " " << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << endl; 
+            // << " " << errE[0] << " " << errE[1] << " " << errE[2] << endl;
 
             // reassign the correct values to the fields for the loop to work
             Kokkos::parallel_for(
@@ -330,6 +336,7 @@ int main(int argc, char* argv[]) {
                     view_exact(i, j, k) = exact_fct(x, y, z);
                 });
 
+            /*
             Kokkos::parallel_for(
                 "Assign exact E-field", exactE.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -343,6 +350,7 @@ int main(int argc, char* argv[]) {
 
                     view_exactE(i, j, k) = exact_E(x, y, z);
                 });
+            */
         }
 
         // stop the timers
