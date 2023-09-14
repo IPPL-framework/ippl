@@ -285,7 +285,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
-            this->params_m.add("hessian", true);
+            this->params_m.add("hessian", false);
         }
     };
 }  // namespace ippl
