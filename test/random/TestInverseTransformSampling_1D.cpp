@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
         using Dist_t = ippl::random::Distribution<double, 2>;
         using view_type = ippl::detail::ViewType<ippl::Vector<double, 1>, 1>::view_type;
-        using sampling_t = ippl::random::sample_its<double, Kokkos::Serial, Dist_t>;
+        using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
         
         // Define a distribution that is normal in dim=0, and harmonic in dim=1
         const double mu = 1.0;
@@ -82,7 +82,9 @@ int main(int argc, char* argv[]) {
         view_type position2("position2", nlocal2);
         sampling2.sample_ITS(position2, 0);
         
-        
+        Kokkos::fence();
+        ippl::Comm->barrier();
+
         /*
         const double pi = Kokkos::numbers::pi_v<double>;
         const double kw = 2.*pi/(rmax[1]-rmin[1])*4.0;
