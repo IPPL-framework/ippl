@@ -14,7 +14,7 @@
 namespace ippl {
 
     void initialize(int& argc, char* argv[], MPI_Comm comm) {
-        Env = std::make_unique<mpi::Environment>(argc, argv);
+        Env = std::make_unique<mpi::Environment>(argc, argv, comm);
 
         Comm = std::make_unique<mpi::Communicator>(comm);
 

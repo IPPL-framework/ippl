@@ -150,7 +150,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     auto& bunch           = this->bunch;
 
     bunch->update();
-    // bunch->update();
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();
 

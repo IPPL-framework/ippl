@@ -84,11 +84,24 @@ namespace ippl {
             return;
         }
 
-        detail::Partitioner<Dim> partitioner;
-        partitioner.split(domain, hLocalDomains_m, isParallel, nRanks);
+        /* Check to see if we have too few elements to partition.  If so, reduce
+         * the number of ranks (if necessary) to just the number of elements along
+         * parallel dims.
+         */
+        long totparelems = 1;
+        for (unsigned d = 0; d < Dim; ++d) {
+            totparelems *= domain[d].length();
+        }
+
+        if (totparelems < nRanks) {
+            nRanks = totparelems;
+        }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
         Kokkos::resize(hLocalDomains_m, nRanks);
+
+        detail::Partitioner<Dim> partitioner;
+        partitioner.split(domain, hLocalDomains_m, isParallel, nRanks);
 
         findNeighbors();
 
