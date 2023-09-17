@@ -15,9 +15,14 @@ namespace ippl {
             KOKKOS_DEFAULTED_FUNCTION
             Generator(const Generator& g) = default;
 
+            //KOKKOS_FUNCTION
+            //Generator(int seed)
+            //    : rand_pool64_m(seed) {}
+
             KOKKOS_FUNCTION
-            Generator(int seed)
-                : rand_pool64_m(seed) {}
+            Generator(const pool_type& randPool)
+                  : rand_pool64_m(randPool) {}
+
 
             KOKKOS_FUNCTION
             ~Generator() {}

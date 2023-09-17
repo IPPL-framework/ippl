@@ -76,8 +76,9 @@ namespace ippl {
                 ++nlocal_m;
             }
         }
-        
+
         struct fill_random {
+            typedef Kokkos::Random_XorShift64_Pool<DeviceType> pool_type;
             Distribution dist;
             view_type x;
             Generator<DeviceType> gen;
@@ -86,14 +87,13 @@ namespace ippl {
             uniform_real_distribution<DeviceType, T> unif;
             // Initialize all members
             KOKKOS_FUNCTION
-            fill_random(Distribution dist_, view_type x_, int seed, T umin_, T umax_)
+            fill_random(Distribution dist_, view_type x_, const pool_type& randPool, T umin_, T umax_)
             : dist(dist_)
             , x(x_)
-            , gen(seed)
+            , gen(randPool)
             , umin_m(umin_)
             , umax_m(umax_)
             , unif(0.0, 1.0){}
-            
             KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
                 T u = 0.0;
                 
@@ -109,13 +109,13 @@ namespace ippl {
             }
         };
         unsigned int getLocalNum() const { return nlocal_m; }
-        void generate(view_type view, int seed) {
-            Kokkos::parallel_for(nlocal_m, fill_random(dist, view, seed, umin, umax));
+        void generate(view_type view, Kokkos::Random_XorShift64_Pool<DeviceType> & randPool) {
+            Kokkos::parallel_for(nlocal_m, fill_random(dist, view, randPool, umin, umax));
         }
-        
-        void sample_ITS(view_type view, int seed){
-            generate(view, seed);
+        void sample_ITS(view_type view, Kokkos::Random_XorShift64_Pool<DeviceType>& randPool) {
+          generate(view, randPool);
         }
+
     private:
         unsigned int nlocal_m;
     };

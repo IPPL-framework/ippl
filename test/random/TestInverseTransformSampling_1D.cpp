@@ -1,5 +1,6 @@
 #include "Ippl.h"
 
+#include "Random/Generator.h"
 #include "Random/InverseTransformSampling_1D.h"
 
 /*
@@ -60,7 +61,7 @@ int main(int argc, char* argv[]) {
         using Dist_t = ippl::random::Distribution<double, 2>;
         using view_type = ippl::detail::ViewType<ippl::Vector<double, 1>, 1>::view_type;
         using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
-        
+        typedef Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace> pool_type;
         // Define a distribution that is normal in dim=0, and harmonic in dim=1
         const double mu = 1.0;
         const double sd = 0.5;
@@ -71,9 +72,14 @@ int main(int argc, char* argv[]) {
         sampling_t sampling(dist, 0, rmax[0], rmin[0], rlayout, ntotal);
         unsigned int nlocal = sampling.getLocalNum();
         view_type position("position", nlocal);
-        sampling.sample_ITS(position, 42);
+
+        pool_type rand_pool64_m(42); // Construct rand_pool64_m with the desired seed
+        //ippl::random::Generator<Kokkos::DefaultExecutionSpace> generator(rand_pool64_m); // Construct Generator with rand_pool64_m
+
+        sampling.sample_ITS(position, rand_pool64_m);
         
         
+       /*
         const double par2[2] = {-1.0, 1.0};
         Dist_t dist2(par2);
         dist2.setNormalDistribution();
@@ -81,10 +87,9 @@ int main(int argc, char* argv[]) {
         unsigned int nlocal2 = sampling.getLocalNum();
         view_type position2("position2", nlocal2);
         sampling2.sample_ITS(position2, 0);
-        
+        */
         Kokkos::fence();
         ippl::Comm->barrier();
-
         /*
         const double pi = Kokkos::numbers::pi_v<double>;
         const double kw = 2.*pi/(rmax[1]-rmin[1])*4.0;
@@ -99,10 +104,10 @@ int main(int argc, char* argv[]) {
         view_type position2("position2", nlocal2);
         sampling2.sample_ITS(position2, 42);
         */
-        for (unsigned int i = 0; i < nlocal; ++i) {
-            std::cout << ippl::Comm->rank() << " " << position(i)[0] << " " << position2(i)[0]
-                      << std::endl;
-        }
+        //for (unsigned int i = 0; i < nlocal; ++i) {
+        //    std::cout << ippl::Comm->rank() << " " << position(i)[0] //<< " " << position2(i)[0]
+        //              << std::endl;
+        //}
         
     }
     ippl::finalize();
