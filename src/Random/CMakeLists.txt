@@ -4,6 +4,7 @@ set (_SRCS
 set (_HDRS
     Generator.h
     InverseTransformSampling.h
+    InverseTransformSampling_1D.h
     Random.h
     )
 
