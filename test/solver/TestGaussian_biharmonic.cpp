@@ -286,6 +286,7 @@ int main(int argc, char* argv[]) {
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
