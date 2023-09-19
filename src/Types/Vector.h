@@ -76,6 +76,14 @@ namespace ippl {
         template <typename E, size_t N>
         KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
 
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator+=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator-=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator*=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const T& val);
+
         using iterator       = T*;
         using const_iterator = const T*;
         KOKKOS_INLINE_FUNCTION constexpr iterator begin();

@@ -102,14 +102,16 @@ struct FieldVal {
 
     const ippl::NDIndex<Dim> lDom;
 
-    ippl::Vector<T, Dim> hx = 0;
+    ippl::Vector<T, Dim> hx   = 0;
+    ippl::Vector<T, Dim> rmax = 0;
     int shift;
 
     FieldVal(const field_view_type& view, const ippl::NDIndex<Dim>& lDom, ippl::Vector<T, Dim> hx,
-             int shift = 0)
+             int shift = 0, ippl::Vector<T, Dim> rmax = 0)
         : view(view)
         , lDom(lDom)
         , hx(hx)
+        , rmax(rmax)
         , shift(shift) {}
 
     // range policy tags
@@ -244,7 +246,7 @@ TYPED_TEST(FieldTest, VolumeIntegral) {
 
     auto& field = this->field;
 
-    T tol                         = (std::is_same_v<T, double>) ? 5e-15 : 5e-6;
+    T tol                         = 5 * tolerance<T>;
     const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
     const int shift               = field->getNghost();
 
@@ -418,12 +420,45 @@ TYPED_TEST(FieldTest, Hessian) {
     auto mirror_result = Kokkos::create_mirror_view(view_result);
     Kokkos::deep_copy(mirror_result, view_result);
 
+    constexpr T tol = tolerance<T>;
     nestedViewLoop(mirror_result, nghost, [&]<typename... Idx>(const Idx... args) {
         T det = 0;
         for (unsigned d = 0; d < Dim; d++) {
             det += mirror_result(args...)[d][d];
         }
-        assertEqual<T>(det, 0.);
+        ASSERT_NEAR(det, 0., tol);
+    });
+}
+
+TYPED_TEST(FieldTest, Laplace) {
+    auto& mesh   = this->mesh;
+    auto& layout = this->layout;
+    auto& field  = this->field;
+
+    using field_type     = typename TestFixture::field_type;
+    using T              = typename TestFixture::value_type;
+    constexpr size_t Dim = TestFixture::dim;
+
+    field_type laplacian(*mesh, *layout);
+
+    const int nghost = field->getNghost();
+
+    using bc_type = ippl::BConds<field_type, Dim>;
+    bc_type bcField;
+    for (size_t i = 0; i < 2 * Dim; ++i) {
+        bcField[i] = std::make_shared<ippl::ConstantFace<field_type>>(i, 1);
+    }
+
+    field->setFieldBC(bcField);
+    laplacian.setFieldBC(bcField);
+
+    *field    = 1;
+    laplacian = ippl::laplace(*field);
+
+    auto mirror = laplacian.getHostMirror();
+    Kokkos::deep_copy(mirror, laplacian.getView());
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        assertEqual<T>(mirror(args...), 0.);
     });
 }
 

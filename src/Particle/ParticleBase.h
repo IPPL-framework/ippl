@@ -188,6 +188,13 @@ namespace ippl {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
+        /*!
+         * Calls a given function for all attributes in the bunch
+         * @tparam MemorySpace the memory space of the attributes to visit (void to visit all of
+         * them)
+         * @tparam Functor the functor type
+         * @param f a functor taking a single ParticleAttrib<MemorySpace>
+         */
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) const {
             if constexpr (std::is_void_v<MemorySpace>) {
@@ -199,6 +206,7 @@ namespace ippl {
             }
         }
 
+        // Non-const variant of same function
         template <typename MemorySpace = void, typename Functor>
         void forAllAttributes(Functor&& f) {
             if constexpr (std::is_void_v<MemorySpace>) {
@@ -270,10 +278,27 @@ namespace ippl {
         void internalDestroy(const Kokkos::View<bool*, Properties...>& invalid,
                              const size_type destroyNum);
 
+        /*!
+         * Sends particles to another rank
+         * @tparam HashType the hash view type
+         * @param rank the destination rank
+         * @param tag the MPI tag
+         * @param sendNum the number of messages already sent (to distinguish the buffers)
+         * @param requests destination vector in which to store the MPI requests for polling
+         * purposes
+         * @param hash a hash view indicating which particles need to be sent to which rank
+         */
         template <typename HashType>
         void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
                         const HashType& hash);
 
+        /*!
+         * Receives particles from another rank
+         * @param rank the source rank
+         * @param tag the MPI tag
+         * @param recvNum the number of messages already received (to distinguish the buffers)
+         * @param nRecvs the number of particles to receive
+         */
         void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs);
 
         /*!

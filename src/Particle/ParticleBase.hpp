@@ -241,6 +241,9 @@ namespace ippl {
 
         localNum_m -= destroyNum;
 
+        // We need to delete particles in all memory spaces. If there are any attributes not stored
+        // in the memory space we've already been using, we need to copy the index views to the
+        // other spaces.
         auto filter = [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         };

@@ -155,7 +155,8 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type =
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::unpack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
@@ -212,7 +213,9 @@ namespace ippl {
                 if (lDomains[myRank][d].length() == domain[d].length()) {
                     int N = view.extent(d) - 1;
 
-                    using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                    using index_array_type =
+                        typename RangePolicy<Dim,
+                                             typename view_type::execution_space>::index_array_type;
                     ippl::parallel_for(
                         "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {

@@ -132,6 +132,32 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator+=(const T& val) {
+        for (unsigned int i = 0; i < Dim; ++i) {
+            data_m[i] += val;
+        }
+        return *this;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator-=(const T& val) {
+        return this->operator+=(-val);
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator*=(const T& val) {
+        for (unsigned int i = 0; i < Dim; ++i) {
+            data_m[i] *= val;
+        }
+        return *this;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator/=(const T& val) {
+        return this->operator*=(T(1.0) / val);
+    }
+
+    template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
         return data_m;
     }
