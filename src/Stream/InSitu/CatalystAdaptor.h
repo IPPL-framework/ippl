@@ -15,6 +15,21 @@
 
 namespace CatalystAdaptor {
 
+    template <class Field>
+    void setData(conduit_cpp::Node& node, Field& field) {
+        node["electrostatic/association"].set("element");
+        node["electrostatic/topology"].set("mesh");
+        node["electrostatic/volume_dependent"].set("false");
+
+        auto length = std::size(field);
+
+        // offset is zero as we start without the ghost cells
+        // stride is 1 as we have every index of the array
+        node["electrostatic/values/x"].set_external(&field.data()[0][0], length, 0, 1);
+        node["electrostatic/values/y"].set_external(&field.data()[0][1], length, 0, 1);
+        node["electrostatic/values/z"].set_external(&field.data()[0][2], length, 0, 1);
+    }
+
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
         for (int cc = 1; cc < argc; ++cc) {
@@ -114,6 +129,7 @@ namespace CatalystAdaptor {
         }
 
         // add values and subscribe to data
+
         auto fields = mesh["fields"];
         //        fields["density/association"].set("element");
         //        fields["density/topology"].set("mesh");
@@ -121,19 +137,7 @@ namespace CatalystAdaptor {
         // fields["density/values"].set_external(host_view_layout_left.data(),
         // host_view_layout_left.size());
 
-        fields["electrostatic/association"].set("element");
-        fields["electrostatic/topology"].set("mesh");
-        fields["electrostatic/volume_dependent"].set("false");
-
-        auto length = host_view_layout_left.size();
-        // offset is zero as we start without the ghost cells
-        // stride is 1 as we have every index of the array
-        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], length,
-                                                      0, 1);
-        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], length,
-                                                      0, 1);
-        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], length,
-                                                      0, 1);
+        setData(fields, host_view_layout_left);
 
         // print node to have visual representation
         if (cycle == 0)
