@@ -119,9 +119,7 @@ namespace ippl {
             using size_type = ippl::detail::size_type;
             Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
             Kokkos::parallel_for(nlocal_m, fill_random<double, Kokkos::Random_XorShift64_Pool<>>(dist, view, rand_pool64, umin, umax));
-            std::cout << "before fence\n";
             Kokkos::fence();
-            std::cout << "after fence\n";
         }
 
     private:

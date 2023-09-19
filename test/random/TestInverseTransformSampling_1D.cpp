@@ -15,36 +15,108 @@
 #include "Random/Generator.h"
 #include "Random/InverseTransformSampling_1D.h"
 
-/*
-double cdf_y(double y, double alpha, double k) {
-    return y + (alpha / k) * std::sin(k * y);
-}
-double pdf_y(double y, double alpha, double k) {
-    return  (1.0 + alpha * Kokkos::cos(k * y));
-}
-double estimate_y(double u) {
-    return u; // maybe E[x] is good enough as the first guess
-}
-*/
+template <typename T, unsigned DimP>
+class NormalDistribution{
+  public:
+    static constexpr T pi = Kokkos::numbers::pi_v<T>;
+    T par[DimP];
+    NormalDistribution(const T *par_) {
+            for(unsigned int i=0; i<DimP; i++){ par[i] = par_[i]; }
+   }
+    struct custom_cdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, const T *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return 0.5 * (1 + Kokkos::erf((x - mean) / (stddev * Kokkos::sqrt(2.0))));
+       }
+    };
+    struct custom_pdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, T const *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return (1.0 / (stddev * Kokkos::sqrt(2 * pi))) * Kokkos::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
+       }
+    };
+    struct custom_estimate{
+        KOKKOS_INLINE_FUNCTION double operator()(T u, T const *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
+        }
+    };
+    KOKKOS_INLINE_FUNCTION T cdf(T x) const{
+            return cdf_functor(x, par);
+    }
+    KOKKOS_INLINE_FUNCTION T pdf(T x) const {
+            return pdf_functor(x, par);
+    }
+    KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
+            return cdf(x) - u;
+    }
+    KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
+            return pdf(x);
+    }
+    KOKKOS_INLINE_FUNCTION T estimate (T u) const{
+            return estimate_functor(u, par);
+    }
+    custom_cdf cdf_functor;
+    custom_pdf pdf_functor;
+    custom_estimate estimate_functor;
+};
 
-/*
-static KOKKOS_INLINE_FUNCTION double cdf(double y, const double *p) {
-    return y + (p[0] / p[1]) * Kokkos::sin(p[1] * y);
-}
-static KOKKOS_INLINE_FUNCTION double pdf(double y, const double *p) {
-    return  1.0 + p[0] * Kokkos::cos(p[1] * y);
-}
-static KOKKOS_INLINE_FUNCTION double estimate(double u, const double *p) {
-    return (u + p[0])*0.0; // maybe E[x] is good enough as the first guess
-}
-*/
+
+template <typename T, unsigned DimP>
+class HarmonicDistribution{
+  public:
+    static constexpr T pi = Kokkos::numbers::pi_v<T>;
+    T par[DimP];
+    HarmonicDistribution(const T *par_) {
+            for(unsigned int i=0; i<DimP; i++){ par[i] = par_[i]; }
+   }
+   struct custom_cdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, const T *params) const {
+           return x + (params[0] / params[1]) * Kokkos::sin(params[1] * x);
+       }
+    };
+    struct custom_pdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, T const *params) const {
+           return  1.0 + params[0] * Kokkos::cos(params[1] * x);
+       }
+    };
+    struct custom_estimate{
+        KOKKOS_INLINE_FUNCTION double operator()(T u, T const *params) const {
+            return u +  params[0]*0.0;
+        }
+    };
+    KOKKOS_INLINE_FUNCTION T cdf(T x) const{
+            return cdf_functor(x, par);
+    }
+    KOKKOS_INLINE_FUNCTION T pdf(T x) const {
+            return pdf_functor(x, par);
+    }
+    KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
+            return cdf(x) - u;
+    }
+    KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
+            return pdf(x);
+    }
+    KOKKOS_INLINE_FUNCTION T estimate (T u) const{
+            return estimate_functor(u, par);
+    }
+    custom_cdf cdf_functor;
+    custom_pdf pdf_functor;
+    custom_estimate estimate_functor;
+};
+
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
-        //std::cout<< "***    Start   "<< std::endl;
+        double pi    = Kokkos::numbers::pi_v<double>;
+
         using Mesh_t = ippl::UniformCartesian<double, 2>;
 
         ippl::Vector<int, 2> nr   = {std::atoi(argv[1]), std::atoi(argv[2])};
@@ -60,7 +132,6 @@ int main(int argc, char* argv[]) {
             decomp[d] = ippl::PARALLEL;
         }
 
-        // create mesh and layout objects for this problem domain
         ippl::Vector<double, 2> rmin   = -4.;
         ippl::Vector<double, 2> rmax   = 4.;
         ippl::Vector<double, 2> length = rmax - rmin;
@@ -71,72 +142,38 @@ int main(int argc, char* argv[]) {
         const bool isAllPeriodic = true;
 
         Mesh_t mesh(domain, hr, origin);
-        //std::cout<< "***  mesh created   "<< std::endl;
 
         ippl::FieldLayout<2> fl(domain, decomp, isAllPeriodic);
-        //std::cout<< "***  fl created   "<< std::endl;
 
         ippl::detail::RegionLayout<double, 2, Mesh_t> rlayout(fl, mesh);
-        //std::cout<< "***  rlayout created   "<< std::endl;
 
-        using Dist_t = ippl::random::Distribution<double, 2>;
-        //using view_type = ippl::detail::ViewType<ippl::Vector<double, 1>>::view_type;
+        using Dist_t = NormalDistribution<double, 2>;
         using view_type  = typename ippl::detail::ViewType<double, 1>::view_type;
         using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
         typedef Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace> pool_type;
 
-        //std::cout<< "***  types defined "<< std::endl;
         const double mu = 1.0;
         const double sd = 0.5;
         const double par[2] = {mu, sd};
-
         Dist_t dist(par);
-        //std::cout<< "***    distr. created  "<< std::endl;
-        dist.setNormalDistribution();
-        //std::cout<< "***    set normal  "<< std::endl;
         sampling_t sampling(dist, 0, rmax[0], rmin[0], rlayout, ntotal);
-        //std::cout<< "***    sampling created  "<< std::endl;
         unsigned int nlocal = sampling.getLocalNum();
-        //std::cout<< "***    nlocal read  "<< std::endl;
         view_type position("position", nlocal);
-        //std::cout<< "***    position created  "<< std::endl;
-        //pool_type rand_pool64_m(42); // Construct rand_pool64_m with the desired seed
-        //std::cout<< "***    rand_pool64_m created  "<< std::endl;
-        //sampling.generate(position, rand_pool64_m);
         sampling.generate(position, 42);
-        //std::cout<< "***    sampling done  "<< std::endl;
 
-/*
-        const double par2[2] = {-1.0, 1.0};
-        Dist_t dist2(par2);
-        dist2.setNormalDistribution();
-        sampling_t sampling2(dist2, 1, rmax[1], rmin[1], rlayout, ntotal);
-        unsigned int nlocal2 = sampling2.getLocalNum();
-        view_type position2("position2", nlocal2);
-        pool_type rand_pool64_m2(0);
-        sampling2.sample_ITS(position2, rand_pool64_m2);
-*/
+        using DistH_t = HarmonicDistribution<double, 2>;
+        const double parH[2] = {0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
+        Dist_t distH(parH);
+        sampling_t samplingH(distH, 1, rmax[1], rmin[1], rlayout, ntotal);
+        nlocal = samplingH.getLocalNum();
+        view_type positionH("positionH", nlocal);
+        samplingH.generate(positionH, 42);
 
-        //std::cout<< "***    Finish sampling  "<< std::endl;
-        /*
-        const double pi = Kokkos::numbers::pi_v<double>;
-        const double kw = 2.*pi/(rmax[1]-rmin[1])*4.0;
-        const double alpha = 1.0;
-        const double par2[2] = {alpha, kw};
-        Dist_t dist2(par2);
-        dist2.setCdfFunction(cdf);
-        dist2.setPdfFunction(pdf);
-        dist2.setEstimationFunction(estimate);
-        sampling_t sampling2(dist2, 1, rmax[1], rmin[1], rlayout, ntotal);
-        unsigned int nlocal2 = sampling.getLocalNum();
-        view_type position2("position2", nlocal2);
-        sampling2.sample_ITS(position2, 42);
-        */
-        msg << "End of program" << endl;
         //for (unsigned int i = 0; i < nlocal; ++i) {
-        //    std::cout << ippl::Comm->rank() << " " << position(i)[0] << " " << position2(i)[0]
-        //              << std::endl;
+        //    msg << position(i) << " " << positionH(i) << endl;
         //}
+
+        msg << "End of program" << endl;
     }
     ippl::finalize();
 
