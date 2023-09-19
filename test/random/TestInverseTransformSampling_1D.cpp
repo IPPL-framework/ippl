@@ -1,3 +1,15 @@
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+#include <Kokkos_Random.hpp>
+#include <chrono>
+#include <iostream>
+#include <random>
+#include <set>
+#include <string>
+#include <vector>
+#include "Utility/IpplTimings.h"
+
+
 #include "Ippl.h"
 
 #include "Random/Generator.h"
@@ -29,6 +41,10 @@ static KOKKOS_INLINE_FUNCTION double estimate(double u, const double *p) {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        Inform msg("LandauDamping");
+        Inform msg2all("LandauDamping", INFORM_ALL_NODES);
+
+        //std::cout<< "***    Start   "<< std::endl;
         using Mesh_t = ippl::UniformCartesian<double, 2>;
 
         ippl::Vector<int, 2> nr   = {std::atoi(argv[1]), std::atoi(argv[2])};
@@ -53,43 +69,55 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 2> origin = rmin;
 
         const bool isAllPeriodic = true;
+
         Mesh_t mesh(domain, hr, origin);
+        //std::cout<< "***  mesh created   "<< std::endl;
+
         ippl::FieldLayout<2> fl(domain, decomp, isAllPeriodic);
+        //std::cout<< "***  fl created   "<< std::endl;
 
         ippl::detail::RegionLayout<double, 2, Mesh_t> rlayout(fl, mesh);
+        //std::cout<< "***  rlayout created   "<< std::endl;
 
         using Dist_t = ippl::random::Distribution<double, 2>;
-        using view_type = ippl::detail::ViewType<ippl::Vector<double, 1>, 1>::view_type;
+        //using view_type = ippl::detail::ViewType<ippl::Vector<double, 1>>::view_type;
+        using view_type  = typename ippl::detail::ViewType<double, 1>::view_type;
         using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
         typedef Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace> pool_type;
-        // Define a distribution that is normal in dim=0, and harmonic in dim=1
+
+        //std::cout<< "***  types defined "<< std::endl;
         const double mu = 1.0;
         const double sd = 0.5;
         const double par[2] = {mu, sd};
-        
+
         Dist_t dist(par);
+        //std::cout<< "***    distr. created  "<< std::endl;
         dist.setNormalDistribution();
+        //std::cout<< "***    set normal  "<< std::endl;
         sampling_t sampling(dist, 0, rmax[0], rmin[0], rlayout, ntotal);
+        //std::cout<< "***    sampling created  "<< std::endl;
         unsigned int nlocal = sampling.getLocalNum();
+        //std::cout<< "***    nlocal read  "<< std::endl;
         view_type position("position", nlocal);
+        //std::cout<< "***    position created  "<< std::endl;
+        //pool_type rand_pool64_m(42); // Construct rand_pool64_m with the desired seed
+        //std::cout<< "***    rand_pool64_m created  "<< std::endl;
+        //sampling.generate(position, rand_pool64_m);
+        sampling.generate(position, 42);
+        //std::cout<< "***    sampling done  "<< std::endl;
 
-        pool_type rand_pool64_m(42); // Construct rand_pool64_m with the desired seed
-        //ippl::random::Generator<Kokkos::DefaultExecutionSpace> generator(rand_pool64_m); // Construct Generator with rand_pool64_m
-
-        sampling.sample_ITS(position, rand_pool64_m);
-        
-        
-       /*
+/*
         const double par2[2] = {-1.0, 1.0};
         Dist_t dist2(par2);
         dist2.setNormalDistribution();
         sampling_t sampling2(dist2, 1, rmax[1], rmin[1], rlayout, ntotal);
-        unsigned int nlocal2 = sampling.getLocalNum();
+        unsigned int nlocal2 = sampling2.getLocalNum();
         view_type position2("position2", nlocal2);
-        sampling2.sample_ITS(position2, 0);
-        */
-        Kokkos::fence();
-        ippl::Comm->barrier();
+        pool_type rand_pool64_m2(0);
+        sampling2.sample_ITS(position2, rand_pool64_m2);
+*/
+
+        //std::cout<< "***    Finish sampling  "<< std::endl;
         /*
         const double pi = Kokkos::numbers::pi_v<double>;
         const double kw = 2.*pi/(rmax[1]-rmin[1])*4.0;
@@ -104,11 +132,11 @@ int main(int argc, char* argv[]) {
         view_type position2("position2", nlocal2);
         sampling2.sample_ITS(position2, 42);
         */
+        msg << "End of program" << endl;
         //for (unsigned int i = 0; i < nlocal; ++i) {
-        //    std::cout << ippl::Comm->rank() << " " << position(i)[0] //<< " " << position2(i)[0]
+        //    std::cout << ippl::Comm->rank() << " " << position(i)[0] << " " << position2(i)[0]
         //              << std::endl;
         //}
-        
     }
     ippl::finalize();
 

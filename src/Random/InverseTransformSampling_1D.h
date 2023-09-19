@@ -35,7 +35,8 @@ namespace ippl {
     template <typename T, class DeviceType, class Distribution>
     class sample_its{
     public:
-        using view_type = typename ippl::detail::ViewType<Vector<T, 1>, 1>::view_type;
+        using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
+        //using value_type = typename T::value_type;
         
     public:
         Distribution dist;
@@ -77,43 +78,50 @@ namespace ippl {
             }
         }
 
+        template <typename Tt, class GeneratorPool>
         struct fill_random {
-            typedef Kokkos::Random_XorShift64_Pool<DeviceType> pool_type;
+            using view_type  = typename ippl::detail::ViewType<Tt, 1>::view_type;
+            using value_type = Tt; //typename Tt::value_type;
             Distribution dist;
             view_type x;
-            Generator<DeviceType> gen;
-            T umin_m;
-            T umax_m;
-            uniform_real_distribution<DeviceType, T> unif;
+            GeneratorPool rand_pool;
+            Tt umin_m;
+            Tt umax_m;
+            //uniform_real_distribution<DeviceType, T> unif;
             // Initialize all members
             KOKKOS_FUNCTION
-            fill_random(Distribution dist_, view_type x_, const pool_type& randPool, T umin_, T umax_)
+            fill_random(Distribution dist_, view_type x_, GeneratorPool rand_pool_, Tt& umin_, Tt& umax_)
             : dist(dist_)
             , x(x_)
-            , gen(randPool)
+            , rand_pool(rand_pool_)
             , umin_m(umin_)
-            , umax_m(umax_)
-            , unif(0.0, 1.0){}
+            , umax_m(umax_){}
             KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-                T u = 0.0;
+                typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+                value_type u = 0.0;
                 
                 // get uniform random number between umin and umax
-                u = (umax_m - umin_m) * unif(gen) + umin_m;
-                
+                //u = (umax_m - umin_m) * unif(gen) + umin_m;
+                u       = rand_gen.drand(umin_m, umax_m);
+
                 // first guess for Newton-Raphson
                 x(i) = dist.estimate(u);
                 
                 // solve
-                ippl::random::detail::NewtonRaphson<T> solver;
-                solver.solve(dist, x(i)[0], u);
+                ippl::random::detail::NewtonRaphson<value_type> solver;
+                solver.solve(dist, x(i), u);
+                rand_pool.free_state(rand_gen);
             }
         };
-        unsigned int getLocalNum() const { return nlocal_m; }
-        void generate(view_type view, Kokkos::Random_XorShift64_Pool<DeviceType> & randPool) {
-            Kokkos::parallel_for(nlocal_m, fill_random(dist, view, randPool, umin, umax));
-        }
-        void sample_ITS(view_type view, Kokkos::Random_XorShift64_Pool<DeviceType>& randPool) {
-          generate(view, randPool);
+        KOKKOS_INLINE_FUNCTION unsigned int getLocalNum() const { return nlocal_m; }
+        void generate(view_type view, int seed) {
+            using size_type = ippl::detail::size_type;
+            Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+            Kokkos::parallel_for(nlocal_m, fill_random<double, Kokkos::Random_XorShift64_Pool<>>(dist, view, rand_pool64, umin, umax));
+            std::cout << "before fence\n";
+            Kokkos::fence();
+            std::cout << "after fence\n";
         }
 
     private:
@@ -138,19 +146,19 @@ namespace ippl {
             }
         }
         
-	    void setCdfFunction(FunctionPtr cdfFunc) {
+       KOKKOS_INLINE_FUNCTION void setCdfFunction(FunctionPtr cdfFunc) {
 		    cdfFunction = cdfFunc;
 	    }
             
-	    void setPdfFunction(FunctionPtr pdfFunc) {
+       KOKKOS_INLINE_FUNCTION void setPdfFunction(FunctionPtr pdfFunc) {
 		    pdfFunction = pdfFunc;
 	    }
             
-	    void setEstimationFunction(FunctionPtr estimationFunc) {
+       KOKKOS_INLINE_FUNCTION void setEstimationFunction(FunctionPtr estimationFunc) {
 		    estimationFunction = estimationFunc;
 	    }
         
-        void setNormalDistribution() {
+       KOKKOS_INLINE_FUNCTION void setNormalDistribution() {
                 cdfFunction = cdf_normal_wrapper;
                 pdfFunction = pdf_normal_wrapper;
                 estimationFunction = estimate_normal_wrapper;
