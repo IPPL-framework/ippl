@@ -2,19 +2,6 @@
 // Unit test PICTest
 //   Test scatter and gather particle-in-cell operations.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
 #include <random>
@@ -128,7 +115,6 @@ TYPED_TEST_CASE(PICTest, Tests);
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 0.0;
@@ -137,8 +123,7 @@ TYPED_TEST(PICTest, Scatter) {
 
     bunch->Q = charge;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     scatter(bunch->Q, *field, bunch->R);
 
@@ -150,15 +135,13 @@ TYPED_TEST(PICTest, Scatter) {
 TYPED_TEST(PICTest, Gather) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 1.0;
 
     bunch->Q = 0.0;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     gather(bunch->Q, *field, bunch->R);
 

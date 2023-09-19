@@ -2,19 +2,6 @@
 // Unit test Particle send/receive
 //   Test particle send and receive operations.
 //
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
 
@@ -53,11 +40,6 @@ public:
 
         rank_type expectedRank;
         charge_container_type Q;
-
-        void update() {
-            PLayout& layout = this->getLayout();
-            layout.update(*this);
-        }
     };
 
     using bunch_type = Bunch<playout_type>;
@@ -164,11 +146,9 @@ TYPED_TEST_CASE(ParticleSendRecv, Tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     const auto nParticles = this->nParticles;
-    auto& pl              = this->playout;
     auto& bunch           = this->bunch;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
     // bunch->update();
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();

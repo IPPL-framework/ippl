@@ -59,8 +59,7 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         Kokkos::deep_copy(bunch.Q.getView(), Q_host);
 
-        bunch_type buffer(pl);
-        pl.update(bunch, buffer);
+        bunch.update();
 
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field_type;
 

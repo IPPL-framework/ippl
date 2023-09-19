@@ -18,20 +18,6 @@
 //     Example:
 //     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -230,8 +216,6 @@ int main(int argc, char* argv[]) {
 
         P->initializeFields(mesh, FL);
 
-        bunch_type bunchBuffer(PL);
-
         P->initSolver();
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[7]);
@@ -265,7 +249,7 @@ int main(int argc, char* argv[]) {
             Kokkos::fence();
 
             P->initializeORB(FL, mesh);
-            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+            P->repartition(FL, mesh, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
         }
 
@@ -376,14 +360,14 @@ int main(int argc, char* argv[]) {
 
             // Since the particles have moved spatially update them to correct processors
             IpplTimings::startTimer(updateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP, it + 1)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
-                P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+                P->repartition(FL, mesh, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
                 // IpplTimings::startTimer(dumpDataTimer);
                 // P->dumpLocalDomains(FL, it+1);
