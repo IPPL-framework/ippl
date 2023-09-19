@@ -177,10 +177,12 @@ namespace CatalystAdaptor {
         fields["electrostatic/volume_dependent"].set("false");
 
 
-        //auto offset = sizeof(double);
-        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], field.getLayout().getLocalNDIndex()[0].length(), 0, 1);
-        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], field.getLayout().getLocalNDIndex()[1].length(), 0, 1);
-        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], field.getLayout().getLocalNDIndex()[2].length(), 0, 1);
+        auto length = host_view_layout_left.size();
+        // offset is zero as we start without the ghost cells
+        // stried is 1 as we have every index of the array
+        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], length, 0, 1);
+        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], length, 0, 1);
+        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], length, 0, 1);
 
         // print node to have visual representation
         if (cycle == 0)
