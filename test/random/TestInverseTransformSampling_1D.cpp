@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
 
         ippl::detail::RegionLayout<double, 2, Mesh_t> rlayout(fl, mesh);
 
-        using Dist_t = NormalDistribution<double, 2>;
+        using Dist_t = ippl::random::Distribution<double, 2>;
         using view_type  = typename ippl::detail::ViewType<double, 1>::view_type;
         using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
 
@@ -159,13 +159,13 @@ int main(int argc, char* argv[]) {
         const double sd = 0.5;
         const double par[2] = {mu, sd};
         Dist_t dist(par);
+        dist.setNormal();
         sampling_t sampling(dist, 0, rmax[0], rmin[0], rlayout, ntotal);
         unsigned int nlocal = sampling.getLocalNum();
         view_type position("position", nlocal);
         sampling.generate(position, rand_pool64);
 
-
-        using DistH_t = HarmonicDistribution<double, 2>;
+        using DistH_t = ippl::random::Distribution<double, 2>;
         using samplingH_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, DistH_t>;
         const double parH[2] = {0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
         DistH_t distH(parH);
@@ -173,6 +173,7 @@ int main(int argc, char* argv[]) {
         nlocal = samplingH.getLocalNum();
         view_type positionH("positionH", nlocal);
         samplingH.generate(positionH, rand_pool64);
+        
 
         //for (unsigned int i = 0; i < nlocal; ++i) {
         //    msg << position(i) << " " << positionH(i) << endl;

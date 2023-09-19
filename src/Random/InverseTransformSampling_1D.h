@@ -118,86 +118,84 @@ namespace ippl {
     private:
         unsigned int nlocal_m;
     };
-    
-    // class of one-dimensional pdf
+
     template <typename T, unsigned DimP>
     class Distribution {
     public:
-        using view_type = typename ippl::detail::ViewType<Vector<T, 1>, 1>::view_type;
-        using FunctionPtr = T (*)(T, const T*);
-
-        T par[DimP];
-        
-        Distribution(const T *par_) {
-            cdfFunction = nullptr;
-            pdfFunction = nullptr;
-            estimationFunction = nullptr;
+       //T* par;
+       //unsigned DimP;
+       T par[DimP];
+       static constexpr T pi = Kokkos::numbers::pi_v<T>;
+       Distribution(const T *par_) {
             for(unsigned int i=0; i<DimP; i++){
                 par[i] = par_[i];
             }
+            setNormal();
+       }
+       //Distribution(unsigned dimP, const T *par_) : DimP(dimP) {
+       //     par = new T[dimP];
+       //     for (unsigned int i = 0; i < DimP; i++) {
+       //         par[i] = par_[i];
+       //     }
+       //     setNormal();
+       //}
+       //~Distribution() {
+       //     delete[] par;
+       //}
+       struct normal_cdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, const T *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return 0.5 * (1 + Kokkos::erf((x - mean) / (stddev * Kokkos::sqrt(2.0))));
+       }
+       };
+       struct normal_pdf{
+       KOKKOS_INLINE_FUNCTION double operator()(T x, T const *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return (1.0 / (stddev * Kokkos::sqrt(2 * pi))) * Kokkos::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
+       }
+       };
+       struct normal_estimate{
+        KOKKOS_INLINE_FUNCTION double operator()(T u, T const *params) const {
+          T mean = params[0];
+          T stddev = params[1];
+          return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
         }
-        
-       KOKKOS_INLINE_FUNCTION void setCdfFunction(FunctionPtr cdfFunc) {
-		    cdfFunction = cdfFunc;
-	    }
-            
-       KOKKOS_INLINE_FUNCTION void setPdfFunction(FunctionPtr pdfFunc) {
-		    pdfFunction = pdfFunc;
-	    }
-            
-       KOKKOS_INLINE_FUNCTION void setEstimationFunction(FunctionPtr estimationFunc) {
-		    estimationFunction = estimationFunc;
-	    }
-        
-       KOKKOS_INLINE_FUNCTION void setNormalDistribution() {
-                cdfFunction = cdf_normal_wrapper;
-                pdfFunction = pdf_normal_wrapper;
-                estimationFunction = estimate_normal_wrapper;
-        }
+       };
+       normal_pdf pdf_functor;
+       normal_cdf cdf_functor;
+       normal_estimate estimate_functor;
 
-        KOKKOS_INLINE_FUNCTION T cdf(T x) const{
-            return cdfFunction(x, par);
-        }
+       void setCustomFunctions(const normal_pdf& customPDF, const normal_cdf& customCDF, const normal_estimate& customEstimate) {
+           // Set the functors to custom functions provided by the user
+           pdf_functor = customPDF;
+           cdf_functor = customCDF;
+           estimate_functor = customEstimate;
+       }
 
-        KOKKOS_INLINE_FUNCTION T pdf(T x) const {
-            return pdfFunction(x, par);
-        }
+       KOKKOS_INLINE_FUNCTION T cdf(T x) const {
+          return cdf_functor(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T pdf(T x) const {
+          return pdf_functor(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T estimate(T x) const {
+          return estimate_functor(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
+            return cdf(x) - u;
+       }
+       KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
+            return pdf(x);
+       }
 
-        KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
-            return cdfFunction(x, par) - u;
-        }
-        
-        KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
-            return pdfFunction(x, par);//pdf(x);
-        }
-        
-        KOKKOS_INLINE_FUNCTION T estimate (T u) const{
-            return estimationFunction(u, par);
-        }
-        
-    private:
-        FunctionPtr cdfFunction;
-        FunctionPtr pdfFunction;
-        FunctionPtr estimationFunction;
-            
-        static KOKKOS_INLINE_FUNCTION T cdf_normal_wrapper(T x, const T* params) {
-                    T mean = params[0];
-                    T stddev = params[1];
-            return 0.5 * (1 + Kokkos::erf((x - mean) / (stddev * Kokkos::sqrt(2.0))));
-        }
+       void setNormal(){
+          pdf_functor = normal_pdf();
+          cdf_functor = normal_cdf();
+          estimate_functor = normal_estimate();
+       }
 
-        static KOKKOS_INLINE_FUNCTION T pdf_normal_wrapper(T x, const T* params) {
-                T mean = params[0];
-                T stddev = params[1];
-            return (1.0 / (stddev * Kokkos::sqrt(2 * M_PI))) * Kokkos::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
-        }
-
-        static KOKKOS_INLINE_FUNCTION T estimate_normal_wrapper(T u, const T* params) {
-                T mean = params[0];
-                T stddev = params[1];
-            return (Kokkos::sqrt(M_PI / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
-        }
-            
     };
   }  // namespace random
 }  // namespace ippl
