@@ -5,7 +5,6 @@
 
 #include "Ippl.h"
 
-#include <Kokkos_DynamicView.hpp>
 #include <catalyst.hpp>
 #include <iostream>
 #include <numeric>
@@ -13,31 +12,6 @@
 #include <vector>
 
 #include "Utility/IpplException.h"
-
- template <typename T, unsigned Dim = 3>
- using Vector = ippl::Vector<T, Dim>;
-
- template <unsigned Dim = 3>
- using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
- template <unsigned Dim = 3>
- using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
-
- template <typename T, unsigned Dim = 3>
- using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
-
- template <typename T>
- using ParticleAttrib = ippl::ParticleAttrib<T>;
-
- template <unsigned Dim = 3>
- using Vector_t = Vector<double, Dim>;
-
- template <unsigned Dim = 3>
- using Field_t = Field<double, Dim>;
-
- template <unsigned Dim = 3>
- using VField_t = Field<Vector_t<Dim>, Dim>;
-
 
 namespace CatalystAdaptor {
 
@@ -70,24 +44,21 @@ namespace CatalystAdaptor {
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
 
-       auto nGhost = field.getNghost();
+        auto nGhost = field.getNghost();
 
-        typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+        typename Field::view_type::host_mirror_type host_view =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
 
-        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+        Kokkos::View<typename Field::type***, Kokkos::LayoutLeft, Kokkos::HostSpace>
+            host_view_layout_left("host_view_layout_left",
+                                  field.getLayout().getLocalNDIndex()[0].length(),
+                                  field.getLayout().getLocalNDIndex()[1].length(),
+                                  field.getLayout().getLocalNDIndex()[2].length());
 
-        Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left", field.getLayout().getLocalNDIndex()[0].length(),
-                                                                                             field.getLayout().getLocalNDIndex()[1].length(),
-                                                                                             field.getLayout().getLocalNDIndex()[2].length());
-
-        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i)
-        {
-            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j)
-            {
-                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k)
-                {
-                    // host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
-                    host_view_layout_left(i,j,k) = vhost_view(i+nGhost, j+nGhost, k+nGhost);
+        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i) {
+            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j) {
+                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k) {
+                    host_view_layout_left(i, j, k) = host_view(i + nGhost, j + nGhost, k + nGhost);
                 }
             }
         }
@@ -114,8 +85,7 @@ namespace CatalystAdaptor {
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            mesh[field_node_dim].set(
-                int(field.getLayout().getLocalNDIndex()[iDim].length() + 1));
+            mesh[field_node_dim].set(int(field.getLayout().getLocalNDIndex()[iDim].length() + 1));
 
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
@@ -145,22 +115,25 @@ namespace CatalystAdaptor {
 
         // add values and subscribe to data
         auto fields = mesh["fields"];
-//        fields["density/association"].set("element");
-//        fields["density/topology"].set("mesh");
-//        fields["density/volume_dependent"].set("false");
-        //fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
+        //        fields["density/association"].set("element");
+        //        fields["density/topology"].set("mesh");
+        //        fields["density/volume_dependent"].set("false");
+        // fields["density/values"].set_external(host_view_layout_left.data(),
+        // host_view_layout_left.size());
 
         fields["electrostatic/association"].set("element");
         fields["electrostatic/topology"].set("mesh");
         fields["electrostatic/volume_dependent"].set("false");
 
-
         auto length = host_view_layout_left.size();
         // offset is zero as we start without the ghost cells
         // stride is 1 as we have every index of the array
-        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], length, 0, 1);
-        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], length, 0, 1);
-        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], length, 0, 1);
+        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], length,
+                                                      0, 1);
+        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], length,
+                                                      0, 1);
+        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], length,
+                                                      0, 1);
 
         // print node to have visual representation
         if (cycle == 0)
