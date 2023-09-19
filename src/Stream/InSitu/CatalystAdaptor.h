@@ -72,31 +72,9 @@ namespace CatalystAdaptor {
 
        auto nGhost = field.getNghost();
 
-        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
-
-//        Kokkos::View<typename Field::type*, Kokkos::LayoutLeft, Kokkos::HostSpace> vhost_view_layout_left("vhost_view_layout_left", field.getLayout().getLocalNDIndex()[0].length()+
-//            field.getLayout().getLocalNDIndex()[1].length()+
-//            field.getLayout().getLocalNDIndex()[2].length());
-//
-//        auto y_offset = field.getLayout().getLocalNDIndex()[1].length();
-//        auto z_offset = field.getLayout().getLocalNDIndex()[2].length();
-
-//        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i)
-//        {
-//            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j)
-//            {
-//                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k)
-//                {
-//                    host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
-//                }
-//            }
-//        }
-        //            vhost_view_layout_left(i) = vhost_view.data()[i+nGhost][0];
-        //            vhost_view_layout_left(i + y_offset) = vhost_view.data()[i+nGhost][1];
-        //            vhost_view_layout_left(i + y_offset + z_offset) =
-        //            vhost_view.data()[i+nGhost][2];
-
         typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+
+        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
 
         Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left", field.getLayout().getLocalNDIndex()[0].length(),
                                                                                              field.getLayout().getLocalNDIndex()[1].length(),
@@ -179,7 +157,7 @@ namespace CatalystAdaptor {
 
         auto length = host_view_layout_left.size();
         // offset is zero as we start without the ghost cells
-        // stried is 1 as we have every index of the array
+        // stride is 1 as we have every index of the array
         fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], length, 0, 1);
         fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], length, 0, 1);
         fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], length, 0, 1);
