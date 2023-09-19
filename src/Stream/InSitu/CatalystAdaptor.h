@@ -72,7 +72,8 @@ namespace CatalystAdaptor {
 
        auto nGhost = field.getNghost();
 
-//        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+
 //        Kokkos::View<typename Field::type*, Kokkos::LayoutLeft, Kokkos::HostSpace> vhost_view_layout_left("vhost_view_layout_left", field.getLayout().getLocalNDIndex()[0].length()+
 //            field.getLayout().getLocalNDIndex()[1].length()+
 //            field.getLayout().getLocalNDIndex()[2].length());
@@ -97,8 +98,7 @@ namespace CatalystAdaptor {
 
         typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
 
-        Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left",
-                                                                                             field.getLayout().getLocalNDIndex()[0].length(),
+        Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left", field.getLayout().getLocalNDIndex()[0].length(),
                                                                                              field.getLayout().getLocalNDIndex()[1].length(),
                                                                                              field.getLayout().getLocalNDIndex()[2].length());
 
@@ -169,27 +169,20 @@ namespace CatalystAdaptor {
         fields["density/association"].set("element");
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
-        fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
+        //fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
 
         fields["electrostatic/association"].set("element");
         fields["electrostatic/topology"].set("mesh");
         fields["electrostatic/volume_dependent"].set("false");
-//        fields["electrostatic/values/x"].set_external(
-//            vhost_view_layout_left.data(),
-//                field.getLayout().getLocalNDIndex()[0].length());
-//
-//        fields["electrostatic/values/y"].set_external(
-//            vhost_view_layout_left.data(),
-//            field.getLayout().getLocalNDIndex()[1].length(),
-//            y_offset);
 
-//        fields["electrostatic/values/y"].set_external(
-//            &vhost_view_layout_left.data()[1][0],
-//            field.getLayout().getLocalNDIndex()[2].length(),
-//            y_offset+z_offset);
+
+        //auto offset = sizeof(double);
+        fields["electrostatic/values/x"].set_external(&vhost_view.data()[0][0], 0, 1); //, field.getLayout().getLocalNDIndex()[0].length(), 0, 3*offset);
+        fields["electrostatic/values/y"].set_external(&vhost_view.data()[0][1], 0, 1); //, field.getLayout().getLocalNDIndex()[1].length(), offset, 3*offset);
+        fields["electrostatic/values/z"].set_external(&vhost_view.data()[0][2], 0, 1); //, field.getLayout().getLocalNDIndex()[2].length(), 2*offset, 3*offset);
 
         // print node to have visual representation
-        if (cycle == 0)
+        // if (cycle == 0)
             catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
