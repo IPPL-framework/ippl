@@ -382,6 +382,7 @@ public:
         rhoNorm_m = norm(rho_m);
         IpplTimings::stopTimer(sumTimer);
 
+        // CatalystAdaptor::Execute(iteration, time_m, Ippl::Comm->rank(), E_m);
         CatalystAdaptor::Execute(iteration, time_m, Ippl::Comm->rank(), rho_m);
         // dumpVTK(rho_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
 

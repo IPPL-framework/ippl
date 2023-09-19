@@ -5,6 +5,7 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_DynamicView.hpp>
 #include <catalyst.hpp>
 #include <iostream>
 #include <numeric>
@@ -12,6 +13,31 @@
 #include <vector>
 
 #include "Utility/IpplException.h"
+
+ template <typename T, unsigned Dim = 3>
+ using Vector = ippl::Vector<T, Dim>;
+
+ template <unsigned Dim = 3>
+ using Mesh_t = ippl::UniformCartesian<double, Dim>;
+
+ template <unsigned Dim = 3>
+ using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
+
+ template <typename T, unsigned Dim = 3>
+ using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>>;
+
+ template <typename T>
+ using ParticleAttrib = ippl::ParticleAttrib<T>;
+
+ template <unsigned Dim = 3>
+ using Vector_t = Vector<double, Dim>;
+
+ template <unsigned Dim = 3>
+ using Field_t = Field<double, Dim>;
+
+ template <unsigned Dim = 3>
+ using VField_t = Field<Vector_t<Dim>, Dim>;
+
 
 namespace CatalystAdaptor {
 
@@ -46,8 +72,30 @@ namespace CatalystAdaptor {
 
        auto nGhost = field.getNghost();
 
+//        typename VField_t<3>::view_type::host_mirror_type vhost_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
+//        Kokkos::View<typename Field::type*, Kokkos::LayoutLeft, Kokkos::HostSpace> vhost_view_layout_left("vhost_view_layout_left", field.getLayout().getLocalNDIndex()[0].length()+
+//            field.getLayout().getLocalNDIndex()[1].length()+
+//            field.getLayout().getLocalNDIndex()[2].length());
+//
+//        auto y_offset = field.getLayout().getLocalNDIndex()[1].length();
+//        auto z_offset = field.getLayout().getLocalNDIndex()[2].length();
+
+//        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i)
+//        {
+//            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j)
+//            {
+//                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k)
+//                {
+//                    host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
+//                }
+//            }
+//        }
+        //            vhost_view_layout_left(i) = vhost_view.data()[i+nGhost][0];
+        //            vhost_view_layout_left(i + y_offset) = vhost_view.data()[i+nGhost][1];
+        //            vhost_view_layout_left(i + y_offset + z_offset) =
+        //            vhost_view.data()[i+nGhost][2];
+
         typename Field::view_type::host_mirror_type host_view = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),field.getView());
-        //Kokkos::deep_copy(host_view, field.getView());
 
         Kokkos::View<typename Field::type***,  Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left("host_view_layout_left",
                                                                                              field.getLayout().getLocalNDIndex()[0].length(),
@@ -122,6 +170,23 @@ namespace CatalystAdaptor {
         fields["density/topology"].set("mesh");
         fields["density/volume_dependent"].set("false");
         fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
+
+        fields["electrostatic/association"].set("element");
+        fields["electrostatic/topology"].set("mesh");
+        fields["electrostatic/volume_dependent"].set("false");
+//        fields["electrostatic/values/x"].set_external(
+//            vhost_view_layout_left.data(),
+//                field.getLayout().getLocalNDIndex()[0].length());
+//
+//        fields["electrostatic/values/y"].set_external(
+//            vhost_view_layout_left.data(),
+//            field.getLayout().getLocalNDIndex()[1].length(),
+//            y_offset);
+
+//        fields["electrostatic/values/y"].set_external(
+//            &vhost_view_layout_left.data()[1][0],
+//            field.getLayout().getLocalNDIndex()[2].length(),
+//            y_offset+z_offset);
 
         // print node to have visual representation
         if (cycle == 0)
