@@ -36,7 +36,6 @@ namespace ippl {
     class sample_its{
     public:
         using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
-        //using value_type = typename T::value_type;
         
     public:
         Distribution dist;
@@ -87,8 +86,6 @@ namespace ippl {
             GeneratorPool rand_pool;
             Tt umin_m;
             Tt umax_m;
-            //uniform_real_distribution<DeviceType, T> unif;
-            // Initialize all members
             KOKKOS_FUNCTION
             fill_random(Distribution dist_, view_type x_, GeneratorPool rand_pool_, Tt& umin_, Tt& umax_)
             : dist(dist_)
@@ -101,8 +98,6 @@ namespace ippl {
 
                 value_type u = 0.0;
                 
-                // get uniform random number between umin and umax
-                //u = (umax_m - umin_m) * unif(gen) + umin_m;
                 u       = rand_gen.drand(umin_m, umax_m);
 
                 // first guess for Newton-Raphson
@@ -115,9 +110,7 @@ namespace ippl {
             }
         };
         KOKKOS_INLINE_FUNCTION unsigned int getLocalNum() const { return nlocal_m; }
-        void generate(view_type view, int seed) {
-            using size_type = ippl::detail::size_type;
-            Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
             Kokkos::parallel_for(nlocal_m, fill_random<double, Kokkos::Random_XorShift64_Pool<>>(dist, view, rand_pool64, umin, umax));
             Kokkos::fence();
         }

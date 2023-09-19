@@ -151,6 +151,10 @@ int main(int argc, char* argv[]) {
         using view_type  = typename ippl::detail::ViewType<double, 1>::view_type;
         using sampling_t = ippl::random::sample_its<double, Kokkos::DefaultExecutionSpace, Dist_t>;
 
+        int seed = 42;
+        using size_type = ippl::detail::size_type;
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+
         const double mu = 1.0;
         const double sd = 0.5;
         const double par[2] = {mu, sd};
@@ -158,7 +162,7 @@ int main(int argc, char* argv[]) {
         sampling_t sampling(dist, 0, rmax[0], rmin[0], rlayout, ntotal);
         unsigned int nlocal = sampling.getLocalNum();
         view_type position("position", nlocal);
-        sampling.generate(position, 42);
+        sampling.generate(position, rand_pool64);
 
 
         using DistH_t = HarmonicDistribution<double, 2>;
@@ -168,7 +172,7 @@ int main(int argc, char* argv[]) {
         samplingH_t samplingH(distH, 1, rmax[1], rmin[1], rlayout, ntotal);
         nlocal = samplingH.getLocalNum();
         view_type positionH("positionH", nlocal);
-        samplingH.generate(positionH, 42);
+        samplingH.generate(positionH, rand_pool64);
 
         //for (unsigned int i = 0; i < nlocal; ++i) {
         //    msg << position(i) << " " << positionH(i) << endl;
