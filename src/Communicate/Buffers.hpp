@@ -30,6 +30,7 @@ namespace ippl {
             size *= sizeof(T);
             if (buffers.contains(id) && buffers[id]->getBufferSize() < size) {
                 buffers[id]->reallocBuffer(size);
+                return buffers[id];
             }
             buffers[id] = std::make_shared<archive_type<MemorySpace>>(
                 (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
