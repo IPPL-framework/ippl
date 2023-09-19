@@ -108,7 +108,8 @@ namespace CatalystAdaptor {
             {
                 for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k)
                 {
-                    host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
+                    // host_view_layout_left(i,j,k) = host_view(i+nGhost, j+nGhost, k+nGhost);
+                    host_view_layout_left(i,j,k) = vhost_view(i+nGhost, j+nGhost, k+nGhost);
                 }
             }
         }
@@ -177,12 +178,12 @@ namespace CatalystAdaptor {
 
 
         //auto offset = sizeof(double);
-        fields["electrostatic/values/x"].set_external(&vhost_view.data()[0][0], 0, 1); //, field.getLayout().getLocalNDIndex()[0].length(), 0, 3*offset);
-        fields["electrostatic/values/y"].set_external(&vhost_view.data()[0][1], 0, 1); //, field.getLayout().getLocalNDIndex()[1].length(), offset, 3*offset);
-        fields["electrostatic/values/z"].set_external(&vhost_view.data()[0][2], 0, 1); //, field.getLayout().getLocalNDIndex()[2].length(), 2*offset, 3*offset);
+        fields["electrostatic/values/x"].set_external(&host_view_layout_left.data()[0][0], field.getLayout().getLocalNDIndex()[0].length(), 0, 1);
+        fields["electrostatic/values/y"].set_external(&host_view_layout_left.data()[0][1], field.getLayout().getLocalNDIndex()[1].length(), 0, 1);
+        fields["electrostatic/values/z"].set_external(&host_view_layout_left.data()[0][2], field.getLayout().getLocalNDIndex()[2].length(), 0, 1);
 
         // print node to have visual representation
-        // if (cycle == 0)
+        if (cycle == 0)
             catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));

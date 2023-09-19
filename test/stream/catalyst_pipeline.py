@@ -18,4 +18,7 @@ def catalyst_execute(info):
     arrayInfo = producer.CellData["density"]
     arrayInfo.GetNumberOfComponents()
     print("field:", producer.CellData["density"].GetRange(-1)) # .GetRange(0))
+    arrayInfo = producer.CellData["electrostatic"]
+    arrayInfo.GetNumberOfComponents()
+    print("field:", producer.CellData["electrostatic"].GetRange(-1)) # .GetRange(0))
 #    print("pressure-range:", producer.CellData["pressure"].GetRange(0))
