@@ -166,9 +166,9 @@ namespace CatalystAdaptor {
 
         // add values and subscribe to data
         auto fields = mesh["fields"];
-        fields["density/association"].set("element");
-        fields["density/topology"].set("mesh");
-        fields["density/volume_dependent"].set("false");
+//        fields["density/association"].set("element");
+//        fields["density/topology"].set("mesh");
+//        fields["density/volume_dependent"].set("false");
         //fields["density/values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
 
         fields["electrostatic/association"].set("element");
