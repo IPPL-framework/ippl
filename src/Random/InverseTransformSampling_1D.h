@@ -7,18 +7,16 @@
 #include "Random/Random.h"
 
 namespace ippl {
-
-    namespace random {
-    
+  namespace random {
     namespace detail{
         template <typename T>
         struct NewtonRaphson {
             KOKKOS_FUNCTION
             NewtonRaphson() = default;
-            
+
             KOKKOS_FUNCTION
             ~NewtonRaphson() = default;
-            
+
             template <class Distribution>
             KOKKOS_INLINE_FUNCTION void solve(Distribution dist, T& x, T& u, T atol = 1.0e-12,
                                               unsigned int max_iter = 20) {
@@ -30,21 +28,18 @@ namespace ippl {
                 }
             }
         };
-    }
-    
+    }// name space detial
+
     template <typename T, class DeviceType, class Distribution>
     class sample_its{
     public:
         using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
-        
-    public:
         Distribution dist;
         int d;
         T rmax;
         T rmin;
         T umin, umax;
         unsigned int ntotal;
-        
         template <class RegionLayout>
         sample_its(Distribution dist_, int d_, T rmax_, T rmin_, const RegionLayout& rlayout, unsigned int ntotal_)
         : dist(dist_),  // Initialize the 'dist' member with the provided 'dist_' argument
@@ -114,7 +109,6 @@ namespace ippl {
             Kokkos::parallel_for(nlocal_m, fill_random<double, Kokkos::Random_XorShift64_Pool<>>(dist, view, rand_pool64, umin, umax));
             Kokkos::fence();
         }
-
     private:
         unsigned int nlocal_m;
     };
@@ -122,23 +116,23 @@ namespace ippl {
     template <typename T, unsigned DimP, typename PDF, typename CDF, typename ESTIMATE>
     class Distribution {
     public:
-       T par[DimP];
+       T par_m[DimP];
        Distribution(const T *par_) {
             for(unsigned int i=0; i<DimP; i++){
-                par[i] = par_[i];
+                par_m[i] = par_[i];
             }
        }
        PDF pdf_m;
        CDF cdf_m;
        ESTIMATE estimate_m;
        KOKKOS_INLINE_FUNCTION T pdf(T x) const{
-          return pdf_m(x, par);
+          return pdf_m(x, par_m);
        }
        KOKKOS_INLINE_FUNCTION T cdf(T x) const{
-          return cdf_m(x, par);
+          return cdf_m(x, par_m);
        }
        KOKKOS_INLINE_FUNCTION T estimate(T x) const{
-          return estimate_m(x, par);
+          return estimate_m(x, par_m);
        }
        KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
             return cdf(x) - u;
@@ -149,41 +143,39 @@ namespace ippl {
     };
 
     template <typename T>
-       struct normal_cdf{
+    struct normal_cdf{
        KOKKOS_INLINE_FUNCTION double operator()(T x, const T *params) const {
-          static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return 0.5 * (1 + Kokkos::erf((x - mean) / (stddev * Kokkos::sqrt(2.0))));
        }
-       };
+    };
 
-     template <typename T>
-       struct normal_pdf{
+    template <typename T>
+    struct normal_pdf{
        KOKKOS_INLINE_FUNCTION double operator()(T x, T const *params) const {
           static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return (1.0 / (stddev * Kokkos::sqrt(2 * pi))) * Kokkos::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
        }
-       };
+    };
 
-      template <typename T>
-       struct normal_estimate{
+    template <typename T>
+    struct normal_estimate{
         KOKKOS_INLINE_FUNCTION double operator()(T u, T const *params) const {
           static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
         }
-       };
+    };
 
     template<typename T>
     class Normal : public Distribution<T, 2, normal_pdf<T>, normal_cdf<T>, normal_estimate<T>>{
     public:
        unsigned DimP = 2;
-       Normal(const T *par_) : Distribution<T, 2, normal_pdf<T>, normal_cdf<T>, normal_estimate<T>>(par_) {
-       }
+       Normal(const T *par_) : Distribution<T, 2, normal_pdf<T>, normal_cdf<T>, normal_estimate<T>>(par_) {}
     };
   }  // namespace random
 }  // namespace ippl
