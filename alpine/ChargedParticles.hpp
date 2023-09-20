@@ -9,10 +9,10 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
 #include "Solver/FFTPoissonSolver.h"
 #include "Solver/P3MSolver.h"
+#include "Solver/PoissonCG.h"
 
 unsigned LoggingPeriod = 1;
 
@@ -54,7 +54,7 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field_t<Dim>>;
+using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 

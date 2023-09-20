@@ -14,7 +14,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "Solver/ElectrostaticsCG.h"
+#include "Solver/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
                              * sin(sin(pi * z)));
             });
 
-        ippl::ElectrostaticsCG<field_type> lapsolver;
+        ippl::PoissonCG<field_type> lapsolver;
 
         ippl::ParameterList params;
         params.add("max_iterations", 2000);

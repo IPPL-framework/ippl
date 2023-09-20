@@ -19,11 +19,11 @@
 #include "Field/Field.h"
 
 #include "Communicate/Archive.h"
-#include "Electrostatics.h"
 #include "FFT/FFT.h"
 #include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
+#include "Poisson.h"
 
 namespace ippl {
 
@@ -70,7 +70,7 @@ namespace ippl {
     }  // namespace detail
 
     template <typename FieldLHS, typename FieldRHS>
-    class FFTPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+    class FFTPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldLHS::Mesh_t;
@@ -78,7 +78,7 @@ namespace ippl {
 
     public:
         // type of output
-        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
 
         // types for LHS and RHS
         using typename Base::lhs_type, typename Base::rhs_type;

@@ -3,10 +3,9 @@ set (_SRCS
 
 set (_HDRS
     SolverAlgorithm.h
-    ElectrostaticsCG.h
-    Electrostatics.h
+    PoissonCG.h
+    Poisson.h
     PCG.h
-    Solver.h
     FDTDSolver.h
     FDTDSolver.hpp
 )
