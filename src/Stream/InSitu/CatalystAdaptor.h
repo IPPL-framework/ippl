@@ -15,19 +15,28 @@
 
 namespace CatalystAdaptor {
 
-    template <class Field>
-    void setData(conduit_cpp::Node& node, Field& field) {
+    using View_vector =
+        Kokkos::View<ippl::Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+    void setData(conduit_cpp::Node& node, const View_vector& view) {
         node["electrostatic/association"].set("element");
         node["electrostatic/topology"].set("mesh");
         node["electrostatic/volume_dependent"].set("false");
 
-        auto length = std::size(field);
+        auto length = std::size(view);
 
         // offset is zero as we start without the ghost cells
         // stride is 1 as we have every index of the array
-        node["electrostatic/values/x"].set_external(&field.data()[0][0], length, 0, 1);
-        node["electrostatic/values/y"].set_external(&field.data()[0][1], length, 0, 1);
-        node["electrostatic/values/z"].set_external(&field.data()[0][2], length, 0, 1);
+        node["electrostatic/values/x"].set_external(&view.data()[0][0], length, 0, 1);
+        node["electrostatic/values/y"].set_external(&view.data()[0][1], length, 0, 1);
+        node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
+    }
+
+    using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+    void setData(conduit_cpp::Node& node, const View_scalar& view) {
+        node["density/association"].set("element");
+        node["density/topology"].set("mesh");
+        node["density/volume_dependent"].set("false");
+        node["density/values"].set_external(view.data(), view.size());
     }
 
     void Initialize(int argc, char* argv[]) {
@@ -129,13 +138,7 @@ namespace CatalystAdaptor {
         }
 
         // add values and subscribe to data
-
         auto fields = mesh["fields"];
-        //        fields["density/association"].set("element");
-        //        fields["density/topology"].set("mesh");
-        //        fields["density/volume_dependent"].set("false");
-        // fields["density/values"].set_external(host_view_layout_left.data(),
-        // host_view_layout_left.size());
 
         setData(fields, host_view_layout_left);
 
