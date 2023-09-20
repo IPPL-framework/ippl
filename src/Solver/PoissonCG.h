@@ -1,10 +1,10 @@
 //
 // Class PoissonCG
-//   Solves electrostatics problems with the CG algorithm
+//   Solves the Poisson problem with the CG algorithm
 //
 
-#ifndef IPPL_ELECTROSTATICS_CG_H
-#define IPPL_ELECTROSTATICS_CG_H
+#ifndef IPPL_POISSON_CG_H
+#define IPPL_POISSON_CG_H
 
 #include "PCG.h"
 #include "Poisson.h"

@@ -3,8 +3,8 @@
 //   Base class for solvers for the Poisson problem
 //
 
-#ifndef IPPL_ELECTROSTATICS_H
-#define IPPL_ELECTROSTATICS_H
+#ifndef IPPL_POISSON_H
+#define IPPL_POISSON_H
 
 #include "Utility/ParameterList.h"
 
@@ -109,7 +109,7 @@ namespace ippl {
         void setGradient(grad_type& grad) { grad_mp = &grad; }
 
         /*!
-         * Solve the electrostatics problem described by
+         * Solve the Poisson problem described by
          * -laplace(lhs) = rhs
          */
         virtual void solve() = 0;

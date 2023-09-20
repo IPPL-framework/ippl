@@ -1,6 +1,6 @@
 //
 // Class FFTPeriodicPoissonSolver
-//   Solves periodic electrostatics problems using Fourier transforms
+//   Solves the periodic Poisson problem using Fourier transforms
 //
 //
 

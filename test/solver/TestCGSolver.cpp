@@ -1,4 +1,4 @@
-// Tests the conjugate gradient solver for electrostatics problems
+// Tests the conjugate gradient solver for Poisson problems
 // by checking the relative error from the exact solution
 // Usage:
 //      TestCGSolver [size [scaling_type]]
