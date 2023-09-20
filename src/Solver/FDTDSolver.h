@@ -19,39 +19,29 @@
 #ifndef FDTD_SOLVER_H_
 #define FDTD_SOLVER_H_
 
-#include "Types/Vector.h"
-
-#include "Field/Field.h"
-
-#include "FieldLayout/FieldLayout.h"
-#include "Meshes/UniformCartesian.h"
+#include "Solver/Maxwell.h"
 
 namespace ippl {
-    template <typename Tfields, unsigned Dim, class M = UniformCartesian<double, Dim>,
-              class C = typename M::DefaultCentering>
-    class FDTDSolver {
+    template <typename EMField, typename SourceField>
+    class FDTDSolver : public Maxwell<EMField, SourceField> {
     public:
-        // define a type for scalar field (e.g. charge density field)
-        // define a type for vectors
-        // define a type for vector field
-        typedef Field<Tfields, Dim, M, C> Field_t;
-        typedef Vector<Tfields, Dim> Vector_t;
-        typedef Field<Vector_t, Dim, M, C> VField_t;
-        using memory_space = typename Field_t::memory_space;
-
-        // define type for field layout
-        typedef FieldLayout<Dim> FieldLayout_t;
-
-        // type for communication buffers
-        using buffer_type = Communicate::buffer_type<memory_space>;
+        constexpr static unsigned Dim = EMField::dim;
+        using typeR                   = typename SourceField::value_type;
+        using Base                    = Maxwell<EMField, SourceField>;
+        using VectorSourceField_t     = typename Base::VectorSourceField_t;
+        using Mesh_t                  = typename Base::Mesh_t;
+        using FieldLayout_t           = typename Base::FieldLayout_t;
+        using Vector_t                = typename Base::Vector_t;
 
         // constructor and destructor
-        FDTDSolver(Field_t& charge, VField_t& current, VField_t& E, VField_t& B,
+        FDTDSolver()
+            : Base() {}
+        FDTDSolver(SourceField& charge, VectorSourceField_t& current, EMField& E, EMField& B,
                    double timestep = 0.05, bool seed_ = false);
-        ~FDTDSolver();
+        ~FDTDSolver() = default;
 
         // finite differences time domain solver for potentials (A and phi)
-        void solve();
+        void solve() override;
 
         // evaluates E and B fields using computed potentials
         void field_evaluation();
@@ -64,7 +54,7 @@ namespace ippl {
 
     private:
         // mesh and layout objects
-        M* mesh_mp;
+        Mesh_t* mesh_mp;
         FieldLayout_t* layout_mp;
 
         // computational domain
@@ -83,24 +73,16 @@ namespace ippl {
         // iteration number for gaussian seed
         size_t iteration = 0;
 
-        // fields containing reference to charge and current
-        Field_t* rhoN_mp;
-        VField_t* JN_mp;
-
         // scalar and vector potentials at n-1, n, n+1 times
-        Field_t phiNm1_m;
-        Field_t phiN_m;
-        Field_t phiNp1_m;
-        VField_t aNm1_m;
-        VField_t aN_m;
-        VField_t aNp1_m;
-
-        // E and B fields
-        VField_t* En_mp;
-        VField_t* Bn_mp;
+        SourceField phiNm1_m;
+        SourceField phiN_m;
+        SourceField phiNp1_m;
+        VectorSourceField_t aNm1_m;
+        VectorSourceField_t aN_m;
+        VectorSourceField_t aNp1_m;
 
         // buffer for communication
-        detail::FieldBufferData<Tfields> fd_m;
+        detail::FieldBufferData<typeR> fd_m;
     };
 }  // namespace ippl
 

@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
         bool seed = false;
 
         // define an FDTDSolver object
-        ippl::FDTDSolver<double, Dim> solver(rho, current, fieldE, fieldB, dt, seed);
+        ippl::FDTDSolver<VField_t, Field_t> solver(rho, current, fieldE, fieldB, dt, seed);
 
         if (!seed) {
             // add pulse at center of domain
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
 
                     if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                         view_rho(i, j, k) = sine(0, dt);
-            });
+                });
         }
 
         msg << "Timestep number = " << 0 << " , time = " << 0 << endl;
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
 
                         if ((x == 0.5) && (y == 0.5) && (z == 0.5))
                             view_rho(i, j, k) = sine(it, dt);
-                });
+                    });
             }
 
             solver.solve();

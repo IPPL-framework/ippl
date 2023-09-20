@@ -16,28 +16,19 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#include "Types/Vector.h"
-
-#include "Field/Field.h"
-
 #include "FDTDSolver.h"
-#include "Field/HaloCells.h"
-#include "FieldLayout/FieldLayout.h"
-#include "Meshes/UniformCartesian.h"
 
 namespace ippl {
 
-    template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::FDTDSolver(Field_t& charge, VField_t& current, VField_t& E,
-                                               VField_t& B, double timestep, bool seed_) {
+    template <typename EMField, typename SourceField>
+    FDTDSolver<EMField, SourceField>::FDTDSolver(SourceField& charge, VectorSourceField_t& current,
+                                                 EMField& E, EMField& B, double timestep,
+                                                 bool seed_) {
         // set the rho and J fields to be references to charge and current
         // since charge and current deposition will happen at each timestep
-        rhoN_mp = &charge;
-        JN_mp   = &current;
-
         // same for E and B fields
-        En_mp = &E;
-        Bn_mp = &B;
+        this->setSources(charge, current);
+        this->setEMFields(E, B);
 
         // initialize the time-step size
         this->dt = timestep;
@@ -49,11 +40,8 @@ namespace ippl {
         initialize();
     }
 
-    template <typename Tfields, unsigned Dim, class M, class C>
-    FDTDSolver<Tfields, Dim, M, C>::~FDTDSolver(){};
-
-    template <typename Tfields, unsigned Dim, class M, class C>
-    void FDTDSolver<Tfields, Dim, M, C>::solve() {
+    template <typename EMField, typename SourceField>
+    void FDTDSolver<EMField, SourceField>::solve() {
         // physical constant
         double c        = 1.0;  // 299792458.0;
         double mu0      = 1.0;  // 1.25663706212e-6;
@@ -72,9 +60,8 @@ namespace ippl {
         double beta0[3] = {(c * dt - hr_m[0]) / (c * dt + hr_m[0]),
                            (c * dt - hr_m[1]) / (c * dt + hr_m[1]),
                            (c * dt - hr_m[2]) / (c * dt + hr_m[2])};
-        double beta1[3] = {2.0 * dt * hr_m[0] / (c * dt + hr_m[0]),
-                           2.0 * dt * hr_m[1] / (c * dt + hr_m[1]),
-                           2.0 * dt * hr_m[2] / (c * dt + hr_m[2])};
+        double beta1[3] = {2.0 * hr_m[0] / (c * dt + hr_m[0]), 2.0 * hr_m[1] / (c * dt + hr_m[1]),
+                           2.0 * hr_m[2] / (c * dt + hr_m[2])};
         double beta2[3] = {-1.0, -1.0, -1.0};
 
         // preliminaries for Kokkos loops (ghost cells and views)
@@ -313,25 +300,25 @@ namespace ippl {
         phiN_m   = phiNp1_m;
     };
 
-    template <typename Tfields, unsigned Dim, class M, class C>
-    void FDTDSolver<Tfields, Dim, M, C>::field_evaluation() {
+    template <typename EMField, typename SourceField>
+    void FDTDSolver<EMField, SourceField>::field_evaluation() {
         // magnetic field is the curl of the vector potential
         // we take the average of the potential at N and N+1
-        (*Bn_mp) = 0.5 * (curl(aN_m) + curl(aNp1_m));
+        (*(this->Bn_mp)) = 0.5 * (curl(aN_m) + curl(aNp1_m));
 
         // electric field is the time derivative of the vector potential
         // minus the gradient of the scalar potential
-        (*En_mp) = -(aNp1_m - aN_m) / dt - grad(phiN_m);
+        (*(this->En_mp)) = -(aNp1_m - aN_m) / dt - grad(phiN_m);
     };
 
-    template <typename Tfields, unsigned Dim, class M, class C>
-    double FDTDSolver<Tfields, Dim, M, C>::gaussian(size_t it) {
+    template <typename EMField, typename SourceField>
+    double FDTDSolver<EMField, SourceField>::gaussian(size_t it) {
         double arg = Kokkos::pow((it * dt) / 0.1, 2);
         return 100 * Kokkos::exp(-arg);
     };
 
-    template <typename Tfields, unsigned Dim, class M, class C>
-    void FDTDSolver<Tfields, Dim, M, C>::initialize() {
+    template <typename EMField, typename SourceField>
+    void FDTDSolver<EMField, SourceField>::initialize() {
         // get layout and mesh
         layout_mp = &(this->rhoN_mp->getLayout());
         mesh_mp   = &(this->rhoN_mp->get_mesh());
