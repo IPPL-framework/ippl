@@ -128,9 +128,24 @@ namespace ippl {
                 par[i] = par_[i];
             }
        }
-       PDF pdf;
-       CDF cdf;
-       ESTIMATE estimate;
+       PDF pdf_m;
+       CDF cdf_m;
+       ESTIMATE estimate_m;
+       KOKKOS_INLINE_FUNCTION T pdf(T x) const{
+          return pdf_m(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T cdf(T x) const{
+          return cdf_m(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T estimate(T x) const{
+          return estimate_m(x, par);
+       }
+       KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
+            return cdf(x) - u;
+       }
+       KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
+            return pdf(x);
+       }
     };
 
     template <typename T>
