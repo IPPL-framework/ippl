@@ -119,83 +119,56 @@ namespace ippl {
         unsigned int nlocal_m;
     };
 
-    template <typename T, unsigned DimP>
+    template <typename T, unsigned DimP, typename PDF, typename CDF, typename ESTIMATE>
     class Distribution {
     public:
-       //T* par;
-       //unsigned DimP;
        T par[DimP];
-       static constexpr T pi = Kokkos::numbers::pi_v<T>;
        Distribution(const T *par_) {
             for(unsigned int i=0; i<DimP; i++){
                 par[i] = par_[i];
             }
-            setNormal();
        }
-       //Distribution(unsigned dimP, const T *par_) : DimP(dimP) {
-       //     par = new T[dimP];
-       //     for (unsigned int i = 0; i < DimP; i++) {
-       //         par[i] = par_[i];
-       //     }
-       //     setNormal();
-       //}
-       //~Distribution() {
-       //     delete[] par;
-       //}
+       PDF pdf;
+       CDF cdf;
+       ESTIMATE estimate;
+    };
+
+    template <typename T>
        struct normal_cdf{
        KOKKOS_INLINE_FUNCTION double operator()(T x, const T *params) const {
+          static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return 0.5 * (1 + Kokkos::erf((x - mean) / (stddev * Kokkos::sqrt(2.0))));
        }
        };
+
+     template <typename T>
        struct normal_pdf{
        KOKKOS_INLINE_FUNCTION double operator()(T x, T const *params) const {
+          static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return (1.0 / (stddev * Kokkos::sqrt(2 * pi))) * Kokkos::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
        }
        };
+
+      template <typename T>
        struct normal_estimate{
         KOKKOS_INLINE_FUNCTION double operator()(T u, T const *params) const {
+          static constexpr T pi = Kokkos::numbers::pi_v<T>;
           T mean = params[0];
           T stddev = params[1];
           return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
         }
        };
-       normal_pdf pdf_functor;
-       normal_cdf cdf_functor;
-       normal_estimate estimate_functor;
 
-       void setCustomFunctions(const normal_pdf& customPDF, const normal_cdf& customCDF, const normal_estimate& customEstimate) {
-           // Set the functors to custom functions provided by the user
-           pdf_functor = customPDF;
-           cdf_functor = customCDF;
-           estimate_functor = customEstimate;
+    template<typename T>
+    class Normal : public Distribution<T, 2, normal_pdf<T>, normal_cdf<T>, normal_estimate<T>>{
+    public:
+       unsigned DimP = 2;
+       Normal(const T *par_) : Distribution<T, 2, normal_pdf<T>, normal_cdf<T>, normal_estimate<T>>(par_) {
        }
-
-       KOKKOS_INLINE_FUNCTION T cdf(T x) const {
-          return cdf_functor(x, par);
-       }
-       KOKKOS_INLINE_FUNCTION T pdf(T x) const {
-          return pdf_functor(x, par);
-       }
-       KOKKOS_INLINE_FUNCTION T estimate(T x) const {
-          return estimate_functor(x, par);
-       }
-       KOKKOS_INLINE_FUNCTION T obj_func(T x, T u) const{
-            return cdf(x) - u;
-       }
-       KOKKOS_INLINE_FUNCTION T der_obj_func(T x) const{
-            return pdf(x);
-       }
-
-       void setNormal(){
-          pdf_functor = normal_pdf();
-          cdf_functor = normal_cdf();
-          estimate_functor = normal_estimate();
-       }
-
     };
   }  // namespace random
 }  // namespace ippl
