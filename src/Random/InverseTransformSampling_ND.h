@@ -159,6 +159,20 @@ namespace ippl {
       return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
   }
   
+  template<typename T>
+  KOKKOS_FUNCTION T uniform_cdf_func(T x){
+      return x;
+  }
+  template<typename T>
+  KOKKOS_FUNCTION T uniform_pdf_func(){
+      return 1.;
+  }
+  template<typename T>
+  KOKKOS_FUNCTION T uniform_estimate_func(T u){
+      return u;
+  }
+  
+  
     template <typename T, unsigned Dim>
     struct normal_cdf{
         KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params) const {
