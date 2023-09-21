@@ -25,6 +25,9 @@ target_link_libraries (LandauDamping ${IPPL_LIBS})
 ##add_executable (LandauDamping_test LandauDamping_test.cpp)
 ##target_link_libraries (LandauDamping_test ${IPPL_LIBS})
 
+add_executable (LandauDamping_test_sampling LandauDamping_test_sampling.cpp)
+target_link_libraries (LandauDamping_test_sampling ${IPPL_LIBS})
+
 add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
 target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
 

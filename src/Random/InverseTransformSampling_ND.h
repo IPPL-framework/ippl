@@ -114,7 +114,7 @@ namespace ippl {
         unsigned int nlocal_m;
     };
 
-    template <typename T, unsigned DimP, typename PDF, typename CDF, typename ESTIMATE>
+    template <typename T, unsigned Dim, unsigned DimP, typename PDF, typename CDF, typename ESTIMATE>
     class Distribution {
     public:
        T par_m[DimP];
@@ -141,6 +141,13 @@ namespace ippl {
        }
        KOKKOS_INLINE_FUNCTION T der_obj_func(T x, unsigned int d) const{
             return pdf(x, d);
+       }
+       KOKKOS_INLINE_FUNCTION T full_pdf(ippl::Vector<T, Dim> x) const{
+          T total_pdf = 1.0;
+          for(unsigned int d=0; d<Dim; d++){
+             total_pdf *= pdf(x[d], d);
+          }
+          return total_pdf;
        }
     };
 
@@ -204,9 +211,9 @@ namespace ippl {
     };
 
     template<typename T, unsigned Dim>
-    class Normal : public Distribution<T, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>{
+    class Normal : public Distribution<T, Dim, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>{
     public:
-       Normal(const T *par_) : Distribution<T, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>(par_) {}
+       Normal(const T *par_) : Distribution<T, Dim, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>(par_) {}
     };
   }  // namespace random
 }  // namespace ippl

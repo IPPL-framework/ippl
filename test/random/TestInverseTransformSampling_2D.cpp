@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4;
         double pi    = Kokkos::numbers::pi_v<double>;
-        using DistH_t = ippl::random::Distribution<double, DimP, custom_pdf, custom_cdf, custom_estimate>;
+        using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
         using samplingH_t = ippl::random::sample_its<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
         const double parH[DimP] = {rmin[0], rmax[0], 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
         DistH_t distH(parH);
