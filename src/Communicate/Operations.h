@@ -5,6 +5,7 @@
 #ifndef IPPL_MPI_OPERATIONS_H
 #define IPPL_MPI_OPERATIONS_H
 
+#include <Kokkos_Complex.hpp>
 #include <complex>
 #include <functional>
 #include <mpi.h>
