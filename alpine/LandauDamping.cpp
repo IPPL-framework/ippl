@@ -308,10 +308,9 @@ int main(int argc, char* argv[]) {
             nloc, generate_random_position<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
                       P->R.getView(), rand_pool64, alpha, kw, minU, maxU));
 
-       Kokkos::Random_XorShift64_Pool<> rand_pool64_((size_type)(42 + 100 * ippl::Comm->rank()));
        Kokkos::parallel_for(
             nloc, generate_random_velocity<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      P->P.getView(), rand_pool64_));
+                      P->P.getView(), rand_pool64));
                       
         Kokkos::fence();
         ippl::Comm->barrier();
