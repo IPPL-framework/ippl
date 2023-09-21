@@ -396,6 +396,8 @@ int main(int argc, char* argv[]) {
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
+        CatalystAdaptor::Execute(it, P->time_m, Ippl::Comm->rank(), P->E_m);
+
         // gather E field
         P->gatherCIC();
 
