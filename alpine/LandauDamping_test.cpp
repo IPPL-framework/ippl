@@ -44,7 +44,6 @@
 #include "Utility/IpplTimings.h"
 #include "Manager/PicManager.h"
 #include "datatypes.h"
-#include "Random/InverseTransformSampling.h"
 #include "LandauDampingManager.h"
 
 int main(int argc, char* argv[]) {
@@ -70,10 +69,10 @@ int main(int argc, char* argv[]) {
         // Perform pre-run operations, including creating mesh, particles,...
        manager.pre_run();
        
-        manager.time_m = 0.0;
-        msg << "Starting iterations ..." << endl;
+       manager.time_m = 0.0;
+       msg << "Starting iterations ..." << endl;
         
-        manager.run(manager.nt);
+       manager.run(manager.nt);
         
         msg << "LandauDamping: End." << endl;
     }

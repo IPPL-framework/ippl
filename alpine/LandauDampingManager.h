@@ -8,25 +8,26 @@
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
 #include "LandauDampingManager.h"
-#include "Random/InverseTransformSampling.h" 
+#include "Random/InverseTransformSampling_ND.h" 
  
 const char* TestName = "LandauDamping";
  
  // define functions used in sampling particles
-KOKKOS_FUNCTION
-double CDF(double y, double alpha, double k) {
-    return y + (alpha / k) * std::sin(k * y);
-}
-
-KOKKOS_FUNCTION
-double PDF(double y, double alpha, double k) {
-    return  (1.0 + alpha * Kokkos::cos(k * y));
-}
-
-KOKKOS_FUNCTION
-double ESTIMATE(double u, double alpha) {
-    return u/(1+alpha); // maybe E[x] is good enough as the first guess
-}
+struct custom_cdf{
+    KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
+          return x + (params[d*Dim+0] / params[d*Dim+1]) * Kokkos::sin(params[d*Dim+1] * x);
+    }
+};
+struct custom_pdf{
+    KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params) const {
+          return  1.0 + params[d*Dim+0] * Kokkos::cos(params[d*Dim+1] * x);
+    }
+};
+struct custom_estimate{
+    KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params) const {
+          return u + params[d]*0.;
+    }
+};
 
 KOKKOS_FUNCTION
 double PDF3D(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
@@ -127,7 +128,7 @@ public:
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
-       
+        
         this->pcontainer_m = std::make_shared<ParticleContainer_t>(*PL);
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
         this->fcontainer_m->initializeFields(*mesh, *FL);
@@ -142,7 +143,6 @@ public:
         this->setLoadBalancer(loadbalancer_m);
         
         this ->initializeParticles();
-        
         this->fcontainer_m->rho_m = 0.0;
         this->fsolver_m->runSolver();
         this->par2grid();
@@ -150,8 +150,14 @@ public:
         this->grid2par();
         m << "Done";
     }
+    
     void initializeParticles(){
         Inform m("Initialize Particles");
+
+        using DistR_t = ippl::random::Distribution<double, Dim, 2*Dim, custom_pdf, custom_cdf, custom_estimate>;
+        const double parR[2*Dim] = {alpha, kw[0], alpha, kw[1], alpha, kw[2]};
+        DistR_t distR(parR);
+
         auto mesh = fcontainer_m->rho_m.get_mesh();
         auto FL = fcontainer_m->getLayout();
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -164,13 +170,13 @@ public:
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
                 "Assign initial rho based on PDF", this->fcontainer_m->rho_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args) {
+                KOKKOS_CLASS_LAMBDA (const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * this->hr + this->origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = PDF3D(xvec, this->alpha, this->kw, Dim);
+                    distR.full_pdf(xvec);
                 });
 
             Kokkos::fence();
@@ -178,43 +184,30 @@ public:
             this->loadbalancer_m->initializeORB(FL, mesh);
             this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
         }
-        
-         // Sample particle positions:
-         ippl::detail::RegionLayout<double, 3, Mesh_t<3>> rlayout;
-         rlayout = ippl::detail::RegionLayout<double, 3, Mesh_t<3>>(FL, mesh);
-         using InvTransSampl_t = ippl::random::InverseTransformSampling<double, 3, Kokkos::DefaultExecutionSpace>;
-         ippl::random::Distribution<double, 3> distR;
-         for(int d=0; d<3; d++){
-                 double k = this->kw[d];
-                 double alpha = this->alpha;
-		 distR.setCdfFunction(d, [alpha, k](double y) { return CDF(y, alpha, k);});
-		 distR.setPdfFunction(d, [alpha, k](double y) { return PDF(y, alpha, k);});
-		 distR.setEstimationFunction(d, [alpha](double u) { return ESTIMATE(u, alpha);});
-         }
-         InvTransSampl_t its(this->rmin, this->rmax, rlayout, distR, this->totalP);
-         unsigned int nloc = its.getLocalNum();
-         this->pcontainer_m->create(nloc);
-         its.generate(distR, this->pcontainer_m->R.getView(), 42 + 100 * ippl::Comm->rank());
-         
-         // Sample particle velocity:
-         // Box-Muller method
-         //Kokkos::parallel_for(
-         //   nloc, ippl::random::generate_random_normal<double, Kokkos::DefaultExecutionSpace, 3>(
-         //            pcontainer_m->P.getView(), 0.0, 1.0, 42 + 100 * ippl::Comm->rank()));
-         
-         // standard method
-         Kokkos::Random_XorShift64_Pool<> rand_pool64_((size_type)(42 + 100 * ippl::Comm->rank()));
-         Kokkos::parallel_for(
-            nloc, ippl::random::generate_random_normal_basic<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                     this->pcontainer_m->P.getView(), rand_pool64_));
-        
+        // Sample particle positions:
+        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(FL, mesh);
+
+        int seed = 42;
+        using size_type = ippl::detail::size_type;
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        using samplingR_t = ippl::random::sample_its<double, Dim, Kokkos::DefaultExecutionSpace, DistR_t>;
+        samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
+        size_type nloc = samplingR.getLocalNum();
+        this->pcontainer_m->create(nloc);
+        samplingR.generate(this->pcontainer_m->R.getView(), rand_pool64);
+
+        Kokkos::parallel_for(
+            nloc, ippl::random::randn_functor<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                      this->pcontainer_m->P.getView(), rand_pool64));
+
         Kokkos::fence();
         ippl::Comm->barrier();
 
         this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
-        
     }
+
     void advance() override {
             if (this->step_method == "LeapFrog"){
                 LeapFrogStep();
@@ -237,13 +230,11 @@ public:
             this->pcontainer_m->update();
 
             // Domain Decomposition
-            
-            if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
-                auto mesh = fcontainer_m->rho_m.get_mesh();
-                auto FL = fcontainer_m->getLayout();
-                loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
-            }
-
+            //if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
+            //    auto mesh = fcontainer_m->rho_m.get_mesh();
+            //    auto FL = fcontainer_m->getLayout();
+            //    loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
+            //}
             // scatter the charge onto the underlying grid
             this->par2grid();
             
@@ -256,6 +247,7 @@ public:
             // kick
             this->pcontainer_m->P = this->pcontainer_m->P - 0.5 * this->dt * this->pcontainer_m->E;
     }
+
     void par2grid() override {
         scatterCIC();
     }
@@ -293,7 +285,7 @@ public:
             fcontainer_m->rho_m = fcontainer_m->rho_m - (this->Q / size);
         }
     }
-    
+
     void dumpLandau() { dumpLandau(fcontainer_m->E_m.getView()); }
 
     template <typename View>
@@ -332,7 +324,7 @@ public:
             std::stringstream fname;
             fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
-            fname<<"_test";
+            fname<<"_manager";
             fname << ".csv";
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(16);
@@ -344,6 +336,5 @@ public:
         }
         ippl::Comm->barrier();
     }
-    
 };
 #endif
