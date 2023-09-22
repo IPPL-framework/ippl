@@ -106,6 +106,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp) const {
         constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
 
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
@@ -131,10 +132,10 @@ namespace ippl {
             "ParticleAttrib::scatter", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index = l;
-                Vector<T, Field::dim> whi     = l - index;
-                Vector<T, Field::dim> wlo     = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Field::dim> index        = l;
+                Vector<PositionType, Field::dim> whi = l - index;
+                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
@@ -156,6 +157,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gather(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) {
         constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
@@ -184,10 +186,10 @@ namespace ippl {
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index = l;
-                Vector<T, Field::dim> whi     = l - index;
-                Vector<T, Field::dim> wlo     = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Field::dim> index        = l;
+                Vector<PositionType, Field::dim> whi = l - index;
+                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
