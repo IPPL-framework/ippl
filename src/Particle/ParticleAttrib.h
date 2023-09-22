@@ -72,20 +72,7 @@ namespace ippl {
             ar.deserialize(buf_m, nrecvs);
         }
 
-        [[deprecated]] ParticleAttrib()
-            : Base("", "", "")
-            , dview_m("", 0){};
-
-        ParticleAttrib(const std::string& name, const std::string& long_name,
-                       const std::string& unit)
-            : Base(name, long_name, unit)
-            , dview_m(name, 0) {}
-
         virtual ~ParticleAttrib() = default;
-
-        const void* data() const override { return dview_m.data(); }
-
-        const std::type_index type() const override { return typeid(T); }
 
         size_type size() const override { return dview_m.extent(0); }
 

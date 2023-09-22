@@ -14,8 +14,6 @@
 #ifndef IPPL_PARTICLE_ATTRIB_BASE_H
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
-#include <typeindex>
-
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 
@@ -54,30 +52,13 @@ namespace ippl {
 
             virtual size_type size() const = 0;
 
-            ParticleAttribBase(const std::string& name, const std::string& long_name,
-                               const std::string& unit)
-                : name_m(name)
-                , long_name_m(long_name)
-                , unit_m(unit) {}
-
             virtual ~ParticleAttribBase() = default;
 
             void setParticleCount(size_type& num) { localNum_mp = &num; }
             size_type getParticleCount() const { return *localNum_mp; }
 
-            std::string name() const { return name_m; }
-            std::string long_name() const { return long_name_m; }
-            std::string unit() const { return unit_m; }
-
-            virtual const void* data() const = 0;
-
-            virtual const std::type_index type() const = 0;
-
         protected:
             const size_type* localNum_mp;
-            const std::string name_m;
-            const std::string long_name_m;
-            const std::string unit_m;
         };
     }  // namespace detail
 }  // namespace ippl

@@ -53,8 +53,7 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     ParticleBase<PLayout, IP...>::ParticleBase()
-        : R("R", "position", "m")
-        , layout_m(nullptr)
+        : layout_m(nullptr)
         , localNum_m(0)
         , totalNum_m(0)
         , nextID_m(Comm->rank())
