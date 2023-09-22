@@ -119,7 +119,7 @@ namespace ippl {
     public:
        T par_m[DimP];
 
-       Distribution(const T *par_) {
+       KOKKOS_INLINE_FUNCTION Distribution(const T *par_) {
             for(unsigned int i=0; i<DimP; i++){
                 par_m[i] = par_[i];
             }
@@ -213,7 +213,7 @@ namespace ippl {
     template<typename T, unsigned Dim>
     class Normal : public Distribution<T, Dim, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>{
     public:
-       Normal(const T *par_) : Distribution<T, Dim, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>(par_) {}
+       KOKKOS_INLINE_FUNCTION Normal(const T *par_) : Distribution<T, Dim, 2*Dim, normal_pdf<T, Dim>, normal_cdf<T, Dim>, normal_estimate<T, Dim>>(par_) {}
     };
   }  // namespace random
 }  // namespace ippl

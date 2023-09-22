@@ -29,17 +29,6 @@ struct custom_estimate{
     }
 };
 
-KOKKOS_FUNCTION
-double PDF3D(const Vector_t<double, Dim>& xvec, const double& alpha, const Vector_t<double, Dim>& kw,
-           const unsigned Dim) {
-    double pdf = 1.0;
-
-    for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0 + alpha * Kokkos::cos(kw[d] * xvec[d]));
-    }
-    return pdf;
-}
-
 class LandauDampingManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>> {
 public:
     double loadbalancethreshold_m;
@@ -154,6 +143,8 @@ public:
     void initializeParticles(){
         Inform m("Initialize Particles");
 
+        Vector_t<double, Dim> hr_m = hr;
+        Vector_t<double, Dim> origin_m = origin;
         using DistR_t = ippl::random::Distribution<double, Dim, 2*Dim, custom_pdf, custom_cdf, custom_estimate>;
         const double parR[2*Dim] = {alpha, kw[0], alpha, kw[1], alpha, kw[2]};
         DistR_t distR(parR);
@@ -170,9 +161,9 @@ public:
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
                 "Assign initial rho based on PDF", this->fcontainer_m->rho_m.getFieldRangePolicy(),
-                KOKKOS_CLASS_LAMBDA (const index_array_type& args) {
+                KOKKOS_LAMBDA (const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr_m + origin_m;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
@@ -230,11 +221,11 @@ public:
             this->pcontainer_m->update();
 
             // Domain Decomposition
-            //if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
-            //    auto mesh = fcontainer_m->rho_m.get_mesh();
-            //    auto FL = fcontainer_m->getLayout();
-            //    loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
-            //}
+            if (loadbalancer_m->balance(this->totalP, this->it + 1)) {
+                auto mesh = fcontainer_m->rho_m.get_mesh();
+                auto FL = fcontainer_m->getLayout();
+                loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition);
+            }
             // scatter the charge onto the underlying grid
             this->par2grid();
             
