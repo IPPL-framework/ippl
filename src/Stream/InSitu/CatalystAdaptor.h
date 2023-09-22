@@ -109,7 +109,7 @@ namespace CatalystAdaptor {
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            mesh[field_node_dim].set(int(field.getLayout().getLocalNDIndex()[iDim].length() + 1));
+            mesh[field_node_dim].set(field.getLayout().getLocalNDIndex()[iDim].length() + 1);
 
             // shift origin by one ghost cell
             mesh[field_node_origin].set(
