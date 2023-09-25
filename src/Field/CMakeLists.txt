@@ -11,6 +11,9 @@ set (_HDRS
     BcTypes.hpp
     Field.h
     Field.hpp
+    FieldBase.h
+    FieldBase.hpp
+    FieldAttribBase.h
     FieldOperations.hpp
     HaloCells.h
     HaloCells.hpp
