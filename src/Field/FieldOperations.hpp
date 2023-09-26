@@ -72,6 +72,26 @@ namespace ippl {
         }
         return detail::meta_laplace<Field>(u, hvector);
     }
+    /*!
+     * User interface of Laplacian_preconditioner
+     * @param u field
+     */
+    template <typename Field>
+    detail::meta_laplace_preconditioner<Field> laplace_preconditioner(Field& u) {
+        constexpr unsigned Dim = Field::dim;
+
+        u.fillHalo();
+        BConds<Field, Dim>& bcField = u.getFieldBC();
+        bcField.apply(u);
+
+        using mesh_type = typename Field::Mesh_t;
+        mesh_type& mesh = u.get_mesh();
+        typename mesh_type::vector_type hvector(0);
+        for (unsigned d = 0; d < Dim; d++) {
+            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+        }
+        return detail::meta_laplace_preconditioner<Field>(u, hvector);
+    }
 
     /*!
      * User interface of curl in three dimensions.

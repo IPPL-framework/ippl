@@ -8,15 +8,17 @@
 
 #include "SolverAlgorithm.h"
 
+#define PRECONDITIONED 0
 namespace ippl {
 
-    template <typename OpRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+    template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class PCG : public SolverAlgorithm<FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
+        using preconditioner_type = std::function<PreRet(lhs_type)>;
         using operator_type = std::function<OpRet(lhs_type)>;
 
         /*!
@@ -24,6 +26,7 @@ namespace ippl {
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
         void setOperator(operator_type op) { op_m = std::move(op); }
+        void setPreconditioner(preconditioner_type op) {op_preconditioner = std::move(op); }
 
         /*!
          * Query how many iterations were required to obtain the solution
@@ -44,6 +47,8 @@ namespace ippl {
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout);
+            lhs_type d(mesh, layout);
+            lhs_type s(mesh, layout);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -68,11 +73,14 @@ namespace ippl {
             }
 
             r = rhs - op_m(lhs);
-
-            lhs_type d = r.deepCopy();
+#if PRECONDITIONED
+            d = op_preconditioner(r);
+#else
+            d = r.deepCopy();
+#endif
             d.setFieldBC(bc);
 
-            T delta1          = innerProduct(r, r);
+            T delta1          = innerProduct(r, d);
             residueNorm       = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
@@ -92,14 +100,22 @@ namespace ippl {
                 // iterations to offset accumulated floating point errors
                 r = r - alpha * q;
 
+#if PRECONDITIONED
+                s = op_preconditioner(r);
                 T delta0 = delta1;
-                delta1   = innerProduct(r, r);
+                delta1   = innerProduct(r, s);
+#else
+                T delta0 = delta1;
+                delta1   = innerProduct(r,r);
+#endif
                 T beta   = delta1 / delta0;
 
                 residueNorm = std::sqrt(delta1);
-
+#if PRECONDITIONED
+                d = s + beta * d;
+#else
                 d = r + beta * d;
-
+#endif
                 ++iterations_m;
             }
 
@@ -113,6 +129,7 @@ namespace ippl {
 
     protected:
         operator_type op_m;
+        preconditioner_type op_preconditioner;
         T residueNorm    = 0;
         int iterations_m = 0;
     };
