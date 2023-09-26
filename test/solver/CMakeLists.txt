@@ -26,13 +26,6 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
-add_executable (TestFDTDSolver TestFDTDSolver.cpp)
-target_link_libraries (
-    TestFDTDSolver
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
 if (ENABLE_FFT)
     add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
     target_link_libraries (

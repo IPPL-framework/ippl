@@ -4,8 +4,6 @@ set (_SRCS
 set (_HDRS
     PoissonCG.h
     Poisson.h
-    FDTDSolver.h
-    FDTDSolver.hpp
 )
 
 if (ENABLE_FFT)
