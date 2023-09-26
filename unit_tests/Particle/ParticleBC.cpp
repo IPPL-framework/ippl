@@ -54,13 +54,10 @@ public:
     }
 
     void checkResult(const ippl::Vector<T, Dim>& expected) {
-        T tol = (std::is_same_v<T, double>) ? 1e-15 : 1e-7;
-
         Kokkos::deep_copy(mirror, bunch->R.getView());
-
         for (int i = 0; i < nParticles; ++i) {
             for (size_t j = 0; j < Dim; ++j) {
-                ASSERT_NEAR(expected[j], mirror(i)[j], tol);
+                ASSERT_NEAR(expected[j], mirror(i)[j], tolerance<T> / 10);
             }
         }
     }
