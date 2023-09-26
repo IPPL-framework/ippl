@@ -8,7 +8,7 @@
 
 #include "SolverAlgorithm.h"
 
-#define PRECONDITIONED 0
+#define PRECONDITIONED 1
 namespace ippl {
 
     template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
