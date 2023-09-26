@@ -2,10 +2,8 @@ set (_SRCS
     )
 
 set (_HDRS
-    SolverAlgorithm.h
     PoissonCG.h
     Poisson.h
-    PCG.h
     FDTDSolver.h
     FDTDSolver.hpp
 )

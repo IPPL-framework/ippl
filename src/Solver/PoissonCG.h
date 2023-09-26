@@ -6,7 +6,7 @@
 #ifndef IPPL_POISSON_CG_H
 #define IPPL_POISSON_CG_H
 
-#include "PCG.h"
+#include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 
 namespace ippl {
