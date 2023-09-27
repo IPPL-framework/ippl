@@ -1,6 +1,7 @@
 //
 // Class FFTPeriodicPoissonSolver
 //   Solves the periodic Poisson problem using Fourier transforms
+//   cf. https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 5
 //
 //
 
