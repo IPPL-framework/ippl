@@ -6,9 +6,22 @@
 #ifndef IPPL_ELEMENT_H
 #define IPPL_ELEMENT_H
 
+#include "Types/Vector.h"
+
 namespace ippl {
 
-class Element {}
+template <unsigned Dim>
+class Element {
+   public:
+    template <unsigned NumNodes>
+    virtual Vector<Vector<unsigned, Dim>, NumNodes> getNodes();
+
+    void localToGlobal();
+
+    void globalToLocal();
+
+    void getJacobian();
+};
 
 }  // namespace ippl
 

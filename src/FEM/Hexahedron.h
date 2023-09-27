@@ -9,7 +9,9 @@
 
 namespace ippl {
 
-class Hexahedron : public Element {};
+class Hexahedron : public Element<3> {};
+
+Vector<Vector<unsigned, 3>, 8> getNodes();
 
 }  // namespace ippl
 

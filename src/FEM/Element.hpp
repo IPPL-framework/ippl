@@ -1,7 +1,2 @@
 
-
-namespace ippl {
-
-// TODO Element implementation
-
-}  // namespace ippl
+namespace ippl {}  // namespace ippl
