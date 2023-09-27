@@ -59,7 +59,7 @@ namespace ippl {
          * @param E Reference to electric field
          * @param B Reference to magnetic field
          */
-        virtual void setEMFields(EMField& E, EMField& B) {
+        void setEMFields(EMField& E, EMField& B) {
             En_mp = &E;
             Bn_mp = &B;
         }
