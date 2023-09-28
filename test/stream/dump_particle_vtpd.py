@@ -15,21 +15,23 @@ materialLibrary1 = GetMaterialLibrary()
 
 # Create a new 'Render View'
 renderView2 = CreateView('RenderView')
-renderView2.ViewSize = [1720, 1139]
+renderView2.ViewSize = [1280, 824]
 renderView2.InteractionMode = 'Selection'
 renderView2.AxesGrid = 'GridAxes3DActor'
-renderView2.CenterOfRotation = [9.804884923241747, 10.012704247151916, 10.01700792908101]
+renderView2.CenterOfRotation = [10.002041462808847, 9.978474140167236, 10.046973206102848]
+renderView2.HiddenLineRemoval = 1
 renderView2.StereoType = 'Crystal Eyes'
-renderView2.CameraPosition = [40.819301732806345, 33.78514219032403, 34.48114089650258]
-renderView2.CameraFocalPoint = [9.804884923241747, 10.012704247151914, 10.017007929081009]
-renderView2.CameraViewUp = [-0.4004377803427935, 0.8567874131175701, -0.3249075449992492]
+renderView2.CameraPosition = [42.41949355014824, 42.39592622750662, 42.46442529344225]
+renderView2.CameraFocalPoint = [10.002041462808847, 9.978474140167236, 10.046973206102848]
+renderView2.CameraViewUp = [-0.4082482904638631, 0.816496580927726, -0.40824829046386296]
 renderView2.CameraFocalDisk = 1.0
-renderView2.CameraParallelScale = 14.43822672570447
+renderView2.CameraParallelScale = 14.53234620584578
 renderView2.BackEnd = 'OSPRay raycaster'
 renderView2.OSPRayMaterialLibrary = materialLibrary1
 
 # init the 'GridAxes3DActor' selected for 'AxesGrid'
 renderView2.AxesGrid.Visibility = 1
+renderView2.AxesGrid.ShowGrid = 1
 
 SetActiveView(None)
 
@@ -40,7 +42,7 @@ SetActiveView(None)
 # create new layout object 'Layout #1'
 layout1 = CreateLayout(name='Layout #1')
 layout1.AssignView(0, renderView2)
-layout1.SetSize(1720, 1139)
+layout1.SetSize(1280, 824)
 
 # ----------------------------------------------------------------
 # restore active view
@@ -131,14 +133,6 @@ ippl_particleDisplay.SetScalarBarVisibility(renderView2, True)
 # ----------------------------------------------------------------
 
 # create extractor
-vTM1 = CreateExtractor('VTM', ippl_particle, registrationName='VTM1')
-# trace defaults for the extractor.
-vTM1.Trigger = 'TimeStep'
-
-# init the 'VTM' selected for 'Writer'
-vTM1.Writer.FileName = 'ippl_particle_{timestep:06d}.vtm'
-
-# create extractor
 pNG1 = CreateExtractor('PNG', renderView2, registrationName='PNG1')
 # trace defaults for the extractor.
 pNG1.Trigger = 'TimeStep'
@@ -147,10 +141,11 @@ pNG1.Trigger = 'TimeStep'
 pNG1.Writer.FileName = 'RenderView2_{timestep:06d}{camera}.png'
 pNG1.Writer.ImageResolution = [1720, 1139]
 pNG1.Writer.Format = 'PNG'
+pNG1.Writer.ResetDisplay = 1
 
 # ----------------------------------------------------------------
 # restore active source
-SetActiveSource(vTM1)
+SetActiveSource(pNG1)
 # ----------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
