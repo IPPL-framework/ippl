@@ -71,7 +71,7 @@ namespace ippl {
         algo algo_m = algo();
 
         virtual void setDefaultParameters() override {
-            this->params_m.add("max_iterations", 1000);
+            this->params_m.add("max_iterations", 10000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
     };
