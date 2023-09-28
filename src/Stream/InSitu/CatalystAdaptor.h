@@ -96,7 +96,7 @@ namespace CatalystAdaptor {
 
 
     template <class Field>
-    std::optional<conduit_cpp::Node> Execute(int cycle, double time, int rank, Field& field, std::optional<conduit_cpp::Node>& node_in) {
+    std::optional<conduit_cpp::Node> Execute_Field(int cycle, double time, int rank, Field& field, std::optional<conduit_cpp::Node>& node_in) {
         static_assert(Field::dimension == 3, "CatalystAdaptor only supports 3D");
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
@@ -276,7 +276,7 @@ namespace CatalystAdaptor {
         //conduit_cpp::Node node;
         auto node = std::make_optional<conduit_cpp::Node>();
         auto node_1 = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
-        CatalystAdaptor::Execute(cycle, time, rank, field, node_1);
+        CatalystAdaptor::Execute_Field(cycle, time, rank, field, node_1);
         //callCatalystExecute(node.value());
 
     }

@@ -397,7 +397,7 @@ int main(int argc, char* argv[]) {
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
-       // CatalystAdaptor::Execute(it, P->time_m, Ippl::Comm->rank(), P->rho_m);
+       // CatalystAdaptor::Execute_Field(it, P->time_m, Ippl::Comm->rank(), P->rho_m);
        CatalystAdaptor::Execute_Field_Particle(it, P->time_m, Ippl::Comm->rank(), P->E_m, P);
 
         // gather E field

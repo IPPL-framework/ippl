@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
                 // std::cout << view(i,j) << std::endl;
             });
 
-        CatalystAdaptor::Execute(it, time, ippl.Comm.get()->rank(), field);  // field
+        CatalystAdaptor::Execute_Field(it, time, ippl.Comm.get()->rank(), field);  // field
         // print should be same as field data
         time += dt;
     }

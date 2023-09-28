@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
                 view(i, j, k) = y * time;
             });
 
-        CatalystAdaptor::Execute(it, time, Ippl::Comm->rank(), field);
+        CatalystAdaptor::Execute_Field(it, time, Ippl::Comm->rank(), field);
         // print should be same as field data
         time += dt;
 
