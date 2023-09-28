@@ -209,9 +209,9 @@ namespace CatalystAdaptor {
         // number of points in specific dimension
         // std::string particle_node_dim{"coordsets/coords/values/x"};
 
-        mesh["coordsets/coords/values/x"].set(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/y"].set(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/z"].set(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
 
         mesh["topologies/mesh/type"].set("unstructured");
         mesh["topologies/mesh/coordset"].set("coords");
