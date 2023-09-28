@@ -7,6 +7,7 @@ set (_HDRS
     Electrostatics.h
     PCG.h
     Solver.h
+    Preconditioner.h
 )
 
 if (ENABLE_FFT)

@@ -93,7 +93,7 @@ include_directories (
     BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
+add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} Solver/Preconditioner.h)
 
 set(TimerFences true)
 string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")

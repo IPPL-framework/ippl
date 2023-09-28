@@ -7,6 +7,7 @@
 #define IPPL_PCG_H
 
 #include "SolverAlgorithm.h"
+#include "Preconditioner.h"
 
 #define PRECONDITIONED 1
 namespace ippl {
@@ -99,13 +100,12 @@ namespace ippl {
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
                 r = r - alpha * q;
+                T delta0 = delta1;
 
 #if PRECONDITIONED
                 s = op_preconditioner(r);
-                T delta0 = delta1;
                 delta1   = innerProduct(r, s);
 #else
-                T delta0 = delta1;
                 delta1   = innerProduct(r,r);
 #endif
                 T beta   = delta1 / delta0;
@@ -137,3 +137,4 @@ namespace ippl {
 }  // namespace ippl
 
 #endif
+

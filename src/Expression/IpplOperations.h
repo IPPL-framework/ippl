@@ -455,43 +455,6 @@ namespace ippl {
             const E u_m;
             const vector_type hvector_m;
         };
-
-        /*!
-         * Meta function of Laplacian Preconditioner
-         */
-        template <typename E>
-        struct meta_laplace_preconditioner
-            : public Expression<meta_laplace_preconditioner<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_laplace_preconditioner(const E& u, const typename E::Mesh_t::vector_type& hvector)
-                : u_m(u) , hvector_m(hvector) {}
-
-            /*
-             * n-dimensional Laplacian preconditioner
-             */
-            template <typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T          = typename E::Mesh_t::value_type;
-                T res = 0;
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-                    auto&& center          = apply(u_m, coords);
-                    res += 1./hvector_m[d] * (0.5*center);
-                }
-                return res;
-            }
-
-        private:
-            using Mesh_t      = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
-            const vector_type hvector_m;
-        };
-
     }  // namespace detail
 
     namespace detail {
