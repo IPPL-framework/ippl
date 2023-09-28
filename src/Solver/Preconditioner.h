@@ -24,7 +24,7 @@ namespace ippl{
                 , hvector_m(hvector) {}
 
             /*
-             * n-dimensional Laplacian preconditioner
+             * n-dimensional Jacobian preconditioner
              */
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
@@ -50,6 +50,8 @@ namespace ippl{
         * Meta function of SSOR Preconditioner
         * M = (L+D)D^{-1}(L+D)^T
         * Here we implement M^{-1}*u matrix-free
+        * This is a work in progress not working yet
+        * TODO: Fix this implementation
         */
         template <typename E>
         struct meta_laplace_ssor_preconditioner
@@ -63,8 +65,8 @@ namespace ippl{
                 , hvector_m(hvector) {}
 
             /*
-            * n-dimensional Laplacian preconditioner
-             * */
+            * n-dimensional SSOR preconditioner
+            * */
             template <typename... Idx>
             KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
@@ -74,7 +76,7 @@ namespace ippl{
                 for (unsigned d = 0; d < dim; d++) {
                     index_type coords[dim] = {args...};
                     double factor = 1.;
-                    for (unsigned k = 0; k<50;k++){
+                    for (unsigned k = 0; k<53;k++){  //TODO: Key parameter here need to be adapted
                         auto&& diag          = apply(u_m, coords);
                         factor /= 2.;
                         res += 1./hvector_m[d]* (factor * diag);
@@ -92,7 +94,7 @@ namespace ippl{
                 for (unsigned d = 0; d < dim; d++) {
                     index_type coords[dim] = {args...};
                     double factor = 1.;
-                    for (unsigned k = 0; k<50;k++){
+                    for (unsigned k = 0; k<53;k++){ // TODO: Key parameter here need to be adapted
                         auto&& diag          = apply(u_m, coords);
                         factor /= 2.;
                         res += 1./hvector_m[d]* (factor * diag);
@@ -113,7 +115,7 @@ namespace ippl{
 
 
     /*!
-     * User interface of Laplacian_preconditioner
+     * User interface of Jacobian preconditioner
      * @param u field
      */
     template <typename Field>
@@ -135,7 +137,7 @@ namespace ippl{
     }
 
     /*!
-     * User interface of Laplacian_preconditioner
+     * User interface of SSOR_preconditioner
      * @param u field
      */
     template <typename Field>

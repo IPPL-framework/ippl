@@ -1,6 +1,7 @@
 //
 // Class PCG
-//   Preconditioned Conjugate Gradient solver algorithm
+//   Preconditioned Conjugate Gradient solver algorithm for matrix-free HPC
+//   Follows the algorithm of Kronbichler, Martin & Sashko, Dmytro & Munch, Peter. (2022).
 //
 
 #ifndef IPPL_PCG_H
@@ -9,7 +10,7 @@
 #include "SolverAlgorithm.h"
 #include "Preconditioner.h"
 
-#define PRECONDITIONED 1
+
 namespace ippl {
 
     template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
@@ -47,9 +48,12 @@ namespace ippl {
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout);
-            lhs_type d(mesh, layout);
-            lhs_type s(mesh, layout);
+            lhs_type     r(mesh, layout);
+            lhs_type     p(mesh, layout);
+            lhs_type     v(mesh, layout);
+            lhs_type   x_2(mesh , layout);
+            lhs_type Minvr(mesh , layout);
+            lhs_type Minvv(mesh , layout);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -74,50 +78,51 @@ namespace ippl {
             }
 
             r = rhs - op_m(lhs);
-#if PRECONDITIONED
-            d = op_preconditioner(r);
-#else
-            d = r.deepCopy();
-#endif
-            d.setFieldBC(bc);
+            p.setFieldBC(bc);
 
-            T delta1          = innerProduct(r, d);
-            T delta0          = delta1;
-            residueNorm       = std::sqrt(delta1);
-            const T tolerance = params.get<T>("tolerance");// * norm(rhs);
+            T gamma;
+            T a,b,c,d,e,f;
+            T alpha           = 0;
+            T alpha_2         = 0;
+            T beta            = 0;
+            T beta_2          = 0;
+
+            residueNorm       = std::sqrt(innerProduct(r,r));
+            const T tolerance = params.get<T>("tolerance")* norm(rhs);
 
             lhs_type q(mesh, layout);
 
-            while (iterations_m < maxIterations && delta1 > tolerance*tolerance) {
-                q       = op_m(d);
-                T alpha = delta1 / innerProduct(d, q);
-                lhs     = lhs + alpha * d;
-
-                // The exact residue is given by
-                // r = rhs - op_m(lhs);
-                // This correction is generally not used in practice because
-                // applying the Laplacian is computationally expensive and
-                // the correction does not have a significant effect on accuracy;
-                // in some implementations, the correction may be applied every few
-                // iterations to offset accumulated floating point errors
-                r = r - alpha * q;
-                delta0 = delta1;
-
-#if PRECONDITIONED
-                s = op_preconditioner(r);
-                delta1   = innerProduct(r, s);
-#else
-                delta1   = innerProduct(r,r);
-#endif
-                T beta   = delta1 / delta0;
-
-                residueNorm = std::sqrt(delta1);
-#if PRECONDITIONED
-                d = s + beta * d;
-#else
-                d = r + beta * d;
-#endif
+            while (iterations_m < maxIterations && residueNorm > tolerance) {
                 ++iterations_m;
+                Minvr = op_preconditioner(r);
+                if (iterations_m>1 && iterations_m%2){
+                    lhs = lhs + alpha*p + alpha_2/beta_2*(p - Minvr);
+                }
+                r = r - alpha*v;
+                p = op_preconditioner(r) + beta*p;
+                v = op_m(p);
+                Minvv = op_preconditioner(v);
+                gamma = innerProduct(r,r);
+                a = innerProduct(p,v);
+                b = innerProduct(r,v);
+                c = innerProduct(v,v);
+                d = innerProduct(r,Minvr);
+                e = innerProduct(r,Minvv);
+                f = innerProduct(v,Minvv);
+                alpha_2 = alpha;
+                alpha = d/a;
+                if(std::sqrt(gamma - 2*alpha*b + alpha*alpha*c) < tolerance){
+                    if (iterations_m%2){
+                        lhs = lhs + alpha*p;
+                    }
+                    else{
+                        lhs = lhs + alpha*p + alpha_2/beta_2*(p - Minvr);
+                    }
+                    break;
+                }
+                beta_2 = beta;
+                beta = (d - (2*alpha*e)+alpha*alpha*f)/d;
+                residueNorm = std::sqrt(innerProduct(r,r));
             }
 
             if (allFacesPeriodic) {
@@ -138,4 +143,5 @@ namespace ippl {
 }  // namespace ippl
 
 #endif
+
 

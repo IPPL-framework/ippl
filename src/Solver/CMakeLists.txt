@@ -8,6 +8,7 @@ set (_HDRS
     PCG.h
     Solver.h
     Preconditioner.h
+    EnhancedPCG.h
 )
 
 if (ENABLE_FFT)
