@@ -10,6 +10,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "Utility/IpplException.h"
 
@@ -38,6 +39,18 @@ namespace CatalystAdaptor {
         node["density/volume_dependent"].set("false");
         node["density/values"].set_external(view.data(), view.size());
     }
+
+    void callCatalystExecute(conduit_cpp::Node& node) {
+        // print node to have visual representation
+        // if (cycle == 0)
+            //catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+
+        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        }
+    }
+
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
         for (int cc = 1; cc < argc; ++cc) {
@@ -58,6 +71,7 @@ namespace CatalystAdaptor {
         }
     }
 
+
     void Initialize_Adios(int argc, char* argv[])
     {
         conduit_cpp::Node node;
@@ -69,7 +83,7 @@ namespace CatalystAdaptor {
             }
             else
             {
-                node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
+                node["catalyst/scripts/script" +std::to_string(cc - 1)].set_string(argv[cc]);
             }
         }
         node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
@@ -82,13 +96,16 @@ namespace CatalystAdaptor {
 
 
     template <class Field>
-    void Execute(int cycle, double time, int rank, Field& field) {
+    std::optional<conduit_cpp::Node> Execute(int cycle, double time, int rank, Field& field, std::optional<conduit_cpp::Node>& node_in) {
         static_assert(Field::dimension == 3, "CatalystAdaptor only supports 3D");
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
         //
         // conduit blueprint definition (v.8.3)
         // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
+        conduit_cpp::Node node;
+        if (node_in)
+            node = node_in.value();
 
         auto nGhost = field.getNghost();
 
@@ -109,7 +126,6 @@ namespace CatalystAdaptor {
             }
         }
 
-        conduit_cpp::Node node;
 
         // add time/cycle information
         auto state = node["catalyst/state"];
@@ -164,18 +180,19 @@ namespace CatalystAdaptor {
 
         setData(fields, host_view_layout_left);
 
-        // print node to have visual representation
-        if (cycle == 0)
-            catalyst_conduit_node_print(conduit_cpp::c_node(&node));
-
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        if (node_in == std::nullopt)
+        {
+            callCatalystExecute(node);
+            return {};
         }
+        else
+          return node;
+
     }
 
     template <class ChargedParticles>
-    void Execute_Particle(int cycle, double time, int rank, ChargedParticles& particle) {
+    void Execute_Particle(int cycle, double time, int rank, ChargedParticles& particle, std::optional<conduit_cpp::Node>& node_in) {
 
         auto layout_view = particle->R.getView();
 
@@ -192,6 +209,8 @@ namespace CatalystAdaptor {
 //        }
 
         conduit_cpp::Node node;
+        if (node_in)
+            node = node_in.value();
 
         // add time/cycle information
         auto state = node["catalyst/state"];
@@ -242,14 +261,20 @@ namespace CatalystAdaptor {
 //                      << &velocity_view.data()[i][1] << " " << &velocity_view.data()[i][2] << std::endl;
 //        }
 
-        // print node to have visual representation
-        if (cycle == 0)
+        // if (node_in == std::nullopt)
             catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+            callCatalystExecute(node);
 
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-        }
+    }
+
+
+    template <class Field, class ChargedParticles>
+    void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ChargedParticles& particle) {
+        //conduit_cpp::Node node;
+        auto node = std::make_optional<conduit_cpp::Node>();
+        auto node_1 = CatalystAdaptor::Execute(cycle, time, rank, field, node);
+        CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node_1);
+        //callCatalystExecute(node.value());
 
     }
 
