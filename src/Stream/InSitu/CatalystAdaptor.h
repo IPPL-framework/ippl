@@ -38,7 +38,6 @@ namespace CatalystAdaptor {
         node["density/volume_dependent"].set("false");
         node["density/values"].set_external(view.data(), view.size());
     }
-
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
         for (int cc = 1; cc < argc; ++cc) {
@@ -155,8 +154,19 @@ namespace CatalystAdaptor {
     template <class ChargedParticles>
     void Execute_Particle(int cycle, double time, int rank, ChargedParticles& particle) {
 
-        auto particle_view = particle->q.getView();
         auto layout_view = particle->R.getView();
+
+//        std::cout << "layout_view" << std::endl;
+//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
+//            std::cout << "i " << i << " data " << layout_view.data()[i][0] << " "
+//                      << layout_view.data()[i][1] << " " << layout_view.data()[i][2] << std::endl;
+//        }
+//
+//        std::cout << "velocity_view" << std::endl;
+//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
+//            std::cout << "i " << i << " data " << velocity_view.data()[i][0] << " "
+//                      << velocity_view.data()[i][1] << " " << velocity_view.data()[i][2] << std::endl;
+//        }
 
         conduit_cpp::Node node;
 
@@ -174,21 +184,18 @@ namespace CatalystAdaptor {
         mesh["coordsets/coords/type"].set("explicit");
 
         // number of points in specific dimension
-        std::string particle_node_dim{"coordsets/coords/values/x"};
+        // std::string particle_node_dim{"coordsets/coords/values/x"};
 
-        for (unsigned int iDim = 0; iDim < 3; ++iDim) {
-            mesh[particle_node_dim].set_external(&layout_view.data()[0][iDim], std::size(layout_view), 0, 1);
-
-            // increment last char in string
-            ++particle_node_dim.back();
-        }
+        mesh["coordsets/coords/values/x"].set(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
 
         mesh["topologies/mesh/type"].set("unstructured");
         mesh["topologies/mesh/coordset"].set("coords");
         mesh["topologies/mesh/elements/shape"].set("point");
         mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum(),0);
-        std::cout << "Size of layout view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
-        std::cout << "Size of particle view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
+//        std::cout << "Size of layout view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
+//        std::cout << "Size of particle view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
 
         auto charge_view = particle->q.getView();
         // add values and subscribe to data
@@ -202,9 +209,15 @@ namespace CatalystAdaptor {
         fields["velocity/association"].set("vertex");
         fields["velocity/topology"].set("mesh");
         fields["velocity/volume_dependent"].set("false");
-        fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,1);
-        fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,1);
-        fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,1);
+        fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,sizeof(double)*3);
+        fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,sizeof(double)*3);
+        fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,sizeof(double)*3);
+
+//        std::cout << "velocity_view" << std::endl;
+//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
+//            std::cout << "i " << i << " data " << &velocity_view.data()[i][0] << " "
+//                      << &velocity_view.data()[i][1] << " " << &velocity_view.data()[i][2] << std::endl;
+//        }
 
         // print node to have visual representation
         if (cycle == 0)
