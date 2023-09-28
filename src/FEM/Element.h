@@ -14,7 +14,7 @@ template <unsigned Dim>
 class Element {
    public:
     template <unsigned NumNodes>
-    virtual Vector<Vector<unsigned, Dim>, NumNodes> getNodes();
+    virtual Vector<Vector<unsigned, Dim>, NumNodes> getLocalNodes() = 0;
 
     void localToGlobal();
 
