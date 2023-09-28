@@ -58,6 +58,29 @@ namespace CatalystAdaptor {
         }
     }
 
+    void Initialize_Adios(int argc, char* argv[])
+    {
+        conduit_cpp::Node node;
+        for (int cc = 1; cc < argc; ++cc)
+        {
+            if (strstr(argv[cc], "xml"))
+            {
+                node["adios/config_filepath"].set_string(argv[cc]);
+            }
+            else
+            {
+                node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
+            }
+        }
+        node["catalyst_load/implementation"] = "adios";
+        catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok)
+        {
+            std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
+        }
+    }
+
+
     template <class Field>
     void Execute(int cycle, double time, int rank, Field& field) {
         static_assert(Field::dimension == 3, "CatalystAdaptor only supports 3D");
@@ -193,7 +216,7 @@ namespace CatalystAdaptor {
         mesh["topologies/mesh/type"].set("unstructured");
         mesh["topologies/mesh/coordset"].set("coords");
         mesh["topologies/mesh/elements/shape"].set("point");
-        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum(),0);
+        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum());
 //        std::cout << "Size of layout view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
 //        std::cout << "Size of particle view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
 
