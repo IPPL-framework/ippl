@@ -186,14 +186,25 @@ namespace CatalystAdaptor {
         mesh["topologies/mesh/type"].set("unstructured");
         mesh["topologies/mesh/coordset"].set("coords");
         mesh["topologies/mesh/elements/shape"].set("point");
-        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),std::size(layout_view));
+        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum(),0);
+        std::cout << "Size of layout view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
+        std::cout << "Size of particle view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
 
+        auto charge_view = particle->q.getView();
         // add values and subscribe to data
         auto fields = mesh["fields"];
         fields["charge/association"].set("vertex");
         fields["charge/topology"].set("mesh");
         fields["charge/volume_dependent"].set("false");
-        fields["charge/values"].set_external(particle_view.data(), particle_view.size());
+        fields["charge/values"].set_external(charge_view.data(), particle->getLocalNum());
+
+        auto velocity_view = particle->P.getView();
+        fields["velocity/association"].set("vertex");
+        fields["velocity/topology"].set("mesh");
+        fields["velocity/volume_dependent"].set("false");
+        fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,1);
+        fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,1);
+        fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,1);
 
         // print node to have visual representation
         if (cycle == 0)
