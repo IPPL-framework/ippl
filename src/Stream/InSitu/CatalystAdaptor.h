@@ -152,6 +152,78 @@ namespace CatalystAdaptor {
         }
     }
 
+    template <class ChargedParticles>
+    void Execute_Particle(int cycle, double time, int rank, ChargedParticles& particle) {
+
+        auto particle_view = particle->q.getView();
+        auto layout_view = particle->R.getView();
+
+//        typename ChargedParticles::view_type::host_mirror_type host_view =
+//            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particle_view);
+
+//        Kokkos::View<typename ChargedParticles::type***, Kokkos::LayoutLeft, Kokkos::HostSpace>
+//            host_view_layout_left("host_view_layout_left",
+//                                  field.getLayout().getLocalNDIndex()[0].length(),
+//                                  field.getLayout().getLocalNDIndex()[1].length(),
+//                                  field.getLayout().getLocalNDIndex()[2].length());
+//
+//        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i) {
+//            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j) {
+//                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k) {
+//                    host_view_layout_left(i, j, k) = host_view(i + nGhost, j + nGhost, k + nGhost);
+//                }
+//            }
+//        }
+
+        conduit_cpp::Node node;
+
+        // add time/cycle information
+        auto state = node["catalyst/state"];
+        state["cycle"].set(cycle);
+        state["time"].set(time);
+        state["domain_id"].set(rank);
+
+        // add catalyst channel named ippl_field, as fields is reserved
+        auto channel = node["catalyst/channels/ippl_particles"];
+        channel["type"].set_string("mesh");
+
+        // in data channel now we adhere to conduits mesh blueprint definition
+        auto mesh = channel["data"];
+        mesh["coordsets/coords/type"].set("explicit");
+
+        // number of points in specific dimension
+        std::string particle_node_dim{"coordsets/coords/values/x"};
+
+        for (unsigned int iDim = 0; iDim < 3; ++iDim) {
+            mesh[particle_node_dim].set_external(&layout_view.data()[0][iDim], std::size(layout_view), 0, 1);
+
+            // increment last char in string
+            ++particle_node_dim.back();
+        }
+
+        // auto test = particle->ID;
+        // add topology
+        mesh["topologies/mesh/type"].set("unstructured");
+        mesh["topologies/mesh/coordset"].set("coords");
+        mesh["topologies/mesh/elements/shape"].set("point");
+        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data());
+//
+//        // add values and subscribe to data
+//        auto fields = mesh["fields"];
+//
+//        setData(fields, host_view_layout_left);
+
+        // print node to have visual representation
+        if (cycle == 0)
+            catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+
+        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        }
+
+    }
+
     void Finalize() {
         conduit_cpp::Node node;
         catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
