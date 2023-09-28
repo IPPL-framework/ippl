@@ -13,6 +13,10 @@
  *
  ***************************************************************************/
 
+// Testing the inverse transform sampling method for Normal Distribution on bounded domains
+//     Example:
+//     srun ./TestInverseTransformSamplingNormal --overallocate 2.0 --info 10
+
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
@@ -24,40 +28,16 @@
 #include <vector>
 #include "Utility/IpplTimings.h"
 #include "Ippl.h"
-#include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 
-struct custom_cdf{
-       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
-           if(d==0){
-               return ippl::random::uniform_cdf_func<double>(x);
-           }
-           else{
-               return x + (params[2] / params[3]) * Kokkos::sin(params[3] * x);
-           }
-       }
-};
-struct custom_pdf{
-       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params) const {
-           if(d==0){
-               return ippl::random::uniform_pdf_func<double>();;
-           }
-           else{
-               return  1.0 + params[2] * Kokkos::cos(params[3] * x);
-           }
-       }
-};
-struct custom_estimate{
-        KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params) const {
-            if(d==0){
-                return ippl::random::uniform_estimate_func<double>(u+params[0]*0);
-            }
-            else{
-                return u;
-            }
-        }
-};
+const int Dim = 2;
+
+using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+
+using Mesh_t = ippl::UniformCartesian<double, Dim>;
+
+using size_type = ippl::detail::size_type;
 
 KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
 {
@@ -76,21 +56,54 @@ KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
 }
 
 KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
-    for(int p=0; p<P; p++){
+    for(int p=1; p<P; p++){
         moms[p] = NormDistCentMom(stdev, p+1);
     }
+}
+
+void MomentsFromSamples(view_type position, int d, int ntotal, int P, double *moms){
+    double temp = 0.0;
+    Kokkos::parallel_reduce("moments", position.extent(0),
+                            KOKKOS_LAMBDA(const int i, double& valL) {
+        double myVal = position(i)[d];
+        valL += myVal;
+        },
+        Kokkos::Sum<double>(temp));
+    Kokkos::fence();
+    MPI_Reduce(&temp, &moms[0], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+    moms[0] = moms[0]/ntotal;
+    
+    for(int p=1; p<P; p++){
+        temp = 0.0;
+        Kokkos::parallel_reduce("moments", position.extent(0),
+                                KOKKOS_LAMBDA(const int i, double& valL) {
+            double myVal = pow(position(i)[d]-moms[0], p+1);
+            valL += myVal;
+            },
+            Kokkos::Sum<double>(temp));
+        Kokkos::fence();
+        MPI_Reduce(&temp, &moms[p], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        moms[p] = moms[p]/(ntotal-1); // Bessel's correction
+    }
+}
+
+void WriteErrorInMoments(double *moms, double *moms_ref, int P){
+    Inform csvout(NULL, "data/error_moments_normal_dist.csv", Inform::APPEND);
+    csvout.precision(10);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+    for(int i=0; i<P; i++){
+        csvout << fabs( moms_ref[i] - moms[i] )  << endl;
+    }
+    ippl::Comm->barrier();
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        const int Dim = 2;
-
-        using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
-        ippl::Vector<int, 2> nr   = {std::atoi(argv[1]), std::atoi(argv[2])};
-        const unsigned int ntotal = std::atol(argv[3]);
-
+        ippl::Vector<int, 2> nr   = {20, 20};
+        const unsigned int ntotal = 100000;
+        
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
             domain[i] = ippl::Index(nr[i]);
@@ -104,7 +117,6 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, Dim> rmin   = -4.;
         ippl::Vector<double, Dim> rmax   = 4.;
         ippl::Vector<double, Dim> length = rmax - rmin;
-
         ippl::Vector<double, Dim> hr     = length / nr;
         ippl::Vector<double, Dim> origin = rmin;
 
@@ -116,22 +128,20 @@ int main(int argc, char* argv[]) {
 
         ippl::detail::RegionLayout<double, Dim, Mesh_t> rlayout(fl, mesh);
 
-        using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
         int seed = 42;
-        using size_type = ippl::detail::size_type;
+
         unsigned int nlocal;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
         // example of sampling normal in both dimensions
-        const double mu1 = 0.8;
-        const double sd1 = 0.3;
-        const double mu2 = -mu1;
-        const double sd2 = sqrt(2.-( sd1*sd1 + 2.*mu1*mu1 ) );
+        const double mu1 = 1.0;
+        const double sd1 = 0.8;
+        const double mu2 = -2.0;
+        const double sd2 = 0.4;
         const double par[4] = {mu1, sd1, mu2, sd2};
         using Dist_t = ippl::random::NormalDistribution<double, Dim>;
         using sampling_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, Dist_t>;
 
-        
         Dist_t dist(par);
         sampling_t sampling(dist, rmax, rmin, rlayout, ntotal);
         nlocal = sampling.getLocalNum();
@@ -139,29 +149,22 @@ int main(int argc, char* argv[]) {
         sampling.generate(position, rand_pool64);
         
         const int P = 4;
+        double moms1_ref[P], moms2_ref[P];
         double moms1[P], moms2[P];
-        NormDistCentMoms(sd1, P, moms1);
-        NormDistCentMoms(sd2, P, moms2);
-        for(int i=0; i<P; i++)
-            std::cout << moms1[i] << std::endl;
+        
+        moms1_ref[0] = mu1;
+        NormDistCentMoms(sd1, P, moms1_ref);
+        MomentsFromSamples(position, 0, ntotal, P, moms1);
+        
+        moms2_ref[0] = mu2;
+        NormDistCentMoms(sd2, P, moms2_ref);
+        MomentsFromSamples(position, 1, ntotal, P, moms2);
+        
+        WriteErrorInMoments(moms1, moms1_ref, P);
+        WriteErrorInMoments(moms2, moms2_ref, P);
 
-        for(int i=0; i<P; i++)
-            std::cout << moms2[i] << std::endl;
-        /*
-        // example of sampling normal/uniform in one and harmonic in another with custom functors
-        const int DimP = 4;
-        double pi    = Kokkos::numbers::pi_v<double>;
-        using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
-        using samplingH_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
-        const double parH[DimP] = {rmin[0], rmax[0], 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
-
-        DistH_t distH(parH);
-        samplingH_t samplingH(distH, rmax, rmin, rlayout, ntotal);
-        nlocal = samplingH.getLocalNum();
-        view_type positionH("positionH", nlocal);
-        samplingH.generate(positionH, rand_pool64);
-        */
     }
     ippl::finalize();
     return 0;
 }
+

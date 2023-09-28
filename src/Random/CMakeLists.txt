@@ -3,7 +3,8 @@ set (_SRCS
 
 set (_HDRS
     InverseTransformSampling.h
-    Random.h
+    Utility.h
+    NormalDistribution.h
     )
 
 include_DIRECTORIES (
