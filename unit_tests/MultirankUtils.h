@@ -3,19 +3,6 @@
 //   Provides a framework with which unit tests can easily work with
 //   objects of different dimensionalities.
 //
-// Copyright (c) 2023 Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef MULTIRANK_UTILS_H
 #define MULTIRANK_UTILS_H
 
@@ -139,53 +126,6 @@ public:
     template <typename Functor, typename... Args>
     static auto apply(Functor& f, Args&&... args) {
         apply_impl(std::make_index_sequence<sizeof...(Dims)>{}, f, args...);
-    }
-
-    /*!
-     * Expands into a nested loop via templating
-     * Source:
-     * https://stackoverflow.com/questions/34535795/n-dimensionally-nested-metaloops-with-templates
-     * @tparam Dim the number of nested levels
-     * @tparam BeginFunctor functor type for determining the start index of each loop
-     * @tparam EndFunctor functor type for determining the end index of each loop
-     * @tparam Functor functor type for the loop body
-     * @param begin a functor that returns the starting index for each level of the loop
-     * @param end a functor that returns the ending index (exclusive) for each level of the loop
-     * @param c a functor to be called in each iteration of the loop with the indices as arguments
-     */
-    template <unsigned Dim, unsigned Current = 0, class BeginFunctor, class EndFunctor,
-              class Functor>
-    static constexpr void nestedLoop(BeginFunctor&& begin, EndFunctor&& end, Functor&& c) {
-        for (size_t i = begin(Current); i < end(Current); ++i) {
-            if constexpr (Dim - 1 == Current) {
-                c(i);
-            } else {
-                auto next = [i, &c](auto... args) {
-                    c(i, args...);
-                };
-                nestedLoop<Dim, Current + 1>(begin, end, next);
-            }
-        }
-    }
-
-    /*!
-     * Convenience function for nested looping through a view
-     * @tparam View the view type
-     * @tparam Functor the loop body functor type
-     * @param view the view
-     * @param shift the number of ghost cells
-     * @param c the functor to be called in each iteration
-     */
-    template <typename View, class Functor>
-    static constexpr void nestedViewLoop(View& view, int shift, Functor&& c) {
-        nestedLoop<View::rank>(
-            [&](unsigned) {
-                return shift;
-            },
-            [&](unsigned d) {
-                return view.extent(d) - shift;
-            },
-            c);
     }
 };
 

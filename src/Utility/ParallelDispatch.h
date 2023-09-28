@@ -2,19 +2,6 @@
 // Parallel dispatch
 //   Utility functions relating to parallel dispatch in IPPL
 //
-// Copyright (c) 2023, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #ifndef IPPL_PARALLEL_DISPATCH_H
 #define IPPL_PARALLEL_DISPATCH_H
@@ -36,11 +23,11 @@ namespace ippl {
     template <unsigned Dim, class... PolicyArgs>
     struct RangePolicy {
         // The range policy type
-        typedef Kokkos::MDRangePolicy<PolicyArgs..., Kokkos::Rank<Dim>> policy_type;
+        using policy_type = Kokkos::MDRangePolicy<PolicyArgs..., Kokkos::Rank<Dim>>;
         // The index type used by the range policy
-        typedef typename policy_type::array_index_type index_type;
+        using index_type = typename policy_type::array_index_type;
         // A vector type containing the index type
-        typedef ::ippl::Vector<index_type, Dim> index_array_type;
+        using index_array_type = ::ippl::Vector<index_type, Dim>;
     };
 
     /*!
@@ -48,9 +35,9 @@ namespace ippl {
      */
     template <class... PolicyArgs>
     struct RangePolicy<1, PolicyArgs...> {
-        typedef Kokkos::RangePolicy<PolicyArgs...> policy_type;
-        typedef typename policy_type::index_type index_type;
-        typedef ::ippl::Vector<index_type, 1> index_array_type;
+        using policy_type      = Kokkos::RangePolicy<PolicyArgs...>;
+        using index_type       = typename policy_type::index_type;
+        using index_array_type = ::ippl::Vector<index_type, 1>;
     };
 
     /*!
@@ -108,7 +95,7 @@ namespace ippl {
             return policy_type(begin, end);
         }
         // Silences incorrect nvcc warning: missing return statement at end of non-void function
-        throw IpplException("detail::getRangePolicy", "Unreachable state");
+        throw IpplException("detail::createRangePolicy", "Unreachable state");
     }
 
     namespace detail {
@@ -122,14 +109,14 @@ namespace ippl {
         struct Coords {
             // https://stackoverflow.com/a/53398815/2773311
             // https://en.cppreference.com/w/cpp/utility/declval
-            typedef decltype(std::tuple_cat(
-                std::declval<typename Coords<1, T>::type>(),
-                std::declval<typename Coords<Dim - 1, T>::type>())) type;
+            using type =
+                decltype(std::tuple_cat(std::declval<typename Coords<1, T>::type>(),
+                                        std::declval<typename Coords<Dim - 1, T>::type>()));
         };
 
         template <typename T>
         struct Coords<1, T> {
-            typedef std::tuple<T> type;
+            using type = std::tuple<T>;
         };
 
         enum e_functor_type {
@@ -162,7 +149,8 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc&... res) const {
                 using index_type = typename RangePolicy<sizeof...(T)>::index_type;
-                typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
+                typename RangePolicy<sizeof...(T)>::index_array_type args = {
+                    static_cast<index_type>(x)...};
                 f(args, res...);
             }
         };
@@ -173,7 +161,8 @@ namespace ippl {
 
             KOKKOS_INLINE_FUNCTION void operator()(T... x) const {
                 using index_type = typename RangePolicy<sizeof...(T)>::index_type;
-                typename RangePolicy<sizeof...(T)>::index_array_type args = {(index_type)x...};
+                typename RangePolicy<sizeof...(T)>::index_array_type args = {
+                    static_cast<index_type>(x)...};
                 f(args);
             }
         };
