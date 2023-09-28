@@ -72,7 +72,7 @@ namespace CatalystAdaptor {
                 node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
             }
         }
-        node["catalyst_load/implementation"] = "adios";
+        node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok)
         {

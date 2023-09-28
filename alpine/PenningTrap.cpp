@@ -154,7 +154,8 @@ const char* TestName = "PenningTrap";
 int main(int argc, char* argv[]) {
     static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
-    CatalystAdaptor::Initialize(argc, argv);
+    //CatalystAdaptor::Initialize(argc, argv);
+    CatalystAdaptor::Initialize_Adios(argc, argv);
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
