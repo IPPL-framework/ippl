@@ -61,7 +61,7 @@ KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
     }
 }
 
-void MomentsFromSamples(view_type position, int d, int ntotal, int P, double *moms){
+void MomentsFromSamples(view_type position, int d, int ntotal, const int P, double *moms){
     double temp = 0.0;
     Kokkos::parallel_reduce("moments", position.extent(0),
                             KOKKOS_LAMBDA(const int i, double& valL) {
@@ -70,20 +70,21 @@ void MomentsFromSamples(view_type position, int d, int ntotal, int P, double *mo
         },
         Kokkos::Sum<double>(temp));
     Kokkos::fence();
-    MPI_Reduce(&temp, &moms[0], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    moms[0] = moms[0]/ntotal;
-    
+    double gtemp = 0.0;
+    MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+    double mean = gtemp/ntotal;
+    moms[0] = mean;
     for(int p=1; p<P; p++){
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d]-moms[0], p+1);
+            double myVal = pow(position(i)[d]-mean, p+1);
             valL += myVal;
             },
             Kokkos::Sum<double>(temp));
         Kokkos::fence();
-        MPI_Reduce(&temp, &moms[p], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        moms[p] = moms[p]/(ntotal-1); // Bessel's correction
+        MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        moms[p] = gtemp/(ntotal-1); // Bessel's correction
     }
 }
 
@@ -91,9 +92,8 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
     Inform csvout(NULL, "data/error_moments_normal_dist.csv", Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
-
     for(int i=0; i<P; i++){
-        csvout << fabs( moms_ref[i] - moms[i] )  << endl;
+        csvout << moms_ref[i] << " " << moms[i] << " " << fabs(moms_ref[i] - moms[i]) << endl;
     }
     ippl::Comm->barrier();
 }
@@ -102,8 +102,8 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {20, 20};
-        const unsigned int ntotal = 100000;
-        
+        const unsigned int ntotal = 1000000;
+
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
             domain[i] = ippl::Index(nr[i]);
@@ -134,10 +134,10 @@ int main(int argc, char* argv[]) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
         // example of sampling normal in both dimensions
-        const double mu1 = 1.0;
-        const double sd1 = 0.8;
-        const double mu2 = -2.0;
-        const double sd2 = 0.4;
+        const double mu1 = 0.0;
+        const double sd1 = 1.0;
+        const double mu2 = -1.0;
+        const double sd2 = 0.5;
         const double par[4] = {mu1, sd1, mu2, sd2};
         using Dist_t = ippl::random::NormalDistribution<double, Dim>;
         using sampling_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, Dist_t>;
@@ -147,19 +147,19 @@ int main(int argc, char* argv[]) {
         nlocal = sampling.getLocalNum();
         view_type position("position", nlocal);
         sampling.generate(position, rand_pool64);
-        
-        const int P = 4;
+
+        const int P = 6;
         double moms1_ref[P], moms2_ref[P];
         double moms1[P], moms2[P];
-        
+
         moms1_ref[0] = mu1;
         NormDistCentMoms(sd1, P, moms1_ref);
-        MomentsFromSamples(position, 0, ntotal, P, moms1);
-        
+        MomentsFromSamples(position, 0, nlocal, P, moms1);
+
         moms2_ref[0] = mu2;
         NormDistCentMoms(sd2, P, moms2_ref);
-        MomentsFromSamples(position, 1, ntotal, P, moms2);
-        
+        MomentsFromSamples(position, 1, nlocal, P, moms2);
+
         WriteErrorInMoments(moms1, moms1_ref, P);
         WriteErrorInMoments(moms2, moms2_ref, P);
 

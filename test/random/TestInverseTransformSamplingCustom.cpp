@@ -90,29 +90,30 @@ KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
     }
 }
 
-void MomentsFromSamples(view_type position, int d, int ntotal, int P, double *moms){
+void MomentsFromSamples(view_type position, int d, int ntotal, const int P, double *moms){
     double temp = 0.0;
     Kokkos::parallel_reduce("moments", position.extent(0),
                             KOKKOS_LAMBDA(const int i, double& valL) {
         double myVal = position(i)[d];
         valL += myVal;
         },
-        Kokkos::Sum<double>(temp));
+	Kokkos::Sum<double>(temp));
     Kokkos::fence();
-    MPI_Reduce(&temp, &moms[0], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    moms[0] = moms[0]/ntotal;
-    
+    double gtemp = 0.0;
+    MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+    double mean = gtemp/ntotal;
+    moms[0] = mean;
     for(int p=1; p<P; p++){
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d]-moms[0], p+1);
+            double myVal = pow(position(i)[d]-mean, p+1);
             valL += myVal;
             },
             Kokkos::Sum<double>(temp));
         Kokkos::fence();
-        MPI_Reduce(&temp, &moms[p], 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        moms[p] = moms[p]/(ntotal-1); // Bessel's correction
+        MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        moms[p] = gtemp/(ntotal-1); // Bessel's correction
     }
 }
 
@@ -120,19 +121,17 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
     Inform csvout(NULL, "data/error_moments_custom_dist.csv", Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
-
     for(int i=0; i<P; i++){
-        csvout << fabs( moms_ref[i] - moms[i] )  << endl;
+        csvout << moms_ref[i] << " " << moms[i] << " " << fabs(moms_ref[i] - moms[i]) << endl;
     }
     ippl::Comm->barrier();
 }
-
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {20, 20};
-        const unsigned int ntotal = 100000;
+        const unsigned int ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -166,8 +165,8 @@ int main(int argc, char* argv[]) {
         
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4;
-        const double mu = 0.8;
-        const double sd = 0.3;
+        const double mu = 1.0;
+        const double sd = 0.9;
         const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
         
         using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
@@ -179,7 +178,7 @@ int main(int argc, char* argv[]) {
         view_type positionH("positionH", nlocal);
         samplingH.generate(positionH, rand_pool64);
         
-        const int P = 4;
+        const int P = 6;
         double moms1_ref[P];
         double moms1[P];
         
