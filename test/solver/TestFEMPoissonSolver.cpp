@@ -1,11 +1,12 @@
 // Tests the FEM poison solver by // TODO
 
 #include "Ippl.h"
-#include "Solver/FEMPoissonSolver.h"
+// #include "Solver/FEMPoissonSolver.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        /*
         constexpr unsigned dim = 3;  // 3D problem
         using Mesh_t           = ippl::UniformCartesian<double, 3>;
         using Centering_t      = Mesh_t::DefaultCentering;
@@ -15,6 +16,10 @@ int main(int argc, char* argv[]) {
         ippl::FEMPoissonSolver<field_type> solver;
 
         // IpplTimings::print("timings" + std::to_string(pt) + ".dat");
+
+        */
+
+        // TODO
     }
     ippl::finalize();
 

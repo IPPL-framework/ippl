@@ -6,7 +6,7 @@
 #define IPPL_FEMPOISSONSOLVER_H
 
 #include "PCG.h"
-#include "Solver/Solver.h"
+#include "Solver/Electrostatics.h"
 
 namespace ippl {
 
@@ -18,14 +18,14 @@ namespace ippl {
  * @tparam FieldRHS field type for the right hand side
  */
 template <typename FieldLHS, typename FieldRHS = FieldLHS>
-class FEMPoissonSolver : public Solver<FieldLHS, FieldRHS> {
+class FEMPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
     constexpr static unsigned Dim = FieldLHS::dim;
     using Tlhs                    = typename FieldLHS::value_type;
-    using Trhs                    = typename FieldRHS::value_type;
 
    public:
     using Base = Solver<FieldLHS, FieldRHS>;
     using typename Base::lhs_type, typename Base::rhs_type;
+
     using algo =
         PCG<UnaryMinus<detail::meta_laplace<lhs_type>>, FieldLHS, FieldRHS>;
 
@@ -33,7 +33,7 @@ class FEMPoissonSolver : public Solver<FieldLHS, FieldRHS> {
      * @brief Default constructor for FEM poisson solver
      */
     FEMPoissonSolver() : Base() {
-        static_assert(std::is_floating_point<Trhs>::value,
+        static_assert(std::is_floating_point<Tlhs>::value,
                       "Not a floating point type");
         setDefaultParameters();
     }
@@ -45,7 +45,7 @@ class FEMPoissonSolver : public Solver<FieldLHS, FieldRHS> {
      * @param rhs right hand side
      */
     FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs) : Base(lhs, rhs) {
-        static_assert(std::is_floating_point<Trhs>::value,
+        static_assert(std::is_floating_point<Tlhs>::value,
                       "Not a floating point type");
         setDefaultParameters();
     }
@@ -54,8 +54,8 @@ class FEMPoissonSolver : public Solver<FieldLHS, FieldRHS> {
      * @brief Solve the poisson equation using finite element methods.
      * The problem is described by -laplace(lhs) = rhs
      */
-    void solve() {
-        algo_m.setOperator(IPPL_SOVLER_OPERATOR_WRAPPER(-laplace, lhs_type));
+    void solve() override {
+        algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
         algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
         int output = this->params_m.template get<int>("output_type");
@@ -64,14 +64,14 @@ class FEMPoissonSolver : public Solver<FieldLHS, FieldRHS> {
         }
     }
 
-    /*!
+    /**
      * Query how many iterations were required to obtain the solution
      * the last time this solver was used
      * @return Iteration count of last solve
      */
     int getIterationCount() { return algo_m.getIterationCount(); }
 
-    /*!
+    /**
      * Query the residue
      * @return Residue norm from last solve
      */
