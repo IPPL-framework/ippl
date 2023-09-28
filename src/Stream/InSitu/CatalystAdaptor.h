@@ -183,8 +183,7 @@ namespace CatalystAdaptor {
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-        // add catalyst channel named ippl_field, as fields is reserved
-        auto channel = node["catalyst/channels/ippl_particles"];
+        auto channel = node["catalyst/channels/ippl_particle"];
         channel["type"].set_string("mesh");
 
         // in data channel now we adhere to conduits mesh blueprint definition
@@ -206,7 +205,7 @@ namespace CatalystAdaptor {
         mesh["topologies/mesh/type"].set("unstructured");
         mesh["topologies/mesh/coordset"].set("coords");
         mesh["topologies/mesh/elements/shape"].set("point");
-        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data());
+        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),std::size(layout_view));
 //
 //        // add values and subscribe to data
 //        auto fields = mesh["fields"];
