@@ -43,7 +43,7 @@ namespace CatalystAdaptor {
     void callCatalystExecute(conduit_cpp::Node& node) {
         // print node to have visual representation
         // if (cycle == 0)
-        catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        // catalyst_conduit_node_print(conduit_cpp::c_node(&node));
 
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
@@ -181,7 +181,7 @@ namespace CatalystAdaptor {
         setData(fields, host_view_layout_left);
 
         // catalyst_conduit_node_print(conduit_cpp::c_node(&node));
-        if (node_in == std::nullopt)
+        if (node_in != std::nullopt)
         {
             callCatalystExecute(node);
             return {};
@@ -275,8 +275,8 @@ namespace CatalystAdaptor {
     void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ChargedParticles& particle) {
         //conduit_cpp::Node node;
         auto node = std::make_optional<conduit_cpp::Node>();
-        auto node_1 = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
-        CatalystAdaptor::Execute_Field(cycle, time, rank, field, node_1);
+        node = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
+        node = CatalystAdaptor::Execute_Field(cycle, time, rank, field, node);
         //callCatalystExecute(node.value());
 
     }

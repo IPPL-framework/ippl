@@ -392,13 +392,13 @@ int main(int argc, char* argv[]) {
         // scatter the charge onto the underlying grid
         P->scatterCIC(totalP, it + 1, hr);
 
+        CatalystAdaptor::Execute_Field_Particle(it, P->time_m, Ippl::Comm->rank(), P->rho_m, P);
         // Field solve
         IpplTimings::startTimer(SolveTimer);
         P->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
        // CatalystAdaptor::Execute_Field(it, P->time_m, Ippl::Comm->rank(), P->rho_m);
-       CatalystAdaptor::Execute_Field_Particle(it, P->time_m, Ippl::Comm->rank(), P->E_m, P);
 
         // gather E field
         P->gatherCIC();
