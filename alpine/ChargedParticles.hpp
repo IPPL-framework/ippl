@@ -9,10 +9,10 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "Solver/FFTPeriodicPoissonSolver.h"
-#include "Solver/FFTPoissonSolver.h"
-#include "Solver/P3MSolver.h"
-#include "Solver/PoissonCG.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
+#include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
+#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 unsigned LoggingPeriod = 1;
 
@@ -67,7 +67,7 @@ using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, 
 
 template <typename T = double, unsigned Dim = 3>
 using OpenSolver_t =
-    ConditionalType<Dim == 3, ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+    ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,

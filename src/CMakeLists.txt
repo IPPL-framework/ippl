@@ -81,8 +81,10 @@ add_subdirectory (Types)
 add_subdirectory (Partition)
 
 if (ENABLE_SOLVERS)
-    message (STATUS "Adding Solver subdirectory")
-    add_subdirectory (Solver)
+    message (STATUS "Adding Solver subdirectories")
+    add_subdirectory (PoissonSolvers)
+    add_subdirectory (MaxwellSolvers)
+    add_subdirectory (LinearSolvers)
 endif ()
 
 if (ENABLE_AMR)

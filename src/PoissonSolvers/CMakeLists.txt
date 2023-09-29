@@ -8,8 +8,8 @@ set (_HDRS
 
 if (ENABLE_FFT)
     list (APPEND _HDRS
-                 FFTPoissonSolver.h
-                 FFTPoissonSolver.hpp
+                 FFTOpenPoissonSolver.h
+                 FFTOpenPoissonSolver.hpp
                  FFTPeriodicPoissonSolver.h
                  FFTPeriodicPoissonSolver.hpp
                  P3MSolver.h
@@ -24,4 +24,4 @@ include_DIRECTORIES (
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
-install (FILES ${_HDRS} DESTINATION include/Solver)
+install (FILES ${_HDRS} DESTINATION include/PoissonSolvers)

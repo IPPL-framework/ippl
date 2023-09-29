@@ -10,8 +10,8 @@
 //
 //
 
-#ifndef P3M_SOLVER_H_
-#define P3M_SOLVER_H_
+#ifndef IPPL_P3M_SOLVER_H_
+#define IPPL_P3M_SOLVER_H_
 
 #include "Types/Vector.h"
 
@@ -129,5 +129,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/P3MSolver.hpp"
+#include "PoissonSolvers/P3MSolver.hpp"
 #endif

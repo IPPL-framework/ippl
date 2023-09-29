@@ -14,7 +14,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "Solver/PoissonCG.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);

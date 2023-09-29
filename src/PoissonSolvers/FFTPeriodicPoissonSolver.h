@@ -99,5 +99,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/FFTPeriodicPoissonSolver.hpp"
+#include "PoissonSolvers/FFTPeriodicPoissonSolver.hpp"
 #endif

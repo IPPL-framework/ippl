@@ -1,12 +1,12 @@
 //
-// Class FFTPoissonSolver
+// Class FFTOpenPoissonSolver
 //   FFT-based Poisson Solver for open boundaries.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //
 
-#ifndef FFT_POISSON_SOLVER_H_
-#define FFT_POISSON_SOLVER_H_
+#ifndef IPPL_FFT_OPEN_POISSON_SOLVER_H_
+#define IPPL_FFT_OPEN_POISSON_SOLVER_H_
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -70,7 +70,7 @@ namespace ippl {
     }  // namespace detail
 
     template <typename FieldLHS, typename FieldRHS>
-    class FFTPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
+    class FFTOpenPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldLHS::Mesh_t;
@@ -119,10 +119,10 @@ namespace ippl {
         using scalar_type = typename mesh_type::value_type;
 
         // constructor and destructor
-        FFTPoissonSolver();
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        ~FFTPoissonSolver() = default;
+        FFTOpenPoissonSolver();
+        FFTOpenPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTOpenPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        ~FFTOpenPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
@@ -141,7 +141,7 @@ namespace ippl {
             bool hessian = this->params_m.template get<bool>("hessian");
             if (!hessian) {
                 throw IpplException(
-                    "FFTPoissonSolver::getHessian()",
+                    "FFTOpenPoissonSolver::getHessian()",
                     "Cannot call getHessian() if 'hessian' flag in ParameterList is false");
             }
             return &hess_m;
@@ -251,7 +251,7 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("FFTPoissonSolver::setDefaultParameters",
+                    throw IpplException("FFTOpenPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
 
@@ -261,5 +261,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/FFTPoissonSolver.hpp"
+#include "PoissonSolvers/FFTOpenPoissonSolver.hpp"
 #endif
