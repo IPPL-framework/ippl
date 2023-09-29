@@ -39,6 +39,8 @@ using Mesh_t = ippl::UniformCartesian<double, Dim>;
 
 using size_type = ippl::detail::size_type;
 
+using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
+
 KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
 {
     if (n == 0 || n==1)
@@ -47,6 +49,7 @@ KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
 }
 
 KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
+    // returns the central moment E[(x-\mu)^p] for Normal distribution function
     if(p%2==0){
         return pow(stdev, p)*doublefactorial(p-1);
     }
@@ -101,8 +104,8 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        ippl::Vector<int, 2> nr   = {20, 20};
-        const unsigned int ntotal = 1000000;
+        ippl::Vector<int, 2> nr   = {100, 100};
+        unsigned int ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -130,10 +133,8 @@ int main(int argc, char* argv[]) {
 
         int seed = 42;
 
-        unsigned int nlocal;
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        GeneratorPool rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-        // example of sampling normal in both dimensions
         const double mu1 = 0.0;
         const double sd1 = 1.0;
         const double mu2 = -1.0;
@@ -144,21 +145,21 @@ int main(int argc, char* argv[]) {
 
         Dist_t dist(par);
         sampling_t sampling(dist, rmax, rmin, rlayout, ntotal);
-        nlocal = sampling.getLocalNum();
-        view_type position("position", nlocal);
+        ntotal = sampling.getLocalNum();
+        view_type position("position", ntotal);
         sampling.generate(position, rand_pool64);
 
-        const int P = 6;
+        const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
         double moms1_ref[P], moms2_ref[P];
         double moms1[P], moms2[P];
 
         moms1_ref[0] = mu1;
         NormDistCentMoms(sd1, P, moms1_ref);
-        MomentsFromSamples(position, 0, nlocal, P, moms1);
+        MomentsFromSamples(position, 0, ntotal, P, moms1);
 
         moms2_ref[0] = mu2;
         NormDistCentMoms(sd2, P, moms2_ref);
-        MomentsFromSamples(position, 1, nlocal, P, moms2);
+        MomentsFromSamples(position, 1, ntotal, P, moms2);
 
         WriteErrorInMoments(moms1, moms1_ref, P);
         WriteErrorInMoments(moms2, moms2_ref, P);

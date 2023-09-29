@@ -12,6 +12,10 @@
  * Visit www.amas.web.psi for more details
  *
  ***************************************************************************/
+// Testing the inverse transform sampling method for a user defined distribution
+// on a bounded domain.
+//     Example:
+//     srun ./TestInverseTransformSamplingCustom --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -25,6 +29,7 @@
 #include "Utility/IpplTimings.h"
 #include "Ippl.h"
 #include "Random/Distribution.h"
+#include "Random/NormalDistribution.h"
 #include "Random/InverseTransformSampling.h"
 
 const int Dim = 2;
@@ -34,6 +39,8 @@ using Mesh_t = ippl::UniformCartesian<double, Dim>;
 const double pi    = Kokkos::numbers::pi_v<double>;
 
 using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+
+using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
 struct custom_cdf{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
@@ -76,6 +83,7 @@ KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
 }
 
 KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
+    // returns the central moment E[(x-\mu)^p] for Normal distribution function
     if(p%2==0){
         return pow(stdev, p)*doublefactorial(p-1);
     }
@@ -87,6 +95,31 @@ KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
 KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
     for(int p=1; p<P; p++){
         moms[p] = NormDistCentMom(stdev, p+1);
+    }
+}
+
+
+double HarmDistCentMom(double a, double b, double r, int i){
+  // pdf = ( 1 + a*cos(b*x) ) / Z
+  // Z = \int 1 + a*cos(b*x) ) dx
+  // This function returns E[x^i] = \int x^i pdf(x) dx for a harmonic pdf
+  // For simplicity, we consider symmetric bounded domain where x \in [-r, r]
+  // Integrals are computed analytically using Wolfram
+  double Z = (2*(a*sin(b*r)+b*r))/b;
+  if( i%2==1 )
+    return 0.0;
+  if( i==2 )
+    return ( (2.*((3.*a*b*b*r*r-6.*a)*sin(b*r)+6.*a*b*r*cos(b*r)+pow(b*r,3.)))/(3.*pow(b,3.)) ) / Z;
+  if( i==4 )
+    return ( (2.*a*(b*b*r*r*(b*b*r*r-12.)+24.)*sin(b*r))/pow(b,5.)+(8.*a*r*(b*b*r*r-6.)*cos(b*r))/pow(b,4.)+(2.*pow(r,5.))/5. ) / Z;
+  if( i == 6 )
+    return ( (2.*a*(b*b*r*r*(b*b*r*r*(b*b*r*r-30.)+360.)-720.)*sin(b*r))/pow(b,7)+(12.*a*r*(b*b*r*r*(b*b*r*r-20.)+120.)*cos(b*r))/pow(b,6)+(2.*pow(r,7))/7. )/ Z;
+  return 0;
+}
+
+void HarmDistCentMoms(double a, double b, double r, const int P, double *moms){
+    for(int p=1; p<P; p++){
+        moms[p] = HarmDistCentMom(a, b, r, p+1);
     }
 }
 
@@ -131,7 +164,7 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {20, 20};
-        const unsigned int ntotal = 1000000;
+        unsigned int ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -160,25 +193,24 @@ int main(int argc, char* argv[]) {
 
         int seed = 42;
         using size_type = ippl::detail::size_type;
-        unsigned int nlocal;
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        GeneratorPool rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
         
         // example of sampling normal/uniform in one and harmonic in another with custom functors
-        const int DimP = 4;
+        const int DimP = 4; // dimension of parameters in the pdf
         const double mu = 1.0;
         const double sd = 0.9;
-        const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0};
+        const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0}; // paramters of pdf
         
         using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
         using samplingH_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
 
         DistH_t distH(parH);
         samplingH_t samplingH(distH, rmax, rmin, rlayout, ntotal);
-        nlocal = samplingH.getLocalNum();
-        view_type positionH("positionH", nlocal);
+        ntotal = samplingH.getLocalNum();
+        view_type positionH("positionH", ntotal);
         samplingH.generate(positionH, rand_pool64);
         
-        const int P = 6;
+        const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
         double moms1_ref[P];
         double moms1[P];
         
@@ -189,8 +221,12 @@ int main(int argc, char* argv[]) {
         WriteErrorInMoments(moms1, moms1_ref, P);
         
         // next, compute error in moments of 2nd dimension
-        //double moms2_ref[P];
-        //double moms2[P];
+        double moms2_ref[P];
+        double moms2[P];
+        moms2_ref[0] = 0.0;
+        HarmDistCentMoms(parH[2], parH[3], rmax[1], P, moms2_ref);
+        MomentsFromSamples(positionH, 1, ntotal, P, moms2);
+        WriteErrorInMoments(moms2, moms2_ref, P);
     }
     ippl::finalize();
     return 0;
