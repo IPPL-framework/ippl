@@ -43,7 +43,11 @@ namespace CatalystAdaptor {
 
     void callCatalystExecute(const conduit_cpp::Node& node) {
 
-        catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        // TODO: we should add here this IPPL-INFO stuff
+        if ( static auto called {false}; !std::exchange(called, true) ) {
+            catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        }
+
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
             std::cerr << "Failed to execute Catalyst: " << err << std::endl;
