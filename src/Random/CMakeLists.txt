@@ -4,6 +4,7 @@ set (_SRCS
 set (_HDRS
     InverseTransformSampling.h
     Utility.h
+    Distribution.h
     NormalDistribution.h
     )
 
