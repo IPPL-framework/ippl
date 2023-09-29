@@ -383,7 +383,6 @@ public:
         IpplTimings::stopTimer(sumTimer);
 
         // dumpVTK(E_m,nr_m[0],nr_m[1],nr_m[2],iteration,hrField[0],hrField[1],hrField[2]);
-        //CatalystAdaptor::Execute_Field_Particle(iteration, time_m, Ippl::Comm->rank(), rho_m, this);
 
         // rho = rho_e - rho_i
         double size = 1;

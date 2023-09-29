@@ -37,14 +37,13 @@ namespace CatalystAdaptor {
         node["density/association"].set("element");
         node["density/topology"].set("mesh");
         node["density/volume_dependent"].set("false");
+
         node["density/values"].set_external(view.data(), view.size());
     }
 
-    void callCatalystExecute(conduit_cpp::Node& node) {
-        // print node to have visual representation
-        // if (cycle == 0)
-        // catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+    void callCatalystExecute(const conduit_cpp::Node& node) {
 
+        catalyst_conduit_node_print(conduit_cpp::c_node(&node));
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
             std::cerr << "Failed to execute Catalyst: " << err << std::endl;
@@ -147,13 +146,15 @@ namespace CatalystAdaptor {
         std::string field_node_spacing{"coordsets/coords/spacing/dx"};
 
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
+            // add dimension
             mesh[field_node_dim].set(field.getLayout().getLocalNDIndex()[iDim].length() + 1);
 
-            // shift origin by one ghost cell
+            // add origin
             mesh[field_node_origin].set(
-                field.get_mesh().getOrigin()[iDim]  // global origin
-                + field.getLayout().getLocalNDIndex()[iDim].first()
-                      * field.get_mesh().getMeshSpacing(iDim));  // shift to local index
+                field.get_mesh().getOrigin()[iDim] + field.getLayout().getLocalNDIndex()[iDim].first()
+                      * field.get_mesh().getMeshSpacing(iDim));
+
+            // add spacing
             mesh[field_node_spacing].set(field.get_mesh().getMeshSpacing(iDim));
 
             // increment last char in string
@@ -165,22 +166,23 @@ namespace CatalystAdaptor {
         // add topology
         mesh["topologies/mesh/type"].set("uniform");
         mesh["topologies/mesh/coordset"].set("coords");
-        std::string field_node_origin_topo = "topologies/mesh/origin/x";
+        std::string field_node_origin_topo{"topologies/mesh/origin/x"};
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // shift origin
             mesh[field_node_origin_topo].set(field.get_mesh().getOrigin()[iDim]
                                              + field.getLayout().getLocalNDIndex()[iDim].first()
                                                    * field.get_mesh().getMeshSpacing(iDim));
 
+            // increment last char in string
             ++field_node_origin_topo.back();
         }
 
         // add values and subscribe to data
         auto fields = mesh["fields"];
-
         setData(fields, host_view_layout_left);
 
-        // catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        // as we have a local copy of the field, the catalyst_execute needs to be called
+        // within this scope otherwise the memory location might be already overwritten
         if (node_in != std::nullopt)
         {
             callCatalystExecute(node);
@@ -196,18 +198,7 @@ namespace CatalystAdaptor {
 
         auto layout_view = particle->R.getView();
 
-//        std::cout << "layout_view" << std::endl;
-//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
-//            std::cout << "i " << i << " data " << layout_view.data()[i][0] << " "
-//                      << layout_view.data()[i][1] << " " << layout_view.data()[i][2] << std::endl;
-//        }
-//
-//        std::cout << "velocity_view" << std::endl;
-//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
-//            std::cout << "i " << i << " data " << velocity_view.data()[i][0] << " "
-//                      << velocity_view.data()[i][1] << " " << velocity_view.data()[i][2] << std::endl;
-//        }
-
+        // if node is passed in, append data to it
         conduit_cpp::Node node;
         if (node_in)
             node = node_in.value();
@@ -218,15 +209,13 @@ namespace CatalystAdaptor {
         state["time"].set(time);
         state["domain_id"].set(rank);
 
+        // channel for particles
         auto channel = node["catalyst/channels/ippl_particle"];
         channel["type"].set_string("mesh");
 
         // in data channel now we adhere to conduits mesh blueprint definition
         auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set("explicit");
-
-        // number of points in specific dimension
-        // std::string particle_node_dim{"coordsets/coords/values/x"};
 
         mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
         mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
@@ -236,31 +225,28 @@ namespace CatalystAdaptor {
         mesh["topologies/mesh/coordset"].set("coords");
         mesh["topologies/mesh/elements/shape"].set("point");
         mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum());
-//        std::cout << "Size of layout view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
-//        std::cout << "Size of particle view from rank: " << rank << "  " << particle->getLocalNum() << std::endl;
 
         auto charge_view = particle->q.getView();
-        // add values and subscribe to data
+
+        // add values for scalar charge field
         auto fields = mesh["fields"];
         fields["charge/association"].set("vertex");
         fields["charge/topology"].set("mesh");
         fields["charge/volume_dependent"].set("false");
+
         fields["charge/values"].set_external(charge_view.data(), particle->getLocalNum());
 
+        // add values for vector velocity field
         auto velocity_view = particle->P.getView();
         fields["velocity/association"].set("vertex");
         fields["velocity/topology"].set("mesh");
         fields["velocity/volume_dependent"].set("false");
+
         fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,sizeof(double)*3);
         fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,sizeof(double)*3);
         fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,sizeof(double)*3);
 
-//        std::cout << "velocity_view" << std::endl;
-//        for (long unsigned int i = 0; i < particle->getLocalNum(); ++i) {
-//            std::cout << "i " << i << " data " << &velocity_view.data()[i][0] << " "
-//                      << &velocity_view.data()[i][1] << " " << &velocity_view.data()[i][2] << std::endl;
-//        }
-        // catalyst_conduit_node_print(conduit_cpp::c_node(&node));
+        // this node we can return as the pointer to velocity and charge is globally valid
         if (node_in == std::nullopt)
         {
             callCatalystExecute(node);
@@ -273,11 +259,10 @@ namespace CatalystAdaptor {
 
     template <class Field, class ChargedParticles>
     void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ChargedParticles& particle) {
-        //conduit_cpp::Node node;
+
         auto node = std::make_optional<conduit_cpp::Node>();
         node = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
-        node = CatalystAdaptor::Execute_Field(cycle, time, rank, field, node);
-        //callCatalystExecute(node.value());
+        CatalystAdaptor::Execute_Field(cycle, time, rank, field, node);
 
     }
 
