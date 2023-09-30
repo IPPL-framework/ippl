@@ -10,18 +10,30 @@
 
 namespace ippl {
 
-template <unsigned Dim>
-class Element {
-   public:
-    template <unsigned NumNodes>
-    virtual Vector<Vector<unsigned, Dim>, NumNodes> getLocalNodes() = 0;
+    template <unsigned Dim, unsigned NumVertices>
+    class Element {
+    public:
+        Element(const std::size_t& global_index,
+                Vector<std::size_t, NumVertices>& global_indices_of_vertices);
 
-    void localToGlobal();
+        virtual const Vector<std::size_t, NumVertices>& getGlobalIndicesOfVertices() const;
 
-    void globalToLocal();
+        virtual bool operator==(const Element& other) const;
 
-    void getJacobian();
-};
+    protected:
+        /**
+         * @brief The global index of the element.
+         *
+         * - In a 3D uniform cartesian mesh with hexahedral elements, this global
+         * index is the index of the cell.
+         * - In a 2D triangular mesh this global index is the index of the cell
+         * of the triangle.
+         */
+        std::size_t global_index_m;
+        // TODO maybe add references to entities with a higher co-dimension.
+
+        Vector<std::size_t, NumVertices> global_indices_of_vertices_m;
+    };
 
 }  // namespace ippl
 

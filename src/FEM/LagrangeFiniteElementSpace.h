@@ -9,8 +9,8 @@
 
 namespace ippl {
 
-template <unsigned Dim, Element<Dim> ElementType>
-class LagrangeFiniteElementSpace : FiniteElementSpace<Dim, ElementType> {};
+    template <unsigned Dim, Element<Dim> ElementType>
+    class LagrangeFiniteElementSpace : FiniteElementSpace<Dim, ElementType> {};
 
 }  // namespace ippl
 

@@ -5,7 +5,7 @@
 
 namespace ippl {
 
-class Quadrature {};
+    class Quadrature {};
 
 }  // namespace ippl
 

@@ -9,9 +9,10 @@
 
 namespace ippl {
 
-class Hexahedron : public Element<3> {};
-
-Vector<Vector<unsigned, 3>, 8> getLocalNodes();
+    class Hexahedron : public Element<3, 8> {
+    public:
+        Hexahedron(std::size_t global_index, Vector<std::size_t, 8> global_indices_of_vertices);
+    };
 
 }  // namespace ippl
 
