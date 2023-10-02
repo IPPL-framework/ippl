@@ -1,7 +1,0 @@
-# ninja log v5
-253	743	1695724398704802350	src/CMakeFiles/ippl.dir/Utility/Timer.cpp.o	4eb70e4a6d4c9bcb
-328	573	1695724398536414668	src/CMakeFiles/ippl.dir/Utility/UserList.cpp.o	8106c6263f41c375
-304	328	1695724398290968423	src/CMakeFiles/ippl.dir/Utility/User.cpp.o	4faca0b5a92d17de
-277	304	1695724398267778642	src/CMakeFiles/ippl.dir/Utility/Unique.cpp.o	f2732c323e1229ad
-2	277	1695724398239592646	src/CMakeFiles/ippl.dir/Utility/PAssert.cpp.o	b27677a9c443325d
-1	252	1695724398215548905	src/CMakeFiles/ippl.dir/FieldLayout/FieldLayout.cpp.o	1b869405f1bec479

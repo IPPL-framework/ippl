@@ -1,2 +1,0 @@
-/usr/bin/ar qc libippl.a CMakeFiles/ippl.dir/Ippl.cpp.o CMakeFiles/ippl.dir/Communicate/Communicate.cpp.o CMakeFiles/ippl.dir/Communicate/Buffers.cpp.o CMakeFiles/ippl.dir/FieldLayout/FieldLayout.cpp.o CMakeFiles/ippl.dir/Utility/Inform.cpp.o CMakeFiles/ippl.dir/Utility/IpplInfo.cpp.o CMakeFiles/ippl.dir/Utility/IpplTimings.cpp.o CMakeFiles/ippl.dir/Utility/PAssert.cpp.o CMakeFiles/ippl.dir/Utility/Timer.cpp.o CMakeFiles/ippl.dir/Utility/Unique.cpp.o CMakeFiles/ippl.dir/Utility/User.cpp.o CMakeFiles/ippl.dir/Utility/UserList.cpp.o
-/usr/bin/ranlib libippl.a
