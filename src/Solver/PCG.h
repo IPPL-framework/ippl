@@ -84,7 +84,7 @@ namespace ippl {
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
             residueNorm       = std::sqrt(delta1);
-            const T tolerance = params.get<T>("tolerance");// * norm(rhs);
+            const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
 

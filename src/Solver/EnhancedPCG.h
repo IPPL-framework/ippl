@@ -94,13 +94,13 @@ namespace ippl {
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
                 ++iterations_m;
-                Minvr = op_preconditioner(r);
                 if (iterations_m>1 && iterations_m%2){
                     lhs = lhs + alpha*p + alpha_2/beta_2*(p - Minvr);
                 }
                 r = r - alpha*v;
                 p = op_preconditioner(r) + beta*p;
                 v = op_m(p);
+                Minvr = op_preconditioner(r);
                 Minvv = op_preconditioner(v);
                 gamma = innerProduct(r,r);
                 a = innerProduct(p,v);
@@ -122,7 +122,7 @@ namespace ippl {
                 }
                 beta_2 = beta;
                 beta = (d - (2*alpha*e)+alpha*alpha*f)/d;
-                residueNorm = std::sqrt(innerProduct(r,r));
+                residueNorm = std::sqrt(gamma);
             }
 
             if (allFacesPeriodic) {
