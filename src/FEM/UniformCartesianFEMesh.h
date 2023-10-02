@@ -50,7 +50,7 @@ namespace ippl {
 
         UniformCartesianFEMesh();
 
-        UniformCartesianFEMesh(UniformCartesian<T, Dim> mesh);
+        UniformCartesianFEMesh(const UniformCartesian<T, Dim>& mesh);
 
         virtual ElementType getElement(std::size_t element_index) = 0;
     };
