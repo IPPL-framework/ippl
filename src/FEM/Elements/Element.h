@@ -37,6 +37,6 @@ namespace ippl {
 
 }  // namespace ippl
 
-#include "FEM/Element.hpp"
+#include "FEM/Elements/Element.hpp"
 
 #endif

@@ -6,8 +6,8 @@
 #ifndef IPPL_UNIFORMCARTESIANFEMESH_H
 #define IPPL_UNIFORMCARTESIANFEMESH_H
 
+#include "FEM/Elements/HexahedralElement.h"
 #include "FEM/FEMesh.h"
-#include "FEM/Hexahedron.h"
 #include "Meshes/UniformCartesian.h"
 
 namespace ippl {
@@ -24,7 +24,7 @@ namespace ippl {
     //     HexahedronIterator();
 
     //     // Dereference operator
-    //     Hexahedron& operator*();
+    //     HexahedralElement& operator*();
 
     //     // Pre-increment operator
     //     HexahedronIterator& operator++();
@@ -39,11 +39,11 @@ namespace ippl {
     //     bool operator!=(const HexahedronIterator& other) const;
 
     // private:
-    //     Hexahedron* current_m;
+    //     HexahedralElement* current_m;
     // };
 
     template <typename T, unsigned Dim>
-    class UniformCartesianFEMesh : public FEMesh<T, Dim, Hexahedron> {
+    class UniformCartesianFEMesh : public FEMesh<T, Dim, HexahedralElement> {
     public:
         typedef typename Mesh<T, Dim>::vector_type vector_type;
         typedef Cell DefaultCentering;

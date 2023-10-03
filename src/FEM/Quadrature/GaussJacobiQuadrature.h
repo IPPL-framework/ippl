@@ -1,15 +1,18 @@
 // Class GaussJacobiQuadrature
+//   See: https://craffael.github.io/lehrfempp/gauss__quadrature_8cc_source.html
 
 #ifndef IPPL_GAUSSJACOBIQUADRATURE_H
 #define IPPL_GAUSSJACOBIQUADRATURE_H
 
-#include "FEM/Quadrature.h"
+#include "FEM/Quadrature/Quadrature.h"
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, unsigned NumNodes>
+    template <typename T, unsigned Order>
     class GaussJacobiQuadrature : public Quadrature {
     public:
+        typedef NumNodes = Order / 2;  // TODO fix possible bugs
+
         /**
          * @brief Construct a new Gauss Jacobi Quadrature object
          * https://en.wikipedia.org/wiki/Gauss%E2%80%93Jacobi_quadrature
@@ -59,16 +62,6 @@ namespace ippl {
          */
         unsigned getOrder() const override;
 
-        /**
-         * @brief Sets the order of the Gauss-Jacobi quadrature rule.
-         * @details order = 2 * number_of_points
-         * @example
-         * order 2: 1 point
-         * order 4: 2 points
-         * @param order
-         */
-        void setOrder(const unsigned& order);
-
     private:
         unsigned number_of_points_m = NumNodes;
         T alpha_m;
@@ -77,6 +70,6 @@ namespace ippl {
 
 }  // namespace ippl
 
-#include "FEM/GaussJacobiQuadrature.hpp"
+#include "FEM/Quadrature/GaussJacobiQuadrature.hpp"
 
 #endif

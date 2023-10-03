@@ -1,5 +1,6 @@
+// Class Quadrature
 //
-//
+
 #ifndef IPPL_QUADRATURE_H
 #define IPPL_QUADRATURE_H
 
@@ -7,14 +8,24 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim, unsigned NumNodes>
+    template <typename T, unsigned NumNodes>
     class Quadrature {
     public:
         Quadrature();
 
+        /**
+         * @brief Returns the order of the quadrature rule. (order = degree + 1)
+         *
+         * @return unsigned
+         */
         virtual unsigned getOrder() const;
 
-        virtual void setOrder();
+        /**
+         * @brief Returns the degree of exactness of the quadrature rule. (degree = order - 1)
+         *
+         * @return unsigned
+         */
+        virtual unsigned getDegree() const;
 
         /**
          * @brief Get the nodes for the quadrature rule scaled to the interval [a, b].
@@ -23,7 +34,7 @@ namespace ippl {
          * @param b End of the interval [a, b]
          * @return std::vector<Vector<T, Dim>> Returns a vector of nodes.)
          */
-        virtual Vector<Vector<T, Dim>, NumNodes> getNodes(const T& a, const T& b) const = 0;
+        virtual Vector<T, NumNodes> getNodes(const T& a, const T& b) const = 0;
 
         /**
          * @brief Get the weights object
@@ -34,5 +45,7 @@ namespace ippl {
     };
 
 }  // namespace ippl
+
+#include "FEM/Quadrature/Quadrature.hpp"
 
 #endif
