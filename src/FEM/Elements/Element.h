@@ -10,6 +10,16 @@
 
 namespace ippl {
 
+    /**
+     * @brief This class represents an element in a finite element mesh.
+     * It contains both the information about the local and global geometry
+     * and its location in the mesh.
+     *
+     * @tparam Dim The dimension (1 for 1D, 2 for 2D, 3 for 3D)
+     * @tparam NumVertices the number of vertices (corners of the element)
+     * @tparam NumNodes The total number of nodes (vertices and midpoints of the element, if
+     * existent)
+     */
     template <unsigned Dim, unsigned NumVertices>
     class Element {
     public:
@@ -17,6 +27,11 @@ namespace ippl {
                 Vector<std::size_t, NumVertices>& global_indices_of_vertices);
 
         virtual const Vector<std::size_t, NumVertices>& getGlobalIndicesOfVertices() const;
+
+        virtual const Vector<Vector<T, Dim>, NumVertices>& getGlobalVertices() const = 0;
+
+        template <unsigned NumNodes>
+        virtual const Vector<Vector<T, Dim>, NumNodes>& getGlobalNodes() const = 0;
 
         virtual bool operator==(const Element& other) const;
 

@@ -44,6 +44,8 @@ namespace ippl {
         FiniteElementSpace(const UniformCartesian<T, Dim>& mesh, QuadratureType& quadrature,
                            unsigned degree = 1);
 
+        ~FiniteElementSpace();
+
         /**
          * @brief Set the degree of the finite element space
          *
@@ -92,8 +94,7 @@ namespace ippl {
 
     protected:
         unsigned degree_m;
-        Element* element_m;
-        FEMesh* femesh_m;  // TODO use safe(r) pointer
+        FEMesh* femesh_m;  // TODO use safe pointer
         Quadrature& quadrature_rule_m;
     };
 
