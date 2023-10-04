@@ -9,14 +9,25 @@
 
 namespace ippl {
 
-    template <unsigned NumVertices = 2>
-    class LineElement : public Element<1, NumVertices> {
+    template <typename T>
+    class LineElement : public Element<T, 1, 2> {
     public:
-        LineElement(std::size_t global_index,
-                    Vector<std::size_t, NumVertices> global_indices_of_vertices);
+        static constexpr unsigned Dim         = 1;
+        static constexpr unsigned NumVertices = 2;
 
-        template <unsigned Order, unsigned NumNodes = Order + 1>
-        virtual const Vector<Vector<T, Dim>, NumNodes>& getGlobalNodes() const override;
+        typedef typename Element<T, Dim, NumVertices>::set_of_vertices_type set_of_vertices_type;
+        typedef typename Element<T, Dim, NumVertices>::jacobian_type jacobian_type;
+
+        set_of_vertices_type getLocalVertices() const override;
+
+        jacobian_type getTransformationJacobian(
+            const set_of_vertices_type& global_vertices) const override;
+
+        set_of_vertices_type getGlobalNodes(
+            const jacobian_type& transformation_jacobian) const override;
+
+    private:
+        LineElement() {}
     };
 
 }  // namespace ippl

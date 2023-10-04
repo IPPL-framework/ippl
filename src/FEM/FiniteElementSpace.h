@@ -12,11 +12,9 @@
 #ifndef IPPL_FEMSPACE_H
 #define IPPL_FEMSPACE_H
 
-#include "FEM/Element.h"
-#include "FEM/FEMesh.h"
-#include "FEM/Quadrature.h"
+#include "FEM/Elements/Element.h"
+#include "FEM/Quadrature/Quadrature.h"
 #include "Meshes/Mesh.h"
-#include "Meshes/UniformCartesian.h"
 
 namespace ippl {
 
@@ -28,23 +26,12 @@ namespace ippl {
          * quadrature rule.
          *
          * @param mesh Mesh
+         * @param ref_element Reference element
          * @param quadrature quadrature rule
+         * @param degree Degree of the finite element space
          */
-        template <typename MeshType, typename QuadratureType>
-        FiniteElementSpace(const MeshType& mesh, QuadratureType& quadrature, unsigned degree = 1);
-
-        /**
-         * @brief Construct a new Finite Element Space object with a given uniform Cartesian mesh
-         * and quadrature rule.
-         *
-         * @param mesh Uniform Cartesian mesh
-         * @param quadrature Quadrature rule
-         */
-        template <typename QuadratureType>
-        FiniteElementSpace(const UniformCartesian<T, Dim>& mesh, QuadratureType& quadrature,
-                           unsigned degree = 1);
-
-        ~FiniteElementSpace();
+        FiniteElementSpace(const Mesh& mesh, const Element& ref_element,
+                           const Quadrature& quadrature, unsigned degree);
 
         /**
          * @brief Set the degree of the finite element space
@@ -92,10 +79,19 @@ namespace ippl {
         template <typename Func>
         virtual T evaluateAx(const std::size_t& j, const Func& x) const;
 
+        /***/
+        Vector<std::size_t, Dim> FiniteElementSpace<T, Dim>::getElementDimIndices(
+            const std::size_t& element_index) const;
+
+        /***/
+        Vector<std::size_t, NumVertices> getVerticesForElementIndex(
+            const std::size_t& element_index) const;
+
     protected:
+        const Mesh& mesh_m;
+        const Element& ref_element_m;
+        const Quadrature& quadrature_m;
         unsigned degree_m;
-        FEMesh* femesh_m;  // TODO use safe pointer
-        Quadrature& quadrature_rule_m;
     };
 
 }  // namespace ippl

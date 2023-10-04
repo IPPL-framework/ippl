@@ -7,54 +7,56 @@
 #define IPPL_ELEMENT_H
 
 #include "Types/Vector.h"
-
 namespace ippl {
 
     /**
-     * @brief This class represents an element in a finite element mesh.
-     * It contains both the information about the local and global geometry
-     * and its location in the mesh.
+     * @brief Singleton base class for the element types
      *
-     * @tparam Dim The dimension (1 for 1D, 2 for 2D, 3 for 3D)
-     * @tparam NumVertices the number of vertices (corners of the element)
-     * @tparam NumNodes The total number of nodes (vertices and midpoints of the element, if
-     * existent)
+     * @tparam T template type for the CRTP (curiously recurring template pattern)
      */
-    template <unsigned Dim, unsigned NumVertices>
-    class Element {
+    template <typename T>
+    class Singleton {
     public:
-        Element(const std::size_t& global_index,
-                Vector<std::size_t, NumVertices>& global_indices_of_vertices);
+        static T& getInstance() {
+            static T instance;
+            return instance;
+        }
 
-        virtual const Vector<std::size_t, NumVertices>& getGlobalIndicesOfVertices() const;
-
-        virtual const Vector<Vector<T, Dim>, NumVertices>& getGlobalVertices() const = 0;
-
-        template <unsigned NumNodes>
-        virtual const Vector<Vector<T, Dim>, NumNodes>& getGlobalNodes() const = 0;
-
-        virtual
-
-            virtual bool
-            operator==(const Element& other) const;
+        Singleton(Singleton const&)      = delete;
+        void operator=(Singleton const&) = delete;
 
     protected:
-        /**
-         * @brief The global index of the element.
-         *
-         * - In a 3D uniform cartesian mesh with hexahedral elements, this global
-         * index is the index of the cell.
-         * - In a 2D triangular mesh this global index is the index of the cell
-         * of the triangle.
-         */
-        std::size_t global_index_m;
-        // TODO maybe add references to entities with a higher co-dimension.
+        Singleton() {}
+    };
 
-        Vector<std::size_t, NumVertices> global_indices_of_vertices_m;
+    /**
+     * @brief A base reference element class that follows the singleton design pattern.
+     * Meaning only one instance exists at a time for all classes that inherit it.
+     *
+     * @tparam Dim
+     * @tparam NumVertices
+     */
+    template <typename T, unsigned Dim, unsigned NumVertices>
+    class Element : public Singleton<Element> {
+    public:
+        typedef Vector<Vector<T, Dim>, NumVertices> set_of_vertices_type;
+        typedef int jacobian_type;  // TODO
+
+        /***/
+        virtual set_of_vertices_type getLocalVertices() const = 0;
+
+        /***/
+        virtual jacobian_type getTransformationJacobian(
+            const set_of_vertices_type& global_vertices) const = 0;
+
+        /***/
+        virtual set_of_vertices_type getGlobalNodes(
+            const jacobian_type& transformation_jacobian) const = 0;
+
+    private:
+        Element() = 0;
     };
 
 }  // namespace ippl
-
-#include "FEM/Elements/Element.hpp"
 
 #endif

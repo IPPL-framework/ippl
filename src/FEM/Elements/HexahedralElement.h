@@ -12,11 +12,6 @@ namespace ippl {
     template <unsigned NumVertices = 8>
     class HexahedralElement : public Element<3, NumVertices> {
     public:
-        HexahedralElement(std::size_t global_index,
-                          Vector<std::size_t, NumVertices> global_indices_of_vertices);
-
-        template <unsigned Order, unsigned NumNodes = (Order + 1) * (Order + 1) * (Order + 1)>
-        virtual const Vector<Vector<T, Dim>, NumNodes>& getGlobalNodes() const override;
     };
 
 }  // namespace ippl
