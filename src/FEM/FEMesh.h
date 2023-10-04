@@ -40,13 +40,16 @@ namespace ippl {
     //     ElementType* current_m;
     // };
 
-    template <typename T, unsigned Dim, Element<Dim> ElementType>
+    template <typename T, unsigned Dim>
     class FEMesh : Mesh<T, Dim> {
     public:
+        FEMesh(const Mesh<T, Dim>& mesh) = 0;
+
         virtual std::size_t getNumberOfVertices() = 0;
 
         virtual std::size_t getNumberOfElements() = 0;
 
+        template <typename ElementType>
         virtual ElementType getElement(std::size_t element_index) = 0;
 
         /**
@@ -58,5 +61,7 @@ namespace ippl {
     };
 
 }  // namespace ippl
+
+#include "FEM/FEMesh.hpp"
 
 #endif  // IPPL_FEMESH_H

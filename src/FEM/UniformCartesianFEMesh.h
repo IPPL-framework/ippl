@@ -15,7 +15,7 @@
 namespace ippl {
 
     template <typename T, unsigned Dim>
-    class UniformCartesianFEMesh : public FEMesh<T, Dim, HexahedralElement> {
+    class UniformCartesianFEMesh : public FEMesh<T, Dim> {
     public:
         typedef typename Mesh<T, Dim>::vector_type vector_type;
         typedef Cell DefaultCentering;
@@ -28,9 +28,23 @@ namespace ippl {
             std::conditional_t<Dim == 2, QuadrilateralElement,
                                std::conditional_t<Dim == 3, HexahedralElement, void>>>;
 
-        UniformCartesianFEMesh(const UniformCartesian<T, Dim>& mesh);
+        typedef unsigned NumVertices =
+            std::conditional_t<Dim == 1, 2, std::conditional_t<Dim == 2, 4, 8>>
 
-        virtual ElementType getElement(std::size_t element_index) = 0;
+            UniformCartesianFEMesh(const UniformCartesian<T, Dim>& mesh);
+
+        ElementType getElement(const std::size_t& element_index) const override;
+
+    private:
+        /**
+         * @brief Get the indices of the element in each dimension
+         *
+         * @return Vector<std::size_t, Dim>
+         */
+        Vector<std::size_t, Dim> getElementDimIndices(const std::size_t& element_index) const;
+
+        Vector<std::size_t, NumVertices> getVerticesForElementIndex(
+            const std::size_t& element_index) const;
     };
 }  // namespace ippl
 

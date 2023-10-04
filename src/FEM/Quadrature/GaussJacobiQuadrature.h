@@ -11,7 +11,7 @@ namespace ippl {
     template <typename T, unsigned Order>
     class GaussJacobiQuadrature : public Quadrature {
     public:
-        typedef NumNodes = Order / 2;  // TODO fix possible bugs
+        using NumNodes = Order / 2;  // TODO fix possible bugs
 
         /**
          * @brief Construct a new Gauss Jacobi Quadrature object

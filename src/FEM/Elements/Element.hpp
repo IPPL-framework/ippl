@@ -7,8 +7,7 @@ namespace ippl {
         , global_indices_of_vertices_m(std::move(global_indices_of_vertices)) {}
 
     template <unsigned Dim, unsigned NumVertices>
-    const Vector<std::size_t, NumVertices>& Element<Dim, NumVertices>::getGlobalIndicesOfVertices()
-        const {
+    Vector<std::size_t, NumVertices> Element<Dim, NumVertices>::getGlobalIndicesOfVertices() const {
         return global_indices_of_vertices_m;
     }
 }  // namespace ippl

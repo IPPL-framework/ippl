@@ -33,7 +33,10 @@ namespace ippl {
         template <unsigned NumNodes>
         virtual const Vector<Vector<T, Dim>, NumNodes>& getGlobalNodes() const = 0;
 
-        virtual bool operator==(const Element& other) const;
+        virtual
+
+            virtual bool
+            operator==(const Element& other) const;
 
     protected:
         /**
