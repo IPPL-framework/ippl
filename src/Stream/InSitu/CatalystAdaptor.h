@@ -19,9 +19,9 @@ namespace CatalystAdaptor {
     using View_vector =
         Kokkos::View<ippl::Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
     void setData(conduit_cpp::Node& node, const View_vector& view) {
-        node["electrostatic/association"].set("element");
-        node["electrostatic/topology"].set("mesh");
-        node["electrostatic/volume_dependent"].set("false");
+        node["electrostatic/association"].set_string("element");
+        node["electrostatic/topology"].set_string("mesh");
+        node["electrostatic/volume_dependent"].set_string("false");
 
         auto length = std::size(view);
 
@@ -34,9 +34,9 @@ namespace CatalystAdaptor {
 
     using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
     void setData(conduit_cpp::Node& node, const View_scalar& view) {
-        node["density/association"].set("element");
-        node["density/topology"].set("mesh");
-        node["density/volume_dependent"].set("false");
+        node["density/association"].set_string("element");
+        node["density/topology"].set_string("mesh");
+        node["density/volume_dependent"].set_string("false");
 
         node["density/values"].set_external(view.data(), view.size());
     }
@@ -142,7 +142,7 @@ namespace CatalystAdaptor {
 
         // in data channel now we adhere to conduits mesh blueprint definition
         auto mesh = channel["data"];
-        mesh["coordsets/coords/type"].set("uniform");
+        mesh["coordsets/coords/type"].set_string("uniform");
 
         // number of points in specific dimension
         std::string field_node_dim{"coordsets/coords/dims/i"};
@@ -168,8 +168,8 @@ namespace CatalystAdaptor {
         }
 
         // add topology
-        mesh["topologies/mesh/type"].set("uniform");
-        mesh["topologies/mesh/coordset"].set("coords");
+        mesh["topologies/mesh/type"].set_string("uniform");
+        mesh["topologies/mesh/coordset"].set_string("coords");
         std::string field_node_origin_topo{"topologies/mesh/origin/x"};
         for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
             // shift origin
@@ -219,32 +219,32 @@ namespace CatalystAdaptor {
 
         // in data channel now we adhere to conduits mesh blueprint definition
         auto mesh = channel["data"];
-        mesh["coordsets/coords/type"].set("explicit");
+        mesh["coordsets/coords/type"].set_string("explicit");
 
         mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
         mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
         mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
 
-        mesh["topologies/mesh/type"].set("unstructured");
-        mesh["topologies/mesh/coordset"].set("coords");
-        mesh["topologies/mesh/elements/shape"].set("point");
+        mesh["topologies/mesh/type"].set_string("unstructured");
+        mesh["topologies/mesh/coordset"].set_string("coords");
+        mesh["topologies/mesh/elements/shape"].set_string("point");
         mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum());
 
         auto charge_view = particle->q.getView();
 
         // add values for scalar charge field
         auto fields = mesh["fields"];
-        fields["charge/association"].set("vertex");
-        fields["charge/topology"].set("mesh");
-        fields["charge/volume_dependent"].set("false");
+        fields["charge/association"].set_string("vertex");
+        fields["charge/topology"].set_string("mesh");
+        fields["charge/volume_dependent"].set_string("false");
 
         fields["charge/values"].set_external(charge_view.data(), particle->getLocalNum());
 
         // add values for vector velocity field
         auto velocity_view = particle->P.getView();
-        fields["velocity/association"].set("vertex");
-        fields["velocity/topology"].set("mesh");
-        fields["velocity/volume_dependent"].set("false");
+        fields["velocity/association"].set_string("vertex");
+        fields["velocity/topology"].set_string("mesh");
+        fields["velocity/volume_dependent"].set_string("false");
 
         fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,sizeof(double)*3);
         fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,sizeof(double)*3);
