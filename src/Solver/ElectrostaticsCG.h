@@ -7,8 +7,8 @@
 #define IPPL_ELECTROSTATICS_CG_H
 
 #include "Electrostatics.h"
-#include "EnhancedPCG.h"
-//#include "PCG.h"
+//#include "EnhancedPCG.h"
+#include "PCG.h"
 namespace ippl {
 
 // Expands to a lambda that acts as a wrapper for a differential operator
@@ -29,12 +29,27 @@ namespace ippl {
 
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
         using PreRet = detail::meta_laplace_jacobian_preconditioner<lhs_type>;
-        using algo  = PCG<OpRet, PreRet, FieldLHS, FieldRHS>;
 
         ElectrostaticsCG()
             : Base() {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+            algo_m = new EnhancedPCG<OpRet, PreRet, FieldLHS, FieldRHS>();
+        }
+
+        ElectrostaticsCG(std::string preconditioner)
+                : Base() {
+            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
+            setDefaultParameters();
+            if (preconditioner == "jacobian"){
+                algo_m = new PCG<OpRet, PreRet, FieldLHS, FieldRHS>();
+            }
+            else if (preconditioner == "enhanced"){
+                algo_m = new EnhancedPCG<OpRet, PreRet, FieldLHS, FieldRHS>();
+            }
+            else{
+                algo_m = new CG<OpRet, PreRet, FieldLHS, FieldRHS>();
+            }
         }
 
         ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
@@ -44,9 +59,9 @@ namespace ippl {
         }
 
         void solve() override {
-            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
-            algo_m.setPreconditioner(IPPL_SOLVER_OPERATOR_WRAPPER(laplace_jacobian_preconditioner, lhs_type));
-            algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
+            algo_m->setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
+            algo_m->setPreconditioner(IPPL_SOLVER_OPERATOR_WRAPPER(laplace_jacobian_preconditioner, lhs_type));
+            algo_m->operator()(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
@@ -59,16 +74,16 @@ namespace ippl {
          * the last time this solver was used
          * @return Iteration count of last solve
          */
-        int getIterationCount() { return algo_m.getIterationCount(); }
+        int getIterationCount() { return algo_m->getIterationCount(); }
 
         /*!
          * Query the residue
          * @return Residue norm from last solve
          */
-        Tlhs getResidue() const { return algo_m.getResidue(); }
+        Tlhs getResidue() const { return algo_m->getResidue(); }
 
     protected:
-        algo algo_m = algo();
+        CG<OpRet, PreRet, FieldLHS, FieldRHS> *algo_m;
 
         virtual void setDefaultParameters() override {
             this->params_m.add("max_iterations", 10000);
