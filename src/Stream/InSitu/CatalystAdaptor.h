@@ -250,6 +250,15 @@ namespace CatalystAdaptor {
         fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,sizeof(double)*3);
         fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,sizeof(double)*3);
 
+
+        fields["position/association"].set_string("vertex");
+        fields["position/topology"].set_string("mesh");
+        fields["position/volume_dependent"].set_string("false");
+
+        fields["position/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/z"].set_external(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
+
         // this node we can return as the pointer to velocity and charge is globally valid
         if (node_in == std::nullopt)
         {
