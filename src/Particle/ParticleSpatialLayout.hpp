@@ -210,11 +210,10 @@ namespace ippl {
         return totalSize;
     }
 
-    template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    template <typename ParticleBunch>
+    template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
-        const ParticleBunch& pdata, locate_type& ranks, bool_type& invalid) const {
-        auto& positions          = pdata.R.getView();
+        const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
+        auto& positions          = pc.R.getView();
         region_view_type Regions = rlayout_m.getdLocalRegions();
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
@@ -256,7 +255,7 @@ namespace ippl {
          *Step 2: search in neighbors
          *Step 3: save information on whether the particle was located
          *Step 4: run additional loop on non-located particles*/
-
+        
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::locateParticles()",
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
