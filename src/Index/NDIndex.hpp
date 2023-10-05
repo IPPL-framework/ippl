@@ -3,19 +3,6 @@
 //   This is a simple wrapper around Index that just keeps track of
 //   N of them and passes along requests for intersect, etc.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include <iostream>
 
 namespace ippl {
@@ -165,6 +152,14 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<size_t, Dim> NDIndex<Dim>::length() const {
+        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            return Vector<size_t, Dim>{indices_m[Idx].length()...};
+        };
+        return construct(std::make_index_sequence<Dim>{});
+    }
+
+    template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::first() const {
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].first()...};
@@ -200,5 +195,20 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::const_iterator NDIndex<Dim>::end()
         const {
         return indices_m + Dim;
+    }
+
+    template <unsigned Dim>
+    bool operator==(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        for (unsigned d = 0; d < Dim; d++) {
+            if (nd1[d] != nd2[d]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <unsigned Dim>
+    bool operator!=(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        return !(nd1 == nd2);
     }
 }  // namespace ippl

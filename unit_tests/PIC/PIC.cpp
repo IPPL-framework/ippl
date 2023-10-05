@@ -2,70 +2,52 @@
 // Unit test PICTest
 //   Test scatter and gather particle-in-cell operations.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
 #include <random>
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-class PICTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class PICTest;
+
+template <typename T, typename ExecSpace, unsigned Dim>
+class PICTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
-    template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
+    constexpr static unsigned dim = Dim;
+    using value_type              = T;
 
-    template <unsigned Dim>
-    using centering_type = typename mesh_type<Dim>::DefaultCentering;
-
-    template <unsigned Dim>
-    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
-
-    template <unsigned Dim>
-    using flayout_type = ippl::FieldLayout<Dim>;
-
-    template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
+    using mesh_type      = ippl::UniformCartesian<double, Dim>;
+    using centering_type = typename mesh_type::DefaultCentering;
+    using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
+    using flayout_type   = ippl::FieldLayout<Dim>;
+    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
 
     template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout)
+        explicit Bunch(PLayout& playout)
             : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(Q);
         }
 
-        ~Bunch() {}
+        ~Bunch() = default;
 
-        typedef ippl::ParticleAttrib<double> charge_container_type;
-        charge_container_type Q;
+        ippl::ParticleAttrib<double, ExecSpace> Q;
     };
 
-    template <unsigned Dim>
-    using bunch_type = Bunch<playout_type<Dim>>;
+    using bunch_type = Bunch<playout_type>;
 
     PICTest()
-        : nParticles(32) {
-        computeGridSizes(nPoints);
-        for (unsigned d = 0; d < MaxDim; d++) {
+        : nPoints(getGridSizes<Dim>()) {
+        CHECK_SKIP_SERIAL_CONSTRUCTOR;
+        for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 16.;
         }
-        setup(this);
-    }
 
-    template <unsigned Idx, unsigned Dim>
-    void setupDim() {
         std::array<ippl::Index, Dim> args;
         for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
@@ -82,14 +64,14 @@ public:
             origin[d] = 0;
         }
 
-        auto& layout = std::get<Idx>(layouts) = flayout_type<Dim>(owned, domDec);
-        auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
+        layout = flayout_type(owned, domDec);
+        mesh   = mesh_type(owned, hx, origin);
 
-        std::get<Idx>(fields) = std::make_unique<field_type<Dim>>(mesh, layout);
+        field = std::make_unique<field_type>(mesh, layout);
 
-        auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
+        playout = playout_type(layout, mesh);
 
-        auto& bunch = std::get<Idx>(bunches) = std::make_unique<bunch_type<Dim>>(pl);
+        bunch = std::make_unique<bunch_type>(playout);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -117,60 +99,60 @@ public:
         Kokkos::deep_copy(bunch->R.getView(), R_host);
     }
 
-    PtrCollection<std::shared_ptr, field_type> fields;
-    PtrCollection<std::shared_ptr, bunch_type> bunches;
-    size_t nParticles;
-    size_t nPoints[MaxDim];
-    double domain[MaxDim];
-    Collection<playout_type> playouts;
+    std::shared_ptr<field_type> field;
+    std::shared_ptr<bunch_type> bunch;
+    size_t nParticles = 32;
+    std::array<size_t, Dim> nPoints;
+    std::array<double, Dim> domain;
+    playout_type playout;
 
-private:
-    Collection<flayout_type> layouts;
-    Collection<mesh_type> meshes;
+    flayout_type layout;
+    mesh_type mesh;
 };
 
-TEST_F(PICTest, Scatter) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
-                                   std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
-        *field = 0.0;
+using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
+TYPED_TEST_CASE(PICTest, Tests);
 
-        double charge = 0.5;
+TYPED_TEST(PICTest, Scatter) {
+    auto& field      = this->field;
+    auto& bunch      = this->bunch;
+    auto& nParticles = this->nParticles;
 
-        bunch->Q = charge;
+    *field = 0.0;
 
-        bunch_type<Dim> bunchBuffer(pl);
-        pl.update(*bunch, bunchBuffer);
+    double charge = 0.5;
 
-        scatter(bunch->Q, *field, bunch->R);
+    bunch->Q = charge;
 
-        double totalcharge = field->sum();
+    bunch->update();
 
-        ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
-    };
+    scatter(bunch->Q, *field, bunch->R);
 
-    apply(check, fields, bunches, playouts);
+    double totalcharge = field->sum();
+
+    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
+                tolerance<typename TestFixture::value_type>);
 }
 
-TEST_F(PICTest, Gather) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
-                                   std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
-        *field = 1.0;
+TYPED_TEST(PICTest, Gather) {
+    auto& field      = this->field;
+    auto& bunch      = this->bunch;
+    auto& nParticles = this->nParticles;
 
-        bunch->Q = 0.0;
+    *field = 1.0;
 
-        bunch_type<Dim> bunchBuffer(pl);
-        pl.update(*bunch, bunchBuffer);
+    bunch->Q = 0.0;
 
-        gather(bunch->Q, *field, bunch->R);
+    bunch->update();
 
-        ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum()) / nParticles, 0.0);
-    };
+    gather(bunch->Q, *field, bunch->R);
 
-    apply(check, fields, bunches, playouts);
+    ASSERT_DOUBLE_EQ((nParticles - bunch->Q.sum()) / nParticles, 0.0);
 }
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

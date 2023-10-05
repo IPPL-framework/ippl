@@ -10,19 +10,6 @@
 //   we have referred Cabana library
 //   https://github.com/ECP-copa/Cabana.
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef IPPL_FFT_FFT_H
@@ -81,32 +68,21 @@ namespace ippl {
         template <typename>
         struct HeffteBackendType;
 
-#ifdef Heffte_ENABLE_FFTW
+#if defined(Heffte_ENABLE_FFTW)
         template <>
         struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
         };
-#endif
-#ifdef Heffte_ENABLE_MKL
+#elif defined(Heffte_ENABLE_MKL)
         template <>
         struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
-#endif
-#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
-        template <>
-        struct HeffteBackendType<Kokkos::CudaSpace> {
-            using backend     = heffte::backend::cufft;
-            using backendSine = heffte::backend::cufft_sin;
-            using backendCos  = heffte::backend::cufft_cos;
-        };
-#endif
-
-#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#else
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
@@ -117,6 +93,19 @@ namespace ippl {
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
         };
+#endif
+
+#ifdef Heffte_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
+        template <>
+        struct HeffteBackendType<Kokkos::CudaSpace> {
+            using backend     = heffte::backend::cufft;
+            using backendSine = heffte::backend::cufft_sin;
+            using backendCos  = heffte::backend::cufft_cos;
+        };
+#else
+#error cuFFT backend is enabled for heFFTe but CUDA is not enabled for Kokkos!
+#endif
 #endif
     }  // namespace detail
 

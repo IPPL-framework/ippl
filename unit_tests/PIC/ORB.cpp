@@ -2,79 +2,59 @@
 // Unit tests ORB for class OrthogonalRecursiveBisection
 //   Test volume and charge conservation in PIC operations.
 //
-// Copyright (c) 2021, Michael Ligotino, ETH, Zurich;
-// Paul Scherrer Institut, Villigen; Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
 
 #include <random>
 
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-class ORBTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class ORBTest;
+
+template <typename T, typename ExecSpace, unsigned Dim>
+class ORBTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
-    template <unsigned Dim>
-    using mesh_type = ippl::UniformCartesian<double, Dim>;
+    constexpr static unsigned dim = Dim;
+    using value_type              = T;
 
-    template <unsigned Dim>
-    using centering_type = typename mesh_type<Dim>::DefaultCentering;
+    using mesh_type      = ippl::UniformCartesian<double, Dim>;
+    using centering_type = typename mesh_type::DefaultCentering;
+    using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
+    using flayout_type   = ippl::FieldLayout<Dim>;
+    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
+    using ORB            = ippl::OrthogonalRecursiveBisection<field_type>;
 
-    template <unsigned Dim>
-    using field_type = ippl::Field<double, Dim, mesh_type<Dim>, centering_type<Dim>>;
-
-    template <unsigned Dim>
-    using flayout_type = ippl::FieldLayout<Dim>;
-
-    template <unsigned Dim>
-    using playout_type = ippl::ParticleSpatialLayout<double, Dim>;
-
-    template <unsigned Dim>
-    using ORB = ippl::OrthogonalRecursiveBisection<field_type<Dim>>;
-
-    template <class PLayout, unsigned Dim>
+    template <class PLayout>
     struct Bunch : public ippl::ParticleBase<PLayout> {
-        Bunch(PLayout& playout)
+        explicit Bunch(PLayout& playout)
             : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(Q);
         }
 
-        ~Bunch() {}
+        ~Bunch() = default;
 
-        typedef ippl::ParticleAttrib<double> charge_container_type;
-        charge_container_type Q;
+        ippl::ParticleAttrib<double, ExecSpace> Q;
 
-        void updateLayout(flayout_type<Dim> fl, mesh_type<Dim> mesh) {
+        void updateLayout(flayout_type fl, mesh_type mesh) {
             PLayout& layout = this->getLayout();
             layout.updateLayout(fl, mesh);
         }
     };
 
-    template <unsigned Dim>
-    using bunch_type = Bunch<playout_type<Dim>, Dim>;
+    using bunch_type = Bunch<playout_type>;
 
     ORBTest()
-        // Original configuration 256^3 particles, 512^3 grid.
-        : nParticles(128) {
-        computeGridSizes(nPoints);
-        for (unsigned d = 0; d < MaxDim; d++)
+        : nPoints(getGridSizes<Dim>()) {
+        CHECK_SKIP_SERIAL_CONSTRUCTOR;
+        for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 32.;
-        setup(this);
-    }
+        }
 
-    template <unsigned Idx, unsigned Dim>
-    void setupDim() {
         std::array<ippl::Index, Dim> args;
         for (unsigned d = 0; d < Dim; d++)
             args[d] = ippl::Index(nPoints[d]);
@@ -91,16 +71,11 @@ public:
         }
 
         const bool isAllPeriodic = true;
-        auto& layout             = std::get<Idx>(layouts) =
-            flayout_type<Dim>(owned, allParallel, isAllPeriodic);
-
-        auto& mesh = std::get<Idx>(meshes) = mesh_type<Dim>(owned, hx, origin);
-
-        auto field = std::get<Idx>(fields) = std::make_shared<field_type<Dim>>(mesh, layout);
-
-        auto& pl = std::get<Idx>(playouts) = playout_type<Dim>(layout, mesh);
-
-        auto bunch = std::get<Idx>(bunches) = std::make_shared<bunch_type<Dim>>(pl);
+        layout                   = flayout_type(owned, allParallel, isAllPeriodic);
+        mesh                     = mesh_type(owned, hx, origin);
+        field                    = std::make_shared<field_type>(mesh, layout);
+        playout                  = playout_type(layout, mesh);
+        bunch                    = std::make_shared<bunch_type>(playout);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -127,90 +102,77 @@ public:
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
 
-        std::get<Idx>(orbs).initialize(layout, mesh, *field);
+        orb.initialize(layout, mesh, *field);
     }
 
-    template <unsigned Dim>
     void repartition() {
         bool fromAnalyticDensity = false;
-
-        constexpr unsigned Idx = dimToIndex(Dim);
-
-        auto bunch   = std::get<Idx>(bunches);
-        auto field   = std::get<Idx>(fields);
-        auto& orb    = std::get<Idx>(orbs);
-        auto& layout = std::get<Idx>(layouts);
-        auto& mesh   = std::get<Idx>(meshes);
 
         orb.binaryRepartition(bunch->R, layout, fromAnalyticDensity);
         field->updateLayout(layout);
         bunch->updateLayout(layout, mesh);
     }
 
-    template <unsigned Dim>
-    ippl::NDIndex<Dim> getDomain() {
-        return std::get<dimToIndex(Dim)>(layouts).getDomain();
-    }
+    std::shared_ptr<field_type> field;
+    std::shared_ptr<bunch_type> bunch;
+    size_t nParticles = 128;
+    std::array<size_t, Dim> nPoints;
+    std::array<double, Dim> domain;
 
-    PtrCollection<std::shared_ptr, field_type> fields;
-    PtrCollection<std::shared_ptr, bunch_type> bunches;
-    size_t nParticles;
-    size_t nPoints[MaxDim];
-    double domain[MaxDim];
-
-    Collection<flayout_type> layouts;
-    Collection<mesh_type> meshes;
-    Collection<playout_type> playouts;
-    Collection<ORB> orbs;
+    flayout_type layout;
+    mesh_type mesh;
+    playout_type playout;
+    ORB orb;
 };
 
-TEST_F(ORBTest, Volume) {
-    auto check = [&]<unsigned Dim>(playout_type<Dim>& pl, std::shared_ptr<bunch_type<Dim>>& bunch) {
-        ippl::NDIndex<Dim> dom = getDomain<Dim>();
-        bunch_type<Dim> buffer(pl);
+using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
+TYPED_TEST_CASE(ORBTest, Tests);
 
-        pl.update(*bunch, buffer);
+TYPED_TEST(ORBTest, Volume) {
+    constexpr unsigned Dim = TestFixture::dim;
 
-        repartition<Dim>();
+    auto& bunch  = this->bunch;
+    auto& layout = this->layout;
 
-        pl.update(*bunch, buffer);
+    ippl::NDIndex<Dim> dom = layout.getDomain();
 
-        ippl::NDIndex<Dim> ndom = getDomain<Dim>();
+    bunch->update();
 
-        ASSERT_DOUBLE_EQ(dom.size(), ndom.size());
-    };
+    this->repartition();
 
-    apply(check, playouts, bunches);
+    bunch->update();
+
+    ippl::NDIndex<Dim> ndom = layout.getDomain();
+
+    ASSERT_DOUBLE_EQ(dom.size(), ndom.size());
 }
 
-TEST_F(ORBTest, Charge) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<field_type<Dim>>& field,
-                                   std::shared_ptr<bunch_type<Dim>>& bunch, playout_type<Dim>& pl) {
-        bunch_type<Dim> buffer(pl);
+TYPED_TEST(ORBTest, Charge) {
+    auto& bunch = this->bunch;
+    auto& field = this->field;
 
-        double charge = 0.5;
+    double charge = 0.5;
 
-        bunch->Q = charge;
+    bunch->Q = charge;
 
-        pl.update(*bunch, buffer);
+    bunch->update();
 
-        repartition<Dim>();
+    this->repartition();
 
-        pl.update(*bunch, buffer);
+    bunch->update();
 
-        *field = 0.0;
-        scatter(bunch->Q, *field, bunch->R);
+    *field = 0.0;
+    scatter(bunch->Q, *field, bunch->R);
 
-        double totalCharge = field->sum();
+    double totalCharge = field->sum();
 
-        ASSERT_NEAR((nParticles * charge - totalCharge) / totalCharge, 0., 1e-13);
-    };
-
-    apply(check, fields, bunches, playouts);
+    ASSERT_NEAR((this->nParticles * charge - totalCharge) / totalCharge, 0.,
+                tolerance<typename TestFixture::value_type>);
 }
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
