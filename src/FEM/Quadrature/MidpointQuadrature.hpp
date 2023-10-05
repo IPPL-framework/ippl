@@ -5,7 +5,7 @@ namespace ippl {
     MidpointQuadrature<T>::MidpointQuadrature() {}
 
     template <typename T>
-    Vector<T, 1> MidpointQuadrature<T>::getNodes(const T& a, const T& b) const {
+    Vector<T, 1> MidpointQuadrature<T>::getIntegrationNodes(const T& a, const T& b) const {
         return {a + ((b - a) / 2.0)};
     }
 

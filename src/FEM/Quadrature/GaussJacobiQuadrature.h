@@ -34,7 +34,7 @@ namespace ippl {
          * @param b
          * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
          */
-        Vector<Vector<T, Dim>, NumNodes> getNodes(const T& a = -1.0,
+        Vector<Vector<T, Dim>, NumNodes> getIntegrationNodes(const T& a = -1.0,
                                                   const T& b = 1.0) const override;
 
         /**

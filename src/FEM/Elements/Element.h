@@ -7,27 +7,10 @@
 #define IPPL_ELEMENT_H
 
 #include "Types/Vector.h"
+
+#include "FEM/Singleton.h"
+
 namespace ippl {
-
-    /**
-     * @brief Singleton base class for the element types
-     *
-     * @tparam T template type for the CRTP (curiously recurring template pattern)
-     */
-    template <typename T>
-    class Singleton {
-    public:
-        static T& getInstance() {
-            static T instance;
-            return instance;
-        }
-
-        Singleton(Singleton const&)      = delete;
-        void operator=(Singleton const&) = delete;
-
-    protected:
-        Singleton() {}
-    };
 
     /**
      * @brief A base reference element class that follows the singleton design pattern.

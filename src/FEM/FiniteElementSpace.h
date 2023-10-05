@@ -25,13 +25,13 @@ namespace ippl {
          * @brief Construct a new Finite Element Space object with a given mesh and
          * quadrature rule.
          *
-         * @param mesh Mesh
-         * @param ref_element Reference element
-         * @param quadrature quadrature rule
+         * @param mesh Mesh that represents the domain of the problem
+         * @param ref_element Pointer to singleton instance of the reference element
+         * @param quadrature Pointer to the singleton instance of the quadrature rule
          * @param degree Degree of the finite element space
          */
-        FiniteElementSpace(const Mesh& mesh, const Element& ref_element,
-                           const Quadrature& quadrature, unsigned degree);
+        FiniteElementSpace(const Mesh& mesh, const Element* ref_element,
+                           const Quadrature* quadrature, unsigned degree);
 
         /**
          * @brief Set the degree of the finite element space
@@ -79,6 +79,7 @@ namespace ippl {
         template <typename Func>
         virtual T evaluateAx(const std::size_t& j, const Func& x) const;
 
+    private:
         /***/
         Vector<std::size_t, Dim> FiniteElementSpace<T, Dim>::getElementDimIndices(
             const std::size_t& element_index) const;
@@ -87,10 +88,9 @@ namespace ippl {
         Vector<std::size_t, NumVertices> getVerticesForElementIndex(
             const std::size_t& element_index) const;
 
-    protected:
         const Mesh& mesh_m;
-        const Element& ref_element_m;
-        const Quadrature& quadrature_m;
+        const Element* ref_element_m;
+        const Quadrature* quadrature_m;
         unsigned degree_m;
     };
 

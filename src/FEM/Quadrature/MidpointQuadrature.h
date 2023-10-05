@@ -12,7 +12,7 @@ namespace ippl {
     public:
         MidpointQuadrature();
 
-        virtual Vector<T, 1> getNodes(const T& a = 0.0, const T& b = 1.0) const override;
+        virtual Vector<T, 1> getIntegrationNodes(const T& a = 0.0, const T& b = 1.0) const override;
 
         virtual Vector<T, 1> getWeights() const override;
     };

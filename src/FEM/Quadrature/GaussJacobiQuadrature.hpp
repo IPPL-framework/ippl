@@ -8,7 +8,7 @@ namespace ippl {
         , beta_m(beta) {}
 
     template <typename T, unsigned Dim, unsigned NumNodes>
-    Vector<Vector<T, Dim>, NumNodes> GaussJacobiQuadrature<T, Dim>::getNodes(
+    Vector<Vector<T, Dim>, NumNodes> GaussJacobiQuadrature<T, Dim>::getIntegrationNodes(
         const T& a = -1.0, const T& b = 1.0) const {
         return {}  // TODO
     }

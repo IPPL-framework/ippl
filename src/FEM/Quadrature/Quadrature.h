@@ -6,26 +6,26 @@
 
 #include "Types/Vector.h"
 
+#include "FEM/Singleton.h"
+
 namespace ippl {
 
     template <typename T, unsigned NumNodes>
-    class Quadrature {
+    class Quadrature : public Singleton<Quadrature> {
     public:
-        Quadrature();
-
         /**
          * @brief Returns the order of the quadrature rule. (order = degree + 1)
          *
-         * @return unsigned
+         * @return unsigned - order
          */
-        virtual unsigned getOrder() const;
+        virtual unsigned getOrder() const = 0;
 
         /**
          * @brief Returns the degree of exactness of the quadrature rule. (degree = order - 1)
          *
-         * @return unsigned
+         * @return unsigned - degree
          */
-        virtual unsigned getDegree() const;
+        virtual unsigned getDegree() const = 0;
 
         /**
          * @brief Get the nodes for the quadrature rule scaled to the interval [a, b].
@@ -34,14 +34,17 @@ namespace ippl {
          * @param b End of the interval [a, b]
          * @return std::vector<Vector<T, Dim>> Returns a vector of nodes.)
          */
-        virtual Vector<T, NumNodes> getNodes(const T& a, const T& b) const = 0;
+        virtual Vector<T, NumNodes> getIntegrationNodes(const T& a, const T& b) const = 0;
 
         /**
          * @brief Get the weights object
          *
-         * @return std::vector<T>
+         * @return std::vector<T, NumNodes>
          */
         virtual Vector<T, NumNodes> getWeights() const = 0;
+
+    private:
+        Quadrature() = 0;
     };
 
 }  // namespace ippl

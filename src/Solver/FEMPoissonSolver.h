@@ -5,6 +5,7 @@
 #ifndef IPPL_FEMPOISSONSOLVER_H
 #define IPPL_FEMPOISSONSOLVER_H
 
+// #include "FEM/FiniteElementSpace.h"
 #include "PCG.h"
 #include "Solver/Electrostatics.h"
 
@@ -26,6 +27,7 @@ namespace ippl {
         using Base = Solver<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
 
+        // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
         using algo = PCG<UnaryMinus<detail::meta_laplace<lhs_type>>, FieldLHS, FieldRHS>;
 
         /**
