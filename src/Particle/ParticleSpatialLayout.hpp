@@ -242,7 +242,7 @@ namespace ippl {
          *Step 2: search in neighbors
          *Step 3: save information on whether the particle was located
          *Step 4: run additional loop on non-located particles*/
-
+        
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::locateParticles()",
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
