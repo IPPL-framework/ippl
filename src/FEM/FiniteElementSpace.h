@@ -30,67 +30,43 @@ namespace ippl {
          * @param quadrature Pointer to the singleton instance of the quadrature rule
          * @param degree Degree of the finite element space
          */
-        FiniteElementSpace(const Mesh& mesh, const Element* ref_element,
-                           const Quadrature* quadrature, unsigned degree);
+        template <typename QuadratureType>
+        FiniteElementSpace(const Mesh<T, Dim>& mesh, const Element<T, Dim>* ref_element,
+                           const Quadrature<T>* quadrature, const unsigned& degree) = 0;
 
         /**
          * @brief Set the degree of the finite element space
          *
          * @param degree
          */
-        virtual void setDegree(unsigned degree);
+        void setDegree(const unsigned& degree);
 
         /**
          * @brief Get the degree of the finite element space
          *
          * @return unsigned
          */
-        virtual unsigned getDegree() const;
+        unsigned getDegree() const;
 
-        // virtual Element<Dim> getElement(std::size_t element_index) const = 0;
+        void setOrder(const unsigned& order);
 
-        /**
-         * @brief Evaluate the stiffness matrix A_ij for the element with
-         * index row i and column j.
-         *
-         * @param i row index
-         * @param j column index
-         * @return T
-         */
-        virtual T evaluateA(const std::size_t& i, const std::size_t& j) const;
+        unsigned getOrder() const;
 
-        /**
-         * @brief Evaluate the load vector b_j for the element with index j.
-         *
-         * @param j index
-         * @return T Returns the value of the load vector at index j
-         */
-        virtual T evaluateLoadVector(const std::size_t& j) const;
+        // virtual matrix_type getStiffnessMatrix() const = 0;
 
-        /**
-         * @brief Evaluate the product Ax for the element with index j.
-         *
-         * @param j index
-         * @param x_j value of x at index j
-         * @tparam Func function type that returns a value of type T with argument of type
-         * std::size_t
-         * @return T
-         */
-        template <typename Func>
-        virtual T evaluateAx(const std::size_t& j, const Func& x) const;
+        // virtual matrix_type getLoadVector() const = 0;
+
+        // virtual T evaluateA(const std::size_t& i, const std::size_t& j) const = 0;
+
+        // virtual T evaluateLoadVector(const std::size_t& j) const = 0;
+
+        // template <typename Func>
+        // virtual T evaluateAx(const std::size_t& j, const Func& x) const = 0;
 
     private:
-        /***/
-        Vector<std::size_t, Dim> FiniteElementSpace<T, Dim>::getElementDimIndices(
-            const std::size_t& element_index) const;
-
-        /***/
-        Vector<std::size_t, NumVertices> getVerticesForElementIndex(
-            const std::size_t& element_index) const;
-
         const Mesh& mesh_m;
-        const Element* ref_element_m;
-        const Quadrature* quadrature_m;
+        const Element<T, Dim>* ref_element_m;
+        const Quadrature<T>* quadrature_m;
         unsigned degree_m;
     };
 

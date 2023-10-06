@@ -10,13 +10,13 @@
 namespace ippl {
 
     template <typename T>
-    class LineElement : public Element<T, 1, 2> {
+    class LineElement : public Element1D<T> {
     public:
         static constexpr unsigned Dim         = 1;
         static constexpr unsigned NumVertices = 2;
 
-        typedef typename Element<T, Dim, NumVertices>::set_of_vertices_type set_of_vertices_type;
-        typedef typename Element<T, Dim, NumVertices>::jacobian_type jacobian_type;
+        typedef typename Element<T, Dim>::set_of_vertices_type<NumVertices> set_of_vertices_type;
+        typedef typename Element<T, Dim>::jacobian_type jacobian_type;
 
         set_of_vertices_type getLocalVertices() const override;
 

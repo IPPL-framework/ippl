@@ -10,7 +10,7 @@
 
 namespace ippl {
 
-    template <typename T, unsigned NumNodes>
+    template <typename T>
     class Quadrature : public Singleton<Quadrature> {
     public:
         /**
@@ -48,7 +48,5 @@ namespace ippl {
     };
 
 }  // namespace ippl
-
-#include "FEM/Quadrature/Quadrature.hpp"
 
 #endif
