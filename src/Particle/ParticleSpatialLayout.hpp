@@ -196,6 +196,7 @@ namespace ippl {
         return totalSize;
     }
 
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
@@ -211,9 +212,9 @@ namespace ippl {
         const neighbor_list& neighbors = flayout_m.getNeighbors();
 
         // container of particles that travelled more than one cell
-        locate_type notFoundIds("Not found", size_type(0.1 * pdata.getLocalNum()));
+        locate_type notFoundIds("Not found", size_type(0.1 * pc.getLocalNum()));
         // Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
-        bool_type found("Found", pdata.getLocalNum());
+        bool_type found("Found", pc.getLocalNum());
         size_type nLeft              = 0;
         size_type invalidCount       = 0;
         const size_type neighborSize = getNeighborSize(neighbors);
