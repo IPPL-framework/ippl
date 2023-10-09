@@ -8,10 +8,12 @@
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
 #include "LandauDampingManager.h"
-#include "Random/InverseTransformSampling_ND.h" 
- 
+#include "Random/Distribution.h"
+#include "Random/NormalDistribution.h"
+#include "Random/InverseTransformSampling.h"
+
 const char* TestName = "LandauDamping";
- 
+
  // define functions used in sampling particles
 struct custom_cdf{
     KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
@@ -182,18 +184,29 @@ public:
         int seed = 42;
         using size_type = ippl::detail::size_type;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-        using samplingR_t = ippl::random::sample_its<double, Dim, Kokkos::DefaultExecutionSpace, DistR_t>;
+        using samplingR_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistR_t>;
+        
         samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
         size_type nloc = samplingR.getLocalNum();
         this->pcontainer_m->create(nloc);
         samplingR.generate(this->pcontainer_m->R.getView(), rand_pool64);
 
+        Kokkos::fence();
+        ippl::Comm->barrier();
+
+        m << "R sampled" << endl;
+
+        double mu[Dim] = {0.0, 0.0, 0.0};
+        double sd[Dim] = {1.0, 1.0, 1.0};
+
         Kokkos::parallel_for(
-            nloc, ippl::random::randn_functor<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      this->pcontainer_m->P.getView(), rand_pool64));
+            nloc, ippl::random::randn<double, Dim>(
+                      this->pcontainer_m->P.getView(), rand_pool64, mu, sd));
 
         Kokkos::fence();
         ippl::Comm->barrier();
+
+        m << "P sampled" << endl;
 
         this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
