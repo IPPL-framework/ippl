@@ -55,7 +55,29 @@ namespace ippl {
     Vector<std::size_t, LagrangeSpace<T, Dim>::NumVertices>
     LagrangeSpace<T, Dim>::getVerticesForElement(
         const Vector<std::size_t, Dim>& element_indices) const {
-        // TODO
+        vertex_indices = Vector<std::size_t, NumVertices>(0);
+
+        // TODO check, this might fail as mesh_m returns a Vector<T, Dim>
+        const Vector<std::size_t, Dim> num_vertices = mesh_m.getGridsize();
+
+        for (unsigned i = 0; i < NumVertices; ++i) {
+            for (unsigned d = 0; d < Dim; ++d) {
+                vertex_indices[i] += element_indices[d];
+
+                // We have to add one to the vertex index if it is the second
+                // vertex in the current dimension.
+                // This is the case if i % 2^(d+1) > 2^d  which is
+                // i % (1 << d + 1) > (1 << d) in C++.
+                // Or in other words, if the bit at position d is set, which is
+                // the case if i & (1 << d) != 0.
+                // TODO maybe rewrite this text as it is not very clear
+                if (i & (1 << d) != 0)
+                    vertex_indices[i] += 1;
+
+                if (d > 0)
+                    vertex_indices[i] *= num_vertices[d];
+            }
+        }
     }
 
 }  // namespace ippl

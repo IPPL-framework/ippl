@@ -1,5 +1,6 @@
 // Class LagrangeSpace
-//
+//    This is the LagrangeSpace class. It is a class representing a Lagrange space
+//    for finite element methods on a structured grid.
 
 #ifndef IPPL_LAGRANGESPACE_H
 #define IPPL_LAGRANGESPACE_H
@@ -26,11 +27,22 @@ namespace ippl {
         /***/
         Vector<std::size_t, Dim> getElementDimIndices(const std::size_t& element_index) const;
 
-        /***/
+        /**
+         * @brief Get the vertices for an element given the element index.
+         *
+         * @param element_index The index of the element.
+         * @return Vector<std::size_t, NumVertices>
+         */
         Vector<std::size_t, NumVertices> getVerticesForElement(
             const std::size_t& element_index) const;
 
-        /***/
+        /**
+         * @brief Get the vertices for an elment given the element indices in each dimension of the
+         * mesh.
+         *
+         * @param element_indices The indices of the element in each dimension of the mesh.
+         * @return Vector<std::size_t, NumVertices>
+         */
         Vector<std::size_t, NumVertices> getVerticesForElement(
             const Vector<std::size_t, Dim>& element_indices) const;
     };

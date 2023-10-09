@@ -30,7 +30,6 @@ namespace ippl {
          * @param quadrature Pointer to the singleton instance of the quadrature rule
          * @param degree Degree of the finite element space
          */
-        template <typename QuadratureType>
         FiniteElementSpace(const Mesh<T, Dim>& mesh, const Element<T, Dim>* ref_element,
                            const Quadrature<T>* quadrature, const unsigned& degree) = 0;
 
@@ -63,8 +62,8 @@ namespace ippl {
         // template <typename Func>
         // virtual T evaluateAx(const std::size_t& j, const Func& x) const = 0;
 
-    private:
-        const Mesh& mesh_m;
+    protected:
+        const Mesh<T, Dim>& mesh_m;
         const Element<T, Dim>* ref_element_m;
         const Quadrature<T>* quadrature_m;
         unsigned degree_m;
