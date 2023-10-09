@@ -13,27 +13,23 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-#add_executable (TestInverseTransformSampling TestInverseTransformSampling.cpp)
-#target_link_libraries (
-#    TestInverseTransformSampling
-#    ${IPPL_LIBS}
-#    ${MPI_CXX_LIBRARIES}
-#)
-
-
-add_executable (TestInverseTransformSampling_1D TestInverseTransformSampling_1D.cpp)
-
+add_executable (TestInverseTransformSamplingNormal TestInverseTransformSamplingNormal.cpp)
 target_link_libraries (
-    TestInverseTransformSampling_1D
+    TestInverseTransformSamplingNormal
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
 
-
-add_executable (TestInverseTransformSampling_2D TestInverseTransformSampling_2D.cpp)
-
+add_executable (TestInverseTransformSamplingCustom TestInverseTransformSamplingCustom.cpp)
 target_link_libraries (
-    TestInverseTransformSampling_2D
+    TestInverseTransformSamplingCustom
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable (TestUnboundedNormal TestUnboundedNormal.cpp)
+target_link_libraries (
+    TestUnboundedNormal
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )

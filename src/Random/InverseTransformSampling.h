@@ -1,220 +1,173 @@
+// -*- C++ -*-
+/***************************************************************************
+ *
+ * The IPPL Framework
+ *
+ * This program was prepared by PSI.
+ * All rights in the program are reserved by PSI.
+ * Neither PSI nor the author(s)
+ * makes any warranty, express or implied, or assumes any liability or
+ * responsibility for the use of this software
+ *
+ * Visit www.amas.web.psi for more details
+ *
+ ***************************************************************************/
+
+// Class InverseTransformSampling
+//   This class can be used for generating samples of a given distribution function class using
+//   inverse of its cumulative distribution on host or device.
+//
+
 #ifndef IPPL_INVERSE_TRANSFORM_SAMPLING_H
 #define IPPL_INVERSE_TRANSFORM_SAMPLING_H
 
-#include "Types/ViewTypes.h"
-
-#include "Random/Generator.h"
-#include "Random/Random.h"
+#include "Random/Utility.h"
 
 namespace ippl {
-
-    namespace random {
-
-        namespace detail {
-
-            template <typename T, unsigned Dim>
-            struct NewtonRaphson {
-                KOKKOS_FUNCTION
-                NewtonRaphson() = default;
-
-                KOKKOS_FUNCTION
-                ~NewtonRaphson() = default;
-
-                template <class Distribution>
-	        KOKKOS_INLINE_FUNCTION void solve(Distribution dist, unsigned dim, T& x, T& u, T atol = 1.0e-12,
-		                              unsigned int max_iter = 20) {
-			unsigned int iter = 0;
-			while (iter < max_iter && Kokkos::fabs(dist.obj_func(dim, x, u)) > atol) {
-			    // Find x, such that "cdf(x) - u = 0" for a given sample of u~uniform(0,1)
-			    x = x - (dist.obj_func(dim, x, u) / dist.der_obj_func(dim, x));
-			    iter += 1;
-			}
-	        }
-            };
-        }  // namespace detail
-
-	template <typename T, unsigned Dim, class DeviceType>
-	class InverseTransformSampling {
-	public:
-	    using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
-
-	    template <class Distribution, class RegionLayout>
-	    InverseTransformSampling(const Vector<T, Dim>& rmin, const Vector<T, Dim>& rmax,
-		                     const RegionLayout& rlayout, Distribution dist,
-		                     unsigned int ntotal) {
-		const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
-
-		int rank = ippl::Comm->rank();
-		for (unsigned d = 0; d < Dim; ++d) {
-		    nr_m[d] =
-		        dist.cdf(d, regions(rank)[d].max()) - dist.cdf(d, regions(rank)[d].min());
-		    dr_m[d]   = dist.cdf(d, rmax[d]) - dist.cdf(d, rmin[d]);
-		    umin_m[d] = dist.cdf(d, regions(rank)[d].min());
-		    umax_m[d] = dist.cdf(d, regions(rank)[d].max());
-		}
-
-		T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
-		T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
-
-		double factor = pnr / pdr;
-		nlocal_m      = factor * ntotal;
-
-		unsigned int ngobal = 0;
-		MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-		              ippl::Comm->getCommunicator());
-
-		int rest = (int)(ntotal - ngobal);
-
-		if (rank < rest) {
-		    ++nlocal_m;
-		}
-	    }
-
-	    unsigned int getLocalNum() const { return nlocal_m; }
-
-	    template <class Distribution>
-	    void generate(Distribution dist_, view_type view, int seed) {
-		Kokkos::parallel_for(nlocal_m, fill_random<Distribution>(dist_, view, seed, umin_m, umax_m));
-	    }
-
-	    template <class Distribution>
-	    struct fill_random {
-		Distribution dist;
-
-		Generator<DeviceType> gen;
-		uniform_real_distribution<DeviceType, T> unif;
-		Vector<T, Dim> umin, umax;
-
-		// Output View for the random numbers
-		view_type x;
-
-		// Initialize all members
-		KOKKOS_FUNCTION
-		fill_random(Distribution dist_, view_type x_, int seed, Vector<T, Dim> umin_,
-		            Vector<T, Dim> umax_)
-		    : dist(dist_)
-		    , gen(seed)
-		    , unif(0.0, 1.0)
-		    , umin(umin_)
-		    , umax(umax_)
-		    , x(x_) {}
-
-		KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-		    T u = 0.0;
-
-		    for (unsigned d = 0; d < Dim; ++d) {
-		        // get uniform random number between umin and umax
-		        u = (umax[d] - umin[d]) * unif(gen) + umin[d];
-
-		        // first guess for Newton-Raphson
-		        x(i)[d] = dist.estimate(d, u);
-
-		        // solve
-		        ippl::random::detail::NewtonRaphson<T, Dim> solver;
-		        solver.solve(dist, d, x(i)[d], u);
-		    }
-		}
-	    };
-
-	private:
-	    unsigned int nlocal_m;
-	    Vector<T, Dim> nr_m, dr_m, umin_m, umax_m;
-	};
+  namespace random {
+    /*!
+     * @file InverseTransformSampling.h
+     * @class InverseTransformSampling
+     * @brief A class for inverse transform sampling.
+     *
+     * This class performs inverse transform sampling for a given distribution.
+     *
+     * @tparam T Data type.
+     * @tparam Dim Dimensionality of the sample space.
+     * @tparam DeviceType The device type for Kokkos.
+     * @tparam Distribution Type of the distribution to sample from.
+    */
+    template <typename T, unsigned Dim, class DeviceType, class Distribution>
+    class InverseTransformSampling{
+    public:
+        using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
         
-        // class of uncorollated multi-dimensional pdf
-        template <typename T, unsigned Dim>
-        class Distribution {
-        public:
-           Distribution()
-           : cdfFunctions(Dim), pdfFunctions(Dim), estimationFunctions(Dim) {}
-           // Member function to set a custom CDF function for a specific dimension
-	    void setCdfFunction(unsigned dim, std::function<T(T)> cdfFunc) {
-		if (dim < Dim) {
-		    cdfFunctions[dim] = cdfFunc;
-		} else {
-		    throw std::invalid_argument("Invalid dimension specified.");
-		}
-	    }
-	    // Member function to set a custom PDF function for a specific dimension
-	    void setPdfFunction(unsigned dim, std::function<T(T)> pdfFunc) {
-		if (dim < Dim) {
-		    pdfFunctions[dim] = pdfFunc;
-		} else {
-		    throw std::invalid_argument("Invalid dimension specified.");
-		}
-	    }
-	    // Member function to set a custom estimation function for a specific dimension
-	    void setEstimationFunction(unsigned dim, std::function<T(T)> estimationFunc) {
-		if (dim < Dim) {
-		    estimationFunctions[dim] = estimationFunc;
-		} else {
-		    throw std::invalid_argument("Invalid dimension specified.");
-		}
-	    }
-            // Member function to set the Normal Distribution for a specific dimension
-	    void setNormalDistribution(unsigned dim, T mean, T stddev) {
-		if (dim < Dim) {
-		    cdfFunctions[dim] = [mean, stddev](T x) {
-		        return 0.5 * (1 + std::erf((x - mean) / (stddev * std::sqrt(2.0))));
-		    };
-		    pdfFunctions[dim] = [mean, stddev](T x) {
-		        return (1.0 / (stddev * std::sqrt(2 * M_PI))) * std::exp(-(x - mean) * (x - mean) / (2 * stddev * stddev));
-		    };
-		    estimationFunctions[dim] = [mean, stddev](T u) {
-		        return (std::sqrt(M_PI / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
-		    };
-		} else {
-		    throw std::invalid_argument("Invalid dimension specified.");
-		}
-	    }
-           // Member function to compute CDF for a specific dimension
-           T cdf(unsigned dim, T x) {
-              if (dim < Dim) {
-                  return cdfFunctions[dim](x);
-              } else {
-                  throw std::invalid_argument("Invalid dimension specified.");
-              }
-           }
-           // Member function to compute PDF for a specific dimension
-           T pdf(unsigned dim, T x) {
-              if (dim < Dim) {
-                 return pdfFunctions[dim](x);
-              } else {
-                 throw std::invalid_argument("Invalid dimension specified.");
-              }
-           }
-           // Member function to compute objective function CDF(x)-u for a specific dimension
-           T obj_func(unsigned dim, T x, T u) {
-             if (dim < Dim) {
-                 return cdfFunctions[dim](x) - u;
-             } else {
-                throw std::invalid_argument("Invalid dimension specified.");
-             }
-           }
-           // Member function to compute derivative of objective function CDF(x)-u for a specific dimension
-           T der_obj_func(unsigned dim, T x) {
-             if (dim < Dim) {
-                 return pdf(dim, x);
-             } else {
-                throw std::invalid_argument("Invalid dimension specified.");
-             }
-           }
-           T estimate(unsigned dim, T u) const{
-             if (dim < Dim) {
-                 return estimationFunctions[dim](u);
-             } else {
-                throw std::invalid_argument("Invalid dimension specified.");
-             }
-           }
+        /*!
+         * @param dist_ The distribution to sample from.
+         * @param rmax_ Maximum range for sampling.
+         * @param rmin_ Minimum range for sampling.
+         * @param rlayout The region layout.
+         * @param ntotal_ Total number of samples to generate.
+        */
+        
+        Distribution dist;
+        const Vector<T, Dim> rmax;
+        const Vector<T, Dim> rmin;
+        Vector<T, Dim> umin, umax;
+        unsigned int ntotal;
+        
+        /*!
+         * @brief Constructor for InverseTransformSampling class.
+        */
+        template <class RegionLayout>
+        InverseTransformSampling(Distribution dist_, Vector<T, Dim> rmax_, Vector<T, Dim> rmin_, const RegionLayout& rlayout, unsigned int ntotal_)
+        : dist(dist_),
+        rmax(rmax_),
+        rmin(rmin_),
+        ntotal(ntotal_){
+            const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
+            
+            int rank = ippl::Comm->rank();
+            Vector<T, Dim> nr_m, dr_m;
+            for (unsigned d = 0; d < Dim; ++d) {
+                nr_m[d] = dist.cdf(regions(rank)[d].max(), d) - dist.cdf(regions(rank)[d].min(),d);
+                dr_m[d]   = dist.cdf(rmax[d],d) - dist.cdf(rmin[d],d);
+                umin[d] = dist.cdf(regions(rank)[d].min(),d);
+                umax[d] = dist.cdf(regions(rank)[d].max(),d);
+            }
+            T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
+            T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
+            
+            T factor = pnr / pdr;
+            nlocal_m      = factor * ntotal;
+            
+            unsigned int ngobal = 0;
+            MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+            
+            int rest = (int)(ntotal - ngobal);
+            
+            if (rank < rest) {
+                ++nlocal_m;
+            }
+        }
 
+        /*!
+         * @brief Functor that is used for generating samples.
+        */
+        template <class GeneratorPool>
+        struct fill_random {
+            using value_type = T;
+            Distribution dist;
+            view_type x;
+            GeneratorPool rand_pool;
+            Vector<T, Dim> umin_m;
+            Vector<T, Dim> umax_m;
+            
+            /*!
+             * @brief Constructor for the fill_random functor.
+             *
+             * @param dist_ The distribution to sample from.
+             * @param x_ The view to generate samples in.
+             * @param rand_pool_ The random number generator pool.
+             * @param umin_ Minimum cumulative distribution values.
+             * @param umax_ Maximum cumulative distribution values.
+            */
+            KOKKOS_FUNCTION
+            fill_random(Distribution dist_, view_type x_, GeneratorPool rand_pool_, Vector<T, Dim> umin_, Vector<T, Dim> umax_)
+            : dist(dist_)
+            , x(x_)
+            , rand_pool(rand_pool_)
+            , umin_m(umin_)
+            , umax_m(umax_){}
+            
+            /*!
+             * @brief Operator to fill random values.
+             *
+             * @param i Index for the random values.
+            */
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+                typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+                
+                value_type u = 0.0;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    u       = rand_gen.drand(umin_m[d], umax_m[d]);
+                    
+                    // first guess for Newton-Raphson
+                    x(i)[d] = dist.estimate(u, d);
+                    
+                    // solve
+                    ippl::random::detail::NewtonRaphson<value_type> solver;
 
-        private:
-           std::vector<std::function<T(T)>> cdfFunctions;
-           std::vector<std::function<T(T)>> pdfFunctions;
-           std::vector<std::function<T(T)>> estimationFunctions;
+                    solver.solve(dist, d, x(i)[d], u);
+
+                    rand_pool.free_state(rand_gen);
+                }
+            }
         };
-
-    }  // namespace random
+        
+        /*!
+         * @brief Get the local number of samples.
+         *
+         * @returns The local number of samples.
+        */
+        KOKKOS_INLINE_FUNCTION unsigned int getLocalNum() const { return nlocal_m; }
+        
+        /*!
+         * @brief Generate random samples using inverse transform sampling.
+         *
+         * @param view The view to fill with random samples.
+         * @param rand_pool64 The random number generator pool.
+        */
+        void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
+            Kokkos::parallel_for(nlocal_m, fill_random<Kokkos::Random_XorShift64_Pool<>>(dist, view, rand_pool64, umin, umax));
+            Kokkos::fence();
+        }
+    private:
+        unsigned int nlocal_m;
+    };
+  
+  }  // namespace random
 }  // namespace ippl
 
 #endif
