@@ -8,11 +8,9 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Order>
-    class GaussJacobiQuadrature : public Quadrature {
+    template <typename T>
+    class GaussJacobiQuadrature : public Quadrature<T> {
     public:
-        using NumNodes = Order / 2;  // TODO fix possible bugs
-
         /**
          * @brief Construct a new Gauss Jacobi Quadrature object
          * https://en.wikipedia.org/wiki/Gauss%E2%80%93Jacobi_quadrature
@@ -21,51 +19,56 @@ namespace ippl {
          * quadrature rule. For alpha = beta = -0.5 or alpha = beta = 0.5, the quadrature rule is
          * equivalent to the Gauss-Chebyshev quadrature rule.
          *
-         * @param number_of_points Number of points in the quadrature rule
-         * @param alpha Default value is 0.0
-         * @param beta Default value is 0.0
+         * @param degree Polynomial degree of exactness
+         * @param alpha
+         * @param beta
          */
-        GaussJacobiQuadrature(const T& alpha = 0.0, const T& beta = 0.0);
+        GaussJacobiQuadrature(const unsigned& degree, const T& alpha, const T& beta);
+
+        /**
+         * @brief Return the number of points for the Gauss-Jacobi quadrature rule.
+         *
+         * @return unsigned - Return the number of points
+         */
+        unsigned getNumberOfIntegrationPoints() const override;
 
         /**
          * @brief Get the Nodes for the quadrature
          *
          * @param a
          * @param b
+         * @tparam NumNodes Number of nodes in the quadrature rule.
          * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
          */
-        Vector<Vector<T, Dim>, NumNodes> getIntegrationNodes(const T& a = -1.0,
-                                                  const T& b = 1.0) const override;
+        template <unsigned NumNodes>
+        Vector<T, NumNodes> getIntegrationNodes(const T& a = -1.0, const T& b = 1.0) const override;
 
         /**
          * @brief Get the weights for the quadrature
+         * @tparam NumNodes Number of nodes in the quadrature rule.
          *
          * @return std::vector<T> - Returns a vector with number_of_points many weights.
          */
+        template <unsigned NumNodes>
         Vector<T, NumNodes> getWeights() const override;
 
-        /**
-         * @brief Return the number of points for the quadrature rule.
-         *
-         * @return unsigned - Return the number of points
-         */
-        unsigned getNumberOfPoints() const;
-
-        /**
-         * @brief Gets the order of the Gauss-Jacobi quadrature rule.
-         * @details order = 2 * number_of_points
-         * @example
-         * order 2: 1 point
-         * order 4: 2 points
-         *
-         * @return unsigned - Returns the order of the quadrature rule
-         */
-        unsigned getOrder() const override;
-
     private:
-        unsigned number_of_points_m = NumNodes;
         T alpha_m;
         T beta_m;
+    };
+
+    template <typename T>
+    class GaussLegendreQuadrature : public GaussJacobiQuadrature<T> {
+    public:
+        GaussLegendreQuadrature()
+            : GaussJacobiQuadrature(0.0, 0.0) {}
+    };
+
+    template <typename T>
+    class ChebyshevGaussQuadrature : public GaussJacobiQuadrature<T> {
+    public:
+        ChebyshevGaussQuadrature()
+            : GaussJacobiQuadrature(-0.5, -0.5) {}
     };
 
 }  // namespace ippl
