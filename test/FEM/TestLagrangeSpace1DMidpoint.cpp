@@ -1,6 +1,6 @@
 #include "Ippl.h"
 
-#include <typeinfo>
+// #include <typeinfo>
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -15,18 +15,22 @@ int main(int argc, char* argv[]) {
         ippl::MidpointQuadrature<double> midpoint_quadrature(1);
 
         // Refernce element
-        const ippl::LineElement edge_element = ippl::LineElement::getInstance();
+        // const ippl::LineElement edge_element = ippl::LineElement::getInstance();
 
         // Create LagrangeSpace
-        ippl::LagrangeSpace<double, 1> lagrange_space(mesh, edge_element, midpoint_quadrature, 1);
+        // ippl::LagrangeSpace<double, 1> lagrange_space(mesh, edge_element, midpoint_quadrature,
+        // 1);
 
         // Print all the elements
-        for (unsigned i = 0; i < number_of_elements; ++i) {
-            std::cout << "Element " << i << " vertices: ";
-            for (unsigned j = 0; j < 2; ++j) {
-                std::cout << lagrange_space.getVerticesForElement(i)[j] << " ";
-            }
-            std::cout << std::endl;
-        }
+        // for (unsigned i = 0; i < number_of_elements; ++i) {
+        //     std::cout << "Element " << i << " vertices: ";
+        //     for (unsigned j = 0; j < 2; ++j) {
+        //         std::cout << lagrange_space.getVerticesForElement(i)[j] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
     }
+    ippl::finalize();
+
+    return 0;
 }

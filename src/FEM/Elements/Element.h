@@ -42,7 +42,8 @@ namespace ippl {
             const jacobian_type& transformation_jacobian) const = 0;
 
     private:
-        Element() = 0;
+        Element()  = default;
+        ~Element() = default;
     };
 
     template <typename T>

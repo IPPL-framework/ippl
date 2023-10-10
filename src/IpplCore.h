@@ -36,4 +36,15 @@
 // // IPPL Load balancing
 #include "Decomposition/OrthogonalRecursiveBisection.h"
 
+// FEM
+// // FEM Elements
+#include "FEM/Elements/LineElement.h"
+#include "FEM/Elements/QuadrilateralElement.h"
+
+// // FEM Quadrature
+#include "FEM/Quadrature/MidpointQuadrature.h"
+
+// // FEM Spaces
+#include "FEM/LagrangeSpace.h"
+
 #endif

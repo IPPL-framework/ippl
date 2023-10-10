@@ -18,11 +18,9 @@ namespace ippl {
             return instance;
         }
 
-        Singleton(Singleton const&)      = delete;
-        void operator=(Singleton const&) = delete;
-
     protected:
-        Singleton() {}
+        Singleton()  = default;
+        ~Singleton() = default;
     };
 }  // namespace ippl
 
