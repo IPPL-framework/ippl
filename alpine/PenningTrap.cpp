@@ -36,15 +36,15 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <random>
-#include <set>
 #include <string>
-#include <vector>
 
 #include "Utility/IpplTimings.h"
 
 #include "ChargedParticles.hpp"
+
+#ifdef ENABLE_CATALYST
 #include "Stream/InSitu/CatalystAdaptor.h"
+#endif
 
 constexpr unsigned Dim = 3;
 
@@ -154,8 +154,10 @@ const char* TestName = "PenningTrap";
 int main(int argc, char* argv[]) {
     static_assert(Dim == 3, "Penning trap must be 3D");
     Ippl ippl(argc, argv);
+#ifdef ENABLE_CATALYST
     //CatalystAdaptor::Initialize(argc, argv);
     CatalystAdaptor::Initialize_Adios(argc, argv);
+#endif
     Inform msg("PenningTrap");
     Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
@@ -393,7 +395,9 @@ int main(int argc, char* argv[]) {
         P->scatterCIC(totalP, it + 1, hr);
 
         // here is the position where we can access the density field
+#ifdef ENABLE_CATALYST
         CatalystAdaptor::Execute_Field_Particle(it, P->time_m, Ippl::Comm->rank(), P->rho_m, P);
+#endif
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -449,6 +453,8 @@ int main(int argc, char* argv[]) {
         std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     std::cout << "Elapsed time: " << time_chrono.count() << std::endl;
 
+#ifdef ENABLE_CATALYST
     CatalystAdaptor::Finalize();
+#endif
     return 0;
 }

@@ -20,7 +20,6 @@
 
 #include "Solver/ElectrostaticsCG.h"
 #include "Solver/FFTPeriodicPoissonSolver.h"
-#include "Stream/InSitu/CatalystAdaptor.h"
 
 // some typedefs
 template <unsigned Dim = 3>
