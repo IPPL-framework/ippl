@@ -18,7 +18,7 @@ namespace ippl {
         // follows 2^Dim.
         static constexpr std::size_t NumVertices = 1 << Dim;
 
-        LagrangeSpace(const Mesh<T, Dim>& mesh,
+        LagrangeSpace(const Mesh<T, Dim>* mesh,
                       const Element<T, Dim, Dim, NumElementVertices>* ref_element,
                       const Quadrature<T, NumIntegrationPoints>* quadrature);
 

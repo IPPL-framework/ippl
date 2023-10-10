@@ -3,7 +3,7 @@ namespace ippl {
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::LagrangeSpace(
-        const Mesh<T, Dim>& mesh, const Element<T, Dim, Dim, NumElementVertices>* ref_element,
+        const Mesh<T, Dim>* mesh, const Element<T, Dim, Dim, NumElementVertices>* ref_element,
         const Quadrature<T, NumIntegrationPoints>* quadrature)
         : FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>(mesh, ref_element,
                                                                                quadrature) {
@@ -26,7 +26,7 @@ namespace ippl {
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
-        Vector<std::size_t, Dim> length_per_dim = this->mesh_m.getGridsize() - 1u;
+        Vector<std::size_t, Dim> length_per_dim = this->mesh_m->getGridsize() - 1u;
 
         // The number_of_lower_dim_cells is the product of all the number of cells per
         // dimension, it will get divided by the current dimension's size to get the index in
@@ -63,7 +63,7 @@ namespace ippl {
         Vector<std::size_t, NumVertices> vertex_indices(0);
 
         // TODO check, this might fail as mesh_m returns a Vector<T, Dim>
-        const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
+        const Vector<std::size_t, Dim> num_vertices = this->mesh_m->getGridsize();
 
         for (unsigned i = 0; i < NumVertices; ++i) {
             for (unsigned d = 0; d < Dim; ++d) {

@@ -6,8 +6,6 @@
 
 #include "Types/Vector.h"
 
-#include "FEM/Singleton.h"
-
 namespace ippl {
 
     template <typename T, unsigned NumNodes>
@@ -18,7 +16,7 @@ namespace ippl {
          *
          * @return unsigned - order
          */
-        virtual unsigned getOrder() const = 0;
+        virtual unsigned getOrder() const;
 
         /**
          * @brief Returns the degree of exactness of the quadrature rule. (degree = order - 1)
@@ -49,11 +47,7 @@ namespace ippl {
          * @tparam NumNodes Number of nodes in the quadrature rule.
          * @return std::vector<T, NumNodes>
          */
-        virtual Vector<T, NumNodes> getWeights() const = 0;
-
-    protected:
-        // the degree of exactness of the quadrature rule
-        unsigned degree_m;
+        virtual Vector<T, NumNodes> getWeights(const T& a, const T& b) const = 0;
     };
 
 }  // namespace ippl

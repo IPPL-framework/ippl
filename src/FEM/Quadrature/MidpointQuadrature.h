@@ -17,11 +17,6 @@ namespace ippl {
     class MidpointQuadrature : public Quadrature<T, NumIntegrationPoints> {
     public:
         /**
-         * @brief Construct a new Midpoint Quadrature object
-         */
-        MidpointQuadrature();
-
-        /**
          * @brief Get the integration nodes for the quadrature
          *
          * @param a Lower bound of the interval
@@ -47,9 +42,6 @@ namespace ippl {
          * @return unsigned - Degree of exactness
          */
         unsigned getDegree() const override;
-
-    private:
-        unsigned num_integration_points_m;
     };
 
 }  // namespace ippl

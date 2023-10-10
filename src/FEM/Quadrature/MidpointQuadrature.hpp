@@ -2,14 +2,6 @@
 
 namespace ippl {
     template <typename T, unsigned NumIntegrationPoints>
-    MidpointQuadrature<T, NumIntegrationPoints>::MidpointQuadrature()
-    //: Quadrature<T, NumIntegrationPoints>()
-    {
-        static_assert(NumIntegrationPoints >= 1,
-                      "Number of integration points must be at least 1.");
-    }
-
-    template <typename T, unsigned NumIntegrationPoints>
     Vector<T, NumIntegrationPoints>
     MidpointQuadrature<T, NumIntegrationPoints>::getIntegrationNodes(const T& a, const T& b) const {
         const unsigned number_of_segments = this->getNumberOfIntegrationPoints();
@@ -30,7 +22,7 @@ namespace ippl {
     Vector<T, NumIntegrationPoints> MidpointQuadrature<T, NumIntegrationPoints>::getWeights(
         const T& a, const T& b) const {
         const T interval_length = b - a;
-        return Vector<T, NumIntegrationPoints>(interval_length / num_integration_points_m);
+        return Vector<T, NumIntegrationPoints>(interval_length / NumIntegrationPoints);
     }
 
     template <typename T, unsigned NumIntegrationPoints>

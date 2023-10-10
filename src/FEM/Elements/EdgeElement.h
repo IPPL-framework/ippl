@@ -28,9 +28,6 @@ namespace ippl {
 
         global_vertex_vector getGlobalNodes(
             const jacobian_type& transformation_jacobian) const override;
-
-    private:
-        EdgeElement() {}
     };
 
 }  // namespace ippl

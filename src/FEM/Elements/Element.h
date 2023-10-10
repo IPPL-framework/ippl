@@ -8,8 +8,6 @@
 
 #include "Types/Vector.h"
 
-#include "FEM/Singleton.h"
-
 namespace ippl {
 
     /**
@@ -20,7 +18,7 @@ namespace ippl {
      * @tparam Dim dimension of the element
      */
     template <typename T, unsigned GeometricDim, unsigned TopologicalDim, unsigned NumVertices>
-    class Element : public Singleton<Element<T, GeometricDim, TopologicalDim, NumVertices>> {
+    class Element {
     public:
         using local_vertex_vector  = Vector<Vector<T, TopologicalDim>, NumVertices>;
         using global_vertex_vector = Vector<Vector<T, GeometricDim>, NumVertices>;
@@ -36,10 +34,6 @@ namespace ippl {
 
         virtual global_vertex_vector getGlobalNodes(
             const jacobian_type& transformation_jacobian) const = 0;
-
-    private:
-        Element()  = default;
-        ~Element() = default;
     };
 
     template <typename T, unsigned GeometricDim, unsigned NumVertices>
