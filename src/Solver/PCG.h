@@ -150,6 +150,7 @@ namespace ippl {
             lhs_type r(mesh, layout);
             lhs_type d(mesh, layout);
             lhs_type s(mesh, layout);
+            lhs_type q(mesh, layout);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -179,10 +180,8 @@ namespace ippl {
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            BaseCG::residueNorm       = std::sqrt(delta1);
+            BaseCG::residueNorm       = std::sqrt(innerProduct(r,r));
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
-
-            lhs_type q(mesh, layout);
 
             std::cout << "Solving with Preconditioner" << std::endl;
             while (BaseCG::iterations_m < maxIterations && BaseCG::residueNorm > tolerance) {
@@ -191,20 +190,21 @@ namespace ippl {
             lhs     = lhs + alpha * d;
 
             // The exact residue is given by
-            // r = rhs - BaseCGop_m(lhs);
+            // r = rhs - BaseCG::op_m(lhs);
             // This correction is generally not used in practice because
             // applying the Laplacian is computationally expensive and
             // the correction does not have a significant effect on accuracy;
             // in some implementations, the correction may be applied every few
             // iterations to offset accumulated floating point errors
             r = r - alpha * q;
-            delta0 = delta1;
             s = op_preconditioner(r);
+
+            delta0 = delta1;
             delta1   = innerProduct(r, s);
 
             T beta   = delta1 / delta0;
+            BaseCG::residueNorm = std::sqrt(innerProduct(r,r));
 
-            BaseCG::residueNorm = std::sqrt(delta1);
             d = s + beta * d;
 
             ++BaseCG::iterations_m;
@@ -250,11 +250,14 @@ namespace ippl {
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
-            // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
+            //Enhancing_data_locality_of_the_conjugate_gradient_method_for_high-order_
+            // matrix-free_finite-element_implementations
+            // https://www.researchgate.net/publication/361849071
             lhs_type r(mesh, layout);
             lhs_type p(mesh, layout);
+            p = 0;
             lhs_type v(mesh, layout);
-            lhs_type x_2(mesh, layout);
+            v = 0;
             lhs_type Minvr(mesh, layout);
             lhs_type Minvv(mesh, layout);
 
@@ -290,7 +293,7 @@ namespace ippl {
             T beta = 0;
             T beta_2 = 0;
 
-            BaseCG::residueNorm = std::sqrt(innerProduct(r, r));
+            //BaseCG::residueNorm = std::sqrt(innerProduct(r, r));
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
@@ -299,7 +302,7 @@ namespace ippl {
             while (BaseCG::iterations_m < maxIterations /*&& BaseCG::residueNorm > tolerance*/) {
                 ++BaseCG::iterations_m;
                 if (BaseCG::iterations_m > 1 && BaseCG::iterations_m % 2) {
-                    lhs = lhs + alpha * p + alpha_2 / beta_2 * (p - Minvr);
+                    lhs = lhs + alpha * p + (alpha_2 / beta_2) * (p - Minvr);
                 }
                 r = r - alpha * v;
                 Minvr = BasePCG::op_preconditioner(r);
@@ -325,9 +328,9 @@ namespace ippl {
                 }
                 beta_2 = beta;
                 beta = (d - (2 * alpha * e) + alpha * alpha * f) / d;
-                BaseCG::residueNorm = std::sqrt(gamma);
-            }
 
+            }
+            BaseCG::residueNorm = std::sqrt(gamma);
             if (allFacesPeriodic) {
                 T avg = lhs.getVolumeAverage();
                 lhs = lhs - avg;

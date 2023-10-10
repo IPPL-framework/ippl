@@ -7,8 +7,8 @@
 #define IPPL_ELECTROSTATICS_CG_H
 
 #include "Electrostatics.h"
-//#include "EnhancedPCG.h"
 #include "PCG.h"
+
 namespace ippl {
 
 // Expands to a lambda that acts as a wrapper for a differential operator
@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using PreRet = detail::meta_laplace_jacobian_preconditioner<lhs_type>;
+        using PreRet = detail::meta_laplace_poisson_preconditioner<lhs_type>;
 
         ElectrostaticsCG()
             : Base() {
@@ -60,7 +60,7 @@ namespace ippl {
 
         void solve() override {
             algo_m->setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
-            algo_m->setPreconditioner(IPPL_SOLVER_OPERATOR_WRAPPER(laplace_jacobian_preconditioner, lhs_type));
+            algo_m->setPreconditioner(IPPL_SOLVER_OPERATOR_WRAPPER(laplace_poisson_preconditioner, lhs_type));
             algo_m->operator()(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
@@ -86,7 +86,7 @@ namespace ippl {
         CG<OpRet, PreRet, FieldLHS, FieldRHS> *algo_m;
 
         virtual void setDefaultParameters() override {
-            this->params_m.add("max_iterations", 10000);
+            this->params_m.add("max_iterations", 1000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
     };
