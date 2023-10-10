@@ -286,12 +286,12 @@ namespace ippl {
             r = rhs - BaseCG::op_m(lhs);
             p.setFieldBC(bc);
 
-            T gamma;
+            T gamma = 0.;
             T a, b, c, d, e, f;
-            T alpha = 0;
-            T alpha_2 = 0;
-            T beta = 0;
-            T beta_2 = 0;
+            T alpha = 0.;
+            T alpha_2 = 0.;
+            T beta = 0.;
+            T beta_2 = 0.;
 
             //BaseCG::residueNorm = std::sqrt(innerProduct(r, r));
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
