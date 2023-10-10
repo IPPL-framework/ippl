@@ -1,5 +1,5 @@
 //
-// Class FFTPoissonSolver
+// Class FFTOpenPoissonSolver
 //   FFT-based Poisson Solver for open boundaries.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
@@ -111,7 +111,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver()
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -126,7 +126,8 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params)
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver(rhs_type& rhs,
+                                                                   ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -147,8 +148,8 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& params)
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                                   ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -171,7 +172,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // override setRhs to call class-specific initialization
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
 
         // start a timer
@@ -188,13 +189,13 @@ namespace ippl {
     // calculation of Efield (which uses FFTs)
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::setGradFD() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::setGradFD() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
         if (out != Base::SOL_AND_GRAD) {
             throw IpplException(
-                "FFTPoissonSolver::setGradFD()",
+                "FFTOpenPoissonSolver::setGradFD()",
                 "Cannot use gradient for Efield computation unless output type is SOL_AND_GRAD");
         } else {
             isGradFD_m = true;
@@ -205,7 +206,7 @@ namespace ippl {
     // initializeFields method, called in constructor
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
         // get algorithm and hessian flag from parameter list
         const int alg      = this->params_m.template get<int>("algorithm");
         const bool hessian = this->params_m.template get<bool>("hessian");
@@ -214,7 +215,7 @@ namespace ippl {
         if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
             && (alg != Algorithm::BIHARMONIC)) {
             throw IpplException(
-                "FFTPoissonSolver::initializeFields()",
+                "FFTOpenPoissonSolver::initializeFields()",
                 "Currently only Hockney, Vico, and Biharmonic are supported for open BCs");
         }
 
@@ -408,7 +409,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::solve() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::solve() {
         // start a timer
         static IpplTimings::TimerRef solve = IpplTimings::getTimer("Solve");
         IpplTimings::startTimer(solve);
@@ -973,7 +974,7 @@ namespace ippl {
     // calculate FFT of the Green's function
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
         grn_mr               = 0.0;
 
@@ -1183,7 +1184,7 @@ namespace ippl {
     };
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
         Vector<int, Dim> size, typename CxField_gt::view_type view_g,
         const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
         const ippl::NDIndex<Dim> ldom, const int nghost) {
