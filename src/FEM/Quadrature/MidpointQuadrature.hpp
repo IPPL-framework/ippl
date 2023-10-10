@@ -15,13 +15,25 @@ namespace ippl {
     template <typename T>
     template <unsigned NumNodes>
     Vector<T, NumNodes> MidpointQuadrature<T>::getIntegrationNodes(const T& a, const T& b) const {
-        // return {a + ((b - a) / 2.0)};
+        const number_of_segments = num_integration_points_m;
+        const segment_length     = (b - a) / number_of_segments;
+
+        // TODO use KOKKKOS
+        Vector<T, NumNodes> nodes;
+        T integration_point = a + 0.5 * segment_length;
+        for (unsigned i = 0; i < number_of_segments; ++i) {
+            nodes[i] = integration_point;
+            integration_point += segment_length;
+        }
+
+        return nodes;
     }
 
     template <typename T>
     template <unsigned NumNodes>
     Vector<T, NumNodes> MidpointQuadrature<T>::getWeights() const {
-                return Vector<T, NumNodes>(1.0 / num_integration_points_m);  // TODO
+        const T interval_length = b - a;
+        return Vector<T, NumNodes>(interval_length / num_integration_points_m);
     }
 
     template <typename T>

@@ -1,18 +1,10 @@
 set (_SRCS
-    # no source files at the moment
+    # no source files
 )
 
-set (_HDRS
-    Element.h
-    Element.hpp
-    FEMMesh.h
-    FEMMEsh.hpp
-    FEMSpace.h
-    FEMSpace.hpp
-    Hexahedron.h
-    Hexahedron.hpp
-    Quadrature.h
-    Quadrature.hpp
+set (GLOB_RECURSE _HDRS
+    "*.h"
+    "*.hpp"
 )
 
 include_directories(
