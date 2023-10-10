@@ -9,19 +9,18 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim>
-    class LagrangeSpace : public FiniteElementSpace<T, Dim> {
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    class LagrangeSpace
+        : public FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints> {
     public:
         // This is the number of vertices per element.
         // Since it is assumed that Mesh is a structured grid, the number of vertices per element
         // follows 2^Dim.
         static constexpr std::size_t NumVertices = 1 << Dim;
 
-        template <unsigned Degree>
-        static constexpr std::size_t DegreesOfFreedom = ;
-
-        LagrangeSpace(const Mesh<T, Dim>& mesh, const Element<T, Dim>* ref_element,
-                      const Quadrature<T>* quadrature, const unsigned& degree);
+        LagrangeSpace(const Mesh<T, Dim>& mesh,
+                      const Element<T, Dim, Dim, NumElementVertices>* ref_element,
+                      const Quadrature<T, NumIntegrationPoints>* quadrature);
 
     private:
         /***/

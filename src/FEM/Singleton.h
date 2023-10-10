@@ -18,6 +18,11 @@ namespace ippl {
             return instance;
         }
 
+        static T* getInstancePtr() {
+            static T instance;
+            return &instance;
+        }
+
     protected:
         Singleton()  = default;
         ~Singleton() = default;

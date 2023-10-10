@@ -18,7 +18,16 @@
 
 namespace ippl {
 
-    template <typename T, unsigned Dim>
+    /**
+     * @brief This abstract class represents an finite element space.
+     *
+     * @tparam T The floating point type used
+     * @tparam GeometricDim The geometric dimension of the space
+     * @tparam TopologicalDim The topological dimension of the space
+     * @tparam NumElementVertices The number of vertices of the element
+     * @tparam NumIntegrationPoints The number of integration nodes of the quadrature rule
+     */
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     class FiniteElementSpace {
     public:
         /**
@@ -28,28 +37,10 @@ namespace ippl {
          * @param mesh Mesh that represents the domain of the problem
          * @param ref_element Pointer to singleton instance of the reference element
          * @param quadrature Pointer to the singleton instance of the quadrature rule
-         * @param degree Degree of the finite element space
          */
-        FiniteElementSpace(const Mesh<T, Dim>& mesh, const Element<T, Dim>* ref_element,
-                           const Quadrature<T>* quadrature, const unsigned& degree) = 0;
-
-        /**
-         * @brief Set the degree of the finite element space
-         *
-         * @param degree
-         */
-        void setDegree(const unsigned& degree);
-
-        /**
-         * @brief Get the degree of the finite element space
-         *
-         * @return unsigned
-         */
-        unsigned getDegree() const;
-
-        void setOrder(const unsigned& order);
-
-        unsigned getOrder() const;
+        FiniteElementSpace(const Mesh<T, Dim>& mesh,
+                           const Element<T, Dim, Dim, NumElementVertices>* ref_element,
+                           const Quadrature<T, NumIntegrationPoints>* quadrature);
 
         // virtual matrix_type getStiffnessMatrix() const = 0;
 
@@ -64,9 +55,8 @@ namespace ippl {
 
     protected:
         const Mesh<T, Dim>& mesh_m;
-        const Element<T, Dim>* ref_element_m;
-        const Quadrature<T>* quadrature_m;
-        unsigned degree_m;
+        const Element<T, Dim, Dim, NumElementVertices>* ref_element_m;
+        const Quadrature<T, NumIntegrationPoints>* quadrature_m;
     };
 
 }  // namespace ippl

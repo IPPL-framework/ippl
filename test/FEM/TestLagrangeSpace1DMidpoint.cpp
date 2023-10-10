@@ -12,10 +12,12 @@ int main(int argc, char* argv[]) {
                                                      {interval_size / number_of_elements}, {0.0});
 
         // Create Midpoint Quadrature
-        ippl::MidpointQuadrature<double> midpoint_quadrature(1);
+        ippl::MidpointQuadrature<double, 1>* midpoint_quadrature_ptr =
+            new ippl::MidpointQuadrature<double, 1>();
 
         // Refernce element
-        const ippl::EdgeElement<double> edge_element = ippl::EdgeElement<double>::getInstance();
+        const ippl::EdgeElement<double, 1>* edge_element_ptr =
+            ippl::EdgeElement<double, 1>::getInstancePointer();
 
         // Create LagrangeSpace
         ippl::LagrangeSpace<double, 1> lagrange_space(mesh, &edge_element, &midpoint_quadrature,

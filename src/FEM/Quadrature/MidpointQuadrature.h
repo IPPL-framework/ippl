@@ -26,24 +26,24 @@ namespace ippl {
          *
          * @param a Lower bound of the interval
          * @param b Upper bound of the interval
-         * @tparam NumNodes Number of nodes in the quadrature rule.
          * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
          */
-        template <unsigned NumNodes>
-        Vector<T, NumNodes> getIntegrationNodes(const T& a = 0.0, const T& b = 1.0) const override;
+        Vector<T, NumIntegrationPoints> getIntegrationNodes(const T& a = 0.0,
+                                                            const T& b = 1.0) const override;
 
         /**
          * @brief Get the weights for the quadrature
-         * @tparam NumNodes Number of nodes in the quadrature rule.
          *
          * @return std::vector<T> - Returns a vector with number_of_points many weights.
          */
-        template <unsigned NumNodes>
-        Vector<T, NumNodes> getWeights() const override;
+        Vector<T, NumIntegrationPoints> getWeights(const T& a = 0.0,
+                                                   const T& b = 1.0) const override;
 
         /**
          * @brief Get the degree of exactness of the quadrature rule.
          *
+         * @param a Lower bound of the interval
+         * @param b Upper bound of the interval
          * @return unsigned - Degree of exactness
          */
         unsigned getDegree() const override;

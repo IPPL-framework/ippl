@@ -14,11 +14,6 @@ namespace ippl {
     class Quadrature {
     public:
         /**
-         * @brief Construct a new Quadrature object with a given degree.
-         */
-        Quadrature();
-
-        /**
          * @brief Returns the order of the quadrature rule. (order = degree + 1)
          *
          * @return unsigned - order
