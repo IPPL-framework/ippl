@@ -9,8 +9,8 @@
 
 namespace ippl {
 
-    template <unsigned NumVertices = 4>
-    class QuadrilateralElement : public Element<2, NumVertices> {
+    template <typename T, unsgined GeometricDim, unsigned NumVertices = 4>
+    class QuadrilateralElement : public Element2D<T, GeometricDim, NumVertices> {
     public:
     };
 

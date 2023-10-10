@@ -7,22 +7,19 @@
 
 namespace ippl {
 
-    template <typename T>
-    class MidpointQuadrature : public Quadrature<T> {
+    /**
+     * @brief A midpoint quadrature rule with a fixed number of integration points.
+     *
+     * @tparam T the floating point number type used
+     * @tparam NumIntegrationPoints the number of integration points. (Minimum 1)
+     */
+    template <typename T, unsigned NumIntegrationPoints>
+    class MidpointQuadrature : public Quadrature<T, NumIntegrationPoints> {
     public:
         /**
          * @brief Construct a new Midpoint Quadrature object
-         *
-         * @param num_integration_points Number of integration points
          */
-        MidpointQuadrature(const unsigned& num_integration_points = 1);
-
-        /**
-         * @brief Get the number Of nodes for this quadrature rule.
-         *
-         * @return unsigned - Number of integration points
-         */
-        unsigned getNumberOfIntegrationPoints() const override;
+        MidpointQuadrature();
 
         /**
          * @brief Get the integration nodes for the quadrature

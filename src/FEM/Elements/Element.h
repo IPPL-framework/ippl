@@ -19,26 +19,22 @@ namespace ippl {
      * @tparam T type of the element
      * @tparam Dim dimension of the element
      */
-    template <typename T, unsigned Dim>
-    class Element : public Singleton<Element> {
+    template <typename T, unsigned GeometricDim, unsigned TopologicalDim, unsigned NumVertices>
+    class Element : public Singleton<Element<T, GeometricDim, TopologicalDim, NumVertices>> {
     public:
-        template <unsigned NumVertices>
-        using set_of_vertices_type Vector<Vector<T, Dim>, NumVertices>;
+        using local_vertex_vector  = Vector<Vector<T, TopologicalDim>, NumVertices>;
+        using global_vertex_vector = Vector<Vector<T, GeometricDim>, NumVertices>;
 
-        typedef int jacobian_type;  // TODO
-
-        /***/
-        template <typename NumVertices>
-        virtual set_of_vertices_type<NumVertices> getLocalVertices() const = 0;
+        using jacobian_type = int;  // TODO
 
         /***/
-        template <typename NumVertices>
+        virtual local_vertex_vector getLocalVertices() const = 0;
+
+        /***/
         virtual jacobian_type getTransformationJacobian(
-            const set_of_vertices_type<NumVertices>& global_vertices) const = 0;
+            const global_vertex_vector& global_vertices) const = 0;
 
-        /***/
-        template <typename NumVertices>
-        virtual set_of_vertices_type<NumVertices> getGlobalNodes(
+        virtual global_vertex_vector getGlobalNodes(
             const jacobian_type& transformation_jacobian) const = 0;
 
     private:
@@ -46,14 +42,14 @@ namespace ippl {
         ~Element() = default;
     };
 
-    template <typename T>
-    using Element1D = Element<T, 1>;
+    template <typename T, unsigned GeometricDim, unsigned NumVertices>
+    using Element1D = Element<T, GeometricDim, 1, NumVertices>;
 
-    template <typename T>
-    using Element2D = Element<T, 2>;
+    template <typename T, unsigned GeometricDim, unsigned NumVertices>
+    using Element2D = Element<T, GeometricDim, 2, NumVertices>;
 
-    template <typename T>
-    using Element3D = Element<T, 3>;
+    template <typename T, unsigned GeometricDim, unsigned NumVertices>
+    using Element3D = Element<T, GeometricDim, 3, NumVertices>;
 
 }  // namespace ippl
 

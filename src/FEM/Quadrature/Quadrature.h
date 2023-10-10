@@ -10,60 +10,42 @@
 
 namespace ippl {
 
-    template <typename T>
+    template <typename T, unsigned NumNodes>
     class Quadrature {
     public:
         /**
          * @brief Construct a new Quadrature object with a given degree.
-         *
-         * @param degree Degree of exactness
          */
-        Quadrature(const unsigned& degree);
+        Quadrature();
 
         /**
          * @brief Returns the order of the quadrature rule. (order = degree + 1)
          *
          * @return unsigned - order
          */
-        unsigned getOrder() const;
+        virtual unsigned getOrder() const = 0;
 
         /**
          * @brief Returns the degree of exactness of the quadrature rule. (degree = order - 1)
          *
          * @return unsigned - degree
          */
-        virtual unsigned getDegree() const;
-
-        /**
-         * @brief Set the order of the quadrature rule.
-         *
-         * @param order
-         */
-        void setOrder(const unsigned& order);
-
-        /**
-         * @brief Set the degree of the quadrature rule.
-         *
-         * @param order
-         */
-        void setDegree(const unsigned& order);
+        virtual unsigned getDegree() const = 0;
 
         /**
          * @brief Get the number Of nodes for this quadrature rule.
          *
          * @return unsigned
          */
-        virtual unsigned getNumberOfIntegrationPoints() const = 0;
+        unsigned getNumberOfIntegrationPoints() const;
 
         /**
          * @brief Get the nodes for the quadrature rule scaled to the interval [a, b].
          *
          * @param a Start of the interval [a, b]
          * @param b End of the interval [a, b]
-         * @tparam NumNodes Number of nodes in the quadrature rule.
          * @return std::vector<Vector<T, Dim>> Returns a vector of nodes.)
          */
-        template <unsigned NumNodes>
         virtual Vector<T, NumNodes> getIntegrationNodes(const T& a, const T& b) const = 0;
 
         /**
@@ -72,7 +54,6 @@ namespace ippl {
          * @tparam NumNodes Number of nodes in the quadrature rule.
          * @return std::vector<T, NumNodes>
          */
-        template <unsigned NumNodes>
         virtual Vector<T, NumNodes> getWeights() const = 0;
 
     protected:

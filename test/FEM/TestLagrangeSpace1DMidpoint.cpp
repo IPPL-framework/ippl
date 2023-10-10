@@ -15,11 +15,11 @@ int main(int argc, char* argv[]) {
         ippl::MidpointQuadrature<double> midpoint_quadrature(1);
 
         // Refernce element
-        // const ippl::LineElement edge_element = ippl::LineElement::getInstance();
+        const ippl::EdgeElement<double> edge_element = ippl::EdgeElement<double>::getInstance();
 
         // Create LagrangeSpace
-        // ippl::LagrangeSpace<double, 1> lagrange_space(mesh, edge_element, midpoint_quadrature,
-        // 1);
+        ippl::LagrangeSpace<double, 1> lagrange_space(mesh, &edge_element, &midpoint_quadrature,
+                                                      1u);
 
         // Print all the elements
         // for (unsigned i = 0; i < number_of_elements; ++i) {

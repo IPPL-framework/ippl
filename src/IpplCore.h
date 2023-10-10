@@ -38,11 +38,13 @@
 
 // FEM
 // // FEM Elements
-#include "FEM/Elements/LineElement.h"
-#include "FEM/Elements/QuadrilateralElement.h"
+#include "FEM/Elements/EdgeElement.h"
+// #include "FEM/Elements/QuadrilateralElement.h"
+// #include "FEM/Elements/HexahedralElement.h"
 
 // // FEM Quadrature
 #include "FEM/Quadrature/MidpointQuadrature.h"
+#include "FEM/Quadrature/Quadrature.h"
 
 // // FEM Spaces
 #include "FEM/LagrangeSpace.h"
