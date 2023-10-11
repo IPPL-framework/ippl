@@ -23,11 +23,11 @@ namespace ippl {
 
         local_vertex_vector getLocalVertices() const override;
 
-        jacobian_type getTransformationJacobian(
-            const global_vertex_vector& global_vertices) const override;
+        // jacobian_type getTransformationJacobian(
+        //     const global_vertex_vector& global_vertices) const override;
 
-        global_vertex_vector getGlobalNodes(
-            const jacobian_type& transformation_jacobian) const override;
+        // global_vertex_vector getGlobalNodes(
+        //     const jacobian_type& transformation_jacobian) const override;
     };
 
 }  // namespace ippl

@@ -18,17 +18,17 @@ int main(int argc, char* argv[]) {
         const ippl::EdgeElement<double, 1> edge_element;
 
         // Create LagrangeSpace
-        const ippl::LagrangeSpace<double, 1, 2, 1> lagrange_space(&mesh, &edge_element,
-                                                                  &midpoint_quadrature, 1u);
+        const ippl::LagrangeSpace<double, 1, 2, 1> lagrange_space(mesh, edge_element,
+                                                                  midpoint_quadrature);
 
         // Print all the elements
-        // for (unsigned i = 0; i < number_of_elements; ++i) {
-        //     std::cout << "Element " << i << " vertices: ";
-        //     for (unsigned j = 0; j < 2; ++j) {
-        //         std::cout << lagrange_space.getVerticesForElement(i)[j] << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
+        for (unsigned i = 0; i < number_of_elements; ++i) {
+            std::cout << "Element " << i << " vertices: ";
+            for (unsigned j = 0; j < 2; ++j) {
+                std::cout << lagrange_space.getVerticesForElement(i)[j] << " ";
+            }
+            std::cout << std::endl;
+        }
     }
     ippl::finalize();
 

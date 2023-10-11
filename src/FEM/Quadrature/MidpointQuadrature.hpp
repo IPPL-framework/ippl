@@ -8,7 +8,7 @@ namespace ippl {
         const T segment_length            = (b - a) / number_of_segments;
 
         // TODO use KOKKKOS
-        Vector<T, number_of_segments> nodes;
+        Vector<T, NumIntegrationPoints> nodes;
         T integration_point = a + 0.5 * segment_length;
         for (unsigned i = 0; i < number_of_segments; ++i) {
             nodes[i] = integration_point;

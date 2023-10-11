@@ -38,9 +38,9 @@ namespace ippl {
          * @param ref_element Pointer to singleton instance of the reference element
          * @param quadrature Pointer to the singleton instance of the quadrature rule
          */
-        FiniteElementSpace(const Mesh<T, Dim>* mesh,
-                           const Element<T, Dim, Dim, NumElementVertices>* ref_element,
-                           const Quadrature<T, NumIntegrationPoints>* quadrature);
+        FiniteElementSpace(const Mesh<T, Dim>& mesh,
+                           const Element<T, Dim, Dim, NumElementVertices>& ref_element,
+                           const Quadrature<T, NumIntegrationPoints>& quadrature);
 
         // virtual matrix_type getStiffnessMatrix() const = 0;
 
@@ -54,9 +54,9 @@ namespace ippl {
         // virtual T evaluateAx(const std::size_t& j, const Func& x) const = 0;
 
     protected:
-        const Mesh<T, Dim>* mesh_m;
-        const Element<T, Dim, Dim, NumElementVertices>* ref_element_m;
-        const Quadrature<T, NumIntegrationPoints>* quadrature_m;
+        const Mesh<T, Dim>& mesh_m;
+        const Element<T, Dim, Dim, NumElementVertices>& ref_element_m;
+        const Quadrature<T, NumIntegrationPoints>& quadrature_m;
     };
 
 }  // namespace ippl

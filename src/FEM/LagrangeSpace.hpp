@@ -3,8 +3,8 @@ namespace ippl {
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::LagrangeSpace(
-        const Mesh<T, Dim>* mesh, const Element<T, Dim, Dim, NumElementVertices>* ref_element,
-        const Quadrature<T, NumIntegrationPoints>* quadrature)
+        const Mesh<T, Dim>& mesh, const Element<T, Dim, Dim, NumElementVertices>& ref_element,
+        const Quadrature<T, NumIntegrationPoints>& quadrature)
         : FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>(mesh, ref_element,
                                                                                quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
@@ -26,7 +26,7 @@ namespace ippl {
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
-        Vector<std::size_t, Dim> length_per_dim = this->mesh_m->getGridsize() - 1u;
+        Vector<std::size_t, Dim> length_per_dim = this->mesh_m.getGridsize() - 1u;
 
         // The number_of_lower_dim_cells is the product of all the number of cells per
         // dimension, it will get divided by the current dimension's size to get the index in
@@ -60,10 +60,11 @@ namespace ippl {
            LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::NumVertices>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getVerticesForElement(
         const Vector<std::size_t, Dim>& element_indices) const {
+        // Vector to store the vertex indices for the element
         Vector<std::size_t, NumVertices> vertex_indices(0);
 
         // TODO check, this might fail as mesh_m returns a Vector<T, Dim>
-        const Vector<std::size_t, Dim> num_vertices = this->mesh_m->getGridsize();
+        const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
 
         for (unsigned i = 0; i < NumVertices; ++i) {
             for (unsigned d = 0; d < Dim; ++d) {
@@ -76,13 +77,15 @@ namespace ippl {
                 // Or in other words, if the bit at position d is set, which is
                 // the case if i & (1 << d) != 0.
                 // TODO maybe rewrite this text as it is not very clear
-                if (i & (1 << d) != 0)
+                if ((i & (1 << d)) != 0)
                     vertex_indices[i] += 1;
 
                 if (d > 0)
                     vertex_indices[i] *= num_vertices[d];
             }
         }
+
+        return vertex_indices;
     }
 
 }  // namespace ippl

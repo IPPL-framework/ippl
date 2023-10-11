@@ -29,11 +29,11 @@ namespace ippl {
         virtual local_vertex_vector getLocalVertices() const = 0;
 
         /***/
-        virtual jacobian_type getTransformationJacobian(
-            const global_vertex_vector& global_vertices) const = 0;
+        // virtual jacobian_type getTransformationJacobian(
+        //     const global_vertex_vector& global_vertices) const = 0;
 
-        virtual global_vertex_vector getGlobalNodes(
-            const jacobian_type& transformation_jacobian) const = 0;
+        // virtual global_vertex_vector getGlobalNodes(
+        //     const jacobian_type& transformation_jacobian) const = 0;
     };
 
     template <typename T, unsigned GeometricDim, unsigned NumVertices>
