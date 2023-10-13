@@ -12,8 +12,8 @@ set (_HDRS
     Elements/Element.h
     Elements/HexahedralElement.h
     Elements/HexahedralElement.hpp
-    Elements/LineElement.h
-    Elements/LineElement.hpp
+    Elements/EdgeElement.h
+    Elements/EdgeElement.hpp
     Elements/QuadrilateralElement.h
     Elements/QuadrilateralElement.hpp
 
@@ -30,9 +30,6 @@ set (_HDRS
     FiniteElementSpace.hpp
     LagrangeSpace.h
     LagrangeSpace.hpp
-
-    # Helpers
-    Singleton.h
 )
 
 include_directories(

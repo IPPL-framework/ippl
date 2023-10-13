@@ -42,15 +42,8 @@ namespace ippl {
                            const Element<T, Dim, Dim, NumElementVertices>& ref_element,
                            const Quadrature<T, NumIntegrationPoints>& quadrature);
 
-        // virtual matrix_type getStiffnessMatrix() const = 0;
-
-        // virtual matrix_type getLoadVector() const = 0;
-
-        // virtual T evaluateA(const std::size_t& i, const std::size_t& j) const = 0;
-
         // virtual T evaluateLoadVector(const std::size_t& j) const = 0;
 
-        // template <typename Func>
         // virtual T evaluateAx(const std::size_t& j, const Func& x) const = 0;
 
     protected:
