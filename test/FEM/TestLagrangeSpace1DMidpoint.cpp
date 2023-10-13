@@ -5,6 +5,8 @@
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        // Inform out("Test LagrangeSpace1DMidpoint");
+
         // Create a 1D uniform mesh centered at 0.0.
         const unsigned number_of_elements = 10;
         const double interval_size        = 2.0;
@@ -25,9 +27,10 @@ int main(int argc, char* argv[]) {
         for (unsigned i = 0; i < number_of_elements; ++i) {
             std::cout << "Element " << i << " vertices: ";
             for (unsigned j = 0; j < 2; ++j) {
-                std::cout << lagrange_space.getVerticesForElement(i)[j] << " ";
+                const auto element_indices = lagrange_space.getElementDimIndices(i);
+                std::cout << lagrange_space.getVerticesForElement(element_indices)[j] << " ";
             }
-            std::cout << std::endl;
+            std::cout << "\n";
         }
     }
     ippl::finalize();
