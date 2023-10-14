@@ -5,9 +5,6 @@ set (_SRCS
 set (_HDRS
     CartesianCentering.hpp
     CartesianCentering.h
-    Cartesian.hpp
-    Cartesian.h
-    CartesianStencilSetup.h
     Centering.h
     Mesh.h
     Mesh.hpp
