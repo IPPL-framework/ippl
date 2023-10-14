@@ -14,8 +14,8 @@ namespace ippl {
 
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    Vector<std::size_t, Dim>
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getElementDimIndices(
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vector_t
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getDimensionIndicesForElement(
         const std::size_t& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
         std::size_t index = element_index;
@@ -47,25 +47,17 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    Vector<std::size_t,
-           LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::NumVertices>
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getVerticesForElement(
-        const std::size_t& element_index) const {
-        return getVerticesForElement(getElementDimIndices(element_index));
-    }
-
-    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    Vector<std::size_t,
-           LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::NumVertices>
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getVerticesForElement(
-        const Vector<std::size_t, Dim>& element_indices) const {
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::vertex_vector_t
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getGlobalVerticesForElement(
+        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vector_t&
+            element_indices) const {
         // Vector to store the vertex indices for the element
-        Vector<std::size_t, NumVertices> vertex_indices(0);
+        Vector<std::size_t, NumElementVertices> vertex_indices(0);
 
         // TODO check, this might fail as mesh_m returns a Vector<T, Dim>
         const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
 
-        for (unsigned i = 0; i < NumVertices; ++i) {
+        for (unsigned i = 0; i < NumElementVertices; ++i) {
             for (unsigned d = 0; d < Dim; ++d) {
                 vertex_indices[i] += element_indices[d];
 
@@ -85,6 +77,23 @@ namespace ippl {
         }
 
         return vertex_indices;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
+        const std::size_t& j) const {
+        assert(j < NumIntegrationPoints);  // TODO change assert to be correct
+        // TODO implement
+        return 0;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateStiffnessMatrix(
+        const std::size_t& i, const std::size_t& j) const {
+        assert(i < NumIntegrationPoints);  // TODO change assert to be correct
+        assert(j < NumIntegrationPoints);  // TODO change assert to be correct
+        // TODO implement
+        return 0;
     }
 
 }  // namespace ippl

@@ -13,26 +13,40 @@ namespace ippl {
     class LagrangeSpace
         : public FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints> {
     public:
-        // This is the number of vertices per element.
-        // Since it is assumed that Mesh is a structured grid, the number of vertices per element
-        // follows 2^Dim.
-        static constexpr std::size_t NumVertices = 1 << Dim;
-
         LagrangeSpace(const Mesh<T, Dim>& mesh,
                       const Element<T, Dim, Dim, NumElementVertices>& ref_element,
                       const Quadrature<T, NumIntegrationPoints>& quadrature);
 
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices,
+                                            NumIntegrationPoints>::index_vector_t index_vector_t;
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices,
+                                            NumIntegrationPoints>::vertex_vector_t vertex_vector_t;
+
         /**
-         * @brief Get the vertices for an element given the element index.
+         * @brief Eveluate the load vector at the given index.
+         *
+         * @param j The index of the load vector
+         * @return T The value of the load vector at the given index
+         */
+        T evaluateLoadVector(const std::size_t& j) const override;
+
+        /**
+         * @brief Evaluate the stiffness matrix at the given indices.
+         *
+         * @param i The row index of the stiffness matrix
+         * @param j The column index of the stiffness matrix
+         * @return T The value of the stiffness matrix at the given indices
+         */
+        T evaluateStiffnessMatrix(const std::size_t& i, const std::size_t& j) const override;
+
+        /**
+         * @brief Get the index vector from the element index.
          *
          * @param element_index The index of the element.
-         * @return Vector<std::size_t, NumVertices>
+         * @return index_vector_t
          */
-        Vector<std::size_t, NumVertices> getVerticesForElement(
-            const std::size_t& element_index) const;
-
-        /***/
-        Vector<std::size_t, Dim> getElementDimIndices(const std::size_t& element_index) const;
+        index_vector_t getDimensionIndicesForElement(
+            const std::size_t& element_index) const override;
 
         /**
          * @brief Get the vertices for an elment given the element indices in each dimension of the
@@ -41,8 +55,8 @@ namespace ippl {
          * @param element_indices The indices of the element in each dimension of the mesh.
          * @return Vector<std::size_t, NumVertices>
          */
-        Vector<std::size_t, NumVertices> getVerticesForElement(
-            const Vector<std::size_t, Dim>& element_indices) const;
+        vertex_vector_t getGlobalVerticesForElement(
+            const index_vector_t& element_indices) const override;
     };
 
 }  // namespace ippl

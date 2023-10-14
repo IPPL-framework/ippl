@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
         for (unsigned i = 0; i < number_of_elements; ++i) {
             std::cout << "Element " << i << " vertices: ";
             for (unsigned j = 0; j < 2; ++j) {
-                const auto element_indices = lagrange_space.getElementDimIndices(i);
-                std::cout << lagrange_space.getVerticesForElement(element_indices)[j] << " ";
+                const auto element_indices = lagrange_space.getDimensionIndicesForElement(i);
+                std::cout << lagrange_space.getGlobalVerticesForElement(element_indices)[j] << " ";
             }
             std::cout << "\n";
         }
