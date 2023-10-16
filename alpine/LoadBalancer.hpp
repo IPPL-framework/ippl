@@ -1,24 +1,28 @@
 #ifndef IPPL_LOAD_BALANCER_H
 #define IPPL_LOAD_BALANCER_H
 
+#include "ParticleContainer.hpp"
 #include <memory>
 
     template <typename T, unsigned Dim = 3>
-    class LoadBalancer   : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{ // inherent from ParticleBase, cause we need getLayout() and update()
+    class LoadBalancer{//   : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{ // inherent from ParticleBase, cause we need getLayout() and update()
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     public:
-        std::string stype_m;
         double loadbalancethreshold_m;
         Field_t<Dim> rho_m;
         VField_t<T, Dim> E_m;
         ippl::FieldLayout<Dim> fl_m;
-        typename Base::particle_position_type R_m;  // particle velocity
-        
-        Solver_t<T, Dim> solver_m;
+        //typename Base::particle_position_type R_m;  // particle velocity
+        std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
+        std::shared_ptr<FieldSolver<T, Dim>> fs_m;
+
+        //Solver_t<T, Dim> solver_m;
         unsigned int loadbalancefreq_m;
         
-        LoadBalancer(std::string solver, double lbs, Field_t<Dim> &rho, VField_t<T, Dim> &E, ippl::FieldLayout<Dim>& fl, typename Base::particle_position_type &R)
-           : stype_m(solver), loadbalancethreshold_m(lbs), rho_m(rho), E_m(E), fl_m(fl), R_m(R) {}
+        //LoadBalancer(double lbs, Field_t<Dim> &rho, VField_t<T, Dim> &E, ippl::FieldLayout<Dim>& fl, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
+        //   :loadbalancethreshold_m(lbs), rho_m(rho), E_m(E), fl_m(fl), pc_m(pc), fs_m(fs) {}
+       	LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
+           :loadbalancethreshold_m(lbs), rho_m(fc->rho_m), E_m(fc->E_m), fl_m(fc->getLayout()), pc_m(pc), fs_m(fs) {}
         ORB<T, Dim> orb;
     public:
         // Constructor, destructor, and other member functions as needed
@@ -32,19 +36,15 @@
         IpplTimings::startTimer(tupdateLayout);
         E_m.updateLayout(fl);
         rho_m.updateLayout(fl);
-        //if (stype_m == "CG") {
-        //     this->phi_m.updateLayout(fl);
-        //    phi_m.setFieldBC(allPeriodic);
-        //}
 
         // Update layout with new FieldLayout
-        PLayout_t<T, Dim>& layout = this->getLayout();
+        PLayout_t<T, Dim>& layout = pc_m->getLayout();
         layout.updateLayout(fl, mesh);
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
         if (!isFirstRepartition) {
-            this->update();
+            pc_m->update();
         }
         IpplTimings::stopTimer(tupdatePLayout);
     }
@@ -55,7 +55,7 @@
 
     void repartition(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
         // Repartition the domains
-        bool res = orb.binaryRepartition(R_m, fl, isFirstRepartition);
+        bool res = orb.binaryRepartition(pc_m->R, fl, isFirstRepartition);
 
         if (res != true) {
             std::cout << "Could not repartition!" << std::endl;
@@ -64,14 +64,14 @@
         // Update
         this->updateLayout(fl, mesh, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
-            if (stype_m == "FFT") {
-                std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+            if (fs_m->stype_m == "FFT") {
+                std::get<FFTSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
             }
             if constexpr (Dim == 3) {
-                if (stype_m == "P3M") {
-                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
-                } else if (stype_m == "OPEN") {
-                    std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                if (fs_m->stype_m == "P3M") {
+                    std::get<P3MSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
+                } else if (fs_m->stype_m == "OPEN") {
+                    std::get<OpenSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
                 }
             }
         }
@@ -87,7 +87,7 @@
             int local = 0;
             std::vector<int> res(ippl::Comm->size());
             double equalPart = (double)totalP / ippl::Comm->size();
-            double dev       = std::abs((double)this->getLocalNum() - equalPart) / totalP;
+            double dev       = std::abs((double)pc_m->getLocalNum() - equalPart) / totalP;
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }

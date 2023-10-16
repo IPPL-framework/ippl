@@ -9,13 +9,13 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
-    // Define the FieldSolver class     
+    // Define the FieldSolver class
     template <typename T, unsigned Dim = 3>
     class FieldSolver {
     public:
         std::string stype_m; // Declare stype_m as a member variable
-    private:
         Solver_t<T, Dim> solver_m;
+    private:
         Field_t<Dim> rho_m;
         VField_t<T, Dim> E_m;
     

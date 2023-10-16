@@ -9,8 +9,8 @@
     class FieldContainer{
     
     public:
-        FieldContainer(Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
-                        Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim])
+        FieldContainer(Vector_t<double, Dim>& hr, Vector_t<double, Dim>& rmin,
+                        Vector_t<double, Dim>& rmax, ippl::e_dim_tag decomp[Dim])
             : hr_m(hr), rmin_m(rmin), rmax_m(rmax) {
             for (unsigned int i = 0; i < Dim; i++) {
                 decomp_m[i] = decomp[i];

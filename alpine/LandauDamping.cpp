@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
        manager.time_m = 0.0;
        msg << "Starting iterations ..." << endl;
         
-       manager.run(manager.nt);
+       //manager.run(manager.nt);
         
         msg << "LandauDamping: End." << endl;
     }
