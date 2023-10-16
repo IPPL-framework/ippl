@@ -18,7 +18,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getNDIndexForElement(
         const Index& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
-        Index index = element_index;
+        int index = element_index;
 
         // Create a vector to store the element indices in each dimension for the corresponding
         // element.
@@ -146,7 +146,7 @@ namespace ippl {
         const Index& vertex_index, const Vector<T, Dim>& global_coordinates) const {
         const NDIndex<Dim> vertex_indices        = getNDIndexForVertex(vertex_index);
         const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
-        const Vector<T, Dim> h                   = mesh_m.getDeltaVertex(vertex_indices);
+        const Vector<T, Dim> h                   = this->mesh_m.getDeltaVertex(vertex_indices);
 
         // If the global coordinates are outside of the support of the basis function in any
         // dimension return 0.

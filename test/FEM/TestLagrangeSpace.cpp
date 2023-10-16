@@ -32,16 +32,16 @@ int main(int argc, char* argv[]) {
         vertex_out << "vertex_index,x\n";
         ippl::Vector<double, 1> vertex_coordinates;
         for (ippl::Index i = 0; i < number_of_vertices; i += 1) {
-            vertex_out << i << ",";
+            vertex_out << i;
             vertex_coordinates = lagrange_space.getCoordinatesForVertex(i);
-            vertex_out << vertex_coordinates[0];
+            vertex_out << "," << vertex_coordinates[0];
             vertex_out << "\n";
         }
 
         // Print all the elements for plotting
         std::ofstream elem_out("~1D_lagrange_elements.dat");
 
-        std::cout << "element_index,a,b\n";
+        elem_out << "element_index,a,b\n";
         for (unsigned i = 0; i < number_of_elements; ++i) {
             elem_out << i;
             const auto element_indices = lagrange_space.getNDIndexForElement(i);
@@ -49,6 +49,20 @@ int main(int argc, char* argv[]) {
                 elem_out << "," << element_indices[j];
             }
             elem_out << "\n";
+        }
+
+        // Print the basis values for plotting
+        const unsigned number_of_points = 100;
+        const double dx                 = interval_size / (number_of_points - 1);
+        ippl::Vector<double, 1> x       = {0.0};
+        std::ofstream basis_out("~1D_lagrange_basis.dat");
+
+        basis_out << "x,\n";
+        for (ippl::Vector<double, 1> x = {-1.0}; x[0] <= 1.0; x[0] += dx) {
+            for (unsigned i = 0; i < number_of_vertices; ++i) {
+                basis_out << lagrange_space.evaluateBasis(i, x);
+                basis_out << "\n";
+            }
         }
     }
     ippl::finalize();
