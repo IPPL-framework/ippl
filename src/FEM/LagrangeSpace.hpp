@@ -14,15 +14,15 @@ namespace ippl {
 
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vector_t
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getDimensionIndicesForElement(
-        const std::size_t& element_index) const {
+    NDIndex<Dim>
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getNDIndexForElement(
+        const Index& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
-        std::size_t index = element_index;
+        Index index = element_index;
 
         // Create a vector to store the element indices in each dimension for the corresponding
         // element.
-        Vector<std::size_t, Dim> element_indices;
+        NDIndex<Dim> element_indices;
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
@@ -47,10 +47,55 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    NDIndex<Dim>
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getNDIndexForVertex(
+        const Index& vertex_index) const {
+        // Copy the vertex index to the index variable we can alter during the computation.
+        Index index = vertex_index;
+
+        // Create a vector to store the vertex indices in each dimension for the corresponding
+        // vertex.
+        NDIndex<Dim> vertex_indices;
+
+        // This is the number of vertices in each dimension.
+        Vector<std::size_t, Dim> vertices_per_dim = this->mesh_m.getGridsize();
+
+        // The number_of_lower_dim_vertices is the product of the number of vertices per
+        // dimension, it will get divided by the current dimensions number to get the index in
+        // that dimension
+        std::size_t remaining_number_of_vertices = 1;
+        // TODO Move to KOKKOS reduction or smth
+        for (const std::size_t num_vertices : vertices_per_dim) {
+            remaining_number_of_vertices *= num_vertices;
+        }
+
+        for (int d = Dim - 1; d >= 0; --d) {
+            remaining_number_of_vertices /= vertices_per_dim[d];
+            vertex_indices[d] = index / remaining_number_of_vertices;
+            index -= vertex_indices[d] * remaining_number_of_vertices;
+        }
+
+        return vertex_indices;
+    };
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    Vector<T, Dim>
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
+        const NDIndex<Dim>& vertex_indices) const {
+        return this->mesh_m.getVertexPosition(vertex_indices);
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    Vector<T, Dim>
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
+        const Index& vertex_index) const {
+        return getCoordinatesForVertex(vertex_index);
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::vertex_vector_t
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getGlobalVerticesForElement(
-        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vector_t&
-            element_indices) const {
+        const NDIndex<Dim>& element_indices) const {
         // Vector to store the vertex indices for the element
         Vector<std::size_t, NumElementVertices> vertex_indices(0);
 
@@ -81,7 +126,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
-        const std::size_t& j) const {
+        const Index& j) const {
         assert(j < NumIntegrationPoints);  // TODO change assert to be correct
         // TODO implement
         return 0;
@@ -89,11 +134,42 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateStiffnessMatrix(
-        const std::size_t& i, const std::size_t& j) const {
+        const Index& i, const Index& j) const {
         assert(i < NumIntegrationPoints);  // TODO change assert to be correct
         assert(j < NumIntegrationPoints);  // TODO change assert to be correct
         // TODO implement
         return 0;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateBasis(
+        const Index& vertex_index, const Vector<T, Dim>& global_coordinates) const {
+        const NDIndex<Dim> vertex_indices        = getNDIndexForVertex(vertex_index);
+        const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
+        const Vector<T, Dim> h                   = mesh_m.getDeltaVertex(vertex_indices);
+
+        // If the global coordinates are outside of the support of the basis function in any
+        // dimension return 0.
+        for (std::size_t d = 0; d < Dim; d++) {
+            if (global_coordinates[d] >= vertex_coodrdinates[d] + h[d]
+                || global_coordinates[d] <= vertex_coodrdinates[d] - h[d]) {
+                // The global coordinates are outside of the support of the basis function.
+                return 0.0;
+            }
+        }
+
+        // The variable that accumulates the product of the shape functions.
+        T product = 1;
+
+        for (std::size_t d = 0; d < Dim; d++) {
+            if (global_coordinates[d] < vertex_coodrdinates[d]) {
+                product *= (global_coordinates[d] - (vertex_coodrdinates[d] - h[d])) / h[d];
+            } else {
+                product *= ((vertex_coodrdinates[d] + h[d]) - global_coordinates[d]) / h[d];
+            }
+        }
+
+        return product;
     }
 
 }  // namespace ippl

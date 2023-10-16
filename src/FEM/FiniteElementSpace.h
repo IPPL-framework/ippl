@@ -29,8 +29,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     class FiniteElementSpace {
     public:
-        typedef Vector<std::size_t, Dim> index_vector_t;
-        typedef Vector<std::size_t, NumElementVertices> vertex_vector_t;
+        typedef Vector<Index, NumElementVertices> vertex_vector_t;
 
         /**
          * @brief Construct a new Finite Element Space object with a given mesh and
@@ -50,7 +49,7 @@ namespace ippl {
          * @param j The index of the load vector
          * @return T The value of the load vector at the given index
          */
-        virtual T evaluateLoadVector(const std::size_t& j) const = 0;
+        virtual T evaluateLoadVector(const Index& j) const = 0;
 
         /**
          * @brief Evaluate the stiffness matrix at the given indices.
@@ -59,34 +58,52 @@ namespace ippl {
          * @param j The column index of the stiffness matrix
          * @return T The value of the stiffness matrix at the given indices
          */
-        virtual T evaluateStiffnessMatrix(const std::size_t& i, const std::size_t& j) const = 0;
+        virtual T evaluateStiffnessMatrix(const Index& i, const Index& j) const = 0;
 
         /**
          * @brief Get the dimension indices for element object
          *
          * @param element_index
-         * @return Vector<std::size_t, Dim>
+         * @return NDIndex<Dim>
          */
-        virtual index_vector_t getDimensionIndicesForElement(
-            const std::size_t& element_index) const = 0;
+        virtual NDIndex<Dim> getNDIndexForElement(const Index& element_index) const = 0;
+
+        /**
+         * @brief Get the dimension indices for vertex object
+         *
+         * @param vertex_index
+         * @return NDIndex<Dim>
+         */
+        virtual NDIndex<Dim> getNDIndexForVertex(const Index& vertex_index) const = 0;
 
         /**
          * @brief Get the vertices for an element given the element index.
          *
          * @param element_index The index of the element.
-         * @return Vector<std::size_t, NumVertices>
+         * @return vertex_vector_t
          */
-        vertex_vector_t getGlobalVerticesForElement(const std::size_t& element_index) const;
+        vertex_vector_t getGlobalVerticesForElement(const Index& element_index) const;
 
         /**
          * @brief Get the vertices for an elment given the element indices in each dimension of the
          * mesh.
          *
          * @param element_indices The indices of the element in each dimension of the mesh.
-         * @return Vector<std::size_t, NumVertices>
+         * @return vertex_vector_t
          */
         virtual vertex_vector_t getGlobalVerticesForElement(
-            const index_vector_t& element_indices) const = 0;
+            const NDIndex<Dim>& element_indices) const = 0;
+
+        /**
+         * @brief Evaluate the basis functions at the given global vertex and at the given global
+         * coordinates.
+         *
+         * @param vertex_index The index of the vertex to evaluate the shape functions for.
+         * @param global_coordinates The local coordinates to evaluate the shape functions at.
+         * @return T The value of the shape functions at the given local coordinates.
+         */
+        virtual T evaluateBasis(const Index& vertex_index,
+                                const Vector<T, Dim>& global_coordinates) const = 0;
 
     protected:
         const Mesh<T, Dim>& mesh_m;

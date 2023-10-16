@@ -25,7 +25,11 @@ namespace ippl {
 
         using jacobian_type = int;  // TODO
 
-        /***/
+        /**
+         * @brief Get the vertices of the element in the local coordinate system.
+         *
+         * @return local_vertex_vector the vertices of the element in the local coordinate system.
+         */
         virtual local_vertex_vector getLocalVertices() const = 0;
 
         /***/

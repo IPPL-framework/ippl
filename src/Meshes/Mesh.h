@@ -48,6 +48,10 @@ namespace ippl {
 
         T getGridsize(size_t dim) const;
 
+        virtual vector_type getVertexPosition(const NDIndex<Dim>& ndi) const = 0;
+
+        virtual vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const = 0;
+
     protected:
         vector_type origin_m;     // Origin of mesh coordinates (vertices)
         vector_type gridSizes_m;  // Sizes (number of vertices)

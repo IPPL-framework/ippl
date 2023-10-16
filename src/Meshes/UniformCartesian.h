@@ -38,7 +38,7 @@ namespace ippl {
         void updateCellVolume_m();
 
         // (x,y,z) coordinates of indexed vertex:
-        vector_type getVertexPosition(const NDIndex<Dim>& ndi) const {
+        vector_type getVertexPosition(const NDIndex<Dim>& ndi) const override {
             vector_type vertexPosition;
             for (unsigned int d = 0; d < Dim; d++)
                 vertexPosition(d) = ndi[d].first() * meshSpacing_m[d] + this->origin_m(d);
@@ -46,7 +46,7 @@ namespace ippl {
         }
 
         // Vertex-vertex grid spacing of indexed cell:
-        vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const {
+        vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const override {
             vector_type vertexVertexSpacing;
             for (unsigned int d = 0; d < Dim; d++)
                 vertexVertexSpacing[d] = meshSpacing_m[d] * ndi[d].length();

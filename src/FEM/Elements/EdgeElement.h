@@ -12,8 +12,8 @@ namespace ippl {
     template <typename T, unsigned GeometricDim>
     class EdgeElement : public Element1D<T, GeometricDim, 2> {
     public:
-        static constexpr unsigned NumVertices = 2;
-        static constexpr unsigned Dim         = 1;
+        static constexpr unsigned NumVertices    = 2;
+        static constexpr unsigned TopologicalDim = 1;
 
         typedef typename Element1D<T, GeometricDim, NumVertices>::local_vertex_vector
             local_vertex_vector;
