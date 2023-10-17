@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
         elem_out.close();
 
         // Print the basis values for plotting
-        const unsigned number_of_points = 100;
+        const unsigned number_of_points = 200;
         const double dx                 = interval_size / (number_of_points - 1);
         ippl::Vector<double, 1> x       = {0.0};
 
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         }
         basis_out << "\n";
 
-        for (ippl::Vector<double, 1> x = {-1.0}; x[0] <= 1.0; x[0] += dx) {
+        for (ippl::Vector<double, 1> x = {-1.3}; x[0] <= 1.3; x[0] += dx) {
             basis_out << x[0];
             for (unsigned i = 0; i < number_of_vertices; ++i) {
                 basis_out << "," << lagrange_space.evaluateBasis(i, x);

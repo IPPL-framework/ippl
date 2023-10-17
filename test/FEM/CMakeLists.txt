@@ -13,9 +13,16 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (TestLagrangeSpace TestLagrangeSpace.cpp)
+add_executable (TestLagrangeSpace1D TestLagrangeSpace1D.cpp)
 target_link_libraries (
-    TestLagrangeSpace
+    TestLagrangeSpace1D
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable (TestLagrangeSpace2D TestLagrangeSpace2D.cpp)
+target_link_libraries (
+    TestLagrangeSpace2D
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
