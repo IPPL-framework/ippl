@@ -10,7 +10,7 @@ manual/ippl_user_guide.pdf
 
 # ignure vtk dump stuff
 data/
-datasets/
+datasets*/
 *.vtk
 
 # CMake and Build folder
