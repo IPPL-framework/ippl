@@ -15,7 +15,7 @@ namespace ippl {
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vec_t
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getNDIndexForElement(
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getDimensionIndicesForElement(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
             element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
@@ -49,7 +49,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vec_t
-    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getNDIndexForVertex(
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getDimensionIndicesForVertex(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
             vertex_index) const {
         // Copy the vertex index to the index variable we can alter during the computation.
@@ -81,11 +81,25 @@ namespace ippl {
     };
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    NDIndex<Dim> LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::makeNDIndex(
+        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vec_t&
+            vertex_indices) const {
+        // Not sure if this is the best way, but the getVertexPosition function expects an NDIndex,
+        // with the vertex index used being the first in the NDIndex. No other index is used, so
+        // we can just set the first and the last to the index we actually want.
+        NDIndex<Dim> nd_index;
+        for (unsigned d = 0; d < Dim; ++d) {
+            nd_index[d] = Index(vertex_indices[d], vertex_indices[d]);
+        }
+        return nd_index;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     Vector<T, Dim>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vec_t&
             vertex_indices) const {
-        return this->mesh_m.getVertexPosition(vertex_indices);
+        return this->mesh_m.getVertexPosition(makeNDIndex(vertex_indices));
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
@@ -93,7 +107,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
             vertex_index) const {
-        const index_vec_t vertex_indices = getNDIndexForVertex(vertex_index);
+        const index_vec_t vertex_indices = getDimensionIndicesForVertex(vertex_index);
         return getCoordinatesForVertex(vertex_indices);
     }
 
@@ -153,9 +167,9 @@ namespace ippl {
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
             vertex_index,
         const Vector<T, Dim>& global_coordinates) const {
-        const index_vec_t vertex_indices         = getNDIndexForVertex(vertex_index);
+        const index_vec_t vertex_indices         = getDimensionIndicesForVertex(vertex_index);
         const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
-        const Vector<T, Dim> h                   = this->mesh_m.getDeltaVertex(vertex_indices);
+        const Vector<T, Dim> h = this->mesh_m.getDeltaVertex(makeNDIndex(vertex_indices));
 
         // If the global coordinates are outside of the support of the basis function in any
         // dimension return 0.

@@ -48,7 +48,7 @@ namespace ippl {
          * @param element_index The index of the element.
          * @return index_vector_t
          */
-        index_vec_t getNDIndexForElement(const index_t& element_index) const override;
+        index_vec_t getDimensionIndicesForElement(const index_t& element_index) const override;
 
         /**
          * @brief Get the dimension indices for vertex object
@@ -56,7 +56,7 @@ namespace ippl {
          * @param vertex_index
          * @return NDIndex<Dim>
          */
-        index_vec_t getNDIndexForVertex(const index_t& vertex_index) const override;
+        index_vec_t getDimensionIndicesForVertex(const index_t& vertex_index) const override;
 
         Vector<T, Dim> getCoordinatesForVertex(const index_vec_t& vertex_indices) const;
         Vector<T, Dim> getCoordinatesForVertex(const index_t& vertex_index) const;
@@ -81,6 +81,9 @@ namespace ippl {
          */
         T evaluateBasis(const index_t& vertex_index,
                         const Vector<T, Dim>& global_coordinates) const override;
+
+    private:
+        NDIndex<Dim> makeNDIndex(const index_vec_t& indices) const;
     };
 
 }  // namespace ippl

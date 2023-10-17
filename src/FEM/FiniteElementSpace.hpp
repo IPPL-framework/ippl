@@ -16,7 +16,7 @@ namespace ippl {
         getGlobalVerticesForElement(
             const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
                 element_index) const {
-        return getGlobalVerticesForElement(getNDIndexForElement(element_index));
+        return getGlobalVerticesForElement(getDimensionIndicesForElement(element_index));
     }
 
 }  // namespace ippl

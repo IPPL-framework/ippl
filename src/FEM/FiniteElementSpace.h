@@ -68,7 +68,7 @@ namespace ippl {
          * @param element_index
          * @return index_vec_t
          */
-        virtual index_vec_t getNDIndexForElement(const index_t& element_index) const = 0;
+        virtual index_vec_t getDimensionIndicesForElement(const index_t& element_index) const = 0;
 
         /**
          * @brief Get the dimension indices for vertex object
@@ -76,7 +76,7 @@ namespace ippl {
          * @param vertex_index
          * @return index_vec_t
          */
-        virtual index_vec_t getNDIndexForVertex(const index_t& vertex_index) const = 0;
+        virtual index_vec_t getDimensionIndicesForVertex(const index_t& vertex_index) const = 0;
 
         /**
          * @brief Get the vertices for an element given the element index.
