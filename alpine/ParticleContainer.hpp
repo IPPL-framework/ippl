@@ -15,6 +15,7 @@
         typename Base::particle_position_type E;  // electric field at particle position
         ParticleContainer(ippl::ParticleSpatialLayout<T, Dim>& pl)
         : Base(pl) {
+        this->initialize(pl);
         registerAttributes();
         setupBCs();
         }
