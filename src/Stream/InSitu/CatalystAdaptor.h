@@ -187,7 +187,7 @@ namespace CatalystAdaptor {
 
         // as we have a local copy of the field, the catalyst_execute needs to be called
         // within this scope otherwise the memory location might be already overwritten
-        if (node_in != std::nullopt)
+        if (node_in == std::nullopt)
         {
             callCatalystExecute(node);
             return {};

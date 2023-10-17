@@ -65,7 +65,7 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
 
 int main(int argc, char* argv[]) {
     Ippl ippl(argc, argv);
-    CatalystAdaptor::Initialize(argc, argv);
+    CatalystAdaptor::Initialize_Adios(argc, argv);
 
     const int pt{2};
     ippl::Index Ix(pt);
@@ -125,7 +125,10 @@ int main(int argc, char* argv[]) {
                 view(i, j, k) = y * time;
             });
 
-        CatalystAdaptor::Execute_Field(it, time, Ippl::Comm->rank(), field);
+        // call catalyst execute with 5th argument as nullopt or not specified
+
+        std::optional<conduit_cpp::Node> node = std::nullopt;
+        CatalystAdaptor::Execute_Field(it, time, Ippl::Comm->rank(), field, node);
         // print should be same as field data
         time += dt;
 
