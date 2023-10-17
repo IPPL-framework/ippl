@@ -9,11 +9,20 @@
 
 namespace ippl {
 
-    template <typename T, unsgined GeometricDim, unsigned NumVertices = 4>
-    class QuadrilateralElement : public Element2D<T, GeometricDim, NumVertices> {
+    template <typename T, unsigned GeometricDim>
+    class QuadrilateralElement : public Element2D<T, GeometricDim, 4> {
     public:
-    };
+        static constexpr unsigned NumVertices    = 4;
+        static constexpr unsigned TopologicalDim = 2;
 
+        typedef typename Element2D<T, GeometricDim, NumVertices>::local_vertex_vector
+            local_vertex_vector;
+        typedef typename Element2D<T, GeometricDim, NumVertices>::global_vertex_vector
+            global_vertex_vector;
+        typedef typename Element2D<T, GeometricDim, NumVertices>::jacobian_type jacobian_type;
+
+        local_vertex_vector getLocalVertices() const override;
+    };
 }  // namespace ippl
 
 #include "FEM/Elements/QuadrilateralElement.hpp"

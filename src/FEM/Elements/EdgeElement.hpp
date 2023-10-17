@@ -5,8 +5,8 @@ namespace ippl {
     typename EdgeElement<T, GeometricDim>::local_vertex_vector
     EdgeElement<T, GeometricDim>::getLocalVertices() const {
         EdgeElement::local_vertex_vector vertices;
-        vertices[0][0] = 0.0;
-        vertices[1][0] = 1.0;
+        vertices[0] = {0.0};
+        vertices[1] = {1.0};
         return vertices;
     }
 

@@ -169,7 +169,7 @@ namespace ippl {
         const Vector<T, Dim>& global_coordinates) const {
         const index_vec_t vertex_indices         = getDimensionIndicesForVertex(vertex_index);
         const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
-        const Vector<T, Dim> h = this->mesh_m.getDeltaVertex(makeNDIndex(vertex_indices));
+        const Vector<T, Dim> h = this->mesh_m.getDeltaVertex(makeNDIndex(Vector<T, Dim>(1)));
 
         // If the global coordinates are outside of the support of the basis function in any
         // dimension return 0.

@@ -9,6 +9,15 @@
 
 namespace ippl {
 
+    /**
+     * @brief This is the LagrangeSpace class. It is a class representing a Lagrange finite element
+     * space for finite element methods on a structured grid.
+     *
+     * @tparam T The type of the coordinates of the mesh.
+     * @tparam Dim The dimension of the mesh.
+     * @tparam NumElementVertices The number of vertices per element.
+     * @tparam NumIntegrationPoints The number of integration points per element.
+     */
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     class LagrangeSpace
         : public FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints> {

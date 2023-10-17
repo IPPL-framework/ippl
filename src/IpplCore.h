@@ -39,7 +39,7 @@
 // FEM
 // // FEM Elements
 #include "FEM/Elements/EdgeElement.h"
-// #include "FEM/Elements/QuadrilateralElement.h"
+#include "FEM/Elements/QuadrilateralElement.h"
 // #include "FEM/Elements/HexahedralElement.h"
 
 // // FEM Quadrature

@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
                                                                   midpoint_quadrature);
 
         // Print the 1D mesh vertices for plotting
-        const std::string vertex_filename = "~1D_lagrange_vertices.dat";
+        const std::string vertex_filename = "~1D_lagrange_vertices.csv";
         std::cout << "Writing vertices to " << vertex_filename << "\n";
         std::ofstream vertex_out(vertex_filename, std::ios::out);
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         vertex_out.close();
 
         // Print all the elements for plotting
-        const std::string element_filename = "~1D_lagrange_elements.dat";
+        const std::string element_filename = "~1D_lagrange_elements.csv";
         std::cout << "Writing elements to " << element_filename << "\n";
         std::ofstream elem_out(element_filename, std::ios::out);
 
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
         const double dx                 = interval_size / (number_of_points - 1);
         ippl::Vector<double, 1> x       = {0.0};
 
-        const std::string basis_filename = "~1D_lagrange_basis.dat";
+        const std::string basis_filename = "~1D_lagrange_basis.csv";
         std::cout << "Writing basis functions to " << basis_filename << "\n";
         std::ofstream basis_out(basis_filename, std::ios::out);
 
