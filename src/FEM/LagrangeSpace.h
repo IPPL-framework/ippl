@@ -19,6 +19,11 @@ namespace ippl {
 
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices,
                                             NumIntegrationPoints>::vertex_vector_t vertex_vector_t;
+        typedef
+            typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t
+                index_t;
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices,
+                                            NumIntegrationPoints>::index_vec_t index_vec_t;
 
         /**
          * @brief Eveluate the load vector at the given index.
@@ -26,7 +31,7 @@ namespace ippl {
          * @param j The index of the load vector
          * @return T The value of the load vector at the given index
          */
-        T evaluateLoadVector(const Index& j) const override;
+        T evaluateLoadVector(const index_t& j) const override;
 
         /**
          * @brief Evaluate the stiffness matrix at the given indices.
@@ -35,7 +40,7 @@ namespace ippl {
          * @param j The column index of the stiffness matrix
          * @return T The value of the stiffness matrix at the given indices
          */
-        T evaluateStiffnessMatrix(const Index& i, const Index& j) const override;
+        T evaluateStiffnessMatrix(const index_t& i, const index_t& j) const override;
 
         /**
          * @brief Get the index vector from the element index.
@@ -43,7 +48,7 @@ namespace ippl {
          * @param element_index The index of the element.
          * @return index_vector_t
          */
-        NDIndex<Dim> getNDIndexForElement(const Index& element_index) const override;
+        index_vec_t getNDIndexForElement(const index_t& element_index) const override;
 
         /**
          * @brief Get the dimension indices for vertex object
@@ -51,10 +56,10 @@ namespace ippl {
          * @param vertex_index
          * @return NDIndex<Dim>
          */
-        NDIndex<Dim> getNDIndexForVertex(const Index& vertex_index) const override;
+        index_vec_t getNDIndexForVertex(const index_t& vertex_index) const override;
 
-        Vector<T, Dim> getCoordinatesForVertex(const NDIndex<Dim>& vertex_indices) const;
-        Vector<T, Dim> getCoordinatesForVertex(const Index& vertex_index) const;
+        Vector<T, Dim> getCoordinatesForVertex(const index_vec_t& vertex_indices) const;
+        Vector<T, Dim> getCoordinatesForVertex(const index_t& vertex_index) const;
 
         /**
          * @brief Get the vertices for an elment given the element indices in each dimension of the
@@ -64,7 +69,7 @@ namespace ippl {
          * @return Vector<std::size_t, NumVertices>
          */
         vertex_vector_t getGlobalVerticesForElement(
-            const NDIndex<Dim>& element_indices) const override;
+            const index_vec_t& element_indices) const override;
 
         /**
          * @brief Evaluate the basis functions at the given global vertex and at the given global
@@ -74,7 +79,7 @@ namespace ippl {
          * @param global_coordinates The local coordinates to evaluate the shape functions at.
          * @return T The value of the shape functions at the given local coordinates.
          */
-        T evaluateBasis(const Index& vertex_index,
+        T evaluateBasis(const index_t& vertex_index,
                         const Vector<T, Dim>& global_coordinates) const override;
     };
 

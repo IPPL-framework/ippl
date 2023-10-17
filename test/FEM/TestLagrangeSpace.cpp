@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
         vertex_out << "vertex_index,x\n";
         ippl::Vector<double, 1> vertex_coordinates;
-        for (ippl::Index i = 0; i < number_of_vertices; i += 1) {
+        for (unsigned i = 0; i < number_of_vertices; i += 1) {
             vertex_out << i;
             vertex_coordinates = lagrange_space.getCoordinatesForVertex(i);
             vertex_out << "," << vertex_coordinates[0];

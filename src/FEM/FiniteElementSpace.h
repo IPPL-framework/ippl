@@ -30,6 +30,8 @@ namespace ippl {
     class FiniteElementSpace {
     public:
         typedef Vector<Index, NumElementVertices> vertex_vector_t;
+        typedef std::size_t index_t;
+        typedef Vector<index_t, Dim> index_vec_t;
 
         /**
          * @brief Construct a new Finite Element Space object with a given mesh and
@@ -49,7 +51,7 @@ namespace ippl {
          * @param j The index of the load vector
          * @return T The value of the load vector at the given index
          */
-        virtual T evaluateLoadVector(const Index& j) const = 0;
+        virtual T evaluateLoadVector(const index_t& j) const = 0;
 
         /**
          * @brief Evaluate the stiffness matrix at the given indices.
@@ -58,23 +60,23 @@ namespace ippl {
          * @param j The column index of the stiffness matrix
          * @return T The value of the stiffness matrix at the given indices
          */
-        virtual T evaluateStiffnessMatrix(const Index& i, const Index& j) const = 0;
+        virtual T evaluateStiffnessMatrix(const index_t& i, const index_t& j) const = 0;
 
         /**
          * @brief Get the dimension indices for element object
          *
          * @param element_index
-         * @return NDIndex<Dim>
+         * @return index_vec_t
          */
-        virtual NDIndex<Dim> getNDIndexForElement(const Index& element_index) const = 0;
+        virtual index_vec_t getNDIndexForElement(const index_t& element_index) const = 0;
 
         /**
          * @brief Get the dimension indices for vertex object
          *
          * @param vertex_index
-         * @return NDIndex<Dim>
+         * @return index_vec_t
          */
-        virtual NDIndex<Dim> getNDIndexForVertex(const Index& vertex_index) const = 0;
+        virtual index_vec_t getNDIndexForVertex(const index_t& vertex_index) const = 0;
 
         /**
          * @brief Get the vertices for an element given the element index.
@@ -82,7 +84,7 @@ namespace ippl {
          * @param element_index The index of the element.
          * @return vertex_vector_t
          */
-        vertex_vector_t getGlobalVerticesForElement(const Index& element_index) const;
+        vertex_vector_t getGlobalVerticesForElement(const index_t& element_index) const;
 
         /**
          * @brief Get the vertices for an elment given the element indices in each dimension of the
@@ -92,7 +94,7 @@ namespace ippl {
          * @return vertex_vector_t
          */
         virtual vertex_vector_t getGlobalVerticesForElement(
-            const NDIndex<Dim>& element_indices) const = 0;
+            const index_vec_t& element_indices) const = 0;
 
         /**
          * @brief Evaluate the basis functions at the given global vertex and at the given global
@@ -102,7 +104,7 @@ namespace ippl {
          * @param global_coordinates The local coordinates to evaluate the shape functions at.
          * @return T The value of the shape functions at the given local coordinates.
          */
-        virtual T evaluateBasis(const Index& vertex_index,
+        virtual T evaluateBasis(const index_t& vertex_index,
                                 const Vector<T, Dim>& global_coordinates) const = 0;
 
     protected:

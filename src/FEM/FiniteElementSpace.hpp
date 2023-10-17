@@ -13,7 +13,9 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::vertex_vector_t
     FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::
-        getGlobalVerticesForElement(const Index& element_index) const {
+        getGlobalVerticesForElement(
+            const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
+                element_index) const {
         return getGlobalVerticesForElement(getNDIndexForElement(element_index));
     }
 
