@@ -35,23 +35,6 @@ namespace ippl {
                                             NumIntegrationPoints>::index_vec_t index_vec_t;
 
         /**
-         * @brief Eveluate the load vector at the given index.
-         *
-         * @param j The index of the load vector
-         * @return T The value of the load vector at the given index
-         */
-        T evaluateLoadVector(const index_t& j) const override;
-
-        /**
-         * @brief Evaluate the stiffness matrix at the given indices.
-         *
-         * @param i The row index of the stiffness matrix
-         * @param j The column index of the stiffness matrix
-         * @return T The value of the stiffness matrix at the given indices
-         */
-        T evaluateStiffnessMatrix(const index_t& i, const index_t& j) const override;
-
-        /**
          * @brief Get the index vector from the element index.
          *
          * @param element_index The index of the element.
@@ -81,8 +64,18 @@ namespace ippl {
             const index_vec_t& element_indices) const override;
 
         /**
-         * @brief Evaluate the basis functions at the given global vertex and at the given global
-         * coordinates.
+         * @brief Returns whether a point in local coordinates ([0, 1]^Dim) is inside the reference
+         * element.
+         *
+         * @param point A point in local coordinates with respect to the reference element.
+         * @return boolean - Returns true when the point is inside the reference element or on the
+         * boundary. Returns false else
+         */
+        bool isLocalPointInLocalRefElement(const Vector<T, Dim>& point) const;
+
+        /**
+         * @brief Evaluate the element shape functions at the given global vertex and at the given
+         * global coordinates.
          *
          * @param global_vertex_index The global index of the vertex to evaluate the shape functions
          * for.
@@ -93,7 +86,7 @@ namespace ippl {
                               const Vector<T, Dim>& global_coordinates) const override;
 
         /**
-         * @brief Evaluate the basis functions at the given local coordinates.
+         * @brief Evaluate the element shape functions at the given local coordinates.
          *
          * @param local_vertex_index The local index of the vertex to evaluate the shape functions
          * @param local_coordinates The local coordinates to evaluate the shape functions at.
@@ -101,6 +94,37 @@ namespace ippl {
          */
         T evaluateLocalBasis(const index_t& local_vertex_index,
                              const Vector<T, Dim>& local_coordinates) const override;
+
+        /**
+         * @brief Function to evaluate the gradient of the element shape functions at
+         * the given global vertex and at the given global coordinates.
+         *
+         * @param local_vertex_index The index of the local vertex to evaluate the gradient of the
+         * shape functions for.
+         * @param local_coordinates
+         * @return Vector<T, Dim> The value of the gradient of the shape functions at the given
+         * local coordinates.
+         */
+        Vector<T, Dim> evaluateLocalBasisGradient(
+            const index_t& local_vertex_index,
+            const Vector<T, Dim>& local_coordinates) const override;
+
+        /**
+         * @brief Eveluate the load vector at the given index.
+         *
+         * @param j The index of the load vector
+         * @return T The value of the load vector at the given index
+         */
+        T evaluateLoadVector(const index_t& j) const override;
+
+        /**
+         * @brief Evaluate the stiffness matrix at the given indices.
+         *
+         * @param i The row index of the stiffness matrix
+         * @param j The column index of the stiffness matrix
+         * @return T The value of the stiffness matrix at the given indices
+         */
+        T evaluateStiffnessMatrix(const index_t& i, const index_t& j) const override;
 
     private:
         NDIndex<Dim> makeNDIndex(const index_vec_t& indices) const;

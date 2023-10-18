@@ -163,22 +163,20 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLocalBasis(
-        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
-            local_vertex_index const Vector<T, Dim>& local_coordinates) const {
-        // ! This function assumes there are only uniform cartestion meshes for the LagrangeSpace
-        // (because ippl::Mesh is like that)
-        // TODO write a function to check if something is inside the reference element
-
+    bool
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::isLocalPointInLocalRefElement(
+        const Vector<T, Dim>& point) const {
         // check if the local coordinates are inside the reference element
+
+        // TODO change from hardcoded for n-cuboid elements to using function of the Element class
         for (std::size_t d = 0; d < Dim; d++) {
             if (local_coordinates[d] >= 1.0 || local_coordinates[d] <= 0.0) {
                 // The global coordinates are outside of the support.
-                return 0.0;
+                return false;
             }
         }
 
-        // TODO
+        return true;
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
@@ -217,6 +215,84 @@ namespace ippl {
         }
 
         return product;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLocalBasis(
+        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
+            local_vertex_index,
+        const Vector<T, Dim>& local_coordinates) const {
+        // Assert that the local vertex index is valid.
+        assert(local_vertex_index < NumElementVertices
+               && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
+
+        assert(isLocalPointInLocalRefElement(local_coordinates)
+               && "Point is not in reference element");
+
+        // Get the local vertex indices for the local vertex index.
+        const index_vec_t local_vertex_indices =
+            this->ref_element_m.getLocalVertices()[local_vertex_index];
+
+        // The variable that accumulates the product of the shape functions.
+        T product = 1;
+
+        for (std::size_t d = 0; d < Dim; d++) {
+            if (local_coordinates[d] < local_vertex_indices[d]) {
+                product *= local_coordinates[d];
+            } else {
+                product *= 1.0 - local_coordinates[d];
+            }
+        }
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    Vector<T, Dim>
+    LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLocalBasisGradient(
+        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
+            local_vertex_index,
+        const Vector<T, Dim>& local_coordinates) const {
+        // TODO assumes 1st order Lagrange
+
+        // Assert that the local vertex index is valid.
+        assert(local_vertex_index < NumElementVertices && "The local vertex index is invalid");
+
+        assert(isLocalPointInLocalRefElement(local_coordinates)
+               && "Point is not in reference element");
+
+        // Get the local vertex indices for the local vertex index.
+        const index_vec_t local_vertex_indices =
+            this->ref_element_m.getLocalVertices()[local_vertex_index];
+
+        Vector<T, Dim> gradient(1);
+
+        // To construct the gradient we need to loop over the dimensions and multiply the
+        // shape functions in each dimension except the current one. The one of the current
+        // dimension is replaced by the derivative of the shape function in that dimension,
+        // which is either 1 or -1.
+        for (std::size_t d = 0; d < Dim; d++) {
+            // The variable that accumulates the product of the shape functions.
+            T product = 1;
+
+            for (std::size_t d2 = 0; d2 < Dim; d2++) {
+                if (d2 == d) {
+                    if (local_coordinates[d] < local_vertex_indices[d]) {
+                        product *= 1;
+                    } else {
+                        product *= -1;
+                    }
+                } else {
+                    if (local_coordinates[d2] < local_vertex_indices[d2]) {
+                        product *= local_coordinates[d2];
+                    } else {
+                        product *= 1.0 - local_coordinates[d2];
+                    }
+                }
+            }
+
+            gradient[d] = product;
+        }
+
+        return gradient;
     }
 
 }  // namespace ippl

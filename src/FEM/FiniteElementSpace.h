@@ -109,7 +109,7 @@ namespace ippl {
                                       const Vector<T, Dim>& global_coordinates) const = 0;
 
         /**
-         * @brief Pure virtual function to evaluate the basis functions at the given local
+         * @brief Pure virtual function to evaluate the element shape functions at the given local
          * coordinates.
          *
          * @param local_vertex_index The local index of the vertex to evaluate the shape functions
@@ -118,6 +118,18 @@ namespace ippl {
          */
         virtual T evaluateLocalBasis(const index_t& local_vertex_index,
                                      const Vector<T, Dim>& local_coordinates) const = 0;
+
+        /**
+         * @brief Pure virtual function to evaluate the gradient of the element shape functions at
+         * the given global vertex and at the given global coordinates.
+         *
+         * @param local_vertex_index The index of the local vertex to evaluate the gradient of the
+         * shape functions for.
+         * @param local_coordinates
+         * @return Vector<T, Dim> The value of the gradient of the shape functions at the given
+         */
+        virtual Vector<T, Dim> evaluateLocalBasisGradient(
+            const index_t& local_vertex_index, const Vector<T, Dim>& local_coordinates) const = 0;
 
     protected:
         const Mesh<T, Dim>& mesh_m;
