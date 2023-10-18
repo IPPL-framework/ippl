@@ -76,7 +76,7 @@ public:
         this->time_m += this->dt;
         this->it ++;
         // wrtie solution to output file
-        this->dumpLandau();
+        this->dump();
         
         Inform m("Post-step:");
         m << "Finished time step: " << this->it << " time: " << this->time_m << endl;
@@ -308,7 +308,7 @@ public:
         }
     }
 
-    void dumpLandau() { dumpLandau(fcontainer_m->E_m.getView()); }
+    void dump() { dumpLandau(fcontainer_m->E_m.getView()); }
 
     template <typename View>
     void dumpLandau(const View& Eview) {

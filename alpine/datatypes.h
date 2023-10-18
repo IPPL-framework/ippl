@@ -65,4 +65,3 @@ extern const char* TestName;
 
 constexpr unsigned Dim = 3;
 using T = double;
-
