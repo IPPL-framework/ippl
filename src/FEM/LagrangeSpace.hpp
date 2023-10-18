@@ -170,7 +170,7 @@ namespace ippl {
 
         // TODO change from hardcoded for n-cuboid elements to using function of the Element class
         for (std::size_t d = 0; d < Dim; d++) {
-            if (local_coordinates[d] >= 1.0 || local_coordinates[d] <= 0.0) {
+            if (point[d] > 1.0 || point[d] < 0.0) {
                 // The global coordinates are outside of the support.
                 return false;
             }
@@ -243,6 +243,8 @@ namespace ippl {
                 product *= 1.0 - local_coordinates[d];
             }
         }
+
+        return product;
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>

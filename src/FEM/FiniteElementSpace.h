@@ -29,8 +29,8 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
     class FiniteElementSpace {
     public:
-        typedef Vector<Index, NumElementVertices> vertex_vector_t;
         typedef std::size_t index_t;
+        typedef Vector<index_t, NumElementVertices> vertex_vector_t;
         typedef Vector<index_t, Dim> index_vec_t;
 
         /**

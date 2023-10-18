@@ -23,8 +23,9 @@ int main(int argc, char* argv[]) {
         const ippl::EdgeElement<double, 1> edge_element;
 
         // Create LagrangeSpace
-        const ippl::LagrangeSpace<double, 1, 2, 1> lagrange_space(mesh, edge_element,
-                                                                  midpoint_quadrature);
+        const unsigned number_of_local_vertices = 2;
+        const ippl::LagrangeSpace<double, 1, number_of_local_vertices, 1> lagrange_space(
+            mesh, edge_element, midpoint_quadrature);
 
         // Print the 1D mesh vertices for plotting
         const std::string vertex_filename = "~1D_lagrange_vertices.csv";
@@ -46,7 +47,12 @@ int main(int argc, char* argv[]) {
         std::cout << "Writing elements to " << element_filename << "\n";
         std::ofstream elem_out(element_filename, std::ios::out);
 
-        elem_out << "element_index,a,b\n";
+        elem_out << "element_index";
+        for (unsigned vertex_i = 0; vertex_i < number_of_local_vertices; ++vertex_i) {
+            elem_out << "," << vertex_i;
+        }
+        elem_out << "\n";
+
         for (unsigned i = 0; i < number_of_elements; ++i) {
             elem_out << i;
             const auto element_indices = lagrange_space.getDimensionIndicesForElement(i);
@@ -60,12 +66,11 @@ int main(int argc, char* argv[]) {
         }
         elem_out.close();
 
-        // Print the basis values for plotting
+        // Print the global basis values for plotting
         const unsigned number_of_points = 200;
         const double dx                 = interval_size / (number_of_points - 1);
-        ippl::Vector<double, 1> x       = {0.0};
 
-        const std::string basis_filename = "~1D_lagrange_basis.csv";
+        const std::string basis_filename = "~1D_lagrange_global_basis.csv";
         std::cout << "Writing basis functions to " << basis_filename << "\n";
         std::ofstream basis_out(basis_filename, std::ios::out);
 
@@ -83,6 +88,26 @@ int main(int argc, char* argv[]) {
             basis_out << "\n";
         }
         basis_out.close();
+
+        // Print the local basis values for plotting
+        const std::string local_basis_filename = "~1D_lagrange_local_basis.csv";
+        std::cout << "Writing local basis functions to " << local_basis_filename << "\n";
+        std::ofstream local_basis_out(local_basis_filename, std::ios::out);
+
+        local_basis_out << "x";
+        for (unsigned i = 0; i < number_of_local_vertices; ++i) {
+            local_basis_out << "," << i;
+        }
+
+        local_basis_out << "\n";
+
+        for (ippl::Vector<double, 1> x = {0.0}; x[0] <= 1.0; x[0] += dx) {
+            local_basis_out << x[0];
+            for (unsigned i = 0; i < number_of_local_vertices; ++i) {
+                local_basis_out << "," << lagrange_space.evaluateLocalBasis(i, x);
+            }
+            local_basis_out << "\n";
+        }
     }
     ippl::finalize();
 
