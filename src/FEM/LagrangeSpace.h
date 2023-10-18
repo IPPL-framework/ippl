@@ -62,13 +62,13 @@ namespace ippl {
         /**
          * @brief Get the dimension indices for vertex object
          *
-         * @param vertex_index
+         * @param global_vertex_index
          * @return NDIndex<Dim>
          */
-        index_vec_t getDimensionIndicesForVertex(const index_t& vertex_index) const override;
+        index_vec_t getDimensionIndicesForVertex(const index_t& global_vertex_index) const override;
 
         Vector<T, Dim> getCoordinatesForVertex(const index_vec_t& vertex_indices) const;
-        Vector<T, Dim> getCoordinatesForVertex(const index_t& vertex_index) const;
+        Vector<T, Dim> getCoordinatesForVertex(const index_t& global_vertex_index) const;
 
         /**
          * @brief Get the vertices for an elment given the element indices in each dimension of the
@@ -84,12 +84,23 @@ namespace ippl {
          * @brief Evaluate the basis functions at the given global vertex and at the given global
          * coordinates.
          *
-         * @param vertex_index The index of the vertex to evaluate the shape functions for.
-         * @param global_coordinates The local coordinates to evaluate the shape functions at.
+         * @param global_vertex_index The global index of the vertex to evaluate the shape functions
+         * for.
+         * @param global_coordinates The global coordinates to evaluate the shape functions at.
          * @return T The value of the shape functions at the given local coordinates.
          */
-        T evaluateBasis(const index_t& vertex_index,
-                        const Vector<T, Dim>& global_coordinates) const override;
+        T evaluateGlobalBasis(const index_t& global_vertex_index,
+                              const Vector<T, Dim>& global_coordinates) const override;
+
+        /**
+         * @brief Evaluate the basis functions at the given local coordinates.
+         *
+         * @param local_vertex_index The local index of the vertex to evaluate the shape functions
+         * @param local_coordinates The local coordinates to evaluate the shape functions at.
+         * @return T The value of the shape functions at the given local coordinates.
+         */
+        T evaluateLocalBasis(const index_t& local_vertex_index,
+                             const Vector<T, Dim>& local_coordinates) const override;
 
     private:
         NDIndex<Dim> makeNDIndex(const index_vec_t& indices) const;

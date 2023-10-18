@@ -73,10 +73,11 @@ namespace ippl {
         /**
          * @brief Get the dimension indices for vertex object
          *
-         * @param vertex_index
+         * @param global_vertex_index
          * @return index_vec_t
          */
-        virtual index_vec_t getDimensionIndicesForVertex(const index_t& vertex_index) const = 0;
+        virtual index_vec_t getDimensionIndicesForVertex(
+            const index_t& global_vertex_index) const = 0;
 
         /**
          * @brief Get the vertices for an element given the element index.
@@ -97,15 +98,26 @@ namespace ippl {
             const index_vec_t& element_indices) const = 0;
 
         /**
-         * @brief Evaluate the basis functions at the given global vertex and at the given global
+         * @brief Pure virtual function to evaluate the basis functions at the given global vertex
+         * and at the given global coordinates.
+         *
+         * @param global_vertex_index The index of the vertex to evaluate the shape functions for.
+         * @param global_coordinates The global coordinates to evaluate the shape functions at.
+         * @return T The value of the shape functions at the given global coordinates.
+         */
+        virtual T evaluateGlobalBasis(const index_t& global_vertex_index,
+                                      const Vector<T, Dim>& global_coordinates) const = 0;
+
+        /**
+         * @brief Pure virtual function to evaluate the basis functions at the given local
          * coordinates.
          *
-         * @param vertex_index The index of the vertex to evaluate the shape functions for.
-         * @param global_coordinates The local coordinates to evaluate the shape functions at.
+         * @param local_vertex_index The local index of the vertex to evaluate the shape functions
+         * @param local_coordinates The local coordinates to evaluate the shape functions at.
          * @return T The value of the shape functions at the given local coordinates.
          */
-        virtual T evaluateBasis(const index_t& vertex_index,
-                                const Vector<T, Dim>& global_coordinates) const = 0;
+        virtual T evaluateLocalBasis(const index_t& local_vertex_index,
+                                     const Vector<T, Dim>& local_coordinates) const = 0;
 
     protected:
         const Mesh<T, Dim>& mesh_m;

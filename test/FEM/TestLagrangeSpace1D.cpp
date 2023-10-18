@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         for (ippl::Vector<double, 1> x = {-1.3}; x[0] <= 1.3; x[0] += dx) {
             basis_out << x[0];
             for (unsigned i = 0; i < number_of_vertices; ++i) {
-                basis_out << "," << lagrange_space.evaluateBasis(i, x);
+                basis_out << "," << lagrange_space.evaluateGlobalBasis(i, x);
             }
             basis_out << "\n";
         }

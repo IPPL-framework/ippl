@@ -51,9 +51,9 @@ namespace ippl {
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_vec_t
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getDimensionIndicesForVertex(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
-            vertex_index) const {
+            global_vertex_index) const {
         // Copy the vertex index to the index variable we can alter during the computation.
-        index_t index = vertex_index;
+        index_t index = global_vertex_index;
 
         // Create a vector to store the vertex indices in each dimension for the corresponding
         // vertex.
@@ -106,8 +106,8 @@ namespace ippl {
     Vector<T, Dim>
     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
-            vertex_index) const {
-        const index_vec_t vertex_indices = getDimensionIndicesForVertex(vertex_index);
+            global_vertex_index) const {
+        const index_vec_t vertex_indices = getDimensionIndicesForVertex(global_vertex_index);
         return getCoordinatesForVertex(vertex_indices);
     }
 
@@ -163,11 +163,35 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
-    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateBasis(
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateLocalBasis(
         const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
-            vertex_index,
+            local_vertex_index const Vector<T, Dim>& local_coordinates) const {
+        // ! This function assumes there are only uniform cartestion meshes for the LagrangeSpace
+        // (because ippl::Mesh is like that)
+        // TODO write a function to check if something is inside the reference element
+
+        // check if the local coordinates are inside the reference element
+        for (std::size_t d = 0; d < Dim; d++) {
+            if (local_coordinates[d] >= 1.0 || local_coordinates[d] <= 0.0) {
+                // The global coordinates are outside of the support.
+                return 0.0;
+            }
+        }
+
+        // TODO
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints>
+    T LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::evaluateGlobalBasis(
+        const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::index_t&
+            global_vertex_index,
         const Vector<T, Dim>& global_coordinates) const {
-        const index_vec_t vertex_indices         = getDimensionIndicesForVertex(vertex_index);
+        // ! This function assumes there are only uniform cartestion meshes for the LagrangeSpace
+
+        // TODO maybe perform a transformation to the reference element and then evaluate the
+        // basis function there
+
+        const index_vec_t vertex_indices = getDimensionIndicesForVertex(global_vertex_index);
         const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
         const Vector<T, Dim> h = this->mesh_m.getDeltaVertex(makeNDIndex(Vector<T, Dim>(1)));
 

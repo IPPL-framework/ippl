@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         for (double x = -1.3; x <= 1.3; x += dx) {
             for (double y = -1.3; y <= 1.3; y += dx) {
                 basis_out << x << "," << y << ",";
-                basis_out << lagrange_space.evaluateBasis(vertex_index, {x, y});
+                basis_out << lagrange_space.evaluateGlobalBasis(vertex_index, {x, y});
                 basis_out << "\n";
             }
         }
