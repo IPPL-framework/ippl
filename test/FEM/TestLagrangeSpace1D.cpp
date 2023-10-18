@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 
         basis_out << "x";
         for (unsigned i = 0; i < number_of_vertices; ++i) {
-            basis_out << "," << i;
+            basis_out << ",v_" << i;
         }
         basis_out << "\n";
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
         local_basis_out << "x";
         for (unsigned i = 0; i < number_of_local_vertices; ++i) {
-            local_basis_out << "," << i;
+            local_basis_out << ",v_" << i;
         }
 
         local_basis_out << "\n";

@@ -193,17 +193,19 @@ namespace ippl {
         const Vector<T, Dim> vertex_coodrdinates = getCoordinatesForVertex(vertex_indices);
         const Vector<T, Dim> h = this->mesh_m.getDeltaVertex(makeNDIndex(Vector<T, Dim>(1)));
 
-        // If the global coordinates are outside of the support of the basis function in any
-        // dimension return 0.
+        // If the global coordinates are outside of the support of the
+        // basis function in any dimension return 0.
         for (std::size_t d = 0; d < Dim; d++) {
             if (global_coordinates[d] >= vertex_coodrdinates[d] + h[d]
                 || global_coordinates[d] <= vertex_coodrdinates[d] - h[d]) {
-                // The global coordinates are outside of the support of the basis function.
+                // The global coordinates are outside of the support of
+                // the basis function.
                 return 0.0;
             }
         }
 
-        // The variable that accumulates the product of the shape functions.
+        // The variable that accumulates the product of the shape
+        // functions.
         T product = 1;
 
         for (std::size_t d = 0; d < Dim; d++) {
