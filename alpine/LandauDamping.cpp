@@ -44,6 +44,7 @@
 #include "Manager/PicManager.h"
 #include "datatypes.h"
 #include "LandauDampingManager.h"
+#include <cuda_runtime.h>
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -66,13 +67,19 @@ int main(int argc, char* argv[]) {
         manager.step_method = argv[arg++];
         
         // Perform pre-run operations, including creating mesh, particles,...
+       cudaStream_t stream;
+       cudaStreamCreate(&stream);
        manager.pre_run();
        
        manager.time_m = 0.0;
        msg << "Starting iterations ..." << endl;
-        
+       
+       cudaStreamSynchronize(stream); // Synchronize the stream
+ 
        manager.run(manager.nt);
         
+       cudaStreamDestroy(stream);
+ 
         msg << "LandauDamping: End." << endl;
     }
     ippl::finalize();

@@ -105,21 +105,21 @@ public:
         m << "Discretization:" << endl
             << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
         
-        Mesh_t<Dim> mesh = Mesh_t<Dim>(this->domain, this->hr, this->origin);
+        Mesh_t<Dim> *mesh = new Mesh_t<Dim>(this->domain, this->hr, this->origin);
 
         this->isAllPeriodic = true;
-        FieldLayout_t<Dim> FL = FieldLayout_t<Dim>(this->domain, this->decomp, this->isAllPeriodic);
+        FieldLayout_t<Dim> *FL = new FieldLayout_t<Dim>(this->domain, this->decomp, this->isAllPeriodic);
 	
-        PLayout_t<T, Dim> PL = PLayout_t<T, Dim>(FL, mesh);
+        PLayout_t<T, Dim> *PL = new PLayout_t<T, Dim>(*FL, *mesh);
         
         if (this->solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
         
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(PL);
+        this->pcontainer_m = std::make_shared<ParticleContainer_t>(*PL);
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
-        this->fcontainer_m->initializeFields(mesh, FL);
+        this->fcontainer_m->initializeFields(*mesh, *FL);
         
         this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, this->fcontainer_m->rho_m, this->fcontainer_m->E_m);
         this->fsolver_m->initSolver();
@@ -130,16 +130,13 @@ public:
         this->setFieldSolver(fsolver_m);
         this->setLoadBalancer(loadbalancer_m);
         
-        this ->initializeParticles(mesh, FL);
+        this ->initializeParticles(*mesh, *FL);
         this->fcontainer_m->rho_m = 0.0;
         this->fsolver_m->runSolver();
         this->par2grid();
         this->fsolver_m->runSolver();
         this->grid2par();
         m << "Done";
-
-        //run(nt);
-
     }
 
     void initializeParticles(Mesh_t<Dim>& mesh_m, FieldLayout_t<Dim>& FL_m){
@@ -219,7 +216,6 @@ public:
             }
     }
     void LeapFrogStep(){
-            Inform m("LeapFrogStep");
             double dt_m = this->dt;
             std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
             std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
@@ -233,48 +229,30 @@ public:
             // an attribute
             // kick
 
-            m << "1" << endl;
-            //this->pcontainer_m->P = pcontainer_m->P - 0.5 * this->dt * pcontainer_m->E;
             pc->P = pc->P - 0.5 * dt_m * pc->E;
 
             // drift
-            m << "2" << endl;
-            //this->pcontainer_m->R = pcontainer_m->R - 0.5 * this->dt * pcontainer_m->P;
             pc->R = pc->R + dt_m * pc->P;
 
             // Since the particles have moved spatially update them to correct processors
-            m << "3" << endl;
             pc->update();
-            //this->pcontainer_m->update();
-            // Domain Decomposition
 
-            m << "4" << endl;
             if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
                 auto mesh = fc->rho_m.get_mesh();
                 auto FL = fc->getLayout();
                 loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
             }
-            
-            m << "5" << endl;
+
             // scatter the charge onto the underlying grid
             this->par2grid();
 
-            cudaError_t error = cudaGetLastError();
-            if (error != cudaSuccess) {
-               printf("CUDA error: %s\n", cudaGetErrorString(error));
-            }
-
-            m << "6" << endl;
             // Field solve
             this->fsolver_m->runSolver();
 
-            m << "7" << endl;
             // gather E field
             this->grid2par();
 
-            m << "8" << endl;
             // kick
-            //this->pcontainer_m->P = pcontainer_m->P - 0.5 * this->dt * pcontainer_m->E;
             pc->P = pc->P - 0.5 * dt_m * pc->E;
     }
 
@@ -295,7 +273,7 @@ public:
     }
 
     void scatterCIC() {
-        //Inform m("scatter ");
+        Inform m("scatter ");
         this->fcontainer_m->rho_m = 0.0;
 
         using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
@@ -308,7 +286,7 @@ public:
         Vector_t<double, Dim> hr_m = hr;
 
         scatter(*q_m, *rho_m, *R_m);
-        // m << std::fabs((Q_m - (*rho_m).sum()) / Q_m)  << endl;
+        m << std::fabs((Q_m - (*rho_m).sum()) / Q_m) << endl;
 
         size_type Total_particles = 0;
         size_type local_particles = pcontainer_m->getLocalNum();
