@@ -232,13 +232,12 @@ public:
     void initializeParticles(Mesh_t<Dim>& mesh_m, FieldLayout_t<Dim>& FL_m){
         Inform m("Initialize Particles");
         Vector_t<double, Dim> mu, sd;
-
         for (unsigned d = 0; d < Dim; d++) {
             mu[d] = 0.5 * this->length[d] + this->origin[d];
         }
-        sd[0] = 1.;// sqrt( 0.15 * this->length[0] );
-        sd[1] = 1.;//sqrt( 0.05 * this->length[1] );
-        sd[2] = 1.;//sqrt( 0.20 * this->length[2] );
+        sd[0] = 0.15 * this->length[0];
+        sd[1] = 0.05 * this->length[1];
+        sd[2] = 0.20 * this->length[2];
         
         /*
         Vector_t<double, Dim> mu, sd;
@@ -269,9 +268,9 @@ public:
                     const size_t ig = i + lDom[0].first() - nghost;
                     const size_t jg = j + lDom[1].first() - nghost;
                     const size_t kg = k + lDom[2].first() - nghost;
-                    double x        = (ig + 0.5) * hr[0] + origin[0];
-                    double y        = (jg + 0.5) * hr[1] + origin[1];
-                    double z        = (kg + 0.5) * hr[2] + origin[2];
+                    double x        = (ig + 0.5) * hr_m[0] + origin_m[0];
+                    double y        = (jg + 0.5) * hr_m[1] + origin_m[1];
+                    double z        = (kg + 0.5) * hr_m[2] + origin_m[2];
 
                     Vector_t<double, Dim> xvec = {x, y, z};
 
@@ -339,7 +338,11 @@ public:
         double muP[Dim] = {0.0, 0.0, 0.0};
         double sdP[Dim] = {1.0, 1.0, 1.0};
         Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P_m, rand_pool64, muP, sdP));
+
+        Kokkos::fence();
+        ippl::Comm->barrier();
         */
+        
         size_type totalP_m = this->totalP;
         Vector_t<double, Dim> Nr, Dr, minU, maxU;
         int myRank = ippl::Comm->rank();
@@ -374,7 +377,7 @@ public:
 
         Kokkos::fence();
         ippl::Comm->barrier();
-
+        
         this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
@@ -385,24 +388,26 @@ public:
             }
     }
     void LeapFrogStep(){
+            Inform m("LeapFrog");
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
             // an attribute
+            m << "0" << endl;
             double alpha_m = this->alpha;
             double Bext_m = this->Bext;
             double DrInv_m = this->DrInv;
             double V0  = 30 * this->length[2];
-            Vector_t<double, Dim> length_m;
+            Vector_t<double, Dim> length_m = this->length;
             Vector_t<double, Dim> origin_m = origin;
             double dt_m = this->dt;
             std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
             std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-            int unsigned totalP_m = this->totalP;
-            int it_m = this->it;
-            bool isFirstRepartition_m = false;
+            //int unsigned totalP_m = this->totalP;
+            //int it_m = this->it;
+            //bool isFirstRepartition_m = false;
 
-
+             m << "1" << endl;
 
              auto Rview = pc->R.getView();
              auto Pview = pc->P.getView();
@@ -420,34 +425,45 @@ public:
                 Eext_y += Eview(j)[1];
                 Eext_z += Eview(j)[2];
 
-                Pview(j)[0] += alpha_m * (Eext_x + Pview(j)[1] * Bext);
-                Pview(j)[1] += alpha_m * (Eext_y - Pview(j)[0] * Bext);
+                Pview(j)[0] += alpha_m * (Eext_x + Pview(j)[1] * Bext_m);
+                Pview(j)[1] += alpha_m * (Eext_y - Pview(j)[0] * Bext_m);
                 Pview(j)[2] += alpha_m * Eext_z;
             });
         
+            m << "2" << endl;
 
             // drift
             pc->R = pc->R + dt_m * pc->P;
 
+            m << "3" << endl;
+
             // Since the particles have moved spatially update them to correct processors
             pc->update();
 
-            if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
-                auto mesh = fc->rho_m.get_mesh();
-                auto FL = fc->getLayout();
-                loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
-            }
+            //m << "4" << endl;
+            //if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
+            //    auto mesh = fc->rho_m.get_mesh();
+            //    auto FL = fc->getLayout();
+            //    loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
+            //}
+            //Kokkos::fence();
 
-            Kokkos::fence();
+            m << "5" << endl;
+
             // scatter the charge onto the underlying grid
             this->par2grid();
+
+            m << "6" << endl;
 
             // Field solve
             this->fsolver_m->runSolver();
 
+            m << "7" << endl;
+
             // gather E field
             this->grid2par();
         
+            m << "8" << endl;
         
            auto R2view = pc->R.getView();
            auto P2view = pc->P.getView();
@@ -469,6 +485,8 @@ public:
              P2view(j)[1] = DrInv_m * (P2view(j)[1] + alpha_m * (Eext_y - P2view(j)[0] * Bext_m - alpha_m * Bext_m * Eext_x));
              P2view(j)[2] += alpha_m * Eext_z;
           });
+          m << "9" << endl;
+
     }
 
     void par2grid() override {
