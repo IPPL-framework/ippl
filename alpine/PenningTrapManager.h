@@ -1,5 +1,5 @@
-#ifndef IPPL_LANDAU_DAMPING_MANAGER_H
-#define IPPL_LANDAU_DAMPING_MANAGER_H
+#ifndef IPPL_PENNING_TRAP_MANAGER_H
+#define IPPL_PENNING_TRAP_MANAGER_H
 
 #include <memory>
 #include "Manager/BaseManager.h"
