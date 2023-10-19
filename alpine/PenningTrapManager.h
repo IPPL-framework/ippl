@@ -16,6 +16,7 @@ using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>
 
 const char* TestName = "PenningTrap";
 
+/*
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -115,7 +116,7 @@ double PDF(const Vector_t<double, Dim>& xvec, const Vector_t<double, Dim>& mu,
     }
     return pdf;
 }
-
+*/
 class PenningTrapManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>> {
 public:
     double loadbalancethreshold_m;
@@ -231,22 +232,14 @@ public:
 
     void initializeParticles(Mesh_t<Dim>& mesh_m, FieldLayout_t<Dim>& FL_m){
         Inform m("Initialize Particles");
+
         Vector_t<double, Dim> mu, sd;
         for (unsigned d = 0; d < Dim; d++) {
             mu[d] = 0.5 * this->length[d] + this->origin[d];
         }
-        sd[0] = 0.15 * this->length[0];
-        sd[1] = 0.05 * this->length[1];
-        sd[2] = 0.20 * this->length[2];
-        
-        /*
-        Vector_t<double, Dim> mu, sd;
-        for (unsigned d = 0; d < Dim; d++) {
-            mu[d] = 0.5 * this->length[d] + this->origin[d];
-        }
-        sd[0] = 1.;// sqrt( 0.15 * this->length[0] );
-        sd[1] = 1.;//sqrt( 0.05 * this->length[1] );
-        sd[2] = 1.;//sqrt( 0.20 * this->length[2] );
+        sd[0] = sqrt( 0.15 * this->length[0] );
+        sd[1] = sqrt( 0.05 * this->length[1] );
+        sd[2] = sqrt( 0.20 * this->length[2] );
         
         using DistR_t = ippl::random::NormalDistribution<double, Dim>;
         const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
@@ -254,7 +247,8 @@ public:
 
         Vector_t<double, Dim> hr_m = this->hr;
         Vector_t<double, Dim> origin_m = this->origin;
-        
+
+        /*
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             isFirstRepartition             = true;
             const ippl::NDIndex<Dim>& lDom = FL_m.getLocalNDIndex();
@@ -283,7 +277,7 @@ public:
             this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
         }
         */
-        /*
+
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
@@ -307,16 +301,12 @@ public:
 
             this->loadbalancer_m->initializeORB(FL_m, mesh_m);
             this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
-        }*/
-        
+        }
+
         // Sample particle positions:
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
-        const typename RegionLayout_t::host_mirror_type Regions = rlayout.gethLocalRegions();
         
-        //unsigned int
-        /*
         size_type totalP_m = this->totalP;
         int seed = 42;
         using size_type = ippl::detail::size_type;
@@ -341,8 +331,21 @@ public:
 
         Kokkos::fence();
         ippl::Comm->barrier();
-        */
-        
+
+        /*
+        Vector_t<double, Dim> mu, sd;
+        for (unsigned d = 0; d < Dim; d++) {
+            mu[d] = 0.5 * this->length[d] + this->origin[d];
+        }
+        sd[0] = 0.15 * this->length[0];
+        sd[1] = 0.05 * this->length[1];
+        sd[2] = 0.20 * this->length[2];
+
+        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
+        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
+        const typename RegionLayout_t::host_mirror_type Regions = rlayout.gethLocalRegions();
+
         size_type totalP_m = this->totalP;
         Vector_t<double, Dim> Nr, Dr, minU, maxU;
         int myRank = ippl::Comm->rank();
@@ -377,7 +380,8 @@ public:
 
         Kokkos::fence();
         ippl::Comm->barrier();
-        
+        */
+
         this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
@@ -543,14 +547,12 @@ public:
         }
     }
 
-    void dump(){};// { dumpData(); }
+    void dump() { dumpData(); }
     
     void dumpData() {
         auto Pview = this->pcontainer_m->P.getView();
-
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
-
         this->fcontainer_m->rho_m     = dot(this->fcontainer_m->E_m, this->fcontainer_m->E_m);
         potEnergy = 0.5 * this->hr[0] * this->hr[1] * this->hr[2] * this->fcontainer_m->rho_m.sum();
 
@@ -584,10 +586,12 @@ public:
                     valL += myVal;
                 },
                 Kokkos::Sum<T>(temp));
+            Kokkos::fence();
             T globaltemp          = 0.0;
             MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
             MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, ippl::Comm->getCommunicator());
             normE[d] = std::sqrt(globaltemp);
+            ippl::Comm->barrier();
         }
 
         if (ippl::Comm->rank() == 0) {
@@ -614,8 +618,8 @@ public:
                 csvout << normE[d] << " ";
             }
             csvout << endl;
+            csvout.flush();
         }
-
         ippl::Comm->barrier();
     }
     

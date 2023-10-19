@@ -151,12 +151,17 @@ void MomentsFromSamples(view_type position, int d, int ntotal, const int P, doub
 }
 
 void WriteErrorInMoments(double *moms, double *moms_ref, int P){
-    Inform csvout(NULL, "data/error_moments_custom_dist.csv", Inform::APPEND);
+    std::stringstream fname;
+    fname << "data/error_moments_custom_dist";
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
     for(int i=0; i<P; i++){
         csvout << moms_ref[i] << " " << moms[i] << " " << fabs(moms_ref[i] - moms[i]) << endl;
     }
+    csvout.flush();
     ippl::Comm->barrier();
 }
 
