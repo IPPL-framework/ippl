@@ -33,7 +33,7 @@ namespace ippl {
             inv_jacobian;  // ippl::Vector<ippl::Vector<T, 1>, GeometricDim>
 
         for (unsigned d = 0; d < GeometricDim; ++d) {
-            inv_jacobian[d][0] = global_vertices[0][d] - global_vertices[1][d];
+            inv_jacobian[d][0] = global_vertices[1][d] - global_vertices[0][d];
         }
 
         return inv_jacobian;

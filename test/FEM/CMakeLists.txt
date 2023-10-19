@@ -13,6 +13,25 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
+
+# Element tests
+
+add_executable(TestEdgeElement TestEdgeElement.cpp)
+target_link_libraries (
+    TestEdgeElement
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestQuadElement TestQuadElement.cpp)
+target_link_libraries (
+    TestQuadElement
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+# FEM Space tests
+
 add_executable (TestLagrangeSpace1D TestLagrangeSpace1D.cpp)
 target_link_libraries (
     TestLagrangeSpace1D
