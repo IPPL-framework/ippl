@@ -142,9 +142,8 @@ namespace ippl {
      * This functor calculates the CDF for a normal distribution in a specific dimension 'd'.
      *
      * @tparam T Data type for the input value 'x'.
-     * @tparam Dim Dimensionality of the distribution.
     */
-    template <typename T, unsigned Dim>
+    template <typename T>
     struct normal_cdf{
       KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params) const {
               T mean = params[2*d + 0];
@@ -160,9 +159,8 @@ namespace ippl {
      * This functor calculates the PDF for a normal distribution in a specific dimension 'd'.
      *
      * @tparam T Data type for the input value 'x'.
-     * @tparam Dim Dimensionality of the distribution.
     */
-    template <typename T, unsigned Dim>
+    template <typename T>
     struct normal_pdf{
       KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params) const {
               T mean = params[2*d + 0];
@@ -178,9 +176,8 @@ namespace ippl {
      * This functor estimates the value for a normal distribution in a specific dimension 'd'.
      *
      * @tparam T Data type for the input value 'u'.
-     * @tparam Dim Dimensionality of the distribution.
     */
-    template <typename T, unsigned Dim>
+    template <typename T>
     struct normal_estimate{
       KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params) const {
               T mean = params[2*d + 0];
@@ -195,9 +192,9 @@ namespace ippl {
     */
     template<typename T, unsigned Dim>
     class NormalDistribution : public ippl::random::Distribution<T, Dim, 2*Dim,
-                          ippl::random::normal_pdf<T, Dim>,
-                          ippl::random::normal_cdf<T, Dim>,
-                          ippl::random::normal_estimate<T, Dim>>{
+                          ippl::random::normal_pdf<T>,
+                          ippl::random::normal_cdf<T>,
+                          ippl::random::normal_estimate<T>>{
     public:
       /*!
        * @brief Constructor for the Normal Distribution class.
@@ -205,9 +202,9 @@ namespace ippl {
       */
       KOKKOS_INLINE_FUNCTION NormalDistribution(const T *par_)
                               : ippl::random::Distribution<T, Dim, 2*Dim,
-                              ippl::random::normal_pdf<T, Dim>,
-                              ippl::random::normal_cdf<T, Dim>,
-                              ippl::random::normal_estimate<T, Dim>>(par_) {}
+                              ippl::random::normal_pdf<T>,
+                              ippl::random::normal_cdf<T>,
+                              ippl::random::normal_estimate<T>>(par_) {}
     };
 
 
