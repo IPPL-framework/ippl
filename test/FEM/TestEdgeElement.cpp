@@ -25,22 +25,20 @@ int main(int argc, char* argv[]) {
 
         // The reference edge is form 0 to 1 on x and 0 on y
 
-        // Rotate it by 90 degrees
         const auto inv_jac =
             edge_element.getInverseLinearTransformationJacobian(global_edge_vertices);
 
-        // get the transformed vertex for this local point
+        // get the transformed vertex for these local points
         const double end_point = 1.0;
         const double mid_point = 0.5;
 
-        const auto end_prod = inv_jac * end_point;
-        const auto mid_prod = inv_jac * mid_point;
+        const ippl::Vector<double, 2> end_prod = {inv_jac[0].dot(end_point),
+                                                  inv_jac[1].dot(end_point)};
+        const ippl::Vector<double, 2> mid_prod = {inv_jac[0].dot(mid_point),
+                                                  inv_jac[1].dot(mid_point)};
 
-        ippl::Vector<double, 2> transformed_end_point = {end_prod[0][0], end_prod[1][0]};
-        transformed_end_point += global_edge_vertices[0];
-
-        ippl::Vector<double, 2> transformed_mid_point = {mid_prod[0][0], mid_prod[1][0]};
-        transformed_mid_point += global_edge_vertices[0];
+        ippl::Vector<double, 2> transformed_end_point = end_prod + global_edge_vertices[0];
+        ippl::Vector<double, 2> transformed_mid_point = mid_prod + global_edge_vertices[0];
 
         std::cout << "transformed_end_point = (" << transformed_end_point[0] << ","
                   << transformed_end_point[1] << ")\n";

@@ -29,8 +29,8 @@ namespace ippl {
         QuadrilateralElement::inverse_jacobian_t inv_jacobian;
 
         for (unsigned d = 0; d < GeometricDim; ++d) {
-            inv_jacobian[0][d] = global_vertices[1][d] - global_vertices[0][d];
-            inv_jacobian[1][d] = global_vertices[2][d] - global_vertices[0][d];
+            inv_jacobian[d][0] = global_vertices[1][d] - global_vertices[0][d];
+            inv_jacobian[d][1] = global_vertices[2][d] - global_vertices[0][d];
         }
 
         return inv_jacobian;
