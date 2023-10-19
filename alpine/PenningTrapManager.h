@@ -13,110 +13,8 @@
 
 using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
-
 const char* TestName = "PenningTrap";
 
-/*
-template <typename T>
-struct Newton1D {
-    double tol   = 1e-12;
-    int max_iter = 20;
-    double pi    = Kokkos::numbers::pi_v<double>;
-
-    T mu, sigma, u;
-
-    KOKKOS_INLINE_FUNCTION Newton1D() {}
-
-    KOKKOS_INLINE_FUNCTION Newton1D(const T& mu_, const T& sigma_, const T& u_)
-        : mu(mu_)
-        , sigma(sigma_)
-        , u(u_) {}
-
-    KOKKOS_INLINE_FUNCTION ~Newton1D() {}
-
-    KOKKOS_INLINE_FUNCTION T f(T& x) {
-        T F;
-        F = Kokkos::erf((x - mu) / (sigma * Kokkos::sqrt(2.0))) - 2 * u + 1;
-        return F;
-    }
-
-    KOKKOS_INLINE_FUNCTION T fprime(T& x) {
-        T Fprime;
-        Fprime = (1 / sigma) * Kokkos::sqrt(2 / pi)
-                 * Kokkos::exp(-0.5 * (Kokkos::pow(((x - mu) / sigma), 2)));
-        return Fprime;
-    }
-
-    KOKKOS_FUNCTION
-    void solve(T& x) {
-        int iterations = 0;
-        while ((iterations < max_iter) && (Kokkos::fabs(f(x)) > tol)) {
-            x = x - (f(x) / fprime(x));
-            iterations += 1;
-        }
-    }
-};
-
-template <typename T, class GeneratorPool, unsigned Dim>
-struct generate_random {
-    using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
-    using value_type = typename T::value_type;
-    // Output View for the random numbers
-    view_type x, v;
-
-    // The GeneratorPool
-    GeneratorPool rand_pool;
-
-    T mu, sigma, minU, maxU;
-    double pi = Kokkos::numbers::pi_v<double>;
-
-    // Initialize all members
-    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_,
-                    T& minU_, T& maxU_)
-        : x(x_)
-        , v(v_)
-        , rand_pool(rand_pool_)
-        , mu(mu_)
-        , sigma(sigma_)
-        , minU(minU_)
-        , maxU(maxU_) {}
-
-    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-        // Get a random number state from the pool for the active thread
-        typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
-
-        value_type u;
-        for (unsigned d = 0; d < Dim; ++d) {
-            u       = rand_gen.drand(minU[d], maxU[d]);
-            x(i)[d] = (Kokkos::sqrt(pi / 2) * (2 * u - 1)) * sigma[d] + mu[d];
-            Newton1D<value_type> solver(mu[d], sigma[d], u);
-            solver.solve(x(i)[d]);
-            v(i)[d] = rand_gen.normal(0.0, 1.0);
-        }
-
-        // Give the state back, which will allow another thread to acquire it
-        rand_pool.free_state(rand_gen);
-    }
-};
-
-double CDF(const double& x, const double& mu, const double& sigma) {
-    double cdf = 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2))));
-    return cdf;
-}
-
-KOKKOS_FUNCTION
-double PDF(const Vector_t<double, Dim>& xvec, const Vector_t<double, Dim>& mu,
-           const Vector_t<double, Dim>& sigma, const unsigned Dim) {
-    double pdf = 1.0;
-    double pi  = Kokkos::numbers::pi_v<double>;
-
-    for (unsigned d = 0; d < Dim; ++d) {
-        pdf *= (1.0 / (sigma[d] * Kokkos::sqrt(2 * pi)))
-               * Kokkos::exp(-0.5 * Kokkos::pow((xvec[d] - mu[d]) / sigma[d], 2));
-    }
-    return pdf;
-}
-*/
 class PenningTrapManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>> {
 public:
     double loadbalancethreshold_m;
@@ -248,36 +146,6 @@ public:
         Vector_t<double, Dim> hr_m = this->hr;
         Vector_t<double, Dim> origin_m = this->origin;
 
-        /*
-        if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
-            isFirstRepartition             = true;
-            const ippl::NDIndex<Dim>& lDom = FL_m.getLocalNDIndex();
-            const int nghost               = this->fcontainer_m->rho_m.getNghost();
-            auto rhoview                   = this->fcontainer_m->rho_m.getView();
-
-            Kokkos::parallel_for(
-                "Assign initial rho based on PDF", this->fcontainer_m->rho_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    // local to global index conversion
-                    const size_t ig = i + lDom[0].first() - nghost;
-                    const size_t jg = j + lDom[1].first() - nghost;
-                    const size_t kg = k + lDom[2].first() - nghost;
-                    double x        = (ig + 0.5) * hr_m[0] + origin_m[0];
-                    double y        = (jg + 0.5) * hr_m[1] + origin_m[1];
-                    double z        = (kg + 0.5) * hr_m[2] + origin_m[2];
-
-                    Vector_t<double, Dim> xvec = {x, y, z};
-
-                    rhoview(i, j, k) = distR.full_pdf(xvec);
-                });
-
-            Kokkos::fence();
-
-            this->loadbalancer_m->initializeORB(FL_m, mesh_m);
-            this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
-        }
-        */
-
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
@@ -332,56 +200,6 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        /*
-        Vector_t<double, Dim> mu, sd;
-        for (unsigned d = 0; d < Dim; d++) {
-            mu[d] = 0.5 * this->length[d] + this->origin[d];
-        }
-        sd[0] = 0.15 * this->length[0];
-        sd[1] = 0.05 * this->length[1];
-        sd[2] = 0.20 * this->length[2];
-
-        typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
-        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
-        const typename RegionLayout_t::host_mirror_type Regions = rlayout.gethLocalRegions();
-
-        size_type totalP_m = this->totalP;
-        Vector_t<double, Dim> Nr, Dr, minU, maxU;
-        int myRank = ippl::Comm->rank();
-        for (unsigned d = 0; d < Dim; ++d) {
-            Nr[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d])
-                    - CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-            Dr[d]   = CDF(rmax[d], mu[d], sd[d]) - CDF(rmin[d], mu[d], sd[d]);
-            minU[d] = CDF(Regions(myRank)[d].min(), mu[d], sd[d]);
-            maxU[d] = CDF(Regions(myRank)[d].max(), mu[d], sd[d]);
-        }
-
-        double factor             = (Nr[0] * Nr[1] * Nr[2]) / (Dr[0] * Dr[1] * Dr[2]);
-        size_type nloc            = (size_type)(factor * totalP_m);
-        size_type Total_particles = 0;
-
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-                      ippl::Comm->getCommunicator());
-
-        int rest = (int)(totalP_m - Total_particles);
-
-        if (ippl::Comm->rank() < rest)
-            ++nloc;
-
-        this->pcontainer_m->create(nloc);
-        view_type* R_m = &this->pcontainer_m->R.getView();
-        view_type* P_m = &this->pcontainer_m->P.getView();
-        
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
-        Kokkos::parallel_for(
-            nloc, generate_random<Vector_t<double, Dim>, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                      *R_m, *P_m, rand_pool64, mu, sd, minU, maxU));
-
-        Kokkos::fence();
-        ippl::Comm->barrier();
-        */
-
         this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
@@ -392,31 +210,30 @@ public:
             }
     }
     void LeapFrogStep(){
-            Inform m("LeapFrog");
-            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-            // Here, we assume a constant charge-to-mass ratio of -1 for
-            // all the particles hence eliminating the need to store mass as
-            // an attribute
-            m << "0" << endl;
-            double alpha_m = this->alpha;
-            double Bext_m = this->Bext;
-            double DrInv_m = this->DrInv;
-            double V0  = 30 * this->length[2];
-            Vector_t<double, Dim> length_m = this->length;
-            Vector_t<double, Dim> origin_m = origin;
-            double dt_m = this->dt;
-            std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-            std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-            //int unsigned totalP_m = this->totalP;
-            //int it_m = this->it;
-            //bool isFirstRepartition_m = false;
+          // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+          // Here, we assume a constant charge-to-mass ratio of -1 for
+          // all the particles hence eliminating the need to store mass as
+          // an attribute
+          Inform m("LeapFrog");
 
-             m << "1" << endl;
+          double alpha_m = this->alpha;
+          double Bext_m = this->Bext;
+          double DrInv_m = this->DrInv;
+          double V0  = 30 * this->length[2];
+          Vector_t<double, Dim> length_m = this->length;
+          Vector_t<double, Dim> origin_m = origin;
+          double dt_m = this->dt;
+          std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+          std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
+          int unsigned totalP_m = this->totalP;
+          int it_m = this->it;
+          bool isFirstRepartition_m = false;
 
-             auto Rview = pc->R.getView();
-             auto Pview = pc->P.getView();
-             auto Eview = pc->E.getView();
-             Kokkos::parallel_for(
+          m << "0" << endl;
+          auto Rview = pc->R.getView();
+          auto Pview = pc->P.getView();
+          auto Eview = pc->E.getView();
+          Kokkos::parallel_for(
                "Kick1", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
                 double Eext_x = -(Rview(j)[0] - origin_m[0] - 0.5 * length_m[0])
                                 * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
@@ -432,53 +249,48 @@ public:
                 Pview(j)[0] += alpha_m * (Eext_x + Pview(j)[1] * Bext_m);
                 Pview(j)[1] += alpha_m * (Eext_y - Pview(j)[0] * Bext_m);
                 Pview(j)[2] += alpha_m * Eext_z;
-            });
-        
-            m << "2" << endl;
+          });
+          Kokkos::fence();
 
-            // drift
-            pc->R = pc->R + dt_m * pc->P;
+          m << "1" << endl;
+          // drift
+          pc->R = pc->R + dt_m * pc->P;
 
-            m << "3" << endl;
+          m << "2" << endl;
+          // Since the particles have moved spatially update them to correct processors
+          pc->update();
 
-            // Since the particles have moved spatially update them to correct processors
-            pc->update();
+          /* m << "3" << endl;
+          if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
+                auto mesh = fc->rho_m.get_mesh();
+                auto FL = fc->getLayout();
+                loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
+          }
+          Kokkos::fence();*/
 
-            //m << "4" << endl;
-            //if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
-            //    auto mesh = fc->rho_m.get_mesh();
-            //    auto FL = fc->getLayout();
-            //    loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
-            //}
-            //Kokkos::fence();
+          m << "4" << endl;
+          // scatter the charge onto the underlying grid
+          this->par2grid();
 
-            m << "5" << endl;
+          m << "5" << endl;
+          // Field solve
+          this->fsolver_m->runSolver();
 
-            // scatter the charge onto the underlying grid
-            this->par2grid();
+          m << "6" << endl;
+          // gather E field
+          this->grid2par();
 
-            m << "6" << endl;
-
-            // Field solve
-            this->fsolver_m->runSolver();
-
-            m << "7" << endl;
-
-            // gather E field
-            this->grid2par();
-        
-            m << "8" << endl;
-        
-           auto R2view = pc->R.getView();
-           auto P2view = pc->P.getView();
-           auto E2view = pc->E.getView();
-           Kokkos::parallel_for(
+          m << "7" << endl;
+          auto R2view = pc->R.getView();
+          auto P2view = pc->P.getView();
+          auto E2view = pc->E.getView();
+          Kokkos::parallel_for(
              "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-            double Eext_x = -(R2view(j)[0] - origin_m[0] - 0.5 * length_m[0])
+             double Eext_x = -(R2view(j)[0] - origin_m[0] - 0.5 * length_m[0])
                            * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-            double Eext_y = -(R2view(j)[1] - origin_m[1] - 0.5 * length_m[1])
+             double Eext_y = -(R2view(j)[1] - origin_m[1] - 0.5 * length_m[1])
                             * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-            double Eext_z = (R2view(j)[2] - origin_m[2] - 0.5 * length_m[2])
+             double Eext_z = (R2view(j)[2] - origin_m[2] - 0.5 * length_m[2])
                            * (V0 / (Kokkos::pow(length_m[2], 2)));
 
              Eext_x += Eview(j)[0];
@@ -489,8 +301,8 @@ public:
              P2view(j)[1] = DrInv_m * (P2view(j)[1] + alpha_m * (Eext_y - P2view(j)[0] * Bext_m - alpha_m * Bext_m * Eext_x));
              P2view(j)[2] += alpha_m * Eext_z;
           });
-          m << "9" << endl;
-
+          Kokkos::fence();
+          m << "8" << endl;
     }
 
     void par2grid() override {
@@ -547,7 +359,7 @@ public:
         }
     }
 
-    void dump() { dumpData(); }
+    void dump() {} //{ dumpData(); }
     
     void dumpData() {
         auto Pview = this->pcontainer_m->P.getView();

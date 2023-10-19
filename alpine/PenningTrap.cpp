@@ -16,7 +16,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
+//     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 LeapFrog --overallocate 1.0 --info 10
 //
 //
 // Copyright (c) 2023, Paul Scherrer Institut, Villigen PSI, Switzerland
