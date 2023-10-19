@@ -135,9 +135,9 @@ public:
         for (unsigned d = 0; d < Dim; d++) {
             mu[d] = 0.5 * this->length[d] + this->origin[d];
         }
-        sd[0] = sqrt( 0.15 * this->length[0] );
-        sd[1] = sqrt( 0.05 * this->length[1] );
-        sd[2] = sqrt( 0.20 * this->length[2] );
+        sd[0] = 0.15 * this->length[0];
+        sd[1] = 0.05 * this->length[1];
+        sd[2] = 0.20 * this->length[2];
         
         using DistR_t = ippl::random::NormalDistribution<double, Dim>;
         const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
