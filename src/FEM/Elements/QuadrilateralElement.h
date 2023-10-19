@@ -19,9 +19,31 @@ namespace ippl {
             local_vertex_vector;
         typedef typename Element2D<T, GeometricDim, NumVertices>::global_vertex_vector
             global_vertex_vector;
-        typedef typename Element2D<T, GeometricDim, NumVertices>::jacobian_type jacobian_type;
+        typedef typename Element2D<T, GeometricDim, NumVertices>::jacobian_t jacobian_t;
+        typedef
+            typename Element2D<T, GeometricDim, NumVertices>::inverse_jacobian_t inverse_jacobian_t;
 
         local_vertex_vector getLocalVertices() const override;
+
+        /**
+         * @brief Returns the transformation matrix without the translation
+         * from the global coordinate system to the local element coordinate system.
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return jacobian_t
+         */
+        jacobian_t getLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const;
+
+        /**
+         * @brief Returns the transformation matrix without the translation
+         * from the local element coordinate system to the global coordinate system.
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return inverse_jacobian_t
+         */
+        inverse_jacobian_t getInverseLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const;
     };
 }  // namespace ippl
 

@@ -20,10 +20,17 @@ namespace ippl {
     template <typename T, unsigned GeometricDim, unsigned TopologicalDim, unsigned NumVertices>
     class Element {
     public:
+        static_assert(GeometricDim >= TopologicalDim,
+                      "The finite element geometric dimension must greater or equal the "
+                      "topological dimension");
+
         using local_vertex_vector  = Vector<Vector<T, TopologicalDim>, NumVertices>;
         using global_vertex_vector = Vector<Vector<T, GeometricDim>, NumVertices>;
 
-        using jacobian_type = int;  // TODO
+        typedef Vector<Vector<T, GeometricDim>, TopologicalDim>
+            jacobian_t;  // TODO this does not include the translation
+        typedef Vector<Vector<T, TopologicalDim>, GeometricDim>
+            inverse_jacobian_t;  // TODO this does not include the translation
 
         /**
          * @brief Get the vertices of the element in the local coordinate system.
@@ -32,12 +39,33 @@ namespace ippl {
          */
         virtual local_vertex_vector getLocalVertices() const = 0;
 
-        /***/
-        // virtual jacobian_type getTransformationJacobian(
-        //     const global_vertex_vector& global_vertices) const = 0;
+        /**
+         * @brief Pure virtual function that child elements need to override that returns the
+         * transformation matrix without the translation from the global coordinate system to the
+         * local element coordinate system.
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return jacobian_t
+         */
+        virtual jacobian_t getLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const = 0;
 
-        // virtual global_vertex_vector getGlobalNodes(
-        //     const jacobian_type& transformation_jacobian) const = 0;
+        /**
+         * @brief Pure virtual function that child elements need to override that returns the
+         * transformation matrix without the translation from the local element coordinate system to
+         * the global coordinate system.
+         *
+         * @details The transformation is given by:
+         * \f$\boldsymbol{x} = \mathbf{J}^{-1}_K \hat{\boldsymbol{x}} + \boldsymbol{v}_0\f$
+         * where \f$\mathbf{J}^{-1}\f$ is the transformation matrix returned by this function and
+         * \f$\boldsymbol{v}_0\f$ is the translation vector (given by the coordinates of the first
+         * vertex of the element).
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return inverse_jacobian_t
+         */
+        virtual inverse_jacobian_t getInverseLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const = 0;
     };
 
     template <typename T, unsigned GeometricDim, unsigned NumVertices>

@@ -19,15 +19,37 @@ namespace ippl {
             local_vertex_vector;
         typedef typename Element1D<T, GeometricDim, NumVertices>::global_vertex_vector
             global_vertex_vector;
-        typedef typename Element1D<T, GeometricDim, NumVertices>::jacobian_type jacobian_type;
+        typedef typename Element1D<T, GeometricDim, NumVertices>::jacobian_t jacobian_t;
+        typedef
+            typename Element1D<T, GeometricDim, NumVertices>::inverse_jacobian_t inverse_jacobian_t;
 
         local_vertex_vector getLocalVertices() const override;
 
-        // jacobian_type getTransformationJacobian(
-        //     const global_vertex_vector& global_vertices) const override;
+        /**
+         * @brief Returns the transformation matrix without the translation
+         * from the global coordinate system to the local element coordinate system.
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return jacobian_t
+         */
+        jacobian_t getLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const;
 
-        // global_vertex_vector getGlobalNodes(
-        //     const jacobian_type& transformation_jacobian) const override;
+        /**
+         * @brief Returns the transformation matrix without the translation
+         * from the local element coordinate system to the global coordinate system.
+         *
+         * @details The transformation is given by:
+         * \f$\boldsymbol{x} = \mathbf{J}^{-1}_K \hat{\boldsymbol{x}} + \boldsymbol{v}_0\f$
+         * where \f$\mathbf{J}^{-1}\f$ is the transformation matrix returned by this function and
+         * \f$\boldsymbol{v}_0\f$ is the translation vector (given by the coordinates of the first
+         * vertex of the element).
+         *
+         * @param global_vertices the vertices of the element in the global coordinate system.
+         * @return inverse_jacobian_t
+         */
+        inverse_jacobian_t getInverseLinearTransformationJacobian(
+            const global_vertex_vector& global_vertices) const;
     };
 
 }  // namespace ippl
