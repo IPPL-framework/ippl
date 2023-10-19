@@ -147,8 +147,8 @@ namespace ippl {
     template <typename T, unsigned Dim>
     struct normal_cdf{
       KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params) const {
-              T mean = params[d*Dim + 0];
-              T stddev = params[d*Dim + 1];
+              T mean = params[2*d + 0];
+              T stddev = params[2*d + 1];
               return ippl::random::normal_cdf_func<T>(x, mean, stddev);
       }
     };
@@ -165,8 +165,8 @@ namespace ippl {
     template <typename T, unsigned Dim>
     struct normal_pdf{
       KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params) const {
-              T mean = params[d*Dim + 0];
-              T stddev = params[d*Dim + 1];
+              T mean = params[2*d + 0];
+              T stddev = params[2*d + 1];
               return ippl::random::normal_pdf_func<T>(x, mean, stddev);
       }
     };
@@ -183,8 +183,8 @@ namespace ippl {
     template <typename T, unsigned Dim>
     struct normal_estimate{
       KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params) const {
-              T mean = params[d*Dim + 0];
-              T stddev = params[d*Dim + 1];
+              T mean = params[2*d + 0];
+              T stddev = params[2*d + 1];
               return ippl::random::normal_estimate_func<T>(u, mean, stddev);
       }
     };
