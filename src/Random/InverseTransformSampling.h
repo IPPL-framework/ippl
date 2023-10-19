@@ -55,7 +55,6 @@ namespace ippl {
         const Vector<T, Dim> rmin;
         Vector<T, Dim> umin, umax;
         unsigned int ntotal;
-        
         /*!
          * @brief Constructor for InverseTransformSampling class.
         */
@@ -82,9 +81,9 @@ namespace ippl {
             nlocal_m      = factor * ntotal;
             
             unsigned int ngobal = 0;
-            MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+            MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED, MPI_SUM,
                           ippl::Comm->getCommunicator());
-            
+
             int rest = (int)(ntotal - ngobal);
             
             if (rank < rest) {
