@@ -24,20 +24,23 @@ namespace ippl {
                       "The finite element geometric dimension must greater or equal the "
                       "topological dimension");
 
-        using local_vertex_vector  = Vector<Vector<T, TopologicalDim>, NumVertices>;
-        using global_vertex_vector = Vector<Vector<T, GeometricDim>, NumVertices>;
+        typedef Vector<T, TopologicalDim> local_point_t;
+        typedef Vector<T, GeometricDim> global_point_t;
 
-        typedef Vector<Vector<T, GeometricDim>, TopologicalDim>
-            jacobian_t;  // TODO this does not include the translation
-        typedef Vector<Vector<T, TopologicalDim>, GeometricDim>
-            inverse_jacobian_t;  // TODO this does not include the translation
+        // A list of all local vertices
+        typedef Vector<local_point_t, NumVertices> local_vertex_vec_t;
+        // A list of all global vertices
+        typedef Vector<global_point_t, NumVertices> global_vertex_vec_t;
+
+        typedef Vector<Vector<T, GeometricDim>, TopologicalDim> jacobian_t;
+        typedef Vector<Vector<T, TopologicalDim>, GeometricDim> inverse_jacobian_t;
 
         /**
          * @brief Get the vertices of the element in the local coordinate system.
          *
-         * @return local_vertex_vector the vertices of the element in the local coordinate system.
+         * @return local_vertex_vec_t the vertices of the element in the local coordinate system.
          */
-        virtual local_vertex_vector getLocalVertices() const = 0;
+        virtual local_vertex_vec_t getLocalVertices() const = 0;
 
         /**
          * @brief Pure virtual function that child elements need to override that returns the
@@ -48,7 +51,7 @@ namespace ippl {
          * @return jacobian_t
          */
         virtual jacobian_t getLinearTransformationJacobian(
-            const global_vertex_vector& global_vertices) const = 0;
+            const global_vertex_vec_t& global_vertices) const = 0;
 
         /**
          * @brief Pure virtual function that child elements need to override that returns the
@@ -65,7 +68,13 @@ namespace ippl {
          * @return inverse_jacobian_t
          */
         virtual inverse_jacobian_t getInverseLinearTransformationJacobian(
-            const global_vertex_vector& global_vertices) const = 0;
+            const global_vertex_vec_t& global_vertices) const = 0;
+
+        virtual local_point_t globalToLocal(const global_vertex_vec_t&,
+                                            const global_point_t&) const;
+
+        virtual global_point_t localToGlobal(const global_vertex_vec_t&,
+                                             const local_point_t&) const;
     };
 
     template <typename T, unsigned GeometricDim, unsigned NumVertices>
@@ -78,5 +87,7 @@ namespace ippl {
     using Element3D = Element<T, GeometricDim, 3, NumVertices>;
 
 }  // namespace ippl
+
+#include "FEM/Elements/Element.hpp"
 
 #endif

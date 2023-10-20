@@ -28,25 +28,15 @@ int main(int argc, char* argv[]) {
                   << global_quad_vertices[2][1] << "), (" << global_quad_vertices[3][0] << ","
                   << global_quad_vertices[3][1] << ")\n";
 
-        const auto inv_jac =
-            quad_element.getInverseLinearTransformationJacobian(global_quad_vertices);
-
-        std::cout << "inv_jac = "
-                  << " (" << inv_jac[0][0] << "," << inv_jac[0][1] << "), (" << inv_jac[1][0] << ","
-                  << inv_jac[1][1] << ")\n";
-
-        // get the transformed vertex for these local points
+        // get the transformed vertex for these local pointsd
         const ippl::Vector<double, 2> end_point = {1.0, 1.0};
         const ippl::Vector<double, 2> mid_point = {0.5, 0.5};
 
-        const ippl::Vector<double, 2> end_prod = {inv_jac[0].dot(end_point),
-                                                  inv_jac[1].dot(end_point)};
+        ippl::Vector<double, 2> transformed_end_point =
+            quad_element.localToGlobal(global_quad_vertices, end_point);
 
-        const ippl::Vector<double, 2> mid_prod = {inv_jac[0].dot(mid_point),
-                                                  inv_jac[1].dot(mid_point)};
-
-        ippl::Vector<double, 2> transformed_end_point = end_prod + global_quad_vertices[0];
-        ippl::Vector<double, 2> transformed_mid_point = mid_prod + global_quad_vertices[0];
+        ippl::Vector<double, 2> transformed_mid_point =
+            quad_element.localToGlobal(global_quad_vertices, mid_point);
 
         std::cout << "transformed_end_point = (" << transformed_end_point[0] << ","
                   << transformed_end_point[1] << ")\n";

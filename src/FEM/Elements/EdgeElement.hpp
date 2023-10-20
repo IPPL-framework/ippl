@@ -2,9 +2,9 @@
 namespace ippl {
 
     template <typename T, unsigned GeometricDim>
-    EdgeElement<T, GeometricDim>::local_vertex_vector
+    EdgeElement<T, GeometricDim>::local_vertex_vec_t
     EdgeElement<T, GeometricDim>::getLocalVertices() const {
-        EdgeElement::local_vertex_vector vertices;
+        EdgeElement::local_vertex_vec_t vertices;
         vertices[0] = {0.0};
         vertices[1] = {1.0};
         return vertices;
@@ -14,7 +14,7 @@ namespace ippl {
     template <typename T, unsigned GeometricDim>
     EdgeElement<T, GeometricDim>::jacobian_t
     EdgeElement<T, GeometricDim>::getLinearTransformationJacobian(
-        const EdgeElement<T, GeometricDim>::global_vertex_vector& global_vertices) const {
+        const EdgeElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         EdgeElement::jacobian_t jacobian;
 
         for (unsigned d = 0; d < GeometricDim; ++d) {
@@ -28,7 +28,7 @@ namespace ippl {
     template <typename T, unsigned GeometricDim>
     EdgeElement<T, GeometricDim>::inverse_jacobian_t
     EdgeElement<T, GeometricDim>::getInverseLinearTransformationJacobian(
-        const EdgeElement<T, GeometricDim>::global_vertex_vector& global_vertices) const {
+        const EdgeElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         EdgeElement::inverse_jacobian_t
             inv_jacobian;  // ippl::Vector<ippl::Vector<T, 1>, GeometricDim>
 

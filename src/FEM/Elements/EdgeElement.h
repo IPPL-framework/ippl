@@ -15,15 +15,17 @@ namespace ippl {
         static constexpr unsigned NumVertices    = 2;
         static constexpr unsigned TopologicalDim = 1;
 
-        typedef typename Element1D<T, GeometricDim, NumVertices>::local_vertex_vector
-            local_vertex_vector;
-        typedef typename Element1D<T, GeometricDim, NumVertices>::global_vertex_vector
-            global_vertex_vector;
+        typedef typename Element1D<T, GeometricDim, NumVertices>::local_point_t local_point_t;
+        typedef typename Element1D<T, GeometricDim, NumVertices>::global_point_t global_point_t;
+        typedef
+            typename Element1D<T, GeometricDim, NumVertices>::local_vertex_vec_t local_vertex_vec_t;
+        typedef typename Element1D<T, GeometricDim, NumVertices>::global_vertex_vec_t
+            global_vertex_vec_t;
         typedef typename Element1D<T, GeometricDim, NumVertices>::jacobian_t jacobian_t;
         typedef
             typename Element1D<T, GeometricDim, NumVertices>::inverse_jacobian_t inverse_jacobian_t;
 
-        local_vertex_vector getLocalVertices() const override;
+        local_vertex_vec_t getLocalVertices() const override;
 
         /**
          * @brief Returns the transformation matrix without the translation
@@ -33,7 +35,7 @@ namespace ippl {
          * @return jacobian_t
          */
         jacobian_t getLinearTransformationJacobian(
-            const global_vertex_vector& global_vertices) const;
+            const global_vertex_vec_t& global_vertices) const;
 
         /**
          * @brief Returns the transformation matrix without the translation
@@ -49,7 +51,7 @@ namespace ippl {
          * @return inverse_jacobian_t
          */
         inverse_jacobian_t getInverseLinearTransformationJacobian(
-            const global_vertex_vector& global_vertices) const;
+            const global_vertex_vec_t& global_vertices) const;
     };
 
 }  // namespace ippl

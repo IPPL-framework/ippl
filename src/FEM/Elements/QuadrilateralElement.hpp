@@ -1,9 +1,9 @@
 
 namespace ippl {
     template <typename T, unsigned GeometricDim>
-    typename QuadrilateralElement<T, GeometricDim>::local_vertex_vector
+    typename QuadrilateralElement<T, GeometricDim>::local_vertex_vec_t
     QuadrilateralElement<T, GeometricDim>::getLocalVertices() const {
-        QuadrilateralElement::local_vertex_vector vertices;
+        QuadrilateralElement::local_vertex_vec_t vertices;
         vertices = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
         return vertices;
     }
@@ -11,7 +11,7 @@ namespace ippl {
     template <typename T, unsigned GeometricDim>
     QuadrilateralElement<T, GeometricDim>::jacobian_t
     QuadrilateralElement<T, GeometricDim>::getLinearTransformationJacobian(
-        const QuadrilateralElement<T, GeometricDim>::global_vertex_vector& global_vertices) const {
+        const QuadrilateralElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::jacobian_t jacobian;
 
         for (unsigned d = 0; d < GeometricDim; ++d) {
@@ -25,7 +25,7 @@ namespace ippl {
     template <typename T, unsigned GeometricDim>
     QuadrilateralElement<T, GeometricDim>::inverse_jacobian_t
     QuadrilateralElement<T, GeometricDim>::getInverseLinearTransformationJacobian(
-        const QuadrilateralElement<T, GeometricDim>::global_vertex_vector& global_vertices) const {
+        const QuadrilateralElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::inverse_jacobian_t inv_jacobian;
 
         for (unsigned d = 0; d < GeometricDim; ++d) {
