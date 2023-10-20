@@ -92,6 +92,11 @@ namespace ippl {
         }
 
         /*!
+         * @brief Deconstructor for InverseTransformSampling class.
+        */
+        ~InverseTransformSampling(){}
+
+        /*!
          * @brief Functor that is used for generating samples.
         */
         template <class GeneratorPool>

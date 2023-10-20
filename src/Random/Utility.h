@@ -57,7 +57,7 @@ namespace ippl {
        * @param rmin The minimum of random number.
        * @param rmax The maximum of random number.
       */
-      randu(view_type v_, GeneratorPool rand_pool_, T *rmin_, T *rmax_)
+      KOKKOS_INLINE_FUNCTION randu(view_type v_, GeneratorPool rand_pool_, T *rmin_, T *rmax_)
         : v(v_)
         , rand_pool(rand_pool_) {
            for(unsigned int i=0; i<Dim; i++){
@@ -66,7 +66,7 @@ namespace ippl {
              }
         }
 
-      randu(view_type v_, GeneratorPool rand_pool_)
+      KOKKOS_INLINE_FUNCTION randu(view_type v_, GeneratorPool rand_pool_)
         : v(v_)
         , rand_pool(rand_pool_) {
            for(unsigned int i=0; i<Dim; i++){

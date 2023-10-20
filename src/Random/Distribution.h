@@ -68,6 +68,12 @@ namespace ippl {
                 par_m[i] = par_[i];
             }
        }
+
+       /*!
+        * @ingroup Distribution
+        * @brief Destructor for the Distribution class.
+       */
+       KOKKOS_INLINE_FUNCTION ~Distribution() {}
         
        /*!
         * @brief A wrapper to change the signiture arguments of pdf in each dimension d

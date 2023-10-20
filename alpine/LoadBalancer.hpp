@@ -5,30 +5,23 @@
 #include <memory>
 
     template <typename T, unsigned Dim = 3>
-    class LoadBalancer{//   : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{ // inherent from ParticleBase, cause we need getLayout() and update()
+    class LoadBalancer{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     public:
         double loadbalancethreshold_m;
         Field_t<Dim> rho_m;
         VField_t<T, Dim> E_m;
         ippl::FieldLayout<Dim> fl_m;
-        //typename Base::particle_position_type R_m;  // particle velocity
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver<T, Dim>> fs_m;
-
-        //Solver_t<T, Dim> solver_m;
         unsigned int loadbalancefreq_m;
         
-        //LoadBalancer(double lbs, Field_t<Dim> &rho, VField_t<T, Dim> &E, ippl::FieldLayout<Dim>& fl, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
-        //   :loadbalancethreshold_m(lbs), rho_m(rho), E_m(E), fl_m(fl), pc_m(pc), fs_m(fs) {}
        	LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
            :loadbalancethreshold_m(lbs), rho_m(fc->rho_m), E_m(fc->E_m), fl_m(fc->getLayout()), pc_m(pc), fs_m(fs) {}
-        ORB<T, Dim> orb;
-    public:
-        // Constructor, destructor, and other member functions as needed
-        LoadBalancer() {   }
 
         ~LoadBalancer() {  }
+
+        ORB<T, Dim> orb;
         
      void updateLayout(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
         // Update local fields

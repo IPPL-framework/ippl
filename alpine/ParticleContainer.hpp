@@ -19,6 +19,9 @@
         registerAttributes();
         setupBCs();
         }
+
+        ~ParticleContainer(){}
+
 	void registerAttributes() {
 		// register the particle attributes
 		this->addAttribute(q);

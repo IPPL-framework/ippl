@@ -16,6 +16,7 @@
                 decomp_m[i] = decomp[i];
             }
      }
+    ~FieldContainer(){}
     
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;

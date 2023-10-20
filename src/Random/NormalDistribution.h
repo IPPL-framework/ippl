@@ -58,7 +58,7 @@ namespace ippl {
        * @param mu The array of means in each dimension
        * @param sd The array of standard deviation in each dimension
       */
-      randn(view_type v_, GeneratorPool rand_pool_, T *mu_, T *sd_)
+      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_, T *mu_, T *sd_)
           : v(v_)
           , rand_pool(rand_pool_){
              for(unsigned int i=0; i<Dim; i++){
@@ -67,7 +67,7 @@ namespace ippl {
              }
            }
 
-      randn(view_type v_, GeneratorPool rand_pool_)
+      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_)
           : v(v_)
           , rand_pool(rand_pool_) {
              for(unsigned int i=0; i<Dim; i++){

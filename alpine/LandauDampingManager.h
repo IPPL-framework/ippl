@@ -39,6 +39,8 @@ public:
     LandauDampingManager()
         : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbt(0), dt(0),  step_method("LeapFrog"){
     }
+    ~LandauDampingManager(){}
+
     Vector_t<int, Dim> nr;
     size_type totalP;
     int nt;

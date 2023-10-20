@@ -23,6 +23,8 @@
     FieldSolver(std::string solver, Field_t<Dim> &rho, VField_t<T, Dim> &E)
         : stype_m(solver), rho_m(rho), E_m(E) {}
     
+    ~FieldSolver(){}
+
     void initSolver() {
         Inform m("solver ");
         if (stype_m == "FFT") {

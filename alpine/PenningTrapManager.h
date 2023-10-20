@@ -22,8 +22,10 @@ public:
     PenningTrapManager()
         : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbt(0), dt(0),  step_method("LeapFrog"){
     }
+    ~PenningTrapManager(){}
+
     Vector_t<int, Dim> nr;
-    size_type totalP;
+    unsigned int totalP;
     int nt;
     double lbt;
     double dt;
@@ -175,7 +177,7 @@ public:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
         
-        size_type totalP_m = this->totalP;
+        unsigned int totalP_m = this->totalP;
         int seed = 42;
         using size_type = ippl::detail::size_type;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
@@ -184,7 +186,7 @@ public:
         Vector_t<double, Dim> rmin_m = rmin;
         Vector_t<double, Dim> rmax_m = rmax;
         samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
-        size_type nlocal = samplingR.getLocalNum();
+        unsigned int nlocal = samplingR.getLocalNum();
         
         this->pcontainer_m->create(nlocal);
 
@@ -225,9 +227,9 @@ public:
           double dt_m = this->dt;
           std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
           std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-          //int unsigned totalP_m = this->totalP;
-          //int it_m = this->it;
-          //bool isFirstRepartition_m = false;
+          int unsigned totalP_m = this->totalP;
+          int it_m = this->it;
+          bool isFirstRepartition_m = false;
 
           m << "0" << endl;
           auto Rview = pc->R.getView();
@@ -260,13 +262,13 @@ public:
           // Since the particles have moved spatially update them to correct processors
           pc->update();
 
-          /* m << "3" << endl;
+          m << "3" << endl;
           if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
                 auto mesh = fc->rho_m.get_mesh();
                 auto FL = fc->getLayout();
                 loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
           }
-          Kokkos::fence();*/
+          Kokkos::fence();
 
           m << "4" << endl;
           // scatter the charge onto the underlying grid
@@ -337,8 +339,8 @@ public:
         scatter(*q_m, *rho_m, *R_m);
         m << std::fabs((Q_m - (*rho_m).sum()) / Q_m) << endl;
 
-        size_type Total_particles = 0;
-        size_type local_particles = pcontainer_m->getLocalNum();
+        unsigned int Total_particles = 0;
+        unsigned int local_particles = pcontainer_m->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
