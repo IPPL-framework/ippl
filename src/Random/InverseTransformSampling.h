@@ -41,7 +41,7 @@ namespace ippl {
     class InverseTransformSampling{
     public:
         using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
-        
+        using size_type = ippl::detail::size_type;
         /*!
          * @param dist_ The distribution to sample from.
          * @param rmax_ Maximum range for sampling.
@@ -54,12 +54,12 @@ namespace ippl {
         const Vector<T, Dim> rmax;
         const Vector<T, Dim> rmin;
         Vector<T, Dim> umin, umax;
-        unsigned int ntotal;
+        size_type ntotal;
         /*!
          * @brief Constructor for InverseTransformSampling class.
         */
         template <class RegionLayout>
-        InverseTransformSampling(Distribution dist_, Vector<T, Dim> rmax_, Vector<T, Dim> rmin_, const RegionLayout& rlayout, unsigned int ntotal_)
+        InverseTransformSampling(Distribution dist_, Vector<T, Dim> rmax_, Vector<T, Dim> rmin_, const RegionLayout& rlayout, size_type ntotal_)
         : dist(dist_),
         rmax(rmax_),
         rmin(rmin_),
@@ -80,8 +80,8 @@ namespace ippl {
             T factor = pnr / pdr;
             nlocal_m      = factor * ntotal;
             
-            unsigned int ngobal = 0;
-            MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED, MPI_SUM,
+            size_type ngobal = 0;
+            MPI_Allreduce(&nlocal_m, &ngobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
                           ippl::Comm->getCommunicator());
 
             int rest = (int)(ntotal - ngobal);
@@ -155,7 +155,7 @@ namespace ippl {
          *
          * @returns The local number of samples.
         */
-        KOKKOS_INLINE_FUNCTION unsigned int getLocalNum() const { return nlocal_m; }
+        KOKKOS_INLINE_FUNCTION size_type getLocalNum() const { return nlocal_m; }
         
         /*!
          * @brief Generate random samples using inverse transform sampling.
@@ -168,7 +168,7 @@ namespace ippl {
             Kokkos::fence();
         }
     private:
-        unsigned int nlocal_m;
+        size_type nlocal_m;
     };
   
   }  // namespace random

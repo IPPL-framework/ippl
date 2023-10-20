@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {100, 100};
-        unsigned int ntotal = 1000000;
+        size_type ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -139,7 +139,12 @@ int main(int argc, char* argv[]) {
         const double sd1 = 1.0;
         const double mu2 = -1.0;
         const double sd2 = 0.5;
-        const double par[4] = {mu1, sd1, mu2, sd2};
+        //const double par[4] = {mu1, sd1, mu2, sd2};
+        double *par = new double [4];
+        par[0] = mu1;
+        par[1] = sd1;
+        par[2] = mu2;
+        par[3] = sd2;
         using Dist_t = ippl::random::NormalDistribution<double, Dim>;
         using sampling_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, Dist_t>;
 

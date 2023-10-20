@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {100, 100};
-        const unsigned int ntotal = 1000000;
+        size_type ntotal = 1000000;
 
         int seed = 42;
 

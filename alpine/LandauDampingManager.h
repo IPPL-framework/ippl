@@ -221,7 +221,7 @@ public:
             double dt_m = this->dt;
             std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
             std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-            int unsigned totalP_m = this->totalP;
+            size_type totalP_m = this->totalP;
             int it_m = this->it;
             bool isFirstRepartition_m = false;
 

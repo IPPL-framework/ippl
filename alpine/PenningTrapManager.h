@@ -25,7 +25,7 @@ public:
     ~PenningTrapManager(){}
 
     Vector_t<int, Dim> nr;
-    unsigned int totalP;
+    size_type totalP;
     int nt;
     double lbt;
     double dt;
@@ -142,7 +142,15 @@ public:
         sd[2] = 0.20 * this->length[2];
         
         using DistR_t = ippl::random::NormalDistribution<double, Dim>;
-        const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
+        //const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
+        double *parR = new double [2*Dim];
+        parR[0] = mu[0];
+        parR[1] = sd[0];
+        parR[2] = mu[1];
+        parR[3] = sd[1];
+        parR[4] = mu[2];
+        parR[5] = sd[2];
+
         DistR_t distR(parR);
 
         Vector_t<double, Dim> hr_m = this->hr;
@@ -177,7 +185,7 @@ public:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
         
-        unsigned int totalP_m = this->totalP;
+        size_type totalP_m = this->totalP;
         int seed = 42;
         using size_type = ippl::detail::size_type;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
@@ -186,7 +194,7 @@ public:
         Vector_t<double, Dim> rmin_m = rmin;
         Vector_t<double, Dim> rmax_m = rmax;
         samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
-        unsigned int nlocal = samplingR.getLocalNum();
+        size_type nlocal = samplingR.getLocalNum();
         
         this->pcontainer_m->create(nlocal);
 
@@ -227,7 +235,7 @@ public:
           double dt_m = this->dt;
           std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
           std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-          int unsigned totalP_m = this->totalP;
+          size_type totalP_m = this->totalP;
           int it_m = this->it;
           bool isFirstRepartition_m = false;
 
@@ -339,8 +347,8 @@ public:
         scatter(*q_m, *rho_m, *R_m);
         m << std::fabs((Q_m - (*rho_m).sum()) / Q_m) << endl;
 
-        unsigned int Total_particles = 0;
-        unsigned int local_particles = pcontainer_m->getLocalNum();
+        size_type Total_particles = 0;
+        size_type local_particles = pcontainer_m->getLocalNum();
 
         MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());

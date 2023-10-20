@@ -42,6 +42,8 @@ using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>
 
 using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
+using size_type = ippl::detail::size_type;
+
 struct custom_cdf{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
            if(d==0){
@@ -169,7 +171,7 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         ippl::Vector<int, 2> nr   = {20, 20};
-        unsigned int ntotal = 1000000;
+        size_type ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -204,8 +206,12 @@ int main(int argc, char* argv[]) {
         const int DimP = 4; // dimension of parameters in the pdf
         const double mu = 1.0;
         const double sd = 0.9;
-        const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0}; // paramters of pdf
-        
+        //const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0}; // paramters of pdf
+        double *parH = new double [DimP];
+        parH[0] = mu;
+        parH[1] = sd;
+        parH[2] = 0.5;
+        parH[3] = 2.*pi/(rmax[1]-rmin[1])*4.0;
         using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
         using samplingH_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
 
