@@ -1,7 +1,8 @@
 // Tests the conjugate gradient solver for electrostatics problems
 // by checking the relative error from the exact solution
 // Usage:
-//      TestCGSolver [size [scaling_type]]
+//      TestCGSolver [size [scaling_type , preconditioner]]
+//      ./TestCGSolver 6 j --info 5
 
 #include "Ippl.h"
 
@@ -10,6 +11,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <typeinfo>
+#include <string>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
@@ -25,7 +27,8 @@ int main(int argc, char* argv[]) {
 
         int pt = 4, ptY = 4;
         bool isWeak = false;
-
+        std::string solver = "not preconditioned";
+        std::string preconditioner_type = "";
         Inform info("Config");
         if (argc >= 2) {
             // First argument is the problem size (log2)
@@ -36,13 +39,46 @@ int main(int argc, char* argv[]) {
                 if (argv[2][0] == 'w') {
                     // If weak scaling is specified, increase the problem size
                     // along the Y axis such that each rank has the same workload
-                    // (simplest enlargement method)
+                    // (the simplest enlargement method)
                     ptY = 1 << (5 + (int)N);
                     pt  = 32;
                     info << "Performing weak scaling" << endl;
                     isWeak = true;
                 }
+                else{
+                    if(argv[2][0] == 'j'){
+                        solver = "preconditioned";
+                        preconditioner_type = "jacobi";
+
+                    }
+                    if(argv[2][0] == 'n'){
+                        solver = "preconditioned";
+                        preconditioner_type = "newton";
+                    }
+                    if(argv[2][0] == 'c'){
+                        solver = "preconditioned";
+                        preconditioner_type = "chebyshev";
+                    }
+                }
+                if (argc >= 4){
+                        if(argv[3][0] == 'j'){
+                            solver = "preconditioned";
+                            preconditioner_type = "jacobi";
+                        }
+                        if(argv[3][0] == 'n'){
+                            solver = "preconditioned";
+                            preconditioner_type = "newton";
+                        }
+                        if(argv[3][0] == 'c'){
+                            solver = "preconditioned";
+                            preconditioner_type = "chebyshev";
+                        }
+                }
             }
+        }
+        info << "Solver is " << solver << endl;
+        if (solver == "preconditioned"){
+            info << "Preconditioner is " << preconditioner_type << endl;
         }
 
         ippl::Index I(pt), Iy(ptY);
@@ -125,6 +161,9 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList params;
         params.add("max_iterations", 2000);
+        params.add("solver", solver);
+        params.add("preconditioner_type", preconditioner_type);
+
         lapsolver.mergeParameters(params);
 
         lapsolver.setRhs(rhs);
