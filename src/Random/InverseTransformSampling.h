@@ -134,6 +134,9 @@ namespace ippl {
                 typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
                 
                 value_type u = 0.0;
+
+                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(dist);
+
                 for (unsigned d = 0; d < Dim; ++d) {
                     u       = rand_gen.drand(umin_m[d], umax_m[d]);
                     
@@ -141,9 +144,7 @@ namespace ippl {
                     x(i)[d] = dist.estimate(u, d);
                     
                     // solve
-                    ippl::random::detail::NewtonRaphson<value_type> solver;
-
-                    solver.solve(dist, d, x(i)[d], u);
+                    solver.solve(d, x(i)[d], u);
 
                     rand_pool.free_state(rand_gen);
                 }

@@ -116,14 +116,25 @@ namespace ippl {
        * In particular, find the root x of the equation dist.obj(x, u)= 0 for a given u using Newton-Raphson method.
        *
        * @tparam T Data type for the equation variables.
+       * @tparam Distribution Class of target distribution to sample from.
+       * @param dist Distribution object providing objective function cdf(x)-u and its derivative.
+       * @param atol Absolute tolerance for convergence (default: 1.0e-12).
+       * @param max_iter Maximum number of iterations (default: 20).
       */
-      template <typename T>
+      template <typename T, class Distribution>
       struct NewtonRaphson {
+          Distribution dist;
+          double atol   = 1e-12;
+          unsigned int max_iter = 20;
+
           KOKKOS_FUNCTION
           NewtonRaphson() = default;
 
           KOKKOS_FUNCTION
           ~NewtonRaphson() = default;
+
+          KOKKOS_INLINE_FUNCTION NewtonRaphson(const Distribution &dist_)
+          : dist(dist_){}
 
           /*!
            * @brief Solve an equation using the Newton-Raphson method.
@@ -131,17 +142,14 @@ namespace ippl {
            * This function iteratively solves an equation of the form "cdf(x) - u = 0"
            * for a given sample `u` using the Newton-Raphson method.
            *
-           * @tparam Distribution Type of the distribution providing the objective function and its derivative.
-           * @param dist Distribution object providing objective function cdf(x)-u and its derivative.
            * @param d Dimension index.
            * @param x Variable to solve for (initial guess and final solution).
            * @param u Given sample from a uniform distribution [0, 1].
-           * @param atol Absolute tolerance for convergence (default: 1.0e-12).
-           * @param max_iter Maximum number of iterations (default: 20).
           */
-          template <class Distribution>
-          KOKKOS_INLINE_FUNCTION void solve(Distribution dist, int d, T& x, T& u, T atol = 1.0e-12,
-                                            unsigned int max_iter = 20) {
+//          template <class Distribution>
+//          KOKKOS_INLINE_FUNCTION void solve(Distribution dist, int d, T& x, T& u, T atol = 1.0e-12,
+//                                            unsigned int max_iter = 20) {
+          KOKKOS_INLINE_FUNCTION void solve(unsigned int d, T& x, T& u){
               unsigned int iter = 0;
               while (iter < max_iter && Kokkos::fabs(dist.obj_func(x, d, u)) > atol) {
                   // Find x, such that "cdf(x) - u = 0" for a given sample of u~uniform(0,1)

@@ -145,7 +145,14 @@ public:
         Inform m("Initialize Particles");
 
         using DistR_t = ippl::random::Distribution<double, Dim, 2*Dim, custom_pdf, custom_cdf, custom_estimate>;
-        const double parR[2*Dim] = {this->alpha, this->kw[0], this->alpha, this->kw[1], this->alpha, this->kw[2]};
+        //const double parR[2*Dim] = {this->alpha, this->kw[0], this->alpha, this->kw[1], this->alpha, this->kw[2]};
+        double *parR = new double [2*Dim];
+        parR[0] = this->alpha;
+        parR[1] = this->kw[0];
+        parR[2] = this->alpha;
+        parR[3] = this->kw[1];
+        parR[4] = this->alpha;
+        parR[5] = this->kw[2];
         DistR_t distR(parR);
 
         Vector_t<double, Dim> kw_m = this->kw;
@@ -185,7 +192,6 @@ public:
         //unsigned int
         size_type totalP_m = this->totalP;
         int seed = 42;
-        using size_type = ippl::detail::size_type;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
         using samplingR_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistR_t>;
