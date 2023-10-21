@@ -26,41 +26,53 @@ namespace ippl {
     public:
         using Base = Electrostatics<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
-
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using PreRet = detail::meta_laplace_poisson_preconditioner<lhs_type>;
+        using PreRet = lhs_type;
 
         ElectrostaticsCG()
             : Base() {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-            algo_m = new EnhancedPCG<OpRet, PreRet, FieldLHS, FieldRHS>();
-        }
+            algo_m = nullptr;
 
-        ElectrostaticsCG(std::string preconditioner)
-                : Base() {
-            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
-            setDefaultParameters();
-            if (preconditioner == "jacobian"){
-                algo_m = new PCG<OpRet, PreRet, FieldLHS, FieldRHS>();
-            }
-            else if (preconditioner == "enhanced"){
-                algo_m = new EnhancedPCG<OpRet, PreRet, FieldLHS, FieldRHS>();
-            }
-            else{
-                algo_m = new CG<OpRet, PreRet, FieldLHS, FieldRHS>();
-            }
         }
 
         ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+            algo_m = nullptr;
+
+        }
+
+        ~ElectrostaticsCG(){
+            if (algo_m!=nullptr){
+                delete algo_m;
+                algo_m = nullptr;
+            }
+        }
+
+        ElectrostaticsCG (const ElectrostaticsCG& other): algo_m(other.algo_m){}
+
+        ElectrostaticsCG& operator=(const ElectrostaticsCG& other){
+            return *this = ElectrostaticsCG(other);
+        }
+
+        void setSolver() {
+            std::string solver_type = this->params_m.template get<std::string>("solver");
+            if (solver_type == "preconditioned") {
+                algo_m = new PCG<OpRet, PreRet, FieldLHS, FieldRHS>();
+                std::string preconditioner_type = this->params_m.template get<std::string>("preconditioner_type");
+                algo_m->setPreconditioner(preconditioner_type);
+
+            } else {
+                algo_m = new CG<OpRet, PreRet, FieldLHS, FieldRHS>();
+            }
         }
 
         void solve() override {
+            setSolver();
             algo_m->setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
-            algo_m->setPreconditioner(IPPL_SOLVER_OPERATOR_WRAPPER(laplace_poisson_preconditioner, lhs_type));
             algo_m->operator()(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
@@ -85,8 +97,8 @@ namespace ippl {
     protected:
         CG<OpRet, PreRet, FieldLHS, FieldRHS> *algo_m;
 
-        virtual void setDefaultParameters() override {
-            this->params_m.add("max_iterations", 1000);
+        void setDefaultParameters() override {
+            this->params_m.add("max_iterations", 2000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
     };
