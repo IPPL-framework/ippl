@@ -152,10 +152,9 @@ public:
         parR[5] = sd[2];
 
         DistR_t distR(parR);
-
+        /*
         Vector_t<double, Dim> hr_m = this->hr;
         Vector_t<double, Dim> origin_m = this->origin;
-
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
@@ -179,7 +178,7 @@ public:
 
             this->loadbalancer_m->initializeORB(FL_m, mesh_m);
             this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
-        }
+        }*/
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
@@ -235,9 +234,9 @@ public:
           double dt_m = this->dt;
           std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
           std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-          size_type totalP_m = this->totalP;
-          int it_m = this->it;
-          bool isFirstRepartition_m = false;
+          //size_type totalP_m = this->totalP;
+          //int it_m = this->it;
+          //bool isFirstRepartition_m = false;
 
           m << "0" << endl;
           auto Rview = pc->R.getView();
@@ -261,6 +260,7 @@ public:
                 Pview(j)[2] += alpha_m * Eext_z;
           });
           Kokkos::fence();
+          ippl::Comm->barrier();
 
           m << "1" << endl;
           // drift
@@ -270,6 +270,7 @@ public:
           // Since the particles have moved spatially update them to correct processors
           pc->update();
 
+          /*
           m << "3" << endl;
           if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
                 auto mesh = fc->rho_m.get_mesh();
@@ -277,7 +278,7 @@ public:
                 loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
           }
           Kokkos::fence();
-
+          */
           m << "4" << endl;
           // scatter the charge onto the underlying grid
           this->par2grid();
@@ -303,15 +304,16 @@ public:
              double Eext_z = (R2view(j)[2] - origin_m[2] - 0.5 * length_m[2])
                            * (V0 / (Kokkos::pow(length_m[2], 2)));
 
-             Eext_x += Eview(j)[0];
-             Eext_y += Eview(j)[1];
-             Eext_z += Eview(j)[2];
+             Eext_x += E2view(j)[0];
+             Eext_y += E2view(j)[1];
+             Eext_z += E2view(j)[2];
 
              P2view(j)[0] = DrInv_m * (P2view(j)[0] + alpha_m * (Eext_x + P2view(j)[1] * Bext_m + alpha_m * Bext_m * Eext_y));
              P2view(j)[1] = DrInv_m * (P2view(j)[1] + alpha_m * (Eext_y - P2view(j)[0] * Bext_m - alpha_m * Bext_m * Eext_x));
              P2view(j)[2] += alpha_m * Eext_z;
           });
           Kokkos::fence();
+          ippl::Comm->barrier();
           m << "8" << endl;
     }
 
