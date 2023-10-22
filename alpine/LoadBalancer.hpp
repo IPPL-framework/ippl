@@ -9,15 +9,14 @@
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     public:
         double loadbalancethreshold_m;
-        Field_t<Dim> rho_m;
-        VField_t<T, Dim> E_m;
-        ippl::FieldLayout<Dim> fl_m;
+        Field_t<Dim>* rho_m;
+        VField_t<T, Dim>* E_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver<T, Dim>> fs_m;
         unsigned int loadbalancefreq_m;
         
        	LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
-           :loadbalancethreshold_m(lbs), rho_m(fc->rho_m), E_m(fc->E_m), fl_m(fc->getLayout()), pc_m(pc), fs_m(fs) {}
+           :loadbalancethreshold_m(lbs), rho_m(&fc->rho_m), E_m(&fc->E_m), pc_m(pc), fs_m(fs) {}
 
         ~LoadBalancer() {  }
 
@@ -25,14 +24,15 @@
         
      void updateLayout(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
         // Update local fields
+
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        E_m.updateLayout(fl);
-        rho_m.updateLayout(fl);
+        (*E_m).updateLayout(fl);
+        (*rho_m).updateLayout(fl);
 
         // Update layout with new FieldLayout
-        PLayout_t<T, Dim>& layout = pc_m->getLayout();
-        layout.updateLayout(fl, mesh);
+        PLayout_t<T, Dim>* layout = &pc_m->getLayout();
+        (*layout).updateLayout(fl, mesh);
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
@@ -43,13 +43,16 @@
     }
 
     void initializeORB(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh) {
-        orb.initialize(fl, mesh, rho_m);
+        orb.initialize(fl, mesh, *rho_m);
     }
 
     void repartition(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
         // Repartition the domains
-        bool res = orb.binaryRepartition(pc_m->R, fl, isFirstRepartition);
 
+        using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+        typename Base::particle_position_type *R_m;
+        R_m = &pc_m->R;
+        bool res = orb.binaryRepartition(*R_m, fl, isFirstRepartition);
         if (res != true) {
             std::cout << "Could not repartition!" << std::endl;
             return;
@@ -58,13 +61,13 @@
         this->updateLayout(fl, mesh, isFirstRepartition);
         if constexpr (Dim == 2 || Dim == 3) {
             if (fs_m->stype_m == "FFT") {
-                std::get<FFTSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
+                std::get<FFTSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
             }
             if constexpr (Dim == 3) {
                 if (fs_m->stype_m == "P3M") {
-                    std::get<P3MSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
+                    std::get<P3MSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
                 } else if (fs_m->stype_m == "OPEN") {
-                    std::get<OpenSolver_t<T, Dim>>(fs_m->solver_m).setRhs(rho_m);
+                    std::get<OpenSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
                 }
             }
         }

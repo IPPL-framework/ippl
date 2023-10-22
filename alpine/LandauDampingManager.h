@@ -145,7 +145,6 @@ public:
         Inform m("Initialize Particles");
 
         using DistR_t = ippl::random::Distribution<double, Dim, 2*Dim, custom_pdf, custom_cdf, custom_estimate>;
-        //const double parR[2*Dim] = {this->alpha, this->kw[0], this->alpha, this->kw[1], this->alpha, this->kw[2]};
         double *parR = new double [2*Dim];
         parR[0] = this->alpha;
         parR[1] = this->kw[0];
@@ -183,8 +182,6 @@ public:
             this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
         }
         
-
-       	m << "HERE" << endl;
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
@@ -224,18 +221,14 @@ public:
             }
     }
     void LeapFrogStep(){
-            double dt_m = this->dt;
-            std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-            std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-            size_type totalP_m = this->totalP;
-            int it_m = this->it;
-            bool isFirstRepartition_m = false;
-
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
             // an attribute
-            // kick
+
+            double dt_m = this->dt;
+            std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+            std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
 
             pc->P = pc->P - 0.5 * dt_m * pc->E;
 
@@ -245,10 +238,13 @@ public:
             // Since the particles have moved spatially update them to correct processors
             pc->update();
 
+            size_type totalP_m = this->totalP;
+            int it_m = this->it;
+            bool isFirstRepartition_m = false;
             if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
-                auto mesh = fc->rho_m.get_mesh();
-                auto FL = fc->getLayout();
-                loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
+                auto* mesh = &fc->rho_m.get_mesh();
+                auto* FL = &fc->getLayout();
+                loadbalancer_m->repartition(*FL, *mesh, isFirstRepartition_m);
             }
 
             // scatter the charge onto the underlying grid

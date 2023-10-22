@@ -150,9 +150,9 @@ public:
         parR[3] = sd[1];
         parR[4] = mu[2];
         parR[5] = sd[2];
-
         DistR_t distR(parR);
-        /*
+
+        
         Vector_t<double, Dim> hr_m = this->hr;
         Vector_t<double, Dim> origin_m = this->origin;
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -178,7 +178,7 @@ public:
 
             this->loadbalancer_m->initializeORB(FL_m, mesh_m);
             this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
-        }*/
+        }
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
@@ -234,11 +234,7 @@ public:
           double dt_m = this->dt;
           std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
           std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-          //size_type totalP_m = this->totalP;
-          //int it_m = this->it;
-          //bool isFirstRepartition_m = false;
 
-          m << "0" << endl;
           auto Rview = pc->R.getView();
           auto Pview = pc->P.getView();
           auto Eview = pc->E.getView();
@@ -262,36 +258,30 @@ public:
           Kokkos::fence();
           ippl::Comm->barrier();
 
-          m << "1" << endl;
           // drift
           pc->R = pc->R + dt_m * pc->P;
 
-          m << "2" << endl;
           // Since the particles have moved spatially update them to correct processors
           pc->update();
 
-          /*
-          m << "3" << endl;
+          size_type totalP_m = this->totalP;
+          int it_m = this->it;
+          bool isFirstRepartition_m = false;
           if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
-                auto mesh = fc->rho_m.get_mesh();
-                auto FL = fc->getLayout();
-                loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
+                auto* mesh = &fc->rho_m.get_mesh();
+                auto* FL = &fc->getLayout();
+                loadbalancer_m->repartition(*FL, *mesh, isFirstRepartition_m);
           }
-          Kokkos::fence();
-          */
-          m << "4" << endl;
+
           // scatter the charge onto the underlying grid
           this->par2grid();
 
-          m << "5" << endl;
           // Field solve
           this->fsolver_m->runSolver();
 
-          m << "6" << endl;
           // gather E field
           this->grid2par();
 
-          m << "7" << endl;
           auto R2view = pc->R.getView();
           auto P2view = pc->P.getView();
           auto E2view = pc->E.getView();
@@ -314,7 +304,6 @@ public:
           });
           Kokkos::fence();
           ippl::Comm->barrier();
-          m << "8" << endl;
     }
 
     void par2grid() override {
