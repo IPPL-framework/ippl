@@ -212,6 +212,7 @@ public:
     Vector_t<double, Dim> rmax_m;
 
     std::string stype_m;
+    std::string ptype_m;
 
     double Q_m;
 
@@ -234,12 +235,13 @@ public:
 
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
-                     std::string solver)
+                     std::string solver , std::string preconditioner = "")
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , stype_m(solver)
+        , ptype_m(preconditioner)
         , Q_m(Q) {
         registerAttributes();
         for (unsigned int i = 0; i < Dim; i++) {
@@ -457,7 +459,9 @@ public:
 
             if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
-                fname << "data/CG_";
+                fname << "data/";
+                fname << stype_m << "_";
+                if(stype_m == "PCG"){fname << ptype_m << "_";}
                 fname << ippl::Comm->size();
                 fname << ".csv";
 
@@ -520,7 +524,7 @@ public:
         std::string  preconditioner_type = "";
         if (stype_m == "PCG" ){
             solver_type = "preconditioned";
-            preconditioner_type = "chebyshev";
+            preconditioner_type = ptype_m;
         }
         sp.add("solver" , solver_type);
         sp.add("preconditioner_type" , preconditioner_type);

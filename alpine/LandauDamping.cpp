@@ -7,7 +7,7 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT and CG supported)
+//     stype    = Field solver type (FFT, CG and PCG supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -16,6 +16,7 @@
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
+//     srun ./LandauDamping 128 128 128 10000 10 PCG [chebyshev , jacobi, newton] 0.01 --overallocate 2.0 --info 10
 //
 
 #include <Kokkos_MathematicalConstants.hpp>
@@ -201,13 +202,17 @@ int main(int argc, char* argv[]) {
         PLayout_t<double, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];
-
+        std::string preconditioner= "";
         if (solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
 
-        P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        if (solver == "PCG"){
+            preconditioner = argv[arg++];
+        }
+
+        P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver, preconditioner);
 
         P->nr_m = nr;
 
