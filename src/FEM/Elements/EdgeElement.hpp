@@ -17,6 +17,8 @@ namespace ippl {
         const EdgeElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         EdgeElement::jacobian_t jacobian;
 
+        // TODO FIX
+
         for (unsigned d = 0; d < GeometricDim; ++d) {
             jacobian[0][d] = 1.0 / (global_vertices[1][d] - global_vertices[0][d]);
         }

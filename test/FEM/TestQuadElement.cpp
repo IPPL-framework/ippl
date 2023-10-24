@@ -43,6 +43,19 @@ int main(int argc, char* argv[]) {
 
         std::cout << "transformed_mid_point = (" << transformed_mid_point[0] << ","
                   << transformed_mid_point[1] << ")\n";
+
+        // get the local point for these global points
+
+        // TODO This is still broken
+        const auto back_jac = quad_element.getLinearTransformationJacobian(global_quad_vertices);
+        std::cout << "back_jac = (" << back_jac[0][0] << ", " << back_jac[0][1] << "), ("
+                  << back_jac[1][0] << ", " << back_jac[1][1] << ")\n";
+
+        // const ippl::Vector<double, 2> local_end_point =
+        //     quad_element.globalToLocal(global_quad_vertices, global_quad_vertices[3]);
+
+        // std::cout << "local_end_point = (" << local_end_point[0] << "," << local_end_point[1]
+        //           << ")\n";
     }
 
     ippl::finalize();
