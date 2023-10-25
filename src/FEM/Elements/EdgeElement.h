@@ -14,13 +14,14 @@ namespace ippl {
 
         typedef typename Element1D<T, NumVertices>::point_t point_t;
         typedef typename Element1D<T, NumVertices>::vertex_vec_t vertex_vec_t;
-        typedef typename Element1D<T, NumVertices>::matrix_t matrix_t;
+        typedef typename Element1D<T, NumVertices>::diag_matrix_vec_t diag_matrix_vec_t;
 
         vertex_vec_t getLocalVertices() const override;
 
-        matrix_t getTransformationJacobian(const vertex_vec_t& global_vertices) const override;
+        diag_matrix_vec_t getTransformationJacobian(
+            const vertex_vec_t& global_vertices) const override;
 
-        matrix_t getInverseTransformationJacobian(
+        diag_matrix_vec_t getInverseTransformationJacobian(
             const vertex_vec_t& global_vertices) const override;
 
         T getDeterminantOfTransformationJacobian(

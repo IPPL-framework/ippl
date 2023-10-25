@@ -10,21 +10,21 @@ namespace ippl {
     }
 
     template <typename T>
-    EdgeElement<T>::matrix_t EdgeElement<T>::getTransformationJacobian(
+    EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getTransformationJacobian(
         const EdgeElement<T>::vertex_vec_t& global_vertices) const {
-        EdgeElement::matrix_t jacobian;
+        EdgeElement::diag_matrix_vec_t jacobian;
 
-        jacobian[0][0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
+        jacobian[0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
 
         return jacobian;
     }
 
     template <typename T>
-    EdgeElement<T>::matrix_t EdgeElement<T>::getInverseTransformationJacobian(
+    EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getInverseTransformationJacobian(
         const EdgeElement<T>::vertex_vec_t& global_vertices) const {
-        EdgeElement::matrix_t inv_jacobian;
+        EdgeElement::diag_matrix_vec_t inv_jacobian;
 
-        inv_jacobian[0][0] = global_vertices[1][0] - global_vertices[0][0];
+        inv_jacobian[0] = global_vertices[1][0] - global_vertices[0][0];
 
         return inv_jacobian;
     }

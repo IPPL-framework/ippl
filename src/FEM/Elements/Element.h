@@ -17,13 +17,14 @@ namespace ippl {
         typedef Vector<point_t, NumVertices> vertex_vec_t;
 
         // a matrix defining a transformtaion in the local or global coordinate system
-        typedef Vector<Vector<T, Dim>, Dim> matrix_t;
+        typedef Vector<T, Dim> diag_matrix_vec_t;
 
         virtual vertex_vec_t getLocalVertices() const = 0;
 
-        virtual matrix_t getTransformationJacobian(const vertex_vec_t& global_vertices) const = 0;
+        virtual diag_matrix_vec_t getTransformationJacobian(
+            const vertex_vec_t& global_vertices) const = 0;
 
-        virtual matrix_t getInverseTransformationJacobian(
+        virtual diag_matrix_vec_t getInverseTransformationJacobian(
             const vertex_vec_t& global_vertices) const = 0;
 
         virtual T getDeterminantOfTransformationJacobian(
