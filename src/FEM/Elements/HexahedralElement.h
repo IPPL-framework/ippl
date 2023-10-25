@@ -9,8 +9,8 @@
 
 namespace ippl {
 
-    template <typename T, unsigned NumVertices = 8>
-    class HexahedralElement : public Element3D<T, NumVertices> {
+    template <typename T, unsigned GeometricDim>
+    class HexahedralElement : public Element3D<T, GeometricDim, 8> {
     public:
     };
 

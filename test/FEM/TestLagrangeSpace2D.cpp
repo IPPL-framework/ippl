@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
             for (double y = 0.0; y <= 1.0; y += dx) {
                 local_basis_out << x << "," << y;
                 for (unsigned i = 0; i < 4; ++i) {
-                    local_basis_out << "," << lagrange_space.evaluateLocalBasis(i, {x, y});
+                    local_basis_out << "," << lagrange_space.evaluateBasis(i, {x, y});
                 }
                 local_basis_out << "\n";
             }

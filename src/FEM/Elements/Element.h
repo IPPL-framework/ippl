@@ -50,7 +50,7 @@ namespace ippl {
          * @param global_vertices the vertices of the element in the global coordinate system.
          * @return jacobian_t
          */
-        virtual jacobian_t getLinearTransformationJacobian(
+        virtual jacobian_t getTransformationJacobian(
             const global_vertex_vec_t& global_vertices) const = 0;
 
         /**
@@ -67,7 +67,7 @@ namespace ippl {
          * @param global_vertices the vertices of the element in the global coordinate system.
          * @return inverse_jacobian_t
          */
-        virtual inverse_jacobian_t getInverseLinearTransformationJacobian(
+        virtual inverse_jacobian_t getInverseTransformationJacobian(
             const global_vertex_vec_t& global_vertices) const = 0;
 
         virtual local_point_t globalToLocal(const global_vertex_vec_t&,

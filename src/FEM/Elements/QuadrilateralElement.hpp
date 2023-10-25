@@ -10,7 +10,7 @@ namespace ippl {
 
     template <typename T, unsigned GeometricDim>
     QuadrilateralElement<T, GeometricDim>::jacobian_t
-    QuadrilateralElement<T, GeometricDim>::getLinearTransformationJacobian(
+    QuadrilateralElement<T, GeometricDim>::getTransformationJacobian(
         const QuadrilateralElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::jacobian_t jacobian;
 
@@ -31,7 +31,7 @@ namespace ippl {
 
     template <typename T, unsigned GeometricDim>
     QuadrilateralElement<T, GeometricDim>::inverse_jacobian_t
-    QuadrilateralElement<T, GeometricDim>::getInverseLinearTransformationJacobian(
+    QuadrilateralElement<T, GeometricDim>::getInverseTransformationJacobian(
         const QuadrilateralElement<T, GeometricDim>::global_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::inverse_jacobian_t inv_jacobian;
 

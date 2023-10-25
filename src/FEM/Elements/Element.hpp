@@ -6,7 +6,7 @@ namespace ippl {
             global_vertices,
         const Element<T, GeometricDim, TopologicalDim, NumVertices>::global_point_t& global_point)
         const {
-        const jacobian_t glob2loc_matrix = getLinearTransformationJacobian(global_vertices);
+        const jacobian_t glob2loc_matrix = getTransformationJacobian(global_vertices);
 
         local_point_t local_point;
 
@@ -26,7 +26,7 @@ namespace ippl {
         const Element<T, GeometricDim, TopologicalDim, NumVertices>::local_point_t& local_point)
         const {
         const inverse_jacobian_t loc2glob_matrix =
-            getInverseLinearTransformationJacobian(global_vertices);
+            getInverseTransformationJacobian(global_vertices);
 
         global_point_t global_point;
 

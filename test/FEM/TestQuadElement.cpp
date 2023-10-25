@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
         // get the local point for these global points
 
         // TODO This is still broken
-        const auto back_jac = quad_element.getLinearTransformationJacobian(global_quad_vertices);
+        const auto back_jac = quad_element.getTransformationJacobian(global_quad_vertices);
         std::cout << "back_jac = (" << back_jac[0][0] << ", " << back_jac[0][1] << "), ("
                   << back_jac[1][0] << ", " << back_jac[1][1] << ")\n";
 

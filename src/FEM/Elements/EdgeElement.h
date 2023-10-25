@@ -34,8 +34,7 @@ namespace ippl {
          * @param global_vertices the vertices of the element in the global coordinate system.
          * @return jacobian_t
          */
-        jacobian_t getLinearTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const;
+        jacobian_t getTransformationJacobian(const global_vertex_vec_t& global_vertices) const;
 
         /**
          * @brief Returns the transformation matrix without the translation
@@ -50,7 +49,7 @@ namespace ippl {
          * @param global_vertices the vertices of the element in the global coordinate system.
          * @return inverse_jacobian_t
          */
-        inverse_jacobian_t getInverseLinearTransformationJacobian(
+        inverse_jacobian_t getInverseTransformationJacobian(
             const global_vertex_vec_t& global_vertices) const;
     };
 
