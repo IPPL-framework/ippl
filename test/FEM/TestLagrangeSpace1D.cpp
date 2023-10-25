@@ -20,11 +20,11 @@ int main(int argc, char* argv[]) {
         const ippl::MidpointQuadrature<double, 1> midpoint_quadrature;
 
         // Refernce element
-        const ippl::EdgeElement<double, 1> edge_element;
+        const ippl::EdgeElement<double> edge_element;
 
         // Create LagrangeSpace
         const unsigned number_of_local_vertices = 2;
-        const ippl::LagrangeSpace<double, 1, number_of_local_vertices, 1> lagrange_space(
+        const ippl::LagrangeSpace<double, 1, 1, number_of_local_vertices, 1> lagrange_space(
             mesh, edge_element, midpoint_quadrature);
 
         // Print the 1D mesh vertices for plotting
@@ -69,25 +69,6 @@ int main(int argc, char* argv[]) {
         // Print the global basis values for plotting
         const unsigned number_of_points = 200;
         const double dx                 = interval_size / (number_of_points - 1);
-
-        const std::string basis_filename = "~1D_lagrange_global_basis.csv";
-        std::cout << "Writing basis functions to " << basis_filename << "\n";
-        std::ofstream basis_out(basis_filename, std::ios::out);
-
-        basis_out << "x";
-        for (unsigned i = 0; i < number_of_vertices; ++i) {
-            basis_out << ",v_" << i;
-        }
-        basis_out << "\n";
-
-        for (ippl::Vector<double, 1> x = {-1.3}; x[0] <= 1.3; x[0] += dx) {
-            basis_out << x[0];
-            for (unsigned i = 0; i < number_of_vertices; ++i) {
-                basis_out << "," << lagrange_space.evaluateGlobalBasis(i, x);
-            }
-            basis_out << "\n";
-        }
-        basis_out.close();
 
         // Print the local basis values for plotting
         const std::string local_basis_filename = "~1D_lagrange_local_basis.csv";

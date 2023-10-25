@@ -6,8 +6,8 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::LagrangeSpace(
         const Mesh<T, Dim>& mesh, const Element<T, Dim, Dim, NumElementVertices>& ref_element,
         const Quadrature<T, NumIntegrationPoints>& quadrature)
-        : FiniteElementSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>(
-            mesh, ref_element, quadrature) {
+        : FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                             calculateLagrangeNumDoFs(Dim, Order)>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
         static_assert(Dim >= 1 && Dim <= 3,
                       "Finite Element space only supports 1D, 2D and 3D meshes");
@@ -155,25 +155,26 @@ namespace ippl {
         return vertex_indices;
     }
 
-    // template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned
-    // NumIntegrationPoints> void LagrangeSpace<T, Dim, NumElementVertices,
-    // NumIntegrationPoints>::evaluateLoadVector(
-    //     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::value_vec_t& b) const {
-    //     assert(j < NumIntegrationPoints);  // TODO change assert to be correct
-    //     // TODO implement
-    //     return 0;
-    // }
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
+        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t& b)
+        const {
+        assert(b.dim > 0);  // TODO change assert to be correct
+        // TODO implement
+    }
 
-    // template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned
-    // NumIntegrationPoints> void LagrangeSpace<T, Dim, NumElementVertices,
-    // NumIntegrationPoints>::evaluateAx(
-    //     const LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::value_vec_t& x,
-    //     LagrangeSpace<T, Dim, NumElementVertices, NumIntegrationPoints>::value_vec_t& Ax) const {
-    //     assert(i < NumIntegrationPoints);  // TODO change assert to be correct
-    //     assert(j < NumIntegrationPoints);  // TODO change assert to be correct
-    //     // TODO implement
-    //     return 0;
-    // }
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateAx(
+        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t&
+            x,
+        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t& Ax)
+        const {
+        assert(x.dim > 0);   // TODO change assert to be correct
+        assert(Ax.dim > 0);  // TODO change assert to be correct
+        // TODO implement
+    }
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>

@@ -9,10 +9,11 @@
 
 namespace ippl {
 
-    template <typename T, unsigned GeometricDim>
-    class EdgeElement : public Element1D<T, GeometricDim, 2> {
+    template <typename T>  // TODO maybe remove the fixed geometric dim at some point
+    class EdgeElement : public Element1D<T, 1, 2> {
     public:
         static constexpr unsigned NumVertices    = 2;
+        static constexpr unsigned GeometricDim   = 1;
         static constexpr unsigned TopologicalDim = 1;
 
         typedef typename Element1D<T, GeometricDim, NumVertices>::local_point_t local_point_t;
@@ -34,7 +35,8 @@ namespace ippl {
          * @param global_vertices the vertices of the element in the global coordinate system.
          * @return jacobian_t
          */
-        jacobian_t getTransformationJacobian(const global_vertex_vec_t& global_vertices) const;
+        jacobian_t getTransformationJacobian(
+            const global_vertex_vec_t& global_vertices) const override;
 
         /**
          * @brief Returns the transformation matrix without the translation
@@ -50,7 +52,10 @@ namespace ippl {
          * @return inverse_jacobian_t
          */
         inverse_jacobian_t getInverseTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const;
+            const global_vertex_vec_t& global_vertices) const override;
+
+        T getDeterminantOfTransformationJacobian(
+            const global_vertex_vec_t& global_vertices) const override;
     };
 
 }  // namespace ippl

@@ -9,10 +9,11 @@
 
 namespace ippl {
 
-    template <typename T, unsigned GeometricDim>
-    class QuadrilateralElement : public Element2D<T, GeometricDim, 4> {
+    template <typename T>
+    class QuadrilateralElement : public Element2D<T, 2, 4> {
     public:
         static constexpr unsigned NumVertices    = 4;
+        static constexpr unsigned GeometricDim   = 2;
         static constexpr unsigned TopologicalDim = 2;
 
         typedef typename Element2D<T, GeometricDim, NumVertices>::local_point_t local_point_t;
@@ -35,7 +36,7 @@ namespace ippl {
          * @return jacobian_t
          */
         jacobian_t getTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const;
+            const global_vertex_vec_t& global_vertices) const override;
 
         /**
          * @brief Returns the transformation matrix without the translation
@@ -45,7 +46,10 @@ namespace ippl {
          * @return inverse_jacobian_t
          */
         inverse_jacobian_t getInverseTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const;
+            const global_vertex_vec_t& global_vertices) const override;
+
+        T getDeterminantOfTransformationJacobian(
+            const global_vertex_vec_t& global_vertices) const override;
     };
 }  // namespace ippl
 

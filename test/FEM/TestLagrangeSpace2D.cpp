@@ -26,29 +26,11 @@ int main(int argc, char* argv[]) {
         const ippl::MidpointQuadrature<double, 1> midpoint_quadrature;
 
         // Refernce element
-        const ippl::QuadrilateralElement<double, 2> quad_element;
+        const ippl::QuadrilateralElement<double> quad_element;
 
         // Create LagrangeSpace
-        const ippl::LagrangeSpace<double, 2, 4, 1> lagrange_space(mesh, quad_element,
-                                                                  midpoint_quadrature);
-
-        // Print the global basis function for a vertex
-        const unsigned vertex_index = 12;
-
-        const std::string basis_filename = "~2D_lagrange_global_basis.csv";
-        std::cout << "Writing basis function to " << basis_filename << "\n";
-        std::ofstream basis_out(basis_filename, std::ios::out);
-
-        basis_out << "x,y,v_" << vertex_index << "\n";
-
-        for (double x = -1.3; x <= 1.3; x += dx) {
-            for (double y = -1.3; y <= 1.3; y += dx) {
-                basis_out << x << "," << y << ",";
-                basis_out << lagrange_space.evaluateGlobalBasis(vertex_index, {x, y});
-                basis_out << "\n";
-            }
-        }
-        basis_out.close();
+        const ippl::LagrangeSpace<double, 2, 1, 4, 1> lagrange_space(mesh, quad_element,
+                                                                     midpoint_quadrature);
 
         // Print the values for the local basis functions
         const std::string local_basis_filename = "~2D_lagrange_local_basis.csv";

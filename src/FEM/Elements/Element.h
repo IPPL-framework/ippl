@@ -20,9 +20,10 @@ namespace ippl {
     template <typename T, unsigned GeometricDim, unsigned TopologicalDim, unsigned NumVertices>
     class Element {
     public:
-        static_assert(GeometricDim >= TopologicalDim,
-                      "The finite element geometric dimension must greater or equal the "
-                      "topological dimension");
+        // static_assert(GeometricDim >= TopologicalDim,
+        //               "The finite element geometric dimension must greater or equal the "
+        //               "topological dimension");
+        static_assert(GeometricDim == TopologicalDim);  // TODO This makes life easier for now.
 
         typedef Vector<T, TopologicalDim> local_point_t;
         typedef Vector<T, GeometricDim> global_point_t;
@@ -68,6 +69,9 @@ namespace ippl {
          * @return inverse_jacobian_t
          */
         virtual inverse_jacobian_t getInverseTransformationJacobian(
+            const global_vertex_vec_t& global_vertices) const = 0;
+
+        virtual T getDeterminantOfTransformationJacobian(
             const global_vertex_vec_t& global_vertices) const = 0;
 
         virtual local_point_t globalToLocal(const global_vertex_vec_t&,
