@@ -13,6 +13,15 @@ link_directories (
     ${Kokkos_DIR}/..
 )
 
+add_executable (EdgeElement EdgeElement.cpp)
+target_link_libraries (
+    EdgeElement
+    ippl
+    pthread
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+)
+
 add_executable (LagrangeSpace LagrangeSpace.cpp)
 target_link_libraries (
     LagrangeSpace
