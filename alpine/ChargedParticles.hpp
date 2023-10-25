@@ -9,10 +9,10 @@
 
 #include "Utility/TypeUtils.h"
 
-#include "Solver/ElectrostaticsCG.h"
-#include "Solver/FFTPeriodicPoissonSolver.h"
-#include "Solver/FFTPoissonSolver.h"
-#include "Solver/P3MSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
+#include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
+#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 unsigned LoggingPeriod = 1;
 
@@ -54,7 +54,7 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 // heFFTe does not support 1D FFTs, so we switch to CG in the 1D case
 template <typename T = double, unsigned Dim = 3>
-using CGSolver_t = ippl::ElectrostaticsCG<Field<T, Dim>, Field_t<Dim>>;
+using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
@@ -67,7 +67,7 @@ using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, 
 
 template <typename T = double, unsigned Dim = 3>
 using OpenSolver_t =
-    ConditionalType<Dim == 3, ippl::FFTPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+    ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,

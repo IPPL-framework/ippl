@@ -1,6 +1,6 @@
 //
 // TestGaussian_hessian
-// This programs tests the FFTPoissonSolver for a Gaussian source.
+// This programs tests the FFTOpenPoissonSolver for a Gaussian source.
 // More specifically, it tests also the Hessian calculation functionality.
 // Different problem sizes are used for the purpose of convergence tests.
 //   Usage:
@@ -21,7 +21,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 template <typename T>
 using Mesh_t = typename ippl::UniformCartesian<T, 3>;
@@ -42,7 +42,7 @@ template <typename T>
 using MField_t = typename ippl::Field<Matrix_t<T>, 3, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
-using Solver_t = ippl::FFTPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
+using Solver_t = ippl::FFTOpenPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
@@ -322,7 +322,7 @@ void compute_convergence(std::string algorithm, int pt) {
     // add hessian flag parameter
     params.add("hessian", true);
 
-    // define an FFTPoissonSolver object
+    // define an FFTOpenPoissonSolver object
     Solver_t<T> FFTsolver(fieldE, rho, params);
 
     // solve the Poisson equation -> rho contains the solution (phi) now
