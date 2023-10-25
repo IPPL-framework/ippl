@@ -45,17 +45,17 @@ namespace ippl {
 
         }
 
-        ~ElectrostaticsCG(){
+        ~PoissonCG(){
             if (algo_m!=nullptr){
                 delete algo_m;
                 algo_m = nullptr;
             }
         }
 
-        ElectrostaticsCG (const ElectrostaticsCG& other): algo_m(other.algo_m){}
+        PoissonCG (const PoissonCG& other): algo_m(other.algo_m){}
 
-        ElectrostaticsCG& operator=(const ElectrostaticsCG& other){
-            return *this = ElectrostaticsCG(other);
+        PoissonCG& operator=(const PoissonCG& other){
+            return *this = PoissonCG(other);
         }
 
         void setSolver() {
