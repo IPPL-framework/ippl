@@ -46,7 +46,7 @@ namespace ippl {
          * @param quadrature Pointer to the singleton instance of the quadrature rule
          */
         FiniteElementSpace(const Mesh<T, Dim>& mesh,
-                           const Element<T, Dim, Dim, NumElementVertices>& ref_element,
+                           const Element<T, Dim, NumElementVertices>& ref_element,
                            const Quadrature<T, NumIntegrationPoints>& quadrature);
 
         /**
@@ -124,7 +124,7 @@ namespace ippl {
 
     protected:
         const Mesh<T, Dim>& mesh_m;
-        const Element<T, Dim, Dim, NumElementVertices>& ref_element_m;
+        const Element<T, Dim, NumElementVertices>& ref_element_m;
         const Quadrature<T, NumIntegrationPoints>& quadrature_m;
     };
 

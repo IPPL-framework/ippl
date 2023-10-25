@@ -4,7 +4,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::LagrangeSpace(
-        const Mesh<T, Dim>& mesh, const Element<T, Dim, Dim, NumElementVertices>& ref_element,
+        const Mesh<T, Dim>& mesh, const Element<T, Dim, NumElementVertices>& ref_element,
         const Quadrature<T, NumIntegrationPoints>& quadrature)
         : FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
                              calculateLagrangeNumDoFs(Dim, Order)>(mesh, ref_element, quadrature) {

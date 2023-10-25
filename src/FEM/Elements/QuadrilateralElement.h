@@ -10,46 +10,23 @@
 namespace ippl {
 
     template <typename T>
-    class QuadrilateralElement : public Element2D<T, 2, 4> {
+    class QuadrilateralElement : public Element2D<T, 4> {
     public:
-        static constexpr unsigned NumVertices    = 4;
-        static constexpr unsigned GeometricDim   = 2;
-        static constexpr unsigned TopologicalDim = 2;
+        static constexpr unsigned NumVertices = 4;
 
-        typedef typename Element2D<T, GeometricDim, NumVertices>::local_point_t local_point_t;
-        typedef typename Element2D<T, GeometricDim, NumVertices>::global_point_t global_point_t;
-        typedef
-            typename Element2D<T, GeometricDim, NumVertices>::local_vertex_vec_t local_vertex_vec_t;
-        typedef typename Element2D<T, GeometricDim, NumVertices>::global_vertex_vec_t
-            global_vertex_vec_t;
-        typedef typename Element2D<T, GeometricDim, NumVertices>::jacobian_t jacobian_t;
-        typedef
-            typename Element2D<T, GeometricDim, NumVertices>::inverse_jacobian_t inverse_jacobian_t;
+        typedef typename Element2D<T, NumVertices>::point_t point_t;
+        typedef typename Element2D<T, NumVertices>::vertex_vec_t vertex_vec_t;
+        typedef typename Element2D<T, NumVertices>::matrix_t matrix_t;
 
-        local_vertex_vec_t getLocalVertices() const override;
+        vertex_vec_t getLocalVertices() const override;
 
-        /**
-         * @brief Returns the transformation matrix without the translation
-         * from the global coordinate system to the local element coordinate system.
-         *
-         * @param global_vertices the vertices of the element in the global coordinate system.
-         * @return jacobian_t
-         */
-        jacobian_t getTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+        matrix_t getTransformationJacobian(const vertex_vec_t& global_vertices) const override;
 
-        /**
-         * @brief Returns the transformation matrix without the translation
-         * from the local element coordinate system to the global coordinate system.
-         *
-         * @param global_vertices the vertices of the element in the global coordinate system.
-         * @return inverse_jacobian_t
-         */
-        inverse_jacobian_t getInverseTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+        matrix_t getInverseTransformationJacobian(
+            const vertex_vec_t& global_vertices) const override;
 
         T getDeterminantOfTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+            const vertex_vec_t& global_vertices) const override;
     };
 }  // namespace ippl
 

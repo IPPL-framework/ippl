@@ -1,6 +1,4 @@
 // Class EdgeElement
-//   The EdgeElement class. This is a class representing an edge element
-//   for finite element methods.
 
 #ifndef IPPL_EDGEELEMENT_H
 #define IPPL_EDGEELEMENT_H
@@ -10,52 +8,23 @@
 namespace ippl {
 
     template <typename T>  // TODO maybe remove the fixed geometric dim at some point
-    class EdgeElement : public Element1D<T, 1, 2> {
+    class EdgeElement : public Element1D<T, 2> {
     public:
-        static constexpr unsigned NumVertices    = 2;
-        static constexpr unsigned GeometricDim   = 1;
-        static constexpr unsigned TopologicalDim = 1;
+        static constexpr unsigned NumVertices = 2;
 
-        typedef typename Element1D<T, GeometricDim, NumVertices>::local_point_t local_point_t;
-        typedef typename Element1D<T, GeometricDim, NumVertices>::global_point_t global_point_t;
-        typedef
-            typename Element1D<T, GeometricDim, NumVertices>::local_vertex_vec_t local_vertex_vec_t;
-        typedef typename Element1D<T, GeometricDim, NumVertices>::global_vertex_vec_t
-            global_vertex_vec_t;
-        typedef typename Element1D<T, GeometricDim, NumVertices>::jacobian_t jacobian_t;
-        typedef
-            typename Element1D<T, GeometricDim, NumVertices>::inverse_jacobian_t inverse_jacobian_t;
+        typedef typename Element1D<T, NumVertices>::point_t point_t;
+        typedef typename Element1D<T, NumVertices>::vertex_vec_t vertex_vec_t;
+        typedef typename Element1D<T, NumVertices>::matrix_t matrix_t;
 
-        local_vertex_vec_t getLocalVertices() const override;
+        vertex_vec_t getLocalVertices() const override;
 
-        /**
-         * @brief Returns the transformation matrix without the translation
-         * from the global coordinate system to the local element coordinate system.
-         *
-         * @param global_vertices the vertices of the element in the global coordinate system.
-         * @return jacobian_t
-         */
-        jacobian_t getTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+        matrix_t getTransformationJacobian(const vertex_vec_t& global_vertices) const override;
 
-        /**
-         * @brief Returns the transformation matrix without the translation
-         * from the local element coordinate system to the global coordinate system.
-         *
-         * @details The transformation is given by:
-         * \f$\boldsymbol{x} = \mathbf{J}^{-1}_K \hat{\boldsymbol{x}} + \boldsymbol{v}_0\f$
-         * where \f$\mathbf{J}^{-1}\f$ is the transformation matrix returned by this function and
-         * \f$\boldsymbol{v}_0\f$ is the translation vector (given by the coordinates of the first
-         * vertex of the element).
-         *
-         * @param global_vertices the vertices of the element in the global coordinate system.
-         * @return inverse_jacobian_t
-         */
-        inverse_jacobian_t getInverseTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+        matrix_t getInverseTransformationJacobian(
+            const vertex_vec_t& global_vertices) const override;
 
         T getDeterminantOfTransformationJacobian(
-            const global_vertex_vec_t& global_vertices) const override;
+            const vertex_vec_t& global_vertices) const override;
     };
 
 }  // namespace ippl

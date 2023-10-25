@@ -32,7 +32,7 @@ namespace ippl {
         static constexpr unsigned NumDoFs = calculateLagrangeNumDoFs(Dim, Order);
 
         LagrangeSpace(const Mesh<T, Dim>& mesh,
-                      const Element<T, Dim, Dim, NumElementVertices>& ref_element,
+                      const Element<T, Dim, NumElementVertices>& ref_element,
                       const Quadrature<T, NumIntegrationPoints>& quadrature);
 
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
