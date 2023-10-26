@@ -32,8 +32,8 @@ public:
         std::uniform_real_distribution<T> dist(-interval_size / 2.0, interval_size / 2.0);
 
         for (unsigned i = 0; i < NumQuads; i++) {
-            // Determine 2 points of the quadrilateral (Since this is only a scaling and translation
-            // transformation).
+            // Determine only two points randomly of the quadrilateral (Since this is only a scaling
+            // and translation transformation, and the quad is parallel to the axes).
 
             // first corner point
             quads[i][0][0] = dist(rng);
