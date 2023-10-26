@@ -32,10 +32,24 @@ public:
         std::uniform_real_distribution<T> dist(-interval_size / 2.0, interval_size / 2.0);
 
         for (unsigned i = 0; i < NumQuads; i++) {
-            for (unsigned p = 0; p < 4; p++) {
-                quads[i][p][0] = dist(rng);
-                quads[i][p][1] = dist(rng);
-            }
+            // Determine 2 points of the quadrilateral (Since this is only a scaling and translation
+            // transformation).
+
+            // first corner point
+            quads[i][0][0] = dist(rng);
+            quads[i][0][1] = dist(rng);
+
+            // second corner point
+            quads[i][3][0] = dist(rng);
+            quads[i][3][1] = dist(rng);
+
+            // Compute the third point
+            quads[i][1][0] = quads[i][3][0];
+            quads[i][1][1] = quads[i][0][1];
+
+            // Compute the fourth point
+            quads[i][2][0] = quads[i][0][0];
+            quads[i][2][1] = quads[i][3][1];
         }
     }
 
@@ -58,6 +72,57 @@ TYPED_TEST(QuadrilateralElementTest, LocalVertices) {
     for (unsigned i = 0; i < this->local_points.dim; i++) {
         ASSERT_EQ(quad_element.getLocalVertices()[i].dim, 2);
         ASSERT_EQ(quad_element.getLocalVertices()[i][0], this->local_points[i][0]);
+    }
+}
+
+TYPED_TEST(QuadrilateralElementTest, LocalToGlobal) {
+    using T = typename TestFixture::value_t;
+    // using point_t      = typename TestFixture::point_t;
+    using vertex_vec_t = typename TestFixture::vertex_vec_t;
+
+    auto& quad_element = this->quad_element;
+
+    for (unsigned i = 0; i < this->quads.dim; i++) {
+        vertex_vec_t transformed_points;
+        for (unsigned p = 0; p < 4; p++) {
+            transformed_points[p] =
+                quad_element.localToGlobal(this->quads[i], this->local_points[p]);
+
+            if (std::is_same<T, double>::value) {
+                ASSERT_DOUBLE_EQ(transformed_points[p][0], this->quads[i][p][0]);
+                ASSERT_DOUBLE_EQ(transformed_points[p][1], this->quads[i][p][1]);
+            } else if (std::is_same<T, float>::value) {
+                ASSERT_FLOAT_EQ(transformed_points[p][0], this->quads[i][p][0]);
+                ASSERT_FLOAT_EQ(transformed_points[p][1], this->quads[i][p][1]);
+            } else {
+                FAIL();
+            }
+        }
+    }
+}
+
+TYPED_TEST(QuadrilateralElementTest, GlobalToLocal) {
+    using T = typename TestFixture::value_t;
+    // using point_t      = typename TestFixture::point_t;
+    using vertex_vec_t = typename TestFixture::vertex_vec_t;
+
+    auto& quad_element = this->quad_element;
+
+    for (unsigned i = 0; i < this->quads.dim; i++) {
+        vertex_vec_t transformed_points;
+        for (unsigned p = 0; p < 4; p++) {
+            transformed_points[p] = quad_element.globalToLocal(this->quads[i], this->quads[i][p]);
+
+            if (std::is_same<T, double>::value) {
+                ASSERT_DOUBLE_EQ(transformed_points[p][0], this->local_points[p][0]);
+                ASSERT_DOUBLE_EQ(transformed_points[p][1], this->local_points[p][1]);
+            } else if (std::is_same<T, float>::value) {
+                ASSERT_FLOAT_EQ(transformed_points[p][0], this->local_points[p][0]);
+                ASSERT_FLOAT_EQ(transformed_points[p][1], this->local_points[p][1]);
+            } else {
+                FAIL();
+            }
+        }
     }
 }
 

@@ -66,31 +66,19 @@ TYPED_TEST(EdgeElementTest, LocalToGlobal) {
 
     auto& edge_element = this->edge_element;
 
-    for (unsigned i = 0; i < this->edges.dim; i++) {
-        const point_t global_start_point = this->edges[i][0];
-        const point_t global_end_point   = this->edges[i][1];
-
-        // we need to pass a vector with one element because this is the type
-        // that is also used in higher dimensions
-        const vertex_vec_t global_edge_vertices = {global_start_point, global_end_point};
-
-        point_t transformed_start_point =
-            edge_element.localToGlobal(global_edge_vertices, this->local_points[0]);
-        point_t transformed_mid_point =
-            edge_element.localToGlobal(global_edge_vertices, this->local_mid_point);
-        point_t transformed_end_point =
-            edge_element.localToGlobal(global_edge_vertices, this->local_points[1]);
+    for (const vertex_vec_t& edge : this->edges) {
+        point_t transformed_start_point = edge_element.localToGlobal(edge, this->local_points[0]);
+        point_t transformed_mid_point   = edge_element.localToGlobal(edge, this->local_mid_point);
+        point_t transformed_end_point   = edge_element.localToGlobal(edge, this->local_points[1]);
 
         if (std::is_same<T, double>::value) {
-            ASSERT_DOUBLE_EQ(transformed_start_point[0], global_start_point[0]);
-            ASSERT_DOUBLE_EQ(transformed_mid_point[0],
-                             0.5 * (global_start_point[0] + global_end_point[0]));
-            ASSERT_DOUBLE_EQ(transformed_end_point[0], global_end_point[0]);
+            ASSERT_DOUBLE_EQ(transformed_start_point[0], edge[0][0]);
+            ASSERT_DOUBLE_EQ(transformed_mid_point[0], 0.5 * (edge[0][0] + edge[1][0]));
+            ASSERT_DOUBLE_EQ(transformed_end_point[0], edge[1][0]);
         } else if (std::is_same<T, float>::value) {
-            ASSERT_FLOAT_EQ(transformed_start_point[0], global_start_point[0]);
-            ASSERT_FLOAT_EQ(transformed_mid_point[0],
-                            0.5 * (global_start_point[0] + global_end_point[0]));
-            ASSERT_FLOAT_EQ(transformed_end_point[0], global_end_point[0]);
+            ASSERT_FLOAT_EQ(transformed_start_point[0], edge[0][0]);
+            ASSERT_FLOAT_EQ(transformed_mid_point[0], 0.5 * (edge[0][0] + edge[1][0]));
+            ASSERT_FLOAT_EQ(transformed_end_point[0], edge[1][0]);
         } else {
             FAIL();
         }
@@ -104,20 +92,10 @@ TYPED_TEST(EdgeElementTest, GlobalToLocal) {
 
     auto& edge_element = this->edge_element;
 
-    for (unsigned i = 0; i < this->edges.dim; i++) {
-        const point_t global_start_point = this->edges[i][0];
-        const point_t global_end_point   = this->edges[i][1];
-
-        // we need to pass a vector with one element because this is the type
-        // that is also used in higher dimensions
-        const vertex_vec_t global_edge_vertices = {global_start_point, global_end_point};
-
-        point_t transformed_start_point =
-            edge_element.globalToLocal(global_edge_vertices, this->edges[i][0]);
-        point_t transformed_mid_point = edge_element.globalToLocal(
-            global_edge_vertices, 0.5 * (this->edges[i][0] + this->edges[i][1]));
-        point_t transformed_end_point =
-            edge_element.globalToLocal(global_edge_vertices, this->edges[i][1]);
+    for (const vertex_vec_t& edge : this->edges) {
+        point_t transformed_start_point = edge_element.globalToLocal(edge, edge[0]);
+        point_t transformed_mid_point = edge_element.globalToLocal(edge, 0.5 * (edge[0] + edge[1]));
+        point_t transformed_end_point = edge_element.globalToLocal(edge, edge[1]);
 
         if (std::is_same<T, double>::value) {
             ASSERT_DOUBLE_EQ(transformed_start_point[0], this->local_points[0][0]);

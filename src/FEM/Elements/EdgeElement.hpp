@@ -29,10 +29,4 @@ namespace ippl {
         return inv_jacobian;
     }
 
-    template <typename T>
-    T EdgeElement<T>::getDeterminantOfTransformationJacobian(
-        const EdgeElement<T>::vertex_vec_t& global_vertices) const {
-        return 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
-    }
-
 }  // namespace ippl

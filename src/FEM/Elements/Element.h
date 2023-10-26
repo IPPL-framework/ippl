@@ -27,8 +27,7 @@ namespace ippl {
         virtual diag_matrix_vec_t getInverseTransformationJacobian(
             const vertex_vec_t& global_vertices) const = 0;
 
-        virtual T getDeterminantOfTransformationJacobian(
-            const vertex_vec_t& global_vertices) const = 0;
+        virtual T getDeterminantOfTransformationJacobian(const vertex_vec_t& global_vertices) const;
 
         virtual point_t globalToLocal(const vertex_vec_t&, const point_t&) const;
 

@@ -25,9 +25,6 @@ namespace ippl {
 
         diag_matrix_vec_t getInverseTransformationJacobian(
             const vertex_vec_t& global_vertices) const override;
-
-        T getDeterminantOfTransformationJacobian(
-            const vertex_vec_t& global_vertices) const override;
     };
 }  // namespace ippl
 
