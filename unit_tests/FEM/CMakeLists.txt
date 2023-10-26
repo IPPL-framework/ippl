@@ -22,6 +22,15 @@ target_link_libraries (
     ${GTEST_BOTH_LIBRARIES}
 )
 
+add_executable (QuadrilateralElement QuadrilateralElement.cpp)
+target_link_libraries (
+    QuadrilateralElement
+    ippl
+    pthread
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+)
+
 add_executable (LagrangeSpace LagrangeSpace.cpp)
 target_link_libraries (
     LagrangeSpace

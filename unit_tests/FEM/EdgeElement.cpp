@@ -17,7 +17,10 @@ protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }
 
 public:
-    using value_t                      = T;
+    using value_t      = T;
+    using point_t      = ippl::EdgeElement<T>::point_t;
+    using vertex_vec_t = ippl::EdgeElement<T>::vertex_vec_t;
+
     static constexpr unsigned NumEdges = 3;
 
     EdgeElementTest()
@@ -29,8 +32,8 @@ public:
         std::uniform_real_distribution<T> dist(-interval_size / 2.0, interval_size / 2.0);
 
         for (unsigned i = 0; i < NumEdges; i++) {
-            edges[i][0] = dist(rng);
-            edges[i][1] = dist(rng);
+            edges[i][0][0] = dist(rng);
+            edges[i][1][0] = dist(rng);
         }
     }
 
@@ -38,51 +41,56 @@ public:
 
     ippl::EdgeElement<T> edge_element;
 
-    const T local_start_point = 0.0;
-    const T local_end_point   = 1.0;
-    const T local_mid_point   = (local_end_point - local_start_point) / 2.0;
+    const vertex_vec_t local_points = {{0.0}, {1.0}};
+    const point_t local_mid_point   = {0.5};
 
-    ippl::Vector<ippl::Vector<T, 2>, NumEdges> edges;
+    ippl::Vector<vertex_vec_t, NumEdges> edges;
 };
 
 using Tests = TestParams::tests<42>;
 TYPED_TEST_CASE(EdgeElementTest, Tests);
 
-// TYPED_TEST(EdgeElementTest, Jacobian) {}
+TYPED_TEST(EdgeElementTest, LocalVertices) {
+    auto& edge_element = this->edge_element;
 
-// TYPED_TEST(EdgeElementTest, InverseJacobian) {}
+    for (unsigned i = 0; i < this->local_points.dim; i++) {
+        ASSERT_EQ(edge_element.getLocalVertices()[i].dim, 1);
+        ASSERT_EQ(edge_element.getLocalVertices()[i][0], this->local_points[i][0]);
+    }
+}
 
 TYPED_TEST(EdgeElementTest, LocalToGlobal) {
-    using T = typename TestFixture::value_t;
+    using T            = typename TestFixture::value_t;
+    using point_t      = typename TestFixture::point_t;
+    using vertex_vec_t = typename TestFixture::vertex_vec_t;
 
     auto& edge_element = this->edge_element;
 
     for (unsigned i = 0; i < this->edges.dim; i++) {
-        const T global_start_point = this->edges[i][0];
-        const T global_end_point   = this->edges[i][1];
+        const point_t global_start_point = this->edges[i][0];
+        const point_t global_end_point   = this->edges[i][1];
 
         // we need to pass a vector with one element because this is the type
         // that is also used in higher dimensions
-        const ippl::Vector<ippl::Vector<T, 1>, 2> global_edge_vertices = {{global_start_point},
-                                                                          {global_end_point}};
+        const vertex_vec_t global_edge_vertices = {global_start_point, global_end_point};
 
-        ippl::Vector<T, 1> transformed_start_point =
-            edge_element.localToGlobal(global_edge_vertices, this->local_start_point);
-        ippl::Vector<T, 1> transformed_mid_point =
+        point_t transformed_start_point =
+            edge_element.localToGlobal(global_edge_vertices, this->local_points[0]);
+        point_t transformed_mid_point =
             edge_element.localToGlobal(global_edge_vertices, this->local_mid_point);
-        ippl::Vector<T, 1> transformed_end_point =
-            edge_element.localToGlobal(global_edge_vertices, this->local_end_point);
+        point_t transformed_end_point =
+            edge_element.localToGlobal(global_edge_vertices, this->local_points[1]);
 
         if (std::is_same<T, double>::value) {
-            ASSERT_DOUBLE_EQ(transformed_start_point[0], global_start_point);
+            ASSERT_DOUBLE_EQ(transformed_start_point[0], global_start_point[0]);
             ASSERT_DOUBLE_EQ(transformed_mid_point[0],
-                             0.5 * (global_start_point + global_end_point));
-            ASSERT_DOUBLE_EQ(transformed_end_point[0], global_end_point);
+                             0.5 * (global_start_point[0] + global_end_point[0]));
+            ASSERT_DOUBLE_EQ(transformed_end_point[0], global_end_point[0]);
         } else if (std::is_same<T, float>::value) {
-            ASSERT_FLOAT_EQ(transformed_start_point[0], global_start_point);
+            ASSERT_FLOAT_EQ(transformed_start_point[0], global_start_point[0]);
             ASSERT_FLOAT_EQ(transformed_mid_point[0],
-                            0.5 * (global_start_point + global_end_point));
-            ASSERT_FLOAT_EQ(transformed_end_point[0], global_end_point);
+                            0.5 * (global_start_point[0] + global_end_point[0]));
+            ASSERT_FLOAT_EQ(transformed_end_point[0], global_end_point[0]);
         } else {
             FAIL();
         }
@@ -90,34 +98,35 @@ TYPED_TEST(EdgeElementTest, LocalToGlobal) {
 }
 
 TYPED_TEST(EdgeElementTest, GlobalToLocal) {
-    using T = typename TestFixture::value_t;
+    using T            = typename TestFixture::value_t;
+    using point_t      = typename TestFixture::point_t;
+    using vertex_vec_t = typename TestFixture::vertex_vec_t;
 
     auto& edge_element = this->edge_element;
 
     for (unsigned i = 0; i < this->edges.dim; i++) {
-        const T global_start_point = this->edges[i][0];
-        const T global_end_point   = this->edges[i][1];
+        const point_t global_start_point = this->edges[i][0];
+        const point_t global_end_point   = this->edges[i][1];
 
         // we need to pass a vector with one element because this is the type
         // that is also used in higher dimensions
-        const ippl::Vector<ippl::Vector<T, 1>, 2> global_edge_vertices = {{global_start_point},
-                                                                          {global_end_point}};
+        const vertex_vec_t global_edge_vertices = {global_start_point, global_end_point};
 
-        ippl::Vector<T, 1> transformed_start_point =
+        point_t transformed_start_point =
             edge_element.globalToLocal(global_edge_vertices, this->edges[i][0]);
-        ippl::Vector<T, 1> transformed_mid_point = edge_element.globalToLocal(
+        point_t transformed_mid_point = edge_element.globalToLocal(
             global_edge_vertices, 0.5 * (this->edges[i][0] + this->edges[i][1]));
-        ippl::Vector<T, 1> transformed_end_point =
+        point_t transformed_end_point =
             edge_element.globalToLocal(global_edge_vertices, this->edges[i][1]);
 
         if (std::is_same<T, double>::value) {
-            ASSERT_DOUBLE_EQ(transformed_start_point[0], this->local_start_point);
-            ASSERT_DOUBLE_EQ(transformed_mid_point[0], this->local_mid_point);
-            ASSERT_DOUBLE_EQ(transformed_end_point[0], this->local_end_point);
+            ASSERT_DOUBLE_EQ(transformed_start_point[0], this->local_points[0][0]);
+            ASSERT_DOUBLE_EQ(transformed_mid_point[0], this->local_mid_point[0]);
+            ASSERT_DOUBLE_EQ(transformed_end_point[0], this->local_points[1][0]);
         } else if (std::is_same<T, float>::value) {
-            ASSERT_FLOAT_EQ(transformed_start_point[0], this->local_start_point);
-            ASSERT_FLOAT_EQ(transformed_mid_point[0], this->local_mid_point);
-            ASSERT_FLOAT_EQ(transformed_end_point[0], this->local_end_point);
+            ASSERT_FLOAT_EQ(transformed_start_point[0], this->local_points[0][0]);
+            ASSERT_FLOAT_EQ(transformed_mid_point[0], this->local_mid_point[0]);
+            ASSERT_FLOAT_EQ(transformed_end_point[0], this->local_points[1][0]);
         } else {
             FAIL();
         }
