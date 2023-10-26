@@ -44,6 +44,7 @@ using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
 using size_type = ippl::detail::size_type;
 
+
 struct custom_cdf{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
            if(d==0){
@@ -131,24 +132,30 @@ void MomentsFromSamples(view_type position, int d, int ntotal, const int P, doub
                             KOKKOS_LAMBDA(const int i, double& valL) {
         double myVal = position(i)[d];
         valL += myVal;
-        },
-	Kokkos::Sum<double>(temp));
-    Kokkos::fence();
-    double gtemp = 0.0;
-    MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    double mean = gtemp/ntotal;
+    }, Kokkos::Sum<double>(temp));
+
+    double mean = temp / ntotal;
     moms[0] = mean;
-    for(int p=1; p<P; p++){
+
+    for (int p = 1; p < P; p++) {
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d]-mean, p+1);
+            double myVal = pow(position(i)[d] - mean, p + 1);
             valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        Kokkos::fence();
-        MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        moms[p] = gtemp/(ntotal-1); // Bessel's correction
+        }, Kokkos::Sum<double>(temp));
+        moms[p] = temp / ntotal;
+    }
+
+    double gtemp[P];
+    MPI_Allreduce(moms, gtemp, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+
+    for (int p = 1; p < P; p++) {
+        gtemp[p] /= ippl::Comm->size()*(ntotal/(ntotal-1)); // Divide by the number of GPUs
+    }
+
+    for (int p = 1; p < P; p++) {
+        moms[p] = gtemp[p];
     }
 }
 
@@ -201,12 +208,11 @@ int main(int argc, char* argv[]) {
         int seed = 42;
         using size_type = ippl::detail::size_type;
         GeneratorPool rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-        
+
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4; // dimension of parameters in the pdf
-        const double mu = 1.0;
-        const double sd = 0.9;
-        //const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0}; // paramters of pdf
+        const double mu = 0.0;
+        const double sd = 0.5;
         double *parH = new double [DimP];
         parH[0] = mu;
         parH[1] = sd;
