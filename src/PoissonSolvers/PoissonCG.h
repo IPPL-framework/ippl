@@ -1,13 +1,13 @@
 //
-// Class ElectrostaticsCG
-//   Solves electrostatics problems with the CG algorithm
+// Class PoissonCG
+//   Solves the Poisson problem with the CG algorithm
 //
 
-#ifndef IPPL_ELECTROSTATICS_CG_H
-#define IPPL_ELECTROSTATICS_CG_H
+#ifndef IPPL_POISSON_CG_H
+#define IPPL_POISSON_CG_H
 
-#include "Electrostatics.h"
-#include "PCG.h"
+#include "LinearSolvers/PCG.h"
+#include "Poisson.h"
 
 namespace ippl {
 
@@ -20,23 +20,23 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
-    class ElectrostaticsCG : public Electrostatics<FieldLHS, FieldRHS> {
+    class PoissonCG : public Poisson<FieldLHS, FieldRHS> {
         using Tlhs = typename FieldLHS::value_type;
 
     public:
-        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
 
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
-        ElectrostaticsCG()
+        PoissonCG()
             : Base() {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
 
-        ElectrostaticsCG(lhs_type& lhs, rhs_type& rhs)
+        PoissonCG(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
