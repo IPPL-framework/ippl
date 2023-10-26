@@ -24,14 +24,13 @@ public:
         : rng(Seed) {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
 
-        const T max_double = std::numeric_limits<T>::max();
-        const T min_double = std::numeric_limits<T>::lowest();
+        const T interval_size = std::numeric_limits<T>::max() / 100.0;
 
-        std::uniform_real_distribution<T> dist(min_double, max_double);
+        std::uniform_real_distribution<T> dist(-interval_size / 2.0, interval_size / 2.0);
 
         for (unsigned i = 0; i < NumEdges; i++) {
-            global_edge_vertices[i][0] = dist(rng);
-            global_edge_vertices[i][1] = dist(rng);
+            edges[i][0] = dist(rng);
+            edges[i][1] = dist(rng);
         }
     }
 
@@ -43,7 +42,7 @@ public:
     const T local_end_point   = 1.0;
     const T local_mid_point   = (local_end_point - local_start_point) / 2.0;
 
-    ippl::Vector<ippl::Vector<T, 2>, NumEdges> global_edge_vertices;
+    ippl::Vector<ippl::Vector<T, 2>, NumEdges> edges;
 };
 
 using Tests = TestParams::tests<42>;
@@ -58,28 +57,72 @@ TYPED_TEST(EdgeElementTest, LocalToGlobal) {
 
     auto& edge_element = this->edge_element;
 
-    for (unsigned i = 0; i < this->global_edge_vertices.dim; i++) {
-        const T global_start_point = this->global_edge_vertices[i][0];
-        const T global_end_point   = this->global_edge_vertices[i][1];
+    for (unsigned i = 0; i < this->edges.dim; i++) {
+        const T global_start_point = this->edges[i][0];
+        const T global_end_point   = this->edges[i][1];
 
         // we need to pass a vector with one element because this is the type
         // that is also used in higher dimensions
         const ippl::Vector<ippl::Vector<T, 1>, 2> global_edge_vertices = {{global_start_point},
                                                                           {global_end_point}};
 
-        ippl::Vector<double, 1> transformed_start_point =
+        ippl::Vector<T, 1> transformed_start_point =
             edge_element.localToGlobal(global_edge_vertices, this->local_start_point);
-        ippl::Vector<double, 1> transformed_mid_point =
+        ippl::Vector<T, 1> transformed_mid_point =
             edge_element.localToGlobal(global_edge_vertices, this->local_mid_point);
-        ippl::Vector<double, 1> transformed_end_point =
+        ippl::Vector<T, 1> transformed_end_point =
             edge_element.localToGlobal(global_edge_vertices, this->local_end_point);
 
-        ASSERT_EQ(transformed_start_point[0], global_start_point);
-        ASSERT_EQ(transformed_end_point[0], global_end_point);
+        if (std::is_same<T, double>::value) {
+            ASSERT_DOUBLE_EQ(transformed_start_point[0], global_start_point);
+            ASSERT_DOUBLE_EQ(transformed_mid_point[0],
+                             0.5 * (global_start_point + global_end_point));
+            ASSERT_DOUBLE_EQ(transformed_end_point[0], global_end_point);
+        } else if (std::is_same<T, float>::value) {
+            ASSERT_FLOAT_EQ(transformed_start_point[0], global_start_point);
+            ASSERT_FLOAT_EQ(transformed_mid_point[0],
+                            0.5 * (global_start_point + global_end_point));
+            ASSERT_FLOAT_EQ(transformed_end_point[0], global_end_point);
+        } else {
+            FAIL();
+        }
     }
 }
 
-// TYPED_TEST(EdgeElementTest, GlobalToLocal) {}
+TYPED_TEST(EdgeElementTest, GlobalToLocal) {
+    using T = typename TestFixture::value_t;
+
+    auto& edge_element = this->edge_element;
+
+    for (unsigned i = 0; i < this->edges.dim; i++) {
+        const T global_start_point = this->edges[i][0];
+        const T global_end_point   = this->edges[i][1];
+
+        // we need to pass a vector with one element because this is the type
+        // that is also used in higher dimensions
+        const ippl::Vector<ippl::Vector<T, 1>, 2> global_edge_vertices = {{global_start_point},
+                                                                          {global_end_point}};
+
+        ippl::Vector<T, 1> transformed_start_point =
+            edge_element.globalToLocal(global_edge_vertices, this->edges[i][0]);
+        ippl::Vector<T, 1> transformed_mid_point = edge_element.globalToLocal(
+            global_edge_vertices, 0.5 * (this->edges[i][0] + this->edges[i][1]));
+        ippl::Vector<T, 1> transformed_end_point =
+            edge_element.globalToLocal(global_edge_vertices, this->edges[i][1]);
+
+        if (std::is_same<T, double>::value) {
+            ASSERT_DOUBLE_EQ(transformed_start_point[0], this->local_start_point);
+            ASSERT_DOUBLE_EQ(transformed_mid_point[0], this->local_mid_point);
+            ASSERT_DOUBLE_EQ(transformed_end_point[0], this->local_end_point);
+        } else if (std::is_same<T, float>::value) {
+            ASSERT_FLOAT_EQ(transformed_start_point[0], this->local_start_point);
+            ASSERT_FLOAT_EQ(transformed_mid_point[0], this->local_mid_point);
+            ASSERT_FLOAT_EQ(transformed_end_point[0], this->local_end_point);
+        } else {
+            FAIL();
+        }
+    }
+}
 
 int main(int argc, char* argv[]) {
     int success = 1;
