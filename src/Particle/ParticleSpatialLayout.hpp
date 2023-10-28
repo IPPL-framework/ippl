@@ -249,6 +249,7 @@ namespace ippl {
             KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
                 // Step 1
                 bool xyz_bool = false;
+                bool increment[2];
 
                 xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
 
@@ -269,26 +270,29 @@ namespace ippl {
                             ranks(i)   = rank;
                             invalid(i) = true;
                             found(i)   = true;
+                            increment[0] = invalid(i);
+                            increment[1] = !found(i);
+                            val += increment;
                             break;
                         }
                     }
                 }
 
                 if (final && !found(i)) {
-                    notFoundIds(val.count[0]) = i;
-                }
-
-                bool increment[2];
-                increment[0] = !found(i);
-                increment[1] = invalid(i);
-                val += increment;
+                    notFoundIds(val.count[1]) = i;
+                    invalid(i) = true;
+                    increment[0] = invalid(i);
+                    increment[1] = !found(i);
+                    val += increment;
+                 }
+        
             },
             red_val);
 
         Kokkos::fence();
 
-        nLeft        = red_val.count[0];
-        invalidCount = red_val.count[1];
+        invalidCount = red_val.count[0];
+        nLeft        = red_val.count[1];
 
         // Step 4
         if (nLeft > 0) {
@@ -296,20 +300,18 @@ namespace ippl {
                 IpplTimings::getTimer("nonNeighboringParticles");
             IpplTimings::startTimer(nonNeighboringParticles);
 
-            Kokkos::parallel_reduce(
+            Kokkos::parallel_for(
                 "ParticleSpatialLayout::leftParticles()",
                 mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
-                KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
+                KOKKOS_LAMBDA(const size_t i, const size_type j) {
                     size_type pId = notFoundIds(i);
                     bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
 
                     if (xyz_bool) {
                         ranks(pId)   = j;
-                        invalid(pId) = true;
-                        count += invalid(pId);
                     }
-                },
-                Kokkos::Sum<size_type>(invalidCount));
+                }
+               );
             Kokkos::fence();
 
             IpplTimings::stopTimer(nonNeighboringParticles);
