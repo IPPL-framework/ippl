@@ -360,7 +360,7 @@ public:
         }
     }
 
-    void dump() {} //{ dumpData(); }
+    void dump() { dumpData(); }
     
     void dumpData() {
         auto Pview = this->pcontainer_m->P.getView();

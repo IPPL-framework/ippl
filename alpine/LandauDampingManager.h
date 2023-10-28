@@ -18,12 +18,12 @@ const char* TestName = "LandauDamping";
  // define functions used in sampling particles
 struct custom_cdf{
     KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
-          return x + (params[d*Dim+0] / params[d*Dim+1]) * Kokkos::sin(params[d*Dim+1] * x);
+          return x + (params[d*2+0] / params[d*2+1]) * Kokkos::sin(params[d*2+1] * x);
     }
 };
 struct custom_pdf{
     KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params) const {
-          return  1.0 + params[d*Dim+0] * Kokkos::cos(params[d*Dim+1] * x);
+          return  1.0 + params[d*2+0] * Kokkos::cos(params[d*2+1] * x);
     }
 };
 struct custom_estimate{
