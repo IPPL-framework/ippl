@@ -22,17 +22,17 @@
 
         ORB<T, Dim> orb;
         
-     void updateLayout(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
+     void updateLayout(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
         // Update local fields
 
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        (*E_m).updateLayout(fl);
-        (*rho_m).updateLayout(fl);
+        (*E_m).updateLayout(*fl);
+        (*rho_m).updateLayout(*fl);
 
         // Update layout with new FieldLayout
         PLayout_t<T, Dim>* layout = &pc_m->getLayout();
-        (*layout).updateLayout(fl, mesh);
+        (*layout).updateLayout(*fl, *mesh);
         IpplTimings::stopTimer(tupdateLayout);
         static IpplTimings::TimerRef tupdatePLayout = IpplTimings::getTimer("updatePB");
         IpplTimings::startTimer(tupdatePLayout);
@@ -42,17 +42,17 @@
         IpplTimings::stopTimer(tupdatePLayout);
     }
 
-    void initializeORB(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh) {
-        orb.initialize(fl, mesh, *rho_m);
+    void initializeORB(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh) {
+        orb.initialize(*fl, *mesh, *rho_m);
     }
 
-    void repartition(ippl::FieldLayout<Dim>& fl, ippl::UniformCartesian<T, Dim>& mesh, bool& isFirstRepartition) {
+    void repartition(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
         // Repartition the domains
 
         using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
         typename Base::particle_position_type *R_m;
         R_m = &pc_m->R;
-        bool res = orb.binaryRepartition(*R_m, fl, isFirstRepartition);
+        bool res = orb.binaryRepartition(*R_m, *fl, isFirstRepartition);
         if (res != true) {
             std::cout << "Could not repartition!" << std::endl;
             return;

@@ -176,8 +176,8 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(FL_m, mesh_m);
-            this->loadbalancer_m->repartition(FL_m, mesh_m, this->isFirstRepartition);
+            this->loadbalancer_m->initializeORB(&FL_m, &mesh_m);
+            this->loadbalancer_m->repartition(&FL_m, &mesh_m, this->isFirstRepartition);
         }
 
         // Sample particle positions:
@@ -270,7 +270,7 @@ public:
           if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
                 auto* mesh = &fc->rho_m.get_mesh();
                 auto* FL = &fc->getLayout();
-                loadbalancer_m->repartition(*FL, *mesh, isFirstRepartition_m);
+                loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
           }
 
           // scatter the charge onto the underlying grid
