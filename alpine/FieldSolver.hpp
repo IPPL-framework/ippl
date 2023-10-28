@@ -16,11 +16,11 @@
         std::string stype_m; // Declare stype_m as a member variable
         Solver_t<T, Dim> solver_m;
     private:
-        Field_t<Dim> rho_m;
-        VField_t<T, Dim> E_m;
+        Field_t<Dim> *rho_m;
+        VField_t<T, Dim> *E_m;
     
     public:
-    FieldSolver(std::string solver, Field_t<Dim> &rho, VField_t<T, Dim> &E)
+    FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *E)
         : stype_m(solver), rho_m(rho), E_m(E) {}
     
     ~FieldSolver(){}
@@ -79,7 +79,7 @@
 
         solver.mergeParameters(sp);
 
-        solver.setRhs(rho_m);
+        solver.setRhs(*rho_m);
 
         if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
@@ -89,7 +89,7 @@
         } else {
             // The periodic Poisson solver, Open boundaries solver,
             // and the P3M solver compute the electric field directly
-            solver.setLhs(E_m);
+            solver.setLhs(*E_m);
         }
     }
 

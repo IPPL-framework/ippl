@@ -123,7 +123,7 @@ public:
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
         this->fcontainer_m->initializeFields(*mesh, *FL);
         
-        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, this->fcontainer_m->rho_m, this->fcontainer_m->E_m);
+        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->rho_m, &this->fcontainer_m->E_m);
         this->fsolver_m->initSolver();
         this->loadbalancer_m = std::make_shared<LoadBalancer_t>(this->lbt, this->fcontainer_m, this->pcontainer_m, this->fsolver_m);
 
