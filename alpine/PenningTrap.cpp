@@ -395,8 +395,9 @@ int main(int argc, char* argv[]) {
         P->scatterCIC(totalP, it + 1, hr);
 
         // here is the position where we can access the density field
+        std::optional<conduit_cpp::Node> node_in;
 #ifdef ENABLE_CATALYST
-        CatalystAdaptor::Execute_Field_Particle(it, P->time_m, Ippl::Comm->rank(), P->rho_m, P);
+        CatalystAdaptor::Execute_Particle(it, P->time_m, Ippl::Comm->rank(), P, node_in);
 #endif
 
         // Field solve
