@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         ippl::Vector<double, 1> vertex_coordinates;
         for (unsigned i = 0; i < number_of_vertices; i++) {
             vertex_out << i;
-            vertex_coordinates = lagrange_space.getCoordinatesForVertex(i);
+            vertex_coordinates = lagrange_space.getCoordinatesForDof(i);
             vertex_out << "," << vertex_coordinates[0];
             vertex_out << "\n";
         }
@@ -55,9 +55,8 @@ int main(int argc, char* argv[]) {
 
         for (unsigned i = 0; i < number_of_elements; ++i) {
             elem_out << i;
-            const auto element_indices = lagrange_space.getDimensionIndicesForElement(i);
-            const auto element_vertices =
-                lagrange_space.getGlobalVerticesForElement(element_indices);
+            const auto element_indices  = lagrange_space.getElementPositionFromIndex(i);
+            const auto element_vertices = lagrange_space.getMeshVerticesForElement(element_indices);
 
             for (unsigned j = 0; j < element_vertices.dim; ++j) {
                 elem_out << "," << element_vertices[j];

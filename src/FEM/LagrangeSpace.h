@@ -31,116 +31,110 @@ namespace ippl {
     public:
         static constexpr unsigned NumDoFs = calculateLagrangeNumDoFs(Dim, Order);
 
+        ///////////////////////////////////////////////////////////////////////
+        // Mesh types /////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        // A point in the global coordinate system
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::point_t point_t;
+
+        // A gradient vector in the global coordinate system
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::gradient_vec_t gradient_vec_t;
+
+        // An index of a vertex in the mesh
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::mesh_vertex_index_t mesh_vertex_index_t;
+
+        // A vector of vertex indices of the mesh
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::mesh_vertex_vec_t mesh_vertex_vec_t;
+
+        // A vector with the position of the vertex in the mesh in each dimension
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::mesh_vertex_pos_t mesh_vertex_pos_t;
+
+        ///////////////////////////////////////////////////////////////////////
+        // Element types //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        // A point in the local coordinate system of an element
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::local_point_t local_point_t;
+
+        // An index of an element in the mesh
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::element_index_t element_index_t;
+
+        // A vector with the position of the element in the mesh in each dimension
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::element_pos_t element_pos_t;
+
+        ///////////////////////////////////////////////////////////////////////
+        // DoF types //////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        // An index of a global degree of freedom of the finite element space
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::global_dof_index_t global_dof_index_t;
+
+        // An index of a local degree of freedom of an element
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::local_dof_index_t local_dof_index_t;
+
+        // A vector of storing a value for all degrees of freedom
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumDoFs>::dof_val_vec_t dof_val_vec_t;
+
         LagrangeSpace(const Mesh<T, Dim>& mesh,
                       const Element<T, Dim, NumElementVertices>& ref_element,
                       const Quadrature<T, NumIntegrationPoints>& quadrature);
 
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::vertex_vec_t vertex_vec_t;
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::index_t index_t;
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::index_vec_t index_vec_t;
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::coord_vec_t coord_vec_t;
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::value_vec_t value_vec_t;
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::gradient_vec_t gradient_vec_t;
+        ///////////////////////////////////////////////////////////////////////
+        /// Mesh and element operations ///////////////////////////////////////
+        // TODO maybe move to Finite Element Space instead or own
+        ///////////////////////////////////////////////////////////////////////
 
-        /**
-         * @brief Get the index vector from the element index.
-         *
-         * @param element_index The index of the element.
-         * @return index_vector_t
-         */
-        index_vec_t getDimensionIndicesForElement(const index_t& element_index) const override;
+        mesh_vertex_pos_t getElementPositionFromIndex(
+            const global_dof_index_t& element_index) const override;
 
-        /**
-         * @brief Get the dimension indices for vertex object
-         *
-         * @param global_vertex_index
-         * @return NDIndex<Dim>
-         */
-        index_vec_t getDimensionIndicesForVertex(const index_t& global_vertex_index) const override;
+        mesh_vertex_pos_t getMeshVertexPositionFromIndex(
+            const global_dof_index_t& dof_index) const override;
 
-        /**
-         * @brief Get the coordinates for a vertex given the vertex indices in each dimension of the
-         * mesh.
-         *
-         * @param vertex_indices The indices of the vertex in each dimension of the mesh.
-         * @return Vector<T, Dim>
-         */
-        coord_vec_t getCoordinatesForVertex(const index_vec_t& vertex_indices) const;
+        mesh_vertex_vec_t getMeshVerticesForElement(
+            const mesh_vertex_pos_t& element_indices) const override;
 
-        /**
-         * @brief Get the coordinates for a vertex given the global vertex index.
-         *
-         * @param global_vertex_index The global index of the vertex.
-         * @return Vector<T, Dim>
-         */
-        coord_vec_t getCoordinatesForVertex(const index_t& global_vertex_index) const;
+        ///////////////////////////////////////////////////////////////////////
+        /// Degree of Freedom operations //////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
 
-        /**
-         * @brief Get the vertices for an elment given the element indices in each dimension of the
-         * mesh.
-         *
-         * @param element_indices The indices of the element in each dimension of the mesh.
-         * @return Vector<std::size_t, NumVertices>
-         */
-        vertex_vec_t getGlobalVerticesForElement(const index_vec_t& element_indices) const override;
+        point_t getCoordinatesForDof(const global_dof_index_t& dof_index) const;
 
-        /**
-         * @brief Returns whether a point in local coordinates ([0, 1]^Dim) is inside the reference
-         * element.
-         *
-         * @param point A point in local coordinates with respect to the reference element.
-         * @return boolean - Returns true when the point is inside the reference element or on the
-         * boundary. Returns false else
-         */
-        bool isLocalPointInRefElement(const Vector<T, Dim>& point) const;
+        std::vector<global_dof_index_t> getElementsInSupportOfDof(
+            const global_dof_index_t& dof_index) const override;
 
-        /**
-         * @brief Evaluate the element shape functions at the given local coordinates.
-         *
-         * @param local_vertex_index The local index of the vertex to evaluate the shape functions
-         * @param local_coordinates The local coordinates to evaluate the shape functions at.
-         * @return T The value of the shape functions at the given local coordinates.
-         */
-        T evaluateBasis(const index_t& local_vertex_index,
+        ///////////////////////////////////////////////////////////////////////
+        /// Basis functions and gradients /////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        T evaluateBasis(const global_dof_index_t& local_vertex_index,
                         const Vector<T, Dim>& local_coordinates) const override;
 
-        /**
-         * @brief Function to evaluate the gradient of the element shape functions at
-         * the given global vertex and at the given global coordinates.
-         *
-         * @param local_vertex_index The index of the local vertex to evaluate the gradient of the
-         * shape functions for.
-         * @param local_coordinates
-         * @return Vector<T, Dim> The value of the gradient of the shape functions at the given
-         * local coordinates.
-         */
         gradient_vec_t evaluateBasisGradient(
-            const index_t& local_vertex_index,
+            const global_dof_index_t& local_vertex_index,
             const Vector<T, Dim>& local_coordinates) const override;
 
-        /**
-         * @brief Eveluate the load vector at the given index.
-         *
-         * @param b the load vector to store the result in.
-         */
-        void evaluateLoadVector(value_vec_t& b) const override;
+        ///////////////////////////////////////////////////////////////////////
+        /// Assembly operations ///////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
 
-        /**
-         * @brief Evaluate the stiffness matrix at the given indices.
-         *
-         * @param x The vector x to multiply the stiffness matrix with.
-         * @param Ax The vector Ax to store the result in.
-         */
-        void evaluateAx(const value_vec_t& x, value_vec_t& Ax) const override;
+        void evaluateLoadVector(dof_val_vec_t& b) const override;
+
+        void evaluateAx(const dof_val_vec_t& x, dof_val_vec_t& Ax) const override;
 
     private:
-        NDIndex<Dim> makeNDIndex(const index_vec_t& indices) const;
+        NDIndex<Dim> makeNDIndex(const mesh_vertex_pos_t& indices) const;
     };
 
 }  // namespace ippl

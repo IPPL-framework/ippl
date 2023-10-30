@@ -14,12 +14,12 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
               unsigned NumDoFs>
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumDoFs>::vertex_vec_t
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumDoFs>::mesh_vertex_vec_t
     FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumDoFs>::
-        getGlobalVerticesForElement(
+        getMeshVerticesForElement(
             const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                     NumDoFs>::index_t& element_index) const {
-        return getGlobalVerticesForElement(getDimensionIndicesForElement(element_index));
+                                     NumDoFs>::global_dof_index_t& element_index) const {
+        return getMeshVerticesForElement(getElementPositionFromIndex(element_index));
     }
 
 }  // namespace ippl

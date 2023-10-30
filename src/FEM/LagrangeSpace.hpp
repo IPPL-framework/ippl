@@ -16,17 +16,17 @@ namespace ippl {
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_vec_t
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::mesh_vertex_pos_t
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::
-        getDimensionIndicesForElement(
-            const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_t&
-                element_index) const {
+        getElementPositionFromIndex(
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::global_dof_index_t& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
-        index_t index = element_index;
+        global_dof_index_t index = element_index;
 
         // Create a vector to store the element indices in each dimension for the corresponding
         // element.
-        index_vec_t element_indices;
+        mesh_vertex_pos_t element_indices;
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
@@ -52,17 +52,18 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_vec_t
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::mesh_vertex_pos_t
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::
-        getDimensionIndicesForVertex(
-            const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_t&
-                global_vertex_index) const {
+        getMeshVertexPositionFromIndex(
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::global_dof_index_t& global_vertex_index)
+            const {
         // Copy the vertex index to the index variable we can alter during the computation.
-        index_t index = global_vertex_index;
+        global_dof_index_t index = global_vertex_index;
 
         // Create a vector to store the vertex indices in each dimension for the corresponding
         // vertex.
-        index_vec_t vertex_indices;
+        mesh_vertex_pos_t vertex_indices;
 
         // This is the number of vertices in each dimension.
         Vector<std::size_t, Dim> vertices_per_dim = this->mesh_m.getGridsize();
@@ -89,8 +90,8 @@ namespace ippl {
               unsigned NumIntegrationPoints>
     NDIndex<Dim>
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::makeNDIndex(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_vec_t&
-            vertex_indices) const {
+        const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                            NumIntegrationPoints>::mesh_vertex_pos_t& vertex_indices) const {
         // Not sure if this is the best way, but the getVertexPosition function expects an NDIndex,
         // with the vertex index used being the first in the NDIndex. No other index is used, so
         // we can just set the first and the last to the index we actually want.
@@ -103,30 +104,31 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::coord_vec_t
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_vec_t&
-            vertex_indices) const {
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::point_t
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::getCoordinatesForDof(
+        const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                            NumIntegrationPoints>::mesh_vertex_pos_t& vertex_indices) const {
         return this->mesh_m.getVertexPosition(makeNDIndex(vertex_indices));
     }
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::coord_vec_t
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::getCoordinatesForVertex(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_t&
-            global_vertex_index) const {
-        const index_vec_t vertex_indices = getDimensionIndicesForVertex(global_vertex_index);
-        return getCoordinatesForVertex(vertex_indices);
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::point_t
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::getCoordinatesForDof(
+        const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                            NumIntegrationPoints>::global_dof_index_t& global_vertex_index) const {
+        const mesh_vertex_pos_t vertex_indices =
+            getMeshVertexPositionFromIndex(global_vertex_index);
+        return getCoordinatesForDof(vertex_indices);
     }
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::vertex_vec_t
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::mesh_vertex_vec_t
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::
-        getGlobalVerticesForElement(
+        getMeshVerticesForElement(
             const LagrangeSpace<T, Dim, Order, NumElementVertices,
-                                NumIntegrationPoints>::index_vec_t& element_indices) const {
+                                NumIntegrationPoints>::mesh_vertex_pos_t& element_indices) const {
         // Vector to store the vertex indices for the element
         Vector<std::size_t, NumElementVertices> vertex_indices(0);
 
@@ -157,57 +159,19 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
-        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t& b)
-        const {
-        assert(b.dim > 0);  // TODO change assert to be correct
-        // TODO implement
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
-              unsigned NumIntegrationPoints>
-    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateAx(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t&
-            x,
-        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::value_vec_t& Ax)
-        const {
-        assert(x.dim > 0);   // TODO change assert to be correct
-        assert(Ax.dim > 0);  // TODO change assert to be correct
-        // TODO implement
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
-              unsigned NumIntegrationPoints>
-    bool LagrangeSpace<T, Dim, Order, NumElementVertices,
-                       NumIntegrationPoints>::isLocalPointInRefElement(const Vector<T, Dim>& point)
-        const {
-        // check if the local coordinates are inside the reference element
-
-        // TODO change from hardcoded for n-cuboid elements to using function of the Element class
-        for (std::size_t d = 0; d < Dim; d++) {
-            if (point[d] > 1.0 || point[d] < 0.0) {
-                // The global coordinates are outside of the support.
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
-              unsigned NumIntegrationPoints>
     T LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateBasis(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_t&
-            local_vertex_index,
+        const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                            NumIntegrationPoints>::global_dof_index_t& local_vertex_index,
         const Vector<T, Dim>& local_coordinates) const {
         // Assert that the local vertex index is valid.
         assert(local_vertex_index < NumElementVertices
                && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
 
-        assert(isLocalPointInRefElement(local_coordinates) && "Point is not in reference element");
+        assert(ref_element_m.isLocalPointInRefElement(local_coordinates)
+               && "Point is not in reference element");
 
         // Get the local vertex indices for the local vertex index.
-        const index_vec_t local_vertex_indices =
+        const mesh_vertex_pos_t local_vertex_indices =
             this->ref_element_m.getLocalVertices()[local_vertex_index];
 
         // The variable that accumulates the product of the shape functions.
@@ -228,18 +192,19 @@ namespace ippl {
               unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::gradient_vec_t
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateBasisGradient(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::index_t&
-            local_vertex_index,
+        const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                            NumIntegrationPoints>::global_dof_index_t& local_vertex_index,
         const Vector<T, Dim>& local_coordinates) const {
         // TODO assumes 1st order Lagrange
 
         // Assert that the local vertex index is valid.
         assert(local_vertex_index < NumElementVertices && "The local vertex index is invalid");
 
-        assert(isLocalPointInRefElement(local_coordinates) && "Point is not in reference element");
+        assert(ref_element_m.isLocalPointInRefElement(local_coordinates)
+               && "Point is not in reference element");
 
         // Get the local vertex indices for the local vertex index.
-        const index_vec_t local_vertex_indices =
+        const mesh_vertex_pos_t local_vertex_indices =
             this->ref_element_m.getLocalVertices()[local_vertex_index];
 
         Vector<T, Dim> gradient(1);
@@ -272,6 +237,64 @@ namespace ippl {
         }
 
         return gradient;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateAx(
+        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t&
+            x,
+        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t& Ax)
+        const {
+        // Precompute the (diagonal) transformation matrix (it is the same for all elements)
+        Vector<T, Dim> inverseJ =
+            ref_element_m.getInverseTransformationJacobian(getMeshVerticesForElement(0));
+
+        weights           = this->quadrature_m.getWeights();
+        integration_nodes = this->quadrature_m.getIntegrationNodes();
+
+        // TODO move lamda function outside of this function and into the sovler
+        auto evaluatePDE = [&, inverseJ, evaluateBasisGradient](
+                               const global_dof_index_t& local_dof_i,
+                               const global_dof_index_t& local_dof_j,
+                               const global_dof_index_t& integration_point_index) {
+            return (inverseJ
+                    * evaluateBasisGradient(local_dof_i,
+                                            integration_nodes[integration_point_index]))
+                   * (inverseJ
+                      * evaluateBasisGradient(local_dof_j,
+                                              integration_nodes[integration_point_index]))
+        };
+
+        // TODO what about precomputing a vector with values for the evaluatePDE lambda function?
+
+        T A_local_ij;
+
+        for (std::size_t i = 0; i < x.dim; ++i) {
+            Ax[i] = 0;
+
+            // TODO take advantage of sparsity of stiffness matrix
+            for (std::size_t j = 0; j < x.dim; ++j) {
+                // Use quadrature to approximate the integral
+
+                A_local_ij = 0;
+
+                for (std::size_t k = 0; k < NumIntegrationPoints; k++) {
+                    A_local_ij += weights[k] * evaluatePDE(i, j, k);
+                }
+
+                Ax[i] += A_local_ij * x[j];
+            }
+        }
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
+        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t& b)
+        const {
+        assert(b.dim > 0);  // TODO change assert to be correct
+        // TODO implement
     }
 
 }  // namespace ippl
