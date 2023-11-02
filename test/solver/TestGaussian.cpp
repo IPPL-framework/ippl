@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
         // print out info and title for the relative error (L2 norm)
         msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
             << communication << " " << reordering << ", algorithm = " << algorithm << endl;
-        msg << "Spacing Error" << endl; // ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error" << endl;  // ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
         ippl::NDIndex<Dim> owned;
@@ -237,8 +237,8 @@ int main(int argc, char* argv[]) {
         // add output type
         params.add("output_type", Solver_t::SOL);
 
-        // define an FFTOpenPoissonSolver object
-        Solver_t FFTsolver(fieldE, rho, params);
+        // define an FFTPoissonSolver object
+        Solver_t FFTsolver(rho, params);  // Solver_t FFTsolver(fieldE, rho, params);
 
         // iterate over 5 timesteps
         for (int times = 0; times < 5; ++times) {
@@ -289,7 +289,7 @@ int main(int argc, char* argv[]) {
             }
             */
 
-            msg << std::setprecision(16) << dx << " " << err << endl; 
+            msg << std::setprecision(16) << dx << " " << err << endl;
             // << " " << errE[0] << " " << errE[1] << " " << errE[2] << endl;
 
             // reassign the correct values to the fields for the loop to work
@@ -342,6 +342,7 @@ int main(int argc, char* argv[]) {
 
         // stop the timers
         IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
