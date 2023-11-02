@@ -1,6 +1,6 @@
 //
 // TestGaussian
-// This program tests the FFTPoissonSolver class with a Gaussian source.
+// This program tests the FFTOpenPoissonSolver class with a Gaussian source.
 // The solve is iterated 5 times for the purpose of timing studies.
 //   Usage:
 //     srun ./TestGaussian <nx> <ny> <nz> <reshape> <comm> <reorder>
@@ -19,19 +19,6 @@
 //     Example:
 //       srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 5
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #include "Ippl.h"
@@ -43,7 +30,7 @@
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -87,7 +74,7 @@ int main(int argc, char* argv[]) {
         using Centering_t = Mesh_t::DefaultCentering;
         typedef ippl::Field<double, Dim, Mesh_t, Centering_t> field;
         typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> fieldV;
-        using Solver_t = ippl::FFTPoissonSolver<fieldV, field>;
+        using Solver_t = ippl::FFTOpenPoissonSolver<fieldV, field>;
 
         // start a timer
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -250,8 +237,8 @@ int main(int argc, char* argv[]) {
         // add output type
         params.add("output_type", Solver_t::SOL);
 
-        // define an FFTPoissonSolver object
-        Solver_t FFTsolver(rho, params); //Solver_t FFTsolver(fieldE, rho, params);
+        // define an FFTOpenPoissonSolver object
+        Solver_t FFTsolver(fieldE, rho, params);
 
         // iterate over 5 timesteps
         for (int times = 0; times < 5; ++times) {

@@ -1,24 +1,11 @@
 //
 // Budiardja_plot
-// This programs tests the FFTPoissonSolver by recreating the
+// This programs tests the FFTOpenPoissonSolver by recreating the
 // convergence test plot from the Budiardja et al. (2010) paper.
 // The solution is the gravitational potential of a sphere.
 //   Usage:
 //     srun ./Budiardja_plot --info 5
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #include "Ippl.h"
@@ -26,7 +13,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {
@@ -61,7 +48,7 @@ int main(int argc, char* argv[]) {
         using Centering_t = Mesh_t::DefaultCentering;
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
         using vfield   = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
-        using Solver_t = ippl::FFTPoissonSolver<vfield, field>;
+        using Solver_t = ippl::FFTOpenPoissonSolver<vfield, field>;
 
         // number of gridpoints to iterate over
         std::array<int, n> N = {48, 144, 288, 384, 576};
@@ -147,7 +134,7 @@ int main(int argc, char* argv[]) {
             // choose Hockney algorithm for Open BCs solver
             params.add("algorithm", Solver_t::HOCKNEY);
 
-            // define an FFTPoissonSolver object
+            // define an FFTOpenPoissonSolver object
             Solver_t FFTsolver(rho, params);
 
             // solve the Poisson equation -> rho contains the solution (phi) now

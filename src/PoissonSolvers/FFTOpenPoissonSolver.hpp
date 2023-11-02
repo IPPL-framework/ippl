@@ -1,21 +1,8 @@
 //
-// Class FFTPoissonSolver
+// Class FFTOpenPoissonSolver
 //   FFT-based Poisson Solver for open boundaries.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 // Communication specific functions (pack and unpack).
@@ -124,7 +111,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver()
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -141,7 +128,8 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(rhs_type& rhs, ParameterList& params)
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver(rhs_type& rhs,
+                                                                   ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -164,8 +152,8 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTPoissonSolver<FieldLHS, FieldRHS>::FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                                                           ParameterList& params)
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::FFTOpenPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                                   ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , mesh2_m(nullptr)
@@ -190,7 +178,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // override setRhs to call class-specific initialization
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
 
         // start a timer
@@ -207,13 +195,13 @@ namespace ippl {
     // calculation of Efield (which uses FFTs)
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::setGradFD() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::setGradFD() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
         if (out != Base::SOL_AND_GRAD) {
             throw IpplException(
-                "FFTPoissonSolver::setGradFD()",
+                "FFTOpenPoissonSolver::setGradFD()",
                 "Cannot use gradient for Efield computation unless output type is SOL_AND_GRAD");
         } else {
             isGradFD_m = true;
@@ -224,17 +212,17 @@ namespace ippl {
     // initializeFields method, called in constructor
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
         // get algorithm and hessian flag from parameter list
         const int alg      = this->params_m.template get<int>("algorithm");
         const bool hessian = this->params_m.template get<bool>("hessian");
 
         // first check if valid algorithm choice
         if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
-            && (alg != Algorithm::BIHARMONIC) && (alg != Algorithm::VICO_2)) {
+            && (alg != Algorithm::BIHARMONIC) && (alg != Algorithm::DCT_VICO)) {
             throw IpplException(
-                "FFTPoissonSolver::initializeFields()",
-                "Currently only HOCKNEY, VICO, VICO_2, and BIHARMONIC are supported for open BCs");
+                "FFTOpenPoissonSolver::initializeFields()",
+                "Currently only Hockney, Vico, DCT Vico and Biharmonic are supported for open BCs");
         }
 
         // get layout and mesh
@@ -329,8 +317,8 @@ namespace ippl {
             IpplTimings::stopTimer(initialize_vico);
         }
 
-        // if VICO_2, need 2N+1 mesh, layout, domain, and green's function field for precomputation
-        if (alg == Algorithm::VICO_2) {
+        // if DCT Vico, need 2N+1 mesh, layout, domain, and green's function field for precomputation
+        if (alg == Algorithm::DCT_VICO) {
             // start a timer
             static IpplTimings::TimerRef initialize_vico =
                 IpplTimings::getTimer("Initialize: extra Vico");
@@ -430,12 +418,11 @@ namespace ippl {
         static IpplTimings::TimerRef warmup = IpplTimings::getTimer("Warmup");
         IpplTimings::startTimer(warmup);
 
-        // "empty" transforms to warmup all the FFTs
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(FORWARD, grnL_m);
         }
-        if (alg == Algorithm::VICO_2) {
+        if (alg == Algorithm::DCT_VICO) {
             fft2n1_m->transform(FORWARD, grn2n1_m);
         }
 
@@ -458,7 +445,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::solve() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::solve() {
         // start a timer
         static IpplTimings::TimerRef solve = IpplTimings::getTimer("Solve");
         IpplTimings::startTimer(solve);
@@ -587,6 +574,7 @@ namespace ippl {
 
         // forward FFT of the charge density field on doubled grid
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
+        fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
 
         IpplTimings::stopTimer(fftrho);
 
@@ -608,6 +596,7 @@ namespace ippl {
 
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
             fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
+            fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
             IpplTimings::stopTimer(fftc);
             // Hockney: multiply the rho2_mr field by the total number of points to account for
@@ -615,7 +604,7 @@ namespace ippl {
             // also multiply by the mesh spacing^3 (to account for discretization)
             // Vico: need to multiply by normalization factor of 1/4N^3,
             // since only backward transform was performed on the 4N grid
-            // Vico_2: need to multiply by a factor of (2N)^3 to match the normalization factor in
+            // DCT_VICO: need to multiply by a factor of (2N)^3 to match the normalization factor in
             // the transform.
             for (unsigned int i = 0; i < Dim; ++i) {
                 switch (alg) {
@@ -626,7 +615,7 @@ namespace ippl {
                     case Algorithm::BIHARMONIC:
                         rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                         break;
-                    case Algorithm::VICO_2:
+                    case Algorithm::DCT_VICO:
                         rho2_mr = rho2_mr * (1.0 / 4.0);
                         break;
                 }
@@ -774,6 +763,7 @@ namespace ippl {
 
                 // transform to get E-field
                 fft_m->transform(BACKWARD, rho2_mr, temp_m);
+                fft_m->transform(BACKWARD, rho2_mr, temp_m);
 
                 IpplTimings::stopTimer(ffte);
 
@@ -787,7 +777,7 @@ namespace ippl {
                         case Algorithm::BIHARMONIC:
                             rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                             break;
-                        case Algorithm::VICO_2:
+                        case Algorithm::DCT_VICO:
                             rho2_mr = rho2_mr * (1.0 / 4.0);
                             break;
                     }
@@ -936,6 +926,7 @@ namespace ippl {
 
                     // transform to get Hessian
                     fft_m->transform(BACKWARD, rho2_mr, temp_m);
+                    fft_m->transform(BACKWARD, rho2_mr, temp_m);
 
                     IpplTimings::stopTimer(ffth);
 
@@ -949,7 +940,7 @@ namespace ippl {
                             case Algorithm::BIHARMONIC:
                                 rho2_mr = rho2_mr * 2.0 * (1.0 / 4.0);
                                 break;
-                            case Algorithm::VICO_2:
+                            case Algorithm::DCT_VICO:
                                 rho2_mr = rho2_mr * (1.0 / 4.0);
                                 break;
                         }
@@ -1045,7 +1036,7 @@ namespace ippl {
     // calculate FFT of the Green's function
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
         grn_mr               = 0.0;
 
@@ -1154,6 +1145,7 @@ namespace ippl {
 
             // inverse Fourier transform of the green's function for precomputation
             fft4n_m->transform(BACKWARD, grnL_m);
+            fft4n_m->transform(BACKWARD, grnL_m);
 
             IpplTimings::stopTimer(fft4);
 
@@ -1211,7 +1203,7 @@ namespace ippl {
             }
             IpplTimings::stopTimer(ifftshift);
 
-        } else if (alg == Algorithm::VICO_2) {
+        } else if (alg == Algorithm::DCT_VICO) {
             Vector_t l(hr_m * nr_m);
             Vector_t hs_m;
             double L_sum(0.0);
@@ -1367,12 +1359,13 @@ namespace ippl {
 
         // perform the FFT of the Green's function for the convolution
         fft_m->transform(FORWARD, grn_mr, grntr_m);
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
 
         IpplTimings::stopTimer(fftg);
     };
 
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
         Vector<int, Dim> size, typename CxField_gt::view_type view_g,
         const ippl::NDIndex<Dim> ldom_g, const int nghost_g, typename Field_t::view_type view,
         const ippl::NDIndex<Dim> ldom, const int nghost) {
@@ -1936,7 +1929,7 @@ namespace ippl {
         Comm->barrier();
     };
 
-    // CommunicateVico for VICO_2 (2N+1 to 2N)
+    // CommunicateVico for DCT_VICO (2N+1 to 2N)
     template <typename FieldLHS, typename FieldRHS>
     void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
         Vector<int, Dim> size, typename Field_t::view_type view_g, const ippl::NDIndex<Dim> ldom_g,

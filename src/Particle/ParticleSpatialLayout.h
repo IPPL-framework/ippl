@@ -19,19 +19,6 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_SPATIAL_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_LAYOUT_H
 
@@ -77,8 +64,8 @@ namespace ippl {
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
-        template <class BufferType>
-        void update(BufferType& pdata, BufferType& buffer);
+        template <class ParticleContainer>
+        void update(ParticleContainer& pc);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
@@ -96,15 +83,15 @@ namespace ippl {
         /*!
          * For each particle in the bunch, determine the rank on which it should
          * be stored based on its location
-         * @tparam ParticleBunch the bunch type
-         * @param pdata the particle bunch
+         * @tparam ParticleContainer the particle container type
+         * @param pc the particle container
          * @param ranks the integer view in which to store the destination ranks
          * @param invalid the boolean view in which to store whether each particle
          * is invalidated, i.e. needs to be sent to another rank
          * @return The total number of invalidated particles
          */
-        template <typename ParticleBunch>
-        size_type locateParticles(const ParticleBunch& pdata, locate_type& ranks,
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
                                   bool_type& invalid) const;
 
         /*!

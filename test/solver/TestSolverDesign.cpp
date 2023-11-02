@@ -5,14 +5,14 @@
 #include <string>
 #include <typeinfo>
 
-#include "Solver/Electrostatics.h"
+#include "PoissonSolvers/Poisson.h"
 
 constexpr unsigned int dim = 3;
 using Mesh_t               = ippl::UniformCartesian<double, dim>;
 using Centering_t          = Mesh_t::DefaultCentering;
 using field_type           = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
-class TestSolver : public ippl::Electrostatics<field_type, field_type> {
+class TestSolver : public ippl::Poisson<field_type, field_type> {
 public:
     void solve() override {
         *rhs_mp = *lhs_mp + *rhs_mp;

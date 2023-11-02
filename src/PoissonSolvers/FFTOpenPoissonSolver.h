@@ -1,25 +1,12 @@
 //
-// Class FFTPoissonSolver
+// Class FFTOpenPoissonSolver
 //   FFT-based Poisson Solver for open boundaries.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#ifndef FFT_POISSON_SOLVER_H_
-#define FFT_POISSON_SOLVER_H_
+#ifndef IPPL_FFT_OPEN_POISSON_SOLVER_H_
+#define IPPL_FFT_OPEN_POISSON_SOLVER_H_
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -32,11 +19,11 @@
 #include "Field/Field.h"
 
 #include "Communicate/Archive.h"
-#include "Electrostatics.h"
 #include "FFT/FFT.h"
 #include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
+#include "Poisson.h"
 
 namespace ippl {
     namespace detail {
@@ -82,7 +69,7 @@ namespace ippl {
     }  // namespace detail
 
     template <typename FieldLHS, typename FieldRHS>
-    class FFTPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+    class FFTOpenPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldLHS::Mesh_t;
@@ -90,7 +77,7 @@ namespace ippl {
 
     public:
         // type of output
-        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
 
         // types for LHS and RHS
         using typename Base::lhs_type, typename Base::rhs_type;
@@ -103,7 +90,7 @@ namespace ippl {
             HOCKNEY    = 0b01,
             VICO       = 0b10,
             BIHARMONIC = 0b11,
-            VICO_2     = 0b100
+            DCT_VICO    = 0b100
         };
 
         // define a type for a 3 dimensional field (e.g. charge density field)
@@ -132,10 +119,10 @@ namespace ippl {
         using scalar_type = typename mesh_type::value_type;
 
         // constructor and destructor
-        FFTPoissonSolver();
-        FFTPoissonSolver(rhs_type& rhs, ParameterList& params);
-        FFTPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        ~FFTPoissonSolver() = default;
+        FFTOpenPoissonSolver();
+        FFTOpenPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTOpenPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        ~FFTOpenPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
@@ -154,7 +141,7 @@ namespace ippl {
             bool hessian = this->params_m.template get<bool>("hessian");
             if (!hessian) {
                 throw IpplException(
-                    "FFTPoissonSolver::getHessian()",
+                    "FFTOpenPoissonSolver::getHessian()",
                     "Cannot call getHessian() if 'hessian' flag in ParameterList is false");
             }
             return &hess_m;
@@ -280,7 +267,7 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("FFTPoissonSolver::setDefaultParameters",
+                    throw IpplException("FFTOpenPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
 
@@ -290,5 +277,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/FFTPoissonSolver.hpp"
+#include "PoissonSolvers/FFTOpenPoissonSolver.hpp"
 #endif

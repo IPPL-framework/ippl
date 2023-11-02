@@ -18,20 +18,6 @@
 //     Example:
 //     srun ./PenningTrap 128 128 128 10000 300 FFT 0.01 --overallocate 1.0 --info 10
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -197,8 +183,8 @@ int main(int argc, char* argv[]) {
         }
 
         // create mesh and layout objects for this problem domain
-        Vector_t<double, Dim> rmin = 0;
-        Vector_t<double, Dim> rmax = 20;
+        Vector_t<double, Dim> rmin   = 0;
+        Vector_t<double, Dim> rmax   = 20;
         Vector_t<double, Dim> length = rmax - rmin;
 
         Vector_t<double, Dim> hr     = length / nr;
@@ -229,8 +215,6 @@ int main(int argc, char* argv[]) {
         sd[2] = 0.20 * length[2];
 
         P->initializeFields(mesh, FL);
-
-        bunch_type bunchBuffer(PL);
 
         P->initSolver();
         P->time_m                 = 0.0;
@@ -265,7 +249,7 @@ int main(int argc, char* argv[]) {
             Kokkos::fence();
 
             P->initializeORB(FL, mesh);
-            P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+            P->repartition(FL, mesh, isFirstRepartition);
             IpplTimings::stopTimer(domainDecomposition);
         }
 
@@ -352,20 +336,20 @@ int main(int argc, char* argv[]) {
             double V0  = 30 * length[2];
             Kokkos::parallel_for(
                 "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    double Eext_x =
-                        -(Rview(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_y =
-                        -(Rview(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_z =
-                        (Rview(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
+                    double Eext_x = -(Rview(j)[0] - origin[0] - 0.5 * length[0])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_y = -(Rview(j)[1] - origin[1] - 0.5 * length[1])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_z = (Rview(j)[2] - origin[2] - 0.5 * length[2])
+                                    * (V0 / (Kokkos::pow(length[2], 2)));
 
-                    Eview(j)[0] += Eext_x;
-                    Eview(j)[1] += Eext_y;
-                    Eview(j)[2] += Eext_z;
+                    Eext_x += Eview(j)[0];
+                    Eext_y += Eview(j)[1];
+                    Eext_z += Eview(j)[2];
 
-                    Pview(j)[0] += alpha * (Eview(j)[0] + Pview(j)[1] * Bext);
-                    Pview(j)[1] += alpha * (Eview(j)[1] - Pview(j)[0] * Bext);
-                    Pview(j)[2] += alpha * Eview(j)[2];
+                    Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
+                    Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
+                    Pview(j)[2] += alpha * Eext_z;
                 });
             IpplTimings::stopTimer(PTimer);
 
@@ -376,14 +360,14 @@ int main(int argc, char* argv[]) {
 
             // Since the particles have moved spatially update them to correct processors
             IpplTimings::startTimer(updateTimer);
-            PL.update(*P, bunchBuffer);
+            P->update();
             IpplTimings::stopTimer(updateTimer);
 
             // Domain Decomposition
             if (P->balance(totalP, it + 1)) {
                 msg << "Starting repartition" << endl;
                 IpplTimings::startTimer(domainDecomposition);
-                P->repartition(FL, mesh, bunchBuffer, isFirstRepartition);
+                P->repartition(FL, mesh, isFirstRepartition);
                 IpplTimings::stopTimer(domainDecomposition);
                 // IpplTimings::startTimer(dumpDataTimer);
                 // P->dumpLocalDomains(FL, it+1);
@@ -408,27 +392,26 @@ int main(int argc, char* argv[]) {
             auto E2view = P->E.getView();
             Kokkos::parallel_for(
                 "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                    double Eext_x =
-                        -(R2view(j)[0] - origin[0] - 0.5 * length[0]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_y =
-                        -(R2view(j)[1] - origin[1] - 0.5 * length[1]) * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                    double Eext_z =
-                        (R2view(j)[2] - origin[2] - 0.5 * length[2]) * (V0 / (Kokkos::pow(length[2], 2)));
+                    double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
+                                    * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                    double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
+                                    * (V0 / (Kokkos::pow(length[2], 2)));
 
-                    E2view(j)[0] += Eext_x;
-                    E2view(j)[1] += Eext_y;
-                    E2view(j)[2] += Eext_z;
-                    P2view(j)[0] = DrInv
-                                   * (P2view(j)[0]
-                                      + alpha
-                                            * (E2view(j)[0] + P2view(j)[1] * Bext
-                                               + alpha * Bext * E2view(j)[1]));
-                    P2view(j)[1] = DrInv
-                                   * (P2view(j)[1]
-                                      + alpha
-                                            * (E2view(j)[1] - P2view(j)[0] * Bext
-                                               - alpha * Bext * E2view(j)[0]));
-                    P2view(j)[2] += alpha * E2view(j)[2];
+                    Eext_x += E2view(j)[0];
+                    Eext_y += E2view(j)[1];
+                    Eext_z += E2view(j)[2];
+
+                    P2view(j)[0] =
+                        DrInv
+                        * (P2view(j)[0]
+                           + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+                    P2view(j)[1] =
+                        DrInv
+                        * (P2view(j)[1]
+                           + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+                    P2view(j)[2] += alpha * Eext_z;
                 });
             IpplTimings::stopTimer(PTimer);
 

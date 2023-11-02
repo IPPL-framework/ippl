@@ -2,19 +2,6 @@
 // Class HaloCells
 //   The guard / ghost cells of BareField.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #include <memory>
 #include <vector>
@@ -138,7 +125,8 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type =
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::pack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
@@ -168,7 +156,8 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using index_array_type = typename RangePolicy<Dim>::index_array_type;
+            using index_array_type =
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
                 "HaloCells::unpack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
@@ -205,7 +194,10 @@ namespace ippl {
             int myRank           = Comm->rank();
             const auto& lDomains = layout->getHostLocalDomains();
             const auto& domain   = layout->getDomain();
-            using index_type     = typename RangePolicy<Dim>::index_type;
+
+            using exec_space = typename view_type::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
+
             Kokkos::Array<index_type, Dim> ext, begin, end;
 
             for (size_t i = 0; i < Dim; ++i) {
@@ -222,8 +214,9 @@ namespace ippl {
                 if (lDomains[myRank][d].length() == domain[d].length()) {
                     int N = view.extent(d) - 1;
 
-                    using index_array_type = typename RangePolicy<Dim>::index_array_type;
-                    using exec_space       = typename view_type::execution_space;
+                    using index_array_type =
+                        typename RangePolicy<Dim,
+                                             typename view_type::execution_space>::index_array_type;
                     ippl::parallel_for(
                         "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
                         KOKKOS_LAMBDA(index_array_type & coords) {

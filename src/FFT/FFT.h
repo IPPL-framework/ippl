@@ -10,19 +10,6 @@
 //   we have referred Cabana library
 //   https://github.com/ECP-copa/Cabana.
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
 #ifndef IPPL_FFT_FFT_H
@@ -60,10 +47,13 @@ namespace ippl {
     class RCTransform {};
     class SineTransform {};
     class CosTransform {};
+<<<<<<< HEAD
     /**
        Tag classes for Cosine of type 1 transforms
     */
     class Cos1Transform {};
+=======
+>>>>>>> master
 
     enum FFTComm {
         a2av   = 0,
@@ -85,7 +75,7 @@ namespace ippl {
         template <typename>
         struct HeffteBackendType;
 
-#ifdef Heffte_ENABLE_FFTW
+#if defined(Heffte_ENABLE_FFTW)
         template <>
         struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::fftw;
@@ -93,14 +83,14 @@ namespace ippl {
             using backendCos  = heffte::backend::fftw_cos;
             using backendCos1 = heffte::backend::fftw_cos1;
         };
-#endif
-#ifdef Heffte_ENABLE_MKL
+#elif defined(Heffte_ENABLE_MKL)
         template <>
         struct HeffteBackendType<Kokkos::HostSpace> {
             using backend     = heffte::backend::mkl;
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
+<<<<<<< HEAD
 #endif
 #if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
         template <>
@@ -113,6 +103,9 @@ namespace ippl {
 #endif
 
 #if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+=======
+#else
+>>>>>>> master
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
@@ -124,6 +117,19 @@ namespace ippl {
             using backendCos  = heffte::backend::stock_cos;
         };
 #endif
+
+#ifdef Heffte_ENABLE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
+        template <>
+        struct HeffteBackendType<Kokkos::CudaSpace> {
+            using backend     = heffte::backend::cufft;
+            using backendSine = heffte::backend::cufft_sin;
+            using backendCos  = heffte::backend::cufft_cos;
+        };
+#else
+#error cuFFT backend is enabled for heFFTe but CUDA is not enabled for Kokkos!
+#endif
+#endif
     }  // namespace detail
 
     template <typename Field, template <typename...> class FFT, typename Backend,
@@ -134,7 +140,7 @@ namespace ippl {
     public:
         using heffteBackend = Backend;
         using workspace_t   = typename FFT<heffteBackend>::template buffer_container<BufferType>;
-        typedef FieldLayout<Dim> Layout_t;
+        using Layout_t      = FieldLayout<Dim>;
 
         FFTBase(const Layout_t& layout, const ParameterList& params);
         ~FFTBase() = default;
@@ -150,7 +156,11 @@ namespace ippl {
         std::shared_ptr<FFT<heffteBackend, long long>> heffte_m;
         workspace_t workspace_m;
 
-        Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft> tempField;
+        template <typename FieldType>
+        using temp_view_type =
+            typename Kokkos::View<typename FieldType::view_type::data_type, Kokkos::LayoutLeft,
+                                  typename FieldType::memory_space>::uniform_type;
+        temp_view_type<Field> tempField;
     };
 
 #define IN_PLACE_FFT_BASE_CLASS(Field, Backend) \
@@ -176,7 +186,7 @@ namespace ippl {
         using Base                    = IN_PLACE_FFT_BASE_CLASS(ComplexField, backend);
 
     public:
-        typedef typename ComplexField::value_type Complex_t;
+        using Complex_t = typename ComplexField::value_type;
 
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
@@ -197,12 +207,12 @@ namespace ippl {
         : public EXT_FFT_BASE_CLASS(RealField, backend,
                                     Kokkos::complex<typename RealField::value_type>) {
         constexpr static unsigned Dim = RealField::dim;
-        typedef typename RealField::value_type Real_t;
-        using Base = EXT_FFT_BASE_CLASS(RealField, backend,
-                                        Kokkos::complex<typename RealField::value_type>);
+        using Real_t                  = typename RealField::value_type;
+        using Base                    = EXT_FFT_BASE_CLASS(RealField, backend,
+                                                           Kokkos::complex<typename RealField::value_type>);
 
     public:
-        typedef Kokkos::complex<Real_t> Complex_t;
+        using Complex_t    = Kokkos::complex<Real_t>;
         using ComplexField = typename Field<Complex_t, Dim, typename RealField::Mesh_t,
                                             typename RealField::Centering_t,
                                             typename RealField::execution_space>::uniform_type;
@@ -222,9 +232,8 @@ namespace ippl {
          */
         void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
-    protected:
-        Kokkos::View<typename ComplexField::view_type::data_type, Kokkos::LayoutLeft>
-            tempFieldComplex;
+    private:
+        typename Base::template temp_view_type<ComplexField> tempFieldComplex;
     };
 
     /**

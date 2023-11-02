@@ -2,30 +2,23 @@
 // Unit test UniformCartesianTest
 //   Test functionality of the class UniformCartesian.
 //
-// Copyright (c) 2021, Matthias Frey, University of St Andrews, St Andrews, Scotland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
-public:
-    UniformCartesianTest() { computeGridSizes(nPoints); }
+template <typename>
+class UniformCartesianTest;
 
-    template <unsigned Dim>
+template <typename T, unsigned Dim>
+class UniformCartesianTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
+public:
+    using value_type              = T;
+    constexpr static unsigned dim = Dim;
+
+    UniformCartesianTest()
+        : nPoints(getGridSizes<Dim>()) {}
+
     ippl::NDIndex<Dim> createMesh(ippl::Vector<T, Dim>& hx, ippl::Vector<T, Dim>& origin,
                                   T& cellVol, T& meshVol) {
         std::array<ippl::Index, Dim> args;
@@ -46,51 +39,51 @@ public:
         return owned;
     }
 
-    size_t nPoints[MaxDim];
+    std::array<size_t, Dim> nPoints;
 };
 
-using Precisions = ::testing::Types<double, float>;
-
-TYPED_TEST_CASE(UniformCartesianTest, Precisions);
+using Precisions = TestParams::Precisions;
+using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
+using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::type;
+TYPED_TEST_CASE(UniformCartesianTest, Tests);
 
 TYPED_TEST(UniformCartesianTest, Constructor) {
-    auto check = [&]<unsigned Dim>() {
-        ippl::Vector<TypeParam, Dim> hx;
-        ippl::Vector<TypeParam, Dim> origin;
-        TypeParam cellVol, meshVol;
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
-        ippl::UniformCartesian<TypeParam, Dim> mesh(owned, hx, origin);
+    ippl::Vector<T, Dim> hx;
+    ippl::Vector<T, Dim> origin;
+    T cellVol, meshVol;
 
-        TypeParam length = mesh.getCellVolume();
+    ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
+    ippl::UniformCartesian<T, Dim> mesh(owned, hx, origin);
 
-        assertTypeParam(length, cellVol);
-        assertTypeParam(mesh.getMeshVolume(), meshVol);
-    };
+    T length = mesh.getCellVolume();
 
-    this->apply(check);
+    assertEqual(length, cellVol);
+    assertEqual(mesh.getMeshVolume(), meshVol);
 }
 
 TYPED_TEST(UniformCartesianTest, Initialize) {
-    auto check = [&]<unsigned Dim>() {
-        ippl::Vector<TypeParam, Dim> hx;
-        ippl::Vector<TypeParam, Dim> origin;
-        TypeParam cellVol, meshVol;
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
+    ippl::Vector<T, Dim> hx;
+    ippl::Vector<T, Dim> origin;
+    T cellVol, meshVol;
 
-        ippl::UniformCartesian<TypeParam, Dim> mesh;
-        mesh.initialize(owned, hx, origin);
+    ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
 
-        assertTypeParam(mesh.getCellVolume(), cellVol);
-        assertTypeParam(mesh.getMeshVolume(), meshVol);
-    };
+    ippl::UniformCartesian<T, Dim> mesh;
+    mesh.initialize(owned, hx, origin);
 
-    this->apply(check);
+    assertEqual(mesh.getCellVolume(), cellVol);
+    assertEqual(mesh.getMeshVolume(), meshVol);
 }
 
 int main(int argc, char* argv[]) {
     int success = 1;
+    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

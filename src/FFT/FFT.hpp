@@ -10,19 +10,6 @@
 //   we have referred Cabana library.
 //   https://github.com/ECP-copa/Cabana.
 //
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 /**
    Implementations for FFT constructor/destructor and transforms
@@ -38,9 +25,24 @@ namespace ippl {
 
     template <typename Field, template <typename...> class FFT, typename Backend, typename T>
     FFTBase<Field, FFT, Backend, T>::FFTBase(const Layout_t& layout, const ParameterList& params) {
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    FFTBase<Field, FFT, Backend, T>::FFTBase(const Layout_t& layout, const ParameterList& params) {
         std::array<long long, 3> low;
         std::array<long long, 3> high;
 
+        const NDIndex<Dim> lDom = layout.getLocalNDIndex();
+        domainToBounds(lDom, low, high);
+
+        heffte::box3d<long long> inbox  = {low, high};
+        heffte::box3d<long long> outbox = {low, high};
+
+        setup(inbox, outbox, params);
+    }
+
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    void FFTBase<Field, FFT, Backend, T>::domainToBounds(const NDIndex<Dim>& domain,
+                                                         std::array<long long, 3>& low,
+                                                         std::array<long long, 3>& high) {
         const NDIndex<Dim> lDom = layout.getLocalNDIndex();
         domainToBounds(lDom, low, high);
 
@@ -70,6 +72,10 @@ namespace ippl {
     /**
            setup performs the initialization necessary.
     */
+    template <typename Field, template <typename...> class FFT, typename Backend, typename T>
+    void FFTBase<Field, FFT, Backend, T>::setup(const heffte::box3d<long long>& inbox,
+                                                const heffte::box3d<long long>& outbox,
+                                                const ParameterList& params) {
     template <typename Field, template <typename...> class FFT, typename Backend, typename T>
     void FFTBase<Field, FFT, Backend, T>::setup(const heffte::box3d<long long>& inbox,
                                                 const heffte::box3d<long long>& outbox,
@@ -109,6 +115,14 @@ namespace ippl {
                 inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
                 heffteOptions);
         }
+        if constexpr (std::is_same_v<FFT<heffteBackend>, heffte::fft3d<heffteBackend>>) {
+            heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
+                inbox, outbox, Comm->getCommunicator(), heffteOptions);
+        } else {
+            heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
+                inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
+                heffteOptions);
+        }
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
         if (workspace_m.size() < heffte_m->size_workspace()) {
@@ -117,6 +131,7 @@ namespace ippl {
     }
 
     template <typename ComplexField>
+    void FFT<CCTransform, ComplexField>::transform(TransformDirection direction, ComplexField& f) {
     void FFT<CCTransform, ComplexField>::transform(TransformDirection direction, ComplexField& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
@@ -134,6 +149,10 @@ namespace ippl {
         if (tempField.size() != f.getOwned().size()) {
             tempField = detail::shrinkView("tempField", fview, nghost);
         }
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -143,6 +162,12 @@ namespace ippl {
                 apply(tempField, args - nghost).imag(apply(fview, args).imag());
             });
 
+        if (direction == FORWARD) {
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+        } else if (direction == BACKWARD) {
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         if (direction == FORWARD) {
             this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                     heffte::scale::full);
@@ -189,13 +214,19 @@ namespace ippl {
         this->domainToBounds(lDomInput, lowInput, highInput);
         this->domainToBounds(lDomOutput, lowOutput, highOutput);
 
+        this->domainToBounds(lDomInput, lowInput, highInput);
+        this->domainToBounds(lDomOutput, lowOutput, highOutput);
+
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
         this->setup(inbox, outbox, params);
+        this->setup(inbox, outbox, params);
     }
 
     template <typename RealField>
+    void FFT<RCTransform, RealField>::transform(TransformDirection direction, RealField& f,
+                                                ComplexField& g) {
     void FFT<RCTransform, RealField>::transform(TransformDirection direction, RealField& f,
                                                 ComplexField& g) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
@@ -220,6 +251,14 @@ namespace ippl {
         if (tempFieldg.size() != g.getOwned().size()) {
             tempFieldg = detail::shrinkView("tempFieldg", gview, nghostg);
         }
+        auto& tempFieldf = this->tempField;
+        auto& tempFieldg = this->tempFieldComplex;
+        if (tempFieldf.size() != f.getOwned().size()) {
+            tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
+        }
+        if (tempFieldg.size() != g.getOwned().size()) {
+            tempFieldg = detail::shrinkView("tempFieldg", gview, nghostg);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -234,6 +273,12 @@ namespace ippl {
                 apply(tempFieldg, args - nghostg).imag(apply(gview, args).imag());
             });
 
+        if (direction == FORWARD) {
+            this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+        } else if (direction == BACKWARD) {
+            this->heffte_m->backward(tempFieldg.data(), tempFieldf.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         if (direction == FORWARD) {
             this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
                                     heffte::scale::full);
@@ -334,6 +379,10 @@ namespace ippl {
         if (tempField.size() != f.getOwned().size()) {
             tempField = detail::shrinkView("tempField", fview, nghost);
         }
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
         ippl::parallel_for(
@@ -342,6 +391,12 @@ namespace ippl {
                 apply(tempField, args - nghost) = apply(fview, args);
             });
 
+        if (direction == FORWARD) {
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+        } else if (direction == BACKWARD) {
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
         if (direction == FORWARD) {
             this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
                                     heffte::scale::full);
@@ -384,6 +439,10 @@ namespace ippl {
          *2) heffte accepts data in layout left (by default) eventhough this
          *can be changed during heffte box creation
          */
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
         auto& tempField = this->tempField;
         if (tempField.size() != f.getOwned().size()) {
             tempField = detail::shrinkView("tempField", fview, nghost);

@@ -1,4 +1,4 @@
-// Tests the conjugate gradient solver for electrostatics problems
+// Tests the conjugate gradient solver for Poisson problems
 // by checking the relative error from the exact solution
 // Usage:
 //      TestCGSolver [size [scaling_type]]
@@ -14,7 +14,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "Solver/ElectrostaticsCG.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
                              * sin(sin(pi * z)));
             });
 
-        ippl::ElectrostaticsCG<field_type> lapsolver;
+        ippl::PoissonCG<field_type> lapsolver;
 
         ippl::ParameterList params;
         params.add("max_iterations", 2000);

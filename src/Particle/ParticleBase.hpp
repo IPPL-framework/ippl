@@ -48,19 +48,6 @@
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 namespace ippl {
 
@@ -68,6 +55,7 @@ namespace ippl {
     ParticleBase<PLayout, IP...>::ParticleBase()
         : layout_m(nullptr)
         , localNum_m(0)
+        , totalNum_m(0)
         , nextID_m(Comm->rank())
         , numNodes_m(Comm->size()) {
         if constexpr (EnableIDs) {
@@ -101,38 +89,45 @@ namespace ippl {
     void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
         PAssert(layout_m != nullptr);
 
-        forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
-            attribute->create(nLocal);
-        });
+        if (nLocal > 0) {
+            forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
+                attribute->create(nLocal);
+            });
 
-        if constexpr (EnableIDs) {
-            // set the unique ID value for these new particles
-            using policy_type =
-                Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
-            auto pIDs     = ID.getView();
-            auto nextID   = this->nextID_m;
-            auto numNodes = this->numNodes_m;
-            Kokkos::parallel_for(
-                "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
-                KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
-            // nextID_m += numNodes_m * (nLocal - localNum_m);
-            nextID_m += numNodes_m * nLocal;
+            if constexpr (EnableIDs) {
+                // set the unique ID value for these new particles
+                using policy_type =
+                    Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
+                auto pIDs     = ID.getView();
+                auto nextID   = this->nextID_m;
+                auto numNodes = this->numNodes_m;
+                Kokkos::parallel_for(
+                    "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
+                    KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
+                // nextID_m += numNodes_m * (nLocal - localNum_m);
+                nextID_m += numNodes_m * nLocal;
+            }
+
+            // remember that we're creating these new particles
+            localNum_m += nLocal;
         }
 
-        // remember that we're creating these new particles
-        localNum_m += nLocal;
+        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
+        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
     }
 
     template <class PLayout, typename... IP>
     void ParticleBase<PLayout, IP...>::createWithID(index_type id) {
         PAssert(layout_m != nullptr);
 
+        size_type n = (id > -1) ? 1 : 0;
+
         // temporary change
         index_type tmpNextID = nextID_m;
         nextID_m             = id;
         numNodes_m           = 0;
 
-        create(1);
+        create(n);
 
         nextID_m   = tmpNextID;
         numNodes_m = Comm->getNodes();
@@ -159,6 +154,16 @@ namespace ippl {
     template <typename... Properties>
     void ParticleBase<PLayout, IP...>::destroy(const Kokkos::View<bool*, Properties...>& invalid,
                                                const size_type destroyNum) {
+        this->internalDestroy(invalid, destroyNum);
+
+        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
+        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
+    }
+
+    template <class PLayout, typename... IP>
+    template <typename... Properties>
+    void ParticleBase<PLayout, IP...>::internalDestroy(
+        const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum) {
         PAssert(destroyNum <= localNum_m);
 
         // If there aren't any particles to delete, do nothing
@@ -238,6 +243,9 @@ namespace ippl {
 
         localNum_m -= destroyNum;
 
+        // We need to delete particles in all memory spaces. If there are any attributes not stored
+        // in the memory space we've already been using, we need to copy the index views to the
+        // other spaces.
         auto filter = [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         };
@@ -257,17 +265,17 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    template <typename HashType, typename BufferType>
+    template <typename HashType>
     void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
                                                   std::vector<MPI_Request>& requests,
-                                                  const HashType& hash, BufferType& buffer) {
+                                                  const HashType& hash) {
         size_type nSends = hash.size();
         requests.resize(requests.size() + 1);
 
         auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         });
-        pack(buffer, hashes);
+        pack(hashes);
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nSends);
             if (bufSize == 0) {
@@ -276,15 +284,14 @@ namespace ippl {
 
             auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
 
-            Comm->isend(rank, tag++, buffer, *buf, requests.back(), nSends);
+            Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
         });
     }
 
     template <class PLayout, typename... IP>
-    template <typename BufferType>
     void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
-                                                    size_type nRecvs, BufferType& buffer) {
+                                                    size_type nRecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
             if (bufSize == 0) {
@@ -293,10 +300,10 @@ namespace ippl {
 
             auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
 
-            Comm->recv(rank, tag++, buffer, *buf, bufSize, nRecvs);
+            Comm->recv(rank, tag++, *this, *buf, bufSize, nRecvs);
             buf->resetReadPos();
         });
-        unpack(buffer, nRecvs);
+        unpack(nRecvs);
     }
 
     template <class PLayout, typename... IP>
@@ -328,24 +335,21 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    template <class Buffer>
-    void ParticleBase<PLayout, IP...>::pack(Buffer& buffer, const hash_container_type& hash) {
+    void ParticleBase<PLayout, IP...>::pack(const hash_container_type& hash) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->pack(buffer.template getAttribute<MemorySpace>(j),
-                             hash.template get<MemorySpace>());
+                att[j]->pack(hash.template get<MemorySpace>());
             }
         });
     }
 
     template <class PLayout, typename... IP>
-    template <class Buffer>
-    void ParticleBase<PLayout, IP...>::unpack(Buffer& buffer, size_type nrecvs) {
+    void ParticleBase<PLayout, IP...>::unpack(size_type nrecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             auto& att = attributes_m.template get<MemorySpace>();
             for (unsigned j = 0; j < att.size(); j++) {
-                att[j]->unpack(buffer.template getAttribute<MemorySpace>(j), nrecvs);
+                att[j]->unpack(nrecvs);
             }
         });
         localNum_m += nrecvs;

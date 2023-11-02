@@ -8,43 +8,30 @@
 //   where ke = Coulomb constant,
 //         alpha = controls long-range interaction.
 //
-// Copyright (c) 2023, Sonali Mayani,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-#ifndef P3M_SOLVER_H_
-#define P3M_SOLVER_H_
+#ifndef IPPL_P3M_SOLVER_H_
+#define IPPL_P3M_SOLVER_H_
 
 #include "Types/Vector.h"
 
 #include "Field/Field.h"
 
-#include "Electrostatics.h"
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
+#include "Poisson.h"
 
 namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
-    class P3MSolver : public Electrostatics<FieldLHS, FieldRHS> {
+    class P3MSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldRHS::Mesh_t;
 
     public:
         // type of output
-        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
 
         // types for LHS and RHS
         using typename Base::lhs_type, typename Base::rhs_type;
@@ -142,5 +129,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/P3MSolver.hpp"
+#include "PoissonSolvers/P3MSolver.hpp"
 #endif
