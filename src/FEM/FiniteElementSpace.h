@@ -12,6 +12,8 @@
 #ifndef IPPL_FEMSPACE_H
 #define IPPL_FEMSPACE_H
 
+#include "Types/ViewTypes.h"
+
 #include "FEM/Elements/Element.h"
 #include "FEM/Quadrature/Quadrature.h"
 #include "Meshes/Mesh.h"
@@ -27,12 +29,14 @@ namespace ippl {
      * @tparam NumIntegrationPoints The number of integration nodes of the quadrature rule
      */
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumDoFs>
+              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
     class FiniteElementSpace {
     public:
-        ///////////////////////////////////////////////////////////////////////
-        // Mesh types /////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
+        // An unsigned integer number representing an index
+        typedef std::size_t index_t;  // look at ippl::Index
+
+        // A vector with the position of the element in the mesh in each dimension
+        typedef Vector<index_t, Dim> nd_index_t;  // TODO look ad NDINDEX
 
         // A point in the global coordinate system
         typedef Vector<T, Dim> point_t;
@@ -40,40 +44,11 @@ namespace ippl {
         // A gradient vector in the global coordinate system
         typedef Vector<T, Dim> gradient_vec_t;
 
-        // An index of a vertex in the mesh
-        typedef std::size_t mesh_vertex_index_t;
-
         // A vector of vertex indices of the mesh
-        typedef Vector<mesh_vertex_index_t, NumElementVertices> mesh_vertex_vec_t;
-
-        // A vector with the position of the vertex in the mesh in each dimension
-        typedef Vector<mesh_vertex_index_t, Dim> mesh_vertex_pos_t;
-
-        ///////////////////////////////////////////////////////////////////////
-        // Element types //////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        // A point in the local coordinate system of an element
-        typedef Vector<T, Dim> local_point_t;
-
-        // An index of an element in the mesh
-        typedef std::size_t element_index_t;
-
-        // A vector with the position of the element in the mesh in each dimension
-        typedef Vector<element_index_t, Dim> element_pos_t;
-
-        ///////////////////////////////////////////////////////////////////////
-        // DoF types //////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        // An index of a global degree of freedom of the finite element space
-        typedef std::size_t global_dof_index_t;
-
-        // An index of a local degree of freedom of an element
-        typedef std::size_t local_dof_index_t;
+        typedef Vector<index_t, NumElementVertices> mesh_element_vertex_vec_t;
 
         // A vector of storing a value for all degrees of freedom
-        typedef Vector<T, NumDoFs> dof_val_vec_t;
+        typedef Vector<T, NumGlobalDOFs> dof_value_vec_t;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
@@ -87,39 +62,50 @@ namespace ippl {
         /// Mesh and Element operations ///////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual mesh_vertex_pos_t getMeshVertexPositionFromIndex(
-            const mesh_vertex_index_t& vertex_index) const = 0;
+        std::size_t numberOfElements() const;
 
-        virtual element_pos_t getElementPositionFromIndex(
-            const element_index_t& element_index) const = 0;
+        nd_index_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
-        mesh_vertex_vec_t getMeshVerticesForElement(const element_index_t& element_index) const;
+        nd_index_t getElementNDIndex(const index_t& element_index) const;
 
-        virtual mesh_vertex_vec_t getMeshVerticesForElement(
-            const element_pos_t& element_indices) const = 0;
+        mesh_element_vertex_vec_t getElementMeshVertices(const index_t& element_index) const;
+
+        mesh_element_vertex_vec_t getElementMeshVertices(const nd_index_t& element_indices) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
+
+        virtual index_t getLocalDOFIndex(const index_t& global_dof_index,
+                                         const index_t& element_index) const = 0;
+
+        virtual index_t getGlobalDOFIndex(const index_t& local_dof_index,
+                                          const index_t& element_index) const = 0;
+
+        virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const;
+
+        virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
+            const index_t& element_index) const = 0;
+
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual T evaluateBasis(const local_dof_index_t& local_vertex_index,
-                                const local_point_t& local_coordinates) const = 0;
+        virtual T evaluateRefElementBasis(const index_t& local_vertex_index,
+                                          const point_t& local_coordinates) const = 0;
 
-        virtual gradient_vec_t evaluateBasisGradient(
-            const local_dof_index_t& local_vertex_index,
-            const local_point_t& local_coordinates) const = 0;
+        virtual gradient_vec_t evaluateRefElementBasisGradient(
+            const index_t& local_vertex_index, const point_t& local_coordinates) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual void evaluateLoadVector(dof_val_vec_t& b) const = 0;
+        virtual void evaluateAx(const dof_value_vec_t& x, dof_value_vec_t& z) const = 0;
 
-        virtual void evaluateAx(const dof_val_vec_t& x, dof_val_vec_t& Ax) const = 0;
+        virtual void evaluateLoadVector(dof_value_vec_t& b) const = 0;
 
     protected:
         const Mesh<T, Dim>& mesh_m;

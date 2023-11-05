@@ -38,7 +38,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
-    bool Element<T, Dim, NumVertices>::isLocalPointInRefElement(const Vector<T, Dim>& point) const {
+    bool Element<T, Dim, NumVertices>::isPointInRefElement(const Vector<T, Dim>& point) const {
         // check if the local coordinates are inside the reference element
 
         // TODO change from hardcoded for n-cuboid elements to using function of the Element class

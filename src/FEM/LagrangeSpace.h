@@ -29,101 +29,59 @@ namespace ippl {
         : public FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
                                     calculateLagrangeNumDoFs(Dim, Order)> {
     public:
-        static constexpr unsigned NumDoFs = calculateLagrangeNumDoFs(Dim, Order);
+        static constexpr unsigned NumGlobalDOFs = calculateLagrangeNumDoFs(Dim, Order);
 
-        ///////////////////////////////////////////////////////////////////////
-        // Mesh types /////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
+        // An unsigned integer number representing an index
+        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                            NumGlobalDOFs>::index_t index_t;  // look at ippl::Index
+
+        // A vector with the position of the element in the mesh in each dimension
+        typedef
+            typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                        NumGlobalDOFs>::nd_index_t nd_index_t;  // TODO look ad NDINDEX
 
         // A point in the global coordinate system
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::point_t point_t;
+                                            NumGlobalDOFs>::point_t point_t;
 
         // A gradient vector in the global coordinate system
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::gradient_vec_t gradient_vec_t;
-
-        // An index of a vertex in the mesh
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::mesh_vertex_index_t mesh_vertex_index_t;
+                                            NumGlobalDOFs>::gradient_vec_t gradient_vec_t;
 
         // A vector of vertex indices of the mesh
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::mesh_vertex_vec_t mesh_vertex_vec_t;
-
-        // A vector with the position of the vertex in the mesh in each dimension
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::mesh_vertex_pos_t mesh_vertex_pos_t;
-
-        ///////////////////////////////////////////////////////////////////////
-        // Element types //////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        // A point in the local coordinate system of an element
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::local_point_t local_point_t;
-
-        // An index of an element in the mesh
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::element_index_t element_index_t;
-
-        // A vector with the position of the element in the mesh in each dimension
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::element_pos_t element_pos_t;
-
-        ///////////////////////////////////////////////////////////////////////
-        // DoF types //////////////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        // An index of a global degree of freedom of the finite element space
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::global_dof_index_t global_dof_index_t;
-
-        // An index of a local degree of freedom of an element
-        typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::local_dof_index_t local_dof_index_t;
+                                            NumGlobalDOFs>::mesh_element_vertex_vec_t
+            mesh_element_vertex_vec_t;
 
         // A vector of storing a value for all degrees of freedom
         typedef typename FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                            NumDoFs>::dof_val_vec_t dof_val_vec_t;
+                                            NumGlobalDOFs>::dof_value_vec_t dof_value_vec_t;
+
+        ///////////////////////////////////////////////////////////////////////
+        // Constructors ///////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
 
         LagrangeSpace(const Mesh<T, Dim>& mesh,
                       const Element<T, Dim, NumElementVertices>& ref_element,
                       const Quadrature<T, NumIntegrationPoints>& quadrature);
 
         ///////////////////////////////////////////////////////////////////////
-        /// Mesh and element operations ///////////////////////////////////////
-        // TODO maybe move to Finite Element Space instead or own
-        ///////////////////////////////////////////////////////////////////////
-
-        mesh_vertex_pos_t getElementPositionFromIndex(
-            const global_dof_index_t& element_index) const override;
-
-        mesh_vertex_pos_t getMeshVertexPositionFromIndex(
-            const global_dof_index_t& dof_index) const override;
-
-        mesh_vertex_vec_t getMeshVerticesForElement(
-            const mesh_vertex_pos_t& element_indices) const override;
-
-        ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        point_t getCoordinatesForDof(const global_dof_index_t& dof_index) const;
+        point_t getCoordinatesForDof(const global_dof_index_t& dof_index) const override;
 
-        std::vector<global_dof_index_t> getElementsInSupportOfDof(
-            const global_dof_index_t& dof_index) const override;
+        Vector < getElementsInSupportOfDof(const global_dof_index_t& dof_index) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        T evaluateBasis(const global_dof_index_t& local_vertex_index,
-                        const Vector<T, Dim>& local_coordinates) const override;
+        T evaluateRefElementBasis(const local_dof_index_t& local_vertex_index,
+                        const local_point_t& local_coordinates) const override;
 
-        gradient_vec_t evaluateBasisGradient(
-            const global_dof_index_t& local_vertex_index,
-            const Vector<T, Dim>& local_coordinates) const override;
+        gradient_vec_t evaluateRefElementBasisGradient(const local_dof_index_t& local_vertex_index,
+                                             const local_point_t& local_coordinates) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
@@ -134,7 +92,7 @@ namespace ippl {
         void evaluateAx(const dof_val_vec_t& x, dof_val_vec_t& Ax) const override;
 
     private:
-        NDIndex<Dim> makeNDIndex(const mesh_vertex_pos_t& indices) const;
+        NDIndex<Dim> makeNDIndex(const Vector<T, Dim>& indices) const;
     };
 
 }  // namespace ippl

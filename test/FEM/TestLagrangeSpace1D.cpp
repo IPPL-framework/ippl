@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         for (unsigned i = 0; i < number_of_elements; ++i) {
             elem_out << i;
             const auto element_indices  = lagrange_space.getElementPositionFromIndex(i);
-            const auto element_vertices = lagrange_space.getMeshVerticesForElement(element_indices);
+            const auto element_vertices = lagrange_space.getElementMeshVertices(element_indices);
 
             for (unsigned j = 0; j < element_vertices.dim; ++j) {
                 elem_out << "," << element_vertices[j];
@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
         for (ippl::Vector<double, 1> x = {0.0}; x[0] <= 1.0; x[0] += dx) {
             local_basis_out << x[0];
             for (unsigned i = 0; i < number_of_local_vertices; ++i) {
-                local_basis_out << "," << lagrange_space.evaluateBasis(i, x);
+                local_basis_out << "," << lagrange_space.evaluateRefElementBasis(i, x);
             }
             local_basis_out << "\n";
         }

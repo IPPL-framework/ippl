@@ -21,18 +21,30 @@ namespace ippl {
 
         virtual mesh_vertex_vec_t getLocalVertices() const = 0;
 
-        virtual diag_matrix_vec_t getTransformationJacobian(
-            const mesh_vertex_vec_t& global_vertices) const = 0;
-
-        virtual diag_matrix_vec_t getInverseTransformationJacobian(
-            const mesh_vertex_vec_t& global_vertices) const = 0;
-
         virtual T getDeterminantOfTransformationJacobian(
+            const mesh_vertex_vec_t& global_vertices) const;
+
+        virtual diag_matrix_vec_t getInverseTransposedTransformationJacobian(
             const mesh_vertex_vec_t& global_vertices) const;
 
         virtual point_t globalToLocal(const mesh_vertex_vec_t&, const point_t&) const;
 
-        virtual point_t localToGlobal(const mesh_vertex_vec_t&, const point_t&) const;
+        /**
+         * @brief Transforms a point from local to global coordinates.
+         *
+         * @param global_vertices A vector of the vertex indices of the global element to transform
+         * to in the mesh.
+         * @param point A point in local coordinates with respect to the reference element.
+         *
+         * @details Equivalent to transforming a local point \f$\hat{\boldsymbol{x}}\f$ on the local
+         * element \f$\hat{K}\f$ to a point in the global coordinate system \f$\boldsymbol{x}\f$ on
+         * \f$K\f$ by applying the transformation \f$\mathbf{\Phi}_K\f$ \f\[\boldsymbol{x} =
+         * \mathbf{\Phi}_K(\hat{\boldsymbol{x}})\f\]
+         *
+         * @return point_t
+         */
+        virtual point_t localToGlobal(const mesh_vertex_vec_t& global_vertices,
+                                      const point_t& point) const;
 
         /**
          * @brief Returns whether a point in local coordinates ([0, 1]^Dim) is inside the reference
@@ -42,7 +54,14 @@ namespace ippl {
          * @return boolean - Returns true when the point is inside the reference element or on the
          * boundary. Returns false else
          */
-        bool isLocalPointInRefElement(const Vector<T, Dim>& point) const;
+        bool isPointInRefElement(const Vector<T, Dim>& point) const;
+
+    private:
+        virtual diag_matrix_vec_t getTransformationJacobian(
+            const mesh_vertex_vec_t& global_vertices) const = 0;
+
+        virtual diag_matrix_vec_t getInverseTransformationJacobian(
+            const mesh_vertex_vec_t& global_vertices) const = 0;
     };
 
     template <typename T, unsigned NumVertices>
