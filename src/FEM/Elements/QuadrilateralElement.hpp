@@ -1,16 +1,16 @@
 
 namespace ippl {
     template <typename T>
-    typename QuadrilateralElement<T>::mesh_vertex_vec_t QuadrilateralElement<T>::getLocalVertices()
+    typename QuadrilateralElement<T>::mesh_element_vertex_vec_t QuadrilateralElement<T>::getLocalVertices()
         const {
-        QuadrilateralElement::mesh_vertex_vec_t vertices;
+        QuadrilateralElement::mesh_element_vertex_vec_t vertices;
         vertices = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
         return vertices;
     }
 
     template <typename T>
     QuadrilateralElement<T>::diag_matrix_vec_t QuadrilateralElement<T>::getTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_vertex_vec_t& global_vertices) const {
+        const QuadrilateralElement<T>::mesh_element_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::diag_matrix_vec_t jacobian;
 
         jacobian[0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
@@ -22,7 +22,7 @@ namespace ippl {
     template <typename T>
     QuadrilateralElement<T>::diag_matrix_vec_t
     QuadrilateralElement<T>::getInverseTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_vertex_vec_t& global_vertices) const {
+        const QuadrilateralElement<T>::mesh_element_vertex_vec_t& global_vertices) const {
         QuadrilateralElement::diag_matrix_vec_t inv_jacobian;
 
         inv_jacobian[0] = global_vertices[1][0] - global_vertices[0][0];

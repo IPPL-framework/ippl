@@ -1,7 +1,7 @@
 namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
     Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::globalToLocal(
-        const Element<T, Dim, NumVertices>::mesh_vertex_vec_t& global_vertices,
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
         const diag_matrix_vec_t glob2loc_matrix = getTransformationJacobian(global_vertices);
@@ -13,7 +13,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumVertices>
     Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::localToGlobal(
-        const Element<T, Dim, NumVertices>::mesh_vertex_vec_t& global_vertices,
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
         const diag_matrix_vec_t loc2glob_matrix = getInverseTransformationJacobian(global_vertices);
@@ -25,7 +25,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumVertices>
     T Element<T, Dim, NumVertices>::getDeterminantOfTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_vertex_vec_t& global_vertices) const {
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_vec_t& global_vertices) const {
         T determinant = 1.0;
 
         // Since the jacobian is a diagonal matrix in our case the determinant is the product of the
@@ -38,8 +38,8 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
-    diag_matrix_vec_t Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_vertex_vec_t& global_vertices) const {
+    Element<T, Dim, NumVertices>::diag_matrix_vec_t Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_vec_t& global_vertices) const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);
     }

@@ -37,20 +37,20 @@ namespace ippl {
          *
          * @param a
          * @param b
-         * @tparam NumNodes Number of nodes in the quadrature rule.
+         * @tparam NumNodes1D Number of nodes in the quadrature rule.
          * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
          */
-        template <unsigned NumNodes>
-        Vector<T, NumNodes> getIntegrationNodes(const T& a = -1.0, const T& b = 1.0) const override;
+        template <unsigned NumNodes1D>
+        Vector<T, NumNodes1D> getIntegrationNodes(const T& a = -1.0, const T& b = 1.0) const override;
 
         /**
          * @brief Get the weights for the quadrature
-         * @tparam NumNodes Number of nodes in the quadrature rule.
+         * @tparam NumNodes1D Number of nodes in the quadrature rule.
          *
          * @return std::vector<T> - Returns a vector with number_of_points many weights.
          */
-        template <unsigned NumNodes>
-        Vector<T, NumNodes> getWeights() const override;
+        template <unsigned NumNodes1D>
+        Vector<T, NumNodes1D> getWeights() const override;
 
     private:
         T alpha_m;

@@ -14,15 +14,15 @@ namespace ippl {
         return std::ceil((getDegree() + 1) / 2);  // TODO
     }
     template <typename T>
-    template <unsigned NumNodes>
-    Vector<T, NumNodes> GaussJacobiQuadrature<T>::getIntegrationNodes(const T& a = -1.0,
+    template <unsigned NumNodes1D>
+    Vector<T, NumNodes1D> GaussJacobiQuadrature<T>::getIntegrationNodes(const T& a = -1.0,
                                                                       const T& b = 1.0) const {
         return {}  // TODO
     }
 
     template <typename T>
-    template <unsigned NumNodes>
-    Vector<T, NumNodes> GaussJacobiQuadrature<T>::getWeights() const {
+    template <unsigned NumNodes1D>
+    Vector<T, NumNodes1D> GaussJacobiQuadrature<T>::getWeights() const {
         return {}  // TODO
     }
 }  // namespace ippl
