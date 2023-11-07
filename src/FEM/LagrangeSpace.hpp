@@ -14,13 +14,84 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints, unsigned NumGlobalDOFs>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateAx(
+        const Vector<T, NumGlobalDOFs>& x, Vector<T, NumGlobalDOFs>& z) const {
+        const std::size_t NumElementDOFs = this->NumElementDOFs;
+
+        const std::size_t NumElementIntegrationPoints =
+            this->quadrature_m.numElementIntegrationPoints();
+
+        // List of quadrature weights
+        auto w = this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        auto q = this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // Inverse Transpose Transformation Jacobian
+        Vector<T, Dim> DPhiInvT = this->ref_element_m.getInverseTransposeTransformationJacobian(
+            this->getElementMeshVertices(0));
+
+        // Absolute value of det Phi_K
+        T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertices(0)));
+
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<gradient_vec_t, NumElementDOFs>, NumIntegrationPoints> grad_b_q;
+        for (index_t k = 0; k < NumIntegrationPoints; ++k) {
+            for (index_t i = 0; i < NumElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementBasisGradient(i, q[k]);
+            }
+        }
+
+        // Allocate memory for the element matrix
+        Vector<Vector<T, NumElementDOFs> NumElementDOFs> A_K;
+
+        for (index_t element_index = 0; element_index < this->numElements; ++element_index) {
+            Vector<index_t, NumElementDOFs> global_dofs;
+            Vector<index_t, NumElementDOFs> local_dofs;
+
+            // 1. Compute the Galerkin element matrix A_K
+            for (index_t i = 0; i < NumElementDOFs; ++i) {
+                for (index_t j = 0; j < NumElementDOFs; ++j) {
+                    A_k[i][j] = 0.0;
+
+                    for (index_t k = 0; k < NumElementIntegrationPoints; ++k) {
+                        A_K[i][j] += w[k]
+                                     * ((DPhiInvT * grad_b_q[k][j]) * (DPhiInvT * grad_b_q[k][i]))
+                                     * absDetDPhi;
+                    }
+                }
+            }
+
+            // 2. Compute the contribution to z = Ax with A_K
+            for (index_t i = 0; i < NumElementDOFs; ++i) {
+                index_t I = global_dofs[i];
+                for (index_t j = 0; j < NumElementDOFs; ++j) {
+                    index_t J = global_dofs[j];
+
+                    z[i] += A_K[i][j] * x[j];
+                }
+            }
+        }
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
+              unsigned NumIntegrationPoints, unsigned NumGlobalDOFs>
+    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
+        Vector<T, NumGlobalDOFs>& b) const {
+        assert(b.dim > 0);  // TODO change assert to be correct
+        // TODO implement
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
     NDIndex<Dim>
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::makeNDIndex(
         const Vector<T, Dim>& indices) const {
-        // Not sure if this is the best way, but the getVertexPosition function expects an NDIndex,
-        // with the vertex index used being the first in the NDIndex. No other index is used, so
-        // we can just set the first and the last to the index we actually want.
+        // Not sure if this is the best way, but the getVertexPosition function expects an
+        // NDIndex, with the vertex index used being the first in the NDIndex. No other index is
+        // used, so we can just set the first and the last to the index we actually want.
         NDIndex<Dim> nd_index;
         for (unsigned d = 0; d < Dim; ++d) {
             nd_index[d] = Index(indices[d], indices[d]);
@@ -50,11 +121,12 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
-    T LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateRefElementBasis(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices,
-                            NumIntegrationPoints>::local_dof_index_t& local_vertex_index,
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::local_point_t&
-            local_coordinates) const {
+    T LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::
+        evaluateRefElementBasis(
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::local_dof_index_t& local_vertex_index,
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::local_point_t& local_coordinates) const {
         // Assert that the local vertex index is valid.
         assert(local_vertex_index < NumElementVertices
                && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
@@ -83,11 +155,12 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
               unsigned NumIntegrationPoints>
     LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::gradient_vec_t
-    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateRefElementBasisGradient(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices,
-                            NumIntegrationPoints>::local_dof_index_t& local_vertex_index,
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::local_point_t&
-            local_coordinates) const {
+    LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::
+        evaluateRefElementBasisGradient(
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::local_dof_index_t& local_vertex_index,
+            const LagrangeSpace<T, Dim, Order, NumElementVertices,
+                                NumIntegrationPoints>::local_point_t& local_coordinates) const {
         // TODO assumes 1st order Lagrange
 
         // Assert that the local vertex index is valid.
@@ -130,64 +203,6 @@ namespace ippl {
         }
 
         return gradient;
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
-              unsigned NumIntegrationPoints>
-    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateAx(
-        const LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t&
-            x,
-        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t& Ax)
-        const {
-        // Precompute the (diagonal) transformation matrix (it is the same for all elements)
-        Vector<T, Dim> inverseJ =
-            ref_element_m.getInverseTransformationJacobian(getElementMeshVertices(0));
-
-        weights           = this->quadrature_m.getWeights();
-        integration_nodes = this->quadrature_m.getIntegrationNodes();
-
-        // TODO move lamda function outside of this function and into the sovler
-        auto evaluatePDE = [&, inverseJ, evaluateRefElementBasisGradient](
-                               const global_dof_index_t& local_dof_i,
-                               const global_dof_index_t& local_dof_j,
-                               const global_dof_index_t& integration_point_index) {
-            return (inverseJ
-                    * evaluateRefElementBasisGradient(local_dof_i,
-                                            integration_nodes[integration_point_index]))
-                   * (inverseJ
-                      * evaluateRefElementBasisGradient(local_dof_j,
-                                              integration_nodes[integration_point_index]))
-        };
-
-        // TODO what about precomputing a vector with values for the evaluatePDE lambda function?
-
-        T A_local_ij;
-
-        for (std::size_t i = 0; i < x.dim; ++i) {
-            Ax[i] = 0;
-
-            // TODO take advantage of sparsity of stiffness matrix
-            for (std::size_t j = 0; j < x.dim; ++j) {
-                // Use quadrature to approximate the integral
-
-                A_local_ij = 0;
-
-                for (std::size_t k = 0; k < NumIntegrationPoints; k++) {
-                    A_local_ij += weights[k] * evaluatePDE(i, j, k);
-                }
-
-                Ax[i] += A_local_ij * x[j];
-            }
-        }
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, unsigned NumElementVertices,
-              unsigned NumIntegrationPoints>
-    void LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::evaluateLoadVector(
-        LagrangeSpace<T, Dim, Order, NumElementVertices, NumIntegrationPoints>::dof_val_vec_t& b)
-        const {
-        assert(b.dim > 0);  // TODO change assert to be correct
-        // TODO implement
     }
 
 }  // namespace ippl

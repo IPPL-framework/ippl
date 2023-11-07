@@ -29,7 +29,7 @@ namespace ippl {
      * @tparam NumIntegrationPoints The number of integration nodes of the quadrature rule
      */
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
+              unsigned NumElementDOFs>
     class FiniteElementSpace {
     public:
         // An unsigned integer number representing an index
@@ -47,9 +47,6 @@ namespace ippl {
         // A vector of vertex indices of the mesh
         typedef Vector<index_t, NumElementVertices> mesh_element_vertex_vec_t;
 
-        // A vector of storing a value for all degrees of freedom
-        typedef Vector<T, NumGlobalDOFs> dof_value_vec_t;
-
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -59,10 +56,22 @@ namespace ippl {
                            const Quadrature<T, NumIntegrationPoints>& quadrature);
 
         ///////////////////////////////////////////////////////////////////////
+        /// Assembly operations ///////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        template <unsigned NumGlobalDOFs>
+        virtual void evaluateAx(const Vector<T, NumGlobalDOFs>& x,
+                                Vector<T, NumGlobalDOFs>& z) const = 0;
+
+        template <unsigned NumGlobalDOFs>
+        virtual void evaluateLoadVector(Vector<T, NumGlobalDOFs>& b) const = 0;
+
+    protected:
+        ///////////////////////////////////////////////////////////////////////
         /// Mesh and Element operations ///////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        std::size_t numberOfElements() const;
+        std::size_t numElements() const;
 
         nd_index_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
@@ -76,6 +85,8 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        std::size_t numGlobalDOFs() const;
+
         virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
         virtual index_t getLocalDOFIndex(const index_t& global_dof_index,
@@ -84,7 +95,7 @@ namespace ippl {
         virtual index_t getGlobalDOFIndex(const index_t& local_dof_index,
                                           const index_t& element_index) const = 0;
 
-        virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const;
+        virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const = 0;
 
         virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
             const index_t& element_index) const = 0;
@@ -93,21 +104,16 @@ namespace ippl {
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual T evaluateRefElementBasis(const index_t& local_vertex_index,
-                                          const point_t& local_coordinates) const = 0;
+        virtual T evaluateRefElementBasis(const index_t& localDOF,
+                                          const point_t& localPoint) const = 0;
 
-        virtual gradient_vec_t evaluateRefElementBasisGradient(
-            const index_t& local_vertex_index, const point_t& local_coordinates) const = 0;
+        virtual gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
+                                                               const point_t& localPoint) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
-        /// Assembly operations ///////////////////////////////////////////////
+        /// Member variables //////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual void evaluateAx(const dof_value_vec_t& x, dof_value_vec_t& z) const = 0;
-
-        virtual void evaluateLoadVector(dof_value_vec_t& b) const = 0;
-
-    protected:
         const Mesh<T, Dim>& mesh_m;
         const Element<T, Dim, NumElementVertices>& ref_element_m;
         const Quadrature<T, NumIntegrationPoints>& quadrature_m;

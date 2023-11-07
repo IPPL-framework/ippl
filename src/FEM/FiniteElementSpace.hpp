@@ -1,12 +1,11 @@
 
 namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
-    FiniteElementSpace<
-        T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-        NumElementDOFs>::FiniteElementSpace(const Mesh<T, Dim>& mesh,
-                                            const Element<T, Dim, NumElementVertices>& ref_element,
-                                            const Quadrature<T, NumIntegrationPoints>& quadrature)
+              unsigned NumElementDOFs>
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::
+        FiniteElementSpace(const Mesh<T, Dim>& mesh,
+                           const Element<T, Dim, NumElementVertices>& ref_element,
+                           const Quadrature<T, NumIntegrationPoints>& quadrature)
         : mesh_m(mesh)
         , ref_element_m(ref_element)
         , quadrature_m(quadrature) {
@@ -14,14 +13,27 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::nd_index_t
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::
+              unsigned NumElementDOFs>
+    std::size_t FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                   NumElementDOFs>::numElements() const {
+        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1u;
+
+        // TODO Use a reduction instead
+        std::size_t num_elements = 1;
+        for (const std::size_t num_cells : cells_per_dim) {
+            num_elements *= num_cells;
+        }
+
+        return num_elements;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
+              unsigned NumElementDOFs>
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::nd_index_t
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::
         getMeshVertexNDIndex(
             const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                     NumGlobalDOFs, NumElementDOFs>::index_t& vertex_index) const {
+                                     NumElementDOFs>::index_t& vertex_index) const {
         // Copy the vertex index to the index variable we can alter during the computation.
         index_t index = global_vertex_index;
 
@@ -52,14 +64,11 @@ namespace ippl {
 
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::nd_index_t
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::
-        getElementNDIndex(
-            const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                     NumGlobalDOFs, NumElementDOFs>::index_t& element_index) const {
+              unsigned NumElementDOFs>
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::nd_index_t
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::
+        getElementNDIndex(const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
+                                                   NumElementDOFs>::index_t& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
         index_t index = element_index;
 
@@ -90,27 +99,24 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
+              unsigned NumElementDOFs>
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
                        NumElementDOFs>::mesh_element_vertex_vec_t
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::
         getElementMeshVertices(
             const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                     NumGlobalDOFs, NumElementDOFs>::index_t& element_index) const {
+                                     NumElementDOFs>::index_t& element_index) const {
         return getElementMeshVertices(getElementPositionFromIndex(element_index));
     }
 
     template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumGlobalDOFs, unsigned NumElementDOFs>
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
+              unsigned NumElementDOFs>
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
                        NumElementDOFs>::mesh_element_vertex_vec_t
-    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumGlobalDOFs,
-                       NumElementDOFs>::
+    FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints, NumElementDOFs>::
         getElementMeshVertices(
             const FiniteElementSpace<T, Dim, NumElementVertices, NumIntegrationPoints,
-                                     NumGlobalDOFs, NumElementDOFs>::nd_index_t& element_indices)
-            const {
+                                     NumElementDOFs>::nd_index_t& element_indices) const {
         // Vector to store the vertex indices for the element
         mesh_vertex_vec_t vertex_indices(0);
 
@@ -138,5 +144,4 @@ namespace ippl {
 
         return vertex_indices;
     }
-
 }  // namespace ippl

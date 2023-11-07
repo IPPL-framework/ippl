@@ -38,6 +38,13 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
+    diag_matrix_vec_t Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
+        const Element<T, Dim, NumVertices>::mesh_vertex_vec_t& global_vertices) const {
+        // Simply return the inverse transformation jacobian since it is a diagonal matrix
+        return getInverseTransformationJacobian(global_vertices);
+    }
+
+    template <typename T, unsigned Dim, unsigned NumVertices>
     bool Element<T, Dim, NumVertices>::isPointInRefElement(const Vector<T, Dim>& point) const {
         // check if the local coordinates are inside the reference element
 

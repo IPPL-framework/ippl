@@ -21,13 +21,7 @@ namespace ippl {
 
         virtual mesh_vertex_vec_t getLocalVertices() const = 0;
 
-        virtual T getDeterminantOfTransformationJacobian(
-            const mesh_vertex_vec_t& global_vertices) const;
-
-        virtual diag_matrix_vec_t getInverseTransposedTransformationJacobian(
-            const mesh_vertex_vec_t& global_vertices) const;
-
-        virtual point_t globalToLocal(const mesh_vertex_vec_t&, const point_t&) const;
+        point_t globalToLocal(const mesh_vertex_vec_t&, const point_t&) const;
 
         /**
          * @brief Transforms a point from local to global coordinates.
@@ -43,8 +37,12 @@ namespace ippl {
          *
          * @return point_t
          */
-        virtual point_t localToGlobal(const mesh_vertex_vec_t& global_vertices,
-                                      const point_t& point) const;
+        point_t localToGlobal(const mesh_vertex_vec_t& global_vertices, const point_t& point) const;
+
+        T getDeterminantOfTransformationJacobian(const mesh_vertex_vec_t& global_vertices) const;
+
+        diag_matrix_vec_t getInverseTransposeTransformationJacobian(
+            const mesh_vertex_vec_t& global_vertices) const;
 
         /**
          * @brief Returns whether a point in local coordinates ([0, 1]^Dim) is inside the reference
