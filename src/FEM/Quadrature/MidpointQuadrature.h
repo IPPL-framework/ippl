@@ -7,41 +7,22 @@
 
 namespace ippl {
 
-    /**
-     * @brief A midpoint quadrature rule with a fixed number of integration points.
-     *
-     * @tparam T the floating point number type used
-     * @tparam NumIntegrationPoints the number of integration points. (Minimum 1)
-     */
-    template <typename T, unsigned NumIntegrationPoints>
-    class MidpointQuadrature : public Quadrature<T, NumIntegrationPoints> {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    class MidpointQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
-        /**
-         * @brief Get the integration nodes for the quadrature
-         *
-         * @param a Lower bound of the interval
-         * @param b Upper bound of the interval
-         * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
-         */
-        Vector<T, NumIntegrationPoints> getIntegrationNodes(const T& a = 0.0,
-                                                            const T& b = 1.0) const override;
-
-        /**
-         * @brief Get the weights for the quadrature
-         *
-         * @return std::vector<T> - Returns a vector with number_of_points many weights.
-         */
-        Vector<T, NumIntegrationPoints> getWeights(const T& a = 0.0,
-                                                   const T& b = 1.0) const override;
+        MidpointQuadrature(const ElementType& ref_element);
 
         /**
          * @brief Get the degree of exactness of the quadrature rule.
          *
-         * @param a Lower bound of the interval
-         * @param b Upper bound of the interval
          * @return unsigned - Degree of exactness
          */
         unsigned getDegree() const override;
+
+    protected:
+        Vector<T, NumNodes1D> getIntegrationNodes() const override;
+
+        Vector<T, NumNodes1D> getWeights() const override;
     };
 
 }  // namespace ippl

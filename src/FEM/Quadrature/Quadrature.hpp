@@ -1,42 +1,29 @@
 
 namespace ippl {
-
-    template <typename T, unsigned NumNodes, unsigned Dim, unsigned NumElementVertices>
-    std::size_t Quadrature<T, NumNodes, NumElementVertices>::num1DIntegrationPoints() const {
-        return NumNodes;
-    }
-
-    template <typename T, unsigned NumNodes, unsigned Dim, unsigned NumElementVertices>
-    std::size_t Quadrature<T, NumNodes, NumElementVertices>::numElementIntegrationPoints() const {
-        return numElementNodes(NumNodes, Dim);
-    }
-
-    template <typename T, unsigned NumNodes, unsigned Dim, unsigned NumElementVertices>
-    std::size_t Quadrature<T, NumNodes, NumElementVertices>::getOrder() const {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    std::size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {
         return this->getDegree() + 1;
     }
 
-    template <typename T, unsigned NumNodes, unsigned Dim, unsigned NumElementVertices>
-    Vector<T, numElementNodes(NumNodes, Dim)>
-    Quadrature<T, NumNodes, Dim, NumElementVertices>::getWeightsForRefElement() const {
-        const std::size_t NumElementNodes = numElementNodes(NumNodes, Dim);
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<T, Quadrature<T, NumNodes1D, ElementType>::numElementDOFs>
+    Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
+        Vector<T, NumNodes1D> w = this->getWeights();
 
-        Vector<T, NumNodes> w = this->getWeights();
+        Vector<T, this->numElementNodes> tensor_prod_w;
 
-        Vector<T, NumElementNodes> tensor_prod_w;
-
-        Vector<unsigned, Dim> nd_index(0);
-        for (unsigned i = 0; i < NumElementNodes; ++i) {
+        Vector<unsigned, ElementType::dim> nd_index(0);
+        for (unsigned i = 0; i < this->numElementNodes; ++i) {
             tensor_prod_w[i] = 1.0;
-            for (unsigned d = 0; d < Dim; ++d) {
+            for (unsigned d = 0; d < ElementType::dim; ++d) {
                 tensor_prod_w[i] *= w[nd_index[d]];
             }
 
             // Update nd_index for next iteration
             // Increment the nd_index variable in the first dimension, or if it
             // is already at the maximum value reset it and, go to the higher dimension
-            for (int d = 0; d < Dim; ++d) {
-                if (++nd_index[d] < NumNodes)
+            for (int d = 0; d < ElementType::dim; ++d) {
+                if (++nd_index[d] < NumNodes1D)
                     break;
                 nd_index[d] = 0;
             }
@@ -45,26 +32,25 @@ namespace ippl {
         return tensor_prod_w;
     }
 
-    template <typename T, unsigned NumNodes, unsigned Dim, unsigned NumElementVertices>
-    Vector<Vector<T, Dim>, numElementNodes(NumNodes, Dim)>
-    Quadrature<T, NumNodes, NumElementVertices>::getIntegrationNodesForRefElement() const {
-        const std::size_t NumElementNodes = numElementNodes(NumNodes, Dim);
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<Vector<T, Quadrature<T, NumNodes1D, ElementType>::dim>,
+           Quadrature<T, NumNodes1D, ElementType>::numElementDOFs>
+    Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
+        Vector<T, NumNodes1D> q = this->getIntegrationNodes();
 
-        Vector<T, NumNodes> q = this->getIntegrationNodes();
+        Vector<Vector<T, ElementType::dim>, this->numElementNodes> tensor_prod_q;
 
-        Vector<Vector<T, Dim>, NumElementNodes> tensor_prod_q;
-
-        Vector<unsigned, Dim> nd_index(0);
-        for (unsigned i = 0; i < NumElementNodes; ++i) {
-            for (unsigned d = 0; d < Dim; ++d) {
+        Vector<unsigned, ElementType::dim> nd_index(0);
+        for (unsigned i = 0; i < this->numElementNodes; ++i) {
+            for (unsigned d = 0; d < ElementType::dim; ++d) {
                 tensor_prod_q[i][d] = q[nd_index[d]];
             }
 
             // Update nd_index for next iteration
             // Increment the nd_index variable in the first dimension, or if it
             // is already at the maximum value reset it and, go to the higher dimension
-            for (int d = 0; d < Dim; ++d) {
-                if (++nd_index[d] < NumNodes)
+            for (int d = 0; d < ElementType::dim; ++d) {
+                if (++nd_index[d] < NumNodes1D)
                     break;
                 nd_index[d] = 0;
             }

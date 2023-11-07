@@ -18,20 +18,27 @@
 #include "FEM/Quadrature/Quadrature.h"
 #include "Meshes/Mesh.h"
 
+constexpr unsigned calculateNumElementVertices(unsigned Dim) {
+    return static_cast<unsigned>(pow(2.0, static_cast<double>(Dim)));
+}
+
 namespace ippl {
 
-    /**
-     * @brief This abstract class represents an finite element space.
-     *
-     * @tparam T The floating point type used
-     * @tparam Dim The geometric dimension of the space
-     * @tparam NumElementVertices The number of vertices of the element
-     * @tparam NumIntegrationPoints The number of integration nodes of the quadrature rule
-     */
-    template <typename T, unsigned Dim, unsigned NumElementVertices, unsigned NumIntegrationPoints,
-              unsigned NumElementDOFs>
+    // template <typename T>
+    //  concept IsQuadrature = std::is_base_of<Quadrature, T>::value;
+
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
+              typename QuadratureType>
+    // requires IsElement<QuadratureType>
     class FiniteElementSpace {
     public:
+        static constexpr unsigned dim                = Dim;
+        static constexpr unsigned numElementVertices = calculateNumElementVertices(Dim);
+        static constexpr unsigned numElementDOFs     = NumElementDOFs;
+        static constexpr unsigned numGlobalDOFs      = NumGlobalDOFs;
+
+        typedef Element<T, Dim, numElementVertices> ElementType;
+
         // An unsigned integer number representing an index
         typedef std::size_t index_t;  // look at ippl::Index
 
@@ -45,25 +52,22 @@ namespace ippl {
         typedef Vector<T, Dim> gradient_vec_t;
 
         // A vector of vertex indices of the mesh
-        typedef Vector<index_t, NumElementVertices> mesh_element_vertex_vec_t;
+        typedef Vector<index_t, numElementVertices> mesh_element_vertex_vec_t;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        FiniteElementSpace(const Mesh<T, Dim>& mesh,
-                           const Element<T, Dim, NumElementVertices>& ref_element,
-                           const Quadrature<T, NumIntegrationPoints>& quadrature);
+        FiniteElementSpace(const Mesh<T, Dim>& mesh, const ElementType& ref_element,
+                           const QuadratureType& quadrature);
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        template <unsigned NumGlobalDOFs>
         virtual void evaluateAx(const Vector<T, NumGlobalDOFs>& x,
-                                Vector<T, NumGlobalDOFs>& z) const = 0;
+                                Vector<T, NumGlobalDOFs>& resultAx) const = 0;
 
-        template <unsigned NumGlobalDOFs>
         virtual void evaluateLoadVector(Vector<T, NumGlobalDOFs>& b) const = 0;
 
     protected:
@@ -84,8 +88,6 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
-
-        std::size_t numGlobalDOFs() const;
 
         virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
@@ -115,8 +117,8 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
 
         const Mesh<T, Dim>& mesh_m;
-        const Element<T, Dim, NumElementVertices>& ref_element_m;
-        const Quadrature<T, NumIntegrationPoints>& quadrature_m;
+        const ElementType& ref_element_m;
+        const QuadratureType& quadrature_m;
     };
 
 }  // namespace ippl

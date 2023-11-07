@@ -1,15 +1,15 @@
 
 
 namespace ippl {
-    template <typename T, unsigned NumIntegrationPoints>
-    Vector<T, NumIntegrationPoints>
-    MidpointQuadrature<T, NumIntegrationPoints>::getIntegrationNodes(const T& a, const T& b) const {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<T, NumNodes1D> MidpointQuadrature<T, NumNodes1D, ElementType>::getIntegrationNodes()
+        const {
         const unsigned number_of_segments = this->getNumberOfIntegrationPoints();
-        const T segment_length            = (b - a) / number_of_segments;
+        const T segment_length            = 1.0 / number_of_segments;
 
         // TODO use KOKKKOS
-        Vector<T, NumIntegrationPoints> nodes;
-        T integration_point = a + 0.5 * segment_length;
+        Vector<T, NumNodes1D> nodes;
+        T integration_point = 0.5 * segment_length;
         for (unsigned i = 0; i < number_of_segments; ++i) {
             nodes[i] = integration_point;
             integration_point += segment_length;
@@ -18,15 +18,13 @@ namespace ippl {
         return nodes;
     }
 
-    template <typename T, unsigned NumIntegrationPoints>
-    Vector<T, NumIntegrationPoints> MidpointQuadrature<T, NumIntegrationPoints>::getWeights(
-        const T& a, const T& b) const {
-        const T interval_length = b - a;
-        return Vector<T, NumIntegrationPoints>(interval_length / NumIntegrationPoints);
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<T, NumNodes1D> MidpointQuadrature<T, NumNodes1D, ElementType>::getWeights() const {
+        return Vector<T, NumNodes1D>(1.0 / NumNodes1D);
     }
 
-    template <typename T, unsigned NumIntegrationPoints>
-    unsigned MidpointQuadrature<T, NumIntegrationPoints>::getDegree() const {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    unsigned MidpointQuadrature<T, NumNodes1D, ElementType>::getDegree() const {
         return 1;
     }
 
