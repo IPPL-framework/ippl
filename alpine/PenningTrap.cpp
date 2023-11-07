@@ -148,7 +148,8 @@ int main(int argc, char* argv[]) {
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
         auto start            = std::chrono::high_resolution_clock::now();
-        Vector_t<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+        int arg=1;
+        Vector_t<int, Dim> nr = {std::atoi(argv[arg++]), std::atoi(argv[arg++]), std::atoi(argv[arg++])};
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -162,8 +163,8 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(mainTimer);
 
-        size_type totalP      = std::atol(argv[4]);
-        const unsigned int nt = std::atoi(argv[5]);
+        size_type totalP      = std::atol(argv[arg++]);
+        const unsigned int nt = std::atoi(argv[arg++]);
 
         msg << "Penning Trap " << endl
             << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -200,8 +201,12 @@ int main(int argc, char* argv[]) {
 
         double Q           = -1562.5;
         double Bext        = 5.0;
-        std::string solver = argv[6];
-        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        std::string solver = argv[arg++];
+        std::string preconditioner = "";
+        if (solver == "PCG"){
+            preconditioner = argv[arg++];
+        }
+        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver, preconditioner);
 
         P->nr_m = nr;
 
@@ -218,7 +223,7 @@ int main(int argc, char* argv[]) {
 
         P->initSolver();
         P->time_m                 = 0.0;
-        P->loadbalancethreshold_m = std::atof(argv[7]);
+        P->loadbalancethreshold_m = std::atof(argv[arg++]);
 
         bool isFirstRepartition;
 

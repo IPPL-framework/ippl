@@ -35,7 +35,6 @@ namespace ippl{
                 T res            = 0;
                 index_type coords[dim] = {args...};
                 auto &&center = apply(u_m, coords);
-                //res += (1+factor*factor) * center;
                 for (unsigned d = 0; d < dim; d++) {
                     index_type coords[dim] = {args...};
 
@@ -91,31 +90,45 @@ namespace ippl{
         std::string type_m;
     };
 
+    /*!
+    * Jacobi preconditioner
+    * M = diag{A}
+    */
+
     template<typename Field>
     struct jacobi_preconditioner: public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        jacobi_preconditioner() : type_m("jacobi"){}
+        jacobi_preconditioner(unsigned s = 1) : type_m("jacobi"), s_m(s){}
 
-        /*!
-         * Jacobian Preconditioner
-         * M^-1 = diag{A}^-1
-        */
         Field operator()(Field &u) override {
             Field res = u.deepCopy();
-            res = 1.0 / (2.0 * Dim) * u;
+            res.fillHalo();
+            BConds<Field, Dim>& bcField = res.getFieldBC();
+            bcField.apply(res);
+            double sum = 0.0;
+            mesh_type mesh = u.get_mesh();
+            typename mesh_type::vector_type hvector(0);
+            for (unsigned d = 0; d < Dim; ++d) {
+                hvector[d] = 1./std::pow(mesh.getMeshSpacing(d), 2);
+                sum += hvector[d];
+            }
+            for (unsigned i = 0; i<s_m; ++i)
+                res = res*(0.5/sum);
+            res = u/(Dim*2.0); // For testing purposes
             return res;
         }
         std::string get_type() override {return type_m;};
     protected:
         std::string type_m;
+        unsigned s_m;
     };
 
     /*!
-    * User interface of polynomial_newton_preconditioner
-    * @param u field
+    * Polynomial Newton Preconditioner
+    * Computes iteratively approximations for A^-1
     */
     template <typename Field>
     struct polynomial_newton_preconditioner : public preconditioner<Field> {
@@ -123,7 +136,7 @@ namespace ippl{
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        polynomial_newton_preconditioner(unsigned int max_level = 6 , double zeta = 1e-5, double* eta = nullptr) :
+        polynomial_newton_preconditioner(unsigned int max_level = 6 , double zeta = 1e-2, double* eta = nullptr) :
         type_m("polynomial_newton"),
         level_m(max_level),
         zeta_m(zeta),
@@ -148,29 +161,48 @@ namespace ippl{
         }
 
         Field recursive_preconditioner(Field& u,unsigned int level) {
-            u.fillHalo();
-            BConds <Field, Dim> &bcField = u.getFieldBC();
-            bcField.apply(u);
-
             mesh_type &mesh = u.get_mesh();
             layout_type &layout = u.getLayout();
             //Define Etas if not defined yet
             if (eta_m == nullptr){
-                /*
-                Field x_0(mesh , layout);
-                x_0 = u.deepCopy() + 0.001;
-                beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(poisson , Field), x_0);
-                x_0 = u.deepCopy() + 0.001;
-                // Trick for computing the smallest Eigenvalue of an SPD Matrix
-                alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(poisson , Field) , x_0 , beta_m);
-                 */
-
-                //Precomputed eigenvalues for teh  3 dimensional poisson
-                beta_m = 11.6382;
-                alpha_m = 0.61844;
+                if(analytical_m) {
+                    //Analytical eigenvalues for the 3 dimensional laplace operator
+                    beta_m = 0;
+                    alpha_m = 0;
+                    unsigned long n;
+                    double h;
+                    for (unsigned int d = 0; d < Dim; ++d) {
+                        n = mesh.getGridsize(d);
+                        h = mesh.getMeshSpacing(d);
+                        double local_min = 4/std::pow(h,2); // theoretical maximum
+                        double local_max = 0;
+                        double test;
+                        for (unsigned int i = 1; i<n; ++i) {
+                            test = 4. / std::pow(h, 2) * std::pow(std::sin(i* M_PI * h/2.), 2);
+                            if (test > local_max){
+                                local_max = test;
+                            }
+                            if (test < local_min){
+                                local_min = test;
+                            }
+                        }
+                        beta_m += local_max;
+                        alpha_m += local_min;
+                    }
+                    std::cout << "Analytical results: alpha : " << alpha_m << std::endl;
+                    std::cout << "Analytical results: beta : " << beta_m << std::endl;
+                }
+                else{
+                    Field x_0(mesh , layout);
+                    x_0 = u.deepCopy() + 0.1;
+                    beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0);
+                    x_0 = u.deepCopy() + 0.1;
+                    // Trick for computing the smallest Eigenvalue of an SPD Matrix
+                    alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace , Field) , x_0 , beta_m);
+                }
 
                 eta_m = new double[level_m+1];
-                eta_m[0] = 2.0/(alpha_m + beta_m) * 1.0/(1.0+zeta_m);
+                eta_m[0] = 2.0/((alpha_m + beta_m) * (1.0+zeta_m));
                 if (level_m > 0){
                     eta_m[1] = 2.0/(1.0+2*alpha_m*eta_m[0] - alpha_m*eta_m[0]*alpha_m*eta_m[0]);
                 }
@@ -180,14 +212,14 @@ namespace ippl{
             }
             Field res(mesh, layout);
             if (level == 0) {
-                res = eta_m[0] / (2.0 * Dim) * u; // Acceleration from Section 3.
+                res = eta_m[0]* u;
                 return res;
             }
             Field PAPr(mesh, layout);
             Field Pr(mesh, layout);
 
             Pr = recursive_preconditioner(u, level - 1);
-            PAPr = poisson(Pr);
+            PAPr = -laplace(Pr);
             PAPr = recursive_preconditioner(PAPr, level - 1);
             res = eta_m[level] * (2.0 * Pr - PAPr);
             return res;
@@ -206,16 +238,20 @@ namespace ippl{
         double beta_m;
         double zeta_m;
         double* eta_m = nullptr;
+        bool analytical_m = true;
 
     };
-
+    /*!
+    * Polynomial Chebyshev Preconditioner
+    * Computes iteratively approximations for A^-1
+    */
     template <typename Field>
     struct polynomial_chebyshev_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        polynomial_chebyshev_preconditioner(unsigned int degree = 63 , double zeta=1e-5) :
+        polynomial_chebyshev_preconditioner(unsigned int degree = 63 , double zeta=1e-3) :
                 type_m("polynomial_chebyshev"),
                 degree_m(degree),
                 zeta_m(zeta),
@@ -243,11 +279,6 @@ namespace ippl{
             }
 
         Field operator()(Field& r) override{
-
-            r.fillHalo();
-            BConds<Field, Dim>& bcField = r.getFieldBC();
-            bcField.apply(r);
-
             mesh_type& mesh = r.get_mesh();
             layout_type& layout = r.getLayout();
 
@@ -259,19 +290,41 @@ namespace ippl{
 
             // Define rho if not defined yet
             if (rho_m == nullptr) {
-                /*
-                Field x_0(mesh , layout);
-                x_0 = r.deepCopy() + 0.001;
-                beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(poisson, Field), x_0);
-                x_0 = r.deepCopy() + 0.001;
-
-                // Trick for computing the smallest Eigenvalue of SPD Matrix
-                alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(poisson, Field), x_0, beta_m);
-                */
-
-                //Precomputed eigenvalues for teh  3 dimensional poisson
-                beta_m = 11.6382;
-                alpha_m = 0.61844;
+                if(analytical_m) {
+                    //Analytical eigenvalues for the 3 dimensional laplace operator
+                    beta_m = 0;
+                    alpha_m = 0;
+                    unsigned long n;
+                    double h;
+                    for (unsigned int d = 0; d < Dim; ++d) {
+                        n = mesh.getGridsize(d);
+                        h = mesh.getMeshSpacing(d);
+                        double local_min = 4/std::pow(h,2); // theoretical maximum
+                        double local_max = 0;
+                        double test;
+                        for (unsigned int i = 1; i<n; ++i) {
+                            test = 4. / std::pow(h, 2) * std::pow(std::sin(i* M_PI * h/2.), 2);
+                            if (test > local_max){
+                                local_max = test;
+                            }
+                            if (test < local_min){
+                                local_min = test;
+                            }
+                        }
+                        beta_m += local_max;
+                        alpha_m += local_min;
+                    }
+                    std::cout << "Analytical results: alpha : " << alpha_m << std::endl;
+                    std::cout << "Analytical results: beta : " << beta_m << std::endl;
+                }
+                else {
+                    Field x_0(mesh, layout);
+                    x_0 = r.deepCopy() + 0.1;
+                    beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0);
+                    x_0 = r.deepCopy() + 0.1;
+                    // Trick for computing the smallest Eigenvalue of SPD Matrix
+                    alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0, beta_m);
+                }
                 theta_m = (beta_m + alpha_m) / 2.0 * (1.0 + zeta_m);
                 delta_m = (beta_m - alpha_m) / 2.0;
                 sigma_m = theta_m / delta_m;
@@ -285,9 +338,8 @@ namespace ippl{
             res = r.deepCopy();
 
             x_old = r/theta_m;
-            A = poisson(r);
+            A = -laplace(r);
             x = 2.0*rho_m[1]/delta_m * (2.0*r - A/theta_m);
-
 
             if (degree_m == 0){
                 return x_old;
@@ -297,7 +349,7 @@ namespace ippl{
                 return x;
             }
             for (unsigned int i = 2; i<degree_m+1; ++i){
-                A = poisson(x);
+                A = -laplace(x);
                 z = 2.0/delta_m * (r - A);
                 res = rho_m[i] * (2*sigma_m*x - rho_m[i-1]*x_old + z);
                 x_old = x.deepCopy();
@@ -316,6 +368,7 @@ namespace ippl{
         double alpha_m;
         double zeta_m;
         double* rho_m = nullptr;
+        bool analytical_m = true;
     };
 
     /*!
@@ -326,7 +379,7 @@ namespace ippl{
     * @param tol tolerance
     */
     template<typename Functor , typename Field>
-    double powermethod(Functor&& f, Field& x_0 , unsigned int max_iter = 5000, double tol = 1e-4){
+    double powermethod(Functor&& f, Field& x_0 , unsigned int max_iter = 5000, double tol = 1e-3){
         unsigned int i=0;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
@@ -348,8 +401,9 @@ namespace ippl{
         if(i == max_iter) {
             std::cerr << "Powermethod did not converge, lambda_max : " << lambda << ", error : " << error << std::endl;
         }
-        std::cout << "Powermethod did converge, lambda_max : " << lambda << std::endl;
-
+        else {
+            std::cout << "Powermethod did converge, lambda_max : " << lambda << std::endl;
+        }
         return lambda;
     }
     /*!
@@ -361,7 +415,7 @@ namespace ippl{
     * @param tol tolerance
     */
     template<typename Functor , typename Field>
-    double adapted_powermethod(Functor&& f, Field& x_0 ,double lambda_max, unsigned int max_iter = 5000, double tol = 1e-4){
+    double adapted_powermethod(Functor&& f, Field& x_0 ,double lambda_max, unsigned int max_iter = 5000, double tol = 1e-3){
         unsigned int i=0;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
@@ -385,40 +439,11 @@ namespace ippl{
         if(i == max_iter) {
             std::cerr << "Powermethod did not converge, lambda_min : " << lambda  << ", error : " << error << std::endl;
         }
-        std::cout << "Powermethod did converge, lambda_min : " << lambda << std::endl;
+        else {
+            std::cout << "Powermethod did converge, lambda_min : " << lambda << std::endl;
+        }
         return lambda;
     }
-
-    /*!
-    * Poisson Preconditioner
-    * M^-1 = HH^T
-    * H = I-L*diag{A}^-1
-    * Here we implement M^{-1}*u matrix-free
-    * This is a work in progress not working yet
-
-    template <typename... Idx>
-    KOKKOS_INLINE_FUNCTION auto poisson(const Idx... args) const {
-        using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-        using T          = typename E::Mesh_t::value_type;
-        T res            = 0;
-        // Apply HH^T
-        double factor = 1.0/(2.0*dim);
-        index_type coords[dim] = {args...};
-        auto &&center = apply(u_m, coords);
-        //res += (1+factor*factor) * center;
-        for (unsigned d = 0; d < dim; d++) {
-            index_type coords[dim] = {args...};
-
-            coords[d] -= 1;
-            auto &&left = apply(u_m, coords);
-
-            coords[d] += 2;
-            auto &&right = apply(u_m, coords);
-            res += (factor*left + (1+factor*factor) * center +  factor*right);
-        }
-        return res;
-    }
-    */
 
 } //namespace ippl
 

@@ -27,7 +27,7 @@ namespace ippl {
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
         virtual void setOperator(operator_type op) {op_m = std::move(op); }
-        virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="", [[maybe_unused]] unsigned level = 7, [[maybe_unused]] unsigned depth = 63) {}
+        virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="", [[maybe_unused]] unsigned level = 3, [[maybe_unused]] unsigned depth = 7) {}
                 /*!
                  * Query how many iterations were required to obtain the solution
                  * the last time this solver was used
@@ -128,7 +128,6 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
 
-        //TODO: Write rule of three constructors
         PCG(): preconditioner_m(nullptr){};
         ~PCG(){
             if (preconditioner_m != nullptr){
@@ -149,7 +148,7 @@ namespace ippl {
         * @param op A function that returns OpRet and takes a field of the LHS type
         */
         void setOperator(operator_type op) override { BaseCG::op_m = std::move(op); }
-        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 6, unsigned degree = 63) override{
+        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 4, unsigned degree = 15) override{
                     if (preconditioner_type == "jacobi"){
                         preconditioner_m = new jacobi_preconditioner<FieldLHS>();
                     }
@@ -159,6 +158,9 @@ namespace ippl {
                     else if (preconditioner_type == "chebyshev"){
                         preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree);
                     }
+                    /*else if (preconditioner_type == "incomplete_poisson"){
+                        preconditioner_m = new incomplete_poisson_preconditioner<FieldLHS>();
+                    }*/
                     else{
                         preconditioner_m = new preconditioner<FieldLHS>();
                     }
@@ -262,7 +264,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
 
-        void setPreconditioner(std::string preconditioner_type , unsigned level = 7, unsigned depth = 63) override {
+        void setPreconditioner(std::string preconditioner_type , unsigned level = 3, unsigned depth = 7) override {
             if (preconditioner_type == "jacobi"){
                 BasePCG::preconditioner_m = jacobi_preconditioner<FieldLHS>();
             }
@@ -287,7 +289,7 @@ namespace ippl {
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
-            //Enhancing_data_locality_of_the_conjugate_gradient_method_for_high-order_
+            // Enhancing_data_locality_of_the_conjugate_gradient_method_for_high-order_
             // matrix-free_finite-element_implementations
             // https://www.researchgate.net/publication/361849071
             lhs_type r(mesh, layout);
@@ -372,7 +374,6 @@ namespace ippl {
             }
         }
     };
-
 };// namespace ippl
 
 #endif

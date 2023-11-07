@@ -59,6 +59,10 @@ int main(int argc, char* argv[]) {
                         solver = "preconditioned";
                         preconditioner_type = "chebyshev";
                     }
+                    if(argv[2][0] == 'i'){
+                        solver = "preconditioned";
+                        preconditioner_type = "incomplete_poisson";
+                    }
                 }
                 if (argc >= 4){
                         if(argv[3][0] == 'j'){
@@ -73,6 +77,10 @@ int main(int argc, char* argv[]) {
                             solver = "preconditioned";
                             preconditioner_type = "chebyshev";
                         }
+                    if(argv[3][0] == 'i'){
+                        solver = "preconditioned";
+                        preconditioner_type = "incomplete_poisson";
+                    }
                 }
             }
         }
