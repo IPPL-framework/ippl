@@ -18,7 +18,7 @@
 
 namespace ippl{
     namespace detail {
-
+        //Implements the poisson matrix acting on a d dimensional field
         template <typename E>
         struct meta_poisson: public Expression<meta_poisson<E>,
                 sizeof(E)> {
@@ -94,7 +94,6 @@ namespace ippl{
     * Jacobi preconditioner
     * M = diag{A}
     */
-
     template<typename Field>
     struct jacobi_preconditioner: public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
@@ -115,9 +114,9 @@ namespace ippl{
                 hvector[d] = 1./std::pow(mesh.getMeshSpacing(d), 2);
                 sum += hvector[d];
             }
-            for (unsigned i = 0; i<s_m; ++i)
-                res = res*(0.5/sum);
-            res = u/(Dim*2.0); // For testing purposes
+            for (unsigned i = 0; i<s_m; ++i) {
+                res = res * (0.5 / sum);
+            }
             return res;
         }
         std::string get_type() override {return type_m;};
@@ -166,7 +165,8 @@ namespace ippl{
             //Define Etas if not defined yet
             if (eta_m == nullptr){
                 if(analytical_m) {
-                    //Analytical eigenvalues for the 3 dimensional laplace operator
+                    // Analytical eigenvalues for the d dimensional laplace operator
+                    // Going brute force through all possible eigenvalues seems to be the only way to find max and min
                     beta_m = 0;
                     alpha_m = 0;
                     unsigned long n;
@@ -291,7 +291,8 @@ namespace ippl{
             // Define rho if not defined yet
             if (rho_m == nullptr) {
                 if(analytical_m) {
-                    //Analytical eigenvalues for the 3 dimensional laplace operator
+                    // Analytical eigenvalues for the d dimensional laplace operator
+                    // Going brute force through all possible eigenvalues seems to be the only way to find max and min
                     beta_m = 0;
                     alpha_m = 0;
                     unsigned long n;
@@ -410,7 +411,7 @@ namespace ippl{
     * Computes the smallest Eigenvalue of the Functor f (must be SPD)
     * @param f Functor
     * @param x_0 initial guess
-    * * @param lambda_max largest Eigenvalue
+    * @param lambda_max largest Eigenvalue
     * @param max_iter maximum number of iterations
     * @param tol tolerance
     */

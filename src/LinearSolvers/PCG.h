@@ -253,6 +253,7 @@ namespace ippl {
         preconditioner<FieldLHS>* preconditioner_m;
     };
 
+    /* Prototype of new PCG algorithm https://www.researchgate.net/publication/361849071
     template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class EnhancedPCG : public PCG<OpRet, PreRet, FieldLHS, FieldRHS> {
         using BaseCG = CG<OpRet , PreRet, FieldLHS, FieldRHS>;
@@ -336,7 +337,7 @@ namespace ippl {
 
             lhs_type q(mesh, layout);
 
-            while (BaseCG::iterations_m < maxIterations /*&& BaseCG::residueNorm > tolerance*/) {
+            while (BaseCG::iterations_m < maxIterations) {
                 ++BaseCG::iterations_m;
                 if (BaseCG::iterations_m > 1 && BaseCG::iterations_m % 2) {
                     lhs = lhs + alpha * p + (alpha_2 / beta_2) * (p - Minvr);
@@ -373,7 +374,8 @@ namespace ippl {
                 lhs = lhs - avg;
             }
         }
-    };
+    };*/
+
 };// namespace ippl
 
 #endif
