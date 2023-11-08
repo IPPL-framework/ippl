@@ -5,7 +5,7 @@
 // and the exact solution is the gravitational potential of a sphere.
 //   Usage:
 //     srun ./TestSphere <algorithm> --info 5
-//     algorithm = "HOCKNEY", "VICO", or "VICO_2", types of open BC algorithms
+//     algorithm = "HOCKNEY", "VICO", or "DCT_VICO", types of open BC algorithms
 //
 //     Example:
 //       srun ./TestSphere HOCKNEY --info 5
@@ -143,8 +143,8 @@ int main(int argc, char* argv[]) {
                 params.add("algorithm", Solver_t::HOCKNEY);
             } else if (algorithm == "VICO") {
                 params.add("algorithm", Solver_t::VICO);
-            } else if (algorithm == "VICO_2") {
-                params.add("algorithm", Solver_t::VICO_2);
+            } else if (algorithm == "DCT_VICO") {
+                params.add("algorithm", Solver_t::DCT_VICO);
             } else {
                 throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
             }

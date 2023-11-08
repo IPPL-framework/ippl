@@ -11,7 +11,7 @@
 //     reshape   = "pencils" or "slabs" (heffte parameter)
 //     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
 //     reorder   = "reorder" or "no-reorder" (heffte parameter)
-//     algorithm = "HOCKNEY", "VICO", or "VICO_2", types of open BC algorithms
+//     algorithm = "HOCKNEY", "VICO", or "DCT_VICO", types of open BC algorithms
 //
 //     For more info on the heffte parameters, see:
 //     https://github.com/icl-utk-edu/heffte
@@ -228,8 +228,8 @@ int main(int argc, char* argv[]) {
             params.add("algorithm", Solver_t::HOCKNEY);
         } else if (algorithm == "VICO") {
             params.add("algorithm", Solver_t::VICO);
-        } else if (algorithm == "VICO_2") {
-            params.add("algorithm", Solver_t::VICO_2);
+        } else if (algorithm == "DCT_VICO") {
+            params.add("algorithm", Solver_t::DCT_VICO);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
         }

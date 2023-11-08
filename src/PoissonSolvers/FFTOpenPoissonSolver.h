@@ -159,7 +159,7 @@ namespace ippl {
                              typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
 
-        // needed for improved Vico-Greengard (VICO_2.0)
+        // needed for improved Vico-Greengard (DCT VICO)
         void communicateVico(Vector<int, Dim> size, typename Field_t::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
                              typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
@@ -228,7 +228,7 @@ namespace ippl {
 
         NDIndex<Dim> domain4_m;
 
-        // members for improved Vico-Greengard (VICO_2.0)
+        // members for improved Vico-Greengard (DCT VICO)
         Field_t grn2n1_m;
 
         std::unique_ptr<FFT<Cos1Transform, Field_t>> fft2n1_m;
