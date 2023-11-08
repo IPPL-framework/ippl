@@ -17,7 +17,7 @@ namespace ippl {
          *
          * @return unsigned - Degree of exactness
          */
-        unsigned getDegree() const override;
+        std::size_t getDegree() const override;
 
     protected:
         Vector<T, NumNodes1D> getIntegrationNodes() const override;

@@ -70,12 +70,13 @@ namespace ippl {
 
         virtual void evaluateLoadVector(Vector<T, NumGlobalDOFs>& b) const = 0;
 
-    protected:
         ///////////////////////////////////////////////////////////////////////
         /// Mesh and Element operations ///////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
         std::size_t numElements() const;
+
+        std::size_t numElementsInDim(const index_t& dim) const;
 
         nd_index_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
@@ -89,7 +90,7 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
+        // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
         virtual index_t getLocalDOFIndex(const index_t& global_dof_index,
                                          const index_t& element_index) const = 0;

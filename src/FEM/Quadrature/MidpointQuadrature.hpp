@@ -24,7 +24,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    unsigned MidpointQuadrature<T, NumNodes1D, ElementType>::getDegree() const {
+    std::size_t MidpointQuadrature<T, NumNodes1D, ElementType>::getDegree() const {
         return 1;
     }
 

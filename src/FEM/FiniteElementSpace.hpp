@@ -30,6 +30,15 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
+    std::size_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::numElementsInDim(
+        const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t&
+            dim) const {
+        return this->mesh_m.getGridsize(dim) - 1u;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
+              typename QuadratureType>
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::nd_index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::getMeshVertexNDIndex(
         const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t&

@@ -17,16 +17,12 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(
         const Vector<T, numGlobalDOFs>& x, Vector<T, numGlobalDOFs>& resultAx) const {
-        const std::size_t& numElementDOFs = this->numElementDOFs;
-
-        const std::size_t numElementIntegrationPoints =
-            this->quadrature_m.numElementIntegrationPoints();
-
         // List of quadrature weights
-        auto w = this->quadrature_m.getWeightsForRefElement();
+        Vector<T, QuadratureType::numElementNodes> w = this->quadrature_m.getWeightsForRefElement();
 
         // List of quadrature nodes
-        auto q = this->quadrature_m.getIntegrationNodesForRefElement();
+        Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
 
         // Inverse Transpose Transformation Jacobian
         Vector<T, Dim> DPhiInvT = this->ref_element_m.getInverseTransposeTransformationJacobian(
@@ -37,40 +33,42 @@ namespace ippl {
             this->getElementMeshVertices(0)));
 
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<gradient_vec_t, numElementDOFs>, numElementIntegrationPoints> grad_b_q;
-        for (index_t k = 0; k < numElementIntegrationPoints; ++k) {
-            for (index_t i = 0; i < numElementDOFs; ++i) {
+        Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
+            grad_b_q;
+        for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (index_t i = 0; i < this->numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementBasisGradient(i, q[k]);
             }
         }
 
         // Allocate memory for the element matrix
-        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+        Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
 
-        for (index_t element_index = 0; element_index < this->numElements; ++element_index) {
-            Vector<index_t, numElementDOFs> global_dofs;
-            Vector<index_t, numElementDOFs> local_dofs;
+        for (index_t element_index = 0; element_index < this->numElements(); ++element_index) {
+            Vector<index_t, this->numElementDOFs> global_dofs;
+            Vector<index_t, this->numElementDOFs> local_dofs;
 
             // 1. Compute the Galerkin element matrix A_K
-            for (index_t i = 0; i < numElementDOFs; ++i) {
-                for (index_t j = 0; j < numElementDOFs; ++j) {
+            for (index_t i = 0; i < this->numElementDOFs; ++i) {
+                for (index_t j = 0; j < this->numElementDOFs; ++j) {
                     A_K[i][j] = 0.0;
 
-                    for (index_t k = 0; k < numElementIntegrationPoints; ++k) {
-                        A_K[i][j] += w[k]
-                                     * ((DPhiInvT * grad_b_q[k][j]) * (DPhiInvT * grad_b_q[k][i]))
-                                     * absDetDPhi;
+                    for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        A_K[i][j] +=
+                            w[k]
+                            * dot((DPhiInvT * grad_b_q[k][j]), (DPhiInvT * grad_b_q[k][i])).apply()
+                            * absDetDPhi;
                     }
                 }
             }
 
             // 2. Compute the contribution to resultAx = A*x with A_K
-            for (index_t i = 0; i < numElementDOFs; ++i) {
+            for (index_t i = 0; i < this->numElementDOFs; ++i) {
                 index_t I = global_dofs[i];
-                for (index_t j = 0; j < numElementDOFs; ++j) {
+                for (index_t j = 0; j < this->numElementDOFs; ++j) {
                     index_t J = global_dofs[j];
 
-                    resultAx[i] += A_K[i][j] * x[j];
+                    resultAx[I] += A_K[i][j] * x[J];
                 }
             }
         }
@@ -87,12 +85,13 @@ namespace ippl {
     /// Degree of Freedom operations //////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::point_t
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getCoordsOfDOF(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& dof_index) const {
-        return this->mesh_m.getVertexPosition(makeNDIndex(dof_index));
-    }
+    // template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
+    // LagrangeSpace<T, Dim, Order, QuadratureType>::point_t
+    // LagrangeSpace<T, Dim, Order, QuadratureType>::getCoordsOfDOF(
+    //     const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& dof_index) const {
+    //     // TODO fix, this just did it for the vertex, not the DOF itself
+    //     return this->mesh_m.getVertexPosition(makeNDIndex(dof_index));
+    // }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
@@ -100,7 +99,7 @@ namespace ippl {
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& global_dof_index,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
         // TODO implement
-        return 0;
+        return global_dof_index + element_index;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
@@ -109,25 +108,104 @@ namespace ippl {
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& local_dof_index,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
         // TODO implement
-        return 0;
+        return local_dof_index + element_index;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType>::index_t,
            LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndices(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
-        // TODO implement
-        return Vector<index_t, numElementDOFs>();
+    LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndices() const {
+        Vector<index_t, numElementDOFs> localDOFs;
+
+        for (std::size_t dof = 0; dof < numElementDOFs; ++dof) {
+            localDOFs[dof] = dof;
+        }
+
+        return localDOFs;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType>::index_t,
            LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>
     LagrangeSpace<T, Dim, Order, QuadratureType>::getGlobalDOFIndices(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
-        // TODO implement
-        return Vector<index_t, numElementDOFs>();
+        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex) const {
+        Vector<index_t, this->numElementDOFs> globalDOFs(0);
+
+        // get element pos
+        nd_index_t elementPos = this->getElementNDIndex(elementIndex);
+
+        // get smallest global DOF (lower left corner in 2D)
+        index_t smallestGlobalDOF = elementPos[0] * Order;
+
+        if (Dim >= 2) {
+            smallestGlobalDOF += elementPos[1] * this->mesh_m.getGridsize(1) * Order;
+        }
+
+        if (Dim >= 3) {
+            smallestGlobalDOF +=
+                elementPos[2] * (this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2)) * Order;
+        }
+
+        // Add the vertex DOFs
+        globalDOFs[0] = smallestGlobalDOF;
+        globalDOFs[1] = smallestGlobalDOF + Order;
+
+        if (Dim >= 2) {
+            globalDOFs[2] = globalDOFs[1] + this->mesh_m.getGridsize(1) * Order;
+            globalDOFs[3] = globalDOFs[0] + this->mesh_m.getGridsize(1) * Order;
+        }
+        if (Dim >= 3) {
+            globalDOFs[4] =
+                globalDOFs[0] + this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2) * Order;
+            globalDOFs[5] =
+                globalDOFs[1] + this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2) * Order;
+            globalDOFs[6] =
+                globalDOFs[2] + this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2) * Order;
+            globalDOFs[7] =
+                globalDOFs[3] + this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2) * Order;
+        }
+
+        if (Order > 1) {
+            // If the order is greater than 1, there are edge and face DOFs, otherwise the work is
+            // done
+
+            // Add the edge DOFs
+            if (Dim >= 2) {
+                for (std::size_t i = 0; i < Order - 1; ++i) {
+                    globalDOFs[8 + i] = globalDOFs[0] + i + 1;
+                    globalDOFs[8 + Order - 1 + i] =
+                        globalDOFs[1] + (i + 1) * this->mesh_m.getGridsize(1);
+                    globalDOFs[8 + 2 * (Order - 1) + i] = globalDOFs[2] - (i + 1);
+                    globalDOFs[8 + 3 * (Order - 1) + i] =
+                        globalDOFs[3] - (i + 1) * this->mesh_m.getGridsize(1);
+                }
+            }
+            if (Dim >= 3) {
+                // TODO
+            }
+
+            // Add the face DOFs
+            if (Dim >= 2) {
+                for (std::size_t i = 0; i < Order - 1; ++i) {
+                    for (std::size_t j = 0; j < Order - 1; ++j) {
+                        // TODO CHECK
+                        globalDOFs[8 + 4 * (Order - 1) + i * (Order - 1) + j] =
+                            globalDOFs[0] + (i + 1) + (j + 1) * this->mesh_m.getGridsize(1);
+                        globalDOFs[8 + 4 * (Order - 1) + (Order - 1) * (Order - 1) + i * (Order - 1)
+                                   + j] =
+                            globalDOFs[1] + (i + 1) + (j + 1) * this->mesh_m.getGridsize(1);
+                        globalDOFs[8 + 4 * (Order - 1) + 2 * (Order - 1) * (Order - 1)
+                                   + i * (Order - 1) + j] =
+                            globalDOFs[2] - (i + 1) + (j + 1) * this->mesh_m.getGridsize(1);
+                        globalDOFs[8 + 4 * (Order - 1) + 3 * (Order - 1) * (Order - 1)
+                                   + i * (Order - 1) + j] =
+                            globalDOFs[3] - (i + 1) + (j + 1) * this->mesh_m.getGridsize(1);
+                    }
+                }
+            }
+        }
+
+        return globalDOFs;
     }
 
     ///////////////////////////////////////////////////////////////////////

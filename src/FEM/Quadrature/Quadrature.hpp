@@ -6,7 +6,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    Vector<T, Quadrature<T, NumNodes1D, ElementType>::numElementDOFs>
+    Vector<T, Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
         Vector<T, NumNodes1D> w = this->getWeights();
 
@@ -22,7 +22,7 @@ namespace ippl {
             // Update nd_index for next iteration
             // Increment the nd_index variable in the first dimension, or if it
             // is already at the maximum value reset it and, go to the higher dimension
-            for (int d = 0; d < ElementType::dim; ++d) {
+            for (unsigned d = 0; d < ElementType::dim; ++d) {
                 if (++nd_index[d] < NumNodes1D)
                     break;
                 nd_index[d] = 0;
@@ -34,7 +34,7 @@ namespace ippl {
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<Vector<T, Quadrature<T, NumNodes1D, ElementType>::dim>,
-           Quadrature<T, NumNodes1D, ElementType>::numElementDOFs>
+           Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
         Vector<T, NumNodes1D> q = this->getIntegrationNodes();
 

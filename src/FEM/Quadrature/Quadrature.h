@@ -11,7 +11,7 @@
 
 #include "FEM/Elements/Element.h"
 
-inline constexpr unsigned getNumElementDOFs(unsigned NumNodes1D, unsigned Dim) {
+inline constexpr unsigned getNumElementNodes(unsigned NumNodes1D, unsigned Dim) {
     return static_cast<unsigned>(pow(static_cast<double>(NumNodes1D), static_cast<double>(Dim)));
 }
 
@@ -24,9 +24,10 @@ namespace ippl {
     // requires IsElement<ElementType>
     class Quadrature {
     public:
-        static constexpr unsigned numNodes1D     = NumNodes1D;
-        static constexpr unsigned dim            = ElementType::dim;
-        static constexpr unsigned numElementDOFs = getNumElementDOFs(NumNodes1D, ElementType::dim);
+        static constexpr unsigned numNodes1D = NumNodes1D;
+        static constexpr unsigned dim        = ElementType::dim;
+        static constexpr unsigned numElementNodes =
+            getNumElementNodes(NumNodes1D, ElementType::dim);
 
         Quadrature(const ElementType& ref_element);
 
@@ -44,14 +45,14 @@ namespace ippl {
          *
          * @return Vector<T, NumNodes1D>
          */
-        Vector<T, numElementDOFs> getWeightsForRefElement() const;
+        Vector<T, numElementNodes> getWeightsForRefElement() const;
 
         /**
          * @brief Get the integration nodes for the reference element.
          *
          * @return Vector<Vector<T, Dim>, NumNodes1D>
          */
-        Vector<Vector<T, dim>, numElementDOFs> getIntegrationNodesForRefElement() const;
+        Vector<Vector<T, dim>, numElementNodes> getIntegrationNodesForRefElement() const;
 
     protected:
         virtual Vector<T, NumNodes1D> getIntegrationNodes() const = 0;

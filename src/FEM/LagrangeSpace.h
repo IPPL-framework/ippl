@@ -82,12 +82,11 @@ namespace ippl {
 
         void evaluateLoadVector(Vector<T, numGlobalDOFs>& b) const override;
 
-    protected:
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        point_t getCoordsOfDOF(const index_t& dof_index) const override;
+        // point_t getCoordsOfDOF(const index_t& dof_index) const override;
 
         index_t getLocalDOFIndex(const index_t& global_dof_index,
                                  const index_t& element_index) const override;
@@ -95,8 +94,7 @@ namespace ippl {
         index_t getGlobalDOFIndex(const index_t& local_dof_index,
                                   const index_t& element_index) const override;
 
-        Vector<index_t, numElementDOFs> getLocalDOFIndices(
-            const index_t& element_index) const override;
+        Vector<index_t, numElementDOFs> getLocalDOFIndices() const override;
 
         Vector<index_t, numElementDOFs> getGlobalDOFIndices(
             const index_t& element_index) const override;
@@ -111,7 +109,7 @@ namespace ippl {
         gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
                                                        const point_t& localPoint) const override;
 
-    private:
+    protected:
         NDIndex<Dim> makeNDIndex(const Vector<T, Dim>& indices) const;
     };
 
