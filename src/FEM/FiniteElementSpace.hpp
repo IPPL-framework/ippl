@@ -110,7 +110,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
-                       QuadratureType>::mesh_element_vertex_vec_t
+                       QuadratureType>::mesh_element_vertex_index_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
         getElementMeshVertices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
@@ -121,13 +121,13 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
-                       QuadratureType>::mesh_element_vertex_vec_t
+                       QuadratureType>::mesh_element_vertex_index_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
         getElementMeshVertices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
                                      QuadratureType>::nd_index_t& element_indices) const {
         // Vector to store the vertex indices for the element
-        mesh_element_vertex_vec_t vertex_indices(0);
+        mesh_element_vertex_index_vec_t vertex_indices(0);
 
         // TODO check, this might fail as mesh_m returns a Vector<T, Dim>
         const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();

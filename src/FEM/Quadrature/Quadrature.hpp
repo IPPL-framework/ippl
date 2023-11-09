@@ -49,7 +49,7 @@ namespace ippl {
             // Update nd_index for next iteration
             // Increment the nd_index variable in the first dimension, or if it
             // is already at the maximum value reset it and, go to the higher dimension
-            for (int d = 0; d < ElementType::dim; ++d) {
+            for (unsigned d = 0; d < ElementType::dim; ++d) {
                 if (++nd_index[d] < NumNodes1D)
                     break;
                 nd_index[d] = 0;

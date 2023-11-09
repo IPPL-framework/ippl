@@ -217,13 +217,14 @@ namespace ippl {
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& localDOF,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::point_t& localPoint) const {
         // Assert that the local vertex index is valid.
-        assert(localDOF < numElementVertices
+        assert(localDOF < this->numElementDOFs
                && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
                && "Point is not in reference element");
 
         // Get the local vertex indices for the local vertex index.
+        // TODO fix not order independent, only works for order 1
         const mesh_element_vertex_vec_t local_vertex_indices =
             this->ref_element_m.getLocalVertices()[localDOF];
 
@@ -249,14 +250,17 @@ namespace ippl {
         // TODO assumes 1st order Lagrange
 
         // Assert that the local vertex index is valid.
-        assert(localDOF < numElementVertices && "The local vertex index is invalid");
+        assert(localDOF < this->numElementDOFs && "The local vertex index is invalid");
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
                && "Point is not in reference element");
 
-        // Get the local vertex indices for the local vertex index.
-        const mesh_element_vertex_vec_t local_vertex_indices =
-            this->ref_element_m.getLocalVertices()[localDOF];
+        // Get the local dof nd_index
+        // TODO fix not order independent, only works for order 1
+        const mesh_element_vertex_vec_t local_vertex_points =
+            this->ref_element_m.getLocalVertices();
+
+        const point_t& local_vertex_point = local_vertex_points[localDOF];
 
         gradient_vec_t gradient(1);
 
@@ -270,13 +274,13 @@ namespace ippl {
 
             for (std::size_t d2 = 0; d2 < Dim; d2++) {
                 if (d2 == d) {
-                    if (localPoint[d] < local_vertex_indices[d]) {
+                    if (localPoint[d] < local_vertex_point[d]) {
                         product *= 1;
                     } else {
                         product *= -1;
                     }
                 } else {
-                    if (localPoint[d2] < local_vertex_indices[d2]) {
+                    if (localPoint[d2] < local_vertex_point[d2]) {
                         product *= localPoint[d2];
                     } else {
                         product *= 1.0 - localPoint[d2];

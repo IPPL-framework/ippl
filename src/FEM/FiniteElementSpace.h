@@ -52,7 +52,9 @@ namespace ippl {
         typedef Vector<T, Dim> gradient_vec_t;
 
         // A vector of vertex indices of the mesh
-        typedef Vector<index_t, numElementVertices> mesh_element_vertex_vec_t;
+        typedef Vector<index_t, numElementVertices> mesh_element_vertex_index_vec_t;
+
+        typedef Vector<point_t, numElementVertices> mesh_element_vertex_point_vec_t;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
@@ -80,11 +82,18 @@ namespace ippl {
 
         nd_index_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
-        nd_index_t getElementNDIndex(const index_t& element_index) const;
+        nd_index_t getElementNDIndex(const index_t& elementIndex) const;
 
-        mesh_element_vertex_vec_t getElementMeshVertices(const index_t& element_index) const;
+        mesh_element_vertex_index_vec_t getElementMeshVertices(const index_t& elementIndex) const;
 
-        mesh_element_vertex_vec_t getElementMeshVertices(const nd_index_t& element_indices) const;
+        mesh_element_vertex_index_vec_t getElementMeshVertices(
+            const nd_index_t& elementNDIndex) const;
+
+        mesh_element_vertex_point_vec_t getElementMeshVertexPoints(
+            const index_t& elementIndex) const;
+
+        mesh_element_vertex_point_vec_t getElementMeshVertexPoints(
+            const nd_index_t& elementNDIndex) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
@@ -93,15 +102,15 @@ namespace ippl {
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
         virtual index_t getLocalDOFIndex(const index_t& global_dof_index,
-                                         const index_t& element_index) const = 0;
+                                         const index_t& elementIndex) const = 0;
 
         virtual index_t getGlobalDOFIndex(const index_t& local_dof_index,
-                                          const index_t& element_index) const = 0;
+                                          const index_t& elementIndex) const = 0;
 
         virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const = 0;
 
         virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
-            const index_t& element_index) const = 0;
+            const index_t& elementIndex) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
