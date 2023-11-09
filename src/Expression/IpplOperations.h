@@ -70,6 +70,7 @@ namespace ippl {
     template <typename E>                                                   \
     struct fun : public detail::Expression<fun<E>, sizeof(E)> {             \
         constexpr static unsigned dim = E::dim;                             \
+        using value_type              = typename E::value_type;             \
                                                                             \
         KOKKOS_FUNCTION                                                     \
         fun(const E& u)                                                     \
@@ -309,6 +310,7 @@ namespace ippl {
                   meta_grad<E>,
                   sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
             constexpr static unsigned dim = E::dim;
+            using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
             meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
@@ -418,6 +420,7 @@ namespace ippl {
             : public Expression<meta_laplace<E>,
                                 sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
+            using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
             meta_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
