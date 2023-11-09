@@ -32,11 +32,11 @@ namespace ippl {
 
         // Inverse Transpose Transformation Jacobian
         Vector<T, Dim> DPhiInvT = this->ref_element_m.getInverseTransposeTransformationJacobian(
-            this->getElementMeshVertices(zeroNdIndex));
+            this->getElementMeshVertexIndices(zeroNdIndex));
 
         // Absolute value of det Phi_K
         T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-            this->getElementMeshVertices(zeroNdIndex)));
+            this->getElementMeshVertexIndices(zeroNdIndex)));
 
         // Gradients of the basis functions for the DOF at the quadrature nodes
         Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>

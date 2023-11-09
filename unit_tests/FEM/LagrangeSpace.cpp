@@ -53,6 +53,14 @@ using Combos     = CreateCombinations<Precisions, Spaces, Orders, Dimensions>::t
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);
 
+TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
+    FAIL();
+}
+
+TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
+    FAIL();
+}
+
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
     auto& lagrange_space = this->lagrange_space;
     // const auto& dim = lagrange_space.dim;

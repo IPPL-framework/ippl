@@ -84,7 +84,7 @@ namespace ippl {
 
         nd_index_t getElementNDIndex(const index_t& elementIndex) const;
 
-        mesh_element_vertex_index_vec_t getElementMeshVertices(
+        mesh_element_vertex_index_vec_t getElementMeshVertexIndices(
             const nd_index_t& elementNDIndex) const;
 
         mesh_element_vertex_point_vec_t getElementMeshVertexPoints(

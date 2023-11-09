@@ -112,7 +112,7 @@ namespace ippl {
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
                        QuadratureType>::mesh_element_vertex_index_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
-        getElementMeshVertices(
+        getElementMeshVertexIndices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
                                      QuadratureType>::nd_index_t& element_indices) const {
         // Vector to store the vertex indices for the element

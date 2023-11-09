@@ -31,14 +31,26 @@ public:
 using Tests = TestParams::tests<1, 2>;  // TODO add dim 3
 TYPED_TEST_CASE(FiniteElementSpaceTest, Tests);
 
-TYPED_TEST(FiniteElementSpaceTest, numElements) {}
+TYPED_TEST(FiniteElementSpaceTest, numElements) {
+    FAIL();
+}
 
-TYPED_TEST(FiniteElementSpaceTest, numElementsInDim) {}
+TYPED_TEST(FiniteElementSpaceTest, numElementsInDim) {
+    FAIL();
+}
 
-TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {}
+TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
+    FAIL();
+}
 
-TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {}
+TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
+    FAIL();
+}
 
-TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertices) {}
+TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
+    FAIL();
+}
 
-TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {}
+TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
+    FAIL();
+}

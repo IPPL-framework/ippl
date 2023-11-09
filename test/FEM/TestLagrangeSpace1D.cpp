@@ -57,7 +57,8 @@ int main(int argc, char* argv[]) {
         // for (unsigned i = 0; i < number_of_elements; ++i) {
         //     elem_out << i;
         //     const auto element_indices  = lagrange_space.getElementPositionFromIndex(i);
-        //     const auto element_vertices = lagrange_space.getElementMeshVertices(element_indices);
+        //     const auto element_vertices =
+        //     lagrange_space.getElementMeshVertexIndices(element_indices);
 
         //     for (unsigned j = 0; j < element_vertices.dim; ++j) {
         //         elem_out << "," << element_vertices[j];
