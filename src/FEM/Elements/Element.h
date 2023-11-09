@@ -17,14 +17,14 @@ namespace ippl {
         typedef Vector<T, Dim> point_t;
 
         // A list of all vertices
-        typedef Vector<point_t, NumVertices> mesh_element_vertex_vec_t;
+        typedef Vector<point_t, NumVertices> mesh_element_vertex_point_vec_t;
 
         // a matrix defining a transformtaion in the local or global coordinate system
         typedef Vector<T, Dim> diag_matrix_vec_t;
 
-        virtual mesh_element_vertex_vec_t getLocalVertices() const = 0;
+        virtual mesh_element_vertex_point_vec_t getLocalVertices() const = 0;
 
-        point_t globalToLocal(const mesh_element_vertex_vec_t&, const point_t&) const;
+        point_t globalToLocal(const mesh_element_vertex_point_vec_t&, const point_t&) const;
 
         /**
          * @brief Transforms a point from local to global coordinates.
@@ -40,14 +40,14 @@ namespace ippl {
          *
          * @return point_t
          */
-        point_t localToGlobal(const mesh_element_vertex_vec_t& global_vertices,
+        point_t localToGlobal(const mesh_element_vertex_point_vec_t& global_vertices,
                               const point_t& point) const;
 
         T getDeterminantOfTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const;
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
 
         diag_matrix_vec_t getInverseTransposeTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const;
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
 
         /**
          * @brief Returns whether a point in local coordinates ([0, 1]^Dim) is inside the reference
@@ -59,12 +59,12 @@ namespace ippl {
          */
         bool isPointInRefElement(const Vector<T, Dim>& point) const;
 
-    private:
+    protected:
         virtual diag_matrix_vec_t getTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const = 0;
+            const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
 
         virtual diag_matrix_vec_t getInverseTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const = 0;
+            const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
     };
 
     template <typename T, unsigned NumVertices>

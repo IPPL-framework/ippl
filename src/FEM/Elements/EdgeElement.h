@@ -13,16 +13,17 @@ namespace ippl {
         static constexpr unsigned NumVertices = 2;
 
         typedef typename Element1D<T, NumVertices>::point_t point_t;
-        typedef typename Element1D<T, NumVertices>::mesh_element_vertex_vec_t mesh_element_vertex_vec_t;
+        typedef typename Element1D<T, NumVertices>::mesh_element_vertex_point_vec_t
+            mesh_element_vertex_point_vec_t;
         typedef typename Element1D<T, NumVertices>::diag_matrix_vec_t diag_matrix_vec_t;
 
-        mesh_element_vertex_vec_t getLocalVertices() const override;
+        mesh_element_vertex_point_vec_t getLocalVertices() const override;
 
         diag_matrix_vec_t getTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const override;
+            const mesh_element_vertex_point_vec_t& global_vertices) const override;
 
         diag_matrix_vec_t getInverseTransformationJacobian(
-            const mesh_element_vertex_vec_t& global_vertices) const override;
+            const mesh_element_vertex_point_vec_t& global_vertices) const override;
     };
 
 }  // namespace ippl

@@ -231,7 +231,7 @@ namespace ippl {
 
         // Get the local vertex indices for the local vertex index.
         // TODO fix not order independent, only works for order 1
-        // const mesh_element_vertex_vec_t local_vertex_indices =
+        // const mesh_element_vertex_point_vec_t local_vertex_indices =
         //    this->ref_element_m.getLocalVertices()[localDOF];
 
         // The variable that accumulates the product of the shape functions.
@@ -263,7 +263,7 @@ namespace ippl {
 
         // Get the local dof nd_index
         // TODO fix not order independent, only works for order 1
-        // const mesh_element_vertex_vec_t local_vertex_points =
+        // const mesh_element_vertex_point_vec_t local_vertex_points =
         //    this->ref_element_m.getLocalVertices();
 
         // const point_t& local_vertex_point = local_vertex_points[localDOF];
