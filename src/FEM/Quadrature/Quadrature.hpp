@@ -1,6 +1,10 @@
 
 namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
+    Quadrature<T, NumNodes1D, ElementType>::Quadrature(const ElementType& ref_element)
+        : ref_element_m(ref_element) {}
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
     std::size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {
         return this->getDegree() + 1;
     }

@@ -2,9 +2,14 @@
 
 namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
+    MidpointQuadrature<T, NumNodes1D, ElementType>::MidpointQuadrature(
+        const ElementType& ref_element)
+        : Quadrature<T, NumNodes1D, ElementType>(ref_element) {}
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<T, NumNodes1D> MidpointQuadrature<T, NumNodes1D, ElementType>::getIntegrationNodes()
         const {
-        const unsigned number_of_segments = this->getNumberOfIntegrationPoints();
+        const unsigned number_of_segments = NumNodes1D;
         const T segment_length            = 1.0 / number_of_segments;
 
         // TODO use KOKKKOS

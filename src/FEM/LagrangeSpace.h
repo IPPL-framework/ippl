@@ -33,6 +33,7 @@ namespace ippl {
 
         static constexpr unsigned dim =
             FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs, QuadratureType>::dim;
+        static constexpr unsigned order = Order;
         static constexpr unsigned numElementVertices =
             FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs,
                                QuadratureType>::numElementVertices;
@@ -63,8 +64,12 @@ namespace ippl {
 
         // A vector of vertex indices of the mesh
         typedef typename FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs,
-                                            QuadratureType>::mesh_element_vertex_vec_t
-            mesh_element_vertex_vec_t;
+                                            QuadratureType>::mesh_element_vertex_index_vec_t
+            mesh_element_vertex_index_vec_t;
+
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs,
+                                            QuadratureType>::mesh_element_vertex_point_vec_t
+            mesh_element_vertex_point_vec_t;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////

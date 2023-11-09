@@ -24,13 +24,17 @@ public:
 
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
+    ippl::NDIndex<Dim> meshSize = ippl::NDIndex<Dim>(Dim == 1 ? 4u : 2u, 2u);
+
     LagrangeSpaceTest()
         : rng(42)
         , ref_element()
-        , mesh(ippl::NDIndex<Dim>(10u, 10u), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        , mesh(meshSize, ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
         , lagrange_space(mesh, ref_element, quadrature) {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
+
+        // fill the global reference DOFs
     }
 
     std::mt19937 rng;
@@ -60,6 +64,35 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
     ASSERT_EQ(local_dof_indices.dim, numElementDOFs);
     for (unsigned i = 0; i < numElementDOFs; i++) {
         ASSERT_EQ(local_dof_indices[i], i);
+    }
+}
+
+TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
+    auto& lagrange_space     = this->lagrange_space;
+    const std::size_t& dim   = lagrange_space.dim;
+    const std::size_t& order = lagrange_space.order;
+
+    auto global_dof_indices = lagrange_space.getGlobalDOFIndices(3);
+
+    if (dim == 1 && order == 1) {
+        ASSERT_EQ(global_dof_indices[0], 3);
+        ASSERT_EQ(global_dof_indices[1], 4);
+    } else if (dim == 2 && order == 1) {
+        ASSERT_EQ(global_dof_indices[0], 4);
+        ASSERT_EQ(global_dof_indices[1], 5);
+        ASSERT_EQ(global_dof_indices[2], 7);
+        ASSERT_EQ(global_dof_indices[3], 8);
+    } else if (dim == 1 && order == 1) {
+        ASSERT_EQ(global_dof_indices[0], 6);
+        ASSERT_EQ(global_dof_indices[1], 8);
+        ASSERT_EQ(global_dof_indices[2], 7);
+    } else if (dim == 2 && order == 2) {
+        ASSERT_EQ(global_dof_indices[0], 12);
+        ASSERT_EQ(global_dof_indices[1], 14);
+        ASSERT_EQ(global_dof_indices[2], 24);
+        ASSERT_EQ(global_dof_indices[3], 22);
+    } else {
+        FAIL();
     }
 }
 

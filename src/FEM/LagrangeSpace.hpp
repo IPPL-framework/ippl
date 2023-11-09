@@ -14,6 +14,10 @@ namespace ippl {
                       "Finite Element space only supports 1D, 2D and 3D meshes");
     }
 
+    ///////////////////////////////////////////////////////////////////////
+    /// Assembly operations ///////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(
         const Vector<T, numGlobalDOFs>& x, Vector<T, numGlobalDOFs>& resultAx) const {
@@ -24,13 +28,15 @@ namespace ippl {
         Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
+        nd_index_t zeroNdIndex = Vector<index_t, Dim>(0);
+
         // Inverse Transpose Transformation Jacobian
         Vector<T, Dim> DPhiInvT = this->ref_element_m.getInverseTransposeTransformationJacobian(
-            this->getElementMeshVertices(0));
+            this->getElementMeshVertices(zeroNdIndex));
 
         // Absolute value of det Phi_K
         T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-            this->getElementMeshVertices(0)));
+            this->getElementMeshVertices(zeroNdIndex)));
 
         // Gradients of the basis functions for the DOF at the quadrature nodes
         Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
@@ -225,19 +231,19 @@ namespace ippl {
 
         // Get the local vertex indices for the local vertex index.
         // TODO fix not order independent, only works for order 1
-        const mesh_element_vertex_vec_t local_vertex_indices =
-            this->ref_element_m.getLocalVertices()[localDOF];
+        // const mesh_element_vertex_vec_t local_vertex_indices =
+        //    this->ref_element_m.getLocalVertices()[localDOF];
 
         // The variable that accumulates the product of the shape functions.
         T product = 1;
 
-        for (std::size_t d = 0; d < Dim; d++) {
-            if (localPoint[d] < local_vertex_indices[d]) {
-                product *= localPoint[d];
-            } else {
-                product *= 1.0 - localPoint[d];
-            }
-        }
+        // for (std::size_t d = 0; d < Dim; d++) {
+        //    if (localPoint[d] < local_vertex_indices[d]) {
+        //        product *= localPoint[d];
+        //    } else {
+        //        product *= 1.0 - localPoint[d];
+        //    }
+        //}
 
         return product;
     }
@@ -257,10 +263,10 @@ namespace ippl {
 
         // Get the local dof nd_index
         // TODO fix not order independent, only works for order 1
-        const mesh_element_vertex_vec_t local_vertex_points =
-            this->ref_element_m.getLocalVertices();
+        // const mesh_element_vertex_vec_t local_vertex_points =
+        //    this->ref_element_m.getLocalVertices();
 
-        const point_t& local_vertex_point = local_vertex_points[localDOF];
+        // const point_t& local_vertex_point = local_vertex_points[localDOF];
 
         gradient_vec_t gradient(1);
 
@@ -268,28 +274,28 @@ namespace ippl {
         // shape functions in each dimension except the current one. The one of the current
         // dimension is replaced by the derivative of the shape function in that dimension,
         // which is either 1 or -1.
-        for (std::size_t d = 0; d < Dim; d++) {
-            // The variable that accumulates the product of the shape functions.
-            T product = 1;
+        // for (std::size_t d = 0; d < Dim; d++) {
+        //     // The variable that accumulates the product of the shape functions.
+        //     T product = 1;
 
-            for (std::size_t d2 = 0; d2 < Dim; d2++) {
-                if (d2 == d) {
-                    if (localPoint[d] < local_vertex_point[d]) {
-                        product *= 1;
-                    } else {
-                        product *= -1;
-                    }
-                } else {
-                    if (localPoint[d2] < local_vertex_point[d2]) {
-                        product *= localPoint[d2];
-                    } else {
-                        product *= 1.0 - localPoint[d2];
-                    }
-                }
-            }
+        //     for (std::size_t d2 = 0; d2 < Dim; d2++) {
+        //         if (d2 == d) {
+        //             if (localPoint[d] < local_vertex_point[d]) {
+        //                 product *= 1;
+        //             } else {
+        //                 product *= -1;
+        //             }
+        //         } else {
+        //             if (localPoint[d2] < local_vertex_point[d2]) {
+        //                 product *= localPoint[d2];
+        //             } else {
+        //                 product *= 1.0 - localPoint[d2];
+        //             }
+        //         }
+        //     }
 
-            gradient[d] = product;
-        }
+        //     gradient[d] = product;
+        // }
 
         return gradient;
     }
