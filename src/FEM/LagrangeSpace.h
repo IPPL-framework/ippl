@@ -114,8 +114,7 @@ namespace ippl {
         gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
                                                        const point_t& localPoint) const override;
 
-    protected:
-        NDIndex<Dim> makeNDIndex(const Vector<T, Dim>& indices) const;
+        static NDIndex<Dim> makeNDIndex(const Vector<T, Dim>& indices);
     };
 
 }  // namespace ippl

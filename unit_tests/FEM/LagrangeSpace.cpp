@@ -24,12 +24,12 @@ public:
 
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
-    ippl::NDIndex<Dim> meshSize = ippl::NDIndex<Dim>(Dim == 1 ? 4u : 2u, 2u);
-
     LagrangeSpaceTest()
         : rng(42)
         , ref_element()
-        , mesh(meshSize, ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        , mesh(ippl::LagrangeSpace<T, Dim, Order, QuadratureType>::makeNDIndex(
+                   ippl::Vector<unsigned, Dim>(2u)),
+               ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
         , lagrange_space(mesh, ref_element, quadrature) {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
@@ -48,7 +48,7 @@ public:
 using Precisions = TestParams::Precisions;
 using Spaces     = TestParams::Spaces;
 using Orders     = TestParams::Ranks<1>;
-using Dimensions = TestParams::Ranks<2>;
+using Dimensions = TestParams::Ranks<1, 2>;
 using Combos     = CreateCombinations<Precisions, Spaces, Orders, Dimensions>::type;
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);
@@ -80,25 +80,33 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
     const std::size_t& dim   = lagrange_space.dim;
     const std::size_t& order = lagrange_space.order;
 
-    auto global_dof_indices = lagrange_space.getGlobalDOFIndices(3);
-
-    if (dim == 1 && order == 1) {
-        ASSERT_EQ(global_dof_indices[0], 3);
-        ASSERT_EQ(global_dof_indices[1], 4);
-    } else if (dim == 2 && order == 1) {
-        ASSERT_EQ(global_dof_indices[0], 4);
-        ASSERT_EQ(global_dof_indices[1], 5);
-        ASSERT_EQ(global_dof_indices[2], 7);
-        ASSERT_EQ(global_dof_indices[3], 8);
-    } else if (dim == 1 && order == 1) {
-        ASSERT_EQ(global_dof_indices[0], 6);
-        ASSERT_EQ(global_dof_indices[1], 8);
-        ASSERT_EQ(global_dof_indices[2], 7);
-    } else if (dim == 2 && order == 2) {
-        ASSERT_EQ(global_dof_indices[0], 12);
-        ASSERT_EQ(global_dof_indices[1], 14);
-        ASSERT_EQ(global_dof_indices[2], 24);
-        ASSERT_EQ(global_dof_indices[3], 22);
+    if (dim == 1) {
+        auto global_dof_indices = lagrange_space.getGlobalDOFIndices(1);
+        if (order == 1) {
+            ASSERT_EQ(global_dof_indices[0], 1);
+            ASSERT_EQ(global_dof_indices[1], 2);
+        } else if (order == 2) {
+            ASSERT_EQ(global_dof_indices[0], 3);
+            ASSERT_EQ(global_dof_indices[1], 5);
+            ASSERT_EQ(global_dof_indices[2], 4);
+        } else {
+            FAIL();
+        }
+    } else if (dim == 2) {
+        auto global_dof_indices = lagrange_space.getGlobalDOFIndices(3);
+        if (order == 1) {
+            ASSERT_EQ(global_dof_indices[0], 4);
+            ASSERT_EQ(global_dof_indices[1], 5);
+            ASSERT_EQ(global_dof_indices[2], 7);
+            ASSERT_EQ(global_dof_indices[3], 8);
+        } else if (order == 2) {
+            ASSERT_EQ(global_dof_indices[0], 12);
+            ASSERT_EQ(global_dof_indices[1], 14);
+            ASSERT_EQ(global_dof_indices[2], 24);
+            ASSERT_EQ(global_dof_indices[3], 22);
+        } else {
+            FAIL();
+        }
     } else {
         FAIL();
     }

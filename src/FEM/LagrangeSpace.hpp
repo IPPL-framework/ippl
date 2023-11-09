@@ -302,7 +302,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     NDIndex<Dim> LagrangeSpace<T, Dim, Order, QuadratureType>::makeNDIndex(
-        const Vector<T, Dim>& indices) const {
+        const Vector<T, Dim>& indices) {
         // Not sure if this is the best way, but the getVertexPosition function expects an
         // NDIndex, with the vertex index used being the first in the NDIndex. No other index is
         // used, so we can just set the first and the last to the index we actually want.
