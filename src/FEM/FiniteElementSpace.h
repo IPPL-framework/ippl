@@ -19,7 +19,7 @@
 #include "Meshes/Mesh.h"
 
 constexpr unsigned calculateNumElementVertices(unsigned Dim) {
-    return static_cast<unsigned>(pow(2.0, static_cast<double>(Dim)));
+    return 1 << Dim;  // 2^Dim
 }
 
 namespace ippl {

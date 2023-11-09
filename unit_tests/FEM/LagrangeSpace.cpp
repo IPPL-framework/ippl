@@ -42,7 +42,7 @@ public:
     const ElementType ref_element;
     const ippl::UniformCartesian<T, Dim> mesh;
     const QuadratureType quadrature;
-    ippl::LagrangeSpace<T, Dim, Order, QuadratureType> lagrange_space;
+    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType> lagrange_space;
 };
 
 using Precisions = TestParams::Precisions;
@@ -62,7 +62,7 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
-    auto& lagrange_space = this->lagrange_space;
+    const auto& lagrange_space = this->lagrange_space;
     // const auto& dim = lagrange_space.dim;
     // const auto& order = lagrange_space.order;
     const auto& numElementDOFs = lagrange_space.numElementDOFs;
@@ -83,6 +83,7 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
     if (dim == 1) {
         auto global_dof_indices = lagrange_space.getGlobalDOFIndices(1);
         if (order == 1) {
+            ASSERT_EQ(global_dof_indices.dim, 2);
             ASSERT_EQ(global_dof_indices[0], 1);
             ASSERT_EQ(global_dof_indices[1], 2);
         } else if (order == 2) {
@@ -94,7 +95,9 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
         }
     } else if (dim == 2) {
         auto global_dof_indices = lagrange_space.getGlobalDOFIndices(3);
+
         if (order == 1) {
+            ASSERT_EQ(global_dof_indices.dim, 4);
             ASSERT_EQ(global_dof_indices[0], 4);
             ASSERT_EQ(global_dof_indices[1], 5);
             ASSERT_EQ(global_dof_indices[2], 7);

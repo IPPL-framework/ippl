@@ -142,4 +142,21 @@ namespace ippl {
 
         return vertex_indices;
     }
+
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
+              typename QuadratureType>
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
+                       QuadratureType>::mesh_element_vertex_point_vec_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
+        getElementMeshVertexPoints(
+            const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
+                                     QuadratureType>::nd_index_t& elementNDIndex) const {
+        assert(elementNDIndex.dim > Dim);  // TODO remove
+
+        // Vector to store the vertex points for the element
+        mesh_element_vertex_point_vec_t vertex_points(0);
+
+        return vertex_points;
+    }
+
 }  // namespace ippl
