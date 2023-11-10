@@ -67,7 +67,7 @@ if (ENABLE_TESTS)
     add_subdirectory (test)
 endif ()
 
-option (ENABLE_ALPINE, "Enable Alpine" OFF)
+option (ENABLE_ALPINE "Enable Alpine" OFF)
 if (ENABLE_ALPINE)
     if (NOT ENABLE_SOLVERS)
         message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
@@ -81,9 +81,19 @@ endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
-    find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
-    add_subdirectory (unit_tests)
-    #add_subdirectory(unit_tests_single_precision)
+  enable_testing()
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    # currently v1.14
+    URL https://github.com/google/googletest/archive/f8d7d77c06936315286eb55f8de22cd23c188571.zip
+    )
+
+  # For Windows: Prevent overriding the parent project's compiler/linker settings
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+
+  add_subdirectory (unit_tests)
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
