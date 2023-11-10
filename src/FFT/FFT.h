@@ -47,13 +47,10 @@ namespace ippl {
     class RCTransform {};
     class SineTransform {};
     class CosTransform {};
-<<<<<<< HEAD
     /**
        Tag classes for Cosine of type 1 transforms
     */
     class Cos1Transform {};
-=======
->>>>>>> master
 
     enum FFTComm {
         a2av   = 0,
@@ -90,22 +87,9 @@ namespace ippl {
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
-<<<<<<< HEAD
-#endif
-#if defined(Heffte_ENABLE_CUDA) && defined(KOKKOS_ENABLE_CUDA)
-        template <>
-        struct HeffteBackendType<Kokkos::CudaSpace> {
-            using backend     = heffte::backend::cufft;
-            using backendSine = heffte::backend::cufft_sin;
-            using backendCos  = heffte::backend::cufft_cos;
-            using backendCos1 = heffte::backend::cufft_cos1;
-        };
 #endif
 
 #if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
-=======
-#else
->>>>>>> master
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
@@ -125,6 +109,7 @@ namespace ippl {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
+            using backendCos1 = heffte::backend::cufft_cos1;
         };
 #else
 #error cuFFT backend is enabled for heFFTe but CUDA is not enabled for Kokkos!
