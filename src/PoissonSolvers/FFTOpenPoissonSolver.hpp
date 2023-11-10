@@ -1183,9 +1183,9 @@ namespace ippl {
                         const int jg2 = j + ldom_g[1].first() - nghost_g;
                         const int kg2 = k + ldom_g[2].first() - nghost_g;
 
-                        if ((ig == ig2) && (jg == jg2) && (kg == kg2)) {
-                            view(i, j, k) = real(view_g(i, j, k));
-                        }
+                        const bool isOrig = (ig == ig2) && (jg == jg2) && (kg == kg2);
+
+                        view(i, j, k) = isOrig * real(view_g(i, j, k));
 
                         // Now fill the rest of the field
                         const int s = 2 * size[0] - ig - 1 - ldom_g[0].first() + nghost_g;
@@ -1252,9 +1252,9 @@ namespace ippl {
                         -2 * (std::sin(0.5 * L_sum * s) / s) * (std::sin(0.5 * L_sum * s) / s);
 
                     // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-                    if ((ig == 0 && jg == 0 && kg == 0)) {
-                        view_g2n1(i, j, k) = -L_sum * L_sum * 0.5;
-                    }
+                    const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
+                    view_g2n1(i, j, k) = isOrig * (-L_sum * L_sum * 0.5);
+    
                 });
 
             // start a timer
@@ -1302,9 +1302,8 @@ namespace ippl {
                         const int jg2 = j + ldom_g2n1[1].first() - nghost_g2n1;
                         const int kg2 = k + ldom_g2n1[2].first() - nghost_g2n1;
 
-                        if ((ig == ig2) && (jg == jg2) && (kg == kg2)) {
-                            view(i, j, k) = view_g2n1(i, j, k);
-                        }
+                        const bool isOrig = (ig == ig2) && (jg == jg2) && (kg == kg2);
+                        view(i, j, k) = isOrig * view_g2n1(i, j, k);
 
                         // Now fill the rest of the field
                         const int s = 2 * size[0] - ig - 1 - ldom_g2n1[0].first() + nghost_g2n1;
@@ -1931,7 +1930,7 @@ namespace ippl {
 
     // CommunicateVico for DCT_VICO (2N+1 to 2N)
     template <typename FieldLHS, typename FieldRHS>
-    void FFTPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
         Vector<int, Dim> size, typename Field_t::view_type view_g, const ippl::NDIndex<Dim> ldom_g,
         const int nghost_g, typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
         const int nghost) {
