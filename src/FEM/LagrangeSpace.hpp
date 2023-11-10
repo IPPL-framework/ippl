@@ -28,7 +28,7 @@ namespace ippl {
         Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        nd_index_t zeroNdIndex = Vector<index_t, Dim>(0);
+        ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
 
         // Inverse Transpose Transformation Jacobian
         Vector<T, Dim> DPhiInvT = this->ref_element_m.getInverseTransposeTransformationJacobian(
@@ -138,7 +138,7 @@ namespace ippl {
         Vector<index_t, this->numElementDOFs> globalDOFs(0);
 
         // get element pos
-        nd_index_t elementPos = this->getElementNDIndex(elementIndex);
+        ndindex_t elementPos = this->getElementNDIndex(elementIndex);
 
         // get smallest global DOF (lower left corner in 2D)
         index_t smallestGlobalDOF = elementPos[0] * Order;

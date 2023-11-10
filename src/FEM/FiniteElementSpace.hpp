@@ -39,7 +39,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
-    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::nd_index_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::getMeshVertexNDIndex(
         const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t&
             vertex_index) const {
@@ -48,7 +48,7 @@ namespace ippl {
 
         // Create a vector to store the vertex indices in each dimension for the corresponding
         // vertex.
-        nd_index_t vertex_indices;
+        ndindex_t vertex_indices;
 
         // This is the number of vertices in each dimension.
         Vector<std::size_t, Dim> vertices_per_dim = this->mesh_m.getGridsize();
@@ -75,7 +75,7 @@ namespace ippl {
               typename QuadratureType>
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::getMeshVertexIndex(
-        const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::nd_index_t&
+        const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::ndindex_t&
             vertex_nd_index) const {
         std::size_t vertex_index = 0;
 
@@ -96,7 +96,7 @@ namespace ippl {
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
-    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::nd_index_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::getElementNDIndex(
         const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t&
             element_index) const {
@@ -105,7 +105,7 @@ namespace ippl {
 
         // Create a vector to store the element indices in each dimension for the corresponding
         // element.
-        nd_index_t element_nd_index;
+        ndindex_t element_nd_index;
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
@@ -136,7 +136,7 @@ namespace ippl {
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
         getElementMeshVertexIndices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
-                                     QuadratureType>::nd_index_t& element_nd_index) const {
+                                     QuadratureType>::ndindex_t& element_nd_index) const {
         const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
 
         // TODO maybe move into function that gets the vertex index from the vertex nd_index
@@ -182,15 +182,73 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
               typename QuadratureType>
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
+                       QuadratureType>::mesh_element_vertex_ndindex_vec_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
+        getElementMeshVertexNDIndices(
+            const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
+                                     QuadratureType>::ndindex_t& elementNDIndex) const {
+        mesh_element_vertex_ndindex_vec_t vertex_nd_indices;
+
+        ndindex_t smallest_vertex_nd_index = elementNDIndex;
+
+        // vertex_nd_indices[0] = smallest_vertex_nd_index;
+        // vertex_nd_indices[1] = smallest_vertex_nd_index;
+        // vertex_nd_indices[1][0] += 1;
+
+        // vertex_nd_indices[2] = vertex_nd_indices[0];
+        // vertex_nd_indices[2][1] += 1;
+        // vertex_nd_indices[3] = vertex_nd_indices[1];
+        // vertex_nd_indices[3][1] += 1;
+
+        // vertex_nd_indices[4] = vertex_nd_indices[0];
+        // vertex_nd_indices[4][2] += 1;
+        // vertex_nd_indices[5] = vertex_nd_indices[1];
+        // vertex_nd_indices[5][2] += 1;
+        // vertex_nd_indices[6] = vertex_nd_indices[2];
+        // vertex_nd_indices[6][2] += 1;
+        // vertex_nd_indices[7] = vertex_nd_indices[3];
+        // vertex_nd_indices[7][2] += 1;
+
+        for (std::size_t i = 0; i < (1 << Dim); ++i) {
+            vertex_nd_indices[i] = smallest_vertex_nd_index;
+            for (std::size_t j = 0; j < Dim; ++j) {
+                vertex_nd_indices[i][j] += (i >> j) & 1;
+            }
+        }
+
+        return vertex_nd_indices;
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
+              typename QuadratureType>
+    FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
                        QuadratureType>::mesh_element_vertex_point_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::
         getElementMeshVertexPoints(
             const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs,
-                                     QuadratureType>::nd_index_t& elementNDIndex) const {
-        assert(elementNDIndex.dim == Dim);
+                                     QuadratureType>::ndindex_t& elementNDIndex) const {
+        mesh_element_vertex_point_vec_t vertex_points;
 
-        // Vector to store the vertex points for the element
-        mesh_element_vertex_point_vec_t vertex_points(0);
+        // get all the NDIndices for the vertices of this element
+        mesh_element_vertex_ndindex_vec_t vertex_nd_indices =
+            this->getElementMeshVertexNDIndices(elementNDIndex);
+
+        // get the coordinates of the vertices of this element
+        for (std::size_t i = 0; i < vertex_nd_indices.dim; ++i) {
+            NDIndex<Dim> temp_ndindex;
+            for (std::size_t d = 0; d < Dim; ++d) {
+                std::cout << "vertex_nd_indices[" << i << "][" << d
+                          << "] = " << vertex_nd_indices[i][d] << "\n";
+                temp_ndindex[d] = Index(vertex_nd_indices[i][d], vertex_nd_indices[i][d]);
+            }
+            vertex_points[i] = this->mesh_m.getVertexPosition(temp_ndindex);
+
+            std::cout << "vertex_points[" << i << "] = ";
+            for (std::size_t d = 0; d < Dim; ++d) {
+                std::cout << vertex_points[i][d] << " ";
+            }
+            std::cout << "\n";
+        }
 
         return vertex_points;
     }

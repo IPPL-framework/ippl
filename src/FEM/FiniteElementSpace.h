@@ -43,7 +43,7 @@ namespace ippl {
         typedef std::size_t index_t;  // look at ippl::Index
 
         // A vector with the position of the element in the mesh in each dimension
-        typedef Vector<index_t, Dim> nd_index_t;  // TODO look ad NDINDEX
+        typedef Vector<index_t, Dim> ndindex_t;  // TODO look ad NDINDEX
 
         // A point in the global coordinate system
         typedef Vector<T, Dim> point_t;
@@ -53,6 +53,8 @@ namespace ippl {
 
         // A vector of vertex indices of the mesh
         typedef Vector<index_t, numElementVertices> mesh_element_vertex_index_vec_t;
+
+        typedef Vector<ndindex_t, numElementVertices> mesh_element_vertex_ndindex_vec_t;
 
         typedef Vector<point_t, numElementVertices> mesh_element_vertex_point_vec_t;
 
@@ -80,17 +82,20 @@ namespace ippl {
 
         std::size_t numElementsInDim(const index_t& dim) const;
 
-        nd_index_t getMeshVertexNDIndex(const index_t& vertex_index) const;
+        ndindex_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
-        index_t getMeshVertexIndex(const nd_index_t& vertex_nd_index) const;
+        index_t getMeshVertexIndex(const ndindex_t& vertex_nd_index) const;
 
-        nd_index_t getElementNDIndex(const index_t& elementIndex) const;
+        ndindex_t getElementNDIndex(const index_t& elementIndex) const;
 
         mesh_element_vertex_index_vec_t getElementMeshVertexIndices(
-            const nd_index_t& elementNDIndex) const;
+            const ndindex_t& elementNDIndex) const;
+
+        mesh_element_vertex_ndindex_vec_t getElementMeshVertexNDIndices(
+            const ndindex_t& elementNDIndex) const;
 
         mesh_element_vertex_point_vec_t getElementMeshVertexPoints(
-            const nd_index_t& elementNDIndex) const;
+            const ndindex_t& elementNDIndex) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////

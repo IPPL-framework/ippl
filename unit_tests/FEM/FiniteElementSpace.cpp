@@ -112,6 +112,46 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
     EXPECT_EQ(computed_vertex_nd_index, expected_vertex_index);
 }
 
+TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
+    const auto& fem_space  = this->fem_space;
+    const std::size_t& dim = fem_space.dim;
+
+    if (dim == 1) {
+        const auto indices = fem_space.getElementMeshVertexNDIndices(1);
+        ASSERT_EQ(indices.dim, 2);
+        ASSERT_EQ(indices[0][0], 1);
+        ASSERT_EQ(indices[1][0], 2);
+    } else if (dim == 2) {
+        const unsigned element_index = 3;
+        const ippl::Vector<unsigned, fem_space.dim> element_indices =
+            fem_space.getElementNDIndex(element_index);  // {1, 1}
+        const auto indices = fem_space.getElementMeshVertexNDIndices(element_indices);
+
+        // std::cout << "Expected indices:\n";
+        // std::cout << 7 << " - " << 8 << "\n";
+        // std::cout << "| " << element_index << " |\n";
+        // std::cout << 4 << " - " << 5 << "\n";
+
+        // std::cout << "Computed indices:\n";
+        // std::cout << indices[2][0] << " - " << indices[3][0] << "\n";
+        // std::cout << "| " << element_index << " |\n";
+        // std::cout << indices[0][0] << " - " << indices[1][0] << "\n";
+
+        ASSERT_EQ(indices.dim, 4);
+        ASSERT_EQ(indices[0][0], 1);
+        ASSERT_EQ(indices[0][1], 1);
+
+        ASSERT_EQ(indices[1][0], 2);
+        ASSERT_EQ(indices[1][1], 1);
+
+        ASSERT_EQ(indices[2][0], 1);
+        ASSERT_EQ(indices[2][1], 2);
+
+        ASSERT_EQ(indices[3][0], 2);
+        ASSERT_EQ(indices[3][1], 2);
+    }
+}
+
 TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
     const auto& fem_space  = this->fem_space;
     const std::size_t& dim = fem_space.dim;
@@ -179,25 +219,38 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
     const auto& fem_space  = this->fem_space;
     const std::size_t& dim = fem_space.dim;
 
+    const auto element_ndindex = ippl::Vector<unsigned, fem_space.dim>(1);
+
     if (dim == 1) {
-        const auto indices = fem_space.getElementMeshVertexPoints(1);
+        const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
         ASSERT_EQ(indices.dim, 2);
         ASSERT_EQ(indices[0][0], 1.0);
         ASSERT_EQ(indices[1][0], 2.0);
     } else if (dim == 2) {
-        const auto indices = fem_space.getElementMeshVertexPoints(2);
+        const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
+
+        std::cout << "Expected points:\n";
+        std::cout << "(" << 1.0 << "," << 2.0 << ") - (" << 2.0 << "," << 2.0 << ")\n";
+        std::cout << "(" << 1.0 << "," << 1.0 << ") - (" << 2.0 << "," << 1.0 << ")\n";
+
+        std::cout << "Computed points:\n";
+        std::cout << "(" << indices[2][0] << "," << indices[2][1] << ") - (" << indices[3][0] << ","
+                  << indices[3][1] << ")\n";
+        std::cout << "(" << indices[0][0] << "," << indices[0][1] << ") - (" << indices[1][0] << ","
+                  << indices[1][1] << ")\n";
+
         ASSERT_EQ(indices.dim, 4);
 
-        ASSERT_EQ(indices[0][0], 0.0);
+        ASSERT_EQ(indices[0][0], 1.0);
         ASSERT_EQ(indices[0][1], 1.0);
 
-        ASSERT_EQ(indices[1][0], 1.0);
+        ASSERT_EQ(indices[1][0], 2.0);
         ASSERT_EQ(indices[1][1], 1.0);
 
-        ASSERT_EQ(indices[2][0], 0.0);
+        ASSERT_EQ(indices[2][0], 1.0);
         ASSERT_EQ(indices[2][1], 2.0);
 
-        ASSERT_EQ(indices[3][0], 1.0);
+        ASSERT_EQ(indices[3][0], 2.0);
         ASSERT_EQ(indices[3][1], 2.0);
     } else {
         FAIL();
