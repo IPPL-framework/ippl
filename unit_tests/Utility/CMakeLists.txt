@@ -13,9 +13,12 @@ link_directories (
 )
 
 add_executable (ParameterList ParameterList.cpp)
+gtest_discover_tests (ParameterList)
+
 target_link_libraries (
     ParameterList
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )

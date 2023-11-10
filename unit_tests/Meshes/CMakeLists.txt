@@ -14,9 +14,21 @@ link_directories (
 )
 
 add_executable (UniformCartesian UniformCartesian.cpp)
+gtest_discover_tests (UniformCartesian)
+
 target_link_libraries (
     UniformCartesian
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
+
+# vi: set et ts=4 sw=4 sts=4:
+
+# Local Variables:
+# mode: cmake
+# cmake-tab-width: 4
+# indent-tabs-mode: nil
+# require-final-newline: nil
+# End:

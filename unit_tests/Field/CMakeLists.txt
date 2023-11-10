@@ -14,31 +14,42 @@ link_directories (
 )
 
 add_executable (Field Field.cpp)
+gtest_discover_tests(Field)
+
 target_link_libraries (
     Field
     ippl
     pthread
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
 
 add_executable (FieldBC FieldBC.cpp)
+gtest_discover_tests(FieldBC)
+
 target_link_libraries (
     FieldBC
     ippl
     pthread
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
 
 add_executable (Halo Halo.cpp)
+gtest_discover_tests(Halo)
+
 target_link_libraries (
     Halo
     ippl
     pthread
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
+
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

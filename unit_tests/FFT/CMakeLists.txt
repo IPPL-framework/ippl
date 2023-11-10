@@ -14,13 +14,17 @@ link_directories (
 )
 
 add_executable (FFT FFT.cpp)
+gtest_discover_tests(FFT)
+
 target_link_libraries (
     FFT
     ippl
     pthread
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

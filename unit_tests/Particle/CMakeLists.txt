@@ -14,25 +14,34 @@ link_directories (
 )
 
 add_executable (ParticleBase ParticleBase.cpp)
+gtest_discover_tests(ParticleBase)
+
 target_link_libraries (
     ParticleBase
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
 
 add_executable (ParticleBC ParticleBC.cpp)
+gtest_discover_tests(ParticleBC)
+
 target_link_libraries (
     ParticleBC
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
 
 add_executable (ParticleSendRecv ParticleSendRecv.cpp)
+gtest_discover_tests(ParticleSendRecv)
+
 target_link_libraries (
     ParticleSendRecv
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )

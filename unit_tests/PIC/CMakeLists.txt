@@ -14,17 +14,23 @@ link_directories (
 )
 
 add_executable (PIC PIC.cpp)
+gtest_discover_tests(PIC)
+
 target_link_libraries (
     PIC
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
 
 add_executable (ORB ORB.cpp)
+gtest_discover_tests(ORB)
+
 target_link_libraries (
     ORB
     ippl
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )

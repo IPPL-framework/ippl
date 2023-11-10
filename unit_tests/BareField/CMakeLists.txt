@@ -14,13 +14,17 @@ link_directories (
 )
 
 add_executable (BareField BareField.cpp)
+gtest_discover_tests (BareField)
+
 target_link_libraries (
     BareField
     ippl
     pthread
+    GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
+
 
 # vi: set et ts=4 sw=4 sts=4:
 
