@@ -14,7 +14,7 @@ namespace ippl {
 
         //
         for (std::size_t d = 0; d < Dim; ++d) {
-            assert(mesh.getGridsize(d) > 0 && "Mesh has no cells in at least one dimension");
+            assert(mesh.getGridsize(d) > 1 && "Mesh has no cells in at least one dimension");
         }
     }
 
@@ -26,8 +26,8 @@ namespace ippl {
 
         // TODO Use a reduction instead
         std::size_t num_elements = 1;
-        for (const std::size_t num_cells : cells_per_dim) {
-            num_elements *= num_cells;
+        for (std::size_t d = 0; d < Dim; ++d) {
+            num_elements *= cells_per_dim[d];
         }
 
         return num_elements;
@@ -112,7 +112,7 @@ namespace ippl {
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
-        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1u;
+        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1;
 
         // The number_of_lower_dim_cells is the product of all the number of cells per
         // dimension, it will get divided by the current dimension's size to get the index in

@@ -50,7 +50,7 @@ namespace ippl {
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
 
-        for (index_t element_index = 0; element_index < this->numElements(); ++element_index) {
+        for (index_t elementIndex = 0; elementIndex < this->numElements(); ++elementIndex) {
             Vector<index_t, this->numElementDOFs> global_dofs;
             Vector<index_t, this->numElementDOFs> local_dofs;
 
@@ -102,46 +102,50 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
     LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& global_dof_index,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
+        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex,
+        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& globalDOFIndex) const {
         // TODO implement
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
 
-        // Get NDIndex of the element
-        ndindex_t element_ndindex = this->getElementNDIndex(element_index);
-
         // Get all the global DOFs for the element
-        const auto global_dofs = this->getElementMeshVertexIndices(element_ndindex);
+        const Vector<index_t, this->numElementDOFs> global_dofs =
+            this->getGlobalDOFIndices(elementIndex);
+
+        ippl::Vector<index_t, this->numElementDOFs> dof_mapping;
+        if (Dim == 1) {
+            dof_mapping = {0, 1};
+        } else if (Dim == 2) {
+            dof_mapping = {0, 1, 3, 2};
+        } else if (Dim == 3) {
+            dof_mapping = {0, 1, 3, 2, 4, 5, 7, 6};
+        } else {
+            // throw exception
+            throw std::runtime_error("FEM Lagrange Space: Dimension not supported: "
+                                     + std::to_string(Dim));
+        }
 
         // Find the global DOF in the vector and return the local DOF index
         // TODO this can be done faster since the global DOFs are sorted
-        for (std::size_t i = 0; i < numElementDOFs; ++i) {
-            if (global_dofs[i] == global_dof_index) {
-                return i;
+        for (index_t i = 0; i < dof_mapping.dim; ++i) {
+            std::cout << "element index: " << elementIndex
+                      << ", global_dofs[dof_mapping[i]]: " << global_dofs[dof_mapping[i]]
+                      << " globalDOFIndex: " << globalDOFIndex << std::endl;
+            if (global_dofs[dof_mapping[i]] == globalDOFIndex) {
+                return dof_mapping[i];
             }
         }
-        return -1;  // TODO throw exception
+        throw std::runtime_error("FEM Lagrange Space: Global DOF not found in specified element");
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
     LagrangeSpace<T, Dim, Order, QuadratureType>::getGlobalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& local_dof_index,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
-        // TODO fix not order independent, only works for order 1
-        static_assert(Order == 1, "Only order 1 is supported at the moment");
+        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex,
+        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& localDOFIndex) const {
+        const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
 
-        // Get NDIndex of the element
-        ndindex_t element_ndindex = this->getElementNDIndex(element_index);
-
-        // Modify the element NDIndex depending on the Order
-        // element_ndindex *= Order;
-
-        // Get all the global DOFs for the element
-        const auto global_dofs = this->getElementMeshVertexIndices(element_ndindex);
-
-        return global_dofs[local_dof_index];
+        return global_dofs[localDOFIndex];
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
@@ -150,7 +154,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndices() const {
         Vector<index_t, numElementDOFs> localDOFs;
 
-        for (std::size_t dof = 0; dof < numElementDOFs; ++dof) {
+        for (index_t dof = 0; dof < numElementDOFs; ++dof) {
             localDOFs[dof] = dof;
         }
 
@@ -167,17 +171,15 @@ namespace ippl {
         // get element pos
         ndindex_t elementPos = this->getElementNDIndex(elementIndex);
 
-        // get smallest global DOF (lower left corner in 2D)
-        index_t smallestGlobalDOF = elementPos[0] * Order;
-
-        if (Dim >= 2) {
-            smallestGlobalDOF += elementPos[1] * this->mesh_m.getGridsize(1) * Order;
+        // Compute the vector to multiply the ndindex with
+        ippl::Vector<std::size_t, Dim> vec(1);
+        for (std::size_t d = 1; d < dim; ++d) {
+            for (std::size_t d2 = d; d2 < Dim; ++d2) {
+                vec[d2] *= this->mesh_m.getGridsize(d - 1);
+            }
         }
-
-        if (Dim >= 3) {
-            smallestGlobalDOF +=
-                elementPos[2] * (this->mesh_m.getGridsize(1) * this->mesh_m.getGridsize(2)) * Order;
-        }
+        vec *= Order;  // Multiply each dimension by the order
+        index_t smallestGlobalDOF = elementPos.dot(vec);
 
         // Add the vertex DOFs
         globalDOFs[0] = smallestGlobalDOF;
@@ -204,7 +206,7 @@ namespace ippl {
 
             // Add the edge DOFs
             if (Dim >= 2) {
-                for (std::size_t i = 0; i < Order - 1; ++i) {
+                for (index_t i = 0; i < Order - 1; ++i) {
                     globalDOFs[8 + i] = globalDOFs[0] + i + 1;
                     globalDOFs[8 + Order - 1 + i] =
                         globalDOFs[1] + (i + 1) * this->mesh_m.getGridsize(1);
@@ -219,8 +221,8 @@ namespace ippl {
 
             // Add the face DOFs
             if (Dim >= 2) {
-                for (std::size_t i = 0; i < Order - 1; ++i) {
-                    for (std::size_t j = 0; j < Order - 1; ++j) {
+                for (index_t i = 0; i < Order - 1; ++i) {
+                    for (index_t j = 0; j < Order - 1; ++j) {
                         // TODO CHECK
                         globalDOFs[8 + 4 * (Order - 1) + i * (Order - 1) + j] =
                             globalDOFs[0] + (i + 1) + (j + 1) * this->mesh_m.getGridsize(1);
@@ -264,7 +266,7 @@ namespace ippl {
         // The variable that accumulates the product of the shape functions.
         T product = 1;
 
-        // for (std::size_t d = 0; d < Dim; d++) {
+        // for (index_t d = 0; d < Dim; d++) {
         //    if (localPoint[d] < local_vertex_indices[d]) {
         //        product *= localPoint[d];
         //    } else {
@@ -301,11 +303,11 @@ namespace ippl {
         // shape functions in each dimension except the current one. The one of the current
         // dimension is replaced by the derivative of the shape function in that dimension,
         // which is either 1 or -1.
-        // for (std::size_t d = 0; d < Dim; d++) {
+        // for (index_t d = 0; d < Dim; d++) {
         //     // The variable that accumulates the product of the shape functions.
         //     T product = 1;
 
-        //     for (std::size_t d2 = 0; d2 < Dim; d2++) {
+        //     for (index_t d2 = 0; d2 < Dim; d2++) {
         //         if (d2 == d) {
         //             if (localPoint[d] < local_vertex_point[d]) {
         //                 product *= 1;

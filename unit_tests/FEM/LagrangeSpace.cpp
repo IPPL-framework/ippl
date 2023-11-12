@@ -26,10 +26,9 @@ public:
 
     LagrangeSpaceTest()
         : rng(42)
+        , meshSizes(3)
         , ref_element()
-        , mesh(ippl::LagrangeSpace<T, Dim, Order, QuadratureType>::makeNDIndex(
-                   ippl::Vector<unsigned, Dim>(2u)),
-               ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
         , lagrange_space(mesh, ref_element, quadrature) {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
@@ -39,6 +38,7 @@ public:
 
     std::mt19937 rng;
 
+    const ippl::Vector<unsigned, Dim> meshSizes;
     const ElementType ref_element;
     const ippl::UniformCartesian<T, Dim> mesh;
     const QuadratureType quadrature;
@@ -58,7 +58,7 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
     const std::size_t& dim     = lagrange_space.dim;
     const std::size_t& order   = lagrange_space.order;
 
-    std::size_t localDOFIndex;
+    std::size_t localDOFIndex     = static_cast<unsigned>(-1);
     const std::size_t numElements = (1 << dim);
     const std::size_t numDOFs     = static_cast<unsigned>(pow(3, dim));
 
@@ -88,20 +88,22 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
     if (order == 1) {
         for (std::size_t el_i = 0; el_i < numElements; el_i++) {
             for (std::size_t dof_i = 0; dof_i < numDOFs; dof_i++) {
-                localDOFIndex = lagrange_space.getLocalDOFIndex(dof_i, el_i);
-
                 const auto it = std::find(globalElementDOFs[el_i].begin(),
                                           globalElementDOFs[el_i].end(), dof_i);
 
                 const std::size_t index = it - globalElementDOFs[el_i].begin();
 
+                try {
+                    localDOFIndex = lagrange_space.getLocalDOFIndex(el_i, dof_i);
+                } catch (std::exception& e) {
+                    std::cout << "Element " << el_i << " does not contain DOF " << dof_i
+                              << std::endl;
+                    ASSERT_EQ(it, globalElementDOFs[el_i].end());
+                }
+
                 if (it != globalElementDOFs[el_i].end()) {
                     std::cout << "Found DOF " << dof_i << " in element " << el_i << std::endl;
                     ASSERT_EQ(localDOFIndex, index);
-                }
-
-                else {
-                    ASSERT_EQ(localDOFIndex, static_cast<std::size_t>(-1));
                 }
             }
         }
@@ -112,7 +114,50 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
-    FAIL();
+    auto& lagrange_space     = this->lagrange_space;
+    const std::size_t& dim   = lagrange_space.dim;
+    const std::size_t& order = lagrange_space.order;
+
+    if (order == 1) {
+        if (dim == 1) {
+            // start element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 0), 0);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 1), 1);
+
+            // end element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 0), 1);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 1), 2);
+
+        } else if (dim == 2) {
+            // lower left element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 0), 0);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 1), 1);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 2), 4);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 3), 3);
+
+            // lower right element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 0), 1);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 1), 2);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 2), 5);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 3), 4);
+
+            // upper left element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 0), 3);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 1), 4);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 2), 7);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 3), 6);
+
+            // upper right element
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 0), 4);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 1), 5);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 2), 8);
+            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 3), 7);
+        } else {
+            FAIL();
+        }
+    } else {
+        FAIL();
+    }
 }
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
@@ -154,8 +199,8 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
             ASSERT_EQ(global_dof_indices.dim, 4);
             ASSERT_EQ(global_dof_indices[0], 4);
             ASSERT_EQ(global_dof_indices[1], 5);
-            ASSERT_EQ(global_dof_indices[2], 7);
-            ASSERT_EQ(global_dof_indices[3], 8);
+            ASSERT_EQ(global_dof_indices[2], 8);
+            ASSERT_EQ(global_dof_indices[3], 7);
         } else if (order == 2) {
             ASSERT_EQ(global_dof_indices[0], 12);
             ASSERT_EQ(global_dof_indices[1], 14);

@@ -93,11 +93,11 @@ namespace ippl {
 
         // point_t getCoordsOfDOF(const index_t& dof_index) const override;
 
-        index_t getLocalDOFIndex(const index_t& global_dof_index,
-                                 const index_t& element_index) const override;
+        index_t getLocalDOFIndex(const index_t& elementIndex,
+                                 const index_t& globalDOFIndex) const override;
 
-        index_t getGlobalDOFIndex(const index_t& local_dof_index,
-                                  const index_t& element_index) const override;
+        index_t getGlobalDOFIndex(const index_t& elementIndex,
+                                  const index_t& localDOFIndex) const override;
 
         Vector<index_t, numElementDOFs> getLocalDOFIndices() const override;
 

@@ -103,11 +103,11 @@ namespace ippl {
 
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
-        virtual index_t getLocalDOFIndex(const index_t& global_dof_index,
-                                         const index_t& elementIndex) const = 0;
+        virtual index_t getLocalDOFIndex(const index_t& elementIndex,
+                                         const index_t& globalDOFIndex) const = 0;
 
-        virtual index_t getGlobalDOFIndex(const index_t& local_dof_index,
-                                          const index_t& elementIndex) const = 0;
+        virtual index_t getGlobalDOFIndex(const index_t& elementIndex,
+                                          const index_t& localDOFIndex) const = 0;
 
         virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const = 0;
 
