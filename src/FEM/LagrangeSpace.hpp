@@ -83,8 +83,8 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateLoadVector(
         Vector<T, numGlobalDOFs>& b) const {
-        assert(b.dim > 0);  // TODO change assert to be correct
         // TODO implement
+        assert(b.dim > 0);
     }
 
     ///////////////////////////////////////////////////////////////////////

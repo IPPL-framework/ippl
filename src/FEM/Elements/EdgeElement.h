@@ -7,7 +7,7 @@
 
 namespace ippl {
 
-    template <typename T>  // TODO maybe remove the fixed geometric dim at some point
+    template <typename T>
     class EdgeElement : public Element1D<T, 2> {
     public:
         static constexpr unsigned NumVertices = 2;

@@ -51,8 +51,7 @@ namespace ippl {
 
         // A vector with the position of the element in the mesh in each dimension
         typedef typename FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs,
-                                            QuadratureType>::ndindex_t
-            ndindex_t;  // TODO look ad NDINDEX
+                                            QuadratureType>::ndindex_t ndindex_t;
 
         // A point in the global coordinate system
         typedef typename FiniteElementSpace<T, Dim, numElementDOFs, numGlobalDOFs,

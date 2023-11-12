@@ -24,7 +24,6 @@ namespace ippl {
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::numElements() const {
         Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1u;
 
-        // TODO Use a reduction instead
         std::size_t num_elements = 1;
         for (std::size_t d = 0; d < Dim; ++d) {
             num_elements *= cells_per_dim[d];
@@ -142,7 +141,6 @@ namespace ippl {
                                      QuadratureType>::ndindex_t& element_nd_index) const {
         const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
 
-        // TODO maybe move into function that gets the vertex index from the vertex nd_index
         std::size_t smallest_vertex_index = 0;
         for (int d = Dim - 1; d >= 0; --d) {
             std::size_t temp_index = element_nd_index[d];

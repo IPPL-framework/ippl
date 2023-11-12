@@ -43,7 +43,7 @@ namespace ippl {
         typedef std::size_t index_t;  // look at ippl::Index
 
         // A vector with the position of the element in the mesh in each dimension
-        typedef Vector<index_t, Dim> ndindex_t;  // TODO look ad NDINDEX
+        typedef Vector<index_t, Dim> ndindex_t;
 
         // A point in the global coordinate system
         typedef Vector<T, Dim> point_t;

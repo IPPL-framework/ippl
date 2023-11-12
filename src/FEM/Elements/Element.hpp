@@ -25,7 +25,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumVertices>
     T Element<T, Dim, NumVertices>::getDeterminantOfTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices) const {
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
+        const {
         T determinant = 1.0;
 
         // Since the jacobian is a diagonal matrix in our case the determinant is the product of the
@@ -38,8 +39,10 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
-    Element<T, Dim, NumVertices>::diag_matrix_vec_t Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices) const {
+    Element<T, Dim, NumVertices>::diag_matrix_vec_t
+    Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
+        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
+        const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);
     }
@@ -48,7 +51,6 @@ namespace ippl {
     bool Element<T, Dim, NumVertices>::isPointInRefElement(const Vector<T, Dim>& point) const {
         // check if the local coordinates are inside the reference element
 
-        // TODO change from hardcoded for n-cuboid elements to using function of the Element class
         for (std::size_t d = 0; d < Dim; d++) {
             if (point[d] > 1.0 || point[d] < 0.0) {
                 // The global coordinates are outside of the support.
