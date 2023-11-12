@@ -105,7 +105,23 @@ namespace ippl {
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& global_dof_index,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
         // TODO implement
-        return global_dof_index + element_index;
+        // TODO fix not order independent, only works for order 1
+        static_assert(Order == 1, "Only order 1 is supported at the moment");
+
+        // Get NDIndex of the element
+        ndindex_t element_ndindex = this->getElementNDIndex(element_index);
+
+        // Get all the global DOFs for the element
+        const auto global_dofs = this->getElementMeshVertexIndices(element_ndindex);
+
+        // Find the global DOF in the vector and return the local DOF index
+        // TODO this can be done faster since the global DOFs are sorted
+        for (std::size_t i = 0; i < numElementDOFs; ++i) {
+            if (global_dofs[i] == global_dof_index) {
+                return i;
+            }
+        }
+        return -1;  // TODO throw exception
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
@@ -113,8 +129,19 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, QuadratureType>::getGlobalDOFIndex(
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& local_dof_index,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& element_index) const {
-        // TODO implement
-        return local_dof_index + element_index;
+        // TODO fix not order independent, only works for order 1
+        static_assert(Order == 1, "Only order 1 is supported at the moment");
+
+        // Get NDIndex of the element
+        ndindex_t element_ndindex = this->getElementNDIndex(element_index);
+
+        // Modify the element NDIndex depending on the Order
+        // element_ndindex *= Order;
+
+        // Get all the global DOFs for the element
+        const auto global_dofs = this->getElementMeshVertexIndices(element_ndindex);
+
+        return global_dofs[local_dof_index];
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>

@@ -10,7 +10,12 @@ namespace ippl {
         : mesh_m(mesh)
         , ref_element_m(ref_element)
         , quadrature_m(quadrature) {
-        assert(mesh.Dimension == Dim);
+        assert(mesh.Dimension == Dim && "Mesh dimension does not match the dimension of the space");
+
+        //
+        for (std::size_t d = 0; d < Dim; ++d) {
+            assert(mesh.getGridsize(d) > 0 && "Mesh has no cells in at least one dimension");
+        }
     }
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
@@ -76,21 +81,19 @@ namespace ippl {
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::getMeshVertexIndex(
         const FiniteElementSpace<T, Dim, NumElementDOFs, NumGlobalDOFs, QuadratureType>::ndindex_t&
-            vertex_nd_index) const {
-        std::size_t vertex_index = 0;
+            vertexNDIndex) const {
+        const auto meshSizes = this->mesh_m.getGridsize();
 
-        const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
-
-        std::size_t temp_size;
-        for (int d = Dim - 1; d >= 0; --d) {
-            temp_size = vertex_nd_index[d];
-            for (int i = d; i >= 1; --i) {
-                temp_size *= num_vertices[i];
+        // Compute the vector to multiply the ndindex with
+        ippl::Vector<std::size_t, Dim> vec(1);
+        for (std::size_t d = 1; d < dim; ++d) {
+            for (std::size_t d2 = d; d2 < Dim; ++d2) {
+                vec[d2] *= meshSizes[d - 1];
             }
-            vertex_index += temp_size;
         }
 
-        return vertex_index;
+        // return the dot product between the vertex ndindex and vec.
+        return vertexNDIndex.dot(vec);
     }
 
     // implementation of function to retrieve the index of an element in each dimension

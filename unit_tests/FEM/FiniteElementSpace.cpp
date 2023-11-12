@@ -25,9 +25,9 @@ public:
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
     // Initialize a 2x2 mesh with 1.0 spacing and 0.0 offset.
-    const ippl::Vector<unsigned, Dim> sizes = ippl::Vector<unsigned, Dim>(3u);
+    const ippl::Vector<unsigned, Dim> meshSizes = ippl::Vector<unsigned, Dim>(4u);
     // 3 nodes in each dimension, or 2 elements in each dimension
-    const ippl::NDIndex<Dim> meshSize = ippl::NDIndex<Dim>(sizes);
+    const ippl::NDIndex<Dim> meshSize = ippl::NDIndex<Dim>(meshSizes);
 
     FiniteElementSpaceTest()
         : rng(42)
@@ -46,19 +46,17 @@ public:
     const ippl::LagrangeSpace<T, Dim, 1, QuadratureType> fem_space;
 };
 
-using Tests = TestParams::tests<1, 2>;  // TODO add dim 3
+using Tests = TestParams::tests<1, 2>;  // TODO add 3D
 TYPED_TEST_CASE(FiniteElementSpaceTest, Tests);
 
 TYPED_TEST(FiniteElementSpaceTest, numElements) {
     const auto& fem_space  = this->fem_space;
-    const auto& mesh       = this->mesh;
+    const auto& meshSizes  = this->meshSizes;
     const std::size_t& dim = fem_space.dim;
-
-    EXPECT_GE(mesh.getGridsize(0) - 1u, 2u);
 
     unsigned num_elements = 1;
     for (unsigned d = 0; d < dim; ++d) {
-        num_elements *= mesh.getGridsize(d) - 1u;
+        num_elements *= meshSizes[d] - 1;
     }
 
     EXPECT_EQ(fem_space.numElements(), num_elements);
@@ -66,50 +64,72 @@ TYPED_TEST(FiniteElementSpaceTest, numElements) {
 
 TYPED_TEST(FiniteElementSpaceTest, numElementsInDim) {
     const auto& fem_space  = this->fem_space;
+    const auto& meshSizes  = this->meshSizes;
     const std::size_t& dim = fem_space.dim;
 
     for (std::size_t d = 0; d < dim; ++d) {
-        EXPECT_EQ(fem_space.numElementsInDim(d), 2u);
+        EXPECT_EQ(fem_space.numElementsInDim(d), meshSizes[d] - 1);
     }
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
     const auto& fem_space  = this->fem_space;
+    const auto& meshSizes  = this->meshSizes;
     const std::size_t& dim = fem_space.dim;
 
-    const std::size_t vertex_index = static_cast<double>(pow(3.0, static_cast<double>(dim))) - 1;
-    const auto vertex_nd_index     = fem_space.getMeshVertexNDIndex(vertex_index);
-
-    // std::cout << "Expected NDIndex for vertex " << vertex_index << ":\n";
-    // std::cout << "[ ";
-    // for (std::size_t d = 0; d < dim; ++d) {
-    //     std::cout << 2 << " ";
-    // }
-    // std::cout << "]\n";
-
-    // std::cout << "Computed NDIndex for vertex " << vertex_index << "\n";
-    // std::cout << "[ ";
-    // for (std::size_t d = 0; d < dim; ++d) {
-    //     std::cout << vertex_nd_index[d] << " ";
-    // }
-    // std::cout << "]\n";
-
-    ASSERT_EQ(vertex_nd_index.dim, dim);
+    // compute the number of vertices
+    std::size_t num_vertices = 1;
     for (std::size_t d = 0; d < dim; ++d) {
-        EXPECT_EQ(vertex_nd_index[d], 2u);
+        num_vertices *= meshSizes[d];
+    }
+
+    ippl::Vector<std::size_t, fem_space.dim> ndindexCounter(0);
+
+    for (std::size_t vertex_index = 0; vertex_index < num_vertices; ++vertex_index) {
+        const auto computed_vertex_ndindex = fem_space.getMeshVertexNDIndex(vertex_index);
+
+        ASSERT_EQ(computed_vertex_ndindex.dim, dim);
+
+        for (std::size_t d = 0; d < dim; ++d) {
+            EXPECT_EQ(computed_vertex_ndindex[d], ndindexCounter[d]);
+
+            if (ndindexCounter[d] < meshSizes[d] - 1) {
+                ndindexCounter[d] += 1;
+                break;
+            } else {
+                ndindexCounter[d] = 0;
+            }
+        }
     }
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
     const auto& fem_space  = this->fem_space;
+    const auto& meshSizes  = this->meshSizes;
     const std::size_t& dim = fem_space.dim;
 
-    const std::size_t expected_vertex_index =
-        static_cast<double>(pow(3.0, static_cast<double>(dim))) - 1;
-    const ippl::Vector<std::size_t, fem_space.dim> vertex_nd_index(2);
-    const std::size_t computed_vertex_nd_index = fem_space.getMeshVertexIndex(vertex_nd_index);
+    // compute the number of vertices
+    std::size_t num_vertices = 1;
+    for (std::size_t d = 0; d < dim; ++d) {
+        num_vertices *= meshSizes[d];
+    }
 
-    EXPECT_EQ(computed_vertex_nd_index, expected_vertex_index);
+    ippl::Vector<std::size_t, fem_space.dim> ndindexCounter(0);
+
+    for (std::size_t vertex_index = 0; vertex_index < num_vertices; ++vertex_index) {
+        const std::size_t computed_vertex_index = fem_space.getMeshVertexIndex(ndindexCounter);
+
+        ASSERT_EQ(vertex_index, computed_vertex_index);
+
+        for (std::size_t d = 0; d < dim; ++d) {
+            if (ndindexCounter[d] < meshSizes[d] - 1) {
+                ndindexCounter[d] += 1;
+                break;
+            } else {
+                ndindexCounter[d] = 0;
+            }
+        }
+    }
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
@@ -117,14 +137,14 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
     const std::size_t& dim = fem_space.dim;
 
     if (dim == 1) {
-        const auto indices = fem_space.getElementMeshVertexNDIndices(1);
+        const auto indices = fem_space.getElementMeshVertexNDIndices(2);
         ASSERT_EQ(indices.dim, 2);
-        ASSERT_EQ(indices[0][0], 1);
-        ASSERT_EQ(indices[1][0], 2);
+        ASSERT_EQ(indices[0][0], 2);
+        ASSERT_EQ(indices[1][0], 3);
     } else if (dim == 2) {
-        const unsigned element_index = 3;
+        const unsigned element_index = 8;
         const ippl::Vector<unsigned, fem_space.dim> element_indices =
-            fem_space.getElementNDIndex(element_index);  // {1, 1}
+            fem_space.getElementNDIndex(element_index);  // {2, 2}
         const auto indices = fem_space.getElementMeshVertexNDIndices(element_indices);
 
         // std::cout << "Expected indices:\n";
@@ -138,45 +158,69 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
         // std::cout << indices[0][0] << " - " << indices[1][0] << "\n";
 
         ASSERT_EQ(indices.dim, 4);
-        ASSERT_EQ(indices[0][0], 1);
-        ASSERT_EQ(indices[0][1], 1);
+        ASSERT_EQ(indices[0][0], 2);
+        ASSERT_EQ(indices[0][1], 2);
 
-        ASSERT_EQ(indices[1][0], 2);
-        ASSERT_EQ(indices[1][1], 1);
+        ASSERT_EQ(indices[1][0], 3);
+        ASSERT_EQ(indices[1][1], 2);
 
-        ASSERT_EQ(indices[2][0], 1);
-        ASSERT_EQ(indices[2][1], 2);
+        ASSERT_EQ(indices[2][0], 2);
+        ASSERT_EQ(indices[2][1], 3);
 
-        ASSERT_EQ(indices[3][0], 2);
-        ASSERT_EQ(indices[3][1], 2);
+        ASSERT_EQ(indices[3][0], 3);
+        ASSERT_EQ(indices[3][1], 3);
     }
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
-    const auto& fem_space  = this->fem_space;
-    const std::size_t& dim = fem_space.dim;
+    const auto& fem_space          = this->fem_space;
+    const std::size_t& dim         = fem_space.dim;
+    const std::size_t& numElements = fem_space.numElements();
 
-    const std::size_t element_index = (1 << dim) - 1;  // 2^dim - 1
+    std::vector<std::vector<std::size_t>> element_nd_indices(dim);
 
-    const auto element_nd_index = fem_space.getElementNDIndex(element_index);
-
-    std::cout << "Expected NDIndex for element " << element_index << ":\n";
-    std::cout << "[ ";
-    for (std::size_t d = 0; d < dim; ++d) {
-        std::cout << 1 << " ";
+    if (dim == 1) {
+        element_nd_indices = {{0}, {1}, {2}};
+    } else if (dim == 2) {
+        element_nd_indices = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1},
+                              {2, 1}, {0, 2}, {1, 2}, {2, 2}};
+    } else if (dim == 3) {
+        element_nd_indices = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {0, 1, 0}, {1, 1, 0}, {2, 1, 0},
+                              {0, 2, 0}, {1, 2, 0}, {2, 2, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1},
+                              {0, 1, 1}, {1, 1, 1}, {2, 1, 1}, {0, 2, 1}, {1, 2, 1}, {2, 2, 1},
+                              {0, 0, 2}, {1, 0, 2}, {2, 0, 2}, {0, 1, 2}, {1, 1, 2}, {2, 1, 2},
+                              {0, 2, 2}, {1, 2, 2}, {2, 2, 2}};
+    } else {
+        FAIL();
     }
-    std::cout << "]\n";
 
-    std::cout << "Computed NDIndex for element " << element_index << ":\n";
-    std::cout << "[ ";
-    for (std::size_t d = 0; d < dim; ++d) {
-        std::cout << element_nd_index[d] << " ";
-    }
-    std::cout << "]\n";
+    ippl::Vector<std::size_t, fem_space.dim> element_nd_index;
 
-    ASSERT_EQ(element_nd_index.dim, dim);
-    for (std::size_t d = 0; d < dim; ++d) {
-        EXPECT_EQ(element_nd_index[d], 1);
+    std::cout << "Number of elements: " << numElements << "\n";
+
+    for (std::size_t i = 0; i < numElements; ++i) {
+        element_nd_index = fem_space.getElementNDIndex(i);
+
+        // std::cout << "Expected NDIndex for element " << element_index << ":\n";
+        // std::cout << "[ ";
+        // for (std::size_t d = 0; d < dim; ++d) {
+        //     std::cout << 1 << " ";
+        // }
+        // std::cout << "]\n";
+
+        // std::cout << "Computed NDIndex for element " << element_index << ":\n";
+        // std::cout << "[ ";
+        // for (std::size_t d = 0; d < dim; ++d) {
+        //     std::cout << element_nd_index[d] << " ";
+        // }
+        // std::cout << "]\n";
+
+        ASSERT_EQ(element_nd_index.dim, dim);
+        ASSERT_EQ(element_nd_index.dim, element_nd_indices.at(i).size());
+
+        for (std::size_t d = 0; d < dim; ++d) {
+            EXPECT_EQ(element_nd_index[d], element_nd_indices.at(i).at(d));
+        }
     }
 }
 
@@ -185,14 +229,14 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
     const std::size_t& dim = fem_space.dim;
 
     if (dim == 1) {
-        const auto indices = fem_space.getElementMeshVertexIndices(1);
+        const auto indices = fem_space.getElementMeshVertexIndices(2);
         ASSERT_EQ(indices.dim, 2);
-        ASSERT_EQ(indices[0], 1);
-        ASSERT_EQ(indices[1], 2);
+        ASSERT_EQ(indices[0], 2);
+        ASSERT_EQ(indices[1], 3);
     } else if (dim == 2) {
-        const unsigned element_index = 3;
+        const unsigned element_index = 8;
         const ippl::Vector<unsigned, fem_space.dim> element_indices =
-            fem_space.getElementNDIndex(element_index);  // {1, 1}
+            fem_space.getElementNDIndex(element_index);  // {2, 2}
         const auto indices = fem_space.getElementMeshVertexIndices(element_indices);
 
         // std::cout << "Expected indices:\n";
@@ -206,10 +250,10 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
         // std::cout << indices[0] << " - " << indices[1] << "\n";
 
         ASSERT_EQ(indices.dim, 4);
-        ASSERT_EQ(indices[0], 4);
-        ASSERT_EQ(indices[1], 5);
-        ASSERT_EQ(indices[2], 7);
-        ASSERT_EQ(indices[3], 8);
+        ASSERT_EQ(indices[0], 10);
+        ASSERT_EQ(indices[1], 11);
+        ASSERT_EQ(indices[2], 14);
+        ASSERT_EQ(indices[3], 15);
     } else {
         FAIL();
     }
@@ -219,39 +263,41 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
     const auto& fem_space  = this->fem_space;
     const std::size_t& dim = fem_space.dim;
 
-    const auto element_ndindex = ippl::Vector<unsigned, fem_space.dim>(1);
+    const auto element_ndindex = ippl::Vector<unsigned, fem_space.dim>(2);
 
     if (dim == 1) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
         ASSERT_EQ(indices.dim, 2);
-        ASSERT_EQ(indices[0][0], 1.0);
-        ASSERT_EQ(indices[1][0], 2.0);
+        ASSERT_EQ(indices[0][0], 2.0);
+        ASSERT_EQ(indices[1][0], 3.0);
     } else if (dim == 2) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
 
-        std::cout << "Expected points:\n";
-        std::cout << "(" << 1.0 << "," << 2.0 << ") - (" << 2.0 << "," << 2.0 << ")\n";
-        std::cout << "(" << 1.0 << "," << 1.0 << ") - (" << 2.0 << "," << 1.0 << ")\n";
+        // std::cout << "Expected points:\n";
+        // std::cout << "(" << 1.0 << "," << 2.0 << ") - (" << 2.0 << "," << 2.0 << ")\n";
+        // std::cout << "(" << 1.0 << "," << 1.0 << ") - (" << 2.0 << "," << 1.0 << ")\n";
 
-        std::cout << "Computed points:\n";
-        std::cout << "(" << indices[2][0] << "," << indices[2][1] << ") - (" << indices[3][0] << ","
-                  << indices[3][1] << ")\n";
-        std::cout << "(" << indices[0][0] << "," << indices[0][1] << ") - (" << indices[1][0] << ","
-                  << indices[1][1] << ")\n";
+        // std::cout << "Computed points:\n";
+        // std::cout << "(" << indices[2][0] << "," << indices[2][1] << ") - (" << indices[3][0] <<
+        // ","
+        //           << indices[3][1] << ")\n";
+        // std::cout << "(" << indices[0][0] << "," << indices[0][1] << ") - (" << indices[1][0] <<
+        // ","
+        //           << indices[1][1] << ")\n";
 
         ASSERT_EQ(indices.dim, 4);
 
-        ASSERT_EQ(indices[0][0], 1.0);
-        ASSERT_EQ(indices[0][1], 1.0);
+        ASSERT_EQ(indices[0][0], 2.0);
+        ASSERT_EQ(indices[0][1], 2.0);
 
-        ASSERT_EQ(indices[1][0], 2.0);
-        ASSERT_EQ(indices[1][1], 1.0);
+        ASSERT_EQ(indices[1][0], 3.0);
+        ASSERT_EQ(indices[1][1], 2.0);
 
-        ASSERT_EQ(indices[2][0], 1.0);
-        ASSERT_EQ(indices[2][1], 2.0);
+        ASSERT_EQ(indices[2][0], 2.0);
+        ASSERT_EQ(indices[2][1], 3.0);
 
-        ASSERT_EQ(indices[3][0], 2.0);
-        ASSERT_EQ(indices[3][1], 2.0);
+        ASSERT_EQ(indices[3][0], 3.0);
+        ASSERT_EQ(indices[3][1], 3.0);
     } else {
         FAIL();
     }

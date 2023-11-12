@@ -54,7 +54,61 @@ using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
-    FAIL();
+    const auto& lagrange_space = this->lagrange_space;
+    const std::size_t& dim     = lagrange_space.dim;
+    const std::size_t& order   = lagrange_space.order;
+
+    std::size_t localDOFIndex;
+    const std::size_t numElements = (1 << dim);
+    const std::size_t numDOFs     = static_cast<unsigned>(pow(3, dim));
+
+    std::vector<std::vector<unsigned>> globalElementDOFs;
+
+    std::cout << "Dim: " << dim << std::endl;
+
+    if (dim == 1) {
+        globalElementDOFs = {// Element 0
+                             {0, 1},
+                             // Element 1
+                             {1, 2}};
+    } else if (dim == 2) {
+        globalElementDOFs = {// Element 0
+                             {0, 1, 4, 3},
+                             // Element 1
+                             {1, 2, 5, 4},
+                             // Element 2
+                             {3, 4, 7, 6},
+                             // Element 3
+                             {4, 5, 8, 7}};
+    } else {
+        // This dimension was not handled
+        FAIL();
+    }
+
+    if (order == 1) {
+        for (std::size_t el_i = 0; el_i < numElements; el_i++) {
+            for (std::size_t dof_i = 0; dof_i < numDOFs; dof_i++) {
+                localDOFIndex = lagrange_space.getLocalDOFIndex(dof_i, el_i);
+
+                const auto it = std::find(globalElementDOFs[el_i].begin(),
+                                          globalElementDOFs[el_i].end(), dof_i);
+
+                const std::size_t index = it - globalElementDOFs[el_i].begin();
+
+                if (it != globalElementDOFs[el_i].end()) {
+                    std::cout << "Found DOF " << dof_i << " in element " << el_i << std::endl;
+                    ASSERT_EQ(localDOFIndex, index);
+                }
+
+                else {
+                    ASSERT_EQ(localDOFIndex, static_cast<std::size_t>(-1));
+                }
+            }
+        }
+    } else {
+        // This order was not handled
+        FAIL();
+    }
 }
 
 TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
