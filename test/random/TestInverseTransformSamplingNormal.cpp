@@ -65,35 +65,26 @@ KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
 }
 
 void MomentsFromSamples(view_type position, int d, int ntotal, const int P, double *moms){
+    int d_ = d;
+    int ntotal_ = ntotal;
     double temp = 0.0;
     Kokkos::parallel_reduce("moments", position.extent(0),
                             KOKKOS_LAMBDA(const int i, double& valL) {
-        double myVal = position(i)[d];
+        double myVal = position(i)[d_];
         valL += myVal;
     }, Kokkos::Sum<double>(temp));
 
-    double mean = temp / ntotal;
+    double mean = temp / ntotal_;
     moms[0] = mean;
 
     for (int p = 1; p < P; p++) {
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d] - mean, p + 1);
+            double myVal = pow(position(i)[d_] - mean, p + 1);
             valL += myVal;
         }, Kokkos::Sum<double>(temp));
-        moms[p] = temp / ntotal;
-    }
-
-    double gtemp[P];
-    MPI_Allreduce(moms, gtemp, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
-
-    for (int p = 1; p < P; p++) {
-        gtemp[p] /= ippl::Comm->size()*(ntotal/(ntotal-1)); // Divide by the number of GPUs
-    }
-
-    for (int p = 1; p < P; p++) {
-        moms[p] = gtemp[p];
+        moms[p] = temp / ntotal_;
     }
 }
 
@@ -110,8 +101,10 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        Inform m("test ITS normal");
+
         ippl::Vector<int, 2> nr   = {100, 100};
-        size_type ntotal = 1000000;
+        size_type ntotal = 100000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -141,16 +134,11 @@ int main(int argc, char* argv[]) {
 
         GeneratorPool rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-        const double mu1 = 0.0;
-        const double sd1 = 1.0;
-        const double mu2 = -1.0;
-        const double sd2 = 0.5;
-        //const double par[4] = {mu1, sd1, mu2, sd2};
-        double *par = new double [4];
-        par[0] = mu1;
-        par[1] = sd1;
-        par[2] = mu2;
-        par[3] = sd2;
+        const double mu1 = 0.1;
+        const double sd1 = 0.5;
+        const double mu2 = -0.1;
+        const double sd2 = 1.0;
+        const double par[4] = {mu1, sd1, mu2, sd2};
         using Dist_t = ippl::random::NormalDistribution<double, Dim>;
         using sampling_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, Dist_t>;
 

@@ -131,8 +131,7 @@ namespace ippl {
     */
     template<typename T>
     KOKKOS_FUNCTION T normal_estimate_func(T u, T mean, T stddev) {
-      const T pi = Kokkos::numbers::pi_v<T>;
-      return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
+      return mean + 0.*u*stddev;
     }
 
      /*!

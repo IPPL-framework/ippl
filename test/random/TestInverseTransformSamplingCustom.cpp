@@ -134,8 +134,10 @@ void MomentsFromSamples(view_type position, int d, int ntotal, const int P, doub
         valL += myVal;
     }, Kokkos::Sum<double>(temp));
 
-    double mean = temp / ntotal;
-    moms[0] = mean;
+    double mean = 0.0;
+    MPI_Allreduce(&mean, &temp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+
+    moms[0] = mean/ntotal;
 
     for (int p = 1; p < P; p++) {
         temp = 0.0;
@@ -177,7 +179,7 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        ippl::Vector<int, 2> nr   = {20, 20};
+        ippl::Vector<int, 2> nr   = {100, 100};
         size_type ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
@@ -211,7 +213,7 @@ int main(int argc, char* argv[]) {
 
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4; // dimension of parameters in the pdf
-        const double mu = 0.0;
+        const double mu = 0.5;
         const double sd = 0.5;
         double *parH = new double [DimP];
         parH[0] = mu;
@@ -223,8 +225,8 @@ int main(int argc, char* argv[]) {
 
         DistH_t distH(parH);
         samplingH_t samplingH(distH, rmax, rmin, rlayout, ntotal);
-        ntotal = samplingH.getLocalNum();
-        view_type positionH("positionH", ntotal);
+        size_type nlocal = samplingH.getLocalNum();
+        view_type positionH("positionH", nlocal);
         samplingH.generate(positionH, rand_pool64);
         
         const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
