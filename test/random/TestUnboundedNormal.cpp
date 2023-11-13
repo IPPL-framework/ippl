@@ -40,62 +40,59 @@ using size_type = ippl::detail::size_type;
 
 using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
-KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
+KOKKOS_FUNCTION unsigned int get_double_factorial(unsigned int n)
 {
     if (n == 0 || n==1)
       return 1;
-    return n*doublefactorial(n-2);
+    return n*get_double_factorial(n-2);
 }
 
-KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
+KOKKOS_FUNCTION double get_norm_dist_cent_mom(double stdev, unsigned int p){
     // returns the central moment E[(x-\mu)^p] for Normal distribution function
     if(p%2==0){
-        return pow(stdev, p)*doublefactorial(p-1);
+        return pow(stdev, p)*get_double_factorial(p-1);
     }
     else{
-        return 0.;
+	return 0.;
     }
 }
 
-KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
+KOKKOS_FUNCTION void get_norm_dist_cent_moms(double stdev, const int P, double *moms_p){
     for(int p=1; p<P; p++){
-        moms[p] = NormDistCentMom(stdev, p+1);
+        moms_p[p] = get_norm_dist_cent_mom(stdev, p+1);
     }
 }
 
-void MomentsFromSamples(view_type position, int d, int ntotal, const int P, double *moms){
+void get_moments_from_samples(view_type position, int d, int ntotal, const int P, double *moms_p){
+    int d_ = d;
+    int ntotal_ = ntotal;
     double temp = 0.0;
     Kokkos::parallel_reduce("moments", position.extent(0),
                             KOKKOS_LAMBDA(const int i, double& valL) {
-        double myVal = position(i)[d];
+        double myVal = position(i)[d_];
         valL += myVal;
-        },
-        Kokkos::Sum<double>(temp));
-    Kokkos::fence();
-    double gtemp = 0.0;
-    MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    double mean = gtemp/ntotal;
-    moms[0] = mean;
-    for(int p=1; p<P; p++){
+    }, Kokkos::Sum<double>(temp));
+
+    double mean = temp / ntotal_;
+    moms_p[0] = mean;
+
+    for (int p = 1; p < P; p++) {
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d]-mean, p+1);
+            double myVal = pow(position(i)[d_] - mean, p + 1);
             valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        Kokkos::fence();
-        MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        moms[p] = gtemp/(ntotal-1); // Bessel's correction
+        }, Kokkos::Sum<double>(temp));
+        moms_p[p] = temp / ntotal_;
     }
 }
 
-void WriteErrorInMoments(double *moms, double *moms_ref, int P){
-    Inform csvout(NULL, "data/error_moments_unbounded_normal_dist.csv", Inform::APPEND);
+void write_error_in_moments(double *moms_p, double *moms_ref_p, int P){
+    Inform csvout(NULL, "data/error_moments_normal_dist.csv", Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
     for(int i=0; i<P; i++){
-        csvout << moms_ref[i] << " " << moms[i] << " " << fabs(moms_ref[i] - moms[i]) << endl;
+        csvout << moms_ref_p[i] << " " << moms_p[i] << " " << fabs(moms_ref_p[i] - moms_p[i]) << endl;
     }
     ippl::Comm->barrier();
 }
@@ -103,8 +100,7 @@ void WriteErrorInMoments(double *moms, double *moms_ref, int P){
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        ippl::Vector<int, 2> nr   = {100, 100};
-        const unsigned int ntotal = 1000000;
+        size_type ntotal = 1000000;
 
         int seed = 42;
 
@@ -126,15 +122,15 @@ int main(int argc, char* argv[]) {
         double moms1[P], moms2[P];
 
         moms1_ref[0] = mu[0];
-        NormDistCentMoms(sd[0], P, moms1_ref);
-        MomentsFromSamples(position, 0, ntotal, P, moms1);
+        get_norm_dist_cent_moms(sd[0], P, moms1_ref);
+        get_moments_from_samples(position, 0, ntotal, P, moms1);
 
         moms2_ref[0] = mu[1];
-        NormDistCentMoms(sd[1], P, moms2_ref);
-        MomentsFromSamples(position, 1, ntotal, P, moms2);
+        get_norm_dist_cent_moms(sd[1], P, moms2_ref);
+        get_moments_from_samples(position, 1, ntotal, P, moms2);
 
-        WriteErrorInMoments(moms1, moms1_ref, P);
-        WriteErrorInMoments(moms2, moms2_ref, P);
+        write_error_in_moments(moms1, moms1_ref, P);
+        write_error_in_moments(moms2, moms2_ref, P);
 
     }
     ippl::finalize();

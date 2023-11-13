@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 /***************************************************************************
  *
@@ -42,32 +43,34 @@ using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>
 
 using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
+using size_type = ippl::detail::size_type;
+
 struct custom_cdf{
-       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params) const {
+       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
            if(d==0){
-               return ippl::random::normal_cdf_func<double>(x, params[0], params[1]);
+               return ippl::random::normal_cdf_func<double>(x, params_p[0], params_p[1]);
            }
            else{
-               return x + (params[2] / params[3]) * Kokkos::sin(params[3] * x);
+               return x + (params_p[2] / params_p[3]) * Kokkos::sin(params_p[3] * x);
            }
        }
 };
 
 struct custom_pdf{
-       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params) const {
+       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
            if(d==0){
-               return ippl::random::normal_pdf_func<double>(x, params[0], params[1]);
+               return ippl::random::normal_pdf_func<double>(x, params_p[0], params_p[1]);
            }
            else{
-               return  1.0 + params[2] * Kokkos::cos(params[3] * x);
+               return  1.0 + params_p[2] * Kokkos::cos(params_p[3] * x);
            }
        }
 };
 
 struct custom_estimate{
-        KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params) const {
+        KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params_p) const {
             if(d==0){
-                return ippl::random::normal_estimate_func<double>(u, params[0], params[1]);
+                return ippl::random::normal_estimate_func<double>(u, params_p[0], params_p[1]);
             }
             else{
                 return u;
@@ -75,31 +78,30 @@ struct custom_estimate{
         }
 };
 
-KOKKOS_FUNCTION unsigned int doublefactorial(unsigned int n)
+KOKKOS_FUNCTION unsigned int get_double_factorial(unsigned int n)
 {
     if (n == 0 || n==1)
       return 1;
-    return n*doublefactorial(n-2);
+    return n*get_double_factorial(n-2);
 }
 
-KOKKOS_FUNCTION double NormDistCentMom(double stdev, unsigned int p){
+KOKKOS_FUNCTION double get_norm_dist_cent_mom(double stdev, unsigned int p){
     // returns the central moment E[(x-\mu)^p] for Normal distribution function
     if(p%2==0){
-        return pow(stdev, p)*doublefactorial(p-1);
+        return pow(stdev, p)*get_double_factorial(p-1);
     }
     else{
         return 0.;
     }
 }
 
-KOKKOS_FUNCTION void NormDistCentMoms(double stdev, const int P, double *moms){
+KOKKOS_FUNCTION void get_norm_dist_cent_moms(double stdev, const int P, double *moms_p){
     for(int p=1; p<P; p++){
-        moms[p] = NormDistCentMom(stdev, p+1);
+        moms_p[p] = get_norm_dist_cent_mom(stdev, p+1);
     }
 }
 
-
-double HarmDistCentMom(double a, double b, double r, int i){
+double get_harm_dist_cent_mom(double a, double b, double r, int i){
   // pdf = ( 1 + a*cos(b*x) ) / Z
   // Z = \int 1 + a*cos(b*x) ) dx
   // This function returns E[x^i] = \int x^i pdf(x) dx for a harmonic pdf
@@ -117,54 +119,67 @@ double HarmDistCentMom(double a, double b, double r, int i){
   return 0;
 }
 
-void HarmDistCentMoms(double a, double b, double r, const int P, double *moms){
+void get_harm_dist_cent_moms(double a, double b, double r, const int P, double *moms_p){
     for(int p=1; p<P; p++){
-        moms[p] = HarmDistCentMom(a, b, r, p+1);
+        moms_p[p] = get_harm_dist_cent_mom(a, b, r, p+1);
     }
 }
 
-void MomentsFromSamples(view_type position, int d, int ntotal, const int P, double *moms){
+void get_moments_from_samples(view_type position, int d, int ntotal, const int P, double *moms_p){
     double temp = 0.0;
     Kokkos::parallel_reduce("moments", position.extent(0),
                             KOKKOS_LAMBDA(const int i, double& valL) {
         double myVal = position(i)[d];
         valL += myVal;
-        },
-	Kokkos::Sum<double>(temp));
-    Kokkos::fence();
-    double gtemp = 0.0;
-    MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-    double mean = gtemp/ntotal;
-    moms[0] = mean;
-    for(int p=1; p<P; p++){
+    }, Kokkos::Sum<double>(temp));
+
+    double mean = 0.0;
+    MPI_Allreduce(&mean, &temp, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+
+    moms_p[0] = mean/ntotal;
+
+    for (int p = 1; p < P; p++) {
         temp = 0.0;
         Kokkos::parallel_reduce("moments", position.extent(0),
                                 KOKKOS_LAMBDA(const int i, double& valL) {
-            double myVal = pow(position(i)[d]-mean, p+1);
+            double myVal = pow(position(i)[d] - mean, p + 1);
             valL += myVal;
-            },
-            Kokkos::Sum<double>(temp));
-        Kokkos::fence();
-        MPI_Reduce(&temp, &gtemp, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
-        moms[p] = gtemp/(ntotal-1); // Bessel's correction
+        }, Kokkos::Sum<double>(temp));
+        moms_p[p] = temp / ntotal;
+    }
+
+    double gtemp[P];
+    MPI_Allreduce(moms_p, gtemp, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+
+    for (int p = 1; p < P; p++) {
+        gtemp[p] /= ippl::Comm->size()*(ntotal/(ntotal-1)); // Divide by the number of GPUs
+    }
+
+    for (int p = 1; p < P; p++) {
+        moms_p[p] = gtemp[p];
     }
 }
 
-void WriteErrorInMoments(double *moms, double *moms_ref, int P){
-    Inform csvout(NULL, "data/error_moments_custom_dist.csv", Inform::APPEND);
+void write_error_in_moments(double *moms_p, double *moms_ref_p, int P){
+    std::stringstream fname;
+    fname << "data/error_moments_custom_dist";
+    fname << ".csv";
+
+    Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
     for(int i=0; i<P; i++){
-        csvout << moms_ref[i] << " " << moms[i] << " " << fabs(moms_ref[i] - moms[i]) << endl;
+        csvout << moms_ref_p[i] << " " << moms_p[i] << " " << fabs(moms_ref_p[i] - moms_p[i]) << endl;
     }
+    csvout.flush();
     ippl::Comm->barrier();
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        ippl::Vector<int, 2> nr   = {20, 20};
-        unsigned int ntotal = 1000000;
+        ippl::Vector<int, 2> nr   = {100, 100};
+        size_type ntotal = 1000000;
 
         ippl::NDIndex<2> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -197,17 +212,22 @@ int main(int argc, char* argv[]) {
         
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4; // dimension of parameters in the pdf
-        const double mu = 1.0;
-        const double sd = 0.9;
-        const double parH[DimP] = {mu, sd, 0.5, 2.*pi/(rmax[1]-rmin[1])*4.0}; // paramters of pdf
+        const double mu = 0.0;
+        const double sd = 0.5;
+        double *parH_p = new double [DimP];
+        parH_p[0] = mu;
+        parH_p[1] = sd;
+        parH_p[2] = 0.5;
+        parH_p[3] = 2.*pi/(rmax[1]-rmin[1])*4.0;
         
         using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
         using samplingH_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
 
-        DistH_t distH(parH);
+        DistH_t distH(parH_p);
         samplingH_t samplingH(distH, rmax, rmin, rlayout, ntotal);
-        ntotal = samplingH.getLocalNum();
-        view_type positionH("positionH", ntotal);
+        size_type nlocal = samplingH.getLocalNum();
+        view_type positionH("positionH", nlocal);
+
         samplingH.generate(positionH, rand_pool64);
         
         const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
@@ -216,17 +236,17 @@ int main(int argc, char* argv[]) {
         
         // compute error in moments of 1st dimension
         moms1_ref[0] = mu;
-        NormDistCentMoms(sd, P, moms1_ref);
-        MomentsFromSamples(positionH, 0, ntotal, P, moms1);
-        WriteErrorInMoments(moms1, moms1_ref, P);
+        get_norm_dist_cent_moms(sd, P, moms1_ref);
+        get_moments_from_samples(positionH, 0, ntotal, P, moms1);
+        write_error_in_moments(moms1, moms1_ref, P);
         
         // next, compute error in moments of 2nd dimension
         double moms2_ref[P];
         double moms2[P];
         moms2_ref[0] = 0.0;
-        HarmDistCentMoms(parH[2], parH[3], rmax[1], P, moms2_ref);
-        MomentsFromSamples(positionH, 1, ntotal, P, moms2);
-        WriteErrorInMoments(moms2, moms2_ref, P);
+        get_harm_dist_cent_moms(parH_p[2], parH_p[3], rmax[1], P, moms2_ref);
+        get_moments_from_samples(positionH, 1, ntotal, P, moms2);
+        write_error_in_moments(moms2, moms2_ref, P);
     }
     ippl::finalize();
     return 0;

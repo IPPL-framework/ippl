@@ -1,18 +1,3 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- * This program was prepared by PSI.
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-//
 // Class NormalDistribution
 //   This class can be used for sampling normal distribution function
 //   on bounded domain, e.g. using Inverse Transform Sampling.
@@ -58,16 +43,16 @@ namespace ippl {
        * @param mu The array of means in each dimension
        * @param sd The array of standard deviation in each dimension
       */
-      randn(view_type v_, GeneratorPool rand_pool_, T *mu_, T *sd_)
+      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_, T *mu_p, T *sd_p)
           : v(v_)
           , rand_pool(rand_pool_){
              for(unsigned int i=0; i<Dim; i++){
-                mu[i] = mu_[i];
-                sd[i] = sd_[i];
+                mu[i] = mu_p[i];
+                sd[i] = sd_p[i];
              }
            }
 
-      randn(view_type v_, GeneratorPool rand_pool_)
+      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_)
           : v(v_)
           , rand_pool(rand_pool_) {
              for(unsigned int i=0; i<Dim; i++){
@@ -131,8 +116,7 @@ namespace ippl {
     */
     template<typename T>
     KOKKOS_FUNCTION T normal_estimate_func(T u, T mean, T stddev) {
-      const T pi = Kokkos::numbers::pi_v<T>;
-      return (Kokkos::sqrt(pi / 2.0) * (2.0 * u - 1.0)) * stddev + mean;
+      return mean + 0.*u*stddev;
     }
 
      /*!
@@ -145,9 +129,9 @@ namespace ippl {
     */
     template <typename T>
     struct normal_cdf{
-      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_cdf_func<T>(x, mean, stddev);
       }
     };
@@ -162,9 +146,9 @@ namespace ippl {
     */
     template <typename T>
     struct normal_pdf{
-      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_pdf_func<T>(x, mean, stddev);
       }
     };
@@ -179,9 +163,9 @@ namespace ippl {
     */
     template <typename T>
     struct normal_estimate{
-      KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_estimate_func<T>(u, mean, stddev);
       }
     };
@@ -200,11 +184,11 @@ namespace ippl {
        * @brief Constructor for the Normal Distribution class.
        * The constructor takes an array of parameters of normal distribution, i.e. mean and standard deviation.
       */
-      KOKKOS_INLINE_FUNCTION NormalDistribution(const T *par_)
+      KOKKOS_INLINE_FUNCTION NormalDistribution(const T *par_p)
                               : ippl::random::Distribution<T, Dim, 2*Dim,
                               ippl::random::normal_pdf<T>,
                               ippl::random::normal_cdf<T>,
-                              ippl::random::normal_estimate<T>>(par_) {}
+                              ippl::random::normal_estimate<T>>(par_p) {}
     };
 
 
