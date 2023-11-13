@@ -17,9 +17,10 @@ protected:
     void SetUp() override { CHECK_SKIP_SERIAL; }
 
 public:
-    using value_t      = T;
-    using point_t      = ippl::QuadrilateralElement<T>::point_t;
-    using mesh_element_vertex_point_vec_t = ippl::QuadrilateralElement<T>::mesh_element_vertex_point_vec_t;
+    using value_t = T;
+    using point_t = ippl::QuadrilateralElement<T>::point_t;
+    using mesh_element_vertex_point_vec_t =
+        ippl::QuadrilateralElement<T>::mesh_element_vertex_point_vec_t;
 
     static constexpr unsigned NumQuads = 3;
 
@@ -35,21 +36,21 @@ public:
             // Determine only two points randomly of the quadrilateral (Since this is only a scaling
             // and translation transformation, and the quad is parallel to the axes).
 
-            // first corner point
+            // lower left corner
             quads[i][0][0] = dist(rng);
             quads[i][0][1] = dist(rng);
 
-            // second corner point
-            quads[i][3][0] = dist(rng);
-            quads[i][3][1] = dist(rng);
+            // upper right corner
+            quads[i][2][0] = dist(rng);
+            quads[i][2][1] = dist(rng);
 
-            // Compute the third point
-            quads[i][1][0] = quads[i][3][0];
+            // lower right corner
+            quads[i][1][0] = quads[i][2][0];
             quads[i][1][1] = quads[i][0][1];
 
-            // Compute the fourth point
-            quads[i][2][0] = quads[i][0][0];
-            quads[i][2][1] = quads[i][3][1];
+            // upper left corner
+            quads[i][3][0] = quads[i][0][0];
+            quads[i][3][1] = quads[i][2][1];
         }
     }
 
@@ -57,8 +58,9 @@ public:
 
     ippl::QuadrilateralElement<T> quad_element;
 
-    const mesh_element_vertex_point_vec_t local_points = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
-    const point_t local_mid_point   = {0.5, 0.5};
+    const mesh_element_vertex_point_vec_t local_points = {
+        {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
+    const point_t local_mid_point = {0.5, 0.5};
 
     ippl::Vector<mesh_element_vertex_point_vec_t, NumQuads> quads;
 };

@@ -2,6 +2,7 @@
 
 #include "Ippl.h"
 
+#include <functional>
 #include <random>
 
 #include "TestUtils.h"
@@ -30,7 +31,7 @@ public:
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
-        , lagrange_space(mesh, ref_element, quadrature) {
+        , lagrangeSpace(mesh, ref_element, quadrature) {
         CHECK_SKIP_SERIAL_CONSTRUCTOR;
 
         // fill the global reference DOFs
@@ -42,7 +43,7 @@ public:
     const ElementType ref_element;
     const ippl::UniformCartesian<T, Dim> mesh;
     const QuadratureType quadrature;
-    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType> lagrange_space;
+    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType> lagrangeSpace;
 };
 
 using Precisions = TestParams::Precisions;
@@ -54,9 +55,9 @@ using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
-    const auto& lagrange_space = this->lagrange_space;
-    const std::size_t& dim     = lagrange_space.dim;
-    const std::size_t& order   = lagrange_space.order;
+    const auto& lagrangeSpace = this->lagrangeSpace;
+    const std::size_t& dim    = lagrangeSpace.dim;
+    const std::size_t& order  = lagrangeSpace.order;
 
     std::size_t localDOFIndex     = static_cast<unsigned>(-1);
     const std::size_t numElements = (1 << dim);
@@ -94,7 +95,7 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
                 const std::size_t index = it - globalElementDOFs[el_i].begin();
 
                 try {
-                    localDOFIndex = lagrange_space.getLocalDOFIndex(el_i, dof_i);
+                    localDOFIndex = lagrangeSpace.getLocalDOFIndex(el_i, dof_i);
                 } catch (std::exception& e) {
                     std::cout << "Element " << el_i << " does not contain DOF " << dof_i
                               << std::endl;
@@ -114,44 +115,44 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
-    auto& lagrange_space     = this->lagrange_space;
-    const std::size_t& dim   = lagrange_space.dim;
-    const std::size_t& order = lagrange_space.order;
+    auto& lagrangeSpace      = this->lagrangeSpace;
+    const std::size_t& dim   = lagrangeSpace.dim;
+    const std::size_t& order = lagrangeSpace.order;
 
     if (order == 1) {
         if (dim == 1) {
             // start element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 0), 0);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 1), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 0), 0);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 1), 1);
 
             // end element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 0), 1);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 1), 2);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 0), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 1), 2);
 
         } else if (dim == 2) {
             // lower left element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 0), 0);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 1), 1);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 2), 4);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(0, 3), 3);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 0), 0);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 1), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 2), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 3), 3);
 
             // lower right element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 0), 1);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 1), 2);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 2), 5);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(1, 3), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 0), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 1), 2);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 2), 5);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 3), 4);
 
             // upper left element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 0), 3);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 1), 4);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 2), 7);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(2, 3), 6);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 0), 3);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 1), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 2), 7);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 3), 6);
 
             // upper right element
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 0), 4);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 1), 5);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 2), 8);
-            ASSERT_EQ(lagrange_space.getGlobalDOFIndex(3, 3), 7);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 0), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 1), 5);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 2), 8);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 3), 7);
         } else {
             FAIL();
         }
@@ -161,12 +162,12 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
-    const auto& lagrange_space = this->lagrange_space;
-    // const auto& dim = lagrange_space.dim;
-    // const auto& order = lagrange_space.order;
-    const auto& numElementDOFs = lagrange_space.numElementDOFs;
+    const auto& lagrangeSpace = this->lagrangeSpace;
+    // const auto& dim = lagrangeSpace.dim;
+    // const auto& order = lagrangeSpace.order;
+    const auto& numElementDOFs = lagrangeSpace.numElementDOFs;
 
-    auto local_dof_indices = lagrange_space.getLocalDOFIndices();
+    auto local_dof_indices = lagrangeSpace.getLocalDOFIndices();
 
     ASSERT_EQ(local_dof_indices.dim, numElementDOFs);
     for (unsigned i = 0; i < numElementDOFs; i++) {
@@ -175,43 +176,139 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndices) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
-    auto& lagrange_space     = this->lagrange_space;
-    const std::size_t& dim   = lagrange_space.dim;
-    const std::size_t& order = lagrange_space.order;
+    auto& lagrangeSpace      = this->lagrangeSpace;
+    const std::size_t& dim   = lagrangeSpace.dim;
+    const std::size_t& order = lagrangeSpace.order;
 
     if (dim == 1) {
-        auto global_dof_indices = lagrange_space.getGlobalDOFIndices(1);
+        auto globalDOFIndices = lagrangeSpace.getGlobalDOFIndices(1);
         if (order == 1) {
-            ASSERT_EQ(global_dof_indices.dim, 2);
-            ASSERT_EQ(global_dof_indices[0], 1);
-            ASSERT_EQ(global_dof_indices[1], 2);
+            ASSERT_EQ(globalDOFIndices.dim, 2);
+            ASSERT_EQ(globalDOFIndices[0], 1);
+            ASSERT_EQ(globalDOFIndices[1], 2);
         } else if (order == 2) {
-            ASSERT_EQ(global_dof_indices[0], 3);
-            ASSERT_EQ(global_dof_indices[1], 5);
-            ASSERT_EQ(global_dof_indices[2], 4);
+            ASSERT_EQ(globalDOFIndices[0], 3);
+            ASSERT_EQ(globalDOFIndices[1], 5);
+            ASSERT_EQ(globalDOFIndices[2], 4);
         } else {
             FAIL();
         }
     } else if (dim == 2) {
-        auto global_dof_indices = lagrange_space.getGlobalDOFIndices(3);
+        auto globalDOFIndices = lagrangeSpace.getGlobalDOFIndices(3);
 
         if (order == 1) {
-            ASSERT_EQ(global_dof_indices.dim, 4);
-            ASSERT_EQ(global_dof_indices[0], 4);
-            ASSERT_EQ(global_dof_indices[1], 5);
-            ASSERT_EQ(global_dof_indices[2], 8);
-            ASSERT_EQ(global_dof_indices[3], 7);
+            ASSERT_EQ(globalDOFIndices.dim, 4);
+            ASSERT_EQ(globalDOFIndices[0], 4);
+            ASSERT_EQ(globalDOFIndices[1], 5);
+            ASSERT_EQ(globalDOFIndices[2], 8);
+            ASSERT_EQ(globalDOFIndices[3], 7);
         } else if (order == 2) {
-            ASSERT_EQ(global_dof_indices[0], 12);
-            ASSERT_EQ(global_dof_indices[1], 14);
-            ASSERT_EQ(global_dof_indices[2], 24);
-            ASSERT_EQ(global_dof_indices[3], 22);
+            ASSERT_EQ(globalDOFIndices[0], 12);
+            ASSERT_EQ(globalDOFIndices[1], 14);
+            ASSERT_EQ(globalDOFIndices[2], 24);
+            ASSERT_EQ(globalDOFIndices[3], 22);
         } else {
             FAIL();
         }
     } else {
         FAIL();
     }
+}
+
+TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasis) {
+    auto& lagrangeSpace      = this->lagrangeSpace;
+    const std::size_t& dim   = lagrangeSpace.dim;
+    const std::size_t& order = lagrangeSpace.order;
+    using T                  = typename TestFixture::value_t;
+
+    T tolerance = 1e-7;
+
+    if (order == 1) {
+        if (dim == 1) {
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(0, x), 1.0 - x, tolerance);
+                ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(1, x), x, tolerance);
+            }
+        } else if (dim == 2) {
+            ippl::Vector<T, lagrangeSpace.dim> point;
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                point[0] = x;
+                for (T y = 0.0; y < 1.0; y += 0.05) {
+                    point[1] = y;
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(0, point),
+                                x * y - x - y + 1.0, tolerance);
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(1, point), x * (1.0 - y),
+                                tolerance);
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(2, point), x * y, tolerance);
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(3, point), y * (1.0 - x),
+                                tolerance);
+                }
+            }
+
+        } else {
+            FAIL();
+        }
+    } else {
+        FAIL();
+    }
+}
+
+TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
+    auto& lagrangeSpace      = this->lagrangeSpace;
+    const std::size_t& dim   = lagrangeSpace.dim;
+    const std::size_t& order = lagrangeSpace.order;
+    using T                  = typename TestFixture::value_t;
+
+    T tolerance = 1e-7;
+
+    if (order == 1) {
+        if (dim == 1) {
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                const auto grad_0 = lagrangeSpace.evaluateRefElementBasisGradient(0, x);
+                const auto grad_1 = lagrangeSpace.evaluateRefElementBasisGradient(1, x);
+
+                ASSERT_NEAR(grad_0[0], -1.0, tolerance);
+                ASSERT_NEAR(grad_1[0], 1.0, tolerance);
+            }
+        } else if (dim == 2) {
+            ippl::Vector<T, lagrangeSpace.dim> point;
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                point[0] = x;
+                for (T y = 0.0; y < 1.0; y += 0.05) {
+                    point[1] = y;
+
+                    const auto grad_0 = lagrangeSpace.evaluateRefElementBasisGradient(0, point);
+                    const auto grad_1 = lagrangeSpace.evaluateRefElementBasisGradient(1, point);
+                    const auto grad_2 = lagrangeSpace.evaluateRefElementBasisGradient(2, point);
+                    const auto grad_3 = lagrangeSpace.evaluateRefElementBasisGradient(3, point);
+
+                    ASSERT_NEAR(grad_0[0], y - 1.0, tolerance);
+                    ASSERT_NEAR(grad_0[1], x - 1.0, tolerance);
+
+                    ASSERT_NEAR(grad_1[0], 1.0 - y, tolerance);
+                    ASSERT_NEAR(grad_1[1], -x, tolerance);
+
+                    ASSERT_NEAR(grad_2[0], y, tolerance);
+                    ASSERT_NEAR(grad_2[1], x, tolerance);
+
+                    ASSERT_NEAR(grad_3[0], -y, tolerance);
+                    ASSERT_NEAR(grad_3[1], 1.0 - x, tolerance);
+                }
+            }
+        } else {
+            FAIL();
+        }
+    } else {
+        FAIL();
+    }
+}
+
+TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
+    FAIL();
+}
+
+TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
+    FAIL();
 }
 
 int main(int argc, char* argv[]) {
