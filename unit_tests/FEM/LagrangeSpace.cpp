@@ -23,7 +23,7 @@ public:
         std::conditional_t<Dim == 1, ippl::EdgeElement<T>, ippl::QuadrilateralElement<T>>;
     // std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
-    using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
+    using QuadratureType = ippl::MidpointQuadrature<T, 5, ElementType>;
 
     LagrangeSpaceTest()
         : rng(42)
@@ -304,6 +304,39 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
+    using T = typename TestFixture::value_t;
+
+    auto& lagrangeSpace = this->lagrangeSpace;
+    // const std::size_t& dim           = lagrangeSpace.dim;
+    const std::size_t numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
+
+    Kokkos::View<T*> x("x", numGlobalDOFs);
+    Kokkos::View<T*> z("z", numGlobalDOFs);
+    Kokkos::View<T**> A("A_transpose", numGlobalDOFs, numGlobalDOFs);
+
+    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+        if (i > 0)
+            x(i - 1) = 0.0;
+
+        x(i) = 1.0;
+
+        lagrangeSpace.evaluateAx(x, z);
+
+        // Set the the i-th row-vector of A to z
+        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+            // TODO check if there is a different way in Kokkos to do this
+            A(j, i) = z(j);
+        }
+    }
+
+    std::cout << "A = " << std::endl;
+    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+            std::cout << A(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
     FAIL();
 }
 

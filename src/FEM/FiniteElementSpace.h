@@ -27,15 +27,13 @@ namespace ippl {
     // template <typename T>
     //  concept IsQuadrature = std::is_base_of<Quadrature, T>::value;
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, unsigned NumGlobalDOFs,
-              typename QuadratureType>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType>
     // requires IsElement<QuadratureType>
     class FiniteElementSpace {
     public:
         static constexpr unsigned dim                = Dim;
         static constexpr unsigned numElementVertices = calculateNumElementVertices(Dim);
         static constexpr unsigned numElementDOFs     = NumElementDOFs;
-        static constexpr unsigned numGlobalDOFs      = NumGlobalDOFs;
 
         typedef Element<T, Dim, numElementVertices> ElementType;
 
@@ -66,15 +64,6 @@ namespace ippl {
                            const QuadratureType& quadrature);
 
         ///////////////////////////////////////////////////////////////////////
-        /// Assembly operations ///////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        virtual void evaluateAx(const Vector<T, NumGlobalDOFs>& x,
-                                Vector<T, NumGlobalDOFs>& resultAx) const = 0;
-
-        virtual void evaluateLoadVector(Vector<T, NumGlobalDOFs>& b) const = 0;
-
-        ///////////////////////////////////////////////////////////////////////
         /// Mesh and Element operations ///////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
@@ -101,6 +90,8 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        virtual std::size_t numGlobalDOFs() const = 0;
+
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
         virtual index_t getLocalDOFIndex(const index_t& elementIndex,
@@ -123,6 +114,14 @@ namespace ippl {
 
         virtual gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
                                                                const point_t& localPoint) const = 0;
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Assembly operations ///////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        virtual void evaluateAx(Kokkos::View<const T*> x, Kokkos::View<T*> resultAx) const = 0;
+
+        virtual void evaluateLoadVector(Kokkos::View<T*> b) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Member variables //////////////////////////////////////////////////
