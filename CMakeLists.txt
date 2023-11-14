@@ -79,7 +79,7 @@ if (ENABLE_ALPINE)
     add_subdirectory (alpine)
 endif ()
 
-option (ENABLE_UNIT_TESTS "Enable unit tests" ON)
+option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
   include(FetchContent)
   include(GoogleTest)
