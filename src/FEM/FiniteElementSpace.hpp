@@ -158,8 +158,6 @@ namespace ippl {
                     size *= num_vertices[j];
                 }
                 vertex_indices[i + (1 << d)] = vertex_indices[i] + size;
-                std::cout << "vertex_indices[" << i + (1 << d)
-                          << "] = " << vertex_indices[i + (1 << d)] << "\n";
             }
         }
 
@@ -218,17 +216,9 @@ namespace ippl {
         for (std::size_t i = 0; i < vertex_nd_indices.dim; ++i) {
             NDIndex<Dim> temp_ndindex;
             for (std::size_t d = 0; d < Dim; ++d) {
-                std::cout << "vertex_nd_indices[" << i << "][" << d
-                          << "] = " << vertex_nd_indices[i][d] << "\n";
                 temp_ndindex[d] = Index(vertex_nd_indices[i][d], vertex_nd_indices[i][d]);
             }
             vertex_points[i] = this->mesh_m.getVertexPosition(temp_ndindex);
-
-            std::cout << "vertex_points[" << i << "] = ";
-            for (std::size_t d = 0; d < Dim; ++d) {
-                std::cout << vertex_points[i][d] << " ";
-            }
-            std::cout << "\n";
         }
 
         return vertex_points;

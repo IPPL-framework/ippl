@@ -65,9 +65,6 @@ namespace ippl {
         // Find the global DOF in the vector and return the local DOF index
         // TODO this can be done faster since the global DOFs are sorted
         for (index_t i = 0; i < dof_mapping.dim; ++i) {
-            std::cout << "element index: " << elementIndex
-                      << ", global_dofs[dof_mapping[i]]: " << global_dofs[dof_mapping[i]]
-                      << " globalDOFIndex: " << globalDOFIndex << std::endl;
             if (global_dofs[dof_mapping[i]] == globalDOFIndex) {
                 return dof_mapping[i];
             }

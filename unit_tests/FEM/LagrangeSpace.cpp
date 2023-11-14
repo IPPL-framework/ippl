@@ -65,8 +65,6 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
 
     std::vector<std::vector<unsigned>> globalElementDOFs;
 
-    std::cout << "Dim: " << dim << std::endl;
-
     if (dim == 1) {
         globalElementDOFs = {// Element 0
                              {0, 1},
@@ -97,13 +95,10 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
                 try {
                     localDOFIndex = lagrangeSpace.getLocalDOFIndex(el_i, dof_i);
                 } catch (std::exception& e) {
-                    std::cout << "Element " << el_i << " does not contain DOF " << dof_i
-                              << std::endl;
                     ASSERT_EQ(it, globalElementDOFs[el_i].end());
                 }
 
                 if (it != globalElementDOFs[el_i].end()) {
-                    std::cout << "Found DOF " << dof_i << " in element " << el_i << std::endl;
                     ASSERT_EQ(localDOFIndex, index);
                 }
             }
