@@ -81,23 +81,23 @@ endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
-  include(FetchContent)
-  include(GoogleTest)
+    include(FetchContent)
+    include(GoogleTest)
 
-  enable_testing()
+    enable_testing()
 
-  FetchContent_Declare(
-    googletest
-    # currently v1.14
-    URL https://github.com/google/googletest/archive/f8d7d77c06936315286eb55f8de22cd23c188571.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP ON # requires CMake 3.24
-    )
+    FetchContent_Declare(
+        googletest
+        # currently v1.14
+        URL https://github.com/google/googletest/archive/f8d7d77c06936315286eb55f8de22cd23c188571.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP ON # requires CMake 3.24
+        )
 
-  # For Windows: Prevent overriding the parent project's compiler/linker settings
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(googletest)
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
 
-  add_subdirectory (unit_tests)
+    add_subdirectory (unit_tests)
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
