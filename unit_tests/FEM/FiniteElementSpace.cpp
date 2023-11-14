@@ -13,7 +13,7 @@ class FiniteElementSpaceTest;
 template <typename T, typename ExecSpace, unsigned Dim>
 class FiniteElementSpaceTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
 protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
+    void SetUp() override {}
 
 public:
     using value_t = T;
@@ -33,9 +33,7 @@ public:
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
-        , fem_space(mesh, ref_element, quadrature) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
-    }
+        , fem_space(mesh, ref_element, quadrature) {}
 
     std::mt19937 rng;
 

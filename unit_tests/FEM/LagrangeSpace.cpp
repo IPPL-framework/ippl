@@ -14,7 +14,7 @@ class LagrangeSpaceTest;
 template <typename T, typename ExecSpace, unsigned Order, unsigned Dim>
 class LagrangeSpaceTest<Parameters<T, ExecSpace, Rank<Order>, Rank<Dim>>> : public ::testing::Test {
 protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
+    void SetUp() override {}
 
 public:
     using value_t = T;
@@ -32,8 +32,6 @@ public:
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
         , lagrangeSpace(mesh, ref_element, quadrature) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
-
         // fill the global reference DOFs
     }
 

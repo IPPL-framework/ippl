@@ -14,7 +14,7 @@ class QuadrilateralElementTest;
 template <typename T, typename ExecSpace, unsigned Seed>
 class QuadrilateralElementTest<Parameters<T, ExecSpace, Rank<Seed>>> : public ::testing::Test {
 protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
+    void SetUp() override {}
 
 public:
     using value_t = T;
@@ -26,8 +26,6 @@ public:
 
     QuadrilateralElementTest()
         : rng(Seed) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
-
         const T interval_size = std::numeric_limits<T>::max() / 100.0;
 
         std::uniform_real_distribution<T> dist(-interval_size / 2.0, interval_size / 2.0);
