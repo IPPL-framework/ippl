@@ -1,11 +1,6 @@
 #ifndef IPPL_FIELD_SOLVER_H
 #define IPPL_FIELD_SOLVER_H
 
-#include "Solver/ElectrostaticsCG.h"
-#include "Solver/FFTPeriodicPoissonSolver.h"
-#include "Solver/FFTPoissonSolver.h"
-#include "Solver/P3MSolver.h"
-
 #include <memory>
 #include "Manager/BaseManager.h"
 
