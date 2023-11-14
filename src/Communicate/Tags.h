@@ -109,7 +109,7 @@ namespace ippl {
 #define IPPL_PARTICLE_SEND      9000
 #define IPPL_PARTICLE_RECV      10000
 
-// FFT Poisson Solver
+// FFT Open Poisson Solver
 #define IPPL_SOLVER_SEND        13000
 #define IPPL_SOLVER_RECV        14000
 #define IPPL_VICO_SEND          16000

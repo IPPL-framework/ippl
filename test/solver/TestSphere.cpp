@@ -1,6 +1,6 @@
 //
 // TestSphere
-// This programs tests the FFTPoissonSolver for the gravitational case.
+// This programs tests the FFTOpenPoissonSolver for the gravitational case.
 // The source is a constant term which is 0 outside a certain radius,
 // and the exact solution is the gravitational potential of a sphere.
 //   Usage:
@@ -17,7 +17,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
             using Vector_t    = ippl::Vector<double, 3>;
             typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
             typedef ippl::Field<Vector_t, 3, Mesh_t, Centering_t> vfield;
-            using Solver_t = ippl::FFTPoissonSolver<vfield, field>;
+            using Solver_t = ippl::FFTOpenPoissonSolver<vfield, field>;
 
             // unit box
             double dx       = 2.4 / pt;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
                 throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
             }
 
-            // define an FFTPoissonSolver object
+            // define an FFTOpenPoissonSolver object
             Solver_t FFTsolver(rho, params);
 
             // solve the Poisson equation -> rho contains the solution (phi) now
