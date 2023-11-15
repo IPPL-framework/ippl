@@ -88,9 +88,8 @@ if (ENABLE_UNIT_TESTS)
 
     FetchContent_Declare(
         googletest
-        # currently v1.14
-        URL https://github.com/google/googletest/archive/f8d7d77c06936315286eb55f8de22cd23c188571.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP ON # requires CMake 3.24
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP ON # policy hint for CMake > 3.24
         )
 
     # For Windows: Prevent overriding the parent project's compiler/linker settings
