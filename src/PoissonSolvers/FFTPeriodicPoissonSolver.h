@@ -1,6 +1,7 @@
 //
 // Class FFTPeriodicPoissonSolver
-//   Solves periodic electrostatics problems using Fourier transforms
+//   Solves the periodic Poisson problem using Fourier transforms
+//   cf. https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 5
 //
 //
 
@@ -11,15 +12,15 @@
 
 #include "Types/ViewTypes.h"
 
-#include "Electrostatics.h"
 #include "FFT/FFT.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
+#include "Poisson.h"
 
 namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
-    class FFTPeriodicPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+    class FFTPeriodicPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldRHS::Mesh_t;
@@ -32,7 +33,7 @@ namespace ippl {
         using Layout_t  = FieldLayout<Dim>;
         using Vector_t  = Vector<Trhs, Dim>;
 
-        using Base = Electrostatics<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
         using scalar_type = typename FieldLHS::Mesh_t::value_type;
         using vector_type = typename FieldLHS::Mesh_t::vector_type;
@@ -98,5 +99,5 @@ namespace ippl {
     };
 }  // namespace ippl
 
-#include "Solver/FFTPeriodicPoissonSolver.hpp"
+#include "PoissonSolvers/FFTPeriodicPoissonSolver.hpp"
 #endif

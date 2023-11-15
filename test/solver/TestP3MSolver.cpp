@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include "Solver/P3MSolver.h"
+#include "PoissonSolvers/P3MSolver.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
