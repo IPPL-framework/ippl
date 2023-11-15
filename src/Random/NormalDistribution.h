@@ -57,7 +57,7 @@ namespace ippl {
           , rand_pool(rand_pool_) {
              for(unsigned int i=0; i<Dim; i++){
                 mu[i] = 0.0;
-                sd[i] = 0.0;
+                sd[i] = 1.0;
              }
           }
 
