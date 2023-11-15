@@ -143,7 +143,7 @@ namespace ippl {
          *
          * @returns The local number of samples.
         */
-        KOKKOS_INLINE_FUNCTION size_type getLocalNum() const { return nlocal_m; }
+        KOKKOS_INLINE_FUNCTION size_type getLocalSamplesNum() const { return nlocal_m; }
         
         /*!
          * @brief Generate random samples using inverse transform sampling.

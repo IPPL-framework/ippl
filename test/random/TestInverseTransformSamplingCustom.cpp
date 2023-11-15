@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
 
         DistH_t distH(parH_p);
         samplingH_t samplingH(distH, rmax, rmin, rlayout, ntotal);
-        size_type nlocal = samplingH.getLocalNum();
+        size_type nlocal = samplingH.getLocalSamplesNum();
         view_type positionH("positionH", nlocal);
 
         samplingH.generate(positionH, rand_pool64);

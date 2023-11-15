@@ -129,8 +129,8 @@ int main(int argc, char* argv[]) {
 
         Dist_t dist(par);
         sampling_t sampling(dist, rmax, rmin, rlayout, ntotal);
-        ntotal = sampling.getLocalNum();
-        view_type position("position", ntotal);
+        size_type nlocal = sampling.getLocalSamplesNum();
+        view_type position("position", nlocal);
         sampling.generate(position, rand_pool64);
 
         const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
@@ -139,11 +139,11 @@ int main(int argc, char* argv[]) {
 
         moms1_ref[0] = mu1;
         get_norm_dist_cent_moms(sd1, P, moms1_ref);
-        get_moments_from_samples(position, 0, ntotal, P, moms1);
+        get_moments_from_samples(position, 0, nlocal, P, moms1);
 
         moms2_ref[0] = mu2;
         get_norm_dist_cent_moms(sd2, P, moms2_ref);
-        get_moments_from_samples(position, 1, ntotal, P, moms2);
+        get_moments_from_samples(position, 1, nlocal, P, moms2);
 
         write_error_in_moments(moms1, moms1_ref, P);
         write_error_in_moments(moms2, moms2_ref, P);
