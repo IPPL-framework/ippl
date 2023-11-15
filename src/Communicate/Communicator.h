@@ -155,8 +155,6 @@ namespace ippl {
 
             const MPI_Comm& getCommunicator() const noexcept { return *comm_m; }
 
-            //         void setCommunicator(const MPI_Comm& comm) noexcept { comm_m.reset(comm); }
-
             template <class Buffer, typename Archive>
             void recv(int src, int tag, Buffer& buffer, Archive& ar, size_type msize,
                       size_type nrecvs) {
