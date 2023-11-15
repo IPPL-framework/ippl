@@ -1,5 +1,9 @@
-#ifndef IPPL_RANDOM_UTILITY_H
-#define IPPL_RANDOM_UTILITY_H
+// Class NormalDistribution
+//   This class can be used for sampling normal distribution function
+//   on bounded domain, e.g. using Inverse Transform Sampling.
+
+#ifndef IPPL_UNIFORM_DISTRIBUTION_H
+#define IPPL_UNIFORM_DISTRIBUTION_H
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>

@@ -1,18 +1,3 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- * This program was prepared by PSI.
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-
 // Testing the inverse transform sampling method for Normal Distribution on bounded domains
 //     Example:
 //     srun ./TestInverseTransformSamplingNormal --overallocate 2.0 --info 10
