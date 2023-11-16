@@ -283,16 +283,6 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(Kokkos::View<const T*> x,
                                                                   Kokkos::View<T*> resultAx) const {
-        // List of quadrature weights
-        const Vector<T, QuadratureType::numElementNodes> w =
-            this->quadrature_m.getWeightsForRefElement();
-
-        // List of quadrature nodes
-        const Vector<point_t, QuadratureType::numElementNodes> q =
-            this->quadrature_m.getIntegrationNodesForRefElement();
-
-        const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
-
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
 
@@ -304,6 +294,16 @@ namespace ippl {
 
         // quadrature index
         index_t k;
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
 
         Vector<index_t, this->numElementDOFs> global_dofs;
         Vector<index_t, this->numElementDOFs> local_dofs;
@@ -327,11 +327,9 @@ namespace ippl {
             this->getElementMeshVertexIndices(zeroNdIndex)));
 
         // TODO move outside of LagrangeSpace class and make compatible with kokkos
-        auto eval = [DPhiInvT, absDetDPhi](
-                        const index_t& i, const index_t& j,
-                        const Vector<gradient_vec_t, this->numElementDOFs>& grad_b_q_k) {
-            std::cout << grad_b_q_k[0] << " " << grad_b_q_k[1] << std::endl;
-
+        const auto eval = [DPhiInvT, absDetDPhi](
+                              const index_t& i, const index_t& j,
+                              const Vector<gradient_vec_t, this->numElementDOFs>& grad_b_q_k) {
             return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
         };
 
@@ -377,18 +375,60 @@ namespace ippl {
         Kokkos::View<T*> b) const {
         const std::size_t numElements = this->numElements();
 
-        index_t i, I;
+        index_t k, i, I;
 
         Vector<T, this->numElementDOFs> b_K;
 
         Vector<index_t, this->numElementDOFs> global_dofs;
         Vector<index_t, this->numElementDOFs> local_dofs;
 
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
+
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementBasis(i, q[k]);
+            }
+        }
+
+        // Inverse Transpose Transformation Jacobian
+        const Vector<T, Dim> DPhiInvT =
+            this->ref_element_m.getInverseTransposeTransformationJacobian(
+                this->getElementMeshVertexIndices(zeroNdIndex));
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexIndices(zeroNdIndex)));
+
+        // TODO move outside of LagrangeSpace class and make compatible with kokkos
+        const auto f = [](const point_t& x) {
+            return x[0];  // TODO change
+        };                // TODO fix
+        const auto eval = [absDetDPhi, f](const index_t& i, const point_t& q_k,
+                                          const Vector<T, this->numElementDOFs>& basis_q_k) {
+            return f(q_k) * basis_q_k[i] * absDetDPhi;
+        };
+
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
             global_dofs = this->getGlobalDOFIndices(elementIndex);
             local_dofs  = this->getLocalDOFIndices();
 
             // 1. Compute b_K
+            for (i = 0; i < this->numElementDOFs; ++i) {
+                b_K[i] = 0.0;
+                for (k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    b_K[i] += w[k] * eval(i, q[k], basis_q[k]);
+                }
+            }
 
             // 2. Compute the contribution to b
             for (i = 0; i < this->numElementDOFs; ++i) {
