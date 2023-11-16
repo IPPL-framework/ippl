@@ -28,7 +28,7 @@ namespace ippl {
     * @tparam CDF Struct type for the CDF (Cumulative Distribution Function).
     * @tparam ESTIMATE Struct type for the ESTIMATE function.
     */
-    template <typename T, unsigned Dim, unsigned DimP, typename PDF, typename CDF, typename ESTIMATE>
+    template <typename T, unsigned Dim, unsigned DimP, typename DistributionFunctions>
     class Distribution {
     public:
         
@@ -39,10 +39,9 @@ namespace ippl {
         * @param estimate_m Estimate of the initial guess for the sampling method as a member functor.
        */
        T par_m[DimP];
-       PDF pdf_m;
-       CDF cdf_m;
-       ESTIMATE estimate_m;
-        
+       typename DistributionFunctions::PDF pdf_m;
+       typename DistributionFunctions::CDF cdf_m;
+       typename DistributionFunctions::Estimate estimate_m; 
        /*!
         * @ingroup Distribution
         * @brief Constructor for the Distribution class.

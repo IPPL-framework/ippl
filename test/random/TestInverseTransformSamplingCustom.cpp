@@ -30,7 +30,8 @@ using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
 using size_type = ippl::detail::size_type;
 
-struct custom_cdf{
+struct CustomDistributionFunctions {
+  struct CDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
            if(d==0){
                return ippl::random::normal_cdf_func<double>(x, params_p[0], params_p[1]);
@@ -39,9 +40,9 @@ struct custom_cdf{
                return x + (params_p[2] / params_p[3]) * Kokkos::sin(params_p[3] * x);
            }
        }
-};
+  };
 
-struct custom_pdf{
+  struct PDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
            if(d==0){
                return ippl::random::normal_pdf_func<double>(x, params_p[0], params_p[1]);
@@ -50,9 +51,9 @@ struct custom_pdf{
                return  1.0 + params_p[2] * Kokkos::cos(params_p[3] * x);
            }
        }
-};
+  };
 
-struct custom_estimate{
+  struct Estimate{
         KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params_p) const {
             if(d==0){
                 return ippl::random::normal_estimate_func<double>(u, params_p[0], params_p[1]);
@@ -61,6 +62,7 @@ struct custom_estimate{
                 return u;
             }
         }
+  };
 };
 
 KOKKOS_FUNCTION unsigned int get_double_factorial(unsigned int n)
@@ -205,7 +207,7 @@ int main(int argc, char* argv[]) {
         parH_p[2] = 0.5;
         parH_p[3] = 2.*pi/(rmax[1]-rmin[1])*4.0;
         
-        using DistH_t = ippl::random::Distribution<double, Dim, DimP, custom_pdf, custom_cdf, custom_estimate>;
+        using DistH_t = ippl::random::Distribution<double, Dim, DimP, CustomDistributionFunctions>;
         using samplingH_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistH_t>;
 
         DistH_t distH(parH_p);
