@@ -368,6 +368,10 @@ namespace ippl {
     void FFT<Cos1Transform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
+        /**
+         * This rescaling is needed to match the normalization constant
+         * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+         */
         #ifdef Heffte_ENABLE_FFTW
                 if (direction == FORWARD) {
                     f = f / 8.0;
@@ -412,6 +416,10 @@ namespace ippl {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
 
+        /**
+         * This rescaling is needed to match the normalization constant
+         * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+         */
         #ifdef Heffte_ENABLE_FFTW
                 if (direction == BACKWARD) {
                     f = f * 8.0;
