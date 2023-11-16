@@ -23,7 +23,7 @@ public:
         std::conditional_t<Dim == 1, ippl::EdgeElement<T>, ippl::QuadrilateralElement<T>>;
     // std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
-    using QuadratureType = ippl::MidpointQuadrature<T, 5, ElementType>;
+    using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
     LagrangeSpaceTest()
         : rng(42)
@@ -51,6 +51,14 @@ using Dimensions = TestParams::Ranks<1, 2>;
 using Combos     = CreateCombinations<Precisions, Spaces, Orders, Dimensions>::type;
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);
+
+TYPED_TEST(LagrangeSpaceTest, numGlobalDOFs) {
+    const auto& lagrangeSpace = this->lagrangeSpace;
+    const std::size_t& dim    = lagrangeSpace.dim;
+    const std::size_t& order  = lagrangeSpace.order;
+
+    ASSERT_EQ(lagrangeSpace.numGlobalDOFs(), static_cast<std::size_t>(pow(3.0 * order, dim)));
+}
 
 TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
     const auto& lagrangeSpace = this->lagrangeSpace;
@@ -299,7 +307,10 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
 TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using T = typename TestFixture::value_t;
 
-    auto& lagrangeSpace = this->lagrangeSpace;
+    auto& lagrangeSpace      = this->lagrangeSpace;
+    const std::size_t& dim   = lagrangeSpace.dim;
+    const std::size_t& order = lagrangeSpace.order;
+
     // const std::size_t& dim           = lagrangeSpace.dim;
     const std::size_t numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
@@ -307,11 +318,43 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     Kokkos::View<T*> z("z", numGlobalDOFs);
     Kokkos::View<T**> A("A_transpose", numGlobalDOFs, numGlobalDOFs);
 
+    // Build the discrete poisson eqation matrix to test the assembly function against
+    Kokkos::View<T**> A_ref;
+    if (order == 1) {
+        if (dim == 1) {
+            A_ref = Kokkos::View<T**>("A_ref", numGlobalDOFs, numGlobalDOFs);
+            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+                    if (i == j) {
+                        if (i == 0 || i == numGlobalDOFs - 1) {
+                            A_ref(i, j) = 1.0;
+                        } else {
+                            A_ref(i, j) = 2.0;
+                        }
+                    } else if (i + 1 == j || j + 1 == i) {
+                        A_ref(i, j) = -1.0;
+                    } else {
+                        A_ref(i, j) = 0.0;
+                    }
+                }
+            }
+        } else {
+            FAIL();
+        }
+    } else {
+        FAIL();
+    }
+
     for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
         if (i > 0)
             x(i - 1) = 0.0;
 
         x(i) = 1.0;
+
+        // reset z to zero
+        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+            z(j) = 0.0;
+        }
 
         lagrangeSpace.evaluateAx(x, z);
 
@@ -329,8 +372,22 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
         }
         std::cout << std::endl;
     }
+    std::cout << std::endl;
 
-    FAIL();
+    std::cout << "A_ref = " << std::endl;
+    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+            std::cout << A_ref(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+            ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
+        }
+        std::cout << std::endl;
+    }
 }
 
 TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
