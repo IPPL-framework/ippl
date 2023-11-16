@@ -28,11 +28,11 @@ namespace ippl {
         using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
         using size_type = ippl::detail::size_type;
 
-        Distribution dist;
-        const Vector<T, Dim> rmax;
-        const Vector<T, Dim> rmin;
-        Vector<T, Dim> umin, umax;
-        size_type ntotal;
+        Distribution dist_m;
+        const Vector<T, Dim> rmax_m;
+        const Vector<T, Dim> rmin_m;
+        Vector<T, Dim> umin_m, umax_m;
+        size_type ntotal_m;
 
         /*!
          * @brief Constructor for InverseTransformSampling class.
@@ -45,31 +45,31 @@ namespace ippl {
         */
         template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_, Vector<T, Dim> &rmax_, Vector<T, Dim> &rmin_, RegionLayout& rlayout, size_type &ntotal_)
-        : dist(dist_),
-        rmax(rmax_),
-        rmin(rmin_),
-        ntotal(ntotal_){
+        : dist_m(dist_),
+        rmax_m(rmax_),
+        rmin_m(rmin_),
+        ntotal_m(ntotal_){
             const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
             
             int rank = ippl::Comm->rank();
             Vector<T, Dim> nr_m, dr_m;
             for (unsigned d = 0; d < Dim; ++d) {
-                nr_m[d] = dist.getCdf(regions(rank)[d].max(), d) - dist.getCdf(regions(rank)[d].min(),d);
-                dr_m[d]   = dist.getCdf(rmax[d],d) - dist.getCdf(rmin[d],d);
-                umin[d] = dist.getCdf(regions(rank)[d].min(),d);
-                umax[d] = dist.getCdf(regions(rank)[d].max(),d);
+                nr_m[d] = dist_m.getCdf(regions(rank)[d].max(), d) - dist_m.getCdf(regions(rank)[d].min(),d);
+                dr_m[d]   = dist_m.getCdf(rmax_m[d],d) - dist_m.getCdf(rmin_m[d],d);
+                umin_m[d] = dist_m.getCdf(regions(rank)[d].min(),d);
+                umax_m[d] = dist_m.getCdf(regions(rank)[d].max(),d);
             }
             T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
             T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
 
             T factor = pnr / pdr;
-            nlocal_m      = (size_type) (factor * ntotal);
+            nlocal_m      = (size_type) (factor * ntotal_m);
             size_type nglobal = 0;
 
             MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
                           ippl::Comm->getCommunicator());
 
-            int rest = (int)(ntotal - nglobal);
+            int rest = (int)(ntotal_m - nglobal);
             
             if (rank < rest) {
                 ++nlocal_m;
@@ -88,12 +88,12 @@ namespace ippl {
         template <class GeneratorPool>
         struct fill_random {
             using value_type = T;
-            Distribution dist;
-            view_type x;
-            GeneratorPool rand_pool;
-            Vector<T, Dim> umin_m;
-            Vector<T, Dim> umax_m;
-            unsigned int d;
+            Distribution dist_mm;
+            view_type x_mm;
+            GeneratorPool rand_pool_mm;
+            Vector<T, Dim> umin_mm;
+            Vector<T, Dim> umax_mm;
+            unsigned int d_mm;
 
             /*!
              * @brief Constructor for the fill_random functor.
@@ -106,12 +106,12 @@ namespace ippl {
             */
             KOKKOS_FUNCTION
             fill_random(Distribution &dist_, view_type &x_, GeneratorPool &rand_pool_, Vector<T, Dim> &umin_, Vector<T, Dim> &umax_, unsigned int &d_)
-            : dist(dist_)
-            , x(x_)
-            , rand_pool(rand_pool_)
-            , umin_m(umin_)
-            , umax_m(umax_)
-            , d(d_){}
+            : dist_mm(dist_)
+            , x_mm(x_)
+            , rand_pool_mm(rand_pool_)
+            , umin_mm(umin_)
+            , umax_mm(umax_)
+            , d_mm(d_){}
             
             /*!
              * @brief Operator to fill random values.
@@ -119,21 +119,21 @@ namespace ippl {
              * @param i Index for the random values.
             */
             KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-                typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+                typename GeneratorPool::generator_type rand_gen = rand_pool_mm.get_state();
                 
                 value_type u = 0.0;
 
-                u       = rand_gen.drand(umin_m[d], umax_m[d]);
+                u       = rand_gen.drand(umin_mm[d_mm], umax_mm[d_mm]);
 
                 // first guess for Newton-Raphson
-                x(i)[d] = dist.getEstimate(u, d);
+                x_mm(i)[d_mm] = dist_mm.getEstimate(u, d_mm);
 
                 // solve
-                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(dist);
+                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(dist_mm);
 
-                solver.solve(d, x(i)[d], u);
+                solver.solve(d_mm, x_mm(i)[d_mm], u);
 
-                rand_pool.free_state(rand_gen);
+                rand_pool_mm.free_state(rand_gen);
 
             }
         };
@@ -152,12 +152,12 @@ namespace ippl {
          * @param rand_pool64 The random number generator pool.
         */
         void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
-            Vector<T, Dim> umin_ = umin;
-            Vector<T, Dim> umax_ = umax;
-            Distribution dist_ = dist;
-            size_type nlocal_ = nlocal_m;
+            Vector<T, Dim> umin_mm = umin_m;
+            Vector<T, Dim> umax_mm = umax_m;
+            Distribution dist_mm = dist_m;
+            size_type nlocal_mm = nlocal_m;
             for (unsigned d = 0; d < Dim; ++d) {
-              Kokkos::parallel_for(nlocal_, fill_random<Kokkos::Random_XorShift64_Pool<>>(dist_, view, rand_pool64, umin_, umax_, d));
+              Kokkos::parallel_for(nlocal_mm, fill_random<Kokkos::Random_XorShift64_Pool<>>(dist_mm, view, rand_pool64, umin_mm, umax_mm, d));
               Kokkos::fence();
               ippl::Comm->barrier();
             }
