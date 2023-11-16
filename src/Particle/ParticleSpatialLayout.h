@@ -78,14 +78,23 @@ namespace ippl {
         //! The FieldLayout containing information on nearest neighbors
         FieldLayout_t flayout_m;
 
+        //! Type of the Kokkos view containing the local regions.
         using region_view_type = typename RegionLayout_t::view_type;
-        using region_type      = typename region_view_type::value_type;
-        using neighbor_list    = typename FieldLayout_t::neighbor_list;
+        //! Type of a single Region object.
+        using region_type = typename region_view_type::value_type;
+        //! Array of N rank lists, where N = number of hypercubes for the dimension Dim.
+        using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
+        /*!
+         * Evaluates the total number of MPI ranks sharing the spatial nearest neighbors.
+         * @param neighbors structure containing, for every spatial direction, a list of
+         * MPI ranks IDs corresponding to the nearest neighbors of the current local domain section.
+         * @return The total number of the ranks.
+         */
         size_type getNeighborSize(const neighbor_list& neighbors) const;
 
     public:

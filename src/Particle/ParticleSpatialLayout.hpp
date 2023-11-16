@@ -27,6 +27,12 @@
 
 namespace ippl {
 
+    /*!
+     * We need this struct since Kokkos parallel_scan only accects
+     * one variable of type ReturnType where to perform the reduction operation.
+     * For more details, see
+     * https://kokkos.github.io/kokkos-core-wiki/API/core/parallel-dispatch/parallel_scan.html.
+     */
     struct increment_type {
         size_t count[2];
 
@@ -211,9 +217,9 @@ namespace ippl {
 
         const neighbor_list& neighbors = flayout_m.getNeighbors();
 
-        // container of particles that travelled more than one cell
+        /// Container of particles that travelled more than one cell
         locate_type notFoundIds("Not found", size_type(0.1 * pc.getLocalNum()));
-        // Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
+        /// Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
         bool_type found("Found", pc.getLocalNum());
         size_type nLeft              = 0;
         size_type invalidCount       = 0;
@@ -237,17 +243,18 @@ namespace ippl {
 
         Kokkos::deep_copy(neighbors_view, neighbors_mirror);
 
-        /*Begin Kokkos loop:
-         *Step 1: search in current rank
-         *Step 2: search in neighbors
-         *Step 3: save information on whether the particle was located
-         *Step 4: run additional loop on non-located particles*/
+        /*! Begin Kokkos loop:
+         * Step 1: search in current rank
+         * Step 2: search in neighbors
+         * Step 3: save information on whether the particle was located
+         * Step 4: run additional loop on non-located particles
+         */
 
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::locateParticles()",
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
-                // Step 1
+                /// Step 1
                 bool xyz_bool = false;
                 bool increment[2];
 
@@ -259,7 +266,7 @@ namespace ippl {
                     found(i)   = true;
                 }
 
-                // Step 2
+                /// Step 2
                 else {
                     for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
                         size_type rank = neighbors_view(j);
@@ -278,6 +285,8 @@ namespace ippl {
                     }
                 }
 
+                /// Step 3
+
                 bool update_notFound      = final && !found(i);
                 notFoundIds(val.count[1]) = i * update_notFound;
                 invalid(i)                = update_notFound;
@@ -292,7 +301,7 @@ namespace ippl {
         invalidCount = red_val.count[0];
         nLeft        = red_val.count[1];
 
-        // Step 4
+        /// Step 4
         if (nLeft > 0) {
             static IpplTimings::TimerRef nonNeighboringParticles =
                 IpplTimings::getTimer("nonNeighboringParticles");
