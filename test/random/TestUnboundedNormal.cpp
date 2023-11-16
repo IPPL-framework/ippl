@@ -14,6 +14,7 @@
 #include "Utility/IpplTimings.h"
 #include "Ippl.h"
 #include "Random/NormalDistribution.h"
+#include "Random/Randn.h"
 
 const int Dim = 2;
 
