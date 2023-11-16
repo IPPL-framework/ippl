@@ -200,7 +200,7 @@ namespace ippl {
     template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
-        auto& positions          = pc.R.getView();
+        auto positions           = pc.R.getView();
         region_view_type Regions = rlayout_m.getdLocalRegions();
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
@@ -242,7 +242,7 @@ namespace ippl {
          *Step 2: search in neighbors
          *Step 3: save information on whether the particle was located
          *Step 4: run additional loop on non-located particles*/
-        
+
         Kokkos::parallel_scan(
             "ParticleSpatialLayout::locateParticles()",
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
@@ -267,9 +267,9 @@ namespace ippl {
                         xyz_bool = positionInRegion(is, positions(i), Regions(rank));
 
                         if (xyz_bool) {
-                            ranks(i)   = rank;
-                            invalid(i) = true;
-                            found(i)   = true;
+                            ranks(i)     = rank;
+                            invalid(i)   = true;
+                            found(i)     = true;
                             increment[0] = invalid(i);
                             increment[1] = !found(i);
                             val += increment;
@@ -278,14 +278,12 @@ namespace ippl {
                     }
                 }
 
-                if (final && !found(i)) {
-                    notFoundIds(val.count[1]) = i;
-                    invalid(i) = true;
-                    increment[0] = invalid(i);
-                    increment[1] = !found(i);
-                    val += increment;
-                 }
-        
+                bool update_notFound      = final && !found(i);
+                notFoundIds(val.count[1]) = i * update_notFound;
+                invalid(i)                = update_notFound;
+                increment[0]              = update_notFound * invalid(i);
+                increment[1]              = update_notFound * !found(i);
+                val += increment;
             },
             red_val);
 
@@ -307,11 +305,8 @@ namespace ippl {
                     size_type pId = notFoundIds(i);
                     bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
 
-                    if (xyz_bool) {
-                        ranks(pId)   = j;
-                    }
-                }
-               );
+                    ranks(pId) = xyz_bool * j;
+                });
             Kokkos::fence();
 
             IpplTimings::stopTimer(nonNeighboringParticles);
