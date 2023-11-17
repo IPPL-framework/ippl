@@ -44,12 +44,12 @@ namespace ippl {
          * @param ntotal_ Total number of samples to generate.
         */
         template <class RegionLayout>
-        InverseTransformSampling(Distribution &dist_, Vector<T, Dim> &rmax_, Vector<T, Dim> &rmin_, RegionLayout& rlayout, size_type &ntotal_)
-        : dist_m(dist_),
-        rmax_m(rmax_),
-        rmin_m(rmin_),
-        ntotal_m(ntotal_){
-            const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
+        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, RegionLayout& rlayout_r, size_type &ntotal_r)
+        : dist_m(dist_r),
+        rmax_m(rmax_r),
+        rmin_m(rmin_r),
+        ntotal_m(ntotal_r){
+            const typename RegionLayout::host_mirror_type regions = rlayout_r.gethLocalRegions();
             
             int rank = ippl::Comm->rank();
             Vector<T, Dim> nr_m, dr_m;
@@ -88,12 +88,12 @@ namespace ippl {
         template <class GeneratorPool>
         struct fill_random {
             using value_type = T;
-            Distribution target_dist;
-            view_type sample;
-            GeneratorPool pool;
-            Vector<T, Dim> min_bound;
-            Vector<T, Dim> max_bound;
-            unsigned int dim;
+            Distribution targetdist_m;
+            view_type sample_m;
+            GeneratorPool pool_m;
+            Vector<T, Dim> minbound_m;
+            Vector<T, Dim> maxbound_m;
+            unsigned int dim_m;
 
             /*!
              * @brief Constructor for the fill_random functor.
@@ -105,13 +105,13 @@ namespace ippl {
              * @param umax_ Maximum cumulative distribution values.
             */
             KOKKOS_FUNCTION
-            fill_random(Distribution &dist_, view_type &x_, GeneratorPool &rand_pool_, Vector<T, Dim> &umin_, Vector<T, Dim> &umax_, unsigned int &d_)
-            : target_dist(dist_)
-            , sample(x_)
-            , pool(rand_pool_)
-            , min_bound(umin_)
-            , max_bound(umax_)
-            , dim(d_){}
+            fill_random(Distribution &dist_r, view_type &x_r, GeneratorPool &rand_pool_r, Vector<T, Dim> &umin_r, Vector<T, Dim> &umax_r, unsigned int &d_r)
+            : targetdist_m(dist_r)
+            , sample_m(x_r)
+            , pool_m(rand_pool_r)
+            , minbound_m(umin_r)
+            , maxbound_m(umax_r)
+            , dim_m(d_r){}
             
             /*!
              * @brief Operator to fill random values.
@@ -119,21 +119,21 @@ namespace ippl {
              * @param i Index for the random values.
             */
             KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-                typename GeneratorPool::generator_type rand_gen = pool.get_state();
+                typename GeneratorPool::generator_type rand_gen = pool_m.get_state();
                 
                 value_type u = 0.0;
 
-                u       = rand_gen.drand(min_bound[dim], max_bound[dim]);
+                u       = rand_gen.drand(minbound_m[dim_m], maxbound_m[dim_m]);
 
                 // first guess for Newton-Raphson
-                sample(i)[dim] = target_dist.getEstimate(u, dim);
+                sample_m(i)[dim_m] = targetdist_m.getEstimate(u, dim_m);
 
                 // solve
-                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(target_dist);
+                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(targetdist_m);
 
-                solver.solve(dim, sample(i)[dim], u);
+                solver.solve(dim_m, sample_m(i)[dim_m], u);
 
-                pool.free_state(rand_gen);
+                pool_m.free_state(rand_gen);
 
             }
         };
@@ -152,12 +152,12 @@ namespace ippl {
          * @param rand_pool64 The random number generator pool.
         */
         void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
-            Vector<T, Dim> min_bound = umin_m;
-            Vector<T, Dim> max_bound = umax_m;
-            Distribution target_dist = dist_m;
-            size_type numlocal = nlocal_m;
+            Vector<T, Dim> minbound_m = umin_m;
+            Vector<T, Dim> maxbound_m = umax_m;
+            Distribution targetdist_m = dist_m;
+            size_type numlocal_m = nlocal_m;
             for (unsigned d = 0; d < Dim; ++d) {
-              Kokkos::parallel_for(numlocal, fill_random<Kokkos::Random_XorShift64_Pool<>>(target_dist, view, rand_pool64, min_bound, max_bound, d));
+              Kokkos::parallel_for(numlocal_m, fill_random<Kokkos::Random_XorShift64_Pool<>>(targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
               Kokkos::fence();
               ippl::Comm->barrier();
             }
