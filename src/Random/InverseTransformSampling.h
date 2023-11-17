@@ -88,12 +88,12 @@ namespace ippl {
         template <class GeneratorPool>
         struct fill_random {
             using value_type = T;
-            Distribution dist_mm;
-            view_type x_mm;
-            GeneratorPool rand_pool_mm;
-            Vector<T, Dim> umin_mm;
-            Vector<T, Dim> umax_mm;
-            unsigned int d_mm;
+            Distribution target_dist;
+            view_type sample;
+            GeneratorPool pool;
+            Vector<T, Dim> min_bound;
+            Vector<T, Dim> max_bound;
+            unsigned int dim;
 
             /*!
              * @brief Constructor for the fill_random functor.
@@ -106,12 +106,12 @@ namespace ippl {
             */
             KOKKOS_FUNCTION
             fill_random(Distribution &dist_, view_type &x_, GeneratorPool &rand_pool_, Vector<T, Dim> &umin_, Vector<T, Dim> &umax_, unsigned int &d_)
-            : dist_mm(dist_)
-            , x_mm(x_)
-            , rand_pool_mm(rand_pool_)
-            , umin_mm(umin_)
-            , umax_mm(umax_)
-            , d_mm(d_){}
+            : target_dist(dist_)
+            , sample(x_)
+            , pool(rand_pool_)
+            , min_bound(umin_)
+            , max_bound(umax_)
+            , dim(d_){}
             
             /*!
              * @brief Operator to fill random values.
@@ -119,21 +119,21 @@ namespace ippl {
              * @param i Index for the random values.
             */
             KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-                typename GeneratorPool::generator_type rand_gen = rand_pool_mm.get_state();
+                typename GeneratorPool::generator_type rand_gen = pool.get_state();
                 
                 value_type u = 0.0;
 
-                u       = rand_gen.drand(umin_mm[d_mm], umax_mm[d_mm]);
+                u       = rand_gen.drand(min_bound[dim], max_bound[dim]);
 
                 // first guess for Newton-Raphson
-                x_mm(i)[d_mm] = dist_mm.getEstimate(u, d_mm);
+                sample(i)[dim] = target_dist.getEstimate(u, dim);
 
                 // solve
-                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(dist_mm);
+                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(target_dist);
 
-                solver.solve(d_mm, x_mm(i)[d_mm], u);
+                solver.solve(dim, sample(i)[dim], u);
 
-                rand_pool_mm.free_state(rand_gen);
+                pool.free_state(rand_gen);
 
             }
         };
@@ -152,12 +152,12 @@ namespace ippl {
          * @param rand_pool64 The random number generator pool.
         */
         void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
-            Vector<T, Dim> umin_mm = umin_m;
-            Vector<T, Dim> umax_mm = umax_m;
-            Distribution dist_mm = dist_m;
-            size_type nlocal_mm = nlocal_m;
+            Vector<T, Dim> min_bound = umin_m;
+            Vector<T, Dim> max_bound = umax_m;
+            Distribution target_dist = dist_m;
+            size_type numlocal = nlocal_m;
             for (unsigned d = 0; d < Dim; ++d) {
-              Kokkos::parallel_for(nlocal_mm, fill_random<Kokkos::Random_XorShift64_Pool<>>(dist_mm, view, rand_pool64, umin_mm, umax_mm, d));
+              Kokkos::parallel_for(numlocal, fill_random<Kokkos::Random_XorShift64_Pool<>>(target_dist, view, rand_pool64, min_bound, max_bound, d));
               Kokkos::fence();
               ippl::Comm->barrier();
             }
