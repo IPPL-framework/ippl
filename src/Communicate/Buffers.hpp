@@ -28,8 +28,10 @@ namespace ippl {
                                                                        double overallocation) {
             auto& buffers = buffers_m.get<MemorySpace>();
             size *= sizeof(T);
-            if (buffers.contains(id) && buffers[id]->getBufferSize() < size) {
-                buffers[id]->reallocBuffer(size);
+            if (buffers.contains(id)) {
+                if (buffers[id]->getBufferSize() < size) {
+                    buffers[id]->reallocBuffer(size);
+                }
                 return buffers[id];
             }
             buffers[id] = std::make_shared<archive_type<MemorySpace>>(
