@@ -13,11 +13,12 @@
         ippl::ParticleAttrib<double> q;                 // charge
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
-        ParticleContainer(ippl::ParticleSpatialLayout<T, Dim>& pl)
-        : Base(pl) {
-        this->initialize(pl);
+        ParticleContainer(std::shared_ptr<PLayout_t<T, Dim>> pl)
+        : Base(*pl.get()) {
+        this->initialize(*pl.get());
         registerAttributes();
         setupBCs();
+        pl_m = pl;
         }
 
         ~ParticleContainer(){}
@@ -31,6 +32,7 @@
 	void setupBCs() { setBCAllPeriodic(); }
     private:
        void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
+       std::shared_ptr<PLayout_t<T, Dim>> pl_m;
     };
 
 #endif

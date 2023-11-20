@@ -104,13 +104,16 @@ public:
             << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
         
         this->isAllPeriodic = true;
-        Mesh_t<Dim> *mesh = new Mesh_t<Dim>(this->domain, this->hr, this->origin);
-        FieldLayout_t<Dim> *FL = new FieldLayout_t<Dim>(this->domain, this->decomp, this->isAllPeriodic);
-        PLayout_t<T, Dim> *PL = new PLayout_t<T, Dim>(*FL, *mesh);
+
+        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain, this->hr, this->origin);
+
+        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(this->domain, this->decomp, this->isAllPeriodic);
+
+        std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
         
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(*PL);
+        this->pcontainer_m = std::make_shared<ParticleContainer_t>(PL);
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
-        this->fcontainer_m->initializeFields(*mesh, *FL);
+        this->fcontainer_m->initializeFields(mesh, FL);
         
         this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->rho_m, &this->fcontainer_m->E_m);
         this->fsolver_m->initSolver();
@@ -121,7 +124,7 @@ public:
         this->setFieldSolver(fsolver_m);
         this->setLoadBalancer(loadbalancer_m);
         
-        this ->initializeParticles(*mesh, *FL);
+        this ->initializeParticles(mesh, FL);
         this->fcontainer_m->rho_m = 0.0;
         this->fsolver_m->runSolver();
         this->par2grid();
@@ -130,7 +133,7 @@ public:
         m << "Done";
     }
 
-    void initializeParticles(Mesh_t<Dim>& mesh_m, FieldLayout_t<Dim>& FL_m){
+    void initializeParticles(std::shared_ptr<Mesh_t<Dim>> mesh_m, std::shared_ptr<FieldLayout_t<Dim>> FL_m){
         Inform m("Initialize Particles");
 
         Vector_t<double, Dim> mu, sd;
@@ -158,7 +161,7 @@ public:
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
-            const ippl::NDIndex<Dim>& lDom = FL_m.getLocalNDIndex();
+            const ippl::NDIndex<Dim>& lDom = FL_m->getLocalNDIndex();
             const int nghost               = this->fcontainer_m->rho_m.getNghost();
             auto rhoview                   = this->fcontainer_m->rho_m.getView();
 
@@ -176,13 +179,13 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(&FL_m, &mesh_m);
-            this->loadbalancer_m->repartition(&FL_m, &mesh_m, this->isFirstRepartition);
+            this->loadbalancer_m->initializeORB(FL_m.get(), mesh_m.get());
+            this->loadbalancer_m->repartition(FL_m.get(), mesh_m.get(), this->isFirstRepartition);
         }
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( FL_m, mesh_m );
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( *FL_m, *mesh_m );
         
         size_type totalP_m = this->totalP;
         int seed = 42;

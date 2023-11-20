@@ -28,15 +28,17 @@
     Vector_t<double, Dim> rmin_m;
     Vector_t<double, Dim> rmax_m;
     
-    FieldLayout_t<Dim> *fl_m;
+    std::shared_ptr<Mesh_t<Dim>> mesh_m;
+    std::shared_ptr<FieldLayout_t<Dim>> fl_m;
     
-    // Access to the mesh
-    KOKKOS_INLINE_FUNCTION FieldLayout_t<Dim>& getLayout() const { return *fl_m; }
+    // Access to the layout
+    FieldLayout_t<Dim>& getLayout() const { return *fl_m; }
         
-    void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
-        E_m.initialize(mesh, fl);
-        rho_m.initialize(mesh, fl);
-        fl_m = &fl;
+    void initializeFields(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> fl) {
+        E_m.initialize(*mesh, *fl);
+        rho_m.initialize(*mesh, *fl);
+        fl_m = fl;
+        mesh_m = mesh;
     }
     };
 
