@@ -148,19 +148,19 @@ namespace ippl {
         * @param op A function that returns OpRet and takes a field of the LHS type
         */
         void setOperator(operator_type op) override { BaseCG::op_m = std::move(op); }
-        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 4, unsigned degree = 15) override{
+        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 5, unsigned degree = 31) override{
                     if (preconditioner_type == "jacobi"){
                         preconditioner_m = new jacobi_preconditioner<FieldLHS>();
                     }
                     else if (preconditioner_type == "newton"){
-                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level);
+                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 0);
                     }
                     else if (preconditioner_type == "chebyshev"){
-                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree);
+                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 0);
                     }
-                    /*else if (preconditioner_type == "incomplete_poisson"){
-                        preconditioner_m = new incomplete_poisson_preconditioner<FieldLHS>();
-                    }*/
+                    else if (preconditioner_type == "gauss-seidel"){
+                        preconditioner_m = new gs_preconditioner<FieldLHS>();
+                    }
                     else{
                         preconditioner_m = new preconditioner<FieldLHS>();
                     }
