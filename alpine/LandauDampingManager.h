@@ -33,28 +33,30 @@ struct custom_estimate{
 };
 
 class LandauDampingManager : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>> {
-public:
-    double loadbalancethreshold_m;
-    double time_m;
-    LandauDampingManager()
-        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbt(0), dt(0),  step_method("LeapFrog"){
-    }
-    ~LandauDampingManager(){}
-
-    Vector_t<int, Dim> nr;
+  public:
+    using ParticleContainer_t = ParticleContainer<T, Dim>;
+    using FieldContainer_t = FieldContainer<T, Dim>;
+    using FieldSolver_t= FieldSolver<T, Dim>;
+    using LoadBalancer_t= LoadBalancer<T, Dim>;
+  private:
     size_type totalP;
     int nt;
+    Vector_t<int, Dim> nr;
     double lbt;
+    std::string solver;
+    std::string step_method;
+  public:
+    LandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
+        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>(),
+          totalP(totalP_), nt(nt_), nr(nr_), lbt(lbt_), solver(solver_), step_method(step_method_){}
+
+    ~LandauDampingManager(){}
+
+  private:
+    double loadbalancethreshold_m;
+    double time_m;
     double dt;
     int it;
-    std::string step_method;
- public:
-     using ParticleContainer_t = ParticleContainer<T, Dim>;
-     using FieldContainer_t = FieldContainer<T, Dim>;
-     using FieldSolver_t= FieldSolver<T, Dim>;
-     using LoadBalancer_t= LoadBalancer<T, Dim>;
-
-    std::string solver;
     Vector_t<double, Dim> kw;
     double alpha;
     Vector_t<double, Dim> rmin;
@@ -64,12 +66,39 @@ public:
     Vector_t<double, Dim> origin;
     bool isAllPeriodic;
     bool isFirstRepartition;
-private:
     ippl::NDIndex<Dim> domain;
     ippl::e_dim_tag decomp[Dim];
 
-public:
-     void pre_step() override {
+  public:
+    size_type getTotalP() const { return totalP; }
+
+    void setTotalP(size_type totalP_) { totalP = totalP_; }
+
+    int getNt() const { return nt; }
+
+    void setNt(int nt_) { nt = nt_; }
+
+    const std::string& getSolver() const { return solver; }
+
+    void setSolver(const std::string& solver_) { solver = solver_; }
+
+    double getLoadBalanceThreshold() const { return lbt; }
+
+    void setLoadBalanceThreshold(double lbt_) { lbt = lbt_; }
+
+    const std::string& getStepMethod() const { return step_method; }
+
+    void setStepMethod(const std::string& step_method_) { step_method = step_method_; }
+
+    const Vector_t<int, Dim>& getNr() const { return nr; }
+
+    void setNr(const Vector_t<int, Dim>& nr_) { nr = nr_; }
+
+    double getTime() const { return time_m; }
+
+    void setTime(double time_) { time_m = time_; }
+
+    void pre_step() override {
         Inform m("Pre-step");
         m << "Done" << endl;
     }
