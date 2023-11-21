@@ -2,20 +2,22 @@
 #define IPPL_LOAD_BALANCER_H
 
 #include "ParticleContainer.hpp"
+//#include "FieldSolver.hpp"
 #include <memory>
 
-    template <typename T, unsigned Dim = 3>
+    template <typename T, unsigned Dim>
     class LoadBalancer{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using FieldSolver_t= ippl::FieldSolverBase<T, Dim>;
     public:
         double loadbalancethreshold_m;
         Field_t<Dim>* rho_m;
         VField_t<T, Dim>* E_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
-        std::shared_ptr<FieldSolver<T, Dim>> fs_m;
+        std::shared_ptr<FieldSolver_t> fs_m;
         unsigned int loadbalancefreq_m;
         
-       	LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver<T, Dim>> &fs)
+       	LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver_t> &fs)
            :loadbalancethreshold_m(lbs), rho_m(&fc->rho_m), E_m(&fc->E_m), pc_m(pc), fs_m(fs) {}
 
         ~LoadBalancer() {  }

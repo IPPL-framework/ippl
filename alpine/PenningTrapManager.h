@@ -15,12 +15,12 @@ using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>
 
 const char* TestName = "PenningTrap";
 
-class PenningTrapManager : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>> {
+class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>> {
 public:
     double loadbalancethreshold_m;
     double time_m;
     PenningTrapManager()
-        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>, FieldSolver<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbt(0), dt(0),  step_method("LeapFrog"){
+        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>(),totalP(0), nt(0), lbt(0), dt(0),  step_method("LeapFrog"){
     }
     ~PenningTrapManager(){}
 
