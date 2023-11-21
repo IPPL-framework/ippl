@@ -2,6 +2,7 @@ set (_SRCS
     )
 
 set (_HDRS
+    FieldSolverBase.h
     PicManager.h
     BaseManager.h
     )
