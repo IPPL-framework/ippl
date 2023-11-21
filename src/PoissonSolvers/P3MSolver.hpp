@@ -67,8 +67,9 @@ namespace ippl {
         static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
 
         // get layout and mesh
-        layout_mp = &(this->rhs_mp->getLayout());
-        mesh_mp   = &(this->rhs_mp->get_mesh());
+        layout_mp              = &(this->rhs_mp->getLayout());
+        mesh_mp                = &(this->rhs_mp->get_mesh());
+        mpi::Communicator comm = layout_mp->comm;
 
         // get mesh spacing
         hr_m = mesh_mp->getMeshSpacing();
@@ -85,10 +86,7 @@ namespace ippl {
         }
 
         // define decomposition (parallel / serial)
-        e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; ++d) {
-            decomp[d] = layout_mp->getRequestedDistribution(d);
-        }
+        std::array<bool, Dim> isParallel = layout_mp->isParallel();
 
         // create the domain for the transformed (complex) fields
         // since we use HeFFTe for the transforms it doesn't require permuting to the right
@@ -106,7 +104,7 @@ namespace ippl {
         using mesh_type = typename lhs_type::Mesh_t;
         meshComplex_m   = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
-            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
+            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, isParallel));
 
         // initialize fields
         grn_m.initialize(*mesh_mp, *layout_mp);

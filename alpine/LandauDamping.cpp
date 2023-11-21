@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     {
         Inform msg("LandauDamping");
         Inform msg2all("LandauDamping", INFORM_ALL_NODES);
-        
+
         // Create an instance of a manger for the considered application
         LandauDampingManager manager;
 
@@ -66,15 +66,15 @@ int main(int argc, char* argv[]) {
         manager.solver = argv[arg++];
         manager.lbt = std::atof(argv[arg++]);
         manager.step_method = argv[arg++];
-        
+
         // Perform pre-run operations, including creating mesh, particles,...
        manager.pre_run();
-       
+
        manager.time_m = 0.0;
        msg << "Starting iterations ..." << endl;
-       
+
        manager.run(manager.nt);
-        
+
         msg << "LandauDamping: End." << endl;
     }
     ippl::finalize();

@@ -11,12 +11,11 @@ int main(int argc, char* argv[]) {
         ippl::Index I(16);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        // Specifies SERIAL, PARALLEL dims
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         typedef ippl::BareField<double, dim, Kokkos::Cuda> cuda_field;
         typedef ippl::BareField<double, dim, Kokkos::OpenMP> omp_field;

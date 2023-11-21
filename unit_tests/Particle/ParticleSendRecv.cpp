@@ -60,14 +60,15 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+
         for (unsigned int d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout  = flayout_type(owned, domDec);
+        layout  = flayout_type(MPI_COMM_WORLD, owned, isParallel);
         mesh    = mesh_type(owned, hx, origin);
         playout = playout_type(layout, mesh);
         bunch   = std::make_shared<bunch_type>(playout);
@@ -149,7 +150,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     auto& bunch           = this->bunch;
 
     bunch->update();
-    // bunch->update();
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();
 
@@ -164,8 +164,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch->getLocalNum();
 
-    MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-               ippl::Comm->getCommunicator());
+    ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
     if (ippl::Comm->rank() == 0) {
         ASSERT_EQ(nParticles, Total_particles);

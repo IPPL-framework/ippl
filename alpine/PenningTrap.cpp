@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     {
         Inform msg("PenningTrap");
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
-        
+
         // Create an instance of a manger for the considered application
         PenningTrapManager manager;
 
@@ -67,15 +67,15 @@ int main(int argc, char* argv[]) {
         manager.solver = argv[arg++];
         manager.lbt = std::atof(argv[arg++]);
         manager.step_method = argv[arg++];
-        
+
         // Perform pre-run operations, including creating mesh, particles,...
        manager.pre_run();
-       
+
        manager.time_m = 0.0;
        msg << "Starting iterations ..." << endl;
-       
+
        manager.run(manager.nt);
-        
+
         msg << "End." << endl;
     }
     ippl::finalize();

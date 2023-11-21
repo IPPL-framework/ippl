@@ -19,14 +19,11 @@ int main(int argc, char* argv[]) {
 
         const int iterations = std::stoi(argv[2]);
 
-        ippl::e_dim_tag decomp[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
-        // decomp[d] = ippl::SERIAL;
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // Unit box
         double dx                        = 2.0 / double(pt);

@@ -48,10 +48,8 @@ int main(int argc, char* argv[]) {
         }
 
         // specifies decomposition; here all dimensions are parallel
-        ippl::e_dim_tag decomp[dim];
-        for (unsigned int d = 0; d < dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
         // unit box
         double dx       = 1.0 / nr[0];
@@ -61,7 +59,7 @@ int main(int argc, char* argv[]) {
         Vector_t origin = {-0.5, -0.5, -0.5};
 
         Mesh_t mesh(owned, hr, origin);
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         Field_t field;
         field.initialize(mesh, layout);
