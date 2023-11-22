@@ -16,8 +16,8 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 
 const char* TestName = "PenningTrap";
 
-class PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
-    : public ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>,
+class PenningTrapManager
+    : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>,
                               LoadBalancer<double, 3>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
@@ -25,26 +25,22 @@ public:
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
 private:
-     size_type totalP;
-     int nt;
-     Vector_t<int, Dim> nr;
-     double lbt;
-     std::string solver;
-     std::string step_method;
-
-    double loadbalancethreshold_m;
-    double time_m;
-    PenningTrapManager()
-        : ippl::PicManager<ParticleContainer<double, 3>, FieldContainer<double, 3>,
-                           FieldSolver<double, 3>, LoadBalancer<double, 3>>()
+    size_type totalP;
+    int nt;
+    Vector_t<int, Dim> nr;
+    double lbt;
+    std::string solver;
+    std::string step_method;
+public:
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
+        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>()
         , totalP(totalP_)
         , nt(nt_)
+        , nr(nr_)
         , lbt(lbt_)
-        , dt(dt_)
         , solver(solver_)
-        , step_method(step_method_) {}
-    ~PenningTrapManager() {}
-
+        , step_method(step_method_){}
+    ~PenningTrapManager(){}
 private:
     double loadbalancethreshold_m;
     double time_m;
