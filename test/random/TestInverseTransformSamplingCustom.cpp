@@ -187,10 +187,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         ippl::Vector<double, Dim> rmin   = -4.;
         ippl::Vector<double, Dim> rmax   = 4.;
@@ -203,7 +201,7 @@ int main(int argc, char* argv[]) {
 
         Mesh_t mesh(domain, hr, origin);
 
-        ippl::FieldLayout<Dim> fl(domain, decomp, isAllPeriodic);
+        ippl::FieldLayout<Dim> fl(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
 
         ippl::detail::RegionLayout<double, Dim, Mesh_t> rlayout(fl, mesh);
 
@@ -228,17 +226,17 @@ int main(int argc, char* argv[]) {
         size_type nlocal = samplingH.getLocalNum();
         view_type positionH("positionH", nlocal);
         samplingH.generate(positionH, rand_pool64);
-        
+
         const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
         double moms1_ref[P];
         double moms1[P];
-        
+
         // compute error in moments of 1st dimension
         moms1_ref[0] = mu;
         NormDistCentMoms(sd, P, moms1_ref);
         MomentsFromSamples(positionH, 0, ntotal, P, moms1);
         WriteErrorInMoments(moms1, moms1_ref, P);
-        
+
         // next, compute error in moments of 2nd dimension
         double moms2_ref[P];
         double moms2[P];

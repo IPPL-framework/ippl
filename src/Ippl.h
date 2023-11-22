@@ -12,13 +12,16 @@
 #include "Utility/Inform.h"
 #include "Utility/ParallelDispatch.h"
 
-#include "Communicate/Communicate.h"
+#include "Communicate/Communicator.h"
+#include "Communicate/Environment.h"
 
 namespace ippl {
 
     // the parallel communication object
     // use inlining to avoid multiple definitions
-    inline std::unique_ptr<ippl::Communicate> Comm = 0;
+    inline std::unique_ptr<mpi::Communicator> Comm = 0;
+
+    inline std::unique_ptr<mpi::Environment> Env = 0;
 
     // Inform object to use to print messages to the console (or even to a
     // file if requested)

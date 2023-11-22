@@ -180,10 +180,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // create mesh and layout objects for this problem domain
         Vector_t<float, Dim> kw = 0.5;
@@ -199,11 +197,11 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
         PLayout_t<float, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];
-        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, solver);
 
         P->nr_m = nr;
 

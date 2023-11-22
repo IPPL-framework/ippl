@@ -39,44 +39,45 @@
 #include <set>
 #include <string>
 #include <vector>
+
 #include "Ippl.h"
 #include "Utility/IpplTimings.h"
 #include "Manager/PicManager.h"
 #include "datatypes.h"
 #include "LandauDampingManager.h"
 
-
-
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform msg("LandauDamping");
-        Inform msg2all("LandauDamping", INFORM_ALL_NODES);
-        
-        // Read input parameters, assign them to the corresponding memebers of manager
-        int arg = 1;
-        Vector_t<int, Dim> nr;
-        for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
-        }
-        size_type totalP = std::atoll(argv[arg++]);
-        int nt  = std::atoi(argv[arg++]);
-        std::string solver = argv[arg++];
-        double lbt = std::atof(argv[arg++]);
-        std::string step_method = argv[arg++];
+       Inform msg("LandauDamping");
+       Inform msg2all("LandauDamping", INFORM_ALL_NODES);
 
-       	// Create an instance of a manger for the considered application
-        LandauDampingManager manager(totalP, nt, nr, lbt, solver, step_method);
-        
-        // Perform pre-run operations, including creating mesh, particles,...
+       // Read input parameters, assign them to the corresponding memebers of manager
+       int arg = 1;
+       Vector_t<int, Dim> nr;
+       for (unsigned d = 0; d < Dim; d++) {
+           nr[d] = std::atoi(argv[arg++]);
+       }
+
+       size_type totalP = std::atoll(argv[arg++]);
+       int nt  = std::atoi(argv[arg++]);
+       std::string solver = argv[arg++];
+       double lbt = std::atof(argv[arg++]);
+       std::string step_method = argv[arg++];
+
+       // Create an instance of a manger for the considered application
+       LandauDampingManager manager(totalP, nt, nr, lbt, solver, step_method);
+
+       // Perform pre-run operations, including creating mesh, particles,...
        manager.pre_run();
-       
+
        manager.setTime(0.0);
+
        msg << "Starting iterations ..." << endl;
-       
+
        manager.run(manager.getNt());
-        
-        msg << "LandauDamping: End." << endl;
+
+       msg << "LandauDamping: End." << endl;
     }
     ippl::finalize();
 

@@ -75,7 +75,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::fillHalo() {
-        if (Comm->size() > 1) {
+        if (layout_m->comm.size() > 1) {
             halo_m.fillHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -86,7 +86,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
-        if (Comm->size() > 1) {
+        if (layout_m->comm.size() > 1) {
             halo_m.accumulateHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
@@ -143,15 +143,14 @@ namespace ippl {
                 op;                                                                            \
             },                                                                                 \
             Kokkos::fun<T>(temp));                                                             \
-        T globaltemp      = 0.0;                                                               \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                                         \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator());           \
+        T globaltemp = 0.0;                                                                    \
+        layout_m->comm.allreduce(temp, globaltemp, 1, MPI_Op<T>());                            \
         return globaltemp;                                                                     \
     }
 
-    DefineReduction(Sum, sum, valL += myVal, MPI_SUM)
-    DefineReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-    DefineReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-    DefineReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineReduction(Sum, sum, valL += myVal, std::plus)
+    DefineReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
+    DefineReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
+    DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
