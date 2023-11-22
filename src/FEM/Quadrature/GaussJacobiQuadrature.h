@@ -8,67 +8,29 @@
 
 namespace ippl {
 
-    template <typename T>
-    class GaussJacobiQuadrature : public Quadrature<T> {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    class GaussJacobiQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
-        /**
-         * @brief Construct a new Gauss Jacobi Quadrature object
-         * https://en.wikipedia.org/wiki/Gauss%E2%80%93Jacobi_quadrature
-         *
-         * For alpha = beta = 0.0. The quadrature rule is equivalent to the Gauss-Legendre
-         * quadrature rule. For alpha = beta = -0.5 or alpha = beta = 0.5, the quadrature rule is
-         * equivalent to the Gauss-Chebyshev quadrature rule.
-         *
-         * @param degree Polynomial degree of exactness
-         * @param alpha
-         * @param beta
-         */
-        GaussJacobiQuadrature(const unsigned& degree, const T& alpha, const T& beta);
-
-        /**
-         * @brief Return the number of points for the Gauss-Jacobi quadrature rule.
-         *
-         * @return unsigned - Return the number of points
-         */
-        unsigned getNumberOfIntegrationPoints() const override;
-
-        /**
-         * @brief Get the Nodes for the quadrature
-         *
-         * @param a
-         * @param b
-         * @tparam NumNodes1D Number of nodes in the quadrature rule.
-         * @return std::vector<Vector<T, Dim>> - Returns a vector with number_of_points many nodes.
-         */
-        template <unsigned NumNodes1D>
-        Vector<T, NumNodes1D> getIntegrationNodes(const T& a = -1.0, const T& b = 1.0) const override;
-
-        /**
-         * @brief Get the weights for the quadrature
-         * @tparam NumNodes1D Number of nodes in the quadrature rule.
-         *
-         * @return std::vector<T> - Returns a vector with number_of_points many weights.
-         */
-        template <unsigned NumNodes1D>
-        Vector<T, NumNodes1D> getWeights() const override;
+        GaussJacobiQuadrature(const ElementType& ref_element, const T& alpha, const T& beta,
+                              const std::size_t& max_newton_itersations = 10);
 
     private:
-        T alpha_m;
-        T beta_m;
+        const T alpha_m;
+        const T beta_m;
     };
 
-    template <typename T>
-    class GaussLegendreQuadrature : public GaussJacobiQuadrature<T> {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    class GaussLegendreQuadrature : public GaussJacobiQuadrature<T, NumNodes1D, ElementType> {
     public:
-        GaussLegendreQuadrature()
-            : GaussJacobiQuadrature(0.0, 0.0) {}
+        GaussLegendreQuadrature(const ElementType& ref_element)
+            : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(ref_element, 0.0, 0.0) {}
     };
 
-    template <typename T>
-    class ChebyshevGaussQuadrature : public GaussJacobiQuadrature<T> {
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    class ChebyshevGaussQuadrature : public GaussJacobiQuadrature<T, NumNodes1D, ElementType> {
     public:
-        ChebyshevGaussQuadrature()
-            : GaussJacobiQuadrature(-0.5, -0.5) {}
+        ChebyshevGaussQuadrature(const ElementType& ref_element)
+            : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(ref_element, -0.5, -0.5) {}
     };
 
 }  // namespace ippl

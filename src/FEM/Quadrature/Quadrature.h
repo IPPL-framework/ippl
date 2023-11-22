@@ -36,9 +36,9 @@ namespace ippl {
          *
          * @return unsigned - order
          */
-        virtual std::size_t getOrder() const;
+        std::size_t getOrder() const;
 
-        virtual std::size_t getDegree() const = 0;
+        std::size_t getDegree() const;
 
         /**
          * @brief Get the quadrature weights for the reference element.
@@ -54,13 +54,15 @@ namespace ippl {
          */
         Vector<Vector<T, dim>, numElementNodes> getIntegrationNodesForRefElement() const;
 
+        Vector<T, NumNodes1D> getIntegrationNodes1D() const;
+
+        Vector<T, NumNodes1D> getWeights1D() const;
+
     protected:
-        virtual Vector<T, NumNodes1D> getIntegrationNodes() const = 0;
-
-        virtual Vector<T, NumNodes1D> getWeights() const = 0;
-
-    private:
+        unsigned degree_m;
         const ElementType& ref_element_m;
+        Vector<T, NumNodes1D> integration_nodes_m;
+        Vector<T, NumNodes1D> weights_m;
     };
 
 }  // namespace ippl

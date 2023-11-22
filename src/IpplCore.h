@@ -43,6 +43,7 @@
 // #include "FEM/Elements/HexahedralElement.h"
 
 // // FEM Quadrature
+#include "FEM/Quadrature/GaussJacobiQuadrature.h"
 #include "FEM/Quadrature/MidpointQuadrature.h"
 
 // // FEM Spaces

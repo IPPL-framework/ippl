@@ -6,13 +6,18 @@ namespace ippl {
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     std::size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {
-        return this->getDegree() + 1;
+        return this->degree_m + 1;
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    std::size_t Quadrature<T, NumNodes1D, ElementType>::getDegree() const {
+        return this->degree_m;
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<T, Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
-        Vector<T, NumNodes1D> w = this->getWeights();
+        Vector<T, NumNodes1D> w = this->getWeights1D();
 
         Vector<T, this->numElementNodes> tensor_prod_w;
 
@@ -40,7 +45,7 @@ namespace ippl {
     Vector<Vector<T, Quadrature<T, NumNodes1D, ElementType>::dim>,
            Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
-        Vector<T, NumNodes1D> q = this->getIntegrationNodes();
+        Vector<T, NumNodes1D> q = this->getIntegrationNodes1D();
 
         Vector<Vector<T, ElementType::dim>, this->numElementNodes> tensor_prod_q;
 
@@ -61,6 +66,16 @@ namespace ippl {
         }
 
         return tensor_prod_q;
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodes1D() const {
+        return this->integration_nodes_m;
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getWeights1D() const {
+        return this->weights_m;
     }
 
 }  // namespace ippl

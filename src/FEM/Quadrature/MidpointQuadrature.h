@@ -11,18 +11,6 @@ namespace ippl {
     class MidpointQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
         MidpointQuadrature(const ElementType& ref_element);
-
-        /**
-         * @brief Get the degree of exactness of the quadrature rule.
-         *
-         * @return unsigned - Degree of exactness
-         */
-        std::size_t getDegree() const override;
-
-    protected:
-        Vector<T, NumNodes1D> getIntegrationNodes() const override;
-
-        Vector<T, NumNodes1D> getWeights() const override;
     };
 
 }  // namespace ippl
