@@ -432,11 +432,14 @@ namespace ippl {
 
         // "empty" transforms to warmup all the FFTs
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
+        fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             fft4n_m->transform(FORWARD, grnL_m);
+            fft4n_m->transform(BACKWARD, grnL_m);
         }
         if (alg == Algorithm::VICO_2) {
             fft2n1_m->transform(FORWARD, grn2n1_m);
+            fft2n1_m->transform(BACKWARD, grn2n1_m);
         }
 
         IpplTimings::stopTimer(warmup);
