@@ -145,7 +145,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         this->fcontainer_m = std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
         this->fcontainer_m->initializeFields(mesh, FL);
         
-        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->rho_m, &this->fcontainer_m->E_m);
+        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE());
         this->fsolver_m->initSolver();
         this->loadbalancer_m = std::make_shared<LoadBalancer_t>(this->lbt, this->fcontainer_m, this->pcontainer_m, this->fsolver_m);
 
@@ -155,7 +155,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         this->setLoadBalancer(loadbalancer_m);
         
         this ->initializeParticles(mesh, FL);
-        this->fcontainer_m->rho_m = 0.0;
+        this->fcontainer_m->getRho() = 0.0;
         this->fsolver_m->runSolver();
         this->par2grid();
         this->fsolver_m->runSolver();
@@ -192,12 +192,12 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
             m << "Starting first repartition" << endl;
             this->isFirstRepartition             = true;
             const ippl::NDIndex<Dim>& lDom = FL_m->getLocalNDIndex();
-            const int nghost               = this->fcontainer_m->rho_m.getNghost();
-            auto rhoview                   = this->fcontainer_m->rho_m.getView();
+            const int nghost               = this->fcontainer_m->getRho().getNghost();
+            auto rhoview                   = this->fcontainer_m->getRho().getView();
 
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
-                "Assign initial rho based on PDF", this->fcontainer_m->rho_m.getFieldRangePolicy(),
+                "Assign initial rho based on PDF", this->fcontainer_m->getRho().getFieldRangePolicy(),
                 KOKKOS_LAMBDA (const index_array_type& args) {
                     // local to global index conversion
                     Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr_m + origin_m;
@@ -233,7 +233,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         view_type* R_m = &this->pcontainer_m->R.getView();
         samplingR.generate(*R_m, rand_pool64);
 
-        view_type* P_m = &this->pcontainer_m->P.getView();
+        view_type* P_m = &this->pcontainer_m->getP().getView();
 
         double muP[Dim] = {0.0, 0.0, 0.0};
         double sdP[Dim] = {1.0, 1.0, 1.0};
@@ -242,7 +242,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->q = this->Q / this->totalP;
+        this->pcontainer_m->getQ() = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -269,8 +269,8 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
           std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
 
           auto Rview = pc->R.getView();
-          auto Pview = pc->P.getView();
-          auto Eview = pc->E.getView();
+          auto Pview = pc->getP().getView();
+          auto Eview = pc->getE().getView();
           Kokkos::parallel_for(
                "Kick1", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
                 double Eext_x = -(Rview(j)[0] - origin_m[0] - 0.5 * length_m[0])
@@ -292,7 +292,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
           ippl::Comm->barrier();
 
           // drift
-          pc->R = pc->R + dt_m * pc->P;
+          pc->R = pc->R + dt_m * pc->getP();
 
           // Since the particles have moved spatially update them to correct processors
           pc->update();
@@ -301,8 +301,8 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
           int it_m = this->it;
           bool isFirstRepartition_m = false;
           if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
-                auto* mesh = &fc->rho_m.get_mesh();
-                auto* FL = &fc->getLayout();
+                auto* mesh = &fc->getRho().get_mesh();
+                auto* FL = &fc->getFL();
                 loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
           }
 
@@ -316,8 +316,8 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
           this->grid2par();
 
           auto R2view = pc->R.getView();
-          auto P2view = pc->P.getView();
-          auto E2view = pc->E.getView();
+          auto P2view = pc->getP().getView();
+          auto E2view = pc->getE().getView();
           Kokkos::parallel_for(
              "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
              double Eext_x = -(R2view(j)[0] - origin_m[0] - 0.5 * length_m[0])
@@ -349,20 +349,20 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
 
     void gatherCIC() {
         using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        Base::particle_position_type *E_p = &this->pcontainer_m->E;
+        Base::particle_position_type *E_p = &this->pcontainer_m->getE();
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
-        VField_t<T, Dim> *E_f = &this->fcontainer_m->E_m;
+        VField_t<T, Dim> *E_f = &this->fcontainer_m->getE();
         gather(*E_p, *E_f, *R_m);
     }
 
     void scatterCIC() {
         Inform m("scatter ");
-        this->fcontainer_m->rho_m = 0.0;
+        this->fcontainer_m->getRho() = 0.0;
 
         using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->q;
+        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->getQ();
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
-        Field_t<Dim> *rho_m = &this->fcontainer_m->rho_m;
+        Field_t<Dim> *rho_m = &this->fcontainer_m->getRho();
         double Q_m = this->Q;
         Vector_t<double, Dim> rmin_m = rmin;
         Vector_t<double, Dim> rmax_m = rmax;
@@ -396,11 +396,11 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
     void dump() { dumpData(); }
     
     void dumpData() {
-        auto Pview = this->pcontainer_m->P.getView();
+        auto Pview = this->pcontainer_m->getP().getView();
         double kinEnergy = 0.0;
         double potEnergy = 0.0;
-        this->fcontainer_m->rho_m     = dot(this->fcontainer_m->E_m, this->fcontainer_m->E_m);
-        potEnergy = 0.5 * this->hr[0] * this->hr[1] * this->hr[2] * this->fcontainer_m->rho_m.sum();
+        this->fcontainer_m->getRho()     = dot(this->fcontainer_m->getE(), this->fcontainer_m->getE());
+        potEnergy = 0.5 * this->hr[0] * this->hr[1] * this->hr[2] * this->fcontainer_m->getRho().sum();
 
         Kokkos::parallel_reduce(
             "Particle Kinetic Energy", this->pcontainer_m->getLocalNum(),
@@ -416,8 +416,8 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
 
-        const int nghostE = this->fcontainer_m->E_m.getNghost();
-        auto Eview        = this->fcontainer_m->E_m.getView();
+        const int nghostE = this->fcontainer_m->getE().getNghost();
+        auto Eview        = this->fcontainer_m->getE().getView();
         Vector_t<T, Dim> normE;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -472,7 +472,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
     
     template <typename View>
     void dumpLandau(const View& Eview) {
-        const int nghostE = fcontainer_m->E_m.getNghost();
+        const int nghostE = fcontainer_m->getE().getNghost();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double localEx2 = 0, localExNorm = 0;
@@ -496,7 +496,7 @@ class PenningTrapManager : public ippl::PicManager<double, 3, ParticleContainer<
         MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
         double fieldEnergy =
-            std::reduce(fcontainer_m->hr_m.begin(), fcontainer_m->hr_m.end(), globaltemp, std::multiplies<double>());
+            std::reduce(fcontainer_m->getHr().begin(), fcontainer_m->getHr().end(), globaltemp, std::multiplies<double>());
 
         double ExAmp = 0.0;
         MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());

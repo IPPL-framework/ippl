@@ -4,18 +4,24 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
-    // Define the FieldSolver class
-    template <typename T, unsigned Dim>
-    class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
-    private:
-        Field_t<Dim> *rho_m;
-        VField_t<T, Dim> *E_m;
+// Define the FieldSolver class
+template <typename T, unsigned Dim>
+class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
+  private:
+    Field_t<Dim> *rho_m;
+    VField_t<T, Dim> *E_m;
     
-    public:
-        FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *E)
+  public:
+    FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *E)
           :  ippl::FieldSolverBase<T, Dim>(solver), rho_m(rho), E_m(E) {}
     
     ~FieldSolver(){}
+
+    Field_t<Dim> *getRho() const { return rho_m; }
+    void setRho(Field_t<Dim> *rho){ rho_m = rho; }
+
+    VField_t<T, Dim> *getE() const { return rho_m; }
+    void setE(VField_t<T, Dim> *E){ E_m = E; }
 
     void initSolver() override {
         Inform m("solver ");
@@ -145,5 +151,5 @@
         }
     }
     */
-    };
+};
 #endif
