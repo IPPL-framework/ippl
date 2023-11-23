@@ -86,7 +86,7 @@ namespace ippl {
                     + this->integration_nodes_m[i - 3];
             }
 
-            std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << std::endl;
+            // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << std::endl;
 
             alfbet          = alpha + beta;
             std::size_t its = 1;
@@ -116,22 +116,22 @@ namespace ippl {
                 z1 = z;
                 z  = z1 - p1 / pp;  // Newtons Formula
 
-                if (Kokkos::abs(z - z1) <= 1e-17) {
-                    // std::cout << "i = " << i << ", error: " << Kokkos::abs(z - z1)
-                    //           << ", aborting..." << std::endl;
-                    // break;
-                }
+                // if (Kokkos::abs(z - z1) <= 1e-17) {
+                //  std::cout << "i = " << i << ", error: " << Kokkos::abs(z - z1)
+                //            << ", aborting..." << std::endl;
+                //  break;
+                //}
                 ++its;
             } while (its <= max_newton_iterations);
 
-            if (its > max_newton_iterations) {
-                // inform "too many iterations."
-                // TODO switch to inform
-                std::cout << "i = " << i << ", too many iterations" << std::endl;
-            }
+            // if (its > max_newton_iterations) {
+            //  inform "too many iterations."
+            //  TODO switch to inform
+            // std::cout << "i = " << i << ", too many iterations" << std::endl;
+            //}
 
-            std::cout << "i = " << i << ", result after " << its << " iterations: " << z
-                      << std::endl;
+            // std::cout << "i = " << i << ", result after " << its << " iterations: " << z
+            //           << std::endl;
 
             this->integration_nodes_m[i] = z;
 
