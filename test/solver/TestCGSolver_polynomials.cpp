@@ -29,67 +29,20 @@ int main(int argc, char* argv[]) {
         bool isWeak = false;
         std::string solver = "not preconditioned";
         std::string preconditioner_type = "";
+        std::
         Inform info("Config");
         if (argc >= 2) {
             // First argument is the problem size (log2)
             double N = strtol(argv[1], NULL, 10);
             info << "Got " << N << " as size parameter" << endl;
             pt = ptY = 1 << (int)N;
-            if (argc >= 3) {
-                if (argv[2][0] == 'w') {
-                    // If weak scaling is specified, increase the problem size
-                    // along the Y axis such that each rank has the same workload
-                    // (the simplest enlargement method)
-                    ptY = 1 << (5 + (int)N);
-                    pt  = 32;
-                    info << "Performing weak scaling" << endl;
-                    isWeak = true;
-                }
-                else{
-                    if(argv[2][0] == 'j'){
-                        solver = "preconditioned";
-                        preconditioner_type = "jacobi";
-
-                    }
-                    if(argv[2][0] == 'n'){
+            if(argv[2][0] == 'n'){
                         solver = "preconditioned";
                         preconditioner_type = "newton";
-                    }
-                    if(argv[2][0] == 'c'){
+            }
+            if(argv[2][0] == 'c'){
                         solver = "preconditioned";
                         preconditioner_type = "chebyshev";
-                    }
-                    if(argv[2][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
-                    }
-                    if(argv[2][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
-                    }
-                }
-                if (argc >= 4){
-                    if(argv[3][0] == 'j'){
-                        solver = "preconditioned";
-                        preconditioner_type = "jacobi";
-                    }
-                    if(argv[3][0] == 'n'){
-                        solver = "preconditioned";
-                        preconditioner_type = "newton";
-                    }
-                    if(argv[3][0] == 'c'){
-                        solver = "preconditioned";
-                        preconditioner_type = "chebyshev";
-                    }
-                    if(argv[3][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
-                    }
-                    if(argv[3][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
-                    }
-                }
             }
         }
         info << "Solver is " << solver << endl;
