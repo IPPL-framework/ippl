@@ -57,6 +57,15 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
     ${GTEST_BOTH_LIBRARIES}
 )
+
+add_executable(GaussJacobiQuadrature GaussJacobiQuadrature.cpp)
+target_link_libraries(
+    GaussJacobiQuadrature
+    ippl
+    pthread
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

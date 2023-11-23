@@ -71,19 +71,19 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodes1D(
         const T& a, const T& b) const {
+        assert(b > a);
         // scale the integration nodes from the local domain [a_m, b_m] to the given one [a, b]
 
-        const Vector<T, NumNodes1D> nodes = this->integration_nodes_m;
-
-        return (nodes / (this->b_m - this->a_m) - a_m) * (b - a) + a;
+        // return (this->integration_nodes_m - this->a_m) / (this->b_m - this->a_m) * (b - a) + a;
+        return this->integration_nodes_m;
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getWeights1D(const T& a,
                                                                                const T& b) const {
-        const Vector<T, NumNodes1D> weights = this->weights_m;
-
-        return weights * (b - a) / (this->b_m - this->a_m);
+        assert(b > a);
+        // return this->weights_m * (b - a) / (this->b_m - this->a_m);
+        return this->weights_m;
     }
 
 }  // namespace ippl

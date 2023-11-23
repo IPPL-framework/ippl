@@ -6,17 +6,17 @@ namespace ippl {
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::GaussJacobiQuadrature(
         const ElementType& ref_element, const T& alpha, const T& beta,
         const std::size_t& max_newton_iterations)
-        : Quadrature<T, NumNodes1D, ElementType>(ref_element) {
+        : Quadrature<T, NumNodes1D, ElementType>(ref_element)
+        , alpha_m(alpha)
+        , beta_m(beta) {
         assert(alpha > -1.0 && "alpha > -1.0 is not satisfied");
         assert(beta > -1.0 && "beta > -1.0 is not satisfied");
-
-        this->alpha_m = alpha;
-        this->beta_m  = beta;
+        assert(max_newton_iterations >= 1 && "max_newton_iterations >= 1 is not satisfied");
 
         this->degree_m = 2 * NumNodes1D - 1;
 
-        this->a_m = -1.0;
-        this->b_m = 1.0;
+        this->a_m = -1.0;  // start of the domain
+        this->b_m = 1.0;   // end of the domain
 
         this->integration_nodes_m = Vector<T, NumNodes1D>();
         this->weights_m           = Vector<T, NumNodes1D>();
@@ -41,7 +41,7 @@ namespace ippl {
         T p3;
         T pp;
         T temp;
-        T z;
+        T z = 0.0;  // initialize to prevent "may be uninitialized warning, which it can't be"
         T z1;
 
         // Compute the root of the Jacobi polynomial
@@ -86,9 +86,11 @@ namespace ippl {
                     + this->integration_nodes_m[i - 3];
             }
 
-            alfbet = alpha + beta;
-            std::size_t its;
-            for (its = 1; its <= max_newton_iterations; ++its) {
+            std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << std::endl;
+
+            alfbet          = alpha + beta;
+            std::size_t its = 1;
+            do {
                 // refinement by Newton's method
                 temp = 2.0 + alfbet;
 
@@ -114,16 +116,22 @@ namespace ippl {
                 z1 = z;
                 z  = z1 - p1 / pp;  // Newtons Formula
 
-                if (abs(z - z1) <= 1e-17)  // TODO change to a more appropriate tolerance
-                {
-                    break;
+                if (Kokkos::abs(z - z1) <= 1e-17) {
+                    // std::cout << "i = " << i << ", error: " << Kokkos::abs(z - z1)
+                    //           << ", aborting..." << std::endl;
+                    // break;
                 }
-            }
-            if (its <= max_newton_iterations) {
+                ++its;
+            } while (its <= max_newton_iterations);
+
+            if (its > max_newton_iterations) {
                 // inform "too many iterations."
                 // TODO switch to inform
-                std::cout << "too many iterations" << std::endl;
+                std::cout << "i = " << i << ", too many iterations" << std::endl;
             }
+
+            std::cout << "i = " << i << ", result after " << its << " iterations: " << z
+                      << std::endl;
 
             this->integration_nodes_m[i] = z;
 
@@ -134,5 +142,7 @@ namespace ippl {
                             - Kokkos::lgamma(static_cast<double>(NumNodes1D) + alfbet + 1.0))
                 * temp * Kokkos::pow(2.0, alfbet) / (pp * p2);
         }
+
+        this->integration_nodes_m *= -1.0;  // flip it
     }
 }  // namespace ippl
