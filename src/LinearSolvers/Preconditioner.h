@@ -6,6 +6,7 @@
 #define IPPL_PRECONDITIONER_H
 
 #include "Expression/IpplOperations.h" // get the function apply()
+#include "LaplaceHelpers.h"
 
 // Expands to a lambda that acts as a wrapper for a differential operator
 // fun: the function for which to create the wrapper, such as ippl::laplace
@@ -17,246 +18,6 @@
 
 
 namespace ippl {
-    namespace detail {
-        //Implements the poisson matrix acting on a d dimensional field
-        template<typename E>
-        struct meta_poisson : public Expression<meta_poisson<E>,
-                sizeof(E)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_poisson(const E &u)
-                    : u_m(u) {}
-
-            template<typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T = typename E::Mesh_t::value_type;
-                T res = 0;
-                index_type coords[dim] = {args...};
-                auto &&center = apply(u_m, coords);
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-
-                    coords[d] -= 1;
-                    auto &&left = apply(u_m, coords);
-
-                    coords[d] += 2;
-                    auto &&right = apply(u_m, coords);
-                    res += (2.0 * center - left - right);
-                }
-                return res;
-            }
-
-        private:
-            const E u_m;
-        };
-
-        template<typename E>
-        struct meta_lower_laplace
-                : public Expression<meta_lower_laplace<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_lower_laplace(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
-
-            /*
-             * n-dimensional lower triangular Laplacian
-             */
-            template<typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T = typename E::Mesh_t::value_type;
-                T res = 0;
-                const unsigned nghosts = u_m.getNghost();
-                const auto &layout = u_m.getLayout();
-                const auto &ldom = layout.getLocalNDIndex();
-                const auto &domain = layout.getDomain();
-
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-                    const int global_index = coords[d] + ldom[d].first() - nghosts;
-                    const int size = domain.length()[d];
-                    const bool not_left_boundary = (global_index != 0);
-                    const bool right_boundary = (global_index == size - 1);
-
-                    coords[d] -= 1;
-                    auto &&left = apply(u_m, coords);
-
-                    coords[d] += 2;
-                    auto &&right = apply(u_m, coords);
-
-                    res += hvector_m[d] * (not_left_boundary * left + right_boundary * right);
-                }
-                return res;
-            }
-
-        private:
-            using Mesh_t = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
-            const vector_type hvector_m;
-        };
-
-        template<typename E>
-        struct meta_lower_laplace_alt
-                : public Expression<meta_lower_laplace_alt<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_lower_laplace_alt(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
-
-            /*
-             * n-dimensional lower triangular Laplacian
-             */
-            template<typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T = typename E::Mesh_t::value_type;
-                T res = 0;
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-                    coords[d] -= 1;
-                    auto &&left = apply(u_m, coords);
-                    res += hvector_m[d] * left;
-                }
-                return res;
-            }
-
-        private:
-            using Mesh_t = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
-            const vector_type hvector_m;
-        };
-
-        template<typename E>
-        struct meta_upper_laplace
-                : public Expression<meta_upper_laplace<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_upper_laplace(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
-
-            /*
-             * n-dimensional upper triangular Laplacian
-             */
-            template<typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T = typename E::Mesh_t::value_type;
-                T res = 0;
-                const unsigned nghosts = u_m.getNghost();
-                const auto &layout = u_m.getLayout();
-                const auto &ldom = layout.getLocalNDIndex();
-                const auto &domain = layout.getDomain();
-
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-                    const int global_index = coords[d] + ldom[d].first() - nghosts;
-                    const int size = domain.length()[d];
-                    const bool left_boundary = (global_index == 0);
-                    const bool not_right_boundary = (global_index != size - 1);
-
-                    coords[d] -= 1;
-                    auto &&left = apply(u_m, coords);
-
-                    coords[d] += 2;
-                    auto &&right = apply(u_m, coords);
-
-                    res += hvector_m[d] * (left_boundary * left + not_right_boundary * right);
-                }
-                return res;
-            }
-
-        private:
-            using Mesh_t = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
-            const vector_type hvector_m;
-        };
-    }// namespace detail
-
-    /*!
-     * User interface of poisson
-     * @param u field
-     */
-    template<typename Field>
-    detail::meta_poisson<Field> poisson(Field &u) {
-        constexpr unsigned Dim = Field::dim;
-
-        u.fillHalo();
-        BConds <Field, Dim> &bcField = u.getFieldBC();
-        bcField.apply(u);
-
-        return detail::meta_poisson<Field>(u);
-    }
-
-    /*!
-     * User interface of lower triangular Laplacian
-     * @param u field
-     */
-    template<typename Field>
-    detail::meta_lower_laplace<Field> lower_laplace(Field &u) {
-        constexpr unsigned Dim = Field::dim;
-
-        u.fillHalo();
-        BConds <Field, Dim> &bcField = u.getFieldBC();
-        bcField.apply(u);
-
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type &mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        return detail::meta_lower_laplace<Field>(u, hvector);
-    }
-
-    template<typename Field>
-    detail::meta_lower_laplace_alt<Field> lower_laplace_alt(Field &u) {
-        constexpr unsigned Dim = Field::dim;
-
-        u.fillHalo();
-        BConds <Field, Dim> &bcField = u.getFieldBC();
-        bcField.apply(u);
-
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type &mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        return detail::meta_lower_laplace_alt<Field>(u, hvector);
-    }
-
-    /*!
-     * User interface of lower triangular Laplacian
-     * @param u field
-     */
-    template<typename Field>
-    detail::meta_upper_laplace<Field> upper_laplace(Field &u) {
-        constexpr unsigned Dim = Field::dim;
-
-        u.fillHalo();
-        BConds <Field, Dim> &bcField = u.getFieldBC();
-        bcField.apply(u);
-
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type &mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        return detail::meta_upper_laplace<Field>(u, hvector);
-    }
-
     template<typename Field>
     struct preconditioner {
         constexpr static unsigned Dim = Field::dim;
@@ -291,8 +52,7 @@ namespace ippl {
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        jacobi_preconditioner(unsigned s = 1, double w = 1.0, bool analytical = true) : type_m("jacobi"), s_m(s),
-                                                                                        w_m(w),
+        jacobi_preconditioner(double w = 1.0, bool analytical = false) : type_m("jacobi"),w_m(w),
                                                                                         use_analytical_m(analytical) {}
 
         Field operator()(Field &u) override {
@@ -333,22 +93,18 @@ namespace ippl {
                 }
                 std::cout << "Analytical results: alpha : " << alpha << std::endl;
                 std::cout << "Analytical results: beta : " << beta << std::endl;
-                w_m = 2.0 / (alpha + beta) * (1. + zeta_m);
+                w_m = 2.0 / ((alpha + beta));
                 use_analytical_m = false; //Don't repeat the calculation of w_m
             }
-            for (unsigned i = 0; i < s_m; ++i) {
-                res = res * w_m * 0.5 * factor / sum;
-            }
+            res = res * w_m * 0.5 * factor / sum;
             return res;
         }
 
         std::string get_type() override { return type_m; };
     protected:
         std::string type_m;
-        unsigned s_m; // Number of applications of the jacobian
         double w_m; // Damping factor
         bool use_analytical_m;
-        double zeta_m = 0.0;
     };
 
     /*!
@@ -601,7 +357,41 @@ namespace ippl {
     };
 
     /*!
-    * 2Step Gauss-Seidel
+    * Richardson preconditioner
+    */
+    template<typename Field>
+    struct richardson_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type = typename Field::Mesh_t;
+        using layout_type = typename Field::Layout_t;
+
+        richardson_preconditioner(unsigned innerloops = 5) :
+                type_m("Richardson"),
+                innerloops_m(innerloops),
+                Dinv_m(jacobi_preconditioner<Field>()) {}
+
+        Field operator()(Field &r) override {
+            Field g = r.deepCopy();
+            g = 0;
+            Field ULg = r.deepCopy();
+            Field error_field = r.deepCopy();
+            for (unsigned int j = 0; j < innerloops_m; ++j) {
+                ULg = upper_and_lower_laplace(g);
+                g = r+ULg;
+                g=Dinv_m(g);
+            }
+            return g;
+        }
+
+        std::string get_type() override { return type_m; };
+    protected:
+        std::string type_m;
+        unsigned innerloops_m;
+        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
+    };
+
+    /*!
+    * 2-step Gauss-Seidel
     */
     template<typename Field>
     struct gs_preconditioner : public preconditioner<Field> {
@@ -609,28 +399,111 @@ namespace ippl {
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        gs_preconditioner(unsigned innerloops = 1) :
-                type_m("2-Step Gauss Seidel"),
+        gs_preconditioner(unsigned innerloops = 5,unsigned outerloops=1) :
+                type_m("Gauss-Seidel"),
                 innerloops_m(innerloops),
-                Dinv_m(jacobi_preconditioner<Field>(1)) {}
+                outerloops_m(outerloops),
+                Dinv_m(jacobi_preconditioner<Field>()) {}
 
-        Field operator()(Field &r) override {
-            Field g = r.deepCopy();
-            g = Dinv_m(g);
-            Field res = g.deepCopy();
-            for (unsigned int j = 0; j < innerloops_m; ++j) {
-                g = -lower_laplace(g);
-                g = -Dinv_m(g);
-                res = res + g;
+        Field operator()(Field &b) override {
+            Field x = b.deepCopy();
+            Field r = b.deepCopy();
+            Field r_inner = b.deepCopy();
+            Field g  = b.deepCopy();
+            Field L = b.deepCopy();
+            Field U = b.deepCopy();
+            x = 0;//Initial guess
+
+            double sum = 0.0;
+            mesh_type mesh = b.get_mesh();
+            for (unsigned d = 0; d < Dim; ++d) {
+                sum += 2.0/std::pow(mesh.getMeshSpacing(d), 2);
             }
-            return res;
+            for (unsigned int k=0; k<outerloops_m;++k) {
+                U = -upper_laplace(x);
+                r = b - U;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    L = -lower_laplace(x);
+                    r_inner = r - L;
+                    x = Dinv_m(r_inner);
+                }
+                L = -lower_laplace(x);
+                r = b - L;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    U = -upper_laplace(x);
+                    r_inner = r - U;
+                    x = Dinv_m(r_inner);
+                }
+            }
+            return x;
         }
 
         std::string get_type() override { return type_m; };
     protected:
         std::string type_m;
         unsigned innerloops_m;
-        jacobi_preconditioner<Field> Dinv_m = jacobi_preconditioner<Field>(1, 1.0, true);
+        unsigned outerloops_m;
+        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
+    };
+
+    /*!
+    * Geometric Multigrid for rectangular shaped meshes
+    */
+    template<typename Field>
+    struct gmg_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type = typename Field::Mesh_t;
+        using layout_type = typename Field::Layout_t;
+
+        gmg_preconditioner(unsigned innerloops = 10,unsigned outerloops=2) :
+                type_m("Geometric Multigrid"),
+                innerloops_m(innerloops),
+                outerloops_m(outerloops),
+                Dinv_m(jacobi_preconditioner<Field>()) {}
+
+        restric(Field &u){
+            mesh_type u.get_mesh();
+
+        }
+        Field operator()(Field &b) override {
+            Field x = b.deepCopy();
+            Field r = b.deepCopy();
+            Field r_inner = b.deepCopy();
+            Field g  = b.deepCopy();
+            Field L = b.deepCopy();
+            Field U = b.deepCopy();
+            x = 0;//Initial guess
+
+            double sum = 0.0;
+            mesh_type mesh = b.get_mesh();
+            for (unsigned d = 0; d < Dim; ++d) {
+                sum += 2.0/std::pow(mesh.getMeshSpacing(d), 2);
+            }
+            for (unsigned int k=0; k<outerloops_m;++k) {
+                U = -upper_laplace(x);
+                r = b - U;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    L = -lower_laplace(x);
+                    r_inner = r - L;
+                    x = Dinv_m(r_inner);
+                }
+                L = -lower_laplace(x);
+                r = b - L;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    U = -upper_laplace(x);
+                    r_inner = r - U;
+                    x = Dinv_m(r_inner);
+                }
+            }
+            return x;
+        }
+
+        std::string get_type() override { return type_m; };
+    protected:
+        std::string type_m;
+        unsigned innerloops_m;
+        unsigned outerloops_m;
+        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
     };
 
     /*!

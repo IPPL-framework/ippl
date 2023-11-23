@@ -88,13 +88,13 @@ namespace ippl {
                 lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
-                // r = rhs - op_m(lhs);
+                r = rhs - op_m(lhs);
                 // This correction is generally not used in practice because
                 // applying the Laplacian is computationally expensive and
                 // the correction does not have a significant effect on accuracy;
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
-                r = r - alpha * q;
+                //r = r - alpha * q;
                 delta0 = delta1;
                 delta1   = innerProduct(r,r);
                 T beta   = delta1 / delta0;
@@ -148,15 +148,18 @@ namespace ippl {
         * @param op A function that returns OpRet and takes a field of the LHS type
         */
         void setOperator(operator_type op) override { BaseCG::op_m = std::move(op); }
-        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 5, unsigned degree = 31) override{
+        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 4, unsigned degree = 15) override{
                     if (preconditioner_type == "jacobi"){
                         preconditioner_m = new jacobi_preconditioner<FieldLHS>();
                     }
                     else if (preconditioner_type == "newton"){
-                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 0);
+                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 1);
                     }
                     else if (preconditioner_type == "chebyshev"){
-                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 0);
+                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 1);
+                    }
+                    else if (preconditioner_type == "richardson"){
+                        preconditioner_m = new richardson_preconditioner<FieldLHS>();
                     }
                     else if (preconditioner_type == "gauss-seidel"){
                         preconditioner_m = new gs_preconditioner<FieldLHS>();
