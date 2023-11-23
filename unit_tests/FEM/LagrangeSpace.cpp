@@ -3,7 +3,6 @@
 #include "Ippl.h"
 
 #include <functional>
-#include <random>
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
@@ -26,16 +25,13 @@ public:
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
     LagrangeSpaceTest()
-        : rng(42)
-        , meshSizes(3)
+        : meshSizes(3)
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
         , lagrangeSpace(mesh, ref_element, quadrature) {
         // fill the global reference DOFs
     }
-
-    std::mt19937 rng;
 
     const ippl::Vector<unsigned, Dim> meshSizes;
     const ElementType ref_element;

@@ -15,6 +15,9 @@ namespace ippl {
 
         this->degree_m = 2 * NumNodes1D - 1;
 
+        this->a_m = -1.0;
+        this->b_m = 1.0;
+
         this->integration_nodes_m = Vector<T, NumNodes1D>();
         this->weights_m           = Vector<T, NumNodes1D>();
 

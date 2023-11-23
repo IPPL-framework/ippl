@@ -54,15 +54,20 @@ namespace ippl {
          */
         Vector<Vector<T, dim>, numElementNodes> getIntegrationNodesForRefElement() const;
 
-        Vector<T, NumNodes1D> getIntegrationNodes1D() const;
+        Vector<T, NumNodes1D> getIntegrationNodes1D(const T& a, const T& b) const;
 
-        Vector<T, NumNodes1D> getWeights1D() const;
+        Vector<T, NumNodes1D> getWeights1D(const T& a, const T& b) const;
 
     protected:
         unsigned degree_m;
         const ElementType& ref_element_m;
         Vector<T, NumNodes1D> integration_nodes_m;
         Vector<T, NumNodes1D> weights_m;
+
+        // local domain start
+        T a_m;
+        // local domain end
+        T b_m;
     };
 
 }  // namespace ippl

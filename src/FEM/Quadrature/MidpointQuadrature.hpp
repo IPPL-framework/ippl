@@ -7,17 +7,17 @@ namespace ippl {
         : Quadrature<T, NumNodes1D, ElementType>(ref_element) {
         this->degree_m = 1;
 
-        this->weights_m = Vector<T, NumNodes1D>(1.0 / NumNodes1D);
+        this->a_m = 0.0;
+        this->b_m = 1.0;
 
-        const unsigned number_of_segments = NumNodes1D;
-        const T segment_length            = 1.0 / number_of_segments;
+        const T segment_length = (this->b_m - this->a_m) / NumNodes1D;
+
+        this->weights_m = Vector<T, NumNodes1D>(segment_length);
 
         // TODO use KOKKKOS
         this->integration_nodes_m = Vector<T, NumNodes1D>();
-        T integration_point       = 0.5 * segment_length;
-        for (unsigned i = 0; i < number_of_segments; ++i) {
-            this->integration_nodes_m[i] = integration_point;
-            this->integration_nodes_m[i] += segment_length;
+        for (unsigned i = 0; i < NumNodes1D; ++i) {
+            this->integration_nodes_m[i] = 0.5 * segment_length + i * segment_length + this->a_m;
         }
     }
 

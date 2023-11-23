@@ -17,7 +17,7 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     Vector<T, Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
-        Vector<T, NumNodes1D> w = this->getWeights1D();
+        Vector<T, NumNodes1D> w = this->getWeights1D(0.0, 1.0);
 
         Vector<T, this->numElementNodes> tensor_prod_w;
 
@@ -45,7 +45,7 @@ namespace ippl {
     Vector<Vector<T, Quadrature<T, NumNodes1D, ElementType>::dim>,
            Quadrature<T, NumNodes1D, ElementType>::numElementNodes>
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
-        Vector<T, NumNodes1D> q = this->getIntegrationNodes1D();
+        Vector<T, NumNodes1D> q = this->getIntegrationNodes1D(0.0, 1.0);
 
         Vector<Vector<T, ElementType::dim>, this->numElementNodes> tensor_prod_q;
 
@@ -69,13 +69,21 @@ namespace ippl {
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodes1D() const {
-        return this->integration_nodes_m;
+    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodes1D(
+        const T& a, const T& b) const {
+        // scale the integration nodes from the local domain [a_m, b_m] to the given one [a, b]
+
+        const Vector<T, NumNodes1D> nodes = this->integration_nodes_m;
+
+        return (nodes / (this->b_m - this->a_m) - a_m) * (b - a) + a;
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getWeights1D() const {
-        return this->weights_m;
+    Vector<T, NumNodes1D> Quadrature<T, NumNodes1D, ElementType>::getWeights1D(const T& a,
+                                                                               const T& b) const {
+        const Vector<T, NumNodes1D> weights = this->weights_m;
+
+        return weights * (b - a) / (this->b_m - this->a_m);
     }
 
 }  // namespace ippl
