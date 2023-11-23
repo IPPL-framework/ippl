@@ -391,8 +391,7 @@ public:
         size_type Total_particles = 0;
         size_type local_particles = pcontainer_m->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<size_type>());
 
         double cellVolume = std::reduce(hr_m.begin(), hr_m.end(), 1., std::multiplies<double>());
         (*rho_m)          = (*rho_m) / cellVolume;
@@ -429,8 +428,7 @@ public:
         kinEnergy *= 0.5;
         double gkinEnergy = 0.0;
 
-        MPI_Reduce(&kinEnergy, &gkinEnergy, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(kinEnergy, gkinEnergy, 1, std::plus<double>());
 
         const int nghostE = this->fcontainer_m->getE().getNghost();
         auto Eview        = this->fcontainer_m->getE().getView();
@@ -450,8 +448,8 @@ public:
                 Kokkos::Sum<T>(temp));
             Kokkos::fence();
             T globaltemp          = 0.0;
-            MPI_Datatype mpi_type = ippl::mpi::get_mpi_datatype<T>(temp);
-            MPI_Reduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, 0, ippl::Comm->getCommunicator());
+            ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
+
             normE[d] = std::sqrt(globaltemp);
             ippl::Comm->barrier();
         }
@@ -482,55 +480,6 @@ public:
             }
             csvout << endl;
             csvout.flush();
-        }
-        ippl::Comm->barrier();
-    }
-
-    template <typename View>
-    void dumpLandau(const View& Eview) {
-        const int nghostE = fcontainer_m->getE().getNghost();
-
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double localEx2 = 0, localExNorm = 0;
-        ippl::parallel_reduce(
-            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double val = ippl::apply(Eview, args)[0];
-                double e2  = Kokkos::pow(val, 2);
-                E2 += e2;
-
-                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
-                if (norm > ENorm) {
-                    ENorm = norm;
-                }
-            },
-            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
-
-        double globaltemp = 0.0;
-        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-
-        double fieldEnergy = std::reduce(fcontainer_m->getHr().begin(), fcontainer_m->getHr().end(),
-                                         globaltemp, std::multiplies<double>());
-
-        double ExAmp = 0.0;
-        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
-
-        if (ippl::Comm->rank() == 0) {
-            std::stringstream fname;
-            fname << "data/FieldLandau_";
-            fname << ippl::Comm->size();
-            fname << "_manager";
-            fname << ".csv";
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-            csvout.precision(16);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if (time_m == 0.0) {
-                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
-            }
-            csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
         }
         ippl::Comm->barrier();
     }

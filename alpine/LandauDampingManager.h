@@ -341,13 +341,24 @@ public:
         Vector_t<double, Dim> hr_m        = hr;
 
         scatter(*q_m, *rho_m, *R_m);
-        m << std::fabs((Q_m - (*rho_m).sum()) / Q_m) << endl;
+        double rel_error = std::fabs((Q_m-(*rho_m).sum())/Q_m);
+
+        m << rel_error << endl;
 
         size_type Total_particles = 0;
         size_type local_particles = pcontainer_m->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<size_type>());
+
+        if (ippl::Comm->rank() == 0) {
+            if (Total_particles != this->totalP || rel_error > 1e-10) {
+                m << "Time step: " << this->it << endl;
+                m << "Total particles in the sim. " << this->totalP << " "
+                  << "after update: " << Total_particles << endl;
+                m << "Rel. error in charge conservation: " << rel_error << endl;
+                ippl::Comm->abort();
+            }
+        }
 
         double cellVolume = std::reduce(hr_m.begin(), hr_m.end(), 1., std::multiplies<double>());
         (*rho_m)          = (*rho_m) / cellVolume;
@@ -387,13 +398,13 @@ public:
             Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
 
         double globaltemp = 0.0;
-        MPI_Reduce(&localEx2, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
-        double fieldEnergy = std::reduce(fcontainer_m->getHr().begin(), fcontainer_m->getHr().end(),
-                                         globaltemp, std::multiplies<double>());
+        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
+
+        double fieldEnergy =
+            std::reduce(fcontainer_m->getHr().begin(), fcontainer_m->getHr().end(), globaltemp, std::multiplies<double>());
 
         double ExAmp = 0.0;
-        MPI_Reduce(&localExNorm, &ExAmp, 1, MPI_DOUBLE, MPI_MAX, 0, ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
