@@ -33,7 +33,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndex(
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex,
         const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& globalDOFIndex) const {
-        // TODO implement
+        static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
 

@@ -18,6 +18,8 @@ protected:
 public:
     using value_t = T;
 
+    static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
+
     using ElementType = std::conditional_t<
         Dim == 1, ippl::EdgeElement<T>,
         std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;

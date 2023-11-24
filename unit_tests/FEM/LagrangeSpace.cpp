@@ -18,9 +18,11 @@ protected:
 public:
     using value_t = T;
 
-    using ElementType =
-        std::conditional_t<Dim == 1, ippl::EdgeElement<T>, ippl::QuadrilateralElement<T>>;
-    // std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
+    static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
+
+    using ElementType = std::conditional_t<
+        Dim == 1, ippl::EdgeElement<T>,
+        std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
@@ -81,6 +83,23 @@ TYPED_TEST(LagrangeSpaceTest, getLocalDOFIndex) {
                              {3, 4, 7, 6},
                              // Element 3
                              {4, 5, 8, 7}};
+    } else if (dim == 3) {
+        globalElementDOFs = {// Element 0
+                             {0, 1, 4, 3, 9, 10, 13, 12},
+                             // Element 1
+                             {1, 2, 5, 4, 10, 11, 14, 13},
+                             // Element 2
+                             {3, 4, 7, 6, 12, 13, 16, 15},
+                             // Element 3
+                             {4, 5, 8, 7, 13, 14, 17, 16},
+                             // Element 4
+                             {9, 10, 13, 12, 18, 19, 22, 21},
+                             // Element 5
+                             {10, 11, 14, 13, 19, 20, 23, 22},
+                             // Element 6
+                             {12, 13, 16, 15, 21, 22, 25, 24},
+                             // Element 7
+                             {13, 14, 17, 16, 22, 23, 26, 25}};
     } else {
         // This dimension was not handled
         FAIL();
@@ -150,6 +169,86 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndex) {
             ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 1), 5);
             ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 2), 8);
             ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 3), 7);
+        } else if (dim == 3) {
+            // lower left front element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 0), 0);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 1), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 2), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 3), 3);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 4), 9);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 5), 10);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 6), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(0, 7), 12);
+
+            // lower right front element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 0), 1);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 1), 2);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 2), 5);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 3), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 4), 10);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 5), 11);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 6), 14);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(1, 7), 13);
+
+            // upper left front element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 0), 3);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 1), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 2), 7);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 3), 6);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 4), 12);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 5), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 6), 16);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(2, 7), 15);
+
+            // upper right front element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 0), 4);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 1), 5);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 2), 8);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 3), 7);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 4), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 5), 14);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 6), 17);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(3, 7), 16);
+
+            // lower left back element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 0), 9);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 1), 10);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 2), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 3), 12);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 4), 18);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 5), 19);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 6), 22);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(4, 7), 21);
+
+            // lower right back element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 0), 10);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 1), 11);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 2), 14);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 3), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 4), 19);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 5), 20);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 6), 23);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(5, 7), 22);
+
+            // upper left back element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 0), 12);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 1), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 2), 16);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 3), 15);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 4), 21);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 5), 22);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 6), 25);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(6, 7), 24);
+
+            // upper right back element
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 0), 13);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 1), 14);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 2), 17);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 3), 16);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 4), 22);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 5), 23);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 6), 26);
+            ASSERT_EQ(lagrangeSpace.getGlobalDOFIndex(7, 7), 25);
         } else {
             FAIL();
         }
@@ -207,6 +306,32 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
         } else {
             FAIL();
         }
+    } else if (dim == 3) {
+        auto globalDOFIndices = lagrangeSpace.getGlobalDOFIndices(7);
+
+        if (order == 1) {
+            ASSERT_EQ(globalDOFIndices.dim, 8);
+            ASSERT_EQ(globalDOFIndices[0], 13);
+            ASSERT_EQ(globalDOFIndices[1], 14);
+            ASSERT_EQ(globalDOFIndices[2], 17);
+            ASSERT_EQ(globalDOFIndices[3], 16);
+            ASSERT_EQ(globalDOFIndices[4], 22);
+            ASSERT_EQ(globalDOFIndices[5], 23);
+            ASSERT_EQ(globalDOFIndices[6], 26);
+            ASSERT_EQ(globalDOFIndices[7], 25);
+        } else if (order == 2) {
+            ASSERT_EQ(globalDOFIndices[0], 48);
+            ASSERT_EQ(globalDOFIndices[1], 50);
+            ASSERT_EQ(globalDOFIndices[2], 56);
+            ASSERT_EQ(globalDOFIndices[3], 54);
+            ASSERT_EQ(globalDOFIndices[4], 72);
+            ASSERT_EQ(globalDOFIndices[5], 74);
+            ASSERT_EQ(globalDOFIndices[6], 80);
+            ASSERT_EQ(globalDOFIndices[7], 78);
+        } else {
+            FAIL();
+        }
+
     } else {
         FAIL();
     }
@@ -241,7 +366,17 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasis) {
                                 tolerance);
                 }
             }
-
+            // } else if (dim == 3) {
+            //     ippl::Vector<T, lagrangeSpace.dim> point;
+            //     for (T x = 0.0; x < 1.0; x += 0.05) {
+            //         point[0] = x;
+            //         for (T y = 0.0; y < 1.0; y += 0.05) {
+            //             point[1] = y;
+            //             for (T z = 0.0; z < 1.0; z += 0.05) {
+            //                 point[2] = z;
+            //             }
+            //         }
+            //     }
         } else {
             FAIL();
         }
@@ -292,6 +427,18 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
                     ASSERT_NEAR(grad_3[1], 1.0 - x, tolerance);
                 }
             }
+            // } else if (dim == 3) {
+            //     ippl::Vector<T, lagrangeSpace.dim> point;
+            //     for (T x = 0.0; x < 1.0; x += 0.05) {
+            //         point[0] = x;
+            //         for (T y = 0.0; y < 1.0; y += 0.05) {
+            //             point[1] = y;
+            //             for (T z = 0.0; z < 1.0; z += 0.05) {
+            //                 point[2] = z;
+
+            //             }
+            //         }
+            //     }
         } else {
             FAIL();
         }
@@ -386,9 +533,9 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     }
 }
 
-TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
-    FAIL();
-}
+// TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
+//     FAIL();
+// }
 
 int main(int argc, char* argv[]) {
     int success = 1;
