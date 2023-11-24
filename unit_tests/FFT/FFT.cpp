@@ -125,7 +125,7 @@ public:
     template <typename MirrorA, typename MirrorB>
     void verifyResult(int nghost, const MirrorA& computed, const MirrorB& expected) {
         T max_error_local = 0.0;
-        T tol             = (std::is_same_v<T, double>) ? 1e-13 : 1e-6;
+        T tol             = tolerance<T>;
         nestedViewLoop(computed, nghost, [&]<typename... Idx>(const Idx... args) {
             T error = std::fabs(expected(args...) - computed(args...));
 
@@ -241,7 +241,7 @@ TYPED_TEST(FFTTest, RC) {
 
 TYPED_TEST(FFTTest, CC) {
     using T = typename TestFixture::value_type;
-    T tol   = (std::is_same_v<T, double>) ? 1e-13 : 1e-6;
+    T tol   = tolerance<T>;
 
     auto& layout = this->layout;
     auto& field  = this->compField;

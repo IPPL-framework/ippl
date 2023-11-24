@@ -125,7 +125,7 @@ namespace ippl {
             SCAN
         };
 
-        template <e_functor_type, typename, typename, typename...>
+        template <e_functor_type, typename, typename, typename, typename...>
         struct FunctorWrapper;
 
         /*!
@@ -133,11 +133,12 @@ namespace ippl {
          * Source:
          * https://stackoverflow.com/questions/50713214/familiar-template-syntax-for-generic-lambdas
          * @tparam Functor functor type
+         * @tparam Policy range policy type
          * @tparam T... index types
          * @tparam Acc accumulator data type
          */
-        template <typename Functor, typename... T, typename... Acc>
-        struct FunctorWrapper<REDUCE, Functor, std::tuple<T...>, Acc...> {
+        template <typename Functor, typename Policy, typename... T, typename... Acc>
+        struct FunctorWrapper<REDUCE, Functor, Policy, std::tuple<T...>, Acc...> {
             Functor f;
 
             /*!
@@ -148,37 +149,22 @@ namespace ippl {
              * @return The functor's return value
              */
             KOKKOS_INLINE_FUNCTION void operator()(T... x, Acc&... res) const {
-                using index_type = typename RangePolicy<sizeof...(T)>::index_type;
-                typename RangePolicy<sizeof...(T)>::index_array_type args = {
-                    static_cast<index_type>(x)...};
+                using index_type                       = typename Policy::index_type;
+                typename Policy::index_array_type args = {static_cast<index_type>(x)...};
                 f(args, res...);
             }
         };
 
-        template <typename Functor, typename... T>
-        struct FunctorWrapper<FOR, Functor, std::tuple<T...>> {
+        template <typename Functor, typename Policy, typename... T>
+        struct FunctorWrapper<FOR, Functor, Policy, std::tuple<T...>> {
             Functor f;
 
             KOKKOS_INLINE_FUNCTION void operator()(T... x) const {
-                using index_type = typename RangePolicy<sizeof...(T)>::index_type;
-                typename RangePolicy<sizeof...(T)>::index_array_type args = {
-                    static_cast<index_type>(x)...};
+                using index_type                       = typename Policy::index_type;
+                typename Policy::index_array_type args = {static_cast<index_type>(x)...};
                 f(args);
             }
         };
-
-        /*!
-         * Convenience function for wrapping a functor with the wrapper struct.
-         * @tparam Functor the functor type
-         * @tparam Type the parallel dispatch type
-         * @tparam Dim the loop's rank
-         * @tparam Acc... the accumulator type(s)
-         * @return A wrapper containing the given functor
-         */
-        template <e_functor_type Type, unsigned Dim, typename... Acc, typename Functor>
-        auto functorize(const Functor& f) {
-            return FunctorWrapper<Type, Functor, typename Coords<Dim>::type, Acc...>{f};
-        }
 
         // Extracts the rank of a Kokkos range policy
         template <typename>
@@ -192,6 +178,23 @@ namespace ippl {
         struct ExtractRank<Kokkos::MDRangePolicy<T...>> {
             static constexpr int rank = Kokkos::MDRangePolicy<T...>::rank;
         };
+
+        /*!
+         * Convenience function for wrapping a functor with the wrapper struct.
+         * @tparam Functor the functor type
+         * @tparam Type the parallel dispatch type
+         * @tparam Policy the range policy type
+         * @tparam Acc... the accumulator type(s)
+         * @return A wrapper containing the given functor
+         */
+        template <e_functor_type Type, typename Policy, typename... Acc, typename Functor>
+        auto functorize(const Functor& f) {
+            constexpr unsigned Dim = ExtractRank<Policy>::rank;
+            using PolicyProperties = RangePolicy<Dim, typename Policy::execution_space>;
+            using index_type       = typename PolicyProperties::index_type;
+            return FunctorWrapper<Type, Functor, PolicyProperties,
+                                  typename Coords<Dim, index_type>::type, Acc...>{f};
+        }
     }  // namespace detail
 
     // Wrappers for Kokkos' parallel dispatch functions that use
@@ -199,9 +202,7 @@ namespace ippl {
     template <class ExecPolicy, class FunctorType>
     void parallel_for(const std::string& name, const ExecPolicy& policy,
                       const FunctorType& functor) {
-        Kokkos::parallel_for(
-            name, policy,
-            detail::functorize<detail::FOR, detail::ExtractRank<ExecPolicy>::rank>(functor));
+        Kokkos::parallel_for(name, policy, detail::functorize<detail::FOR, ExecPolicy>(functor));
     }
 
     template <class ExecPolicy, class FunctorType, class... ReducerArgument>
@@ -209,8 +210,8 @@ namespace ippl {
                          const FunctorType& functor, const ReducerArgument&... reducer) {
         Kokkos::parallel_reduce(
             name, policy,
-            detail::functorize<detail::REDUCE, detail::ExtractRank<ExecPolicy>::rank,
-                               typename ReducerArgument::value_type...>(functor),
+            detail::functorize<detail::REDUCE, ExecPolicy, typename ReducerArgument::value_type...>(
+                functor),
             reducer...);
     }
 }  // namespace ippl
