@@ -37,12 +37,9 @@ namespace ippl {
          * https://craffael.github.io/lehrfempp/gauss__quadrature_8cc_source.html
          */
 
-        using scalar_t = long double;
+        using scalar_t = long double;  // might be equivalant to double, depending on compiler
 
-        std::cout << "Debug (GaussJacobiQuarature) Precision of scalar_t: "
-                  << std::numeric_limits<scalar_t>::digits10 << std::endl;
-        std::cout << "Debug (GaussJacobiQuadrature) Precision of T: "
-                  << std::numeric_limits<T>::digits10 << std::endl;
+        const scalar_t tolerance = 2e-16;
 
         Vector<scalar_t, NumNodes1D> integration_nodes;
         Vector<scalar_t, NumNodes1D> weights;
@@ -71,7 +68,7 @@ namespace ippl {
         // Compute the root of the Jacobi polynomial
 
         for (std::size_t i = 0; i < NumNodes1D; ++i) {
-            // make an initial guess for the roots
+            // initial guess depending on which root we are computing
             if (i == 0) {
                 // initial guess for the largest root
                 an = alpha / NumNodes1D;
@@ -140,19 +137,22 @@ namespace ippl {
                 z1 = z;
                 z  = z1 - p1 / pp;  // Newtons Formula
 
-                // if (Kokkos::abs(z - z1) <= 1e-17) {
-                //  std::cout << "i = " << i << ", error: " << Kokkos::abs(z - z1)
-                //            << ", aborting..." << std::endl;
-                //  break;
-                //}
+                // std::cout << "it = " << its << ", i = " << i << ", error: " << Kokkos::abs(z -
+                // z1)
+                //           << std::endl;
+                if (its > this->min_newton_iterations_m && Kokkos::abs(z - z1) <= tolerance) {
+                    break;
+                }
                 ++its;
             } while (its <= this->max_newton_iterations_m);
 
-            // if (its > max_newton_iterations) {
-            //  inform "too many iterations."
-            //  TODO switch to inform
-            // std::cout << "i = " << i << ", too many iterations" << std::endl;
-            //}
+            if (its > this->max_newton_iterations_m) {
+                //  inform "too many iterations."
+                //  TODO switch to inform
+                std::cout << "Root " << NumNodes1D - i - 1
+                          << " didn't converge. Tolerance may be too high for data type"
+                          << std::endl;
+            }
 
             // std::cout << "i = " << i << ", result after " << its << " iterations: " << z
             //           << std::endl;

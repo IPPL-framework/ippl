@@ -12,8 +12,8 @@ namespace ippl {
     class GaussJacobiQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
         GaussJacobiQuadrature(const ElementType& ref_element, const T& alpha, const T& beta,
-                              const std::size_t& max_newton_itersations = 100,
-                              const std::size_t& min_newton_iterations  = 10);
+                              const std::size_t& max_newton_itersations = 10,
+                              const std::size_t& min_newton_iterations  = 1);
 
         void computeNodesAndWeights() override;
 
@@ -29,8 +29,8 @@ namespace ippl {
     class GaussLegendreQuadrature : public GaussJacobiQuadrature<T, NumNodes1D, ElementType> {
     public:
         GaussLegendreQuadrature(const ElementType& ref_element,
-                                const std::size_t& max_newton_itersations = 100,
-                                const std::size_t& min_newton_iterations  = 10)
+                                const std::size_t& max_newton_itersations = 10,
+                                const std::size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
                 ref_element, 0.0, 0.0, max_newton_itersations, min_newton_iterations) {}
     };
@@ -46,8 +46,8 @@ namespace ippl {
     class ChebyshevGaussQuadrature : public GaussJacobiQuadrature<T, NumNodes1D, ElementType> {
     public:
         ChebyshevGaussQuadrature(const ElementType& ref_element,
-                                 const std::size_t& max_newton_itersations = 100,
-                                 const std::size_t& min_newton_iterations  = 10)
+                                 const std::size_t& max_newton_itersations = 10,
+                                 const std::size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
                 ref_element, -0.5, -0.5, max_newton_itersations, min_newton_iterations) {}
     };

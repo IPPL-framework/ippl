@@ -20,8 +20,8 @@ public:
 
     GaussJacobiQuadratureTest()
         : ref_element()
-        , gaussLegendreQuadrature(ref_element, 100, 10)
-        , chebyshevGaussQuadrature(ref_element, 100, 10) {}
+        , gaussLegendreQuadrature(ref_element, 10, 1)
+        , chebyshevGaussQuadrature(ref_element, 10, 1) {}
 
     const ElementType ref_element;
 
@@ -47,6 +47,11 @@ TYPED_TEST(GaussJacobiQuadratureTest, GaussLegendreQuadrature) {
     // Gauss-Legendre Quadrature
     const auto& q = gaussLegendreQuadrature.getIntegrationNodes1D(-1.0, 1.0);
     const auto& w = gaussLegendreQuadrature.getWeights1D(-1.0, 1.0);
+
+    // Gauss-Legendre nodes and weights from:
+    // TABLE OF THE ZEROS OF THE LEGENDRE POLYNOMIALS OF ORDER 1-16 AND THE WEIGHT COEFFICIENTS FOR
+    // GAUSS' MECHANICAL QUADRATURE FORMULA - ARNOLD N. LOWAN
+    // https://www.ams.org/journals/bull/1942-48-10/S0002-9904-1942-07771-8/S0002-9904-1942-07771-8.pdf
 
     if (numNodes1D == 1) {
         EXPECT_NEAR(q[0], 0.0, tol);
