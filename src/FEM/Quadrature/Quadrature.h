@@ -58,6 +58,8 @@ namespace ippl {
 
         Vector<T, NumNodes1D> getWeights1D(const T& a, const T& b) const;
 
+        virtual void computeNodesAndWeights() = 0;
+
     protected:
         unsigned degree_m;
         const ElementType& ref_element_m;

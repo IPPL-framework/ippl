@@ -20,13 +20,13 @@ public:
 
     GaussJacobiQuadratureTest()
         : ref_element()
-        , gaussLegendreQuadrature(ref_element, 10)
-        , chebychevGaussQuadrature(ref_element, 10) {}
+        , gaussLegendreQuadrature(ref_element, 100, 10)
+        , chebyshevGaussQuadrature(ref_element, 100, 10) {}
 
     const ElementType ref_element;
 
     const ippl::GaussLegendreQuadrature<T, NumNodes1D, ElementType> gaussLegendreQuadrature;
-    const ippl::ChebyshevGaussQuadrature<T, NumNodes1D, ElementType> chebychevGaussQuadrature;
+    const ippl::ChebyshevGaussQuadrature<T, NumNodes1D, ElementType> chebyshevGaussQuadrature;
 };
 
 using Precisions = TestParams::Precisions;
@@ -121,18 +121,18 @@ TYPED_TEST(GaussJacobiQuadratureTest, GaussLegendreQuadrature) {
     }
 }
 
-TYPED_TEST(GaussJacobiQuadratureTest, ChebychevGaussQuadrature) {
-    // Chebychev-Gauss gaussLegendreQuadrature
+TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
+    // Chebyshev-Gauss gaussLegendreQuadrature
     using T = typename TestFixture::value_t;
 
-    const auto& chebychevGaussQuadrature = this->chebychevGaussQuadrature;
-    const std::size_t& numNodes1D        = this->chebychevGaussQuadrature.numNodes1D;
+    const auto& chebyshevGaussQuadrature = this->chebyshevGaussQuadrature;
+    const std::size_t& numNodes1D        = this->chebyshevGaussQuadrature.numNodes1D;
 
     const T& tol = std::numeric_limits<T>::epsilon() * 20;
 
-    // Chebychev-Gauss Quadrature
-    const auto& q = chebychevGaussQuadrature.getIntegrationNodes1D(-1.0, 1.0);
-    const auto& w = chebychevGaussQuadrature.getWeights1D(-1.0, 1.0);
+    // Chebyshev-Gauss Quadrature
+    const auto& q = chebyshevGaussQuadrature.getIntegrationNodes1D(-1.0, 1.0);
+    const auto& w = chebyshevGaussQuadrature.getWeights1D(-1.0, 1.0);
 
     T x;
     T w_k = M_PI / numNodes1D;

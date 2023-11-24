@@ -28,14 +28,6 @@ namespace ippl {
         return num_global_dofs;
     }
 
-    // template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    // LagrangeSpace<T, Dim, Order, QuadratureType>::point_t
-    // LagrangeSpace<T, Dim, Order, QuadratureType>::getCoordsOfDOF(
-    //     const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& dof_index) const {
-    //     // TODO fix, this just did it for the vertex, not the DOF itself
-    //     return this->mesh_m.getVertexPosition(makeNDIndex(dof_index));
-    // }
-
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
     LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndex(

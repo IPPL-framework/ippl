@@ -11,6 +11,8 @@ namespace ippl {
     class MidpointQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
         MidpointQuadrature(const ElementType& ref_element);
+
+        void computeNodesAndWeights() override;
     };
 
 }  // namespace ippl

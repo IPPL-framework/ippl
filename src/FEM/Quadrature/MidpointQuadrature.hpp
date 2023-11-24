@@ -10,11 +10,15 @@ namespace ippl {
         this->a_m = 0.0;
         this->b_m = 1.0;
 
+        computeNodesAndWeights();
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    void MidpointQuadrature<T, NumNodes1D, ElementType>::computeNodesAndWeights() {
         const T segment_length = (this->b_m - this->a_m) / NumNodes1D;
 
         this->weights_m = Vector<T, NumNodes1D>(segment_length);
 
-        // TODO use KOKKKOS
         this->integration_nodes_m = Vector<T, NumNodes1D>();
         for (unsigned i = 0; i < NumNodes1D; ++i) {
             this->integration_nodes_m[i] = 0.5 * segment_length + i * segment_length + this->a_m;

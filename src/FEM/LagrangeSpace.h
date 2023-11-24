@@ -5,11 +5,12 @@
 #ifndef IPPL_LAGRANGESPACE_H
 #define IPPL_LAGRANGESPACE_H
 
-#include <cmath>  // for pow // TODO maybe replace to make Kokkos compatible
+#include <cmath>
 
 #include "FEM/FiniteElementSpace.h"
 
 constexpr unsigned getLagrangeNumElementDOFs(unsigned Dim, unsigned Order) {
+    // needs to be constexpr pow function to work at compile time. Kokkos::pow doesn't work.
     return static_cast<unsigned>(pow(static_cast<double>(Order + 1), static_cast<double>(Dim)));
 }
 

@@ -43,7 +43,7 @@ public:
 using Precisions = TestParams::Precisions;
 using Spaces     = TestParams::Spaces;
 using Orders     = TestParams::Ranks<1>;
-using Dimensions = TestParams::Ranks<1, 2>;
+using Dimensions = TestParams::Ranks<1, 2, 3>;
 using Combos     = CreateCombinations<Precisions, Spaces, Orders, Dimensions>::type;
 using Tests      = TestForTypes<Combos>::type;
 TYPED_TEST_CASE(LagrangeSpaceTest, Tests);

@@ -5,13 +5,18 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::GaussJacobiQuadrature(
         const ElementType& ref_element, const T& alpha, const T& beta,
-        const std::size_t& max_newton_iterations)
+        const std::size_t& max_newton_iterations, const std::size_t& min_newton_iterations)
         : Quadrature<T, NumNodes1D, ElementType>(ref_element)
         , alpha_m(alpha)
-        , beta_m(beta) {
-        assert(alpha > -1.0 && "alpha > -1.0 is not satisfied");
-        assert(beta > -1.0 && "beta > -1.0 is not satisfied");
+        , beta_m(beta)
+        , max_newton_iterations_m(max_newton_iterations)
+        , min_newton_iterations_m(min_newton_iterations) {
+        assert(alpha > -1.0 && "alpha >= -1.0 is not satisfied");
+        assert(beta > -1.0 && "beta >= -1.0 is not satisfied");
         assert(max_newton_iterations >= 1 && "max_newton_iterations >= 1 is not satisfied");
+        assert(min_newton_iterations_m >= 1 && "min_newton_iterations_m >= 1 is not satisfied");
+        assert(min_newton_iterations_m <= max_newton_iterations_m
+               && "min_newton_iterations_m <= max_newton_iterations_m is not satisfied");
 
         this->degree_m = 2 * NumNodes1D - 1;
 
@@ -21,28 +26,47 @@ namespace ippl {
         this->integration_nodes_m = Vector<T, NumNodes1D>();
         this->weights_m           = Vector<T, NumNodes1D>();
 
+        this->computeNodesAndWeights();
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    void GaussJacobiQuadrature<T, NumNodes1D, ElementType>::computeNodesAndWeights() {
         /**
          * the following algorithm for computing the roots and weights for the Gauss-Jacobi
          * quadrature has been taken from LehrFEM++ (MIT License)
          * https://craffael.github.io/lehrfempp/gauss__quadrature_8cc_source.html
          */
 
-        T alfbet;
-        T an;
-        T bn;
-        T r1;
-        T r2;
-        T r3;
-        T a;
-        T b;
-        T c;
-        T p1;
-        T p2;
-        T p3;
-        T pp;
-        T temp;
-        T z = 0.0;  // initialize to prevent "may be uninitialized warning, which it can't be"
-        T z1;
+        using scalar_t = long double;
+
+        std::cout << "Debug (GaussJacobiQuarature) Precision of scalar_t: "
+                  << std::numeric_limits<scalar_t>::digits10 << std::endl;
+        std::cout << "Debug (GaussJacobiQuadrature) Precision of T: "
+                  << std::numeric_limits<T>::digits10 << std::endl;
+
+        Vector<scalar_t, NumNodes1D> integration_nodes;
+        Vector<scalar_t, NumNodes1D> weights;
+
+        scalar_t alpha = this->alpha_m;
+        scalar_t beta  = this->beta_m;
+
+        scalar_t alfbet;
+        scalar_t an;
+        scalar_t bn;
+        scalar_t r1;
+        scalar_t r2;
+        scalar_t r3;
+        scalar_t a;
+        scalar_t b;
+        scalar_t c;
+        scalar_t p1;
+        scalar_t p2;
+        scalar_t p3;
+        scalar_t pp;
+        scalar_t temp;
+        scalar_t z =
+            0.0;  // initialize to prevent "may be uninitialized warning, which it can't be"
+        scalar_t z1;
 
         // Compute the root of the Jacobi polynomial
 
@@ -67,23 +91,23 @@ namespace ippl {
                 r1 = (1.67 + 0.28 * alpha) / (1.0 + 0.37 * alpha);
                 r2 = 1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D;
                 r3 = 1.0 + 8.0 * beta / ((6.28 + beta) * NumNodes1D * NumNodes1D);
-                z -= (this->integration_nodes_m[0] - z) * r1 * r2 * r3;
+                z -= (integration_nodes[0] - z) * r1 * r2 * r3;
             } else if (i == NumNodes1D - 2) {
                 // initial guess for the second smallest root
                 r1 = (1.0 + 0.235 * beta) / (0.766 + 0.119 * beta);
                 r2 = 1.0 / (1.0 + 0.639 * (NumNodes1D - 4.0) / (1.0 + 0.71 * (NumNodes1D - 4.0)));
                 r3 = 1.0 / (1.0 + 20.0 * alpha / ((7.5 + alpha) * NumNodes1D * NumNodes1D));
-                z += (z - this->integration_nodes_m[NumNodes1D - 4]) * r1 * r2 * r3;
+                z += (z - integration_nodes[NumNodes1D - 4]) * r1 * r2 * r3;
             } else if (i == NumNodes1D - 1) {
                 // initial guess for the smallest root
                 r1 = (1.0 + 0.37 * beta) / (1.67 + 0.28 * beta);
                 r2 = 1.0 / (1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D);
                 r3 = 1.0 / (1.0 + 8.0 * alpha / ((6.28 + alpha) * NumNodes1D * NumNodes1D));
-                z += (z - this->integration_nodes_m[NumNodes1D - 3]) * r1 * r2 * r3;
+                z += (z - integration_nodes[NumNodes1D - 3]) * r1 * r2 * r3;
             } else {
-                // initial guess for the other integration_nodes_m
-                z = 3.0 * this->integration_nodes_m[i - 1] - 3.0 * this->integration_nodes_m[i - 2]
-                    + this->integration_nodes_m[i - 3];
+                // initial guess for the other integration_nodes
+                z = 3.0 * integration_nodes[i - 1] - 3.0 * integration_nodes[i - 2]
+                    + integration_nodes[i - 3];
             }
 
             // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << std::endl;
@@ -122,7 +146,7 @@ namespace ippl {
                 //  break;
                 //}
                 ++its;
-            } while (its <= max_newton_iterations);
+            } while (its <= this->max_newton_iterations_m);
 
             // if (its > max_newton_iterations) {
             //  inform "too many iterations."
@@ -133,16 +157,19 @@ namespace ippl {
             // std::cout << "i = " << i << ", result after " << its << " iterations: " << z
             //           << std::endl;
 
-            this->integration_nodes_m[i] = z;
+            integration_nodes[i] = z;
 
             // Compute the weight of the Gauss-Jacobi quadrature
-            this->weights_m(i) =
+            weights[i] =
                 Kokkos::exp(Kokkos::lgamma(alpha + NumNodes1D) + Kokkos::lgamma(beta + NumNodes1D)
                             - Kokkos::lgamma(NumNodes1D + 1.)
                             - Kokkos::lgamma(static_cast<double>(NumNodes1D) + alfbet + 1.0))
                 * temp * Kokkos::pow(2.0, alfbet) / (pp * p2);
-        }
 
-        this->integration_nodes_m *= -1.0;  // flip it
+            // store the integration nodes and weights in the correct order
+            this->integration_nodes_m[i] = static_cast<T>(-integration_nodes[i]);
+            this->weights_m[i]           = static_cast<T>(weights[i]);
+        }
     }
+
 }  // namespace ippl

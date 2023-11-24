@@ -52,7 +52,6 @@ namespace ippl {
         // dimension, it will get divided by the current dimensions number to get the index in
         // that dimension
         std::size_t remaining_number_of_vertices = 1;
-        // TODO Move to KOKKOS reduction or smth
         for (const std::size_t num_vertices : vertices_per_dim) {
             remaining_number_of_vertices *= num_vertices;
         }
@@ -106,7 +105,6 @@ namespace ippl {
         // dimension, it will get divided by the current dimension's size to get the index in
         // that dimension
         std::size_t remaining_number_of_cells = 1;
-        // TODO Move to KOKKOS reduction or smth
         for (const std::size_t num_cells : cells_per_dim) {
             remaining_number_of_cells *= num_cells;
         }

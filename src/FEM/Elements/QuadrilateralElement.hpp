@@ -3,8 +3,9 @@ namespace ippl {
     template <typename T>
     typename QuadrilateralElement<T>::mesh_element_vertex_point_vec_t
     QuadrilateralElement<T>::getLocalVertices() const {
-        QuadrilateralElement::mesh_element_vertex_point_vec_t vertices;
-        vertices = {{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
+        QuadrilateralElement::mesh_element_vertex_point_vec_t vertices = {
+            {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
+
         return vertices;
     }
 

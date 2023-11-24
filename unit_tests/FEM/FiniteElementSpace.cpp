@@ -18,9 +18,9 @@ protected:
 public:
     using value_t = T;
 
-    using ElementType =
-        std::conditional_t<Dim == 1, ippl::EdgeElement<T>, ippl::QuadrilateralElement<T>>;
-    // std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
+    using ElementType = std::conditional_t<
+        Dim == 1, ippl::EdgeElement<T>,
+        std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
 
@@ -44,7 +44,7 @@ public:
     const ippl::LagrangeSpace<T, Dim, 1, QuadratureType> fem_space;
 };
 
-using Tests = TestParams::tests<1, 2>;  // TODO add 3D
+using Tests = TestParams::tests<1, 2, 3>;
 TYPED_TEST_CASE(FiniteElementSpaceTest, Tests);
 
 TYPED_TEST(FiniteElementSpaceTest, numElements) {
@@ -261,6 +261,134 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
         ASSERT_EQ(indices[1], 11);
         ASSERT_EQ(indices[2], 14);
         ASSERT_EQ(indices[3], 15);
+    } else if (dim == 3) {
+        // bottom left front element
+        elementNDIndex[0] = 0;
+        elementNDIndex[1] = 0;
+        elementNDIndex[2] = 0;
+        auto indices      = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 0);
+        ASSERT_EQ(indices[1], 1);
+        ASSERT_EQ(indices[2], 4);
+        ASSERT_EQ(indices[3], 5);
+        ASSERT_EQ(indices[4], 16);
+        ASSERT_EQ(indices[5], 17);
+        ASSERT_EQ(indices[6], 20);
+        ASSERT_EQ(indices[7], 21);
+
+        // bottom right front element
+        elementNDIndex[0] = 2;
+        elementNDIndex[1] = 0;
+        elementNDIndex[2] = 0;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 2);
+        ASSERT_EQ(indices[1], 3);
+        ASSERT_EQ(indices[2], 6);
+        ASSERT_EQ(indices[3], 7);
+        ASSERT_EQ(indices[4], 18);
+        ASSERT_EQ(indices[5], 19);
+        ASSERT_EQ(indices[6], 22);
+        ASSERT_EQ(indices[7], 23);
+
+        // bottom left back element
+        elementNDIndex[0] = 0;
+        elementNDIndex[1] = 2;
+        elementNDIndex[2] = 0;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 8);
+        ASSERT_EQ(indices[1], 9);
+        ASSERT_EQ(indices[2], 12);
+        ASSERT_EQ(indices[3], 13);
+        ASSERT_EQ(indices[4], 24);
+        ASSERT_EQ(indices[5], 25);
+        ASSERT_EQ(indices[6], 28);
+        ASSERT_EQ(indices[7], 29);
+
+        // bottom right back element
+        elementNDIndex[0] = 2;
+        elementNDIndex[1] = 2;
+        elementNDIndex[2] = 0;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 10);
+        ASSERT_EQ(indices[1], 11);
+        ASSERT_EQ(indices[2], 14);
+        ASSERT_EQ(indices[3], 15);
+        ASSERT_EQ(indices[4], 26);
+        ASSERT_EQ(indices[5], 27);
+        ASSERT_EQ(indices[6], 30);
+        ASSERT_EQ(indices[7], 31);
+
+        // top left front element
+        elementNDIndex[0] = 0;
+        elementNDIndex[1] = 0;
+        elementNDIndex[2] = 2;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 32);
+        ASSERT_EQ(indices[1], 33);
+        ASSERT_EQ(indices[2], 36);
+        ASSERT_EQ(indices[3], 37);
+        ASSERT_EQ(indices[4], 48);
+        ASSERT_EQ(indices[5], 49);
+        ASSERT_EQ(indices[6], 52);
+        ASSERT_EQ(indices[7], 53);
+
+        // top right front element
+        elementNDIndex[0] = 2;
+        elementNDIndex[1] = 0;
+        elementNDIndex[2] = 2;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 34);
+        ASSERT_EQ(indices[1], 35);
+        ASSERT_EQ(indices[2], 38);
+        ASSERT_EQ(indices[3], 39);
+        ASSERT_EQ(indices[4], 50);
+        ASSERT_EQ(indices[5], 51);
+        ASSERT_EQ(indices[6], 54);
+        ASSERT_EQ(indices[7], 55);
+
+        // top left back element
+        elementNDIndex[0] = 0;
+        elementNDIndex[1] = 2;
+        elementNDIndex[2] = 2;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 40);
+        ASSERT_EQ(indices[1], 41);
+        ASSERT_EQ(indices[2], 44);
+        ASSERT_EQ(indices[3], 45);
+        ASSERT_EQ(indices[4], 56);
+        ASSERT_EQ(indices[5], 57);
+        ASSERT_EQ(indices[6], 60);
+        ASSERT_EQ(indices[7], 61);
+
+        // top right back element
+        elementNDIndex[0] = 2;
+        elementNDIndex[1] = 2;
+        elementNDIndex[2] = 2;
+        indices           = fem_space.getElementMeshVertexIndices(elementNDIndex);
+
+        ASSERT_EQ(indices.dim, 8);
+        ASSERT_EQ(indices[0], 42);
+        ASSERT_EQ(indices[1], 43);
+        ASSERT_EQ(indices[2], 46);
+        ASSERT_EQ(indices[3], 47);
+        ASSERT_EQ(indices[4], 58);
+        ASSERT_EQ(indices[5], 59);
+        ASSERT_EQ(indices[6], 62);
+        ASSERT_EQ(indices[7], 63);
     } else {
         FAIL();
     }
@@ -293,6 +421,42 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
 
         ASSERT_EQ(indices[3][0], 3.0);
         ASSERT_EQ(indices[3][1], 3.0);
+    } else if (dim == 3) {
+        const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
+
+        ASSERT_EQ(indices.dim, 8);
+
+        ASSERT_EQ(indices[0][0], 2.0);
+        ASSERT_EQ(indices[0][1], 2.0);
+        ASSERT_EQ(indices[0][2], 2.0);
+
+        ASSERT_EQ(indices[1][0], 3.0);
+        ASSERT_EQ(indices[1][1], 2.0);
+        ASSERT_EQ(indices[1][2], 2.0);
+
+        ASSERT_EQ(indices[2][0], 2.0);
+        ASSERT_EQ(indices[2][1], 3.0);
+        ASSERT_EQ(indices[2][2], 2.0);
+
+        ASSERT_EQ(indices[3][0], 3.0);
+        ASSERT_EQ(indices[3][1], 3.0);
+        ASSERT_EQ(indices[3][2], 2.0);
+
+        ASSERT_EQ(indices[4][0], 2.0);
+        ASSERT_EQ(indices[4][1], 2.0);
+        ASSERT_EQ(indices[4][2], 3.0);
+
+        ASSERT_EQ(indices[5][0], 3.0);
+        ASSERT_EQ(indices[5][1], 2.0);
+        ASSERT_EQ(indices[5][2], 3.0);
+
+        ASSERT_EQ(indices[6][0], 2.0);
+        ASSERT_EQ(indices[6][1], 3.0);
+        ASSERT_EQ(indices[6][2], 3.0);
+
+        ASSERT_EQ(indices[7][0], 3.0);
+        ASSERT_EQ(indices[7][1], 3.0);
+        ASSERT_EQ(indices[7][2], 3.0);
     } else {
         FAIL();
     }
