@@ -260,28 +260,20 @@ namespace ippl {
 
                 xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
 
-                if (xyz_bool) {
-                    ranks(i)   = myRank;
-                    invalid(i) = false;
-                    found(i)   = true;
-                }
+                ranks(i)     = xyz_bool * myRank;
+                invalid(i)   = !xyz_bool;
+                found(i) =  xyz_bool || found(i);
 
                 /// Step 2
-                else {
-                    for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
-                        size_type rank = neighbors_view(j);
+                for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+                    size_type rank = neighbors_view(j);
 
-                        xyz_bool = positionInRegion(is, positions(i), Regions(rank));
-                        
-                        
-                        if (xyz_bool) {
-                            ranks(i)     = rank;
-                            invalid(i)   = xyz_bool;
-                            found(i)     = xyz_bool;
-                            break;
-                        }
+                    xyz_bool = positionInRegion(is, positions(i), Regions(rank));
+                    
+                    ranks(i)     = !(xyz_bool) * ranks(i) + xyz_bool * rank;
+                    invalid(i)   = xyz_bool || invalid(i);
+                    found(i) =  xyz_bool || found(i);
 
-                }
                 }
 
                 /// Step 3
