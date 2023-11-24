@@ -272,27 +272,28 @@ namespace ippl {
                         size_type rank = neighbors_view(j);
 
                         xyz_bool = positionInRegion(is, positions(i), Regions(rank));
-
+                        
+                        
                         if (xyz_bool) {
                             ranks(i)     = rank;
-                            invalid(i)   = true;
-                            found(i)     = true;
-                            increment[0] = invalid(i);
-                            increment[1] = !found(i);
-                            val += increment;
+                            invalid(i)   = xyz_bool;
+                            found(i)     = xyz_bool;
                             break;
                         }
-                    }
+
+                }
                 }
 
                 /// Step 3
-
-                bool update_notFound      = final && !found(i);
-                notFoundIds(val.count[1]) = i * update_notFound;
-                invalid(i)                = update_notFound;
-                increment[0]              = update_notFound * invalid(i);
-                increment[1]              = update_notFound * !found(i);
+                bool isOut = (final && !found(i));
+                bool isInvalid = isOut || invalid(i);
+                 
+                notFoundIds(val.count[1]) = i * isOut;
+                invalid(i) = isInvalid;
+                increment[0] = isInvalid;
+                increment[1] = !found(i);
                 val += increment;
+
             },
             red_val);
 
@@ -301,6 +302,8 @@ namespace ippl {
         invalidCount = red_val.count[0];
         nLeft        = red_val.count[1];
 
+        std::cout << "Rank " << myRank << " has " << invalidCount << " invalids and " << nLeft << " left " << std::endl;
+ 
         /// Step 4
         if (nLeft > 0) {
             static IpplTimings::TimerRef nonNeighboringParticles =
@@ -315,6 +318,7 @@ namespace ippl {
                     bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
 
                     ranks(pId) = xyz_bool * j;
+            
                 });
             Kokkos::fence();
 
