@@ -73,7 +73,7 @@ namespace ippl {
 
       virtual void runSolver() = 0;
 
-      ~FieldSolverBase(){}
+      virtual ~FieldSolverBase() = default;
   };
 }
 #endif

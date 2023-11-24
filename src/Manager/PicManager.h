@@ -12,7 +12,7 @@
     class PicManager : public BaseManager {
     public:
         PicManager()
-            : BaseManager(), fcontainer_m(nullptr), pcontainer_m(nullptr), fsolver_m(nullptr), loadbalancer_m(nullptr) {}
+            : BaseManager(), fcontainer_m(nullptr), pcontainer_m(nullptr), loadbalancer_m(nullptr) {}
 
         virtual ~PicManager() = default;
 
