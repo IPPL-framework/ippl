@@ -343,7 +343,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasis) {
     const std::size_t& order = lagrangeSpace.order;
     using T                  = typename TestFixture::value_t;
 
-    T tolerance = 1e-7;
+    T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
 
     if (order == 1) {
         if (dim == 1) {
@@ -358,25 +358,41 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasis) {
                 for (T y = 0.0; y < 1.0; y += 0.05) {
                     point[1] = y;
                     ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(0, point),
-                                x * y - x - y + 1.0, tolerance);
+                                (1.0 - x) * (1.0 - y), tolerance);
                     ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(1, point), x * (1.0 - y),
                                 tolerance);
                     ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(2, point), x * y, tolerance);
-                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(3, point), y * (1.0 - x),
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(3, point), (1.0 - x) * y,
                                 tolerance);
                 }
             }
-            // } else if (dim == 3) {
-            //     ippl::Vector<T, lagrangeSpace.dim> point;
-            //     for (T x = 0.0; x < 1.0; x += 0.05) {
-            //         point[0] = x;
-            //         for (T y = 0.0; y < 1.0; y += 0.05) {
-            //             point[1] = y;
-            //             for (T z = 0.0; z < 1.0; z += 0.05) {
-            //                 point[2] = z;
-            //             }
-            //         }
-            //     }
+        } else if (dim == 3) {
+            ippl::Vector<T, lagrangeSpace.dim> point;
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                point[0] = x;
+                for (T y = 0.0; y < 1.0; y += 0.05) {
+                    point[1] = y;
+                    for (T z = 0.0; z < 1.0; z += 0.05) {
+                        point[2] = z;
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(0, point),
+                                    (1.0 - x) * (1.0 - y) * (1.0 - z), tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(1, point),
+                                    x * (1.0 - y) * (1.0 - z), tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(2, point),
+                                    x * y * (1.0 - z), tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(3, point),
+                                    (1.0 - x) * y * (1.0 - z), tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(4, point),
+                                    (1.0 - x) * (1.0 - y) * z, tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(5, point),
+                                    x * (1.0 - y) * z, tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(6, point), x * y * z,
+                                    tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementBasis(7, point),
+                                    (1.0 - x) * y * z, tolerance);
+                    }
+                }
+            }
         } else {
             FAIL();
         }
@@ -427,18 +443,58 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
                     ASSERT_NEAR(grad_3[1], 1.0 - x, tolerance);
                 }
             }
-            // } else if (dim == 3) {
-            //     ippl::Vector<T, lagrangeSpace.dim> point;
-            //     for (T x = 0.0; x < 1.0; x += 0.05) {
-            //         point[0] = x;
-            //         for (T y = 0.0; y < 1.0; y += 0.05) {
-            //             point[1] = y;
-            //             for (T z = 0.0; z < 1.0; z += 0.05) {
-            //                 point[2] = z;
+        } else if (dim == 3) {
+            ippl::Vector<T, lagrangeSpace.dim> point;
+            for (T x = 0.0; x < 1.0; x += 0.05) {
+                point[0] = x;
+                for (T y = 0.0; y < 1.0; y += 0.05) {
+                    point[1] = y;
+                    for (T z = 0.0; z < 1.0; z += 0.05) {
+                        point[2] = z;
 
-            //             }
-            //         }
-            //     }
+                        const auto grad_0 = lagrangeSpace.evaluateRefElementBasisGradient(0, point);
+                        const auto grad_1 = lagrangeSpace.evaluateRefElementBasisGradient(1, point);
+                        const auto grad_2 = lagrangeSpace.evaluateRefElementBasisGradient(2, point);
+                        const auto grad_3 = lagrangeSpace.evaluateRefElementBasisGradient(3, point);
+                        const auto grad_4 = lagrangeSpace.evaluateRefElementBasisGradient(4, point);
+                        const auto grad_5 = lagrangeSpace.evaluateRefElementBasisGradient(5, point);
+                        const auto grad_6 = lagrangeSpace.evaluateRefElementBasisGradient(6, point);
+                        const auto grad_7 = lagrangeSpace.evaluateRefElementBasisGradient(7, point);
+
+                        ASSERT_NEAR(grad_0[0], -1.0 * (1.0 - y) * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_0[1], (1.0 - x) * -1.0 * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_0[2], (1.0 - x) * (1.0 - y) * -1.0, tolerance);
+
+                        ASSERT_NEAR(grad_1[0], 1.0 * (1.0 - y) * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_1[1], x * -1.0 * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_1[2], x * (1.0 - y) * -1.0, tolerance);
+
+                        ASSERT_NEAR(grad_2[0], 1.0 * y * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_2[1], x * 1.0 * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_2[2], x * y * -1.0, tolerance);
+
+                        ASSERT_NEAR(grad_3[0], -1.0 * y * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_3[1], (1.0 - x) * 1.0 * (1.0 - z), tolerance);
+                        ASSERT_NEAR(grad_3[2], (1.0 - x) * y * -1.0, tolerance);
+
+                        ASSERT_NEAR(grad_4[0], -1.0 * (1.0 - y) * z, tolerance);
+                        ASSERT_NEAR(grad_4[1], (1.0 - x) * -1.0 * z, tolerance);
+                        ASSERT_NEAR(grad_4[2], (1.0 - x) * (1.0 - y) * 1.0, tolerance);
+
+                        ASSERT_NEAR(grad_5[0], 1.0 * (1.0 - y) * z, tolerance);
+                        ASSERT_NEAR(grad_5[1], x * -1.0 * z, tolerance);
+                        ASSERT_NEAR(grad_5[2], x * (1.0 - y) * 1.0, tolerance);
+
+                        ASSERT_NEAR(grad_6[0], 1.0 * y * z, tolerance);
+                        ASSERT_NEAR(grad_6[1], x * 1.0 * z, tolerance);
+                        ASSERT_NEAR(grad_6[2], x * y * 1.0, tolerance);
+
+                        ASSERT_NEAR(grad_7[0], -1.0 * y * z, tolerance);
+                        ASSERT_NEAR(grad_7[1], (1.0 - x) * 1.0 * z, tolerance);
+                        ASSERT_NEAR(grad_7[2], (1.0 - x) * y * 1.0, tolerance);
+                    }
+                }
+            }
         } else {
             FAIL();
         }
