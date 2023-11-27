@@ -76,6 +76,8 @@ namespace ippl {
 
         isAllPeriodic_m = isAllPeriodic;
 
+        isParallelDim_m = isParallel;
+
         if (nRanks < 2) {
             Kokkos::resize(dLocalDomains_m, nRanks);
             Kokkos::resize(hLocalDomains_m, nRanks);
