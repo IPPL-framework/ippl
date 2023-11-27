@@ -30,29 +30,84 @@ namespace ippl {
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
+    typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
+    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getChebyshevNodes(
+        const std::size_t& i) const {
+        return -Kokkos::cos((2.0 * static_cast<scalar_t>(i) + 1.0) * M_PI / (2.0 * NumNodes1D));
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
+    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getLehrFEMInitialGuess(
+        const std::size_t& i,
+        const Vector<GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t, NumNodes1D>&
+            integration_nodes) const {
+        const scalar_t alpha = this->alpha_m;
+        const scalar_t beta  = this->beta_m;
+        scalar_t r1;
+        scalar_t r2;
+        scalar_t r3;
+        scalar_t z = (i > 0) ? integration_nodes[i - 1] : 0.0;
+
+        if (i == 0) {
+            // initial guess for the largest root
+            const scalar_t an = alpha / NumNodes1D;
+            const scalar_t bn = beta / NumNodes1D;
+            r1 = (1.0 + alpha) * (2.78 / (4.0 + NumNodes1D * NumNodes1D) + 0.768 * an / NumNodes1D);
+            r2 = 1.0 + 1.48 * an + 0.96 * bn + 0.452 * an * an + 0.83 * an * bn;
+            z  = 1.0 - r1 / r2;
+        } else if (i == 1) {
+            // initial guess for the second largest root
+            r1 = (4.1 + alpha) / ((1.0 + alpha) * (1.0 + 0.156 * alpha));
+            r2 = 1.0 + 0.06 * (NumNodes1D - 8.0) * (1.0 + 0.12 * alpha) / NumNodes1D;
+            r3 = 1.0 + 0.012 * beta * (1.0 + 0.25 * std::abs(alpha)) / NumNodes1D;
+            z -= (1.0 - z) * r1 * r2 * r3;
+        } else if (i == 2) {
+            // initial guess for the third largest root
+            r1 = (1.67 + 0.28 * alpha) / (1.0 + 0.37 * alpha);
+            r2 = 1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D;
+            r3 = 1.0 + 8.0 * beta / ((6.28 + beta) * NumNodes1D * NumNodes1D);
+            z -= (integration_nodes[0] - z) * r1 * r2 * r3;
+        } else if (i == NumNodes1D - 2) {
+            // initial guess for the second smallest root
+            r1 = (1.0 + 0.235 * beta) / (0.766 + 0.119 * beta);
+            r2 = 1.0 / (1.0 + 0.639 * (NumNodes1D - 4.0) / (1.0 + 0.71 * (NumNodes1D - 4.0)));
+            r3 = 1.0 / (1.0 + 20.0 * alpha / ((7.5 + alpha) * NumNodes1D * NumNodes1D));
+            z += (z - integration_nodes[NumNodes1D - 4]) * r1 * r2 * r3;
+        } else if (i == NumNodes1D - 1) {
+            // initial guess for the smallest root
+            r1 = (1.0 + 0.37 * beta) / (1.67 + 0.28 * beta);
+            r2 = 1.0 / (1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D);
+            r3 = 1.0 / (1.0 + 8.0 * alpha / ((6.28 + alpha) * NumNodes1D * NumNodes1D));
+            z += (z - integration_nodes[NumNodes1D - 3]) * r1 * r2 * r3;
+        } else {
+            // initial guess for the other integration_nodes
+            z = 3.0 * z - 3.0 * integration_nodes[i - 2] + integration_nodes[i - 3];
+        }
+        return z;
+    }
+
+    template <typename T, unsigned NumNodes1D, typename ElementType>
     void GaussJacobiQuadrature<T, NumNodes1D, ElementType>::computeNodesAndWeights() {
+        // set the initial guess type
+        const InitialGuessType& initial_guess_type = InitialGuessType::Chebyshev;
+
         /**
          * the following algorithm for computing the roots and weights for the Gauss-Jacobi
          * quadrature has been taken from LehrFEM++ (MIT License)
          * https://craffael.github.io/lehrfempp/gauss__quadrature_8cc_source.html
          */
 
-        using scalar_t = long double;  // might be equivalant to double, depending on compiler
-
         const scalar_t tolerance = 2e-16;
 
         Vector<scalar_t, NumNodes1D> integration_nodes;
         Vector<scalar_t, NumNodes1D> weights;
 
-        scalar_t alpha = this->alpha_m;
-        scalar_t beta  = this->beta_m;
+        const scalar_t alpha = this->alpha_m;
+        const scalar_t beta  = this->beta_m;
 
-        scalar_t alfbet;
-        scalar_t an;
-        scalar_t bn;
-        scalar_t r1;
-        scalar_t r2;
-        scalar_t r3;
+        const scalar_t alfbet = alpha + beta;
+
         scalar_t a;
         scalar_t b;
         scalar_t c;
@@ -61,55 +116,24 @@ namespace ippl {
         scalar_t p3;
         scalar_t pp;
         scalar_t temp;
-        scalar_t z =
-            0.0;  // initialize to prevent "may be uninitialized warning, which it can't be"
+        scalar_t z;
         scalar_t z1;
 
         // Compute the root of the Jacobi polynomial
 
         for (std::size_t i = 0; i < NumNodes1D; ++i) {
             // initial guess depending on which root we are computing
-            if (i == 0) {
-                // initial guess for the largest root
-                an = alpha / NumNodes1D;
-                bn = beta / NumNodes1D;
-                r1 = (1.0 + alpha)
-                     * (2.78 / (4.0 + NumNodes1D * NumNodes1D) + 0.768 * an / NumNodes1D);
-                r2 = 1.0 + 1.48 * an + 0.96 * bn + 0.452 * an * an + 0.83 * an * bn;
-                z  = 1.0 - r1 / r2;
-            } else if (i == 1) {
-                // initial guess for the second largest root
-                r1 = (4.1 + alpha) / ((1.0 + alpha) * (1.0 + 0.156 * alpha));
-                r2 = 1.0 + 0.06 * (NumNodes1D - 8.0) * (1.0 + 0.12 * alpha) / NumNodes1D;
-                r3 = 1.0 + 0.012 * beta * (1.0 + 0.25 * std::abs(alpha)) / NumNodes1D;
-                z -= (1.0 - z) * r1 * r2 * r3;
-            } else if (i == 2) {
-                // initial guess for the third largest root
-                r1 = (1.67 + 0.28 * alpha) / (1.0 + 0.37 * alpha);
-                r2 = 1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D;
-                r3 = 1.0 + 8.0 * beta / ((6.28 + beta) * NumNodes1D * NumNodes1D);
-                z -= (integration_nodes[0] - z) * r1 * r2 * r3;
-            } else if (i == NumNodes1D - 2) {
-                // initial guess for the second smallest root
-                r1 = (1.0 + 0.235 * beta) / (0.766 + 0.119 * beta);
-                r2 = 1.0 / (1.0 + 0.639 * (NumNodes1D - 4.0) / (1.0 + 0.71 * (NumNodes1D - 4.0)));
-                r3 = 1.0 / (1.0 + 20.0 * alpha / ((7.5 + alpha) * NumNodes1D * NumNodes1D));
-                z += (z - integration_nodes[NumNodes1D - 4]) * r1 * r2 * r3;
-            } else if (i == NumNodes1D - 1) {
-                // initial guess for the smallest root
-                r1 = (1.0 + 0.37 * beta) / (1.67 + 0.28 * beta);
-                r2 = 1.0 / (1.0 + 0.22 * (NumNodes1D - 8.0) / NumNodes1D);
-                r3 = 1.0 / (1.0 + 8.0 * alpha / ((6.28 + alpha) * NumNodes1D * NumNodes1D));
-                z += (z - integration_nodes[NumNodes1D - 3]) * r1 * r2 * r3;
+            if (initial_guess_type == InitialGuessType::LehrFEM) {
+                z = this->getLehrFEMInitialGuess(i, integration_nodes);
+            } else if (initial_guess_type == InitialGuessType::Chebyshev) {
+                z = -this->getChebyshevNodes(i);
             } else {
-                // initial guess for the other integration_nodes
-                z = 3.0 * integration_nodes[i - 1] - 3.0 * integration_nodes[i - 2]
-                    + integration_nodes[i - 3];
+                throw std::runtime_error("Unknown initial guess type");
             }
 
-            // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << std::endl;
+            std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << " with "
+                      << initial_guess_type << std::endl;
 
-            alfbet          = alpha + beta;
             std::size_t its = 1;
             do {
                 // refinement by Newton's method
@@ -154,8 +178,8 @@ namespace ippl {
                           << std::endl;
             }
 
-            // std::cout << "i = " << i << ", result after " << its << " iterations: " << z
-            //           << std::endl;
+            std::cout << "i = " << i << ", result after " << its << " iterations: " << z
+                      << std::endl;
 
             integration_nodes[i] = z;
 

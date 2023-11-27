@@ -142,7 +142,7 @@ TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
     T x;
     T w_k = M_PI / numNodes1D;
     for (unsigned k = 0; k < numNodes1D; ++k) {
-        x = -Kokkos::cos((2.0 * static_cast<T>(k) + 1.0) * M_PI / (2.0 * numNodes1D));
+        x = chebyshevGaussQuadrature.getChebyshevNodes(k);
 
         EXPECT_NEAR(q[k], x, tol);
         EXPECT_NEAR(w[k], w_k, tol);

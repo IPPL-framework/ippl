@@ -8,16 +8,28 @@
 
 namespace ippl {
 
+    enum InitialGuessType {
+        Chebyshev,
+        LehrFEM,
+    };
+
     template <typename T, unsigned NumNodes1D, typename ElementType>
     class GaussJacobiQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
     public:
+        using scalar_t = long double;  // might be equivalant to double, depending on compiler
+
         GaussJacobiQuadrature(const ElementType& ref_element, const T& alpha, const T& beta,
                               const std::size_t& max_newton_itersations = 10,
                               const std::size_t& min_newton_iterations  = 1);
 
         void computeNodesAndWeights() override;
 
+        scalar_t getChebyshevNodes(const std::size_t& i) const;  // TODO maybe move somewhere else?
+
     private:
+        scalar_t getLehrFEMInitialGuess(
+            const std::size_t& i, const Vector<scalar_t, NumNodes1D>& integration_nodes) const;
+
         const T alpha_m;
         const T beta_m;
 
