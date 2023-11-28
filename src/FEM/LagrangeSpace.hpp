@@ -273,8 +273,10 @@ namespace ippl {
     ///////////////////////////////////////////////////////////////////////
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(Kokkos::View<const T*> x,
-                                                                  Kokkos::View<T*> resultAx) const {
+    Kokkos::View<T*> LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(
+        Kokkos::View<const T*> x) const {
+        Kokkos::View<T*> resultAx("resultAx", this->numGlobalDOFs());
+
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
 
@@ -360,11 +362,14 @@ namespace ippl {
                 }
             }
         }
+
+        return resultAx;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    void LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateLoadVector(
-        Kokkos::View<T*> b) const {
+    Kokkos::View<T*> LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateLoadVector() const {
+        Kokkos::View<T*> b("b", this->numGlobalDOFs());
+
         const std::size_t numElements = this->numElements();
 
         index_t k, i, I;
@@ -428,6 +433,8 @@ namespace ippl {
                 b(I) += b_K[i];
             }
         }
+
+        return b;
     }
 
 }  // namespace ippl

@@ -140,7 +140,7 @@ TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
     const auto& w = chebyshevGaussQuadrature.getWeights1D(-1.0, 1.0);
 
     T x;
-    T w_k = M_PI / numNodes1D;
+    T w_k = Kokkos::numbers::pi_v<T> / numNodes1D;
     for (unsigned k = 0; k < numNodes1D; ++k) {
         x = chebyshevGaussQuadrature.getChebyshevNodes(k);
 

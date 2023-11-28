@@ -33,7 +33,8 @@ namespace ippl {
     typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getChebyshevNodes(
         const std::size_t& i) const {
-        return -Kokkos::cos((2.0 * static_cast<scalar_t>(i) + 1.0) * M_PI / (2.0 * NumNodes1D));
+        return -Kokkos::cos((2.0 * static_cast<scalar_t>(i) + 1.0) * Kokkos::numbers::pi_v<scalar_t>
+                            / (2.0 * NumNodes1D));
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>

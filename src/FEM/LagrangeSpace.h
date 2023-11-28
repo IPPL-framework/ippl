@@ -103,9 +103,9 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        void evaluateAx(Kokkos::View<const T*> x, Kokkos::View<T*> resultAx) const override;
+        Kokkos::View<T*> evaluateAx(Kokkos::View<const T*> x) const override;
 
-        void evaluateLoadVector(Kokkos::View<T*> b) const override;
+        Kokkos::View<T*> evaluateLoadVector() const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Helper functions ///////////////////////////////////////////////////

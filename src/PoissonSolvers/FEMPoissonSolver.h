@@ -6,10 +6,15 @@
 #define IPPL_FEMPOISSONSOLVER_H
 
 // #include "FEM/FiniteElementSpace.h"
-#include "PCG.h"
-#include "Solver/Electrostatics.h"
+#include "LinearSolvers/PCG.h"
+#include "Poisson.h"
 
 namespace ippl {
+
+#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, fieldType) \
+    [this](fieldType field) {                        \
+        return fun(field.getView());                 \
+    }
 
     /**
      * @brief A solver for the poisson equation using finite element methods and
@@ -19,34 +24,33 @@ namespace ippl {
      * @tparam FieldRHS field type for the right hand side
      */
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
-    class FEMPoissonSolver : public Electrostatics<FieldLHS, FieldRHS> {
+    class FEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
 
     public:
-        using Base = Solver<FieldLHS, FieldRHS>;
+        using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using algo = PCG<UnaryMinus<detail::meta_laplace<lhs_type>>, FieldLHS, FieldRHS>;
+        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
+        using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
-        /**
-         * @brief Default constructor for FEM poisson solver
-         */
-        FEMPoissonSolver()
-            : Base() {
-            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
-            setDefaultParameters();
-        }
+        // FEM Space types
+        using ElementType    = HexahedralElement<Tlhs>;  // 3D Element
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
-        /**
-         * @brief Construct a new FEMPoissonSolver object
-         *
-         * @param lhs left hand side: -laplace(lhs)
-         * @param rhs right hand side
-         */
+        // FEMPoissonSolver()
+        //     : Base(), ref_element_m(), quadrature_m() {
+        //     static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
+        //     setDefaultParameters();
+        // }
+
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
-            : Base(lhs, rhs) {
+            : Base(lhs, rhs)
+            , refElement_m()
+            , quadrature_m()
+            , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
@@ -56,7 +60,7 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
+            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(lagrangeSpace_m.evaluateAx, lhs_type));
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
@@ -85,6 +89,10 @@ namespace ippl {
             this->params_m.add("max_iterations", 1000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
+
+        ElementType refElement_m;
+        QuadratureType quadrature_m;
+        LagrangeSpace<Tlhs, 3, 1, QuadratureType> lagrangeSpace_m;
     };
 
 }  // namespace ippl
