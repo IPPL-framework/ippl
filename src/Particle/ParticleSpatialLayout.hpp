@@ -29,10 +29,38 @@
 
 namespace ippl {
 
+    /*!
+     * We need this struct since Kokkos parallel_scan only accects
+     * one variable of type ReturnType where to perform the reduction operation.
+     * For more details, see
+     * https://kokkos.github.io/kokkos-core-wiki/API/core/parallel-dispatch/parallel_scan.html.
+     */
+    struct increment_type {
+        size_t count[2];
+
+        KOKKOS_FUNCTION void init() {
+            count[0] = 0;
+            count[1] = 0;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(bool* values) {
+            count[0] += values[0];
+            count[1] += values[1];
+            return *this;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(increment_type values) {
+            count[0] += values.count[0];
+            count[1] += values.count[1];
+            return *this;
+        }
+    };
+
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
                                                                               Mesh& mesh)
-        : rlayout_m(fl, mesh) {}
+        : rlayout_m(fl, mesh)
+        , flayout_m(fl) {}
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::updateLayout(FieldLayout<Dim>& fl,
@@ -162,32 +190,131 @@ namespace ippl {
     };
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::getNeighborSize(
+        const neighbor_list& neighbors) const {
+        size_type totalSize = 0;
+
+        for (const auto& componentNeighbors : neighbors) {
+            totalSize += componentNeighbors.size();
+        }
+
+        return totalSize;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleContainer>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleContainer& pc, locate_type& ranks, bool_type& invalid) const {
-        auto& positions                            = pc.R.getView();
-        typename RegionLayout_t::view_type Regions = rlayout_m.getdLocalRegions();
+        auto positions           = pc.R.getView();
+        region_view_type Regions = rlayout_m.getdLocalRegions();
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
 
-        int myRank = Comm->rank();
+        size_type myRank = Comm->rank();
 
         const auto is = std::make_index_sequence<Dim>{};
 
-        size_type invalidCount = 0;
-        Kokkos::parallel_reduce(
+        const neighbor_list& neighbors = flayout_m.getNeighbors();
+
+        /// Container of particles that travelled more than one cell
+        locate_type notFoundIds("Not found", size_type(0.1 * pc.getLocalNum()));
+        /// Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
+        bool_type found("Found", pc.getLocalNum());
+        size_type nLeft              = 0;
+        size_type invalidCount       = 0;
+        const size_type neighborSize = getNeighborSize(neighbors);
+        locate_type neighbors_view("Nearest neighbors IDs", neighborSize);
+
+        increment_type red_val;
+        red_val.init();
+
+        auto neighbors_mirror =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), neighbors_view);
+
+        size_t k = 0;
+
+        for (const auto& componentNeighbors : neighbors) {
+            for (size_t j = 0; j < componentNeighbors.size(); ++j) {
+                neighbors_mirror(k) = componentNeighbors[j];
+                k++;
+            }
+        }
+
+        Kokkos::deep_copy(neighbors_view, neighbors_mirror);
+
+        /*! Begin Kokkos loop:
+         * Step 1: search in current rank
+         * Step 2: search in neighbors
+         * Step 3: save information on whether the particle was located
+         * Step 4: run additional loop on non-located particles
+         */
+
+        Kokkos::parallel_scan(
             "ParticleSpatialLayout::locateParticles()",
-            mdrange_type({0, 0}, {ranks.extent(0), Regions.extent(0)}),
-            KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
-                bool xyz_bool = positionInRegion(is, positions(i), Regions(j));
-                if (xyz_bool) {
-                    ranks(i)   = j;
-                    invalid(i) = (myRank != ranks(i));
-                    count += invalid(i);
+            Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
+            KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
+                /// Step 1
+                bool xyz_bool = false;
+                bool increment[2];
+
+                xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
+
+                ranks(i)     = xyz_bool * myRank;
+                invalid(i)   = !xyz_bool;
+                found(i) =  xyz_bool || found(i);
+
+                /// Step 2
+                for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+                    size_type rank = neighbors_view(j);
+
+                    xyz_bool = positionInRegion(is, positions(i), Regions(rank));
+                    
+                    ranks(i)     = !(xyz_bool) * ranks(i) + xyz_bool * rank;
+                    invalid(i)   = xyz_bool || invalid(i);
+                    found(i) =  xyz_bool || found(i);
+
                 }
+
+                /// Step 3
+                bool isOut = (final && !found(i));
+                bool isInvalid = isOut || invalid(i);
+                 
+                notFoundIds(val.count[1]) = i * isOut;
+                invalid(i) = isInvalid;
+                increment[0] = isInvalid;
+                increment[1] = !found(i);
+                val += increment;
+
             },
-            Kokkos::Sum<size_type>(invalidCount));
+            red_val);
+
         Kokkos::fence();
+
+        invalidCount = red_val.count[0];
+        nLeft        = red_val.count[1];
+
+        std::cout << "Rank " << myRank << " has " << invalidCount << " invalids and " << nLeft << " left " << std::endl;
+ 
+        /// Step 4
+        if (nLeft > 0) {
+            static IpplTimings::TimerRef nonNeighboringParticles =
+                IpplTimings::getTimer("nonNeighboringParticles");
+            IpplTimings::startTimer(nonNeighboringParticles);
+
+            Kokkos::parallel_for(
+                "ParticleSpatialLayout::leftParticles()",
+                mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
+                KOKKOS_LAMBDA(const size_t i, const size_type j) {
+                    size_type pId = notFoundIds(i);
+                    bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
+
+                    ranks(pId) = xyz_bool * j;
+            
+                });
+            Kokkos::fence();
+
+            IpplTimings::stopTimer(nonNeighboringParticles);
+        }
 
         return invalidCount;
     }
@@ -227,4 +354,5 @@ namespace ippl {
         Kokkos::fence();
         return nSends;
     }
+
 }  // namespace ippl
