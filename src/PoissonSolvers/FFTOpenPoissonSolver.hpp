@@ -117,6 +117,7 @@ void solver_send(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> i
     ippl::Communicate::size_type nsends;
     pack(intersection, view, fd, nghost, ldom, nsends);
 
+    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
     ippl::Communicate::buffer_type<memory_space> buf =
         ippl::Comm->getBuffer<memory_space, Tf>(BUF_MSG + id * 8 + i, nsends);
 
@@ -137,6 +138,7 @@ void solver_recv(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> i
     const int myRank = ippl::Comm->rank();
     nrecvs           = intersection.size();
 
+    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
     ippl::Communicate::buffer_type<memory_space> buf =
         ippl::Comm->getBuffer<memory_space, Tf>(BUF_MSG + 8 * id + myRank, nrecvs);
 
