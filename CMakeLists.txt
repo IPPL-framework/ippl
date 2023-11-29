@@ -37,7 +37,13 @@ set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
-set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g -fsanitize=address,undefined")
+set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # Use sanitizer flags for GCC or Clang only
+    set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g -fsanitize=address,undefined")
+endif ()
+
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
     set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G --diag-suppress=20011")
 endif()
