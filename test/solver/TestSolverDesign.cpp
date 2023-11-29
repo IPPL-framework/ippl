@@ -5,14 +5,14 @@
 #include <string>
 #include <typeinfo>
 
-#include "Solver/Electrostatics.h"
+#include "PoissonSolvers/Poisson.h"
 
 constexpr unsigned int dim = 3;
 using Mesh_t               = ippl::UniformCartesian<double, dim>;
 using Centering_t          = Mesh_t::DefaultCentering;
 using field_type           = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
-class TestSolver : public ippl::Electrostatics<field_type, field_type> {
+class TestSolver : public ippl::Poisson<field_type, field_type> {
 public:
     void solve() override {
         *rhs_mp = *lhs_mp + *rhs_mp;
@@ -30,13 +30,13 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++) {
-            allParallel[d] = ippl::SERIAL;
+            isParallel[d] = false;
         }
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // Unit box
         double dx                        = 1.0 / double(pt);

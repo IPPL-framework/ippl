@@ -65,11 +65,11 @@ public:
 
     Vector<int, Dim> nr_m;
 
-    ippl::e_dim_tag decomp_m[Dim];
-
     Vector_t hr_m;
     Vector_t rmin_m;
     Vector_t rmax_m;
+
+    std::array<bool, Dim> isParallel_m;
 
     double Q_m;
 
@@ -80,20 +80,18 @@ public:
         E;  // electric field at particle position
 
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q)
+                     std::array<bool, Dim> isParallel, double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
+        , isParallel_m(isParallel)
         , Q_m(Q) {
         // register the particle attributes
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++) {
-            decomp_m[i] = decomp[i];
-        }
     }
 
     void setupBCs() { setBCAllPeriodic(); }
@@ -181,8 +179,7 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(&local_particles, &Total_particles, 1, std::plus<unsigned int>());
 
         double rel_error = std::fabs((Q_m - Q_grid) / Q_m);
         m << "Rel. error in charge conservation = " << rel_error << endl;
@@ -283,7 +280,7 @@ public:
         Energy *= 0.5;
         double gEnergy = 0.0;
 
-        MPI_Reduce(&Energy, &gEnergy, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(&Energy, &gEnergy, 1, std::plus<double>());
 
         Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
@@ -436,15 +433,15 @@ int main(int argc, char* argv[]) {
         Vector_t rmin(0.0);
         Vector_t rmax(1.0);
         // create mesh and layout objects for this problem domain
-        Vector_t hr;
+        Vector_t hr = rmax / nr;
 
         ippl::NDIndex<Dim> domain;
-        ippl::e_dim_tag decomp[Dim];
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = ippl::Index(nr[d]);
-            decomp[d] = ippl::PARALLEL;
-            hr[d]     = rmax[d] / nr[d];
         }
+
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         Vector_t origin = rmin;
 
@@ -452,7 +449,7 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
         PLayout_t PL(FL, mesh);
 
         /**PRINT**/
@@ -460,7 +457,7 @@ int main(int argc, char* argv[]) {
         msg << FL << endl;
 
         double Q = 1.0;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 
@@ -476,8 +473,7 @@ int main(int argc, char* argv[]) {
         // Verifying that particles are created
         double totalParticles = 0.0;
         double localParticles = P->getLocalNum();
-        MPI_Reduce(&localParticles, &totalParticles, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(&localParticles, &totalParticles, 1, std::plus<double>());
         msg << "Total particles: " << totalParticles << endl;
         P->initPositions(FL, hr, nloc, 2);
 

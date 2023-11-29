@@ -96,10 +96,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         ippl::Vector<double, Dim> rmin   = -4.;
         ippl::Vector<double, Dim> rmax   = 4.;
@@ -111,7 +109,7 @@ int main(int argc, char* argv[]) {
 
         Mesh_t mesh(domain, hr, origin);
 
-        ippl::FieldLayout<Dim> fl(domain, decomp, isAllPeriodic);
+        ippl::FieldLayout<Dim> fl(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
 
         ippl::detail::RegionLayout<double, Dim, Mesh_t> rlayout(fl, mesh);
 

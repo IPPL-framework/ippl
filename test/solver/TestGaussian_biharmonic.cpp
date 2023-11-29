@@ -1,6 +1,6 @@
 //
 // TestGaussian_biharmonic
-// This programs tests the Biharmonic solver from FFTPoissonSolver.
+// This programs tests the Biharmonic solver from FFTOpenPoissonSolver.
 // The test is done on a Gaussian source.
 //   Usage:
 //     srun ./TestGaussian_biharmonic --info 5
@@ -11,13 +11,13 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 using Mesh_t        = ippl::UniformCartesian<double, 3>;
 using Centering_t   = Mesh_t::DefaultCentering;
 using ScalarField_t = ippl::Field<double, 3, Mesh_t, Centering_t>;
 using VectorField_t = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
-using Solver_t      = ippl::FFTPoissonSolver<VectorField_t, ScalarField_t>;
+using Solver_t      = ippl::FFTOpenPoissonSolver<VectorField_t, ScalarField_t>;
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 0.05,
                                        double mu = 0.5) {
@@ -118,9 +118,8 @@ int main(int argc, char* argv[]) {
             ippl::NDIndex<3> owned(I, I, I);
 
             // specifies decomposition; here all dimensions are parallel
-            ippl::e_dim_tag decomp[3];
-            for (unsigned int d = 0; d < 3; d++)
-                decomp[d] = ippl::PARALLEL;
+            std::array<bool, 3> isParallel;
+            isParallel.fill(true);
 
             // unit box
             double dx                      = 1.0 / pt;
@@ -129,7 +128,7 @@ int main(int argc, char* argv[]) {
             ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
             // define the R (rho) field
             ScalarField_t rho;
@@ -216,7 +215,7 @@ int main(int argc, char* argv[]) {
             // add output type
             params.add("output_type", Solver_t::SOL_AND_GRAD);
 
-            // define an FFTPoissonSolver object
+            // define an FFTOpenPoissonSolver object
             Solver_t FFTsolver(fieldE, rho, params);
 
             // solve the Poisson equation -> rho contains the solution (phi) now
@@ -244,8 +243,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -260,8 +258,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;

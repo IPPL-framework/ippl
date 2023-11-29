@@ -149,7 +149,6 @@ namespace ippl {
                               : ippl::random::Distribution<T, Dim, 2*Dim, NormalDistributionFunctions<T>>(par_p) {}
     };
 
-
   }  // namespace random
 }  // namespace ippl
 

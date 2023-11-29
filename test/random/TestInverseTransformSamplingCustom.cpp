@@ -173,10 +173,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         ippl::Vector<double, Dim> rmin   = -4.;
         ippl::Vector<double, Dim> rmax   = 4.;
@@ -189,14 +187,14 @@ int main(int argc, char* argv[]) {
 
         Mesh_t mesh(domain, hr, origin);
 
-        ippl::FieldLayout<Dim> fl(domain, decomp, isAllPeriodic);
+        ippl::FieldLayout<Dim> fl(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
 
         ippl::detail::RegionLayout<double, Dim, Mesh_t> rlayout(fl, mesh);
 
         int seed = 42;
         using size_type = ippl::detail::size_type;
         GeneratorPool rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-        
+
         // example of sampling normal/uniform in one and harmonic in another with custom functors
         const int DimP = 4; // dimension of parameters in the pdf
         const double mu = 0.0;
@@ -216,11 +214,11 @@ int main(int argc, char* argv[]) {
         view_type positionH("positionH", nlocal);
 
         samplingH.generate(positionH, rand_pool64);
-        
+
         const int P = 6; // number of moments to check, i.e. E[x^i] for i = 1,...,P
         double moms1_ref[P];
         double moms1[P];
-        
+
         // compute error in moments of 1st dimension
         moms1_ref[0] = mu;
         get_norm_dist_cent_moms(sd, P, moms1_ref);
