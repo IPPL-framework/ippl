@@ -17,11 +17,11 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
     
     ~FieldSolver(){}
 
-    Field_t<Dim> *getRho() const { return rho_m; }
-    void setRho(Field_t<Dim> *rho){ rho_m = rho; }
+    inline Field_t<Dim> *getRho() const { return rho_m; }
+    inline void setRho(Field_t<Dim> *rho){ rho_m = rho; }
 
-    VField_t<T, Dim> *getE() const { return rho_m; }
-    void setE(VField_t<T, Dim> *E){ E_m = E; }
+    inline VField_t<T, Dim> *getE() const { return rho_m; }
+    inline void setE(VField_t<T, Dim> *E){ E_m = E; }
 
     void initSolver() override {
         Inform m("solver ");

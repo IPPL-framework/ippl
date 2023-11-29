@@ -29,30 +29,29 @@ private:
     std::shared_ptr<FieldLayout_t<Dim>> fl_m;
 
 public:
-    VField_t<T, Dim>& getE() { return E_m; }
-    void setE(VField_t<T, Dim>& E) { E_m = E; }
+    inline VField_t<T, Dim>& getE() { return E_m; }
+    inline void setE(VField_t<T, Dim>& E) { E_m = E; }
 
-    Field_t<Dim>& getRho() { return rho_m; }
-    void setRho(Field_t<Dim>& rho) { rho_m = rho; }
+    inline Field_t<Dim>& getRho() { return rho_m; }
+    inline void setRho(Field_t<Dim>& rho) { rho_m = rho; }
 
-    Vector_t<double, Dim>& getHr() { return hr_m; }
-    void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }
+    inline Vector_t<double, Dim>& getHr() { return hr_m; }
+    inline void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }
 
-    Vector_t<double, Dim>& getRMin() { return rmin_m; }
-    void setRMin(const Vector_t<double, Dim>& rmin) { rmin_m = rmin; }
+    inline Vector_t<double, Dim>& getRMin() { return rmin_m; }
+    inline void setRMin(const Vector_t<double, Dim>& rmin) { rmin_m = rmin; }
 
-    Vector_t<double, Dim>& getRMax() { return rmax_m; }
-    void setRMax(const Vector_t<double, Dim>& rmax) { rmax_m = rmax; }
+    inline Vector_t<double, Dim>& getRMax() { return rmax_m; }
+    inline void setRMax(const Vector_t<double, Dim>& rmax) { rmax_m = rmax; }
 
-    std::array<bool, Dim> getDecomp() { return decomp_m; }
-    void setDecomp(std::array<bool, Dim> decomp) { decomp_m = decomp; }
+    inline std::array<bool, Dim> getDecomp() { return decomp_m; }
+    inline void setDecomp(std::array<bool, Dim> decomp) { decomp_m = decomp; }
 
+    inline Mesh_t<Dim>& getMesh() { return *mesh_m; }
+    inline void setMesh(std::shared_ptr<Mesh_t<Dim>>& mesh) { mesh_m = mesh; }
 
-    Mesh_t<Dim>& getMesh() { return *mesh_m; }
-    void setMesh(std::shared_ptr<Mesh_t<Dim>>& mesh) { mesh_m = mesh; }
-
-    FieldLayout_t<Dim>& getFL() { return *fl_m; }
-    void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
+    inline FieldLayout_t<Dim>& getFL() { return *fl_m; }
+    inline void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
     void initializeFields(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> fl) {
         E_m.initialize(*mesh, *fl);

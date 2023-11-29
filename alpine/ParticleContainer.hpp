@@ -25,17 +25,17 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
         ~ParticleContainer(){}
 
-        ippl::ParticleAttrib<double>& getQ() { return q_m; }
-        void setQ(ippl::ParticleAttrib<double>& q) { q_m = q; }
+        inline ippl::ParticleAttrib<double>& getQ() { return q_m; }
+        inline void setQ(ippl::ParticleAttrib<double>& q) { q_m = q; }
 
-        typename Base::particle_position_type& getP() { return P_m; }
-        void setP(typename Base::particle_position_type& P) { P_m = P; }
+        inline typename Base::particle_position_type& getP() { return P_m; }
+        inline void setP(typename Base::particle_position_type& P) { P_m = P; }
 
-        typename Base::particle_position_type& getE() { return E_m; }
-        void setE(typename Base::particle_position_type& E) { E_m = E; }
+        inline typename Base::particle_position_type& getE() { return E_m; }
+        inline void setE(typename Base::particle_position_type& E) { E_m = E; }
 
-        std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
-        void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
+        inline std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
+        inline void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
 	void registerAttributes() {
 		// register the particle attributes

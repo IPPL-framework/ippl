@@ -22,20 +22,20 @@ class LoadBalancer{
 
         ~LoadBalancer() {  }
 
-        double getLoadBalanceThreshold() const { return loadbalancethreshold_m; }
-        void setLoadBalanceThreshold(double threshold) { loadbalancethreshold_m = threshold; }
+        inline double getLoadBalanceThreshold() const { return loadbalancethreshold_m; }
+        inline void setLoadBalanceThreshold(double threshold) { loadbalancethreshold_m = threshold; }
 
-        Field_t<Dim>* getRho() const { return rho_m; }
-        void setRho(Field_t<Dim>* rho) { rho_m = rho; }
+        inline Field_t<Dim>* getRho() const { return rho_m; }
+        inline void setRho(Field_t<Dim>* rho) { rho_m = rho; }
 
-        VField_t<T, Dim>* getE() const { return E_m; }
-        void setE(VField_t<T, Dim>* E) { E_m = E; }
+        inline VField_t<T, Dim>* getE() const { return E_m; }
+        inline void setE(VField_t<T, Dim>* E) { E_m = E; }
 
-        std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
-        void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
+        inline std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
+        inline void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
 
-        std::shared_ptr<FieldSolver_t> getFieldSolver() const { return fs_m; }
-        void setFieldSolver(std::shared_ptr<FieldSolver_t> fs) { fs_m = fs; }
+        inline std::shared_ptr<FieldSolver_t> getFieldSolver() const { return fs_m; }
+        inline void setFieldSolver(std::shared_ptr<FieldSolver_t> fs) { fs_m = fs; }
 
         void updateLayout(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
             // Update local fields
