@@ -20,19 +20,19 @@
 
         virtual void grid2par() = 0;
 
-        void setParticleContainer(std::shared_ptr<pc> pcontainer){
+        inline void setParticleContainer(std::shared_ptr<pc> pcontainer){
             pcontainer_m = pcontainer;
         }
 
-        void setFieldContainer(std::shared_ptr<fc> fcontainer){
+        inline void setFieldContainer(std::shared_ptr<fc> fcontainer){
             fcontainer_m = fcontainer;
         }
 
-        void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
+        inline void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
             fsolver_m = fsolver;
         }
 
-        void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
+        inline void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
             loadbalancer_m = loadbalancer;
         }
 

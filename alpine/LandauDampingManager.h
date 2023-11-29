@@ -364,7 +364,7 @@ public:
         (*rho_m)          = (*rho_m) / cellVolume;
 
         // rho = rho_e - rho_i (only if periodic BCs)
-        if (this->fsolver_m->stype_m != "OPEN") {
+        if (this->fsolver_m->getStype() != "OPEN") {
             double size = 1;
             for (unsigned d = 0; d < Dim; d++) {
                 size *= rmax_m[d] - rmin_m[d];

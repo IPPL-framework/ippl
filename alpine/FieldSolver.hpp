@@ -25,7 +25,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
     void initSolver() override {
         Inform m("solver ");
-        if (this->stype_m == "FFT") {
+        if (this->getStype() == "FFT") {
             initFFTSolver();
         }
         /*else if (stype_m == "CG") {
@@ -40,8 +40,8 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
     }
 
     void runSolver() override {
-        if (this->stype_m == "CG") {
-            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->solver_m);
+        if (this->getStype() == "CG") {
+            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
             solver.solve();
 
             if (ippl::Comm->rank() == 0) {
@@ -53,17 +53,17 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
             }
             ippl::Comm->barrier();
-        } else if (this->stype_m == "FFT") {
+        } else if (this->getStype() == "FFT") {
             if constexpr (Dim == 2 || Dim == 3) {
-                std::get<FFTSolver_t<T, Dim>>(this->solver_m).solve();
+                std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
             }
-        } else if (this->stype_m == "P3M") {
+        } else if (this->getStype() == "P3M") {
             if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<T, Dim>>(this->solver_m).solve();
+                std::get<P3MSolver_t<T, Dim>>(this->getSolver()).solve();
             }
-        } else if (this->stype_m == "OPEN") {
+        } else if (this->getStype() == "OPEN") {
             if constexpr (Dim == 3) {
-                std::get<OpenSolver_t<T, Dim>>(this->solver_m).solve();
+                std::get<OpenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
         } else {
             throw std::runtime_error("Unknown solver type");
@@ -72,8 +72,8 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
-        this->solver_m.template emplace<Solver>();
-        Solver& solver = std::get<Solver>(this->solver_m);
+        this->getSolver().template emplace<Solver>();
+        Solver& solver = std::get<Solver>(this->getSolver());
 
         solver.mergeParameters(sp);
 
