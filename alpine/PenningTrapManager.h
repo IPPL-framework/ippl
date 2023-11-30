@@ -110,75 +110,62 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
         for (unsigned i = 0; i < Dim; i++) {
-            this->domain[i] = ippl::Index(this->nr[i]);
+            domain[i] = ippl::Index(nr[i]);
         }
         decomp.fill(true);
 
-        this->rmin = 0;
-        this->rmax = 20;
+        rmin = 0;
+        rmax = 20;
 
-        this->length = this->rmax - this->rmin;
-        this->hr     = this->length / this->nr;
+        length = rmax - rmin;
+        hr     = length / nr;
 
-        this->Q      = -1562.5;
-        this->Bext   = 5.0;
-        this->origin = this->rmin;
+        Q      = -1562.5;
+        Bext   = 5.0;
+        origin = rmin;
 
-        this->nrMax    = 2048;  // Max grid size in our studies
-        this->dxFinest = this->length[0] / this->nrMax;
-        this->dt       = 0.5 * this->dxFinest;  // size of timestep
+        nrMax    = 2048;  // Max grid size in our studies
+        dxFinest = length[0] / nrMax;
+        dt       = 0.5 * dxFinest;  // size of timestep
 
-        this->it = 0;
+        it = 0;
 
-        this->alpha = -0.5 * this->dt;
-        this->DrInv = 1.0 / (1 + (std::pow((this->alpha * this->Bext), 2)));
+        alpha = -0.5 * dt;
+        DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
 
-        m << "Discretization:" << endl
-          << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
+        m << "Discretization:" << endl << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        this->isAllPeriodic = true;
+        isAllPeriodic = true;
 
-        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain, this->hr, this->origin);
+        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(domain, hr, origin);
 
-        std::shared_ptr<FieldLayout_t<Dim>> FL =
-            std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, this->domain, this->decomp, this->isAllPeriodic);
+        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
 
         std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
 
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(PL);
+        setParticleContainer( std::make_shared<ParticleContainer_t>(PL) );
 
-        this->fcontainer_m =
-            std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
+        setFieldContainer( std::make_shared<FieldContainer_t>(hr, rmin, rmax, decomp) );
 
-        this->fcontainer_m->initializeFields(mesh, FL);
+        fcontainer_m->initializeFields(mesh, FL);
 
-        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->getRho(),
-            &this->fcontainer_m->getE());
+        setFieldSolver( std::make_shared<FieldSolver_t>(solver, &fcontainer_m->getRho(), &fcontainer_m->getE()) );
 
-        this->fsolver_m->initSolver();
+        fsolver_m->initSolver();
 
-        this->loadbalancer_m = std::make_shared<LoadBalancer_t>(
-            this->lbt, this->fcontainer_m, this->pcontainer_m, this->fsolver_m);
+        setLoadBalancer( std::make_shared<LoadBalancer_t>( lbt, fcontainer_m, pcontainer_m, fsolver_m) );
 
-        this->setParticleContainer(pcontainer_m);
+        initializeParticles(mesh, FL);
 
-        this->setFieldContainer(fcontainer_m);
+        fcontainer_m->getRho() = 0.0;
 
-        this->setFieldSolver(fsolver_m);
+        fsolver_m->runSolver();
 
-        this->setLoadBalancer(loadbalancer_m);
+        par2grid();
 
-        this ->initializeParticles(mesh, FL);
+        fsolver_m->runSolver();
 
-        this->fcontainer_m->getRho() = 0.0;
-
-        this->fsolver_m->runSolver();
-
-        this->par2grid();
-
-        this->fsolver_m->runSolver();
-
-        this->grid2par();
+        grid2par();
 
         m << "Done";
     }
@@ -254,7 +241,7 @@ public:
         view_type* R_m = &this->pcontainer_m->R.getView();
         samplingR.generate(*R_m, rand_pool64);
 
-        view_type* P_m = &this->pcontainer_m->getP().getView();
+        view_type* P_m = &this->pcontainer_m->P.getView();
 
         double muP[Dim] = {0.0, 0.0, 0.0};
         double sdP[Dim] = {1.0, 1.0, 1.0};
@@ -263,7 +250,7 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->getQ() = this->Q / this->totalP;
+        this->pcontainer_m->q = this->Q / this->totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -291,8 +278,8 @@ public:
         std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
 
         auto Rview = pc->R.getView();
-        auto Pview = pc->getP().getView();
-        auto Eview = pc->getE().getView();
+        auto Pview = pc->P.getView();
+        auto Eview = pc->E.getView();
         Kokkos::parallel_for(
                "Kick1", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
                 double Eext_x = -(Rview(j)[0] - origin_m[0] - 0.5 * length_m[0])
@@ -314,7 +301,7 @@ public:
         ippl::Comm->barrier();
 
         // drift
-        pc->R = pc->R + dt_m * pc->getP();
+        pc->R = pc->R + dt_m * pc->P;
 
         // Since the particles have moved spatially update them to correct processors
         pc->update();
@@ -338,8 +325,8 @@ public:
         this->grid2par();
 
         auto R2view = pc->R.getView();
-        auto P2view = pc->getP().getView();
-        auto E2view = pc->getE().getView();
+        auto P2view = pc->P.getView();
+        auto E2view = pc->E.getView();
         Kokkos::parallel_for(
            "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
            double Eext_x = -(R2view(j)[0] - origin_m[0] - 0.5 * length_m[0])
@@ -367,7 +354,7 @@ public:
 
     void gatherCIC() {
         using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        Base::particle_position_type *E_p = &this->pcontainer_m->getE();
+        Base::particle_position_type *E_p = &this->pcontainer_m->E;
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
         VField_t<T, Dim> *E_f             = &this->fcontainer_m->getE();
         gather(*E_p, *E_f, *R_m);
@@ -378,7 +365,7 @@ public:
         this->fcontainer_m->getRho() = 0.0;
 
         using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->getQ();
+        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->q;
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
         Field_t<Dim> *rho_m               = &this->fcontainer_m->getRho();
         double Q_m                        = this->Q;
@@ -412,7 +399,7 @@ public:
     void dump() { dumpData(); }
 
     void dumpData() {
-        auto Pview                   = this->pcontainer_m->getP().getView();
+        auto Pview                   = this->pcontainer_m->P.getView();
         double kinEnergy             = 0.0;
         double potEnergy             = 0.0;
         this->fcontainer_m->getRho() = dot(this->fcontainer_m->getE(), this->fcontainer_m->getE());

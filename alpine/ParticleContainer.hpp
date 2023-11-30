@@ -9,10 +9,11 @@ template <typename T, unsigned Dim = 3>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
 
+    public:
+        ippl::ParticleAttrib<double> q;                 // charge
+        typename Base::particle_position_type P;  // particle velocity
+        typename Base::particle_position_type E;  // electric field at particle position
     private:
-        ippl::ParticleAttrib<double> q_m;                 // charge
-        typename Base::particle_position_type P_m;  // particle velocity
-        typename Base::particle_position_type E_m;  // electric field at particle position
         std::shared_ptr<PLayout_t<T, Dim>> pl_m;
     public:
         ParticleContainer(std::shared_ptr<PLayout_t<T, Dim>> pl)
@@ -25,23 +26,23 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
         ~ParticleContainer(){}
 
-        inline ippl::ParticleAttrib<double>& getQ() { return q_m; }
-        inline void setQ(ippl::ParticleAttrib<double>& q) { q_m = q; }
+        inline ippl::ParticleAttrib<double>& getQ() { return q; }
+        inline void setQ(ippl::ParticleAttrib<double>& q_) { q = q_; }
 
-        inline typename Base::particle_position_type& getP() { return P_m; }
-        inline void setP(typename Base::particle_position_type& P) { P_m = P; }
+        inline typename Base::particle_position_type& getP() { return P; }
+        inline void setP(typename Base::particle_position_type& P_) { P = P_; }
 
-        inline typename Base::particle_position_type& getE() { return E_m; }
-        inline void setE(typename Base::particle_position_type& E) { E_m = E; }
+        inline typename Base::particle_position_type& getE() { return E; }
+        inline void setE(typename Base::particle_position_type& E_) { E = E_; }
 
         inline std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
         inline void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
 	void registerAttributes() {
 		// register the particle attributes
-		this->addAttribute(q_m);
-		this->addAttribute(P_m);
-		this->addAttribute(E_m);
+		this->addAttribute(q);
+		this->addAttribute(P);
+		this->addAttribute(E);
 	}
 	void setupBCs() { setBCAllPeriodic(); }
 

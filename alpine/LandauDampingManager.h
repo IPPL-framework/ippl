@@ -127,71 +127,60 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
         for (unsigned i = 0; i < Dim; i++) {
-            this->domain[i] = ippl::Index(this->nr[i]);
+            domain[i] = ippl::Index(nr[i]);
         }
 
-        this->decomp.fill(true);
-        this->kw    = 0.5;
-        this->alpha = 0.05;
-        this->rmin  = 0.0;
-        this->rmax  = 2 * pi / this->kw;
+        decomp.fill(true);
+        kw    = 0.5;
+        alpha = 0.05;
+        rmin  = 0.0;
+        rmax  = 2 * pi / kw;
 
-        this->hr = this->rmax / this->nr;
+        hr = rmax / nr;
         // Q = -\int\int f dx dv
-        this->Q = std::reduce(this->rmax.begin(), this->rmax.end(), -1., std::multiplies<double>());
-        this->origin = this->rmin;
-        this->dt     = std::min(.05, 0.5 * *std::min_element(this->hr.begin(), this->hr.end()));
-        this->it     = 0;
+        Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
+        origin = rmin;
+        dt     = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
+        it     = 0;
 
         m << "Discretization:" << endl
-          << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
+          << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
 
-        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain, this->hr, this->origin);
+        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(domain, hr, origin);
 
-        this->isAllPeriodic = true;
+        isAllPeriodic = true;
 
-        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, this->domain, this->decomp, this->isAllPeriodic);
+        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
 
         std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
 
-        if (this->solver == "OPEN") {
-            throw IpplException("LandauDamping",
-                                "Open boundaries solver incompatible with this simulation!");
+        if (solver == "OPEN") {
+            throw IpplException("LandauDamping", "Open boundaries solver incompatible with this simulation!");
         }
 
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(PL);
+        setParticleContainer( std::make_shared<ParticleContainer_t>(PL) );
 
-        this->fcontainer_m =
-            std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
+        setFieldContainer( std::make_shared<FieldContainer_t>(hr, rmin, rmax, decomp) );
 
-        this->fcontainer_m->initializeFields(mesh, FL);
+        fcontainer_m->initializeFields(mesh, FL);
 
-        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->getRho(),
-                                                          &this->fcontainer_m->getE());
-        this->fsolver_m->initSolver();
+        setFieldSolver( std::make_shared<FieldSolver_t>(this->solver, &fcontainer_m->getRho(), &fcontainer_m->getE()) );
 
-        this->loadbalancer_m = std::make_shared<LoadBalancer_t>(
-            this->lbt, this->fcontainer_m, this->pcontainer_m, this->fsolver_m);
+        fsolver_m->initSolver();
 
-        this->setParticleContainer(pcontainer_m);
+        setLoadBalancer( std::make_shared<LoadBalancer_t>( lbt, fcontainer_m, pcontainer_m, fsolver_m) );
 
-        this->setFieldContainer(fcontainer_m);
+        initializeParticles(mesh, FL);
 
-        this->setFieldSolver(fsolver_m);
+        fcontainer_m->getRho() = 0.0;
 
-        this->setLoadBalancer(loadbalancer_m);
+        fsolver_m->runSolver();
 
-        this ->initializeParticles(mesh, FL);
+        par2grid();
 
-        this->fcontainer_m->getRho() = 0.0;
+        fsolver_m->runSolver();
 
-        this->fsolver_m->runSolver();
-
-        this->par2grid();
-
-        this->fsolver_m->runSolver();
-
-        this->grid2par();
+        grid2par();
 
         m << "Done";
     }
@@ -260,7 +249,7 @@ public:
         view_type* R_m = &this->pcontainer_m->R.getView();
         samplingR.generate(*R_m, rand_pool64);
 
-        view_type* P_m = &(this->pcontainer_m->getP().getView());
+        view_type* P_m = &(this->pcontainer_m->P.getView());
 
         double mu[Dim] = {0.0, 0.0, 0.0};
         double sd[Dim] = {1.0, 1.0, 1.0};
@@ -268,7 +257,7 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->getQ() = this->Q / this->totalP;
+        this->pcontainer_m->getQ() = Q/totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -288,10 +277,10 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        pc->getP() = pc->getP() - 0.5 * dt_m * pc->getE();
+        pc->P = pc->P - 0.5 * dt_m * pc->E;
 
         // drift
-        pc->R = pc->R + dt_m * pc->getP();
+        pc->R = pc->R + dt_m * pc->P;
 
         // Since the particles have moved spatially update them to correct processors
         pc->update();
@@ -315,7 +304,7 @@ public:
         this->grid2par();
 
         // kick
-        pc->getP() = pc->getP() - 0.5 * dt_m * pc->getE();
+        pc->P = pc->P - 0.5 * dt_m * pc->E;
     }
 
     void par2grid() override { scatterCIC(); }
@@ -324,7 +313,7 @@ public:
 
     void gatherCIC() {
         using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        Base::particle_position_type *E_p = &this->pcontainer_m->getE();
+        Base::particle_position_type *E_p = &this->pcontainer_m->E;
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
         VField_t<T, Dim> *E_f             = &this->fcontainer_m->getE();
         gather(*E_p, *E_f, *R_m);
@@ -335,7 +324,7 @@ public:
         this->fcontainer_m->getRho() = 0.0;
 
         using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->getQ();
+        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->q;
         Base::particle_position_type *R_m = &this->pcontainer_m->R;
         Field_t<Dim> *rho_m               = &this->fcontainer_m->getRho();
         double Q_m                        = this->Q;

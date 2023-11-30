@@ -20,16 +20,32 @@
 
         virtual void grid2par() = 0;
 
+        inline std::shared_ptr<pc> getParticleContainer() {
+            return pcontainer_m;
+        }
+
         inline void setParticleContainer(std::shared_ptr<pc> pcontainer){
             pcontainer_m = pcontainer;
+        }
+
+        inline std::shared_ptr<fc> getFieldContainer() {
+            return fcontainer_m;
         }
 
         inline void setFieldContainer(std::shared_ptr<fc> fcontainer){
             fcontainer_m = fcontainer;
         }
 
+        inline std::shared_ptr<ippl::FieldSolverBase<T, Dim>> getFieldSolver() {
+            return fsolver_m;
+        }
+
         inline void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
             fsolver_m = fsolver;
+        }
+
+        inline std::shared_ptr<orb> getLoadBalancer() {
+            return loadbalancer_m;
         }
 
         inline void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
