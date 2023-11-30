@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
             rho = 1.0;
 
             // start a timer
-            static IpplTimings::TimerRef stod = IpplTimings::getTimer("Solve: Physical to double");
+            static IpplTimings::TimerRef stod = IpplTimings::getTimer("N to 2N");
             IpplTimings::startTimer(stod);
 
             // store rho (RHS) in the lower left quadrant of the doubled grid
@@ -126,6 +126,11 @@ int main(int argc, char* argv[]) {
             const auto& ldom1 = layout.getLocalNDIndex();
 
             if (ranks > 1) {
+
+                // start a timer
+                static IpplTimings::TimerRef stod_send = IpplTimings::getTimer("N to 2N: send");
+                IpplTimings::startTimer(stod_send);
+
                 // COMMUNICATION
                 const auto& lDomains2 = layout2.getHostLocalDomains();
 
@@ -148,6 +153,12 @@ int main(int argc, char* argv[]) {
                         buf->resetWritePos();
                     }
                 }
+
+                IpplTimings::stopTimer(stod_send);
+
+                // start a timer
+                static IpplTimings::TimerRef stod_recv = IpplTimings::getTimer("N to 2N: receive");
+                IpplTimings::startTimer(stod_recv);
 
                 // receive
                 const auto& lDomains1 = layout.getHostLocalDomains();
@@ -174,6 +185,9 @@ int main(int argc, char* argv[]) {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
+
+                IpplTimings::stopTimer(stod_recv);
+
                 ippl::Comm->barrier();
 
             } else {
@@ -201,7 +215,7 @@ int main(int argc, char* argv[]) {
             rho2 = 2.0 * rho2;
 
             // start a timer
-            static IpplTimings::TimerRef dtos = IpplTimings::getTimer("Solve: Double to physical");
+            static IpplTimings::TimerRef dtos = IpplTimings::getTimer("2N to N");
             IpplTimings::startTimer(dtos);
 
             // get the physical part only --> physical electrostatic potential is now given in RHS
@@ -209,6 +223,10 @@ int main(int argc, char* argv[]) {
 
             if (ranks > 1) {
                 // COMMUNICATION
+
+                // start a timer
+                static IpplTimings::TimerRef dtos_send = IpplTimings::getTimer("2N to N: send");
+                IpplTimings::startTimer(dtos_send);
 
                 // send
                 const auto& lDomains1 = layout.getHostLocalDomains();
@@ -231,6 +249,12 @@ int main(int argc, char* argv[]) {
                         buf->resetWritePos();
                     }
                 }
+
+                IpplTimings::stopTimer(dtos_send);
+
+                // start a timer
+                static IpplTimings::TimerRef dtos_recv = IpplTimings::getTimer("2N to N: receive");
+                IpplTimings::startTimer(dtos_recv);
 
                 // receive
                 const auto& lDomains2 = layout2.getHostLocalDomains();
@@ -257,6 +281,9 @@ int main(int argc, char* argv[]) {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
+
+                IpplTimings::stopTimer(dtos_recv);
+
                 ippl::Comm->barrier();
 
             } else {
