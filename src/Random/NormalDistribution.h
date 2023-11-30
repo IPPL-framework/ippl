@@ -1,18 +1,3 @@
-// -*- C++ -*-
-/***************************************************************************
- *
- * The IPPL Framework
- *
- * This program was prepared by PSI.
- * All rights in the program are reserved by PSI.
- * Neither PSI nor the author(s)
- * makes any warranty, express or implied, or assumes any liability or
- * responsibility for the use of this software
- *
- * Visit www.amas.web.psi for more details
- *
- ***************************************************************************/
-//
 // Class NormalDistribution
 //   This class can be used for sampling normal distribution function
 //   on bounded domain, e.g. using Inverse Transform Sampling.
@@ -25,74 +10,6 @@
 
 namespace ippl {
   namespace random {
-
-     /*!
-     * @struct randn
-     * @brief Functor to generate random numbers from a normal distribution.
-     *
-     * This functor can be used to generates random numbers from a normal distribution with
-     * mean 0 and standard deviation 1.
-     *
-     * @tparam T Data type of the random numbers.
-     * @tparam GeneratorPool Type of the random number generator pool.
-     * @tparam Dim Dimensionality of the random numbers.
-    */
-    template <typename T, unsigned Dim>
-    struct randn {
-      using view_type  = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-      using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
-
-      // Output View for the random numbers
-      view_type v;
-
-      // The GeneratorPool
-      GeneratorPool rand_pool;
-
-      T mu[Dim];
-      T sd[Dim];
-      /*!
-       * @brief Constructor for the randn functor.
-       *
-       * @param v_ Output view for the random numbers.
-       * @param rand_pool_ The random number generator pool.
-       * @param mu The array of means in each dimension
-       * @param sd The array of standard deviation in each dimension
-      */
-      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_, T *mu_, T *sd_)
-          : v(v_)
-          , rand_pool(rand_pool_){
-             for(unsigned int i=0; i<Dim; i++){
-                mu[i] = mu_[i];
-                sd[i] = sd_[i];
-             }
-           }
-
-      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_)
-          : v(v_)
-          , rand_pool(rand_pool_) {
-             for(unsigned int i=0; i<Dim; i++){
-                mu[i] = 0.0;
-                sd[i] = 0.0;
-             }
-          }
-
-      /*!
-       * @brief Operator to generate random numbers.
-       *
-       * @param i Index for the random numbers.
-      */
-      KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-          // Get a random number state from the pool for the active thread
-          typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
-
-          for (unsigned d = 0; d < Dim; ++d) {
-              v(i)[d] = mu[d] + sd[d]*rand_gen.normal(0.0, 1.0);
-          }
-
-          // Give the state back, which will allow another thread to acquire it
-          rand_pool.free_state(rand_gen);
-      }
-    };
 
      /*!
      * @brief Calculate the cumulative distribution function (CDF) for a normal distribution.
@@ -144,9 +61,9 @@ namespace ippl {
     */
     template <typename T>
     struct normal_cdf{
-      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_cdf_func<T>(x, mean, stddev);
       }
     };
@@ -161,9 +78,9 @@ namespace ippl {
     */
     template <typename T>
     struct normal_pdf{
-      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, T const *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_pdf_func<T>(x, mean, stddev);
       }
     };
@@ -178,34 +95,59 @@ namespace ippl {
     */
     template <typename T>
     struct normal_estimate{
-      KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params) const {
-              T mean = params[2*d + 0];
-              T stddev = params[2*d + 1];
+      KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d,  T const *params_p) const {
+              T mean = params_p[2*d + 0];
+              T stddev = params_p[2*d + 1];
               return ippl::random::normal_estimate_func<T>(u, mean, stddev);
       }
     };
+
+
+    template <typename T>
+    struct NormalDistributionFunctions {
+      // Functor to calculate the probability density function (PDF) for a normal distribution.
+      struct PDF {
+        KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params_p) const {
+            T mean = params_p[2 * d + 0];
+            T stddev = params_p[2 * d + 1];
+            return ippl::random::normal_pdf_func<T>(x, mean, stddev);
+        }
+      };
+
+      // Functor to calculate the cumulative distribution function (CDF) for a normal distribution.
+      struct CDF {
+        KOKKOS_INLINE_FUNCTION double operator()(T x, unsigned int d, const T *params_p) const {
+            T mean = params_p[2 * d + 0];
+            T stddev = params_p[2 * d + 1];
+            return ippl::random::normal_cdf_func<T>(x, mean, stddev);
+        }
+      };
+
+      // Functor to estimate the initial guess for sampling a normal distribution.
+      struct Estimate {
+        KOKKOS_INLINE_FUNCTION double operator()(T u, unsigned int d, T const *params_p) const {
+            T mean = params_p[2 * d + 0];
+            T stddev = params_p[2 * d + 1];
+            return ippl::random::normal_estimate_func<T>(u, mean, stddev);
+        }
+     };
+    };
+
 
     /*!
        * @file NormalDistribution.h
        * @class NormalDistribution
     */
     template<typename T, unsigned Dim>
-    class NormalDistribution : public ippl::random::Distribution<T, Dim, 2*Dim,
-                          ippl::random::normal_pdf<T>,
-                          ippl::random::normal_cdf<T>,
-                          ippl::random::normal_estimate<T>>{
+    class NormalDistribution : public ippl::random::Distribution<T, Dim, 2*Dim, NormalDistributionFunctions<T>>{
     public:
       /*!
        * @brief Constructor for the Normal Distribution class.
        * The constructor takes an array of parameters of normal distribution, i.e. mean and standard deviation.
       */
-      KOKKOS_INLINE_FUNCTION NormalDistribution(const T *par_)
-                              : ippl::random::Distribution<T, Dim, 2*Dim,
-                              ippl::random::normal_pdf<T>,
-                              ippl::random::normal_cdf<T>,
-                              ippl::random::normal_estimate<T>>(par_) {}
+      KOKKOS_INLINE_FUNCTION NormalDistribution(const T *par_p)
+                              : ippl::random::Distribution<T, Dim, 2*Dim, NormalDistributionFunctions<T>>(par_p) {}
     };
-
 
   }  // namespace random
 }  // namespace ippl

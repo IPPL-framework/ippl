@@ -11,26 +11,31 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
+#include "Random/Randn.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 const char* TestName = "LandauDamping";
 
 // define functions used in sampling particles
-struct custom_cdf {
-    KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double* params) const {
-        return x + (params[d * 2 + 0] / params[d * 2 + 1]) * Kokkos::sin(params[d * 2 + 1] * x);
-    }
-};
-struct custom_pdf {
-    KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const* params) const {
-        return 1.0 + params[d * 2 + 0] * Kokkos::cos(params[d * 2 + 1] * x);
-    }
-};
-struct custom_estimate {
-    KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const* params) const {
-        return u + params[d] * 0.;
-    }
+struct CustomDistributionFunctions {
+  struct CDF{
+       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
+           return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
+       }
+  };
+
+  struct PDF{
+       KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
+           return 1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x);
+       }
+  };
+
+  struct Estimate{
+        KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d, double const *params_p) const {
+            return u + params_p[d] * 0.;
+	}
+  };
 };
 
 class LandauDampingManager
@@ -194,8 +199,7 @@ public:
     void initializeParticles(std::shared_ptr<Mesh_t<Dim>> mesh_m, std::shared_ptr<FieldLayout_t<Dim>> FL_m){
         Inform m("Initialize Particles");
 
-        using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, custom_pdf, custom_cdf,
-                                                   custom_estimate>;
+        using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
         double* parR  = new double[2 * Dim];
         parR[0]       = this->alpha;
         parR[1]       = this->kw[0];
@@ -225,7 +229,7 @@ public:
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = distR.full_pdf(xvec);
+                    ippl::apply(rhoview, args) = distR.getFullPdf(xvec);
                 });
 
             Kokkos::fence();
@@ -249,7 +253,7 @@ public:
         Vector_t<double, Dim> rmin_m = rmin;
         Vector_t<double, Dim> rmax_m = rmax;
         samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
-        size_type nlocal = samplingR.getLocalNum();
+        size_type nlocal = samplingR.getLocalSamplesNum();
 
         this->pcontainer_m->create(nlocal);
 
@@ -261,7 +265,6 @@ public:
         double mu[Dim] = {0.0, 0.0, 0.0};
         double sd[Dim] = {1.0, 1.0, 1.0};
         Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P_m, rand_pool64, mu, sd));
-
         Kokkos::fence();
         ippl::Comm->barrier();
 

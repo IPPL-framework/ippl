@@ -11,6 +11,7 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
+#include "Random/Randn.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -223,7 +224,7 @@ public:
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = distR.full_pdf(xvec);
+                    ippl::apply(rhoview, args) = distR.getFullPdf(xvec);
                 });
 
             Kokkos::fence();
@@ -246,7 +247,7 @@ public:
         Vector_t<double, Dim> rmin_m = rmin;
         Vector_t<double, Dim> rmax_m = rmax;
         samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
-        size_type nlocal = samplingR.getLocalNum();
+        size_type nlocal = samplingR.getLocalSamplesNum();
 
         this->pcontainer_m->create(nlocal);
 
