@@ -234,7 +234,6 @@ public:
 
         grid2par();
 
-        // wrtie solution to output file
         dump();
 
         m << "Done";

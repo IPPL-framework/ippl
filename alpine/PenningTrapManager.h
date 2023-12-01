@@ -129,6 +129,7 @@ public:
         dt       = 0.5 * dxFinest;  // size of timestep
 
         it = 0;
+        time_m = 0.0;
 
         alpha = -0.5 * dt;
         DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
@@ -166,6 +167,8 @@ public:
         fsolver_m->runSolver();
 
         grid2par();
+
+        dump();
 
         m << "Done";
     }
@@ -453,7 +456,7 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (time_m == 0.0) {
+            if ( fabs(time_m) < 1e-14 ) {
                 csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";

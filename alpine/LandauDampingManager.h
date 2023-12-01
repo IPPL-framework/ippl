@@ -142,6 +142,7 @@ public:
         origin = rmin;
         dt     = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
         it     = 0;
+        time_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -181,6 +182,8 @@ public:
         fsolver_m->runSolver();
 
         grid2par();
+
+        dump();
 
         m << "Done";
     }
@@ -407,7 +410,7 @@ public:
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if (time_m == 0.0) {
+            if ( fabs(time_m) < 1e-14 ) {
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
             }
             csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
