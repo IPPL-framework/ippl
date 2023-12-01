@@ -11,11 +11,6 @@
 
 namespace ippl {
 
-#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, fieldType) \
-    [this](fieldType field) {                        \
-        return fun(field.getView());                 \
-    }
-
     /**
      * @brief A solver for the poisson equation using finite element methods and
      * Conjugate Gradient (CG)
@@ -60,7 +55,31 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(lagrangeSpace_m.evaluateAx, lhs_type));
+            const std::size_t Dim            = 3;
+            const std::size_t NumElementDOFs = 8;
+
+            const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
+
+            // Inverse Transpose Transformation Jacobian
+            const Vector<Tlhs, Dim> DPhiInvT =
+                this->ref_element_m.getInverseTransposeTransformationJacobian(
+                    this->getElementMeshVertexIndices(zeroNdIndex));
+
+            // Absolute value of det Phi_K
+            const Tlhs absDetDPhi =
+                std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+                    this->getElementMeshVertexIndices(zeroNdIndex)));
+
+            const Tlhs eval = [DPhiInvT, absDetDPhi](
+                                  const std::size_t& i, const std::size_t& j,
+                                  const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
+                return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
+                       * absDetDPhi;
+            };
+
+            algo_m.setOperator([this, eval](lhs_type field) {
+                return lagrangeSpace_m.evaluateAx(field.getView(), eval);
+            });
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");

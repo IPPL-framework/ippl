@@ -274,7 +274,12 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
     Kokkos::View<T*> LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(
-        Kokkos::View<const T*> x) const {
+        Kokkos::View<const T*> x,
+        const std::function<
+            T(const index_t&, const index_t&,
+              const Vector<Vector<T, Dim>,
+                           LagrangeSpace<T, Dim, Order, QuadratureType>::NumGlobalDOFs>&)>&
+            evalFunction) const {
         Kokkos::View<T*> resultAx("resultAx", this->numGlobalDOFs());
 
         // Allocate memory for the element matrix
@@ -297,8 +302,6 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
-
         Vector<index_t, this->numElementDOFs> global_dofs;
         Vector<index_t, this->numElementDOFs> local_dofs;
 
@@ -311,22 +314,6 @@ namespace ippl {
             }
         }
 
-        // Inverse Transpose Transformation Jacobian
-        const Vector<T, Dim> DPhiInvT =
-            this->ref_element_m.getInverseTransposeTransformationJacobian(
-                this->getElementMeshVertexIndices(zeroNdIndex));
-
-        // Absolute value of det Phi_K
-        const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-            this->getElementMeshVertexIndices(zeroNdIndex)));
-
-        // TODO move outside of LagrangeSpace class and make compatible with kokkos
-        const auto eval = [DPhiInvT, absDetDPhi](
-                              const index_t& i, const index_t& j,
-                              const Vector<gradient_vec_t, this->numElementDOFs>& grad_b_q_k) {
-            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
-        };
-
         const std::size_t numElements = this->numElements();
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
             global_dofs = this->getGlobalDOFIndices(elementIndex);
@@ -337,7 +324,7 @@ namespace ippl {
                 for (j = 0; j < this->numElementDOFs; ++j) {
                     A_K[i][j] = 0.0;
                     for (k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        A_K[i][j] += w[k] * eval(i, j, grad_b_q[k]);
+                        A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
                     }
                 }
             }

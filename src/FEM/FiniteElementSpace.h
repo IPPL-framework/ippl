@@ -119,7 +119,11 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual Kokkos::View<T*> evaluateAx(const Kokkos::View<const T*> x) const = 0;
+        virtual Kokkos::View<T*> evaluateAx(
+            const Kokkos::View<const T*> x,
+            const std::function<T(const index_t&, const index_t&,
+                                  const Vector<Vector<T, Dim>, NumElementDOFs>&)>& evalFunction)
+            const = 0;
 
         virtual Kokkos::View<T*> evaluateLoadVector() const = 0;
 

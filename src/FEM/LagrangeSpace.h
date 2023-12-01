@@ -103,7 +103,13 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        Kokkos::View<T*> evaluateAx(Kokkos::View<const T*> x) const override;
+        Kokkos::View<T*> evaluateAx(
+            Kokkos::View<const T*> x,
+            const std::function<
+                T(const index_t&, const index_t&,
+                  const Vector<Vector<T, Dim>,
+                               LagrangeSpace<T, Dim, Order, QuadratureType>::NumGlobalDOFs>&)>&
+                evalFunction) const override;
 
         Kokkos::View<T*> evaluateLoadVector() const override;
 

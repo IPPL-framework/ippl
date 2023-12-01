@@ -16,6 +16,10 @@ int main(int argc, char* argv[]) {
         int pt = 4, ptY = 4;
         bool isWeak = false;
 
+        // start a timer
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
+
         Inform info("Config");
         if (argc >= 2) {
             // First argument is the problem size (log2)
@@ -117,7 +121,7 @@ int main(int argc, char* argv[]) {
                              * sin(sin(pi * z)));
             });
 
-        ippl::FEMPoissonSolver solver(lhs, rhs);
+        ippl::FEMPoissonSolver<field_type, field_type> solver(lhs, rhs);
 
         ippl::ParameterList params;
         params.add("max_iterations", 1000);
@@ -142,6 +146,8 @@ int main(int argc, char* argv[]) {
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
           << endl;
 
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }
     ippl::finalize();
