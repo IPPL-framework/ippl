@@ -44,14 +44,15 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
+
         for (unsigned int d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout = ippl::FieldLayout<Dim>(owned, domDec);
+        layout = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, isParallel);
         mesh   = mesh_type(owned, hx, origin);
 
         field  = std::make_shared<field_type>(mesh, layout);

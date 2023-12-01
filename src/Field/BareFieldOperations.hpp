@@ -16,6 +16,7 @@ namespace ippl {
         constexpr unsigned Dim = BareField::dim;
 
         T sum                  = 0;
+        auto layout            = f1.getLayout();
         auto view1             = f1.getView();
         auto view2             = f2.getView();
         using exec_space       = typename BareField::execution_space;
@@ -26,9 +27,8 @@ namespace ippl {
                 val += apply(view1, args) * apply(view2, args);
             },
             Kokkos::Sum<T>(sum));
-        T globalSum       = 0;
-        MPI_Datatype type = get_mpi_datatype<T>(sum);
-        MPI_Allreduce(&sum, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
+        T globalSum = 0;
+        layout.comm.allreduce(sum, globalSum, 1, std::plus<T>());
         return globalSum;
     }
 
@@ -44,6 +44,7 @@ namespace ippl {
         constexpr unsigned Dim = BareField::dim;
 
         T local                = 0;
+        auto layout            = field.getLayout();
         auto view              = field.getView();
         using exec_space       = typename BareField::execution_space;
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
@@ -57,9 +58,8 @@ namespace ippl {
                             val = myVal;
                     },
                     Kokkos::Max<T>(local));
-                T globalMax       = 0;
-                MPI_Datatype type = get_mpi_datatype<T>(local);
-                MPI_Allreduce(&local, &globalMax, 1, type, MPI_MAX, Comm->getCommunicator());
+                T globalMax = 0;
+                layout.comm.allreduce(local, globalMax, 1, std::greater<T>());
                 return globalMax;
             }
             default: {
@@ -69,9 +69,8 @@ namespace ippl {
                         val += std::pow(std::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
-                T globalSum       = 0;
-                MPI_Datatype type = get_mpi_datatype<T>(local);
-                MPI_Allreduce(&local, &globalSum, 1, type, MPI_SUM, Comm->getCommunicator());
+                T globalSum = 0;
+                layout.comm.allreduce(local, globalSum, 1, std::plus<T>());
                 return std::pow(globalSum, 1.0 / p);
             }
         }

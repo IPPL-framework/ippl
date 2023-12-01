@@ -62,9 +62,8 @@ int main(int argc, char* argv[]) {
             ippl::NDIndex<3> owned(I, I, I);
 
             // specifies decomposition; here all dimensions are parallel
-            ippl::e_dim_tag decomp[3];
-            for (unsigned int d = 0; d < 3; d++)
-                decomp[d] = ippl::PARALLEL;
+            std::array<bool, 3> isParallel;
+            isParallel.fill(true);
 
             using Mesh_t      = ippl::UniformCartesian<double, 3>;
             using Centering_t = Mesh_t::DefaultCentering;
@@ -80,7 +79,7 @@ int main(int argc, char* argv[]) {
             Mesh_t mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
             // define the L (phi) and R (rho) fields
             field rho;

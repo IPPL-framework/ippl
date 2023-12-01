@@ -103,10 +103,8 @@ int main(int argc, char* argv[]) {
         }
 
         // specifies decomposition; here all dimensions are parallel
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // unit box
         double dx                        = 1.0 / nr[0];
@@ -117,7 +115,7 @@ int main(int argc, char* argv[]) {
         Mesh_t mesh(owned, hr, origin);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<Dim> layout(owned, decomp);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // define the R (rho) field
         field exact, rho;
@@ -267,8 +265,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -281,8 +278,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;

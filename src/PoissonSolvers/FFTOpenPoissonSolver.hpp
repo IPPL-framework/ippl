@@ -9,7 +9,7 @@
 template <typename Tb, typename Tf>
 void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
           ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-          ippl::Communicate::size_type& nsends) {
+          ippl::mpi::Communicator::size_type& nsends) {
     Kokkos::View<Tb*>& buffer = fd.buffer;
 
     size_t size = intersect.size();
@@ -270,8 +270,9 @@ namespace ippl {
         }
 
         // get layout and mesh
-        layout_mp = &(this->rhs_mp->getLayout());
-        mesh_mp   = &(this->rhs_mp->get_mesh());
+        layout_mp              = &(this->rhs_mp->getLayout());
+        mesh_mp                = &(this->rhs_mp->get_mesh());
+        mpi::Communicator comm = layout_mp->comm;
 
         // get mesh spacing and origin
         hr_m               = mesh_mp->getMeshSpacing();
@@ -289,15 +290,12 @@ namespace ippl {
         }
 
         // define decomposition (parallel / serial)
-        e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; ++d) {
-            decomp[d] = layout_mp->getRequestedDistribution(d);
-        }
+        std::array<bool, Dim> isParallel = layout_mp->isParallel();
 
         // create double sized mesh and layout objects using the previously defined domain2_m
         using mesh_type = typename lhs_type::Mesh_t;
         mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
-        layout2_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain2_m, decomp));
+        layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain2_m, isParallel));
 
         // create the domain for the transformed (complex) fields
         // since we use HeFFTe for the transforms it doesn't require permuting to the right
@@ -315,7 +313,7 @@ namespace ippl {
         // create mesh and layout for the real to complex FFT transformed fields
         meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
         layoutComplex_m =
-            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domainComplex_m, decomp));
+            std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, isParallel));
 
         // initialize fields
         storage_field.initialize(*mesh2_m, *layout2_m);
@@ -350,7 +348,8 @@ namespace ippl {
             // 4N grid
             using mesh_type = typename lhs_type::Mesh_t;
             mesh4_m         = std::unique_ptr<mesh_type>(new mesh_type(domain4_m, hr_m, origin));
-            layout4_m       = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(domain4_m, decomp));
+            layout4_m =
+                std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain4_m, isParallel));
 
             // initialize fields
             grnL_m.initialize(*mesh4_m, *layout4_m);
@@ -556,6 +555,7 @@ namespace ippl {
 
                     solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection, ldom1,
                                 nghost1, view1, fd_m, requests);
+
                 }
             }
 
@@ -567,13 +567,13 @@ namespace ippl {
                 if (lDomains1[i].touches(ldom2)) {
                     auto intersection = lDomains1[i].intersect(ldom2);
 
-                    Communicate::size_type nrecvs;
+                    mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        Comm->getBuffer<memory_space, Trhs>(mpi::tag::SOLVER_RECV + myRank, nrecvs);
 
-                    Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
+                    Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
 
                     unpack(intersection, view2, fd_m, nghost2, ldom2);
@@ -678,6 +678,7 @@ namespace ippl {
 
                         solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection, ldom2,
                                     nghost2, view2, fd_m, requests);
+
                     }
                 }
 
@@ -689,13 +690,14 @@ namespace ippl {
                     if (ldom1.touches(lDomains2[i])) {
                         auto intersection = ldom1.intersect(lDomains2[i]);
 
-                        Communicate::size_type nrecvs;
+                        mpi::Communicator::size_type nrecvs;
                         nrecvs = intersection.size();
 
-                        buffer_type buf =
-                            Comm->getBuffer<memory_space, Trhs>(IPPL_SOLVER_RECV + myRank, nrecvs);
+                        buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
+                            mpi::tag::SOLVER_RECV + myRank, nrecvs);
 
-                        Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
+                        Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs),
+                                   nrecvs);
                         buf->resetReadPos();
 
                         unpack(intersection, view1, fd_m, nghost1, ldom1);
@@ -830,6 +832,7 @@ namespace ippl {
 
                             solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection,
                                         ldom2, nghost2, view2, fd_m, requests);
+
                         }
                     }
 
@@ -841,13 +844,13 @@ namespace ippl {
                         if (ldom1.touches(lDomains2[i])) {
                             auto intersection = ldom1.intersect(lDomains2[i]);
 
-                            Communicate::size_type nrecvs;
+                            mpi::Communicator::size_type nrecvs;
                             nrecvs = intersection.size();
 
                             buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                IPPL_SOLVER_RECV + myRank, nrecvs);
+                                mpi::tag::SOLVER_RECV + myRank, nrecvs);
 
-                            Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
+                            Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs),
                                        nrecvs);
                             buf->resetReadPos();
 
@@ -984,6 +987,7 @@ namespace ippl {
 
                                 solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection,
                                             ldom2, nghost2, view2, fd_m, requests);
+
                             }
                         }
 
@@ -995,14 +999,14 @@ namespace ippl {
                             if (ldom1.touches(lDomains2[i])) {
                                 auto intersection = ldom1.intersect(lDomains2[i]);
 
-                                Communicate::size_type nrecvs;
+                                mpi::Communicator::size_type nrecvs;
                                 nrecvs = intersection.size();
 
                                 buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    IPPL_SOLVER_RECV + myRank, nrecvs);
+                                    mpi::tag::SOLVER_RECV + myRank, nrecvs);
 
-                                Comm->recv(i, OPEN_SOLVER_TAG, fd_m, *buf, nrecvs * sizeof(Trhs),
-                                           nrecvs);
+                                Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf,
+                                           nrecvs * sizeof(Trhs), nrecvs);
                                 buf->resetReadPos();
 
                                 unpack(intersection, viewH, fd_m, nghostH, ldom1, row, col);
@@ -1432,6 +1436,7 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 0, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1450,6 +1455,7 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 1, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1468,6 +1474,7 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 2, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1486,6 +1493,7 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 3, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1506,6 +1514,7 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 4, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1525,6 +1534,7 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 5, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1544,6 +1554,7 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 6, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
 
@@ -1565,6 +1576,7 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 7, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
+
                 }
             }
         }
@@ -1579,6 +1591,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 0, i, intersection, ldom, nghost,
                                 view, fd_m);
+
                 }
             }
 
@@ -1602,6 +1615,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 1, i, intersection, ldom, nghost,
                                 view, fd_m, true, false, false);
+
                 }
             }
 
@@ -1625,6 +1639,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 2, i, intersection, ldom, nghost,
                                 view, fd_m, false, true, false);
+
                 }
             }
 
@@ -1648,6 +1663,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 3, i, intersection, ldom, nghost,
                                 view, fd_m, false, false, true);
+
                 }
             }
 
@@ -1675,6 +1691,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 4, i, intersection, ldom, nghost,
                                 view, fd_m, true, true, false);
+
                 }
             }
 
@@ -1702,6 +1719,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 5, i, intersection, ldom, nghost,
                                 view, fd_m, false, true, true);
+
                 }
             }
 
@@ -1729,6 +1747,7 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 6, i, intersection, ldom, nghost,
                                 view, fd_m, true, false, true);
+
                 }
             }
 
@@ -1778,6 +1797,7 @@ namespace ippl {
         const int nghost) {
         const auto& lDomains2   = layout2_m->getHostLocalDomains();
         const auto& lDomains2n1 = layout2n1_m->getHostLocalDomains();
+
 
         std::vector<MPI_Request> requests(0);
         const int ranks = ippl::Comm->size();

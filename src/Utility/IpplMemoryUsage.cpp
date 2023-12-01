@@ -30,7 +30,7 @@ IpplMemoryUsage::IpplMemoryUsage() {}
 
 IpplMemoryUsage::IpplMemoryUsage(Unit unit, bool reset)
     : who_m(RUSAGE_SELF) {
-    globalMemPerCore_m = std::unique_ptr<double[]>(new double[Comm->getNodes()]);
+    globalMemPerCore_m = std::unique_ptr<double[]>(new double[Comm->size()]);
 
     switch (unit) {
         case Unit::BIT:
@@ -88,7 +88,7 @@ void IpplMemoryUsage::sample() {
     // update max_rss_m
     this->sample_m();
 
-    for (int i = 0; i < Comm->getNodes(); i++)
+    for (int i = 0; i < Comm->size(); i++)
         globalMemPerCore_m[i] = 0;
 
     double localMemPerCore = max_rss_m;
