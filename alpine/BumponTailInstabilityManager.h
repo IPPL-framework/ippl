@@ -11,6 +11,7 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
+#include "Random/UniformDistribution.h"
 #include "Random/Randn.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
@@ -24,7 +25,7 @@ struct CustomDistributionFunctions {
   struct CDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
            if( d < Dim - 1)
-                return x;
+                return ippl::random::uniform_cdf_func<double>(x);
            else
                 return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
        }
@@ -33,7 +34,7 @@ struct CustomDistributionFunctions {
   struct PDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
            if( d < Dim - 1)
-               return 1.0;
+               return ippl::random::uniform_pdf_func<double>();
            else
                return  (1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x));
        }
@@ -134,9 +135,9 @@ public:
         // Update time
         this->time_m += this->dt;
         this->it++;
+
         // wrtie solution to output file
         this->dump();
-
         Inform m("Post-step:");
         m << "Finished time step: " << this->it << " time: " << this->time_m << endl;
     }
@@ -183,6 +184,7 @@ public:
         origin = rmin;
         dt     = std::min(.05, 0.5 * *std::min_element(hr.begin(), hr.end()));
         it     = 0;
+        time_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
@@ -231,6 +233,9 @@ public:
         fsolver_m->runSolver();
 
         grid2par();
+
+        // wrtie solution to output file
+        dump();
 
         m << "Done";
     }
@@ -316,12 +321,11 @@ public:
         double sd[Dim];
         for(unsigned int i=0; i<Dim; i++){
            mu[i] = 0.0;
-           sd[i] = 1.0;
+           sd[i] = sigma;
         }
         // sample first nlocBulk with muBulk as mean velocity
         mu[Dim-1] = muBulk;
-        sd[Dim-1] = sigma;
-        Kokkos::parallel_for(nlocBulk, ippl::random::randn<double, Dim>(*P_m, rand_pool64, mu, sd));
+        Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, nlocBulk), ippl::random::randn<double, Dim>(*P_m, rand_pool64, mu, sd));
 
         // sample remaining with muBeam as mean velocity
         mu[Dim-1] = muBeam;
@@ -564,7 +568,7 @@ public:
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (time_m == 0.0) {
+            if ( fabs(time_m) < 1e-14 ) {
                 csvout << "time, Ez_field_energy, Ez_max_norm" << endl;
             }
 
