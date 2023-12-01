@@ -17,6 +17,8 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 
 const char* TestName = "BumponTailInstability";
 
+constexpr bool EnablePhaseDump = false;
+
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
   struct CDF{
@@ -52,6 +54,7 @@ public:
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
+    struct PhaseDump;
 private:
     size_type totalP;
     int nt;
@@ -59,6 +62,7 @@ private:
     double lbt;
     std::string solver;
     std::string step_method;
+    std::shared_ptr<PhaseDump> phase;
 public:
     BumponTailInstabilityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
         : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>()
@@ -67,7 +71,9 @@ public:
         , nr(nr_)
         , lbt(lbt_)
         , solver(solver_)
-        , step_method(step_method_){}
+        , step_method(step_method_){
+            phase = std::make_shared<PhaseDump>();
+        }
     ~BumponTailInstabilityManager(){}
 
 private:
@@ -91,7 +97,6 @@ private:
     double  muBeam;
     double epsilon;
     double delta;
-
 public:
     size_type getTotalP() const { return totalP; }
 
@@ -208,6 +213,15 @@ public:
 
         initializeParticles(mesh, FL);
 
+        if constexpr (EnablePhaseDump) {
+            if (ippl::Comm->size() != 1) {
+                m << "Phase dump only supported on one rank" << endl;
+                ippl::Comm->abort();
+            }
+            phase->initialize(*std::max_element(nr.begin(), nr.end()),
+                             *std::max_element(rmax.begin(), rmax.end()));
+        }
+
         fcontainer_m->getRho() = 0.0;
 
         fsolver_m->runSolver();
@@ -234,7 +248,6 @@ public:
         parR[5]       = kw[2];
         DistR_t distR(parR);
 
-        Vector_t<double, Dim> kw_m     = this->kw;
         Vector_t<double, Dim> hr_m     = hr;
         Vector_t<double, Dim> origin_m = origin;
         if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -263,11 +276,9 @@ public:
             this->loadbalancer_m->repartition(FL_m.get(), mesh_m.get(), this->isFirstRepartition);
         }
 
-        // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( *FL_m, *mesh_m );
 
-        // unsigned int
         size_type totalP_m = this->totalP;
         int seed           = 42;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
@@ -280,11 +291,10 @@ public:
         samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
         size_type nlocal = samplingR.getLocalSamplesNum();
 
-        double factorVelBulk	  = 1.0 - epsilon;
-        double factorVelBeam	  = 1.0 - factorVelBulk;
-        double factorConf         = nlocal/totalP;
-        size_type nlocBulk        = (size_type)(factorConf * factorVelBulk * totalP);
-        size_type nlocBeam        = (size_type)(factorConf * factorVelBeam * totalP);
+        double factorVelBulk      = 1.0 - epsilon;
+        double factorVelBeam      = 1.0 - factorVelBulk;
+        size_type nlocBulk        = (size_type)(factorVelBulk * nlocal);
+        size_type nlocBeam        = (size_type)(factorVelBeam * nlocal);
         nlocal                    = nlocBulk + nlocBeam;
 
         int rank = ippl::Comm->rank();
@@ -304,7 +314,7 @@ public:
 
         double mu[Dim];
         double sd[Dim];
-        for(unsigned int i=0; i<Dim-1; i++){
+        for(unsigned int i=0; i<Dim; i++){
            mu[i] = 0.0;
            sd[i] = 1.0;
         }
@@ -320,7 +330,7 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->getQ() = Q/totalP;
+        this->pcontainer_m->q = Q/totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -428,52 +438,137 @@ public:
         }
     }
 
-    void dump() { dumpBumponTailInstability(fcontainer_m->getE().getView()); }
+    struct PhaseDump {
+        void initialize(size_t nr_, double domain_) {
+           ippl::Index I(nr_);
+           ippl::NDIndex<2> owned(I, I);
+           layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, isParallel);
+
+           Vector_t<double, 2> hx = {domain_ / nr_, 16. / nr_};
+           Vector_t<double, 2> orgn{0, -8};
+
+           mesh = Mesh_t<2>(owned, hx, orgn);
+           phaseSpace.initialize(mesh, layout);
+           if (ippl::Comm->rank() == 0) {
+               phaseSpaceBuf.initialize(mesh, layout);
+           }
+           std::cout << ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
+        }
+
+        void dump(int it_, std::shared_ptr<ParticleContainer_t> pc, bool allDims = false) {
+           const auto pcount = pc->getLocalNum();
+           phase.realloc(pcount);
+           auto& Ri = pc->R;
+           auto& Pi = pc->P;
+           for (unsigned d = allDims ? 0 : Dim - 1; d < Dim; d++) {
+               Kokkos::parallel_for(
+                   "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
+                       phase(i) = {Ri(i)[d], Pi(i)[d]};
+                   });
+               phaseSpace = 0;
+               Kokkos::fence();
+               scatter(pc->q, phaseSpace, phase);
+               auto& view = phaseSpace.getView();
+               MPI_Reduce(view.data(), phaseSpaceBuf.getView().data(), view.size(), MPI_DOUBLE,
+                       MPI_SUM, 0, ippl::Comm->getCommunicator());
+               if (ippl::Comm->rank() == 0) {
+                   std::stringstream fname;
+                   fname << "PhaseSpace_t=" << it_ << "_d=" << d << ".csv";
+
+                   Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, 0);
+                   phaseSpaceBuf.write(out);
+
+                   auto max = phaseSpaceBuf.max();
+                   auto min = phaseSpaceBuf.min();
+                   if (max > maxValue) {
+                       maxValue = max;
+                   }
+                   if (min < minValue) {
+                       minValue = min;
+                   }
+               }
+               ippl::Comm->barrier();
+           }
+           MPI_Bcast(&maxValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+           MPI_Bcast(&minValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        }
+
+        double maxRecorded() const { return maxValue; }
+        double minRecorded() const { return minValue; }
+
+    private:
+        std::array<bool, 2> isParallel = {false, false};
+        FieldLayout_t<2> layout;
+        Mesh_t<2> mesh;
+        Field_t<2> phaseSpace, phaseSpaceBuf;
+        ippl::ParticleAttrib<Vector_t<double, 2>> phase;
+
+        double maxValue = 0, minValue = 0;
+    };
+
+    void dump() {
+        dumpBumponTailInstability(fcontainer_m->getE().getView());
+        if constexpr (EnablePhaseDump) {
+                phase->dump(it, pcontainer_m);
+        }
+    }
 
     template <typename View>
     void dumpBumponTailInstability(const View& Eview) {
         const int nghostE = fcontainer_m->getE().getNghost();
+        double fieldEnergy, EzAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double localEx2 = 0, localExNorm = 0;
-        ippl::parallel_reduce(
-            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double val = ippl::apply(Eview, args)[0];
-                double e2  = Kokkos::pow(val, 2);
-                E2 += e2;
+        double temp            = 0.0;
 
-                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
-                if (norm > ENorm) {
-                    ENorm = norm;
-                }
+        ippl::parallel_reduce(
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::pow(ippl::apply(Eview, args)[Dim - 1], 2);
+                valL += myVal;
             },
-            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
+            Kokkos::Sum<double>(temp));
 
         double globaltemp = 0.0;
-        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
+        ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
 
-        double fieldEnergy =
+        fieldEnergy =
             std::reduce(fcontainer_m->getHr().begin(), fcontainer_m->getHr().end(), globaltemp, std::multiplies<double>());
 
-        double ExAmp = 0.0;
-        ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
+        double tempMax = 0.0;
+        ippl::parallel_reduce(
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::fabs(ippl::apply(Eview, args)[Dim - 1]);
+                if (myVal > valL) {
+                    valL = myVal;
+                }
+            },
+            Kokkos::Max<double>(tempMax));
+
+        EzAmp = 0.0;
+        ippl::Comm->reduce(tempMax, EzAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data/BumponTailInstability_";
+            fname << "data/FieldBumponTail_";
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
+
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
+
             if (time_m == 0.0) {
-                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+                csvout << "time, Ez_field_energy, Ez_max_norm" << endl;
             }
-            csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
+
+            csvout << time_m << " " << fieldEnergy << " " << EzAmp << endl;
         }
         ippl::Comm->barrier();
     }
