@@ -260,7 +260,7 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->getQ() = Q/totalP;
+        this->pcontainer_m->q = Q/totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
 

@@ -26,15 +26,6 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
         ~ParticleContainer(){}
 
-        inline ippl::ParticleAttrib<double>& getQ() { return q; }
-        inline void setQ(ippl::ParticleAttrib<double>& q_) { q = q_; }
-
-        inline typename Base::particle_position_type& getP() { return P; }
-        inline void setP(typename Base::particle_position_type& P_) { P = P_; }
-
-        inline typename Base::particle_position_type& getE() { return E; }
-        inline void setE(typename Base::particle_position_type& E_) { E = E_; }
-
         inline std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
         inline void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
