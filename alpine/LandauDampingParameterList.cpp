@@ -1,13 +1,14 @@
-// Landau Damping Test
+// Landau Damping Test that also has a parameterlist
+// Modifications are tagged with MOD START , MOD END
 //   Usage:
-//     srun ./LandauDamping
+//     srun ./LandauDampingParameterList
 //                  <nx> [<ny>...] <Np> <Nt> <stype>
 //                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT, CG and PCG supported)
+//     stype    = Field solver type (FFT, CG and PCG supported) , PCG needs extra arguments
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
@@ -15,9 +16,7 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 --overallocate 2.0 --info 10
-//     srun ./LandauDamping 128 128 128 10000 10 PCG [chebyshev , jacobi, newton] 0.01 --overallocate 2.0 --info 10
-//
+//     srun ./LandauDampingParameterList 128 128 128 10000 10 PCG [jacobi, chebyshev [degree], newton [level], gauss-seidel [inner outer]] 0.01 --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -202,18 +201,54 @@ int main(int argc, char* argv[]) {
         PLayout_t<double, Dim> PL(FL, mesh);
 
         std::string solver = argv[arg++];
-        std::string preconditioner= "";
+        // MOD: Setup of Preconditioner Start
+        int gauss_seidel_inner_iterations;
+        int gauss_seidel_outer_iterations;
+        int newton_level;
+        int chebyshev_degree;
+        int richardson_iterations;
+        std::string preconditioner_type = "";
+
         if (solver == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
         }
+
+        if (solver == "PCG"){
+            preconditioner_type = argv[arg++];
+            if (preconditioner_type == "newton"){
+                newton_level = std::atoi(argv[arg++]);
+            }
+            else if (preconditioner_type == "chebyshev"){
+                chebyshev_degree = std::atoi(argv[arg++]);
+            }
+            else if (preconditioner_type == "richardson"){
+                richardson_iterations = std::atoi(argv[arg++]);
+            }
+            else if (preconditioner_type == "gauss-seidel"){
+                gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
+                gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
+            }
+        }
+
+        ippl::ParameterList params;
+        params.add("preconditioner_type", preconditioner_type);
+        params.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
+        params.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
+        params.add("newton_level", newton_level);
+        params.add("chebyshev_degree", chebyshev_degree);
+        params.add("richardson_iterations",richardson_iterations);
+
+        std::cout << "Before make bunch" << std::endl;
         P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        std::cout << "After make bunch" << std::endl;
+        //MOD END
 
         P->nr_m = nr;
 
         P->initializeFields(mesh, FL);
 
-        P->initSolver();
+        P->initSolver(params);
         P->time_m                 = 0.0;
         P->loadbalancethreshold_m = std::atof(argv[arg++]);
 

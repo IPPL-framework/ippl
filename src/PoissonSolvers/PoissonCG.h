@@ -63,7 +63,12 @@ namespace ippl {
             if (solver_type == "preconditioned") {
                 algo_m = new PCG<OpRet, PreRet, FieldLHS, FieldRHS>();
                 std::string preconditioner_type = this->params_m.template get<std::string>("preconditioner_type");
-                algo_m->setPreconditioner(preconditioner_type);
+                int level = this->params_m.template get<int>("newton_level");
+                int degree = this->params_m.template get<int>("chebyshev_degree");
+                int inner = this->params_m.template get<int>("gauss_seidel_inner_iterations");
+                int outer = this->params_m.template get<int>("gauss_seidel_outer_iterations");
+                int richardson_iterations = this->params_m.template get<int>("richardson_iterations");
+                algo_m->setPreconditioner(preconditioner_type, level, degree, richardson_iterations, inner, outer);
 
             } else {
                 algo_m = new CG<OpRet, PreRet, FieldLHS, FieldRHS>();

@@ -202,11 +202,7 @@ int main(int argc, char* argv[]) {
         double Q           = -1562.5;
         double Bext        = 5.0;
         std::string solver = argv[arg++];
-        std::string preconditioner = "";
-        if (solver == "PCG"){
-            preconditioner = argv[arg++];
-        }
-        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver, preconditioner);
+        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
 
         P->nr_m = nr;
 

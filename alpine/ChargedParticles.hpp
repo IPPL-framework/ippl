@@ -235,13 +235,12 @@ public:
 
     ChargedParticles(PLayout& pl, Vector_t<double, Dim> hr, Vector_t<double, Dim> rmin,
                      Vector_t<double, Dim> rmax, ippl::e_dim_tag decomp[Dim], double Q,
-                     std::string solver , std::string preconditioner = "")
+                     std::string solver)
         : Base(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , stype_m(solver)
-        , ptype_m(preconditioner)
         , Q_m(Q) {
         registerAttributes();
         for (unsigned int i = 0; i < Dim; i++) {
@@ -437,12 +436,13 @@ public:
         }
     }
 
-    void initSolver() {
+    void initSolver(const ippl::ParameterList& sp = ippl::ParameterList()) {
+        std::cout << "inside initSolver" << std::endl;
         Inform m("solver ");
         if (stype_m == "FFT") {
             initFFTSolver();
         } else if (stype_m == "CG" || stype_m == "PCG") {
-            initCGSolver();
+            initCGSolver(sp);
         } else if (stype_m == "P3M") {
             initP3MSolver();
         } else if (stype_m == "OPEN") {
@@ -496,6 +496,8 @@ public:
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
+        std::cout << "inside initSolverWithParams" << std::endl;
+
         solver_m.template emplace<Solver>();
         Solver& solver = std::get<Solver>(solver_m);
 
@@ -515,19 +517,19 @@ public:
         }
     }
 
-    void initCGSolver() {
+    void initCGSolver(const ippl::ParameterList& sp_old) {
+        std::cout << "inside initCGSolver" << std::endl;
         ippl::ParameterList sp;
+        sp.merge(sp_old);
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
         std::string  solver_type = "";
-        std::string  preconditioner_type = "";
         if (stype_m == "PCG" ){
             solver_type = "preconditioned";
-            preconditioner_type = ptype_m;
+            ptype_m = sp.get<std::string>("preconditioner_type");
         }
         sp.add("solver" , solver_type);
-        sp.add("preconditioner_type" , preconditioner_type);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }

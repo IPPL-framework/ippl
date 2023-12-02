@@ -52,8 +52,7 @@ namespace ippl {
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        jacobi_preconditioner(double w = 1.0, bool analytical = false) : type_m("jacobi"),w_m(w),
-                                                                                        use_analytical_m(analytical) {}
+        jacobi_preconditioner(bool analytical = false) : type_m("jacobi"),w_m(1.0),use_analytical_m(analytical) {}
 
         Field operator()(Field &u) override {
             Field res = u.deepCopy();
@@ -91,8 +90,6 @@ namespace ippl {
                     beta += local_max;
                     alpha += local_min;
                 }
-                std::cout << "Analytical results: alpha : " << alpha << std::endl;
-                std::cout << "Analytical results: beta : " << beta << std::endl;
                 w_m = 2.0 / ((alpha + beta));
                 use_analytical_m = false; //Don't repeat the calculation of w_m
             }
@@ -171,8 +168,6 @@ namespace ippl {
                         beta_m += local_max;
                         alpha_m += local_min;
                     }
-                    std::cout << "Analytical results: alpha : " << alpha_m << std::endl;
-                    std::cout << "Analytical results: beta : " << beta_m << std::endl;
                 } else {
                     Field x_0(mesh, layout);
                     x_0 = u.deepCopy() + 0.1;
@@ -299,8 +294,6 @@ namespace ippl {
                         beta_m += local_max;
                         alpha_m += local_min;
                     }
-                    std::cout << "Analytical results: alpha : " << alpha_m << std::endl;
-                    std::cout << "Analytical results: beta : " << beta_m << std::endl;
                 } else {
                     Field x_0(mesh, layout);
                     x_0 = r.deepCopy() + 0.1;
@@ -374,7 +367,6 @@ namespace ippl {
             Field g = r.deepCopy();
             g = 0;
             Field ULg = r.deepCopy();
-            Field error_field = r.deepCopy();
             for (unsigned int j = 0; j < innerloops_m; ++j) {
                 ULg = upper_and_lower_laplace(g);
                 g = r+ULg;
@@ -387,7 +379,7 @@ namespace ippl {
     protected:
         std::string type_m;
         unsigned innerloops_m;
-        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
+        jacobi_preconditioner<Field> Dinv_m = jacobi_preconditioner<Field>(true);
     };
 
     /*!
@@ -399,12 +391,14 @@ namespace ippl {
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        gs_preconditioner(unsigned innerloops = 5,unsigned outerloops=1) :
+        gs_preconditioner(unsigned innerloops,unsigned outerloops) :
                 type_m("Gauss-Seidel"),
                 innerloops_m(innerloops),
                 outerloops_m(outerloops),
                 Dinv_m(jacobi_preconditioner<Field>()) {}
 
+        // TODO: In case that this algo. is used change g to x since it is dummy variable
+        // TODO: Remove convergence table to get optimal runtime
         Field operator()(Field &b) override {
             Field x = b.deepCopy();
             Field r = b.deepCopy();
@@ -412,28 +406,41 @@ namespace ippl {
             Field g  = b.deepCopy();
             Field L = b.deepCopy();
             Field U = b.deepCopy();
+            //Field D = b.deepCopy();
+            //Field error_field = b.deepCopy();
             x = 0;//Initial guess
-
+            /*
             double sum = 0.0;
             mesh_type mesh = b.get_mesh();
             for (unsigned d = 0; d < Dim; ++d) {
                 sum += 2.0/std::pow(mesh.getMeshSpacing(d), 2);
             }
+            */
             for (unsigned int k=0; k<outerloops_m;++k) {
                 U = -upper_laplace(x);
                 r = b - U;
+                g = x.deepCopy();
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    L = -lower_laplace(x);
+                    L = -lower_laplace(g);
                     r_inner = r - L;
-                    x = Dinv_m(r_inner);
+                    g = Dinv_m(r_inner);
                 }
+                x = g.deepCopy();
                 L = -lower_laplace(x);
                 r = b - L;
+                g = x.deepCopy();
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    U = -upper_laplace(x);
+                    U = -upper_laplace(g);
                     r_inner = r - U;
-                    x = Dinv_m(r_inner);
+                    g = Dinv_m(r_inner);
                 }
+                x = g.deepCopy();
+                /*
+                D = -laplace(x);
+                error_field = b-D;
+                double error = norm(error_field);
+                std::cout << "Iteration: " << k << " Error : " << error << std::endl;
+                */
             }
             return x;
         }
@@ -443,7 +450,7 @@ namespace ippl {
         std::string type_m;
         unsigned innerloops_m;
         unsigned outerloops_m;
-        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
+        jacobi_preconditioner<Field> Dinv_m; //We want the inverse diagonal
     };
 
     /*!
@@ -461,10 +468,6 @@ namespace ippl {
                 outerloops_m(outerloops),
                 Dinv_m(jacobi_preconditioner<Field>()) {}
 
-        restric(Field &u){
-            mesh_type u.get_mesh();
-
-        }
         Field operator()(Field &b) override {
             Field x = b.deepCopy();
             Field r = b.deepCopy();
@@ -535,8 +538,6 @@ namespace ippl {
         }
         if (i == max_iter) {
             std::cerr << "Powermethod did not converge, lambda_max : " << lambda << ", error : " << error << std::endl;
-        } else {
-            std::cout << "Powermethod did converge, lambda_max : " << lambda << std::endl;
         }
         return lambda;
     }
@@ -574,8 +575,6 @@ namespace ippl {
         lambda = lambda + lambda_max;
         if (i == max_iter) {
             std::cerr << "Powermethod did not converge, lambda_min : " << lambda << ", error : " << error << std::endl;
-        } else {
-            std::cout << "Powermethod did converge, lambda_min : " << lambda << std::endl;
         }
         return lambda;
     }

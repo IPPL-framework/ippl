@@ -27,7 +27,13 @@ namespace ippl {
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
         virtual void setOperator(operator_type op) {op_m = std::move(op); }
-        virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="", [[maybe_unused]] unsigned level = 3, [[maybe_unused]] unsigned depth = 7) {}
+        virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="",
+                                       [[maybe_unused]] int level = 0, // Dummy default parameters true default parameters need to be set in main
+                                       [[maybe_unused]] int degree = 0, // Dummy default parameters true default parameters need to be set in main
+                                       [[maybe_unused]] int richardson_iterations = 0, // Dummy default parameters true default parameters need to be set in main
+                                       [[maybe_unused]] int inner = 0, // Dummy default parameters true default parameters need to be set in main
+                                       [[maybe_unused]] int outer = 0 // Dummy default parameters true default parameters need to be set in main
+                                        ) {}
                 /*!
                  * Query how many iterations were required to obtain the solution
                  * the last time this solver was used
@@ -88,13 +94,13 @@ namespace ippl {
                 lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
-                r = rhs - op_m(lhs);
+                // r = rhs - op_m(lhs);
                 // This correction is generally not used in practice because
                 // applying the Laplacian is computationally expensive and
                 // the correction does not have a significant effect on accuracy;
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
-                //r = r - alpha * q;
+                r = r - alpha * q;
                 delta0 = delta1;
                 delta1   = innerProduct(r,r);
                 T beta   = delta1 / delta0;
@@ -148,21 +154,27 @@ namespace ippl {
         * @param op A function that returns OpRet and takes a field of the LHS type
         */
         void setOperator(operator_type op) override { BaseCG::op_m = std::move(op); }
-        virtual void setPreconditioner(std::string preconditioner_type="" , unsigned level = 4, unsigned degree = 15) override{
+        virtual void setPreconditioner(std::string preconditioner_type="",
+                                       int level = 0, // Dummy default parameters true default parameters need to be set in main
+                                       int degree = 0,  // Dummy default parameters true default parameters need to be set in main
+                                       int richardson_iterations = 0, // Dummy default parameters true default parameters need to be set in main
+                                       int inner = 0, // Dummy default parameters true default parameters need to be set in main
+                                       int outer = 0  // Dummy default parameters true default parameters need to be set in main
+                                               ) override{
                     if (preconditioner_type == "jacobi"){
                         preconditioner_m = new jacobi_preconditioner<FieldLHS>();
                     }
                     else if (preconditioner_type == "newton"){
-                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 1);
+                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 1e-3);
                     }
                     else if (preconditioner_type == "chebyshev"){
-                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 1);
+                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 1e-3);
                     }
                     else if (preconditioner_type == "richardson"){
-                        preconditioner_m = new richardson_preconditioner<FieldLHS>();
+                        preconditioner_m = new richardson_preconditioner<FieldLHS>(richardson_iterations);
                     }
                     else if (preconditioner_type == "gauss-seidel"){
-                        preconditioner_m = new gs_preconditioner<FieldLHS>();
+                        preconditioner_m = new gs_preconditioner<FieldLHS>(inner , outer);
                     }
                     else{
                         preconditioner_m = new preconditioner<FieldLHS>();
@@ -256,7 +268,8 @@ namespace ippl {
         preconditioner<FieldLHS>* preconditioner_m;
     };
 
-    /* Prototype of new PCG algorithm https://www.researchgate.net/publication/361849071
+    /* COMPLETELY OUTDATED NEEDS TO BE REWRITTEN FROM SCRATCH
+     * Prototype of new PCG algorithm https://www.researchgate.net/publication/361849071
     template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class EnhancedPCG : public PCG<OpRet, PreRet, FieldLHS, FieldRHS> {
         using BaseCG = CG<OpRet , PreRet, FieldLHS, FieldRHS>;
