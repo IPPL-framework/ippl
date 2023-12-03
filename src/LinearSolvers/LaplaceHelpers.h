@@ -43,7 +43,7 @@ namespace ippl {
         template<typename E>
         struct meta_lower_laplace
                 : public Expression<meta_lower_laplace<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type) + 2*sizeof(typename E::Layout_t::NDIndex_t) + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
@@ -97,7 +97,7 @@ namespace ippl {
         template<typename E>
         struct meta_upper_laplace
                 : public Expression<meta_upper_laplace<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type) + 2*sizeof(typename E::Layout_t::NDIndex_t) + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
@@ -151,7 +151,7 @@ namespace ippl {
         template<typename E>
         struct meta_upper_and_lower_laplace
                 : public Expression<meta_upper_and_lower_laplace<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type) + 2*sizeof(typename E::Layout_t::NDIndex_t) + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
