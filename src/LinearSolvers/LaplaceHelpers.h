@@ -47,8 +47,13 @@ namespace ippl {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_lower_laplace(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
+            meta_lower_laplace(const E &u,
+                               const typename E::Mesh_t::vector_type &hvector,
+                               unsigned nghosts,
+                               const typename E::Layout_t::NDIndex_t &ldom,
+                               const typename E::Layout_t::NDIndex_t &domain
+            )
+            : u_m(u), hvector_m(hvector), nghosts_m(nghosts) , ldom_m(ldom) , domain_m(domain) {}
 
             /*
              * n-dimensional lower triangular Laplacian
@@ -58,15 +63,11 @@ namespace ippl {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
                 using T = typename E::Mesh_t::value_type;
                 T res = 0;
-                const unsigned nghosts = u_m.getNghost();
-                const auto &layout = u_m.getLayout();
-                const auto &ldom = layout.getLocalNDIndex();
-                const auto &domain = layout.getDomain();
 
                 for (unsigned d = 0; d < dim; d++) {
                     index_type coords[dim] = {args...};
-                    const int global_index = coords[d] + ldom[d].first() - nghosts;
-                    const int size = domain.length()[d];
+                    const int global_index = coords[d] + ldom_m[d].first() - nghosts_m;
+                    const int size = domain_m.length()[d];
                     const bool not_left_boundary = (global_index != 0);
                     const bool right_boundary = (global_index == size - 1);
 
@@ -83,43 +84,14 @@ namespace ippl {
 
         private:
             using Mesh_t = typename E::Mesh_t;
+            using Layout_t = typename E::Layout_t;
             using vector_type = typename Mesh_t::vector_type;
+            using domain_type = typename Layout_t::NDIndex_t;
             const E u_m;
             const vector_type hvector_m;
-        };
-
-        template<typename E>
-        struct meta_lower_laplace_alt
-                : public Expression<meta_lower_laplace_alt<E>,
-                        sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
-            constexpr static unsigned dim = E::dim;
-
-            KOKKOS_FUNCTION
-            meta_lower_laplace_alt(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
-
-            /*
-             * n-dimensional lower triangular Laplacian
-             */
-            template<typename... Idx>
-            KOKKOS_INLINE_FUNCTION auto operator()(const Idx... args) const {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
-                using T = typename E::Mesh_t::value_type;
-                T res = 0;
-                for (unsigned d = 0; d < dim; d++) {
-                    index_type coords[dim] = {args...};
-                    coords[d] -= 1;
-                    auto &&left = apply(u_m, coords);
-                    res += hvector_m[d] * left;
-                }
-                return res;
-            }
-
-        private:
-            using Mesh_t = typename E::Mesh_t;
-            using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
-            const vector_type hvector_m;
+            const unsigned nghosts_m;
+            const domain_type ldom_m;
+            const domain_type domain_m;
         };
 
         template<typename E>
@@ -129,8 +101,13 @@ namespace ippl {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_upper_laplace(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
+            meta_upper_laplace(const E &u,
+                               const typename E::Mesh_t::vector_type &hvector,
+                               unsigned nghosts,
+                               const typename E::Layout_t::NDIndex_t &ldom,
+                               const typename E::Layout_t::NDIndex_t &domain
+                               )
+                    : u_m(u), hvector_m(hvector), nghosts_m(nghosts) , ldom_m(ldom) , domain_m(domain) {}
 
             /*
              * n-dimensional upper triangular Laplacian
@@ -140,15 +117,11 @@ namespace ippl {
                 using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
                 using T = typename E::Mesh_t::value_type;
                 T res = 0;
-                const unsigned nghosts = u_m.getNghost();
-                const auto &layout = u_m.getLayout();
-                const auto &ldom = layout.getLocalNDIndex();
-                const auto &domain = layout.getDomain();
 
                 for (unsigned d = 0; d < dim; d++) {
                     index_type coords[dim] = {args...};
-                    const int global_index = coords[d] + ldom[d].first() - nghosts;
-                    const int size = domain.length()[d];
+                    const int global_index = coords[d] + ldom_m[d].first() - nghosts_m;
+                    const int size = domain_m.length()[d];
                     const bool left_boundary = (global_index == 0);
                     const bool not_right_boundary = (global_index != size - 1);
 
@@ -165,9 +138,14 @@ namespace ippl {
 
         private:
             using Mesh_t = typename E::Mesh_t;
+            using Layout_t = typename E::Layout_t;
             using vector_type = typename Mesh_t::vector_type;
+            using domain_type = typename Layout_t::NDIndex_t;
             const E u_m;
             const vector_type hvector_m;
+            const unsigned nghosts_m;
+            const domain_type ldom_m;
+            const domain_type domain_m;
         };
 
         template<typename E>
@@ -177,8 +155,13 @@ namespace ippl {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_upper_and_lower_laplace(const E &u, const typename E::Mesh_t::vector_type &hvector)
-                    : u_m(u), hvector_m(hvector) {}
+            meta_upper_and_lower_laplace(const E &u,
+                               const typename E::Mesh_t::vector_type &hvector,
+                               unsigned nghosts,
+                               const typename E::Layout_t::NDIndex_t &ldom,
+                               const typename E::Layout_t::NDIndex_t &domain
+            )
+                    : u_m(u), hvector_m(hvector), nghosts_m(nghosts) , ldom_m(ldom) , domain_m(domain) {}
 
             /*
              * n-dimensional upper+lower triangular Laplacian
@@ -201,9 +184,14 @@ namespace ippl {
 
         private:
             using Mesh_t = typename E::Mesh_t;
+            using Layout_t = typename E::Layout_t;
             using vector_type = typename Mesh_t::vector_type;
+            using domain_type = typename Layout_t::NDIndex_t;
             const E u_m;
             const vector_type hvector_m;
+            const unsigned nghosts_m;
+            const domain_type ldom_m;
+            const domain_type domain_m;
         };
     }// namespace detail
 
@@ -242,24 +230,11 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
         }
-        return detail::meta_lower_laplace<Field>(u, hvector);
-    }
-
-    template<typename Field>
-    detail::meta_lower_laplace_alt<Field> lower_laplace_alt(Field &u) {
-        constexpr unsigned Dim = Field::dim;
-
-        u.fillHalo();
-        BConds <Field, Dim> &bcField = u.getFieldBC();
-        bcField.apply(u);
-
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type &mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        return detail::meta_lower_laplace_alt<Field>(u, hvector);
+        const auto &layout = u.getLayout();
+        unsigned nghosts = u.getNghost();
+        const auto &ldom = layout.getLocalNDIndex();
+        const auto &domain = layout.getDomain();
+        return detail::meta_lower_laplace<Field>(u, hvector, nghosts , ldom, domain);
     }
 
 /*!
@@ -280,7 +255,11 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
         }
-        return detail::meta_upper_laplace<Field>(u, hvector);
+        const auto &layout = u.getLayout();
+        unsigned nghosts = u.getNghost();
+        const auto &ldom = layout.getLocalNDIndex();
+        const auto &domain = layout.getDomain();
+        return detail::meta_upper_laplace<Field>(u, hvector, nghosts , ldom, domain);
     }
     /*!
  * User interface of upper+lower triangular Laplacian
@@ -300,7 +279,11 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
         }
-        return detail::meta_upper_and_lower_laplace<Field>(u, hvector);
+        const auto &layout = u.getLayout();
+        unsigned nghosts = u.getNghost();
+        const auto &ldom = layout.getLocalNDIndex();
+        const auto &domain = layout.getDomain();
+        return detail::meta_upper_and_lower_laplace<Field>(u, hvector, nghosts , ldom, domain);
     }
 }
 #endif // IPPL_LAPLACE_HELPERS_H
