@@ -155,7 +155,6 @@ int main(int argc, char* argv[]) {
           << endl;
 
         IpplTimings::stopTimer(allTimer);
-        IpplTimings::print();
         IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }
     ippl::finalize();

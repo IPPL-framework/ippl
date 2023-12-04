@@ -108,7 +108,7 @@ namespace ippl {
             const std::function<
                 T(const index_t&, const index_t&,
                   const Vector<Vector<T, Dim>,
-                               LagrangeSpace<T, Dim, Order, QuadratureType>::NumGlobalDOFs>&)>&
+                               LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>&)>&
                 evalFunction) const override;
 
         Kokkos::View<T*> evaluateLoadVector() const override;

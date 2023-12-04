@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
+        using OpRet = lhs_type;
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
@@ -36,7 +36,7 @@ namespace ippl {
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
         // FEMPoissonSolver()
-        //     : Base(), ref_element_m(), quadrature_m() {
+        //     : Base(), refElement_m(), quadrature_m() {
         //     static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
         //     setDefaultParameters();
         // }
@@ -44,7 +44,7 @@ namespace ippl {
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
-            , quadrature_m()
+            , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
@@ -56,30 +56,34 @@ namespace ippl {
          */
         void solve() override {
             const std::size_t Dim            = 3;
-            const std::size_t NumElementDOFs = 8;
+            const std::size_t NumElementDOFs = 8;  // TODO implement higher order elements.
 
             const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
 
             // Inverse Transpose Transformation Jacobian
             const Vector<Tlhs, Dim> DPhiInvT =
-                this->ref_element_m.getInverseTransposeTransformationJacobian(
-                    this->getElementMeshVertexIndices(zeroNdIndex));
+                refElement_m.getInverseTransposeTransformationJacobian(
+                    lagrangeSpace_m.getElementMeshVertexIndices(zeroNdIndex));
 
             // Absolute value of det Phi_K
-            const Tlhs absDetDPhi =
-                std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-                    this->getElementMeshVertexIndices(zeroNdIndex)));
+            const Tlhs absDetDPhi = std::abs(refElement_m.getDeterminantOfTransformationJacobian(
+                lagrangeSpace_m.getElementMeshVertexIndices(zeroNdIndex)));
 
-            const Tlhs eval = [DPhiInvT, absDetDPhi](
-                                  const std::size_t& i, const std::size_t& j,
-                                  const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
-                return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
-                       * absDetDPhi;
+            const auto poissonEquationEval =
+                [DPhiInvT, absDetDPhi](
+                    const std::size_t& i, const std::size_t& j,
+                    const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
+                    return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
+                           * absDetDPhi;
+                };
+
+            const auto algoOperator = [poissonEquationEval, this](lhs_type field) {
+                lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+
+                return field;
             };
 
-            algo_m.setOperator([this, eval](lhs_type field) {
-                return lagrangeSpace_m.evaluateAx(field.getView(), eval);
-            });
+            algo_m.setOperator(algoOperator);
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
