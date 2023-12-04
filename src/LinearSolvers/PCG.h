@@ -227,8 +227,8 @@ namespace ippl {
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            BaseCG::residueNorm       = std::sqrt(innerProduct(r,r));
-            const T tolerance = params.get<T>("tolerance") * norm(rhs);
+            BaseCG::residueNorm       = std::sqrt(std::abs(delta1));
+            const T tolerance = params.get<T>("tolerance") * delta1;
 
             while (BaseCG::iterations_m < maxIterations && BaseCG::residueNorm > tolerance) {
             q       = BaseCG::op_m(d);
@@ -249,7 +249,7 @@ namespace ippl {
             delta1   = innerProduct(r, s);
 
             T beta   = delta1 / delta0;
-            BaseCG::residueNorm = std::sqrt(innerProduct(r,r));
+            BaseCG::residueNorm = std::sqrt(std::abs(delta1));
 
             d = s + beta * d;
 
