@@ -218,6 +218,8 @@ namespace ippl {
         assert(localDOF < this->numElementDOFs
                && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
 
+        std::cout << "hi 2\n";
+
         assert(this->ref_element_m.isPointInRefElement(localPoint)
                && "Point is not in reference element");
 
@@ -252,6 +254,8 @@ namespace ippl {
 
         // Assert that the local vertex index is valid.
         assert(localDOF < this->numElementDOFs && "The local vertex index is invalid");
+
+        std::cout << "hi 1\n";
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
                && "Point is not in reference element");
@@ -358,6 +362,7 @@ namespace ippl {
             grad_b_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
+                std::cout << "q[k] = " << q[k] << std::endl;
                 grad_b_q[k][i] = this->evaluateRefElementBasisGradient(i, q[k]);
             }
         }
@@ -435,6 +440,7 @@ namespace ippl {
         Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
+                std::cout << "q[k] = " << q[k] << std::endl;
                 basis_q[k][i] = this->evaluateRefElementBasis(i, q[k]);
             }
         }

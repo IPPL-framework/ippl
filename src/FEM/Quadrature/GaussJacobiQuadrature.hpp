@@ -132,8 +132,8 @@ namespace ippl {
                 throw std::runtime_error("Unknown initial guess type");
             }
 
-            std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << " with "
-                      << initial_guess_type << std::endl;
+            // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << " with "
+            //           << initial_guess_type << std::endl;
 
             std::size_t its = 1;
             do {
@@ -172,15 +172,14 @@ namespace ippl {
             } while (its <= this->max_newton_iterations_m);
 
             if (its > this->max_newton_iterations_m) {
-                //  inform "too many iterations."
                 //  TODO switch to inform
                 std::cout << "Root " << NumNodes1D - i - 1
                           << " didn't converge. Tolerance may be too high for data type"
                           << std::endl;
             }
 
-            std::cout << "i = " << i << ", result after " << its << " iterations: " << z
-                      << std::endl;
+            // std::cout << "i = " << i << ", result after " << its << " iterations: " << z
+            //           << std::endl;
 
             integration_nodes[i] = z;
 
