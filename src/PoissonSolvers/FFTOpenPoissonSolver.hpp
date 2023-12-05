@@ -1222,7 +1222,7 @@ namespace ippl {
             // compute length of the physical domain
             // compute Fourier domain spacing
             for (unsigned int i = 0; i < Dim; ++i) {
-                hs_m[i] = pi * 0.5 / l[i];
+                hs_m[i] = Kokkos::numbers::pi_v<Trhs> * 0.5 / l[i];
                 L_sum   = L_sum + l[i] * l[i];
             }
 
@@ -1233,7 +1233,7 @@ namespace ippl {
             mesh2n1_m->setMeshSpacing(hs_m);
 
             // size of truncation window
-            L_sum = std::sqrt(L_sum);
+            L_sum = Kokkos::sqrt(L_sum);
             L_sum = 1.1 * L_sum;
 
             // initialize grn2n1_m
