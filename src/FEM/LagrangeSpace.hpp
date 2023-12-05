@@ -1,13 +1,15 @@
 
 namespace ippl {
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::LagrangeSpace(
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
         const Mesh<T, Dim>& mesh,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::ElementType& ref_element,
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::ElementType&
+            ref_element,
         const QuadratureType& quadrature)
-        : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), QuadratureType>(
-            mesh, ref_element, quadrature) {
+        : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), QuadratureType,
+                             FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
         static_assert(Dim >= 1 && Dim <= 3,
                       "Finite Element space only supports 1D, 2D and 3D meshes");
@@ -17,22 +19,26 @@ namespace ippl {
     /// Degree of Freedom operations //////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    std::size_t LagrangeSpace<T, Dim, Order, QuadratureType>::numGlobalDOFs() const {
-        const Vector<index_t, Dim> meshSize = this->mesh_m.getGridsize();
-        std::size_t num_global_dofs         = 1;
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    std::size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numGlobalDOFs(
+        const unsigned& nghosts) const {
+        std::size_t num_global_dofs = 1;
         for (std::size_t d = 0; d < Dim; ++d) {
-            num_global_dofs *= meshSize[d] * Order;
+            num_global_dofs *= (this->mesh_m.getGridsize(d) + 2 * nghosts) * Order;
         }
 
         return num_global_dofs;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& globalDOFIndex) const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            elementIndex,
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            globalDOFIndex) const {
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -64,20 +70,24 @@ namespace ippl {
         throw std::runtime_error("FEM Lagrange Space: Global DOF not found in specified element");
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::index_t
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getGlobalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& localDOFIndex) const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndex(
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            elementIndex,
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            localDOFIndex) const {
         const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType>::index_t,
-           LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getLocalDOFIndices() const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t,
+           LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndices() const {
         Vector<index_t, numElementDOFs> localDOFs;
 
         for (index_t dof = 0; dof < numElementDOFs; ++dof) {
@@ -87,11 +97,13 @@ namespace ippl {
         return localDOFs;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType>::index_t,
-           LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::getGlobalDOFIndices(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& elementIndex) const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t,
+           LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndices(
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            elementIndex) const {
         Vector<index_t, this->numElementDOFs> globalDOFs(0);
 
         // get element pos
@@ -169,14 +181,38 @@ namespace ippl {
         return globalDOFs;
     }
 
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    Vector<typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::ndindex_t,
+           LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFNDIndices(
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+            elementIndex) const {
+        static_assert(Order == 1 && "Only order 1 is supported at the moment");
+
+        Vector<ndindex_t, numElementDOFs> ndindices;
+
+        // 1. get all the global DOFs for the element
+        Vector<index_t, numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+
+        // 2. convert the global DOFs to ndindices
+        for (index_t i = 0; i < numElementDOFs; ++i) {
+            ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);  // TODO fix for higher order
+        }
+
+        return ndindices;
+    }
+
     ///////////////////////////////////////////////////////////////////////
     /// Basis functions and gradients /////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    T LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateRefElementBasis(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& localDOF,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::point_t& localPoint) const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    T LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateRefElementBasis(
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t& localDOF,
+        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::point_t& localPoint)
+        const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < this->numElementDOFs
@@ -203,11 +239,14 @@ namespace ippl {
         return product;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    LagrangeSpace<T, Dim, Order, QuadratureType>::gradient_vec_t
-    LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateRefElementBasisGradient(
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::index_t& localDOF,
-        const LagrangeSpace<T, Dim, Order, QuadratureType>::point_t& localPoint) const {
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::gradient_vec_t
+    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::
+        evaluateRefElementBasisGradient(const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
+                                                            FieldRHS>::index_t& localDOF,
+                                        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
+                                                            FieldRHS>::point_t& localPoint) const {
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1 && "Only order 1 is supported at the moment");
 
@@ -255,8 +294,9 @@ namespace ippl {
         return gradient;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    NDIndex<Dim> LagrangeSpace<T, Dim, Order, QuadratureType>::makeNDIndex(
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    NDIndex<Dim> LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::makeNDIndex(
         const Vector<T, Dim>& indices) {
         // Not sure if this is the best way, but the getVertexPosition function expects an
         // NDIndex, with the vertex index used being the first in the NDIndex. No other index is
@@ -272,15 +312,23 @@ namespace ippl {
     /// Assembly operations ///////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    Kokkos::View<T*> LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateAx(
-        Kokkos::View<const T*> x,
-        const std::function<
-            T(const index_t&, const index_t&,
-              const Vector<Vector<T, Dim>,
-                           LagrangeSpace<T, Dim, Order, QuadratureType>::numElementDOFs>&)>&
-            evalFunction) const {
-        Kokkos::View<T*> resultAx("resultAx", this->numGlobalDOFs());
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    FieldLHS LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateAx(
+        const FieldLHS& field,
+        const std::function<T(
+            const index_t&, const index_t&,
+            const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
+                                                       FieldRHS>::numElementDOFs>&)>& evalFunction)
+        const {
+        // TODO take ghost cells into account!
+        const std::size_t num_global_dofs_with_ghosts = this->numGlobalDOFs(field.getNghost());
+        assert(field.getView().size() == num_global_dofs_with_ghosts
+               && "Field size does not match");
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout());
 
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
@@ -343,20 +391,27 @@ namespace ippl {
             // 2. Compute the contribution to resultAx = A*x with A_K
             for (i = 0; i < this->numElementDOFs; ++i) {
                 I = global_dofs[i];
+                const ndindex_t& dof_ndindex_I =
+                    this->getMeshVertexNDIndex(I);  // TODO fix for higher order
+
                 for (j = 0; j < this->numElementDOFs; ++j) {
                     J = global_dofs[j];
-                    resultAx(I) += A_K[i][j] * x(J);
+                    const ndindex_t& dof_ndindex_J =
+                        this->getMeshVertexNDIndex(J);  // TODO fix for higher order
+
+                    getFieldEntry(resultField, dof_ndindex_I) +=
+                        A_K[i][j] * getFieldEntry(field, dof_ndindex_J);
                 }
             }
         }
 
-        return resultAx;
+        return resultField;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType>
-    Kokkos::View<T*> LagrangeSpace<T, Dim, Order, QuadratureType>::evaluateLoadVector() const {
-        Kokkos::View<T*> b("b", this->numGlobalDOFs());
-
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateLoadVector(
+        FieldRHS& field, const std::function<T(const point_t&)>& f) const {
         const std::size_t numElements = this->numElements();
 
         index_t k, i, I;
@@ -393,10 +448,6 @@ namespace ippl {
         const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexIndices(zeroNdIndex)));
 
-        // TODO move outside of LagrangeSpace class and make compatible with kokkos
-        const auto f = [](const point_t& x) {
-            return x[0];  // TODO change
-        };                // TODO fix
         const auto eval = [absDetDPhi, f](const index_t& i, const point_t& q_k,
                                           const Vector<T, this->numElementDOFs>& basis_q_k) {
             return f(q_k) * basis_q_k[i] * absDetDPhi;
@@ -417,11 +468,12 @@ namespace ippl {
             // 2. Compute the contribution to b
             for (i = 0; i < this->numElementDOFs; ++i) {
                 I = global_dofs[i];
-                b(I) += b_K[i];
+                const auto& dof_ndindex_I =
+                    this->getMeshVertexNDIndex(I);  // TODO fix for higher order
+
+                getFieldEntry(field, dof_ndindex_I) += b_K[i];
             }
         }
-
-        return b;
     }
 
 }  // namespace ippl

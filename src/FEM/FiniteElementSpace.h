@@ -27,7 +27,8 @@ namespace ippl {
     // template <typename T>
     //  concept IsQuadrature = std::is_base_of<Quadrature, T>::value;
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
+              typename FieldLHS, typename FieldRHS>
     // requires IsElement<QuadratureType>
     class FiniteElementSpace {
     public:
@@ -90,7 +91,7 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual std::size_t numGlobalDOFs() const = 0;
+        virtual std::size_t numGlobalDOFs(const unsigned& nghosts = 0) const = 0;
 
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
@@ -103,6 +104,9 @@ namespace ippl {
         virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const = 0;
 
         virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
+            const index_t& elementIndex) const = 0;
+
+        virtual Vector<ndindex_t, NumElementDOFs> getGlobalDOFNDIndices(
             const index_t& elementIndex) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
@@ -119,13 +123,14 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual Kokkos::View<T*> evaluateAx(
-            const Kokkos::View<const T*> x,
+        virtual FieldLHS evaluateAx(
+            const FieldLHS& field,
             const std::function<T(const index_t&, const index_t&,
                                   const Vector<Vector<T, Dim>, NumElementDOFs>&)>& evalFunction)
             const = 0;
 
-        virtual Kokkos::View<T*> evaluateLoadVector() const = 0;
+        virtual void evaluateLoadVector(FieldRHS& rhs_field,
+                                        const std::function<T(const point_t&)>& f) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Member variables //////////////////////////////////////////////////

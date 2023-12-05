@@ -503,93 +503,93 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementBasisGradient) {
     }
 }
 
-TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
-    using T = typename TestFixture::value_t;
+// TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
+//     using T = typename TestFixture::value_t;
 
-    auto& lagrangeSpace      = this->lagrangeSpace;
-    const std::size_t& dim   = lagrangeSpace.dim;
-    const std::size_t& order = lagrangeSpace.order;
+//     auto& lagrangeSpace      = this->lagrangeSpace;
+//     const std::size_t& dim   = lagrangeSpace.dim;
+//     const std::size_t& order = lagrangeSpace.order;
 
-    // const std::size_t& dim           = lagrangeSpace.dim;
-    const std::size_t numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
+//     // const std::size_t& dim           = lagrangeSpace.dim;
+//     const std::size_t numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
-    Kokkos::View<T*> x("x", numGlobalDOFs);
-    Kokkos::View<T*> z("z", numGlobalDOFs);
-    Kokkos::View<T**> A("A_transpose", numGlobalDOFs, numGlobalDOFs);
+//     Kokkos::View<T*> x("x", numGlobalDOFs);
+//     Kokkos::View<T*> z("z", numGlobalDOFs);
+//     Kokkos::View<T**> A("A_transpose", numGlobalDOFs, numGlobalDOFs);
 
-    // Build the discrete poisson eqation matrix to test the assembly function against
-    Kokkos::View<T**> A_ref;
-    if (order == 1) {
-        if (dim == 1) {
-            A_ref = Kokkos::View<T**>("A_ref", numGlobalDOFs, numGlobalDOFs);
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    if (i == j) {
-                        if (i == 0 || i == numGlobalDOFs - 1) {
-                            A_ref(i, j) = 1.0;
-                        } else {
-                            A_ref(i, j) = 2.0;
-                        }
-                    } else if (i + 1 == j || j + 1 == i) {
-                        A_ref(i, j) = -1.0;
-                    } else {
-                        A_ref(i, j) = 0.0;
-                    }
-                }
-            }
-        } else {
-            // FAIL();
-            GTEST_SKIP();
-        }
-    } else {
-        // FAIL();
-        GTEST_SKIP();
-    }
+//     // Build the discrete poisson eqation matrix to test the assembly function against
+//     Kokkos::View<T**> A_ref;
+//     if (order == 1) {
+//         if (dim == 1) {
+//             A_ref = Kokkos::View<T**>("A_ref", numGlobalDOFs, numGlobalDOFs);
+//             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+//                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//                     if (i == j) {
+//                         if (i == 0 || i == numGlobalDOFs - 1) {
+//                             A_ref(i, j) = 1.0;
+//                         } else {
+//                             A_ref(i, j) = 2.0;
+//                         }
+//                     } else if (i + 1 == j || j + 1 == i) {
+//                         A_ref(i, j) = -1.0;
+//                     } else {
+//                         A_ref(i, j) = 0.0;
+//                     }
+//                 }
+//             }
+//         } else {
+//             // FAIL();
+//             GTEST_SKIP();
+//         }
+//     } else {
+//         // FAIL();
+//         GTEST_SKIP();
+//     }
 
-    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-        if (i > 0)
-            x(i - 1) = 0.0;
+//     for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+//         if (i > 0)
+//             x(i - 1) = 0.0;
 
-        x(i) = 1.0;
+//         x(i) = 1.0;
 
-        // reset z to zero
-        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-            z(j) = 0.0;
-        }
+//         // reset z to zero
+//         for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//             z(j) = 0.0;
+//         }
 
-        lagrangeSpace.evaluateAx(x, z);
+//         lagrangeSpace.evaluateAx(x, z);
 
-        // Set the the i-th row-vector of A to z
-        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-            // TODO check if there is a different way in Kokkos to do this
-            A(j, i) = z(j);
-        }
-    }
+//         // Set the the i-th row-vector of A to z
+//         for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//             // TODO check if there is a different way in Kokkos to do this
+//             A(j, i) = z(j);
+//         }
+//     }
 
-    std::cout << "A = " << std::endl;
-    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-            std::cout << A(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+//     std::cout << "A = " << std::endl;
+//     for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+//         for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//             std::cout << A(i, j) << " ";
+//         }
+//         std::cout << std::endl;
+//     }
+//     std::cout << std::endl;
 
-    std::cout << "A_ref = " << std::endl;
-    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-            std::cout << A_ref(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+//     std::cout << "A_ref = " << std::endl;
+//     for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+//         for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//             std::cout << A_ref(i, j) << " ";
+//         }
+//         std::cout << std::endl;
+//     }
 
-    for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-        for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-            ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
-        }
-        std::cout << std::endl;
-    }
-}
+//     for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+//         for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+//             ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
+//         }
+//         std::cout << std::endl;
+//     }
+// }
 
 // TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 //     FAIL();

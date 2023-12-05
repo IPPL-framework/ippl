@@ -115,7 +115,7 @@ namespace ippl {
 
         ElementType refElement_m;
         QuadratureType quadrature_m;
-        LagrangeSpace<Tlhs, 3, 1, QuadratureType> lagrangeSpace_m;
+        LagrangeSpace<Tlhs, 3, 1, QuadratureType, FieldLHS, FieldRHS> lagrangeSpace_m;
     };
 
 }  // namespace ippl
