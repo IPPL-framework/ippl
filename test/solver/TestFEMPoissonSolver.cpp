@@ -7,8 +7,8 @@
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        constexpr unsigned dim = 3;  // 3D problem
-        using Mesh_t           = ippl::UniformCartesian<double, 3>;
+        constexpr unsigned dim = 2;  // 3D problem
+        using Mesh_t           = ippl::UniformCartesian<double, dim>;
         using Centering_t      = Mesh_t::DefaultCentering;
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
         // Define domain
         ippl::Index I(pt), Iy(ptY);
-        ippl::NDIndex<dim> owned(I, Iy, I);
+        ippl::NDIndex<dim> owned(I, Iy);  //, I);
 
         ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
         for (unsigned int d = 0; d < dim; d++) {
@@ -54,8 +54,9 @@ int main(int argc, char* argv[]) {
         // Unit box
         double dx                        = 2.0 / double(pt);
         double dy                        = 2.0 / double(ptY);
-        ippl::Vector<double, dim> hx     = {dx, dy, dx};
-        ippl::Vector<double, dim> origin = -1;
+        ippl::Vector<double, dim> hx     = {dx, dy};  //, dx};
+        ippl::Vector<double, dim> origin = -1.0;
+
         Mesh_t mesh(owned, hx, origin);
 
         // Define fields for left hand side and right hand side and solution
@@ -67,7 +68,7 @@ int main(int argc, char* argv[]) {
 
         bc_type bcField;
 
-        for (unsigned int i = 0; i < 6; ++i) {
+        for (unsigned int i = 0; i < 2 * dim; ++i) {
             bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
         }
 
@@ -80,46 +81,29 @@ int main(int argc, char* argv[]) {
 
         const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
 
-        using Kokkos::pow, Kokkos::sin, Kokkos::cos;
+        // using Kokkos::pow, Kokkos::sin, Kokkos::cos;
 
         // set solution
         int shift1     = solution.getNghost();
         auto policySol = solution.getFieldRangePolicy();
         Kokkos::parallel_for(
-            "Assign solution", policySol, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            "Assign solution", policySol, KOKKOS_LAMBDA(const int i, const int j) {
                 const size_t ig = i + lDom[0].first() - shift1;
                 const size_t jg = j + lDom[1].first() - shift1;
-                const size_t kg = k + lDom[2].first() - shift1;
-                double x        = (ig + 0.5) * hx[0];
-                double y        = (jg + 0.5) * hx[1];
-                double z        = (kg + 0.5) * hx[2];
+                // const size_t kg = k + lDom[2].first() - shift1;
+                double x = (ig + 0.5) * hx[0];
+                double y = (jg + 0.5) * hx[1];
+                // double z        = (kg + 0.5) * hx[2];
 
-                viewSol(i, j, k) = sin(sin(pi * x)) * sin(sin(pi * y)) * sin(sin(pi * z));
+                viewSol(i, j) = sin(sin(pi * x)) * sin(sin(pi * y));  // * sin(sin(pi * z));
             });
 
         // set right hand side
-        const int shift2 = rhs.getNghost();
-        auto policyRHS   = rhs.getFieldRangePolicy();
+        // const int shift2 = rhs.getNghost();
+        auto policyRHS = rhs.getFieldRangePolicy();
         Kokkos::parallel_for(
-            "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const size_t ig = i + lDom[0].first() - shift2;
-                const size_t jg = j + lDom[1].first() - shift2;
-                const size_t kg = k + lDom[2].first() - shift2;
-                double x        = (ig + 0.5) * hx[0];
-                double y        = (jg + 0.5) * hx[1];
-                double z        = (kg + 0.5) * hx[2];
-
-                // https://gitlab.psi.ch/OPAL/Libraries/ippl-solvers/-/blob/5-fftperiodicpoissonsolver/test/TestFFTPeriodicPoissonSolver.cpp#L91
-                viewRHS(i, j, k) =
-                    pow(pi, 2)
-                    * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                       + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                          + (cos(sin(pi * x)) * sin(pi * x)
-                             + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2) + pow(cos(pi * z), 2))
-                                   * sin(sin(pi * x)))
-                                * sin(sin(pi * y)))
-                             * sin(sin(pi * z)));
-            });
+            "Assign rhs", policyRHS,
+            KOKKOS_LAMBDA(const int i, const int j) { viewRHS(i, j) = -1.0; });
 
         ippl::FEMPoissonSolver<field_type, field_type> solver(lhs, rhs);
 
@@ -127,8 +111,21 @@ int main(int argc, char* argv[]) {
         params.add("max_iterations", 1000);
         solver.mergeParameters(params);
 
+        solver.setRhs(rhs);
+        solver.setLhs(lhs);
+
+        std::cout << "Solve\n";
+        info << "hi\n";
+
         lhs = 0.0;
         solver.solve();
+
+        for (int y = 0; y < ptY; ++y) {
+            for (int x = 0; x < pt; ++x) {
+                std::cout << lhs(x, y) << ",";
+            }
+            std::cout << std::endl;
+        }
 
         const char* name = isWeak ? "Convergence (weak)" : "Convergence";
         Inform m(name);

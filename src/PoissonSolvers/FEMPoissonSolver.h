@@ -32,7 +32,11 @@ namespace ippl {
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
-        using ElementType    = HexahedralElement<Tlhs>;  // 3D Element
+        using ElementType =
+            std::conditional_t<Dim == 1, ippl::EdgeElement<Tlhs>,
+                               std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
+                                                  ippl::HexahedralElement<Tlhs>>>;
+
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
         // FEMPoissonSolver()
@@ -55,7 +59,6 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            const std::size_t Dim            = 3;
             const std::size_t NumElementDOFs = 8;  // TODO implement higher order elements.
 
             const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
@@ -115,7 +118,7 @@ namespace ippl {
 
         ElementType refElement_m;
         QuadratureType quadrature_m;
-        LagrangeSpace<Tlhs, 3, 1, QuadratureType, FieldLHS, FieldRHS> lagrangeSpace_m;
+        LagrangeSpace<Tlhs, Dim, 1, QuadratureType, FieldLHS, FieldRHS> lagrangeSpace_m;
     };
 
 }  // namespace ippl
