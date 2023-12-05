@@ -119,7 +119,7 @@ namespace ippl {
          *This copy to a temporary Kokkos view is needed because of following
          *reasons:
          *1) heffte wants the input and output fields without ghost layers
-         *2) heffte accepts data in layout left (by default) eventhough this
+         *2) heffte accepts data in layout left (by default) even though this
          *can be changed during heffte box creation
          */
         auto& tempField = this->tempField;
