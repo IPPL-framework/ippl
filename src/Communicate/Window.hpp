@@ -127,7 +127,7 @@ namespace ippl {
             template <TargetComm Target>
             template <typename T>
             void Window<Target>::get(T& value, int source, unsigned int pos, Request* request) {
-                this->get(&value, source, pos);
+                this->get(&value, source, pos, request);
             }
 
             template <TargetComm Target>
