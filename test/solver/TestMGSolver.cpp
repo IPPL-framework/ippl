@@ -15,8 +15,11 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
+#include "Utility/ViewUtils.h"
 
-#include "PoissonSolvers/PoissonCG.h"
+#include "PoissonSolvers/PoissonMG.h"
+
+
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -27,15 +30,7 @@ int main(int argc, char* argv[]) {
 
         int pt = 4, ptY = 4;
         bool isWeak = false;
-        // Preconditioner Setup Start
-        int gauss_seidel_inner_iterations;
-        int gauss_seidel_outer_iterations;
-        int newton_level;
-        int chebyshev_degree;
-        int richardson_iterations;
-        std::string solver = "not preconditioned";
-        std::string preconditioner_type = "";
-        // Preconditioner Setup End
+
         Inform info("Config");
         if (argc >= 2) {
             // First argument is the problem size (log2)
@@ -47,74 +42,14 @@ int main(int argc, char* argv[]) {
                     // If weak scaling is specified, increase the problem size
                     // along the Y axis such that each rank has the same workload
                     // (the simplest enlargement method)
-                    ptY = 1 << (5 + (int)N);
-                    pt  = 32;
+                    ptY = 1 << (5 + (int) N);
+                    pt = 32;
                     info << "Performing weak scaling" << endl;
                     isWeak = true;
                 }
-                else{
-                    if(argv[2][0] == 'j'){
-                        solver = "preconditioned";
-                        preconditioner_type = "jacobi";
-
-                    }
-                    if(argv[2][0] == 'n'){
-                        solver = "preconditioned";
-                        preconditioner_type = "newton";
-                        newton_level = std::atoi(argv[3]);
-                    }
-                    if(argv[2][0] == 'c'){
-                        solver = "preconditioned";
-                        preconditioner_type = "chebyshev";
-                        chebyshev_degree = std::atoi(argv[3]);
-                    }
-                    if(argv[2][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
-                        gauss_seidel_inner_iterations = std::atoi(argv[3]);
-                        gauss_seidel_outer_iterations = std::atoi(argv[4]);
-                    }
-                    if(argv[2][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
-                        richardson_iterations = std::atoi(argv[3]);
-                    }
-                }
-                if (argc >= 4){
-                    if(argv[3][0] == 'j'){
-                        solver = "preconditioned";
-                        preconditioner_type = "jacobi";
-                    }
-                    if(argv[3][0] == 'n'){
-                        solver = "preconditioned";
-                        preconditioner_type = "newton";
-                        newton_level = std::atoi(argv[4]);
-
-                    }
-                    if(argv[3][0] == 'c'){
-                        solver = "preconditioned";
-                        preconditioner_type = "chebyshev";
-                        chebyshev_degree = std::atoi(argv[4]);
-
-                    }
-                    if(argv[3][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
-                        gauss_seidel_inner_iterations = std::atoi(argv[4]);
-                        gauss_seidel_outer_iterations = std::atoi(argv[5]);
-                    }
-                    if(argv[3][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
-                        richardson_iterations = std::atoi(argv[4]);
-                    }
-                }
             }
         }
-        info << "Solver is " << solver << endl;
-        if (solver == "preconditioned"){
-            info << "Preconditioner is " << preconditioner_type << endl;
-        }
+        info << "Solver is Multigrid "<< endl;
 
         ippl::Index I(pt), Iy(ptY);
         ippl::NDIndex<dim> owned(I, Iy, I);
@@ -192,18 +127,10 @@ int main(int argc, char* argv[]) {
                              * sin(sin(pi * z)));
             });
 
-        ippl::PoissonCG<field_type> lapsolver;
+        ippl::PoissonMG<field_type> lapsolver;
 
         ippl::ParameterList params;
         params.add("max_iterations", 2000);
-        params.add("solver", solver);
-        // Preconditioner Setup
-        params.add("preconditioner_type", preconditioner_type);
-        params.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
-        params.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
-        params.add("newton_level", newton_level);
-        params.add("chebyshev_degree", chebyshev_degree);
-        params.add("richardson_iterations", richardson_iterations);
 
         lapsolver.mergeParameters(params);
 

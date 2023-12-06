@@ -437,7 +437,6 @@ public:
     }
 
     void initSolver(const ippl::ParameterList& sp = ippl::ParameterList()) {
-        std::cout << "inside initSolver" << std::endl;
         Inform m("solver ");
         if (stype_m == "FFT") {
             initFFTSolver();
@@ -496,8 +495,6 @@ public:
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
-        std::cout << "inside initSolverWithParams" << std::endl;
-
         solver_m.template emplace<Solver>();
         Solver& solver = std::get<Solver>(solver_m);
 
@@ -518,7 +515,6 @@ public:
     }
 
     void initCGSolver(const ippl::ParameterList& sp_old) {
-        std::cout << "inside initCGSolver" << std::endl;
         ippl::ParameterList sp;
         sp.merge(sp_old);
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);

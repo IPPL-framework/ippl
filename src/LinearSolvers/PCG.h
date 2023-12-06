@@ -42,7 +42,6 @@ namespace ippl {
          virtual int getIterationCount() { return iterations_m; }
 
         virtual void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
-
             constexpr unsigned Dim = lhs_type::dim;
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
@@ -78,6 +77,8 @@ namespace ippl {
             }
 
             r = rhs - op_m(lhs);
+            auto&& view = lhs.getView();
+            ippl::detail::write<double , Dim>(view);
             d = r.deepCopy();
             d.setFieldBC(bc);
 
@@ -88,8 +89,15 @@ namespace ippl {
 
             lhs_type q(mesh, layout);
 
+            std::cout << "Start iterations" << std::endl;
+            std::cout << iterations_m << std::endl;
+            std::cout << maxIterations << std::endl;
+            std::cout << residueNorm << std::endl;
+            std::cout << tolerance << std::endl;
             while (iterations_m < maxIterations && residueNorm > tolerance) {
+                std::cout << "Before op" << std::endl;
                 q       = op_m(d);
+                std::cout << "After op" << std::endl;
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
