@@ -562,7 +562,6 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Comm->barrier();
 
         } else {
             Kokkos::parallel_for(
@@ -692,7 +691,6 @@ namespace ippl {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
-                Comm->barrier();
 
             } else {
                 Kokkos::parallel_for(
@@ -853,7 +851,6 @@ namespace ippl {
                     if (requests.size() > 0) {
                         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                     }
-                    Comm->barrier();
 
                 } else {
                     Kokkos::parallel_for(
@@ -1016,7 +1013,6 @@ namespace ippl {
                         if (requests.size() > 0) {
                             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                         }
-                        Comm->barrier();
 
                     } else {
                         Kokkos::parallel_for(
@@ -1936,7 +1932,6 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        Comm->barrier();
     };
 
     // CommunicateVico for VICO_2 (2N+1 to 2N)
@@ -2502,6 +2497,5 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        ippl::Comm->barrier();
     };
 }  // namespace ippl
