@@ -7,14 +7,13 @@
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        constexpr unsigned dim = 2;  // 3D problem
+        constexpr unsigned dim = 2;  // 3; // 3D problem
         using Mesh_t           = ippl::UniformCartesian<double, dim>;
         using Centering_t      = Mesh_t::DefaultCentering;
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
         int pt = 4, ptY = 4;
-        bool isWeak = false;
 
         // start a timer
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
@@ -26,6 +25,7 @@ int main(int argc, char* argv[]) {
             double N = strtol(argv[1], NULL, 10);
             info << "Got " << N << " as size parameter" << endl;
             pt = ptY = 1 << (int)N;
+            pt       = 1 << (int)N;
             if (argc >= 3) {
                 if (argv[2][0] == 'w') {
                     // If weak scaling is specified, increase the problem size
@@ -34,13 +34,13 @@ int main(int argc, char* argv[]) {
                     ptY = 1 << (5 + (int)N);
                     pt  = 32;
                     info << "Performing weak scaling" << endl;
-                    isWeak = true;
+                    // isWeak = true;
                 }
             }
         }
 
         // Define domain
-        ippl::Index I(pt), Iy(ptY);
+        ippl::Index I(pt), Iy(ptY);       // TODO think about higher order...
         ippl::NDIndex<dim> owned(I, Iy);  //, I);
 
         ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 
         // Define fields for left hand side and right hand side and solution
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
-        field_type rhs(mesh, layout), lhs(mesh, layout), solution(mesh, layout);
+        field_type rhs(mesh, layout, 0), lhs(mesh, layout, 0), solution(mesh, layout, 0);
 
         // Define boundary conditions
         typedef ippl::BConds<field_type, dim> bc_type;
@@ -69,19 +69,17 @@ int main(int argc, char* argv[]) {
         bc_type bcField;
 
         for (unsigned int i = 0; i < 2 * dim; ++i) {
-            bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+            bcField[i] = std::make_shared<ippl::ZeroFace<field_type>>(i);
         }
 
         lhs.setFieldBC(bcField);
 
         // prepare to compute solution and right-hand side
-        double pi = Kokkos::numbers::pi_v<double>;
+        // double pi = Kokkos::numbers::pi_v<double>;
 
         typename field_type::view_type &viewRHS = rhs.getView(), viewSol = solution.getView();
 
         const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
-
-        // using Kokkos::pow, Kokkos::sin, Kokkos::cos;
 
         // set solution
         int shift1     = solution.getNghost();
@@ -95,7 +93,7 @@ int main(int argc, char* argv[]) {
                 double y = (jg + 0.5) * hx[1];
                 // double z        = (kg + 0.5) * hx[2];
 
-                viewSol(i, j) = sin(sin(pi * x)) * sin(sin(pi * y));  // * sin(sin(pi * z));
+                viewSol(i, j) = x * x + y * y;  // * sin(sin(pi * z));
             });
 
         // set right hand side
@@ -103,7 +101,7 @@ int main(int argc, char* argv[]) {
         auto policyRHS = rhs.getFieldRangePolicy();
         Kokkos::parallel_for(
             "Assign rhs", policyRHS,
-            KOKKOS_LAMBDA(const int i, const int j) { viewRHS(i, j) = -1.0; });
+            KOKKOS_LAMBDA(const int i, const int j) { viewRHS(i, j) = 1.0; });
 
         ippl::FEMPoissonSolver<field_type, field_type> solver(lhs, rhs);
 
@@ -120,14 +118,18 @@ int main(int argc, char* argv[]) {
         lhs = 0.0;
         solver.solve();
 
+        std::cout << "LHS:" << std::endl;
         for (int y = 0; y < ptY; ++y) {
             for (int x = 0; x < pt; ++x) {
-                std::cout << lhs(x, y) << ",";
+                std::cout << lhs(x, y);
+                if (x < pt - 1)
+                    std::cout << ",";
             }
             std::cout << std::endl;
         }
+        std::cout << std::endl;
 
-        const char* name = isWeak ? "Convergence (weak)" : "Convergence";
+        const char* name = "Convergence";
         Inform m(name);
 
         field_type error(mesh, layout);
@@ -138,7 +140,7 @@ int main(int argc, char* argv[]) {
         error          = -laplace(lhs) - rhs;
         double residue = norm(error) / norm(rhs);
 
-        int size    = isWeak ? pt * pt * ptY : pt;
+        int size    = pt;
         int itCount = solver.getIterationCount();
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
           << endl;

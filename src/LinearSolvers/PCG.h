@@ -107,6 +107,11 @@ namespace ippl {
                 T avg = lhs.getVolumeAverage();
                 lhs   = lhs - avg;
             }
+
+            std::cout << "iterations_m < maxIterations = " << iterations_m << " < " << maxIterations
+                      << " = " << (iterations_m < maxIterations) << std::endl;
+            std::cout << "residueNorm > tolerance = " << residueNorm << " > " << tolerance << " = "
+                      << (residueNorm > tolerance) << std::endl;
         }
 
         T getResidue() const { return residueNorm; }
