@@ -654,6 +654,10 @@ namespace ippl {
                     case Algorithm::DCT_VICO:
                         rho2_mr = rho2_mr * (1.0 / 4.0);
                         break;
+                    default: 
+                        throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                            "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
+                            "supported for open BCs");
                 }
             }
 
@@ -809,6 +813,10 @@ namespace ippl {
                         case Algorithm::DCT_VICO:
                             rho2_mr = rho2_mr * (1.0 / 4.0);
                             break;
+                        default: 
+                            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
+                                "supported for open BCs");
                     }
                 }
 
@@ -964,6 +972,10 @@ namespace ippl {
                             case Algorithm::DCT_VICO:
                                 rho2_mr = rho2_mr * (1.0 / 4.0);
                                 break;
+                            default: 
+                                throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                    "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
+                                    "supported for open BCs");
                         }
                     }
 
