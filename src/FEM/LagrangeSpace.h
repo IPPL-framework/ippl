@@ -119,12 +119,6 @@ namespace ippl {
         void evaluateLoadVector(FieldRHS& rhs_field,
                                 const std::function<T(const point_t&)>& f) const override;
 
-        ///////////////////////////////////////////////////////////////////////
-        /// Helper functions ///////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        static NDIndex<Dim> makeNDIndex(const Vector<T, Dim>& indices);
-
         template <typename FieldType, std::size_t... Is>
         static T& getFieldEntry(FieldType& field, const ndindex_t& ndindex) {
             return getFieldEntry(field, ndindex, std::make_index_sequence<Dim>());

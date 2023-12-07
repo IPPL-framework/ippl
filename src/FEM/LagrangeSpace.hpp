@@ -294,20 +294,6 @@ namespace ippl {
         return gradient;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
-              typename FieldRHS>
-    NDIndex<Dim> LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::makeNDIndex(
-        const Vector<T, Dim>& indices) {
-        // Not sure if this is the best way, but the getVertexPosition function expects an
-        // NDIndex, with the vertex index used being the first in the NDIndex. No other index is
-        // used, so we can just set the first and the last to the index we actually want.
-        NDIndex<Dim> nd_index;
-        for (unsigned d = 0; d < Dim; ++d) {
-            nd_index[d] = Index(indices[d], indices[d]);
-        }
-        return nd_index;
-    }
-
     ///////////////////////////////////////////////////////////////////////
     /// Assembly operations ///////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
