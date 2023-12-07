@@ -243,13 +243,11 @@ public:
         Inform m("Initialize Particles");
 
         using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
-        double* parR  = new double[2 * Dim];
-        parR[0]       = delta;
-        parR[1]       = kw[0];
-        parR[2]       = delta;
-        parR[3]       = kw[1];
-        parR[4]       = delta;
-        parR[5]       = kw[2];
+        double parR[2 * Dim];
+        for(unsigned int i=0; i<Dim; i++){
+            parR[i * 2   ]  = delta;
+            parR[i * 2 + 1] = kw[i];
+        }
         DistR_t distR(parR);
 
         Vector_t<double, Dim> hr_m     = hr;
