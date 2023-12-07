@@ -567,7 +567,7 @@ public:
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if ( fabs(time_m) < 1e-14 ) {
+            if ( std::fabs(time_m) < 1e-14 ) {
                 csvout << "time, Ez_field_energy, Ez_max_norm" << endl;
             }
 

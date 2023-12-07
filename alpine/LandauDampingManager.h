@@ -410,7 +410,7 @@ public:
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if ( fabs(time_m) < 1e-14 ) {
+            if ( std::fabs(time_m) < 1e-14 ) {
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
             }
             csvout << time_m << " " << fieldEnergy << " " << ExAmp << endl;
