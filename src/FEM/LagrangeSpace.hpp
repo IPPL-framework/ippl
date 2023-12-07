@@ -307,14 +307,9 @@ namespace ippl {
             const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
                                                        FieldRHS>::numElementDOFs>&)>& evalFunction)
         const {
-        // TODO take ghost cells into account!
-        const std::size_t num_global_dofs_with_ghosts = this->numGlobalDOFs(field.getNghost());
-        assert(field.getView().size() == num_global_dofs_with_ghosts
-               && "Field size does not match");
-
         // create a new field for result with view initialized to zero (views are initialized to
         // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout());
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), field.getNghost());
 
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;

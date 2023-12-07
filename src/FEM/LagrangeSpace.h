@@ -119,17 +119,38 @@ namespace ippl {
         void evaluateLoadVector(FieldRHS& rhs_field,
                                 const std::function<T(const point_t&)>& f) const override;
 
+        ///////////////////////////////////////////////////////////////////////
+        /// Helper functions //////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
         template <typename FieldType, std::size_t... Is>
         static T& getFieldEntry(FieldType& field, const ndindex_t& ndindex) {
             return getFieldEntry(field, ndindex, std::make_index_sequence<Dim>());
         }
 
         template <typename FieldType, std::size_t... Is>
-        static T& getFieldEntry(FieldType& field, const ndindex_t& ndindex,
+        static T& getFieldEntry(FieldType& field, ndindex_t ndindex,
                                 const std::index_sequence<Is...>) {
             static_assert(sizeof...(Is) == Dim, "Number of indices must match the dimension");
             static_assert(sizeof...(Is) == FieldType::view_type::rank,
                           "Number of indices must match the field view rank");
+
+            const unsigned num_ghosts = field.getNghost();
+
+            // offset the NDIndex for the ghost cells
+            ndindex += num_ghosts;
+
+            // make sure that the index is within the field (without the ghost cells)
+            for (std::size_t i = 0; i < Dim; ++i) {
+                if (ndindex[i] < num_ghosts
+                    || ndindex[i] > field.getLayout().getDomain()[i].length()) {
+                    // throw std::out_of_range("Index out of range");
+                    std::cerr << "Index out of range" << std::endl;
+                    std::cerr << "Index: " << ndindex[i] << std::endl;
+                    std::cerr << "Domain: " << num_ghosts << " - "
+                              << field.getLayout().getDomain()[i].length() << std::endl;
+                }
+            }
 
             return field.getView()(ndindex[Is]...);
         };

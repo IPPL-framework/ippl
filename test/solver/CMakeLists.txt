@@ -83,6 +83,13 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
+    add_executable(TestFEMPoissonSolverOld TestFEMPoissonSolver_old.cpp)
+    target_link_libraries(
+        TestFEMPoissonSolverOld
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
     add_executable(TestFEMPoissonSolver TestFEMPoissonSolver.cpp)
     target_link_libraries(
         TestFEMPoissonSolver
