@@ -25,6 +25,7 @@ private:
     std::array<bool, Dim> decomp_m;
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
+    Field<T, Dim> phi_m;
     std::shared_ptr<Mesh_t<Dim>> mesh_m;
     std::shared_ptr<FieldLayout_t<Dim>> fl_m;
 
@@ -34,6 +35,9 @@ public:
 
     inline Field_t<Dim>& getRho() { return rho_m; }
     inline void setRho(Field_t<Dim>& rho) { rho_m = rho; }
+
+    inline Field<T, Dim>& getPhi() { return phi_m; }
+    inline void setPhi(Field<T, Dim>& phi) { phi_m = phi; }
 
     inline Vector_t<double, Dim>& getHr() { return hr_m; }
     inline void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }
@@ -53,9 +57,12 @@ public:
     inline FieldLayout_t<Dim>& getFL() { return *fl_m; }
     inline void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
-    void initializeFields(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> fl) {
+    void initializeFields(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> fl, std::string stype_m = "") {
         E_m.initialize(*mesh, *fl);
         rho_m.initialize(*mesh, *fl);
+        if (stype_m == "CG") {
+            phi_m.initialize(*mesh, *fl);
+        }
         fl_m = fl;
         mesh_m = mesh;
     }

@@ -148,9 +148,9 @@ public:
 
         setFieldContainer( std::make_shared<FieldContainer_t>(hr, rmin, rmax, decomp) );
 
-        fcontainer_m->initializeFields(mesh, FL);
+        fcontainer_m->initializeFields(mesh, FL, solver);
 
-        setFieldSolver( std::make_shared<FieldSolver_t>(solver, &fcontainer_m->getRho(), &fcontainer_m->getE()) );
+        setFieldSolver( std::make_shared<FieldSolver_t>(solver, &fcontainer_m->getRho(), &fcontainer_m->getE(), &fcontainer_m->getPhi()) );
 
         fsolver_m->initSolver();
 

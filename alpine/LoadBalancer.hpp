@@ -12,13 +12,14 @@ class LoadBalancer{
         double loadbalancethreshold_m;
         Field_t<Dim>* rho_m;
         VField_t<T, Dim>* E_m;
+        Field<T, Dim> *phi_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver_t> fs_m;
         unsigned int loadbalancefreq_m;
         ORB<T, Dim> orb;
     public:
         LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver_t> &fs)
-           :loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), E_m(&fc->getE()), pc_m(pc), fs_m(fs) {}
+           :loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), E_m(&fc->getE()), phi_m(&fc->getPhi()), pc_m(pc), fs_m(fs) {}
 
         ~LoadBalancer() {  }
 
@@ -30,6 +31,9 @@ class LoadBalancer{
 
         inline VField_t<T, Dim>* getE() const { return E_m; }
         inline void setE(VField_t<T, Dim>* E) { E_m = E; }
+
+        inline Field<T, Dim>* getPhi() { return phi_m; }
+        inline void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
 
         inline std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
         inline void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
@@ -44,6 +48,11 @@ class LoadBalancer{
             IpplTimings::startTimer(tupdateLayout);
             (*E_m).updateLayout(*fl);
             (*rho_m).updateLayout(*fl);
+
+            if (fs_m->getStype() == "CG") {
+                phi_m->updateLayout(*fl);
+                phi_m->setFieldBC(phi_m->getFieldBC());
+            }
 
             // Update layout with new FieldLayout
             PLayout_t<T, Dim>* layout = &pc_m->getLayout();
