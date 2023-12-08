@@ -27,19 +27,6 @@
 //        local atom.  This is not a virtual function, it is a requirement of
 //        the templated class for use in other parts of the code.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #ifndef IPPL_PARTICLE_LAYOUT_H
 #define IPPL_PARTICLE_LAYOUT_H
@@ -53,13 +40,17 @@ namespace ippl {
     namespace detail {
         // ParticleLayout class definition.  Template parameters are the type
         // and dimension of the ParticlePos object used for the particles.
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, typename... PositionProperties>
         class ParticleLayout {
         public:
             typedef T value_type;
             typedef std::int64_t index_type;
             typedef Vector<T, Dim> vector_type;
-            typedef ParticleAttrib<vector_type> particle_position_type;
+
+            using particle_position_type   = ParticleAttrib<vector_type, PositionProperties...>;
+            using position_memory_space    = typename particle_position_type::memory_space;
+            using position_execution_space = typename particle_position_type::execution_space;
+
             typedef std::array<BC, 2 * Dim> bc_container_type;
 
             static constexpr unsigned dim = Dim;

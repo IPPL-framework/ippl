@@ -2,36 +2,29 @@
 // Unit test UniformCartesianTest
 //   Test functionality of the class UniformCartesian.
 //
-// Copyright (c) 2021, Matthias Frey, University of St Andrews, St Andrews, Scotland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
-#include <cmath>
-
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-class UniformCartesianTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
-public:
-    UniformCartesianTest() { computeGridSizes(nPoints); }
+template <typename>
+class UniformCartesianTest;
 
-    template <unsigned Dim>
-    ippl::NDIndex<Dim> createMesh(ippl::Vector<double, Dim>& hx, ippl::Vector<double, Dim>& origin,
-                                  double& cellVol, double& meshVol) {
+template <typename T, unsigned Dim>
+class UniformCartesianTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
+public:
+    using value_type              = T;
+    constexpr static unsigned dim = Dim;
+
+    UniformCartesianTest()
+        : nPoints(getGridSizes<Dim>()) {}
+
+    ippl::NDIndex<Dim> createMesh(ippl::Vector<T, Dim>& hx, ippl::Vector<T, Dim>& origin,
+                                  T& cellVol, T& meshVol) {
         std::array<ippl::Index, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
+        for (unsigned d = 0; d < Dim; d++) {
             args[d] = ippl::Index(nPoints[d]);
+        }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(args);
 
         cellVol = 1;
@@ -46,47 +39,56 @@ public:
         return owned;
     }
 
-    size_t nPoints[MaxDim];
+    std::array<size_t, Dim> nPoints;
 };
 
-TEST_F(UniformCartesianTest, Constructor) {
-    auto check = [&]<unsigned Dim>() {
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
-        double cellVol, meshVol;
+using Precisions = TestParams::Precisions;
+using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
+using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::type;
+TYPED_TEST_CASE(UniformCartesianTest, Tests);
 
-        auto owned = createMesh(hx, origin, cellVol, meshVol);
-        ippl::UniformCartesian<double, Dim> mesh(owned, hx, origin);
+TYPED_TEST(UniformCartesianTest, Constructor) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        double length = mesh.getCellVolume();
+    ippl::Vector<T, Dim> hx;
+    ippl::Vector<T, Dim> origin;
+    T cellVol, meshVol;
 
-        ASSERT_DOUBLE_EQ(length, cellVol);
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-    };
+    ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
+    ippl::UniformCartesian<T, Dim> mesh(owned, hx, origin);
 
-    apply(check);
+    T length = mesh.getCellVolume();
+
+    assertEqual(length, cellVol);
+    assertEqual(mesh.getMeshVolume(), meshVol);
 }
 
-TEST_F(UniformCartesianTest, Initialize) {
-    auto check = [&]<unsigned Dim>() {
-        ippl::Vector<double, Dim> hx;
-        ippl::Vector<double, Dim> origin;
-        double cellVol, meshVol;
+TYPED_TEST(UniformCartesianTest, Initialize) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        auto owned = createMesh(hx, origin, cellVol, meshVol);
+    ippl::Vector<T, Dim> hx;
+    ippl::Vector<T, Dim> origin;
+    T cellVol, meshVol;
 
-        ippl::UniformCartesian<double, Dim> mesh;
-        mesh.initialize(owned, hx, origin);
+    ippl::NDIndex<Dim> owned = this->createMesh(hx, origin, cellVol, meshVol);
 
-        ASSERT_DOUBLE_EQ(mesh.getCellVolume(), cellVol);
-        ASSERT_DOUBLE_EQ(mesh.getMeshVolume(), meshVol);
-    };
+    ippl::UniformCartesian<T, Dim> mesh;
+    mesh.initialize(owned, hx, origin);
 
-    apply(check);
+    assertEqual(mesh.getCellVolume(), cellVol);
+    assertEqual(mesh.getMeshVolume(), meshVol);
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    TestParams::checkArgs(argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

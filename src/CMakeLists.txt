@@ -39,7 +39,13 @@ macro (add_ippl_sources)
     endif ()
 endmacro ()
 
-macro (add_ippl_headers)
+macro (add_ippl_headers)​
+85
+#ifdef ENABLE_CATALYST
+86
+    CatalystAdaptor::Finalize();
+87
+#endif
     file (RELATIVE_PATH _relPath "${IPPL_SRC_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
     foreach (_hdr ${ARGN})
         if (_relPath)
@@ -80,11 +86,20 @@ add_subdirectory (Types)
 add_subdirectory (Partition)
 add_subdirectory (Stream)
 add_subdirectory (Stream/InSitu)
+add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)
-    message (STATUS "Adding Solver subdirectory")
-    add_subdirectory (Solver)
+    message (STATUS "Adding Solver subdirectories")
+    add_subdirectory (PoissonSolvers)
+    add_subdirectory (MaxwellSolvers)
+    add_subdirectory (LinearSolvers)
 endif ()
+
+if (ENABLE_CATALYST)
+    find_package(catalyst 2.0 REQUIRED)
+    message (STATUS "Enable Catalyst")
+    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
+endif()
 
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)
@@ -96,15 +111,19 @@ include_directories (
 
 add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
 
-if (ENABLE_CATALYST)
-    find_package(catalyst 2.0 REQUIRED)
-    message (STATUS "Enable Catalyst")
-    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
+set(TimerFences true)
+string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")
+string(REPLACE "SERIAL;" "" KokkosAccelerators "${KokkosAccelerators}")
+if ("${KokkosAccelerators}" MATCHES ".+;.+")
+    set(TimerFences false)
 endif()
+
+message("Timer fences for this build: ${TimerFences}")
 
 target_compile_definitions(ippl PUBLIC
   $<$<BOOL:${ENABLE_FFT}>:-DENABLE_FFT>
   $<$<BOOL:${ENABLE_CATALYST}>:-DENABLE_CATALYST>
+  IPPL_ENABLE_TIMER_FENCES=${TimerFences}
 )
 
 target_link_libraries(ippl PUBLIC

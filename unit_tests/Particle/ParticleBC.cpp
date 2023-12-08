@@ -2,245 +2,233 @@
 // Unit test ParticleBCTest
 //   Test particle boundary conditions.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
-#include <cmath>
-
-#include "MultirankUtils.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-class ParticleBCTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class ParticleBCTest;
+
+template <typename T, typename ExecSpace, unsigned Dim>
+class ParticleBCTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
+protected:
+    void SetUp() override { CHECK_SKIP_SERIAL; }
+
 public:
-    template <unsigned Dim>
-    using playout_type = ippl::detail::ParticleLayout<double, Dim>;
+    using value_type              = T;
+    constexpr static unsigned dim = Dim;
 
-    template <unsigned Dim>
-    using bunch_type = ippl::ParticleBase<playout_type<Dim>>;
+    using playout_type = ippl::detail::ParticleLayout<T, Dim, ExecSpace>;
+    using bunch_type   = ippl::ParticleBase<playout_type>;
 
-    ParticleBCTest()
-        : nParticles(1000) {
-        for (unsigned d = 0; d < MaxDim; d++)
+    ParticleBCTest() {
+        CHECK_SKIP_SERIAL_CONSTRUCTOR;
+        for (unsigned d = 0; d < Dim; d++) {
             len[d] = (d + 1) * 0.2;
-        for (unsigned d = 0; d < MaxDim; d++)
+        }
+        for (unsigned d = 0; d < Dim; d++) {
             shift[d] = 0.01 * (d + 1);
+        }
     }
 
-    template <unsigned Idx, unsigned Dim>
-    void setup(const ippl::Vector<double, Dim>& pos) {
-        auto bunch = std::get<Idx>(bunches) =
-            std::make_shared<bunch_type<Dim>>(std::get<Idx>(playouts));
+    void setup(const ippl::Vector<T, Dim>& pos) {
+        bunch = std::make_shared<bunch_type>(playout);
 
         bunch->create(nParticles);
 
-        auto& HostR = std::get<Idx>(mirrors) = bunch->R.getHostMirror();
-
-        for (int i = 0; i < nParticles; ++i)
-            HostR(i) = pos;
-
-        Kokkos::deep_copy(bunch->R.getView(), HostR);
-
-        // domain
-        std::array<ippl::PRegion<double>, Dim> args;
-        for (unsigned d = 0; d < Dim; d++)
-            args[d] = ippl::PRegion<double>(0, len[d]);
-        std::get<Idx>(nrs) = std::make_from_tuple<ippl::NDRegion<double, Dim>>(args);
-    }
-
-    template <unsigned Idx, unsigned Dim>
-    void checkResult(const ippl::Vector<double, Dim>& expected) {
-        auto& HostR = std::get<Idx>(mirrors);
-        auto bunch  = std::get<Idx>(bunches);
-
-        Kokkos::deep_copy(HostR, bunch->R.getView());
+        mirror = bunch->R.getHostMirror();
 
         for (int i = 0; i < nParticles; ++i) {
+            mirror(i) = pos;
+        }
+
+        Kokkos::deep_copy(bunch->R.getView(), mirror);
+
+        // domain
+        std::array<ippl::PRegion<T>, Dim> args;
+        for (unsigned d = 0; d < Dim; d++) {
+            args[d] = ippl::PRegion<T>(0, len[d]);
+        }
+        nr = std::make_from_tuple<ippl::NDRegion<T, Dim>>(args);
+    }
+
+    void checkResult(const ippl::Vector<T, Dim>& expected) {
+        Kokkos::deep_copy(mirror, bunch->R.getView());
+        for (int i = 0; i < nParticles; ++i) {
             for (size_t j = 0; j < Dim; ++j) {
-                ASSERT_NEAR(expected[j], HostR(i)[j], 1e-15);
+                ASSERT_NEAR(expected[j], mirror(i)[j], tolerance<T> / 10);
             }
         }
     }
 
-    template <unsigned Dim>
-    ippl::Vector<double, Dim> truncate(const ippl::Vector<double, MaxDim>& vec) {
-        ippl::Vector<double, Dim> res;
-        for (unsigned d = 0; d < Dim; d++)
-            res[d] = vec[d];
-        return res;
-    }
+    std::shared_ptr<bunch_type> bunch;
 
-    PtrCollection<std::shared_ptr, bunch_type> bunches;
+    ippl::Vector<T, Dim> len;
+    ippl::Vector<T, Dim> shift;
+    int nParticles = 1000;
 
-    ippl::Vector<double, MaxDim> len;
-    ippl::Vector<double, MaxDim> shift;
-    int nParticles;
+    using region_type = ippl::NDRegion<T, Dim>;
+    region_type nr;
 
-    template <unsigned Dim>
-    using region_type = ippl::NDRegion<double, Dim>;
-    Collection<region_type> nrs;
+    using mirror_type = typename bunch_type::particle_position_type::HostMirror;
+    mirror_type mirror;
 
-    template <unsigned Dim>
-    using mirror_type = typename bunch_type<Dim>::particle_position_type::HostMirror;
-    Collection<mirror_type> mirrors;
-
-    Collection<playout_type> playouts;
+    playout_type playout;
 };
 
-TEST_F(ParticleBCTest, UpperPeriodicBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(len + shift);
-        setup<Idx, Dim>(pos);
+using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
+TYPED_TEST_CASE(ParticleBCTest, Tests);
 
-        bunch->setParticleBC(ippl::BC::PERIODIC);
+TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        auto expected = truncate<Dim>(shift);
-        checkResult<Idx, Dim>(expected);
-    };
+    const ippl::Vector<T, Dim>& pos = this->len + this->shift;
+    this->setup(pos);
 
-    apply(check, bunches, nrs);
+    bunch->setParticleBC(ippl::BC::PERIODIC);
+
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    auto expected = this->shift;
+    this->checkResult(expected);
 }
 
-TEST_F(ParticleBCTest, UpperNoBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(len + shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, UpperNoBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::NO);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = this->len + this->shift;
+    this->setup(pos);
 
-        checkResult<Idx, Dim>(pos);
-    };
+    bunch->setParticleBC(ippl::BC::NO);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    this->checkResult(pos);
 }
 
-TEST_F(ParticleBCTest, UpperReflectiveBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(len + shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, UpperReflectiveBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::REFLECTIVE);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = this->len + this->shift;
+    this->setup(pos);
 
-        auto expected = truncate<Dim>(len - shift);
-        checkResult<Idx, Dim>(expected);
-    };
+    bunch->setParticleBC(ippl::BC::REFLECTIVE);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    auto expected = this->len - this->shift;
+    this->checkResult(expected);
 }
 
-TEST_F(ParticleBCTest, UpperSinkBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(len + shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, UpperSinkBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::SINK);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = this->len + this->shift;
+    this->setup(pos);
 
-        checkResult<Idx, Dim>(len);
-    };
+    bunch->setParticleBC(ippl::BC::SINK);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    this->checkResult(this->len);
 }
 
-TEST_F(ParticleBCTest, LowerPeriodicBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(-shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, LowerPeriodicBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::PERIODIC);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = -this->shift;
+    this->setup(pos);
 
-        auto expected = truncate<Dim>(len - shift);
-        checkResult<Idx, Dim>(expected);
-    };
+    bunch->setParticleBC(ippl::BC::PERIODIC);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    auto expected = this->len - this->shift;
+    this->checkResult(expected);
 }
 
-TEST_F(ParticleBCTest, LowerNoBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(-shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, LowerNoBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::NO);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = -this->shift;
+    this->setup(pos);
 
-        checkResult<Idx, Dim>(pos);
-    };
+    bunch->setParticleBC(ippl::BC::NO);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    this->checkResult(pos);
 }
 
-TEST_F(ParticleBCTest, LowerReflectiveBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(-shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, LowerReflectiveBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::REFLECTIVE);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = -this->shift;
+    this->setup(pos);
 
-        ippl::Vector<double, Dim> expected = shift;
-        checkResult<Idx, Dim>(expected);
-    };
+    bunch->setParticleBC(ippl::BC::REFLECTIVE);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    ippl::Vector<T, Dim> expected = this->shift;
+    this->checkResult(expected);
 }
 
-TEST_F(ParticleBCTest, LowerSinkBC) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& bunch,
-                                   ippl::NDRegion<double, Dim>& nr) {
-        constexpr unsigned Idx = dimToIndex(Dim);
-        auto pos               = truncate<Dim>(-shift);
-        setup<Idx, Dim>(pos);
+TYPED_TEST(ParticleBCTest, LowerSinkBC) {
+    using T                = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
 
-        bunch->setParticleBC(ippl::BC::SINK);
+    auto& bunch = this->bunch;
+    auto& nr    = this->nr;
 
-        bunch->getLayout().applyBC(bunch->R, nr);
+    const ippl::Vector<T, Dim>& pos = -this->shift;
+    this->setup(pos);
 
-        ippl::Vector<double, Dim> expected = 0;
-        checkResult<Idx, Dim>(expected);
-    };
+    bunch->setParticleBC(ippl::BC::SINK);
 
-    apply(check, bunches, nrs);
+    bunch->getLayout().applyBC(bunch->R, nr);
+
+    ippl::Vector<T, Dim> expected = 0;
+    this->checkResult(expected);
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    TestParams::checkArgs(argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

@@ -3,19 +3,6 @@
 //   This is a simple wrapper around Index that just keeps track of
 //   N of them and passes along requests for intersect, etc.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include <iostream>
 
 namespace ippl {
@@ -66,24 +53,27 @@ namespace ippl {
     template <unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const NDIndex<Dim>& idx) {
         out << '{';
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             out << idx[d] << ((d == Dim - 1) ? '}' : ',');
+        }
         return out;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION NDIndex<Dim> NDIndex<Dim>::intersect(const NDIndex<Dim>& ndi) const {
         NDIndex<Dim> r;
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             r[d] = indices_m[d].intersect(ndi[d]);
+        }
         return r;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION NDIndex<Dim> NDIndex<Dim>::grow(int ncells) const {
         NDIndex<Dim> r;
-        for (unsigned d = 0; d < Dim; ++d)
+        for (unsigned d = 0; d < Dim; ++d) {
             r[d] = indices_m[d].grow(ncells);
+        }
         return r;
     }
 
@@ -97,46 +87,54 @@ namespace ippl {
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::touches(const NDIndex<Dim>& a) const {
         bool touch = true;
-        for (unsigned int d = 0; (d < Dim) && touch; ++d)
+        for (unsigned int d = 0; (d < Dim) && touch; ++d) {
             touch = touch && indices_m[d].touches(a.indices_m[d]);
+        }
         return touch;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::contains(const NDIndex<Dim>& a) const {
         bool cont = true;
-        for (unsigned int d = 0; (d < Dim) && cont; ++d)
+        for (unsigned int d = 0; (d < Dim) && cont; ++d) {
             cont = cont && indices_m[d].contains(a.indices_m[d]);
+        }
         return cont;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
                                                     int i) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d], i);
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r, unsigned d,
                                                     double a) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d], a);
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r,
                                                     unsigned d) const {
-        if (&l != this)
+        if (&l != this) {
             l = *this;
-        if (&r != this)
+        }
+        if (&r != this) {
             r = *this;
+        }
         return indices_m[d].split(l[d], r[d]);
     }
 
@@ -144,49 +142,37 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION bool NDIndex<Dim>::split(NDIndex<Dim>& l, NDIndex<Dim>& r) const {
         unsigned int max_dim    = 0;
         unsigned int max_length = 0;
-        for (unsigned int d = 0; d < Dim; ++d)
+        for (unsigned int d = 0; d < Dim; ++d) {
             if (indices_m[d].length() > max_length) {
                 max_dim    = d;
                 max_length = indices_m[d].length();
             }
+        }
         return split(l, r, max_dim);
     }
 
-#if __cplusplus < 202002L
-    namespace detail {
-        template <bool first, size_t... Idx>
-        KOKKOS_INLINE_FUNCTION Vector<int, sizeof...(Idx)> constructIndexVector(
-            const Index indices[], const std::index_sequence<Idx...>&) {
-            if constexpr (first)
-                return Vector<int, sizeof...(Idx)>{indices[Idx].first()...};
-            else
-                return Vector<int, sizeof...(Idx)>{indices[Idx].last()...};
+    template <unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<size_t, Dim> NDIndex<Dim>::length() const {
+        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            return Vector<size_t, Dim>{indices_m[Idx].length()...};
         };
-    }  // namespace detail
-#endif
+        return construct(std::make_index_sequence<Dim>{});
+    }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::first() const {
-#if __cplusplus < 202002L
-        return detail::constructIndexVector<true>(indices_m, std::make_index_sequence<Dim>{});
-#else
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].first()...};
         };
         return construct(std::make_index_sequence<Dim>{});
-#endif
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::last() const {
-#if __cplusplus < 202002L
-        return detail::constructIndexVector<false>(indices_m, std::make_index_sequence<Dim>{});
-#else
         auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return Vector<int, Dim>{indices_m[Idx].last()...};
         };
         return construct(std::make_index_sequence<Dim>{});
-#endif
     }
 
     template <unsigned Dim>
@@ -209,5 +195,20 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr typename NDIndex<Dim>::const_iterator NDIndex<Dim>::end()
         const {
         return indices_m + Dim;
+    }
+
+    template <unsigned Dim>
+    bool operator==(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        for (unsigned d = 0; d < Dim; d++) {
+            if (nd1[d] != nd2[d]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <unsigned Dim>
+    bool operator!=(const NDIndex<Dim>& nd1, const NDIndex<Dim>& nd2) {
+        return !(nd1 == nd2);
     }
 }  // namespace ippl

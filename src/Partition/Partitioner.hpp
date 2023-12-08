@@ -2,19 +2,6 @@
 // Class Partitioner
 //   Partition a domain into subdomains.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #include <algorithm>
 #include <numeric>
@@ -25,7 +12,8 @@ namespace ippl {
 
         template <unsigned Dim>
         template <typename view_type>
-        void Partitioner<Dim>::split(const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp,
+        void Partitioner<Dim>::split(const NDIndex<Dim>& domain, view_type& view,
+                                     const std::array<bool, Dim>& isParallel,
                                      int nSplits) const {
             using NDIndex_t = NDIndex<Dim>;
 
@@ -52,7 +40,7 @@ namespace ippl {
 
                 for (v = 1; v < nSplits; v *= 2) {
                     // Go to the next parallel dimension.
-                    while (decomp[d] != PARALLEL)
+                    while (!isParallel[d])
                         if (++d == Dim)
                             d = 0;
 
@@ -110,14 +98,16 @@ namespace ippl {
                         lmax       = 0;
                         d          = std::numeric_limits<unsigned int>::max();
                         for (unsigned int dd = 0; dd < Dim; ++dd) {
-                            if (decomp[dd] == PARALLEL) {
+                            if (isParallel[dd]) {
                                 if ((len = leftDomain[dd].length()) > lmax) {
                                     lmax = len;
                                     d    = dd;
                                 }
                             }
                         }
-                        domains_c[vl].split(domains_c[vl], domains_c[vr], d, a);
+                        NDIndex_t temp;
+                        domains_c[vl].split(temp, domains_c[vr], d, a);
+                        domains_c[vl] = temp;
                         ++vtot;
                     }
                 }

@@ -2,19 +2,6 @@
 // File IpplExpressions.h
 //   Expression Templates classes.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_EXPRESSIONS_H
 #define IPPL_EXPRESSIONS_H
 
@@ -37,6 +24,8 @@ namespace ippl {
          */
         template <typename E, size_t N = sizeof(E)>
         struct Expression {
+            constexpr static unsigned dim = E::dim;
+
             /*!
              * Access single element of the expression
              */
@@ -53,8 +42,11 @@ namespace ippl {
          */
         template <typename E, size_t N = sizeof(E)>
         struct CapturedExpression {
+            constexpr static unsigned dim = E::dim;
+
             template <typename... Args>
             KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {
+                static_assert(sizeof...(Args) == dim || dim == 0);
                 return reinterpret_cast<const E&>(*this)(args...);
             }
 
@@ -68,6 +60,7 @@ namespace ippl {
         template <typename T>
         struct Scalar : public Expression<Scalar<T>, sizeof(T)> {
             typedef T value_type;
+            constexpr static unsigned dim = 0;
 
             KOKKOS_FUNCTION
             Scalar(value_type val)

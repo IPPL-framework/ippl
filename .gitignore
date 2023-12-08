@@ -24,3 +24,7 @@ compile_commands.json
 .idea/
 *.dat
 __pycache__
+
+
+*~
+*.~

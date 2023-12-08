@@ -61,11 +61,11 @@ class BinaryRepartitionFailed {};
 
 // Calculate the local domain for a binary repartition.
 template <unsigned Dim>
-NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>&, BareField<double, Dim>&);
+NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>&, BareField<T, Dim>&);
 
 // Calculate and apply a local domain for a binary repartition.
-template <unsigned Dim>
-inline void BinaryRepartition(FieldLayout<Dim>& layout, BareField<double, Dim>& weights) {
+template <class T, unsigned Dim>
+inline void BinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& weights) {
     layout.Repartition(CalcBinaryRepartition(layout, weights));
 }
 

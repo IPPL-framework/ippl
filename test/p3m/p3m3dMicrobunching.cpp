@@ -5,22 +5,10 @@
 //   interaction, alpha is the splitting parameter, epsilon is the softening parameter,
 //   printSteps=10 prints every tenth step
 //
-// Copyright (c) 2016, Benjamin Ulmer, ETH Zürich
-// All rights reserved
-//
+// Benjamin Ulmer, ETH Zürich (2016)
 // Implemented as part of the Master thesis
 // "The P3M Model on Emerging Computer Architectures With Application to Microbunching"
 // (http://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/thesisBUlmer.pdf)
-//
-// This file is part of OPAL.
-//
-// OPAL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with OPAL. If not, see <https://www.gnu.org/licenses/>.
 //
 #include "Ippl.h"
 
@@ -459,7 +447,7 @@ public:
 
     void openH5(std::string fn) {
         h5_prop_t props = H5CreateFileProp();
-        MPI_Comm comm   = Ippl::getComm();
+        MPI_Comm comm   = ippl::Comm->getCommunicator();
         h5_err_t h5err  = H5SetPropFileMPIOCollective(props, &comm);
         PAssert(h5err != H5_ERR);
         H5f_m = H5OpenFile(fn.c_str(), H5_O_WRONLY, props);
@@ -613,182 +601,185 @@ void ChargedParticles<PL>::calculatePairForces(double interaction_radius, double
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    Inform msg(argv[0]);
-    Inform msg2all(argv[0], INFORM_ALL_NODES);
+    ippl::initialize(argc, argv);
+    {
+        Inform msg(argv[0]);
+        Inform msg2all(argv[0], INFORM_ALL_NODES);
 
-    IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
-    IpplTimings::startTimer(allTimer);
+        IpplTimings::TimerRef allTimer = IpplTimings::getTimer("AllTimer");
+        IpplTimings::startTimer(allTimer);
 
-    Vektor<int, Dim> nr;
+        Vektor<int, Dim> nr;
 
-    nr        = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-    int param = 4;
+        nr        = Vektor<int, Dim>(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+        int param = 4;
 
-    double interaction_radius = atof(argv[param++]);
-    double alpha              = atof(argv[param++]);
-    double eps                = atof(argv[param++]);
-    int iterations            = atoi(argv[param++]);
-    unsigned myseedID         = atoi(argv[param++]);
-    int printEvery            = atoi(argv[param++]);
+        double interaction_radius = atof(argv[param++]);
+        double alpha              = atof(argv[param++]);
+        double eps                = atof(argv[param++]);
+        int iterations            = atoi(argv[param++]);
+        unsigned myseedID         = atoi(argv[param++]);
+        int printEvery            = atoi(argv[param++]);
 
-    // double R56 =  atof(argv[param++]); //coupling constant in m for real frame
-    ///////// setup the initial layout ///////////////////////////////////////
-    e_dim_tag decomp[Dim];
-    Mesh_t* mesh;
-    FieldLayout_t* FL;
-    ChargedParticles<playout_t>* P;
+        // double R56 =  atof(argv[param++]); //coupling constant in m for real frame
+        ///////// setup the initial layout ///////////////////////////////////////
+        e_dim_tag decomp[Dim];
+        Mesh_t* mesh;
+        FieldLayout_t* FL;
+        ChargedParticles<playout_t>* P;
 
-    NDIndex<Dim> domain;
-    for (unsigned i = 0; i < Dim; i++)
-        domain[i] = domain[i] = Index(nr[i] + 1);
+        NDIndex<Dim> domain;
+        for (unsigned i = 0; i < Dim; i++)
+            domain[i] = domain[i] = Index(nr[i] + 1);
 
-    for (unsigned d = 0; d < Dim; ++d)
-        decomp[d] = SERIAL;
-    decomp[2] = PARALLEL;
-    // decomp[1]=PARALLEL;
+        for (unsigned d = 0; d < Dim; ++d)
+            decomp[d] = SERIAL;
+        decomp[2] = PARALLEL;
+        // decomp[1]=PARALLEL;
 
-    // create mesh and layout objects for this problem domain
-    mesh          = new Mesh_t(domain);
-    FL            = new FieldLayout_t(*mesh, decomp);
-    playout_t* PL = new playout_t(*FL, *mesh);
-    // define beam parameters:
+        // create mesh and layout objects for this problem domain
+        mesh          = new Mesh_t(domain);
+        FL            = new FieldLayout_t(*mesh, decomp);
+        playout_t* PL = new playout_t(*FL, *mesh);
+        // define beam parameters:
 
-    /////////// Create the particle distribution
-    ////////////////////////////////////////////////////////
-    P = new ChargedParticles<playout_t>(PL, nr, decomp, myseedID);
-    INFOMSG(P->getMesh() << endl);
-    INFOMSG(P->getFieldLayout() << endl);
-    msg << endl << endl;
+        /////////// Create the particle distribution
+        ////////////////////////////////////////////////////////
+        P = new ChargedParticles<playout_t>(PL, nr, decomp, myseedID);
+        INFOMSG(P->getMesh() << endl);
+        INFOMSG(P->getFieldLayout() << endl);
+        msg << endl << endl;
 
-    double tend = P->Ld / (P->beta0);
-    std::cout << "tend = " << tend << std::endl;
-    // lorentz transform to beam frame:
-    //////// TODO check lorentz transformation of time
-    // tend = P->gamma*(tend-P->beta0*P->Ld);
-    tend /= P->gamma;
-    std::cout << "tend' = " << tend << std::endl;
-    double dt = tend / iterations;
-    std::cout << "TIMESTEP dt = " << dt << std::endl;
-    createParticleDistributionMicrobunching(P, myseedID);
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    PL->setAllCacheDimensions(interaction_radius);
-    PL->enableCaching();
+        double tend = P->Ld / (P->beta0);
+        std::cout << "tend = " << tend << std::endl;
+        // lorentz transform to beam frame:
+        //////// TODO check lorentz transformation of time
+        // tend = P->gamma*(tend-P->beta0*P->Ld);
+        tend /= P->gamma;
+        std::cout << "tend' = " << tend << std::endl;
+        double dt = tend / iterations;
+        std::cout << "TIMESTEP dt = " << dt << std::endl;
+        createParticleDistributionMicrobunching(P, myseedID);
+        /////////////////////////////////////////////////////////////////////////////////////////////
+        PL->setAllCacheDimensions(interaction_radius);
+        PL->enableCaching();
 
-    /////// Print mesh informations ////////////////////////////////////////////////////////////
-    Ippl::Comm->barrier();
-    // dumpParticlesCSVp(P,0);
+        /////// Print mesh informations ////////////////////////////////////////////////////////////
+        ippl::Comm->barrier();
+        // dumpParticlesCSVp(P,0);
 
-    INFOMSG(P->getMesh() << endl);
-    INFOMSG(P->getFieldLayout() << endl);
-    msg << endl << endl;
+        INFOMSG(P->getMesh() << endl);
+        INFOMSG(P->getFieldLayout() << endl);
+        msg << endl << endl;
 
-    msg << "number of particles = " << endl;
-    msg << P->getTotalNum() << endl;
-    msg << "Total charge Q = " << endl;
-    msg << P->total_charge << endl;
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    std::string fname;
-    fname = "data/particleData_seedID_";
-    fname += std::to_string(P->seedID);
-    fname += ".h5part";
+        msg << "number of particles = " << endl;
+        msg << P->getTotalNum() << endl;
+        msg << "Total charge Q = " << endl;
+        msg << P->total_charge << endl;
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        std::string fname;
+        fname = "data/particleData_seedID_";
+        fname += std::to_string(P->seedID);
+        fname += ".h5part";
 
-    P->openH5(fname);
-    dumpH5part(P, 0);
-    unsigned printid = 1;
-    msg << "Starting iterations ..." << endl;
+        P->openH5(fname);
+        dumpH5part(P, 0);
+        unsigned printid = 1;
+        msg << "Starting iterations ..." << endl;
 
-    // calculate initial grid forces
-    P->calculateGridForces(interaction_radius, alpha, eps, 0);
-    // dumpVTKVector(P->eg_m, P,0,"EFieldAfterPMandPP");
-
-    P->calcMoments();
-    P->computeBeamStatistics();
-    writeBeamStatistics(P, 0);
-
-    for (int it = 0; it < iterations; it++) {
-        // advance the particle positions
-        // basic leapfrogging timestep scheme.  velocities are offset
-        // by half a timestep from the positions.
-
-        // energy position coupling:
-        /*
-           Vektor<double,3> kHat;
-           kHat[0]=0; kHat[1]=0; kHat[2]=1.;
-         */
-        // assign(P->R, P->R + dt *
-        // P->p/(P->gamma*P->m0)+rearrangez*1./P->gamma*(1.-sqrt(1.+dot(P->p,P->p)/(P->m0*P->m0*P->c*P->c)))*P->R56);
-        assign(P->R, P->R + dt * P->p / P->m0);
-        // shift particle due to longitudinal dispersion
-        // assign(P->R, P->R + kHat*P->gamma*P->R56*P->p/(P->beta0*P->m0));
-        /*
-           for (unsigned i=0; i<P->getLocalNum(); ++i) {
-           P->R[i][2]+=(sqrt(P->p[i][2]+P->m0*P->m0)/(P->m0)-1.)*1./P->gamma*P->R56;
-           }
-         */
-        // update particle distribution across processors
-        msg << "do particle update" << endl;
-        IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("UpdateTimer");
-        IpplTimings::startTimer(updateTimer);
-        P->update();
-        IpplTimings::stopTimer(updateTimer);
-
-        msg << "done particle update" << endl;
-        // compute the electric field
-        msg << "calculating grid" << endl;
-        IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
-        IpplTimings::startTimer(gridTimer);
-
-        P->calculateGridForces(interaction_radius, alpha, eps, it + 1);
-
-        IpplTimings::stopTimer(gridTimer);
-
-        msg << "calculating pairs" << endl;
-
-        IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
-        IpplTimings::startTimer(particleTimer);
-
-        P->calculatePairForces(interaction_radius, eps, alpha);
-        IpplTimings::stopTimer(particleTimer);
-
-        // P->update();
-
-        // dumpVTKVector(P->eg_m, P,it+1,"EFieldAfterPMandPP");
-        // dumpVTKScalar(P->rho_m,P,it+1,"RhoInterpol");
-
-        // second part of leapfrog: advance velocitites
-        assign(P->p, P->p + dt * P->Q * P->EF);
-
-        if ((it + 1) % printEvery == 0) {
-            // dumpVTKVector(P->eg_m, P,printid,"EFieldAfterPMandPP");
-            dumpH5part(P, printid++);
-        }
-        // dumpParticlesCSVp(P,it+1);
+        // calculate initial grid forces
+        P->calculateGridForces(interaction_radius, alpha, eps, 0);
+        // dumpVTKVector(P->eg_m, P,0,"EFieldAfterPMandPP");
 
         P->calcMoments();
         P->computeBeamStatistics();
-        writeBeamStatistics(P, it + 1);
+        writeBeamStatistics(P, 0);
 
-        msg << "Finished iteration " << it << endl;
+        for (int it = 0; it < iterations; it++) {
+            // advance the particle positions
+            // basic leapfrogging timestep scheme.  velocities are offset
+            // by half a timestep from the positions.
+
+            // energy position coupling:
+            /*
+            Vektor<double,3> kHat;
+            kHat[0]=0; kHat[1]=0; kHat[2]=1.;
+            */
+            // assign(P->R, P->R + dt *
+            // P->p/(P->gamma*P->m0)+rearrangez*1./P->gamma*(1.-sqrt(1.+dot(P->p,P->p)/(P->m0*P->m0*P->c*P->c)))*P->R56);
+            assign(P->R, P->R + dt * P->p / P->m0);
+            // shift particle due to longitudinal dispersion
+            // assign(P->R, P->R + kHat*P->gamma*P->R56*P->p/(P->beta0*P->m0));
+            /*
+            for (unsigned i=0; i<P->getLocalNum(); ++i) {
+            P->R[i][2]+=(sqrt(P->p[i][2]+P->m0*P->m0)/(P->m0)-1.)*1./P->gamma*P->R56;
+            }
+            */
+            // update particle distribution across processors
+            msg << "do particle update" << endl;
+            IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("UpdateTimer");
+            IpplTimings::startTimer(updateTimer);
+            P->update();
+            IpplTimings::stopTimer(updateTimer);
+
+            msg << "done particle update" << endl;
+            // compute the electric field
+            msg << "calculating grid" << endl;
+            IpplTimings::TimerRef gridTimer = IpplTimings::getTimer("GridTimer");
+            IpplTimings::startTimer(gridTimer);
+
+            P->calculateGridForces(interaction_radius, alpha, eps, it + 1);
+
+            IpplTimings::stopTimer(gridTimer);
+
+            msg << "calculating pairs" << endl;
+
+            IpplTimings::TimerRef particleTimer = IpplTimings::getTimer("ParticleTimer");
+            IpplTimings::startTimer(particleTimer);
+
+            P->calculatePairForces(interaction_radius, eps, alpha);
+            IpplTimings::stopTimer(particleTimer);
+
+            // P->update();
+
+            // dumpVTKVector(P->eg_m, P,it+1,"EFieldAfterPMandPP");
+            // dumpVTKScalar(P->rho_m,P,it+1,"RhoInterpol");
+
+            // second part of leapfrog: advance velocitites
+            assign(P->p, P->p + dt * P->Q * P->EF);
+
+            if ((it + 1) % printEvery == 0) {
+                // dumpVTKVector(P->eg_m, P,printid,"EFieldAfterPMandPP");
+                dumpH5part(P, printid++);
+            }
+            // dumpParticlesCSVp(P,it+1);
+
+            P->calcMoments();
+            P->computeBeamStatistics();
+            writeBeamStatistics(P, it + 1);
+
+            msg << "Finished iteration " << it << endl;
+        }
+
+        // print final state
+        dumpH5part(P, printid++);
+
+        // P->computeBunchingGain();
+
+        P->closeH5();
+        ippl::Comm->barrier();
+
+        msg << "number of particles = " << endl;
+        msg << P->getTotalNum() << endl;
+
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
+
+        delete P;
+        delete FL;
+        delete mesh;
     }
-
-    // print final state
-    dumpH5part(P, printid++);
-
-    // P->computeBunchingGain();
-
-    P->closeH5();
-    Ippl::Comm->barrier();
-
-    msg << "number of particles = " << endl;
-    msg << P->getTotalNum() << endl;
-
-    IpplTimings::stopTimer(allTimer);
-    IpplTimings::print();
-
-    delete P;
-    delete FL;
-    delete mesh;
+    ippl::finalize();
 
     return 0;
 }

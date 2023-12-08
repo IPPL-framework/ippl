@@ -13,19 +13,6 @@
 //   defines the necessary templated classes and functions to make
 //   ParticleAttrib a capable expression-template participant.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_ATTRIB_H
 #define IPPL_PARTICLE_ATTRIB_H
 
@@ -38,16 +25,24 @@ namespace ippl {
 
     // ParticleAttrib class definition
     template <typename T, class... Properties>
-    class ParticleAttrib : public detail::ParticleAttribBase<Properties...>,
+    class ParticleAttrib : public detail::ParticleAttribBase<>::with_properties<Properties...>,
                            public detail::Expression<
                                ParticleAttrib<T, Properties...>,
                                sizeof(typename detail::ViewType<T, 1, Properties...>::view_type)> {
     public:
         typedef T value_type;
-        using boolean_view_type =
-            typename detail::ParticleAttribBase<Properties...>::boolean_view_type;
-        using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
+        constexpr static unsigned dim = 1;
+
+        using Base = typename detail::ParticleAttribBase<>::with_properties<Properties...>;
+
+        using hash_type = typename Base::hash_type;
+
+        using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
+
         using HostMirror = typename view_type::host_mirror_type;
+
+        using memory_space    = typename view_type::memory_space;
+        using execution_space = typename view_type::execution_space;
 
         using size_type = detail::size_type;
 
@@ -62,19 +57,19 @@ namespace ippl {
          * @param keepIndex List of indices of valid particles in the invalid region
          * @param invalidCount Number of invalid particles in the valid region
          */
-        void destroy(const Kokkos::View<int*>& deleteIndex, const Kokkos::View<int*>& keepIndex,
+        void destroy(const hash_type& deleteIndex, const hash_type& keepIndex,
                      size_type invalidCount) override;
 
-        void pack(void*, const Kokkos::View<int*>&) const override;
+        void pack(const hash_type&) override;
 
-        void unpack(void*, size_type) override;
+        void unpack(size_type) override;
 
-        void serialize(detail::Archive<Properties...>& ar, size_type nsends) override {
-            ar.serialize(dview_m, nsends);
+        void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
+            ar.serialize(buf_m, nsends);
         }
 
-        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs) override {
-            ar.deserialize(dview_m, nrecvs);
+        void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
+            ar.deserialize(buf_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
@@ -124,13 +119,12 @@ namespace ippl {
 
         //     // scatter the data from this attribute onto the given Field, using
         //     // the given Position attribute
-        template <unsigned Dim, class M, class C, typename P2>
-        void scatter(Field<T, Dim, M, C>& f,
-                     const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp) const;
+        template <typename Field, typename P2>
+        void scatter(Field& f,
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
 
-        template <unsigned Dim, class M, class C, typename P2>
-        void gather(Field<T, Dim, M, C>& f,
-                    const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp);
+        template <typename Field, typename P2>
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
 
         T sum();
         T max();
@@ -139,6 +133,7 @@ namespace ippl {
 
     private:
         view_type dview_m;
+        view_type buf_m;
     };
 }  // namespace ippl
 

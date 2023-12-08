@@ -18,38 +18,26 @@
 //   so that if we must repartition the copy of the FieldLayout that
 //   is stored here, we will end up repartitioning all the registered Fields.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim, class Mesh>
-        RegionLayout<T, Dim, Mesh>::RegionLayout()
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        RegionLayout<T, Dim, Mesh, Properties...>::RegionLayout()
             : dLocalRegions_m("local regions (device)", 0)
             , hLocalRegions_m(Kokkos::create_mirror_view(dLocalRegions_m)) {
             indexOffset_m.fill(0);
             centerOffset_m.fill(0);
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        RegionLayout<T, Dim, Mesh>::RegionLayout(const FieldLayout<Dim>& fl, const Mesh& mesh)
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        RegionLayout<T, Dim, Mesh, Properties...>::RegionLayout(const FieldLayout<Dim>& fl,
+                                                                const Mesh& mesh)
             : RegionLayout() {
             changeDomain(fl, mesh);
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        void RegionLayout<T, Dim, Mesh>::changeDomain(const FieldLayout<Dim>& fl,
-                                                      const Mesh& mesh) {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        void RegionLayout<T, Dim, Mesh, Properties...>::changeDomain(const FieldLayout<Dim>& fl,
+                                                                     const Mesh& mesh) {
             // set our index space offset
             for (unsigned int d = 0; d < Dim; ++d) {
                 indexOffset_m[d]  = fl.getDomain()[d].first();
@@ -66,9 +54,10 @@ namespace ippl {
         // our own internal FieldLayout, we must convert from the [0,N-1] index
         // space to our own continuous NDRegion space.
         // NOTE: THIS ASSUMES THAT REGION'S HAVE first() < last() !!
-        template <typename T, unsigned Dim, class Mesh>
-        typename RegionLayout<T, Dim, Mesh>::NDRegion_t RegionLayout<T, Dim, Mesh>::convertNDIndex(
-            const NDIndex<Dim>& ni, const Mesh& mesh) const {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        typename RegionLayout<T, Dim, Mesh, Properties...>::NDRegion_t
+        RegionLayout<T, Dim, Mesh, Properties...>::convertNDIndex(const NDIndex<Dim>& ni,
+                                                                  const Mesh& mesh) const {
             // find first and last points in NDIndex and get coordinates from mesh
             NDIndex<Dim> firstPoint, lastPoint;
             for (unsigned int d = 0; d < Dim; d++) {
@@ -88,8 +77,9 @@ namespace ippl {
             return ndregion;
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        void RegionLayout<T, Dim, Mesh>::fillRegions(const FieldLayout<Dim>& fl, const Mesh& mesh) {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        void RegionLayout<T, Dim, Mesh, Properties...>::fillRegions(const FieldLayout<Dim>& fl,
+                                                                    const Mesh& mesh) {
             using domain_type           = typename FieldLayout<Dim>::host_mirror_type;
             const domain_type& ldomains = fl.getHostLocalDomains();
 
@@ -104,9 +94,9 @@ namespace ippl {
             Kokkos::deep_copy(dLocalRegions_m, hLocalRegions_m);
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        void RegionLayout<T, Dim, Mesh>::write(std::ostream& out) const {
-            if (Ippl::Comm->rank() > 0) {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        void RegionLayout<T, Dim, Mesh, Properties...>::write(std::ostream& out) const {
+            if (Comm->rank() > 0) {
                 return;
             }
 
@@ -119,19 +109,19 @@ namespace ippl {
             }
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        const typename RegionLayout<T, Dim, Mesh>::view_type
-        RegionLayout<T, Dim, Mesh>::getdLocalRegions() const {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        const typename RegionLayout<T, Dim, Mesh, Properties...>::view_type
+        RegionLayout<T, Dim, Mesh, Properties...>::getdLocalRegions() const {
             return dLocalRegions_m;
         }
 
-        template <typename T, unsigned Dim, class Mesh>
-        const typename RegionLayout<T, Dim, Mesh>::host_mirror_type
-        RegionLayout<T, Dim, Mesh>::gethLocalRegions() const {
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
+        const typename RegionLayout<T, Dim, Mesh, Properties...>::host_mirror_type
+        RegionLayout<T, Dim, Mesh, Properties...>::gethLocalRegions() const {
             return hLocalRegions_m;
         }
 
-        template <typename T, unsigned Dim, class Mesh>
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
         std::ostream& operator<<(std::ostream& out, const RegionLayout<T, Dim, Mesh>& rl) {
             rl.write(out);
             return out;

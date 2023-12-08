@@ -9,7 +9,7 @@
 //   in the case that the amount of data to be exchanged increases, when a new buffer
 //   is created, an amount of memory greater than the requested size is allocated
 //   for the new buffer. The factor by which memory is overallocated is determined by
-//   a data member in Communicate, which can be set and queried at runtime. Only new
+//   a data member in Communicator, which can be set and queried at runtime. Only new
 //   buffers are overallocated. If a buffer is requested with the same ID as a buffer
 //   that has been previously allocated, the same buffer will be used. If the requested
 //   size exceeds the buffer size, that buffer will be resized to have exactly
@@ -19,39 +19,25 @@
 //   conditions; halo cell exchange along faces, edges, and vertices; as well as
 //   exchanging particle data between ranks.
 //
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 namespace ippl {
+    namespace mpi {
 
-    template <typename T>
-    Communicate::buffer_type Communicate::getBuffer(int id, size_type size, double overallocation) {
-        size *= sizeof(T);
-#if __cplusplus > 201703L
-        if (buffers_m.contains(id)) {
-#else
-        if (buffers_m.find(id) != buffers_m.end()) {
-#endif
-            buffer_type buf = buffers_m[id];
-            if (buf->getBufferSize() < size) {
-                buf->reallocBuffer(size);
+        template <typename MemorySpace, typename T>
+        Communicator::buffer_type<MemorySpace> Communicator::getBuffer(int id, size_type size,
+                                                                       double overallocation) {
+            auto& buffers = buffers_m.get<MemorySpace>();
+            size *= sizeof(T);
+            if (buffers.contains(id)) {
+                if (buffers[id]->getBufferSize() < size) {
+                    buffers[id]->reallocBuffer(size);
+                }
+                return buffers[id];
             }
-            return buf;
+            buffers[id] = std::make_shared<archive_type<MemorySpace>>(
+                (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
+            return buffers[id];
         }
-        buffers_m[id] = std::make_shared<archive_type>(
-            (size_type)(size * std::max(overallocation, defaultOveralloc_m)));
-        return buffers_m[id];
-    }
+    }  // namespace mpi
 
 }  // namespace ippl

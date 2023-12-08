@@ -9,7 +9,7 @@
 //   in the case that the amount of data to be exchanged increases, when a new buffer
 //   is created, an amount of memory greater than the requested size is allocated
 //   for the new buffer. The factor by which memory is overallocated is determined by
-//   a data member in Communicate, which can be set and queried at runtime. Only new
+//   a data member in Communicator, which can be set and queried at runtime. Only new
 //   buffers are overallocated. If a buffer is requested with the same ID as a buffer
 //   that has been previously allocated, the same buffer will be used. If the requested
 //   size exceeds the buffer size, that buffer will be resized to have exactly
@@ -19,36 +19,22 @@
 //   conditions; halo cell exchange along faces, edges, and vertices; as well as
 //   exchanging particle data between ranks.
 //
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 
 #include "Ippl.h"
 
-#include "Communicate.h"
+#include "Communicator.h"
 
 namespace ippl {
+    namespace mpi {
 
-    void Communicate::setDefaultOverallocation(double factor) {
-        defaultOveralloc_m = factor;
-    }
+        void Communicator::setDefaultOverallocation(double factor) {
+            defaultOveralloc_m = factor;
+        }
 
-    void Communicate::deleteBuffer(int id) {
-        buffers_m.erase(id);
-    }
-
-    void Communicate::deleteAllBuffers() {
-        buffers_m.clear();
-    }
-
+        void Communicator::deleteAllBuffers() {
+            buffers_m.forAll([]<typename Map>(Map&& m) {
+                m.clear();
+            });
+        }
+    }  // namespace mpi
 }  // namespace ippl

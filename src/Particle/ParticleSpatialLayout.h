@@ -19,19 +19,6 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_SPATIAL_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_LAYOUT_H
 
@@ -43,21 +30,28 @@
 #include "Region/RegionLayout.h"
 
 namespace ippl {
+
     /*!
      * ParticleSpatialLayout class definition.
      * @tparam T value type
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>>
-    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim> {
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
+              typename... PositionProperties>
+    class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim, PositionProperties...> {
     public:
-        using hash_type   = typename ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>::hash_type;
-        using locate_type = typename detail::ViewType<int, 1>::view_type;
-        using bool_type   = typename detail::ViewType<bool, 1>::view_type;
-        using vector_type = typename detail::ParticleLayout<T, Dim>::vector_type;
-        using RegionLayout_t = detail::RegionLayout<T, Dim, Mesh>;
-        using Mesh_t         = UniformCartesian<double, Dim>;
+        using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
+        using typename Base::position_memory_space, typename Base::position_execution_space;
+
+        using hash_type   = detail::hash_type<position_memory_space>;
+        using locate_type = typename detail::ViewType<int, 1, position_memory_space>::view_type;
+        using bool_type   = typename detail::ViewType<bool, 1, position_memory_space>::view_type;
+
+        using vector_type = typename Base::vector_type;
+        using RegionLayout_t =
+            typename detail::RegionLayout<T, Dim, Mesh, position_memory_space>::uniform_type;
+        using FieldLayout_t = typename ippl::FieldLayout<Dim>;
 
         using size_type = detail::size_type;
 
@@ -66,15 +60,14 @@ namespace ippl {
         ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
 
         ParticleSpatialLayout()
-            : detail::ParticleLayout<T, Dim>() {}
+            : detail::ParticleLayout<T, Dim, PositionProperties...>() {}
 
         ~ParticleSpatialLayout() = default;
-        //~ParticleSpatialLayout() {}
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
-        template <class BufferType>
-        void update(BufferType& pdata, BufferType& buffer);
+        template <class ParticleContainer>
+        void update(ParticleContainer& pc);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
@@ -82,15 +75,42 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
-        using region_type = typename RegionLayout_t::view_type::value_type;
+        //! The FieldLayout containing information on nearest neighbors
+        FieldLayout_t flayout_m;
+
+        //! Type of the Kokkos view containing the local regions.
+        using region_view_type = typename RegionLayout_t::view_type;
+        //! Type of a single Region object.
+        using region_type = typename region_view_type::value_type;
+        //! Array of N rank lists, where N = number of hypercubes for the dimension Dim.
+        using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
+        /*!
+         * Evaluates the total number of MPI ranks sharing the spatial nearest neighbors.
+         * @param neighbors structure containing, for every spatial direction, a list of
+         * MPI ranks IDs corresponding to the nearest neighbors of the current local domain section.
+         * @return The total number of the ranks.
+         */
+        size_type getNeighborSize(const neighbor_list& neighbors) const;
+
     public:
-        void locateParticles(const ParticleBase<ParticleSpatialLayout<T, Dim, Mesh>>& pdata,
-                             locate_type& ranks, bool_type& invalid) const;
+        /*!
+         * For each particle in the bunch, determine the rank on which it should
+         * be stored based on its location
+         * @tparam ParticleContainer the particle container type
+         * @param pc the particle container
+         * @param ranks the integer view in which to store the destination ranks
+         * @param invalid the boolean view in which to store whether each particle
+         * is invalidated, i.e. needs to be sent to another rank
+         * @return The total number of invalidated particles
+         */
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
+                                  bool_type& invalid) const;
 
         /*!
          * @param rank we sent to

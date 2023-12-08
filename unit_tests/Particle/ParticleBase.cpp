@@ -2,140 +2,134 @@
 // Unit test ParticleBaseTest
 //   Test functionality of the class ParticleBase.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 
-#include <cmath>
-
-#include "MultirankUtils.h"
+#include "Particle/ParticleAttrib.h"
+#include "TestUtils.h"
 #include "gtest/gtest.h"
 
-class ParticleBaseTest : public ::testing::Test, public MultirankUtils<1, 2, 3, 4, 5, 6> {
+template <typename>
+class ParticleBaseTest;
+template <typename Params>
+class InitializationTest : public ::testing::Test {
 public:
-    template <unsigned Dim>
-    using playout_type = ippl::detail::ParticleLayout<double, Dim>;
-
-    template <unsigned Dim>
-    using bunch_type = ippl::ParticleBase<playout_type<Dim>>;
-
-    ParticleBaseTest() { setup(this); }
-
-    template <unsigned Idx, unsigned Dim>
-    void setupDim() {
-        std::get<Idx>(pbases) = std::make_shared<bunch_type<Dim>>(std::get<Idx>(playouts));
-    }
-
-    Collection<playout_type> playouts;
-    PtrCollection<std::shared_ptr, bunch_type> pbases;
+    using playout_type = typename ParticleBaseTest<Params>::playout_type;
+    using bunch_type   = typename ParticleBaseTest<Params>::bunch_type;
 };
 
-TEST_F(ParticleBaseTest, CreateAndDestroy) {
-    if (Ippl::Comm->size() > 1) {
+template <typename T, typename IDSpace, typename PositionSpace, unsigned Dim>
+class ParticleBaseTest<Parameters<T, IDSpace, PositionSpace, Rank<Dim>>> : public ::testing::Test {
+public:
+    using value_type     = T;
+    using attribute_type = ippl::ParticleAttrib<T, PositionSpace>;
+    using bool_type      = typename ippl::detail::ViewType<bool, 1, PositionSpace>::view_type;
+
+    using playout_type = ippl::detail::ParticleLayout<T, Dim, PositionSpace>;
+    using bunch_type   = ippl::ParticleBase<playout_type, IDSpace>;
+
+    ParticleBaseTest()
+        : pbase(std::make_shared<bunch_type>(playout)) {}
+
+    playout_type playout;
+    std::shared_ptr<bunch_type> pbase;
+};
+
+using Precisions = TestParams::Precisions;
+using Spaces     = TestParams::Spaces;
+using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
+using Combos     = CreateCombinations<Precisions, Spaces, Spaces, Ranks>::type;
+using Tests      = TestForTypes<Combos>::type;
+TYPED_TEST_CASE(ParticleBaseTest, Tests);
+TYPED_TEST_CASE(InitializationTest, Tests);
+
+TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
+    if (ippl::Comm->size() > 1) {
         std::cerr << "ParticleBaseTest::CreateAndDestroy test only works for one MPI rank!"
                   << std::endl;
         return;
     }
     size_t nParticles = 1000;
 
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& pbase) {
-        // Create 1000 particles
-        pbase->create(nParticles);
+    auto& pbase = this->pbase;
 
-        size_t localnum = pbase->getLocalNum();
+    // Create 1000 particles
+    pbase->create(nParticles);
 
-        EXPECT_EQ(nParticles, localnum);
+    size_t localnum = pbase->getLocalNum();
 
-        // Check that the right IDs are present
-        auto mirror = pbase->ID.getHostMirror();
-        Kokkos::deep_copy(mirror, pbase->ID.getView());
-        for (size_t i = 0; i < mirror.extent(0); ++i) {
-            EXPECT_EQ(mirror[i], i);
-        }
+    EXPECT_EQ(nParticles, localnum);
 
-        // Delete all the particles with odd indices
-        // (i.e. mark as invalid)
-        typedef typename ippl::detail::ViewType<bool, 1>::view_type bool_type;
-        bool_type invalid("invalid", nParticles);
-        auto mirror2 = Kokkos::create_mirror(invalid);
-        for (size_t i = 0; i < 500; ++i) {
-            mirror2(2 * i)     = false;
-            mirror2(2 * i + 1) = true;
-        }
-        Kokkos::deep_copy(invalid, mirror2);
-        pbase->destroy(invalid, 500);
+    // Check that the right IDs are present
+    auto mirror = pbase->ID.getHostMirror();
+    Kokkos::deep_copy(mirror, pbase->ID.getView());
+    for (size_t i = 0; i < mirror.extent(0); ++i) {
+        EXPECT_EQ(mirror[i], (int)i);
+    }
 
-        // Verify remaining indices
-        Kokkos::deep_copy(mirror, pbase->ID.getView());
-        for (size_t i = 0; i < 500; ++i) {
-            // The even indices contain the original particles
-            // The particles with odd indices are deleted and replaced
-            // with particles with even indices (in ascending order w.r.t. index)
-            int index = i % 2 == 0 ? i : 500 + (i - 1);
-            EXPECT_EQ(mirror[i], index);
-        }
-    };
+    // Delete all the particles with odd indices
+    // (i.e. mark as invalid)
+    typename TestFixture::bool_type invalid("invalid", nParticles);
+    auto mirror2 = Kokkos::create_mirror(invalid);
+    for (size_t i = 0; i < 500; ++i) {
+        mirror2(2 * i)     = false;
+        mirror2(2 * i + 1) = true;
+    }
+    Kokkos::deep_copy(invalid, mirror2);
+    pbase->destroy(invalid, 500);
 
-    apply(check, pbases);
+    // Verify remaining indices
+    Kokkos::deep_copy(mirror, pbase->ID.getView());
+    for (int i = 0; i < 500; ++i) {
+        // The even indices contain the original particles
+        // The particles with odd indices are deleted and replaced
+        // with particles with even indices (in ascending order w.r.t. index)
+        int index = i % 2 == 0 ? i : 500 + (i - 1);
+        EXPECT_EQ(mirror[i], index);
+    }
 }
 
-TEST_F(ParticleBaseTest, AddAttribute) {
-    auto check = [&]<unsigned Dim>(std::shared_ptr<bunch_type<Dim>>& pbase) {
-        using attrib_type = ippl::ParticleAttrib<double>;
+TYPED_TEST(ParticleBaseTest, AddAttribute) {
+    using attrib_type = typename TestFixture::attribute_type;
 
-        attrib_type Q;
+    auto& pbase = this->pbase;
 
-        pbase->addAttribute(Q);
+    attrib_type Q;
 
-        auto nAttributes = pbase->getAttributeNum();
+    pbase->addAttribute(Q);
 
-        EXPECT_EQ(size_t(3), nAttributes);
-    };
+    auto nAttributes = pbase->getAttributeNum();
 
-    apply(check, pbases);
+    EXPECT_EQ(size_t(3), nAttributes);
 }
 
-TEST(ParticleBase, Initialize1) {
-    auto check = [&]<unsigned Dim>() {
-        ParticleBaseTest::playout_type<Dim> pl;
-        ParticleBaseTest::bunch_type<Dim> bunch(pl);
+TYPED_TEST(InitializationTest, Initialize1) {
+    typename TestFixture::playout_type pl;
+    typename TestFixture::bunch_type bunch(pl);
 
-        size_t localnum = bunch.getLocalNum();
+    size_t localnum = bunch.getLocalNum();
 
-        EXPECT_EQ(size_t(0), localnum);
-    };
-
-    MultirankUtils<1, 2, 3, 4, 5, 6>::apply(check);
+    EXPECT_EQ(size_t(0), localnum);
 }
 
-TEST(ParticleBase, Initialize2) {
-    auto check = [&]<unsigned Dim>() {
-        ParticleBaseTest::bunch_type<Dim> bunch;
+TYPED_TEST(InitializationTest, Initialize2) {
+    typename TestFixture::playout_type pl;
+    typename TestFixture::bunch_type bunch;
 
-        ParticleBaseTest::playout_type<Dim> pl;
-        bunch.initialize(pl);
+    bunch.initialize(pl);
 
-        size_t localnum = bunch.getLocalNum();
+    size_t localnum = bunch.getLocalNum();
 
-        EXPECT_EQ(size_t(0), localnum);
-    };
-
-    MultirankUtils<1, 2, 3, 4, 5, 6>::apply(check);
+    EXPECT_EQ(size_t(0), localnum);
 }
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    int success = 1;
+    TestParams::checkArgs(argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

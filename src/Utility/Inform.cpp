@@ -67,8 +67,8 @@ Inform& level5(Inform& inf) {
 void Inform::setup(const char* myname, int pnode) {
     On = true;
 
-    if (Ippl::Info != NULL) {
-        OutputLevel = Ippl::Info->getOutputLevel();
+    if (ippl::Info != NULL) {
+        OutputLevel = ippl::Info->getOutputLevel();
     } else {
         OutputLevel = MIN_INFORM_LEVEL;
     }
@@ -102,7 +102,7 @@ Inform::Inform(const char* myname, const char* fname, const WriteMode opnmode, i
     , OpenedSuccessfully(true) {
     // only open a file if we're on the proper node
     MsgDest = 0;
-    if (pnode >= 0 && pnode == Ippl::Comm->myNode()) {
+    if (pnode >= 0 && pnode == ippl::Comm->rank()) {
         if (opnmode == OVERWRITE)
             MsgDest = new std::ofstream(fname, std::ios::out);
         else
@@ -111,7 +111,7 @@ Inform::Inform(const char* myname, const char* fname, const WriteMode opnmode, i
 
     // make sure it was opened properly
     if (MsgDest == 0 || !(*MsgDest)) {
-        if (pnode >= 0 && pnode == Ippl::Comm->myNode()) {
+        if (pnode >= 0 && pnode == ippl::Comm->rank()) {
             std::cerr << "Inform: Cannot open file '" << fname << "'." << std::endl;
         }
         NeedClose          = false;
@@ -167,8 +167,8 @@ void Inform::display_single_line(char* buf) {
         *MsgDest << Name;
 
         // output the node number if necessary
-        if (Ippl::Comm->getNodes() > 1)
-            *MsgDest << "{" << Ippl::Comm->myNode() << "}";
+        if (ippl::Comm->size() > 1)
+            *MsgDest << "{" << ippl::Comm->rank() << "}";
 
         // output the message level number if necessary
         if (MsgLevel > 1)
@@ -243,7 +243,7 @@ Inform& Inform::setMessageLevel(const int ol) {
 // the signal has been given ... process the message.  Return ref to object.
 Inform& Inform::outputMessage(void) {
     // print out the message (only if this is the master node)
-    if (PrintNode < 0 || PrintNode == Ippl::Comm->myNode()) {
+    if (PrintNode < 0 || PrintNode == ippl::Comm->rank()) {
         FormatBuf << std::ends;
         // extract C string and display
         MsgBuf        = FormatBuf.str();

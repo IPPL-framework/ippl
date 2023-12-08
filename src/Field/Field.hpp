@@ -2,25 +2,12 @@
 // Class Field
 //   BareField with a mesh and configurable boundary conditions
 //
-// Copyright (c) 2021 Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 //
 
 namespace ippl {
     namespace detail {
-        template <typename T, unsigned Dim, class Mesh, class Centering>
-        struct isExpression<Field<T, Dim, Mesh, Centering>> : std::true_type {};
+        template <typename T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+        struct isExpression<Field<T, Dim, Mesh, Centering, ViewArgs...>> : std::true_type {};
     }  // namespace detail
 
     //////////////////////////////////////////////////////////////////////////
@@ -28,15 +15,17 @@ namespace ippl {
     // 'initialize' function before doing anything else.  There are no special
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>::Field()
-        : BareField<T, Dim>()
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field()
+        : BareField_t()
         , mesh_m(nullptr)
         , bc_m() {}
 
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering> Field<T, Dim, Mesh, Centering>::deepCopy() const {
-        Field<T, Dim, Mesh, Centering> copy(*mesh_m, this->getLayout(), this->getNghost());
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    Field<T, Dim, Mesh, Centering, ViewArgs...>
+    Field<T, Dim, Mesh, Centering, ViewArgs...>::deepCopy() const {
+        Field<T, Dim, Mesh, Centering, ViewArgs...> copy(*mesh_m, this->getLayout(),
+                                                         this->getNghost());
         Kokkos::deep_copy(copy.getView(), this->getView());
 
         return copy;
@@ -44,40 +33,43 @@ namespace ippl {
 
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    Field<T, Dim, Mesh, Centering>::Field(Mesh_t& m, Layout_t& l, int nghost)
-        : BareField<T, Dim>(l, nghost)
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field(Mesh_t& m, Layout_t& l, int nghost)
+        : BareField_t(l, nghost)
         , mesh_m(&m) {
         for (unsigned int face = 0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Centering>>(face);
+            bc_m[face] =
+                std::make_shared<NoBcFace<Field<T, Dim, Mesh, Centering, ViewArgs...>>>(face);
         }
     }
 
     //////////////////////////////////////////////////////////////////////////
     // Initialize the Field, also specifying a mesh
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    void Field<T, Dim, Mesh, Centering>::initialize(Mesh_t& m, Layout_t& l, int nghost) {
-        BareField<T, Dim>::initialize(l, nghost);
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    void Field<T, Dim, Mesh, Centering, ViewArgs...>::initialize(Mesh_t& m, Layout_t& l,
+                                                                 int nghost) {
+        BareField_t::initialize(l, nghost);
         mesh_m = &m;
         for (unsigned int face = 0; face < 2 * Dim; ++face) {
-            bc_m[face] = std::make_shared<NoBcFace<T, Dim, Mesh, Centering>>(face);
+            bc_m[face] =
+                std::make_shared<NoBcFace<Field<T, Dim, Mesh, Centering, ViewArgs...>>>(face);
         }
     }
 
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    T Field<T, Dim, Mesh, Centering>::getVolumeIntegral() const {
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    T Field<T, Dim, Mesh, Centering, ViewArgs...>::getVolumeIntegral() const {
         typename Mesh::value_type dV = mesh_m->getCellVolume();
         return this->sum() * dV;
     }
 
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    T Field<T, Dim, Mesh, Centering>::getVolumeAverage() const {
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    T Field<T, Dim, Mesh, Centering, ViewArgs...>::getVolumeAverage() const {
         return getVolumeIntegral() / mesh_m->getMeshVolume();
     }
 
-    template <class T, unsigned Dim, class Mesh, class Centering>
-    void Field<T, Dim, Mesh, Centering>::updateLayout(Layout_t& l, int nghost) {
-        BareField<T, Dim>::updateLayout(l, nghost);
+    template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+    void Field<T, Dim, Mesh, Centering, ViewArgs...>::updateLayout(Layout_t& l, int nghost) {
+        BareField_t::updateLayout(l, nghost);
     }
 
 }  // namespace ippl

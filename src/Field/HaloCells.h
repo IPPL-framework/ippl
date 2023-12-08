@@ -2,19 +2,6 @@
 // Class HaloCells
 //   The guard / ghost cells of BareField.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_HALO_CELLS_H
 #define IPPL_HALO_CELLS_H
 
@@ -32,13 +19,14 @@ namespace ippl {
         /*!
          * Helper class to send / receive field data.
          */
-        template <typename T>
+        template <typename T, class... ViewArgs>
         struct FieldBufferData {
-            using view_type = typename detail::ViewType<T, 1>::view_type;
+            using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
+            using archive_type = Archive<typename view_type::memory_space>;
 
-            void serialize(Archive<>& ar, size_type nsends) { ar.serialize(buffer, nsends); }
+            void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(Archive<>& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
+            void deserialize(archive_type& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };
@@ -47,12 +35,13 @@ namespace ippl {
          * This class provides the functionality to do field halo exchange.
          * @file HaloCells.h
          */
-        template <typename T, unsigned Dim>
+        template <typename T, unsigned Dim, class... ViewArgs>
         class HaloCells {
         public:
-            using view_type  = typename detail::ViewType<T, Dim>::view_type;
-            using Layout_t   = FieldLayout<Dim>;
-            using bound_type = typename Layout_t::bound_type;
+            using view_type       = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
+            using Layout_t        = FieldLayout<Dim>;
+            using bound_type      = typename Layout_t::bound_type;
+            using databuffer_type = FieldBufferData<T, ViewArgs...>;
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
@@ -67,7 +56,7 @@ namespace ippl {
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
              */
-            void accumulateHalo(view_type& view, const Layout_t* layout);
+            void accumulateHalo(view_type& view, Layout_t* layout);
 
             /*!
              * Send interal data to halo cells. This operation uses
@@ -75,7 +64,7 @@ namespace ippl {
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
              */
-            void fillHalo(view_type&, const Layout_t* layout);
+            void fillHalo(view_type&, Layout_t* layout);
 
             /*!
              * Pack the field data to be sent into a contiguous array.
@@ -83,7 +72,7 @@ namespace ippl {
              * @param view the original view
              * @param fd the buffer to pack into
              */
-            void pack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd,
+            void pack(const bound_type& range, const view_type& view, databuffer_type& fd,
                       size_type& nsends);
 
             /*!
@@ -94,7 +83,7 @@ namespace ippl {
              * @tparam Op the data assigment operator
              */
             template <typename Op>
-            void unpack(const bound_type& range, const view_type& view, FieldBufferData<T>& fd);
+            void unpack(const bound_type& range, const view_type& view, databuffer_type& fd);
 
             /*!
              * Operator for the unpack function.
@@ -139,7 +128,7 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeBoundaries(view_type& view, const Layout_t* layout, SendOrder order);
+            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order);
 
             /*!
              * Extract the subview of the original data. This does not copy.
@@ -149,7 +138,7 @@ namespace ippl {
              */
             auto makeSubview(const view_type& view, const bound_type& intersect);
 
-            FieldBufferData<T> haloData_m;
+            databuffer_type haloData_m;
         };
     }  // namespace detail
 }  // namespace ippl

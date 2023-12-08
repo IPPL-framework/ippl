@@ -2,19 +2,6 @@
 // Class IpplInfo
 //   Global Ippl information.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #include "Ippl.h"
 #include "IpplVersions.h"
 
@@ -35,11 +22,15 @@ void IpplInfo::printVersion(void) {
 }
 
 void IpplInfo::printHelp(char** argv) {
-    std::cout << "Usage: " << argv[0] << " [<option> <option> ...]\n";
+    std::cout << "Usage: " << argv[0] << " [<option> ...]\n";
     std::cout << "The possible values for <option> are:\n";
-    std::cout << "   --info <n>          : Set info message level.  0 = off.\n";
-    std::cout << "   --help              : Print IPPL help message\n";
-    std::cout << "   --kokkos-help       : Print Kokkos help message\n";
+    std::cout << "   --info <n>                  : Set info message level.  0 = off.\n";
+    std::cout << "   --overallocate|-b <factor>  : Set the buffer overallocation factor\n";
+    std::cout << "   --timer-fences <on|off>     : Enable or disable timer fences (default enabled "
+                 "if only "
+                 "one accelerator present)\n";
+    std::cout << "   --help                      : Print IPPL help message\n";
+    std::cout << "   --kokkos-help               : Print Kokkos help message\n";
 }
 
 /////////////////////////////////////////////////////////////////////

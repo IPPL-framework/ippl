@@ -2,19 +2,6 @@
 // Class Vector
 //   Vector class used for vector fields and particle attributes like the coordinate.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_Vector_H
 #define IPPL_Vector_H
 
@@ -42,6 +29,10 @@ namespace ippl {
         Vector()
             : Vector(value_type(0)) {}
 
+        template <typename... Args,
+                  typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
+        explicit KOKKOS_FUNCTION Vector(const Args&... args);
+
         template <typename E, size_t N>
         KOKKOS_FUNCTION Vector(const detail::Expression<E, N>& expr);
 
@@ -50,6 +41,11 @@ namespace ippl {
 
         KOKKOS_FUNCTION
         Vector(const T& val);
+        
+        
+        Vector(const std::array<T, Dim>& a);
+
+	Vector(const std::array<std::vector<T>, Dim>& a);
 
         /*!
          * @param list of values
@@ -85,12 +81,22 @@ namespace ippl {
         template <typename E, size_t N>
         KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
 
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator+=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator-=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator*=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const T& val);
+
         using iterator       = T*;
         using const_iterator = const T*;
         KOKKOS_INLINE_FUNCTION constexpr iterator begin();
         KOKKOS_INLINE_FUNCTION constexpr iterator end();
         KOKKOS_INLINE_FUNCTION constexpr const_iterator begin() const;
         KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
+
+        KOKKOS_INLINE_FUNCTION T dot(const Vector<T, Dim>& rhs) const;
 
     private:
         T data_m[Dim];

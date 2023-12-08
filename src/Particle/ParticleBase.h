@@ -48,48 +48,53 @@
 //   This example defines a user class with 3D position and two extra
 //   attributes: a radius rad (double), and a velocity vel (a 3D Vector).
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
+#include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "Types/IpplTypes.h"
 
+#include "Utility/TypeUtils.h"
+
 #include "Particle/ParticleLayout.h"
 
 namespace ippl {
+
     /*!
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
+     * @tparam IDProperties the view properties for particle IDs (if any
+     * of the provided types is ippl::DisableParticleIDs, then particle
+     * IDs will be disabled for the bunch)
      */
-    template <class PLayout, class... Properties>
+    template <class PLayout, typename... IDProperties>
     class ParticleBase {
+        constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
+
     public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;
-        using particle_index_type    = ParticleAttrib<index_type>;
+        using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
 
-        using Layout_t              = PLayout;
-        using attribute_type        = typename detail::ParticleAttribBase<Properties...>;
-        using attribute_container_t = std::vector<attribute_type*>;
-        using attribute_iterator    = typename attribute_container_t::iterator;
-        using bc_container_type     = typename PLayout::bc_container_type;
-        using hash_type             = typename detail::ViewType<int, 1, Properties...>::view_type;
+        using Layout_t = PLayout;
+
+        template <typename... Properties>
+        using attribute_type = typename detail::ParticleAttribBase<Properties...>;
+
+        template <typename MemorySpace>
+        using container_type = std::vector<attribute_type<MemorySpace>*>;
+
+        using attribute_container_type =
+            typename detail::ContainerForAllSpaces<container_type>::type;
+
+        using bc_container_type = typename PLayout::bc_container_type;
+
+        using hash_container_type = typename detail::ContainerForAllSpaces<detail::hash_type>::type;
 
         using size_type = detail::size_type;
 
@@ -99,9 +104,6 @@ namespace ippl {
 
         //! view of particle IDs
         particle_index_type ID;
-
-        typename attribute_type::boolean_view_type invalidIndex;
-        hash_type newIndex;
 
         /*!
          * If this constructor is used, the user must call 'initialize' with
@@ -143,6 +145,11 @@ namespace ippl {
         void setLocalNum(size_type size) { localNum_m = size; }
 
         /*!
+         * @returns total number of particles (across all processes)
+         */
+        size_type getTotalNum() const { return totalNum_m; }
+
+        /*!
          * @returns particle layout
          */
         Layout_t& getLayout() { return *layout_m; }
@@ -168,36 +175,81 @@ namespace ippl {
          * Add particle attribute
          * @param pa attribute to be added to ParticleBase
          */
-        void addAttribute(detail::ParticleAttribBase<Properties...>& pa);
+        template <typename MemorySpace>
+        void addAttribute(detail::ParticleAttribBase<MemorySpace>& pa);
 
         /*!
          * Get particle attribute
          * @param i attribute number in container
          * @returns a pointer to the attribute
          */
-        attribute_type* getAttribute(size_t i) { return attributes_m[i]; }
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        attribute_type<MemorySpace>* getAttribute(size_t i) {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
+        /*!
+         * Calls a given function for all attributes in the bunch
+         * @tparam MemorySpace the memory space of the attributes to visit (void to visit all of
+         * them)
+         * @tparam Functor the functor type
+         * @param f a functor taking a single ParticleAttrib<MemorySpace>
+         */
+        template <typename MemorySpace = void, typename Functor>
+        void forAllAttributes(Functor&& f) const {
+            if constexpr (std::is_void_v<MemorySpace>) {
+                attributes_m.forAll(f);
+            } else {
+                for (auto& attribute : attributes_m.template get<MemorySpace>()) {
+                    f(attribute);
+                }
+            }
+        }
+
+        // Non-const variant of same function
+        template <typename MemorySpace = void, typename Functor>
+        void forAllAttributes(Functor&& f) {
+            if constexpr (std::is_void_v<MemorySpace>) {
+                attributes_m.forAll([&]<typename Attributes>(Attributes& atts) {
+                    for (auto& attribute : atts) {
+                        f(attribute);
+                    }
+                });
+            } else {
+                for (auto& attribute : attributes_m.template get<MemorySpace>()) {
+                    f(attribute);
+                }
+            }
+        }
 
         /*!
          * @returns the number of attributes
          */
-        typename attribute_container_t::size_type getAttributeNum() const {
-            return attributes_m.size();
+        unsigned getAttributeNum() const {
+            unsigned total = 0;
+            detail::runForAllSpaces([&]<typename MemorySpace>() {
+                total += attributes_m.template get<MemorySpace>().size();
+            });
+            return total;
         }
 
         /*!
-         * Create nLocal processor local particles
+         * Create nLocal processor local particles. This is a collective call,
+         * i.e. all MPI ranks must call this.
          * @param nLocal number of local particles to be created
          */
         void create(size_type nLocal);
 
         /*!
-         * Create a new particle with a given ID
+         * Create a new particle with a given ID. This is a collective call. If a process
+         * passes a negative number, it does not create a particle.
          * @param id particle identity number
          */
         void createWithID(index_type id);
 
         /*!
-         * Create nTotal particles globally, equally distributed among all processors
+         * Create nTotal particles globally, equally distributed among all processors.
+         * This is a collective call.
          * @param nTotal number of total particles to be created
          */
         void globalCreate(size_type nTotal);
@@ -205,49 +257,86 @@ namespace ippl {
         /*!
          * Particle deletion Function. Partition the particles into a valid region
          * and an invalid region,
-         * effectively deleting the invalid particles
+         * effectively deleting the invalid particles. This is a collective call.
          * @param invalid View marking which indices are invalid
          * @param destroyNum Total number of invalid particles
          */
-        void destroy(const Kokkos::View<bool*>& invalid, const size_type destroyNum);
+        template <typename... Properties>
+        void destroy(const Kokkos::View<bool*, Properties...>& invalid, const size_type destroyNum);
+
+        // This is a collective call.
+        void update() { layout_m->update(*this); }
+
+        /*
+         * The following functions should not be called in an application.
+         */
+
+        /* This function does not alter the totalNum_m member function. It should only be called
+         * during the update function where we know the number of particles remains the same.
+         */
+        template <typename... Properties>
+        void internalDestroy(const Kokkos::View<bool*, Properties...>& invalid,
+                             const size_type destroyNum);
+
+        /*!
+         * Sends particles to another rank
+         * @tparam HashType the hash view type
+         * @param rank the destination rank
+         * @param tag the MPI tag
+         * @param sendNum the number of messages already sent (to distinguish the buffers)
+         * @param requests destination vector in which to store the MPI requests for polling
+         * purposes
+         * @param hash a hash view indicating which particles need to be sent to which rank
+         */
+        template <typename HashType>
+        void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
+                        const HashType& hash);
+
+        /*!
+         * Receives particles from another rank
+         * @param rank the source rank
+         * @param tag the MPI tag
+         * @param recvNum the number of messages already received (to distinguish the buffers)
+         * @param nRecvs the number of particles to receive
+         */
+        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs);
 
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
          */
-        void serialize(detail::Archive<Properties...>& ar, size_type nsends);
+        template <typename Archive>
+        void serialize(Archive& ar, size_type nsends);
 
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
          */
-        void deserialize(detail::Archive<Properties...>& ar, size_type nrecvs);
+        template <typename Archive>
+        void deserialize(Archive& ar, size_type nrecvs);
 
         /*!
          * Determine the total space necessary to store a certain number of particles
+         * @tparam MemorySpace only consider attributes stored in this memory space
          * @param count particle number
          * @return Total size of a buffer packed with the given number of particles
          */
+        template <typename MemorySpace>
         size_type packedSize(const size_type count) const;
 
-        //     protected:
-
+    protected:
         /*!
          * Fill attributes of buffer.
-         * @tparam Buffer is a bunch type
          * @param buffer to send
          * @param hash function to access index.
          */
-        template <class Buffer>
-        void pack(Buffer& buffer, const hash_type& hash);
+        void pack(const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
-         * @tparam Buffer is a bunch type
          * @param buffer received
          */
-        template <class Buffer>
-        void unpack(Buffer& buffer, size_type nrecvs);
+        void unpack(size_type nrecvs);
 
     private:
         //! particle layout
@@ -257,8 +346,11 @@ namespace ippl {
         //! processor local number of particles
         size_type localNum_m;
 
+        //! total number of particles (across all processes)
+        size_type totalNum_m;
+
         //! all attributes
-        attribute_container_t attributes_m;
+        attribute_container_type attributes_m;
 
         //! next unique particle ID
         index_type nextID_m;
@@ -267,8 +359,8 @@ namespace ippl {
         index_type numNodes_m;
 
         //! buffers for particle partitioning
-        hash_type deleteIndex_m;
-        hash_type keepIndex_m;
+        hash_container_type deleteIndex_m;
+        hash_container_type keepIndex_m;
     };
 }  // namespace ippl
 

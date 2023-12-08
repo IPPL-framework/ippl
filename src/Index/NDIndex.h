@@ -3,19 +3,6 @@
 //   This is a simple wrapper around Index that just keeps track of
 //   N of them and passes along requests for intersect, etc.
 //
-// Copyright (c) 2020, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_NDINDEX_H
 #define IPPL_NDINDEX_H
 
@@ -85,6 +72,7 @@ namespace ippl {
 
         KOKKOS_INLINE_FUNCTION bool split(NDIndex<Dim>& l, NDIndex<Dim>& r) const;
 
+        KOKKOS_INLINE_FUNCTION Vector<size_t, Dim> length() const;
         KOKKOS_INLINE_FUNCTION Vector<int, Dim> first() const;
         KOKKOS_INLINE_FUNCTION Vector<int, Dim> last() const;
 

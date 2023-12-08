@@ -9,19 +9,6 @@
 //   that they have type char and thus contain raw bytes, unlike other typed buffers
 //   such as detail::FieldBufferData used by HaloCells.
 //
-// Copyright (c) 2020, Matthias Frey, Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
-//
 #ifndef IPPL_ARCHIVE_H
 #define IPPL_ARCHIVE_H
 
@@ -37,6 +24,7 @@ namespace ippl {
          * Serialize and desesrialize particle attributes.
          * @tparam Properties variadic template for Kokkos::View
          */
+
         template <class... Properties>
         class Archive {
         public:
@@ -49,8 +37,8 @@ namespace ippl {
              * Serialize.
              * @param view to take data from.
              */
-            template <typename T>
-            void serialize(const Kokkos::View<T*>& view, size_type nsends);
+            template <typename T, class... ViewArgs>
+            void serialize(const Kokkos::View<T*, ViewArgs...>& view, size_type nsends);
 
             /*!
              * Serialize vector attributes
@@ -60,15 +48,16 @@ namespace ippl {
              *
              * @param view to take data from.
              */
-            template <typename T, unsigned Dim>
-            void serialize(const Kokkos::View<Vector<T, Dim>*>& view, size_type nsends);
+            template <typename T, unsigned Dim, class... ViewArgs>
+            void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
+                           size_type nsends);
 
             /*!
              * Deserialize.
              * @param view to put data to
              */
-            template <typename T>
-            void deserialize(Kokkos::View<T*>& view, size_type nrecvs);
+            template <typename T, class... ViewArgs>
+            void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -78,8 +67,8 @@ namespace ippl {
              *
              * @param view to put data to
              */
-            template <typename T, unsigned Dim>
-            void deserialize(Kokkos::View<Vector<T, Dim>*>& view, size_type nrecvs);
+            template <typename T, unsigned Dim, class... ViewArgs>
+            void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
              * @returns a pointer to the data of the buffer

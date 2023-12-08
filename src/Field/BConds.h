@@ -2,21 +2,6 @@
 //   This is the container class for the field BCs.
 //   It calls the findBCNeighbors and apply in the
 //   respective BC classes to apply field BCs
-// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// Matthias Frey, University of St Andrews,
-// St Andrews, Scotland
-// All rights reserved
-//
-// This file is part of IPPL.
-//
-// IPPL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// You should have received a copy of the GNU General Public License
-// along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 #ifndef IPPL_FIELD_BC_H
 #define IPPL_FIELD_BC_H
@@ -28,19 +13,16 @@
 #include "Field/BcTypes.h"
 
 namespace ippl {
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class Field;
-
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    class BConds;
-
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    std::ostream& operator<<(std::ostream&, const BConds<T, Dim, Mesh, Centering>&);
-
-    template <typename T, unsigned Dim, class Mesh, class Centering>
+    /*!
+     * A container for boundary conditions
+     * @tparam Field the type of the field to which the boundary conditions will be applied
+     * @tparam Dim the rank of the field (redundant parameter required to avoid a circular
+     * dependency loop between Field and BConds)
+     */
+    template <typename Field, unsigned Dim>
     class BConds {
     public:
-        using bc_type        = detail::BCondBase<T, Dim, Mesh, Centering>;
+        using bc_type        = detail::BCondBase<Field>;
         using container      = std::array<std::shared_ptr<bc_type>, 2 * Dim>;
         using iterator       = typename container::iterator;
         using const_iterator = typename container::const_iterator;
@@ -48,8 +30,8 @@ namespace ippl {
         BConds()  = default;
         ~BConds() = default;
 
-        void findBCNeighbors(Field<T, Dim, Mesh, Centering>& field);
-        void apply(Field<T, Dim, Mesh, Centering>& field);
+        void findBCNeighbors(Field& field);
+        void apply(Field& field);
 
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;
@@ -62,8 +44,8 @@ namespace ippl {
         container bc_m;
     };
 
-    template <typename T, unsigned Dim, class Mesh, class Centering>
-    inline std::ostream& operator<<(std::ostream& os, const BConds<T, Dim, Mesh, Centering>& bc) {
+    template <typename Field, unsigned Dim>
+    inline std::ostream& operator<<(std::ostream& os, const BConds<Field, Dim>& bc) {
         bc.write(os);
         return os;
     }
