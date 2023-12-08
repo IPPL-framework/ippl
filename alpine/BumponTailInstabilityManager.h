@@ -48,8 +48,8 @@ struct CustomDistributionFunctions {
 };
 
 class BumponTailInstabilityManager
-    : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>,
-                              LoadBalancer<double, 3>> {
+    : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
+                              LoadBalancer<T, Dim>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -66,7 +66,7 @@ private:
     std::shared_ptr<PhaseDump> phase;
 public:
     BumponTailInstabilityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
-        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>()
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
         , totalP(totalP_)
         , nt(nt_)
         , nr(nr_)

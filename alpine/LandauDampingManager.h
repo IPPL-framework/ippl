@@ -39,8 +39,8 @@ struct CustomDistributionFunctions {
 };
 
 class LandauDampingManager
-    : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>,
-                              LoadBalancer<double, 3>> {
+    : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
+                              LoadBalancer<T, Dim>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -55,7 +55,7 @@ private:
     std::string step_method;
 public:
     LandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
-        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>()
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
         , totalP(totalP_)
         , nt(nt_)
         , nr(nr_)
@@ -192,13 +192,11 @@ public:
         Inform m("Initialize Particles");
 
         using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
-        double* parR  = new double[2 * Dim];
-        parR[0]       = this->alpha;
-        parR[1]       = this->kw[0];
-        parR[2]       = this->alpha;
-        parR[3]       = this->kw[1];
-        parR[4]       = this->alpha;
-        parR[5]       = this->kw[2];
+        double parR[2 * Dim];
+        for(unsigned int i=0; i<Dim; i++){
+            parR[i * 2   ]  = alpha;
+            parR[i * 2 + 1] = kw[i];
+        }
         DistR_t distR(parR);
 
         Vector_t<double, Dim> kw_m     = this->kw;
@@ -254,8 +252,12 @@ public:
 
         view_type* P_m = &(this->pcontainer_m->P.getView());
 
-        double mu[Dim] = {0.0, 0.0, 0.0};
-        double sd[Dim] = {1.0, 1.0, 1.0};
+        double mu[Dim];
+        double sd[Dim];
+        for(unsigned int i=0; i<Dim; i++){
+            mu[i] = 0.0;
+            sd[i] = 1.0;
+        }
         Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P_m, rand_pool64, mu, sd));
         Kokkos::fence();
         ippl::Comm->barrier();

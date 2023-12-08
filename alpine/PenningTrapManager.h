@@ -185,14 +185,11 @@ public:
         sd[2] = 0.20 * this->length[2];
 
         using DistR_t = ippl::random::NormalDistribution<double, Dim>;
-        // const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
-        double* parR = new double[2 * Dim];
-        parR[0]      = mu[0];
-        parR[1]      = sd[0];
-        parR[2]      = mu[1];
-        parR[3]      = sd[1];
-        parR[4]      = mu[2];
-        parR[5]      = sd[2];
+        double parR[2 * Dim];
+        for(unsigned int i=0; i<Dim; i++){
+            parR[i * 2   ]  = mu[i];
+            parR[i * 2 + 1] = sd[i];
+        }
         DistR_t distR(parR);
 
         Vector_t<double, Dim> hr_m     = this->hr;
