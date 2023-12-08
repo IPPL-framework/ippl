@@ -311,6 +311,8 @@ namespace ippl {
         // zero by default)
         FieldLHS resultField(field.get_mesh(), field.getLayout(), field.getNghost());
 
+        bool checkEssentialBDCs = true;  // TODO get from field
+
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
 
@@ -342,6 +344,15 @@ namespace ippl {
                 grad_b_q[k][i] = this->evaluateRefElementBasisGradient(i, q[k]);
             }
         }
+
+        auto isBoundaryDOF = [&k, this](const ndindex_t& ndindex) {
+            for (k = 0; k < Dim; ++k) {
+                if (ndindex[k] == 0 || ndindex[k] == this->mesh_m.getGridsize(k) - 1) {
+                    return true;
+                }
+            }
+            return false;
+        };
 
         const std::size_t numElements = this->numElements();
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
@@ -375,10 +386,20 @@ namespace ippl {
                 const ndindex_t& dof_ndindex_I =
                     this->getMeshVertexNDIndex(I);  // TODO fix for higher order
 
+                // Skip boundary DOFs (Zero Dirichlet BCs)
+                if (checkEssentialBDCs && isBoundaryDOF(dof_ndindex_I)) {
+                    // getFieldEntry(resultField, dof_ndindex_I) = 0.0;
+                    continue;
+                }
+
                 for (j = 0; j < this->numElementDOFs; ++j) {
                     J = global_dofs[j];
                     const ndindex_t& dof_ndindex_J =
                         this->getMeshVertexNDIndex(J);  // TODO fix for higher order
+
+                    if (checkEssentialBDCs && isBoundaryDOF(dof_ndindex_J)) {
+                        continue;
+                    }
 
                     getFieldEntry(resultField, dof_ndindex_I) +=
                         A_K[i][j] * getFieldEntry(field, dof_ndindex_J);
