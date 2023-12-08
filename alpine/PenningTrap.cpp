@@ -12,7 +12,7 @@
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
-//                simulations.>>>>>>> dev-3.2.0
+//                simulations.
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
         // Create an instance of a manger for the considered application
         PenningTrapManager manager(totalP, nt, nr, lbt, solver, step_method);
 
-        // Perf>>>>>>> dev-3.2.0orm pre-run operations, including creating mesh, particles,...
+        // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
 
         manager.setTime(0.0);

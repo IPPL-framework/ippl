@@ -39,13 +39,7 @@ macro (add_ippl_sources)
     endif ()
 endmacro ()
 
-macro (add_ippl_headers)​
-85
-#ifdef ENABLE_CATALYST
-86
-    CatalystAdaptor::Finalize();
-87
-#endif
+macro (add_ippl_headers)
     file (RELATIVE_PATH _relPath "${IPPL_SRC_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
     foreach (_hdr ${ARGN})
         if (_relPath)
