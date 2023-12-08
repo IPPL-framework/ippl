@@ -312,6 +312,7 @@ namespace ippl {
         FieldLHS resultField(field.get_mesh(), field.getLayout(), field.getNghost());
 
         bool checkEssentialBDCs = true;  // TODO get from field
+        // T bc_const_value        = 1.0;   // TODO get from field
 
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
@@ -319,10 +320,11 @@ namespace ippl {
         // local DOF indices
         index_t i, j;
 
-        // global DOF indices
-        index_t I, J;
+        // global DOF n-dimensional indices (Vector of N indices representing indices in each
+        // dimension)
+        ndindex_t I_nd, J_nd;
 
-        // quadrature index
+        // quadrature/helper index
         index_t k;
 
         // List of quadrature weights
@@ -333,8 +335,8 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        Vector<index_t, this->numElementDOFs> global_dofs;
         Vector<index_t, this->numElementDOFs> local_dofs;
+        Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
 
         // Gradients of the basis functions for the DOF at the quadrature nodes
         Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
@@ -356,8 +358,8 @@ namespace ippl {
 
         const std::size_t numElements = this->numElements();
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
-            global_dofs = this->getGlobalDOFIndices(elementIndex);
-            local_dofs  = this->getLocalDOFIndices();
+            local_dofs           = this->getLocalDOFIndices();
+            global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
 
             // 1. Compute the Galerkin element matrix A_K
             for (i = 0; i < this->numElementDOFs; ++i) {
@@ -382,27 +384,22 @@ namespace ippl {
 
             // 2. Compute the contribution to resultAx = A*x with A_K
             for (i = 0; i < this->numElementDOFs; ++i) {
-                I = global_dofs[i];
-                const ndindex_t& dof_ndindex_I =
-                    this->getMeshVertexNDIndex(I);  // TODO fix for higher order
+                I_nd = global_dof_ndindices[i];
 
                 // Skip boundary DOFs (Zero Dirichlet BCs)
-                if (checkEssentialBDCs && isBoundaryDOF(dof_ndindex_I)) {
-                    // getFieldEntry(resultField, dof_ndindex_I) = 0.0;
+                if (checkEssentialBDCs && isBoundaryDOF(I_nd)) {
                     continue;
                 }
 
                 for (j = 0; j < this->numElementDOFs; ++j) {
-                    J = global_dofs[j];
-                    const ndindex_t& dof_ndindex_J =
-                        this->getMeshVertexNDIndex(J);  // TODO fix for higher order
+                    J_nd = global_dof_ndindices[j];
 
-                    if (checkEssentialBDCs && isBoundaryDOF(dof_ndindex_J)) {
+                    // Skip boundary DOFs (Zero Dirichlet BCs)
+                    if (checkEssentialBDCs && isBoundaryDOF(J_nd)) {
                         continue;
                     }
 
-                    getFieldEntry(resultField, dof_ndindex_I) +=
-                        A_K[i][j] * getFieldEntry(field, dof_ndindex_J);
+                    getFieldEntry(resultField, I_nd) += A_K[i][j] * getFieldEntry(field, J_nd);
                 }
             }
         }
