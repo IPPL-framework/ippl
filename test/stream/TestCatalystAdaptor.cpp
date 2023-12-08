@@ -19,135 +19,88 @@
 
 #include "Stream/InSitu/CatalystAdaptor.h"
 
-constexpr unsigned int dim{3};
-using Mesh_t      = ippl::UniformCartesian<double, dim>;
-using Centering_t = Mesh_t::DefaultCentering;
-using Field_t     = ippl::Field<double, dim, Mesh_t, Centering_t>;
-
-void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, double dy, double dz) {
-    typename Field_t::view_type::host_mirror_type host_view = rho.getHostMirror();
-
-    std::stringstream fname;
-    fname << "data/scalar_";
-    fname << std::setw(4) << std::setfill('0') << iteration;
-    fname << ".vtk";
-
-    Kokkos::deep_copy(host_view, rho.getView());
-
-    Inform vtkout(nullptr, fname.str().c_str(), Inform::OVERWRITE);
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
-    if (vtkout.openedSuccessfully()) {
-        // start with header
-        vtkout << "# vtk DataFile Version 2.0" << endl;
-        vtkout << "CatalystAdaptor" << endl;
-        vtkout << "ASCII" << endl;
-        vtkout << "DATASET STRUCTURED_POINTS" << endl;
-        vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
-        vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
-        vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
-        vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
-
-        vtkout << "SCALARS Rho float" << endl;
-        vtkout << "LOOKUP_TABLE default" << endl;
-        for (int z = 0; z < nz + 2; z++) {
-            for (int y = 0; y < ny + 2; y++) {
-                for (int x = 0; x < nx + 2; x++) {
-                    vtkout << host_view(x, y, z) << endl;
-                }
-            }
-        }
-    } else {
-        IpplException("TestCatalystAdaptor::dumpVTK", "opening of file was not successful");
-    }
-}
 
 int main(int argc, char* argv[]) {
-    Ippl ippl(argc, argv);
-    CatalystAdaptor::Initialize_Adios(argc, argv);
+    ippl::initialize(argc, argv);
+    {
+        constexpr unsigned int dim {3};
 
-    const int pt{2};
-    ippl::Index Ix(pt);
-    ippl::Index Iy{pt};
-    ippl::Index Iz{pt};
-    ippl::NDIndex<dim> owned(Ix, Iy, Iz);
+        CatalystAdaptor::Initialize_Adios(argc, argv);
 
-    ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-    for (auto& d : allParallel)
-        d = ippl::PARALLEL;
+        const int pt{2};
+        ippl::Index Ix(pt);
+        ippl::Index Iy{pt};
+        ippl::Index Iz{pt};
+        ippl::NDIndex<dim> owned(Ix, Iy, Iz);
 
-    ippl::FieldLayout<dim> layout(owned, allParallel);
+        std::array<bool, dim> isParallel{true};  // Specifies SERIAL, PARALLEL dims
 
-    constexpr double dx            = {1.0 / double(pt)};
-    constexpr double dy            = {1.0 / double(pt)};
-    constexpr double dz            = {1.0 / double(pt)};
-    ippl::Vector<double, 3> hx     = {dx, dy, dz};
-    ippl::Vector<double, 3> origin = {0, 0, 0};
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
-    Mesh_t mesh(owned, hx, origin);
+        constexpr double dx            = {1.0 / double(pt)};
+        constexpr double dy            = {1.0 / double(pt)};
+        constexpr double dz            = {1.0 / double(pt)};
+        ippl::Vector<double, 3> hx     = {dx, dy, dz};
+        ippl::Vector<double, 3> origin = {0, 0, 0};
 
-    using field_type = ippl::Field<double, dim, Mesh_t, Centering_t>;
+        using Mesh_t      = ippl::UniformCartesian<double, dim>;
+        using Centering_t = Mesh_t::DefaultCentering;
+        using field_type = ippl::Field<double, dim, Mesh_t, Centering_t>;
 
-    std::cout << layout << std::endl;
+        Mesh_t mesh(owned, hx, origin);
 
-    field_type field(mesh, layout);
+        std::cout << layout << std::endl;
 
-    field = 1.0;
+        field_type field(mesh, layout);
 
-    const ippl::NDIndex<dim>& lDom       = layout.getLocalNDIndex();
-    const int nghost                     = field.getNghost();
-    using mdrange_type                   = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    typename field_type::view_type& view = field.getView();
+        field = 1.0;
 
-    double time           = {0.0};
-    const double dt       = {1};
-    const unsigned int nt = {10};
-    for (unsigned int it = 0; it < nt; ++it) {
-        Kokkos::parallel_for(
-            "Assign field",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                // local to global index conversion
-                // const size_t ig = i + lDom[0].first() - nghost;
-                const size_t jg = j + lDom[1].first() - nghost;
-                // const size_t kg = k + lDom[2].first() - nghost;
+        const ippl::NDIndex<dim>& lDom       = layout.getLocalNDIndex();
+        const int nghost                     = field.getNghost();
+        using mdrange_type                   = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        const typename field_type::view_type& view = field.getView();
 
-                // double x = (ig + 0.5) * hx[0] + origin[0];
-                double y = (jg + 0.5) * hx[1] + origin[1];
-                // double z = (kg + 0.5) * hx[2];
+        double time           = {0.0};
+        const double dt       = {1};
+        const unsigned int nt = {10};
+        for (unsigned int it = 0; it < nt; ++it) {
+            Kokkos::parallel_for(
+                "Assign field",
+                mdrange_type(
+                    {nghost, nghost, nghost},
+                    {view.extent(0) - nghost, view.extent(1) - nghost, view.extent(2) - nghost}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    // local to global index conversion
+                    // const size_t ig = i + lDom[0].first() - nghost;
+                    const size_t jg = j + lDom[1].first() - nghost;
+                    double y = (jg + 0.5) * hx[1] + origin[1];
+                    view(i, j, k) = y * time;
+                });
 
-                // view(i, j, k) = 3.0*pow(x,1) + 4.0*pow(y,1) + 5.0*pow(z,1);
-                // view(i, j, k) = sin(pi * x) * cos(pi * y) * exp(z);
-                // view(i, j, k) = sin(pi * x) * sin(pi * y) * sin(pi * z);
-                view(i, j, k) = y * time;
-            });
+            // call catalyst execute with 5th argument as nullopt or not specified
 
-        // call catalyst execute with 5th argument as nullopt or not specified
+            std::optional<conduit_cpp::Node> node = std::nullopt;
+            CatalystAdaptor::Execute_Field(it, time, ippl::Comm->rank(), field, node);
+            // print should be same as field data
+            time += dt;
 
-        std::optional<conduit_cpp::Node> node = std::nullopt;
-        CatalystAdaptor::Execute_Field(it, time, Ippl::Comm->rank(), field, node);
-        // print should be same as field data
-        time += dt;
-
-        // dumpVTK only works with --info 5 and higher
-//        dumpVTK(field, field.get_mesh().getGridsize(0), field.get_mesh().getGridsize(1),
-//                field.get_mesh().getGridsize(2), it, field.get_mesh().getMeshSpacing(0),
-//                field.get_mesh().getMeshSpacing(1), field.get_mesh().getMeshSpacing(2));
-    }
-
-    int nRanks = Ippl::Comm->size();
-    for (int rank = 0; rank < nRanks; ++rank) {
-        if (rank == Ippl::Comm->rank()) {
-            std::string fname = "field_AllBC_" + std::to_string(rank) + ".dat";
-            Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
-            field.write(out);
+            // dumpVTK only works with --info 5 and higher
+            //        dumpVTK(field, field.get_mesh().getGridsize(0), field.get_mesh().getGridsize(1),
+            //                field.get_mesh().getGridsize(2), it, field.get_mesh().getMeshSpacing(0),
+            //                field.get_mesh().getMeshSpacing(1), field.get_mesh().getMeshSpacing(2));
         }
-        Ippl::Comm->barrier();
-    }
 
+        int nRanks = ippl::Comm->size();
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == ippl::Comm->rank()) {
+                std::string fname = std::format("field_AllBC_{}.dat", std::to_string(rank));
+                Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
+                field.write(out);
+            }
+            ippl::Comm->barrier();
+        }
+    }
     CatalystAdaptor::Finalize();
+    ippl::finalize();
     return 0;
 }

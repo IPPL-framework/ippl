@@ -13,6 +13,11 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+#ifdef ENABLE_CATALYST
+#include <optional>
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 const char* TestName = "PenningTrap";
@@ -330,6 +335,10 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
+#ifdef ENABLE_CATALYST
+        std::optional<conduit_cpp::Node> node = std::nullopt;
+        CatalystAdaptor::Execute_Field(it, time_m, ippl::Comm->rank(), fc->getRho(),node);
+#endif
 
         // Field solve
         this->fsolver_m->runSolver();

@@ -14,6 +14,10 @@
 #include "PoissonSolvers/P3MSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
 
+#ifdef ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 unsigned LoggingPeriod = 1;
 
 // some typedefs
@@ -413,6 +417,8 @@ public:
         }
 
         // dumpVTK(rho_m, nr_m[0], nr_m[1], nr_m[2], iteration, hrField[0], hrField[1], hrField[2]);
+        //CatalystAdaptor::Execute_Field(iteration, );
+
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (stype_m != "OPEN") {

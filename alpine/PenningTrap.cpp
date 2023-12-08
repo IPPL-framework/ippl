@@ -46,9 +46,18 @@
 #include "datatypes.h"
 #include "PenningTrapManager.h"
 
+#ifdef ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+
+#ifdef ENABLE_CATALYST
+        CatalystAdaptor::Initialize(argc, argv);
+#endif
+
         Inform msg("PenningTrap");
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
@@ -79,11 +88,11 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
+#ifdef ENABLE_CATALYST
+        CatalystAdaptor::Finalize();
+#endif
     }
     ippl::finalize();
 
-#ifdef ENABLE_CATALYST
-    CatalystAdaptor::Finalize();
-#endif
     return 0;
 }

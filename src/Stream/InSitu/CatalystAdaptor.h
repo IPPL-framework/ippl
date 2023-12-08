@@ -8,11 +8,12 @@
 #include <catalyst.hpp>
 #include <iostream>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 #include "Utility/IpplException.h"
+
 
 namespace CatalystAdaptor {
 
@@ -100,7 +101,7 @@ namespace CatalystAdaptor {
 
     template <class Field>
     std::optional<conduit_cpp::Node> Execute_Field(int cycle, double time, int rank, Field& field, std::optional<conduit_cpp::Node>& node_in) {
-        static_assert(Field::dimension == 3, "CatalystAdaptor only supports 3D");
+        static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
         //
@@ -115,7 +116,7 @@ namespace CatalystAdaptor {
         typename Field::view_type::host_mirror_type host_view =
             Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
 
-        Kokkos::View<typename Field::type***, Kokkos::LayoutLeft, Kokkos::HostSpace>
+        Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
             host_view_layout_left("host_view_layout_left",
                                   field.getLayout().getLocalNDIndex()[0].length(),
                                   field.getLayout().getLocalNDIndex()[1].length(),
