@@ -79,6 +79,24 @@ namespace ippl {
             lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
+                std::cout << "d:" << std::endl;
+                for (unsigned i_x = 0; i_x < 16; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << d(i_x);
+                }
+                std::cout << std::endl;
+
+                std::cout << "op_m(d):" << std::endl;
+                for (unsigned i_x = 0; i_x < 16; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << op_m(d)(i_x);
+                }
+                std::cout << std::endl;
+
                 q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;

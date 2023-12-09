@@ -23,7 +23,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     constexpr unsigned dim = 1;
 
     using Mesh_t   = ippl::UniformCartesian<double, dim>;
-    using Field_t  = ippl::Field<double, dim, Mesh_t, Vert>;
+    using Field_t  = ippl::Field<double, dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
@@ -56,6 +56,11 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
             sol.getView()(i) = Kokkos::sin(pi * x);
         });
 
+    // set lhs to zero
+    Kokkos::parallel_for(
+        "Assign lhs", lhs.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const int i) { lhs.getView()(i) = 0.0; });
+
     // set right hand side
     Kokkos::parallel_for(
         "Assign rhs", rhs.getFieldRangePolicy(), KOKKOS_LAMBDA(const int i) {
@@ -63,6 +68,16 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
             rhs.getView()(i) = pi * pi * Kokkos::sin(pi * x);
         });
+
+    // print the RHS
+    std::cout << "RHS:" << std::endl;
+    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+        if (i_x != 0)
+            std::cout << ",";
+
+        std::cout << rhs(i_x);
+    }
+    std::cout << std::endl;
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
@@ -75,21 +90,21 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // print the solution
     std::cout << "Solution:" << std::endl;
-    for (unsigned x = 0; x < numNodesPerDim; ++x) {
-        if (x != 0)
+    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+        if (i_x != 0)
             std::cout << ",";
 
-        std::cout << sol(x);
+        std::cout << sol(i_x);
     }
     std::cout << std::endl;
 
     // print the LHS after solving
     std::cout << "LHS:" << std::endl;
-    for (unsigned x = 0; x < numNodesPerDim; ++x) {
-        if (x != 0)
+    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+        if (i_x != 0)
             std::cout << ",";
 
-        std::cout << lhs(x);
+        std::cout << lhs(i_x);
     }
     std::cout << std::endl;
 
@@ -99,11 +114,11 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // print the absolute error
     std::cout << "Error:" << std::endl;
-    for (unsigned x = 0; x < numNodesPerDim; ++x) {
-        if (x != 0)
+    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+        if (i_x != 0)
             std::cout << ",";
 
-        std::cout << error(x);
+        std::cout << error(i_x);
     }
     std::cout << std::endl;
 }

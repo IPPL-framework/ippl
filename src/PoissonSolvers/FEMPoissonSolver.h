@@ -76,14 +76,12 @@ namespace ippl {
                 [DPhiInvT, absDetDPhi](
                     const std::size_t& i, const std::size_t& j,
                     const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
-                    return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
+                    return -dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
                            * absDetDPhi;
                 };
 
-            const auto algoOperator = [poissonEquationEval, this](lhs_type field) {
-                lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
-
-                return field;
+            const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet {
+                return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             };
 
             algo_m.setOperator(algoOperator);
