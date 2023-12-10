@@ -76,7 +76,7 @@ namespace ippl {
                 [DPhiInvT, absDetDPhi](
                     const std::size_t& i, const std::size_t& j,
                     const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
-                    return -dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
+                    return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
                            * absDetDPhi;
                 };
 

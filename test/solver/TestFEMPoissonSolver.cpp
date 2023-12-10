@@ -70,17 +70,22 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
         });
 
     // print the RHS
-    std::cout << "RHS:" << std::endl;
+    std::cout << std::setw(15) << "rhs:";
     for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
         if (i_x != 0)
             std::cout << ",";
 
-        std::cout << rhs(i_x);
+        std::cout << std::setw(15) << rhs(i_x);
     }
     std::cout << std::endl;
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+
+    // set the parameters
+    ippl::ParameterList params;
+    params.add("tolerance", 0.0);
+    solver.mergeParameters(params);
 
     // solve the problem
     solver.solve();
@@ -130,7 +135,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
         IpplTimings::startTimer(timer);
 
-        const unsigned numPoints = 1 << 4;
+        const unsigned numPoints = 5;
 
         test_1D_problem(numPoints);
 

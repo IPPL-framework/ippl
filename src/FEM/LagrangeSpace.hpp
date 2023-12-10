@@ -307,9 +307,10 @@ namespace ippl {
             const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
                                                        FieldRHS>::numElementDOFs>&)>& evalFunction)
         const {
+        const std::size_t numGhosts = field.getNghost();
         // create a new field for result with view initialized to zero (views are initialized to
         // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), field.getNghost());
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), numGhosts);
 
         bool checkEssentialBDCs = true;  // TODO get from field
         // T bc_const_value        = 1.0;   // TODO get from field
@@ -347,9 +348,10 @@ namespace ippl {
             }
         }
 
-        auto isBoundaryDOF = [&k, this](const ndindex_t& ndindex) {
+        auto isBoundaryDOF = [&numGhosts, &k, this](const ndindex_t& ndindex) {
             for (k = 0; k < Dim; ++k) {
-                if (ndindex[k] == 0 || ndindex[k] == this->mesh_m.getGridsize(k) - 1) {
+                if (ndindex[k] <= numGhosts
+                    || ndindex[k] >= this->mesh_m.getGridsize(k) + 2 * numGhosts - 1) {
                     return true;
                 }
             }

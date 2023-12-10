@@ -43,7 +43,7 @@ namespace ippl {
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout);
+            lhs_type r(mesh, layout, lhs.getNghost());
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -76,28 +76,22 @@ namespace ippl {
             residueNorm       = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
-            lhs_type q(mesh, layout);
+            lhs_type q(mesh, layout, lhs.getNghost());
+
+            //// DEBUG PRINT //////////////////////////////////////////////
+            std::cout << std::setw(15) << "r_0 (= d_0):";
+            for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                if (i_x != 0)
+                    std::cout << ",";
+
+                std::cout << std::setw(15) << r(i_x);
+            }
+            std::cout << std::endl;
+            ///////////////////////////////////////////////////////////////
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                std::cout << "d:" << std::endl;
-                for (unsigned i_x = 0; i_x < 16; ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
+                q = op_m(d);
 
-                    std::cout << d(i_x);
-                }
-                std::cout << std::endl;
-
-                std::cout << "op_m(d):" << std::endl;
-                for (unsigned i_x = 0; i_x < 16; ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << op_m(d)(i_x);
-                }
-                std::cout << std::endl;
-
-                q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
@@ -119,6 +113,50 @@ namespace ippl {
                 d = r + beta * d;
 
                 ++iterations_m;
+
+                //// DEBUG PRINT //////////////////////////////////////////////
+                std::cout << std::endl;
+                std::cout << "iteration " << iterations_m << ", residueNorm: " << residueNorm
+                          << std::endl;
+
+                std::cout << std::setw(15) << "alpha = " << alpha << std::endl;
+                std::cout << std::setw(15) << "beta = " << beta << std::endl;
+
+                std::cout << std::setw(15) << "lhs:";
+                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << lhs(i_x);
+                }
+                std::cout << std::endl;
+                std::cout << std::setw(15) << "d:";
+                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << d(i_x);
+                }
+                std::cout << std::endl;
+
+                std::cout << std::setw(15) << "q:";
+                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << q(i_x);
+                }
+                std::cout << std::endl;
+
+                std::cout << std::setw(15) << "r:";
+                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << r(i_x);
+                }
+                std::cout << std::endl;
+                ///////////////////////////////////////////////////////////////
             }
 
             if (allFacesPeriodic) {
