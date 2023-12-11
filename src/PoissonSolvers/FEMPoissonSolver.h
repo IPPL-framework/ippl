@@ -69,11 +69,11 @@ namespace ippl {
             // Inverse Transpose Transformation Jacobian
             const Vector<Tlhs, Dim> DPhiInvT =
                 refElement_m.getInverseTransposeTransformationJacobian(
-                    lagrangeSpace_m.getElementMeshVertexIndices(zeroNdIndex));
+                    lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex));
 
             // Absolute value of det Phi_K
             const Tlhs absDetDPhi = std::abs(refElement_m.getDeterminantOfTransformationJacobian(
-                lagrangeSpace_m.getElementMeshVertexIndices(zeroNdIndex)));
+                lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex)));
 
             const auto poissonEquationEval =
                 [DPhiInvT, absDetDPhi](

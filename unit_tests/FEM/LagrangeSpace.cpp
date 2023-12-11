@@ -25,29 +25,37 @@ public:
         Dim == 1, ippl::EdgeElement<T>,
         std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
-    using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
-    using FieldType      = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
+    using QuadratureType       = ippl::MidpointQuadrature<T, 1, ElementType>;
+    using BetterQuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
+    using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
 
     LagrangeSpaceTest()
-        : meshSizes(3)
-        , ref_element()
-        , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        : ref_element()
+        , mesh(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)), ippl::Vector<T, Dim>(1.0),
+               ippl::Vector<T, Dim>(0.0))
         , biggerMesh(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), ippl::Vector<T, Dim>(1.0),
                      ippl::Vector<T, Dim>(0.0))
+        , symmetricMesh(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
+                        ippl::Vector<T, Dim>(0.5), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
+        , betterQuadrature(ref_element)
         , lagrangeSpace(mesh, ref_element, quadrature)
-        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature) {
+        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature)
+        , symmetricLagrangeSpace(symmetricMesh, ref_element, betterQuadrature) {
         // fill the global reference DOFs
     }
 
-    const ippl::Vector<unsigned, Dim> meshSizes;
     const ElementType ref_element;
     const MeshType mesh;
     const MeshType biggerMesh;
+    const MeshType symmetricMesh;
     const QuadratureType quadrature;
+    const BetterQuadratureType betterQuadrature;
     const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType> lagrangeSpace;
     const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType>
         lagrangeSpaceBigger;
+    const ippl::LagrangeSpace<T, Dim, Order, BetterQuadratureType, FieldType, FieldType>
+        symmetricLagrangeSpace;
 };
 
 using Precisions = TestParams::Precisions;
@@ -540,11 +548,11 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             // Inverse Transpose Transformation Jacobian
             const ippl::Vector<T, lagrangeSpace.dim> DPhiInvT =
                 refElement.getInverseTransposeTransformationJacobian(
-                    lagrangeSpace.getElementMeshVertexIndices(zeroNdIndex));
+                    lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex));
 
             // Absolute value of det Phi_K
             const T absDetDPhi = std::abs(refElement.getDeterminantOfTransformationJacobian(
-                lagrangeSpace.getElementMeshVertexIndices(zeroNdIndex)));
+                lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex)));
 
             // Poisson equation eval function (based on the weak form)
             const auto eval = [DPhiInvT, absDetDPhi](
@@ -636,8 +644,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
     using FieldType = typename TestFixture::FieldType;
 
     // const auto& refElement = this->ref_element;
-    const auto& lagrangeSpace = this->lagrangeSpaceBigger;
-    auto mesh                 = this->biggerMesh;
+    const auto& lagrangeSpace = this->symmetricLagrangeSpace;
+    auto mesh                 = this->symmetricMesh;
     const std::size_t& dim    = lagrangeSpace.dim;
     const std::size_t& order  = lagrangeSpace.order;
     // const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
@@ -661,12 +669,18 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             // call evaluateLoadVector
             lagrangeSpace.evaluateLoadVector(rhs_field, f);
 
+            std::cout << "RHS" << std::endl;
+            for (std::size_t i = 0; i < 5; ++i) {
+                std::cout << lagrangeSpace.getFieldEntry(rhs_field, i) << std::endl;
+            }
+            std::cout << std::endl;
+
             // compare to analytical solution
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 0), 2.0 - pi, 1e-7);
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 1), -4.0, 1e-7);
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 2), 0.0, 1e-7);
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 3), 4.0, 1e-7);
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), 2.0 + pi, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), pi - 2.0, 1e-7);
         } else {
             GTEST_SKIP();
         }

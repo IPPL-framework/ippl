@@ -436,17 +436,31 @@ namespace ippl {
         }
 
         // Inverse Transpose Transformation Jacobian
-        const Vector<T, Dim> DPhiInvT =
-            this->ref_element_m.getInverseTransposeTransformationJacobian(
-                this->getElementMeshVertexIndices(zeroNdIndex));
+        // const Vector<T, Dim> DPhiInvT =
+        //     this->ref_element_m.getInverseTransposeTransformationJacobian(
+        //         this->getElementMeshVertexPoints(zeroNdIndex));
 
         // Absolute value of det Phi_K
         const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-            this->getElementMeshVertexIndices(zeroNdIndex)));
+            this->getElementMeshVertexPoints(zeroNdIndex)));
 
-        const auto eval = [absDetDPhi, f](const index_t& i, const point_t& q_k,
-                                          const Vector<T, this->numElementDOFs>& basis_q_k) {
-            return f(q_k) * basis_q_k[i] * absDetDPhi;
+        const auto eval = [this, absDetDPhi, f](const index_t elementIndex, const index_t& i,
+                                                const point_t& q_k,
+                                                const Vector<T, this->numElementDOFs>& basis_q_k) {
+            const T& f_q_k = f(this->ref_element_m.localToGlobal(
+                this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k));
+            std::cout << "q_k global = "
+                      << this->ref_element_m.localToGlobal(
+                             this->getElementMeshVertexIndices(
+                                 this->getElementNDIndex(elementIndex)),
+                             q_k)
+                      << std::endl;
+            std::cout << "f_q_k = " << f_q_k << std::endl;
+            std::cout << "basis_q_k[i] = " << basis_q_k[i] << std::endl;
+            std::cout << "absDetDPhi = " << absDetDPhi << std::endl;
+            std::cout << "eval = " << f_q_k * basis_q_k[i] * absDetDPhi << std::endl;
+
+            return f_q_k * basis_q_k[i] * absDetDPhi;
         };
 
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
@@ -455,19 +469,17 @@ namespace ippl {
 
             // 1. Compute b_K
             for (i = 0; i < this->numElementDOFs; ++i) {
-                b_K[i] = 0.0;
-                for (k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    b_K[i] += w[k] * eval(i, q[k], basis_q[k]);
-                }
-            }
-
-            // 2. Compute the contribution to b
-            for (i = 0; i < this->numElementDOFs; ++i) {
                 I = global_dofs[i];
-                const auto& dof_ndindex_I =
-                    this->getMeshVertexNDIndex(I);  // TODO fix for higher order
+                // TODO fix for higher order
+                const auto& dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                T& b_I                    = getFieldEntry(field, dof_ndindex_I);
+                b_I                       = 0.0;
 
-                getFieldEntry(field, dof_ndindex_I) += b_K[i];
+                for (k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    b_I += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
+                    std::cout << "w[" << k << "] = " << w[k] << std::endl;
+                }
+                std::cout << "b_" << I << " = " << b_I << std::endl;
             }
         }
     }

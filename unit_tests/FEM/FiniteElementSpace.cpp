@@ -35,7 +35,7 @@ public:
         : rng(42)
         , meshSizes(4)
         , ref_element()
-        , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
         , fem_space(mesh, ref_element, quadrature) {}
 
@@ -407,60 +407,60 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
     if (dim == 1) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
         ASSERT_EQ(indices.dim, 2);
-        ASSERT_EQ(indices[0][0], 2.0);
-        ASSERT_EQ(indices[1][0], 3.0);
+        ASSERT_EQ(indices[0][0], 1.0);
+        ASSERT_EQ(indices[1][0], 2.0);
     } else if (dim == 2) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
 
         ASSERT_EQ(indices.dim, 4);
 
-        ASSERT_EQ(indices[0][0], 2.0);
-        ASSERT_EQ(indices[0][1], 2.0);
+        ASSERT_EQ(indices[0][0], 1.0);
+        ASSERT_EQ(indices[0][1], 1.0);
 
-        ASSERT_EQ(indices[1][0], 3.0);
-        ASSERT_EQ(indices[1][1], 2.0);
+        ASSERT_EQ(indices[1][0], 2.0);
+        ASSERT_EQ(indices[1][1], 1.0);
 
-        ASSERT_EQ(indices[2][0], 2.0);
-        ASSERT_EQ(indices[2][1], 3.0);
+        ASSERT_EQ(indices[2][0], 1.0);
+        ASSERT_EQ(indices[2][1], 2.0);
 
-        ASSERT_EQ(indices[3][0], 3.0);
-        ASSERT_EQ(indices[3][1], 3.0);
+        ASSERT_EQ(indices[3][0], 2.0);
+        ASSERT_EQ(indices[3][1], 2.0);
     } else if (dim == 3) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);
 
         ASSERT_EQ(indices.dim, 8);
 
-        ASSERT_EQ(indices[0][0], 2.0);
-        ASSERT_EQ(indices[0][1], 2.0);
-        ASSERT_EQ(indices[0][2], 2.0);
+        ASSERT_EQ(indices[0][0], 1.0);
+        ASSERT_EQ(indices[0][1], 1.0);
+        ASSERT_EQ(indices[0][2], 1.0);
 
-        ASSERT_EQ(indices[1][0], 3.0);
-        ASSERT_EQ(indices[1][1], 2.0);
-        ASSERT_EQ(indices[1][2], 2.0);
+        ASSERT_EQ(indices[1][0], 2.0);
+        ASSERT_EQ(indices[1][1], 1.0);
+        ASSERT_EQ(indices[1][2], 1.0);
 
-        ASSERT_EQ(indices[2][0], 2.0);
-        ASSERT_EQ(indices[2][1], 3.0);
-        ASSERT_EQ(indices[2][2], 2.0);
+        ASSERT_EQ(indices[2][0], 1.0);
+        ASSERT_EQ(indices[2][1], 2.0);
+        ASSERT_EQ(indices[2][2], 1.0);
 
-        ASSERT_EQ(indices[3][0], 3.0);
-        ASSERT_EQ(indices[3][1], 3.0);
-        ASSERT_EQ(indices[3][2], 2.0);
+        ASSERT_EQ(indices[3][0], 2.0);
+        ASSERT_EQ(indices[3][1], 2.0);
+        ASSERT_EQ(indices[3][2], 1.0);
 
-        ASSERT_EQ(indices[4][0], 2.0);
-        ASSERT_EQ(indices[4][1], 2.0);
-        ASSERT_EQ(indices[4][2], 3.0);
+        ASSERT_EQ(indices[4][0], 1.0);
+        ASSERT_EQ(indices[4][1], 1.0);
+        ASSERT_EQ(indices[4][2], 2.0);
 
-        ASSERT_EQ(indices[5][0], 3.0);
-        ASSERT_EQ(indices[5][1], 2.0);
-        ASSERT_EQ(indices[5][2], 3.0);
+        ASSERT_EQ(indices[5][0], 2.0);
+        ASSERT_EQ(indices[5][1], 1.0);
+        ASSERT_EQ(indices[5][2], 2.0);
 
-        ASSERT_EQ(indices[6][0], 2.0);
-        ASSERT_EQ(indices[6][1], 3.0);
-        ASSERT_EQ(indices[6][2], 3.0);
+        ASSERT_EQ(indices[6][0], 1.0);
+        ASSERT_EQ(indices[6][1], 2.0);
+        ASSERT_EQ(indices[6][2], 2.0);
 
-        ASSERT_EQ(indices[7][0], 3.0);
-        ASSERT_EQ(indices[7][1], 3.0);
-        ASSERT_EQ(indices[7][2], 3.0);
+        ASSERT_EQ(indices[7][0], 2.0);
+        ASSERT_EQ(indices[7][1], 2.0);
+        ASSERT_EQ(indices[7][2], 2.0);
     } else {
         FAIL();
     }
