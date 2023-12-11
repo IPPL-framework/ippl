@@ -122,7 +122,7 @@ namespace ippl {
 
         template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
                   typename IndexType>
-        KOKKOS_INLINE_FUNCTION constexpr int zigzag_scatterToPoint(
+        KOKKOS_INLINE_FUNCTION constexpr int ZigzagScatterToPoint(
             const std::index_sequence<Index...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
             const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi,
@@ -148,7 +148,7 @@ namespace ippl {
          */
         template <unsigned long... ScatterPoint, typename T, unsigned Dim,
                   typename IndexType = size_t>
-        KOKKOS_INLINE_FUNCTION void zigzag_scatterToField(
+        KOKKOS_INLINE_FUNCTION void ZigzagScatterToField(
             const std::index_sequence<ScatterPoint...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
             Vector<T, Dim> from, Vector<T, Dim> to,

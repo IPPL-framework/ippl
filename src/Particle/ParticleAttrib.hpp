@@ -191,8 +191,7 @@ namespace ippl {
 
                 //val is charge (or other quantity)
                 const value_type& val = dview_m(idx);
-                //LOG("Passing from " << from << " to " << to << "!!");
-                detail::zigzag_scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, from, to, dx, val * dt_scale, lDom, nghost);
+                detail::ZigzagScatterToField(std::make_index_sequence<1 << Field::dim>{}, view, from, to, dx, val * dt_scale, lDom, nghost);
             });
         IpplTimings::stopTimer(scatterTimer);
 

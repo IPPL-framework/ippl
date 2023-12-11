@@ -65,7 +65,7 @@ namespace ippl {
         }
         template <unsigned long ScatterPoint, unsigned long... Index, typename T, unsigned Dim,
                   typename IndexType>
-        KOKKOS_INLINE_FUNCTION constexpr int zigzag_scatterToPoint(
+        KOKKOS_INLINE_FUNCTION constexpr int ZigzagScatterToPoint(
             const std::index_sequence<Index...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
             const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi,
@@ -74,34 +74,23 @@ namespace ippl {
             (void)lDom;
             (void)nghost;
             (void)source;
-            //std::cout << args[0] << " " << args[1] << " " << args[2] << std::endl;
-            //assert(((zigzag_interpolationIndex<ScatterPoint, Index>(args) < view.extent(0)) && ...));
             bool isinbound = true;
-            ippl::Vector<T, Dim> depot = scale * val * (zigzag_interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...);
-            ippl::Vector<IndexType, Dim> index3{zigzag_interpolationIndex<ScatterPoint, Index>(args)...};
+            ippl::Vector<T, Dim> depot = scale * val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...);
+            ippl::Vector<IndexType, Dim> index3{interpolationIndex<ScatterPoint, Index>(args)...};
             for(unsigned int d = 0; d < Dim;d++){
                 isinbound &= (index3[d] < view.extent(d));
             }
             if(!isinbound){
-                //if(ippl::Comm->rank() == 0){
-                //    std::cout << "scatter cancelled!!\n";
-                //}
                 return 0;
             }
-            typename ippl::detail::ViewType<ippl::Vector<T, Dim>,
+            for(unsigned int d = 0;d < Dim;d++){
+                typename ippl::detail::ViewType<ippl::Vector<T, Dim>,
                                             Dim>::view_type::value_type::value_type* destptr =
-                &(view(zigzag_interpolationIndex<ScatterPoint, Index>(args)...)[0]);
-            Kokkos::atomic_add(
-                destptr,
-                scale * val[0] * (zigzag_interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
-            destptr = &(view(zigzag_interpolationIndex<ScatterPoint, Index>(args)...)[1]);
-            Kokkos::atomic_add(
-                destptr,
-                scale * val[1] * (zigzag_interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
-            destptr = &(view(zigzag_interpolationIndex<ScatterPoint, Index>(args)...)[2]);
-            Kokkos::atomic_add(
-                destptr,
-                scale * val[2] * (zigzag_interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
+                    &(view(interpolationIndex<ScatterPoint, Index>(args)...)[d]);
+                Kokkos::atomic_add(
+                    destptr,
+                    scale * val[d] * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
+            }
 
             return 0;
         }
@@ -125,7 +114,7 @@ namespace ippl {
             return x - floor(x);
         }
         template <unsigned long... ScatterPoint, typename T, unsigned Dim, typename IndexType>
-        KOKKOS_INLINE_FUNCTION void zigzag_scatterToField(
+        KOKKOS_INLINE_FUNCTION void ZigzagScatterToField(
             const std::index_sequence<ScatterPoint...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
             Vector<T, Dim> from, Vector<T, Dim> to,
@@ -185,7 +174,7 @@ namespace ippl {
             
             // Perform the scatter operation for the first midpoint
             auto _ =
-                (zigzag_scatterToPoint<ScatterPoint>(std::make_index_sequence<Dim>{}, view, wlo,
+                (ZigzagScatterToPoint<ScatterPoint>(std::make_index_sequence<Dim>{}, view, wlo,
                                                      whi, fromi_local, jcfrom, scale, hr, lDom, nghost, source1)
                  ^ ...);
             
@@ -195,48 +184,12 @@ namespace ippl {
             }
 
             auto __ =
-                (zigzag_scatterToPoint<ScatterPoint>(std::make_index_sequence<Dim>{}, view, wlo,
+                (ZigzagScatterToPoint<ScatterPoint>(std::make_index_sequence<Dim>{}, view, wlo,
                                                      whi, toi_local, jcto, scale, hr, lDom, nghost, source2)
                  ^ ...);
 
             (void)_;
             (void)__; // [[maybe_unused]] causes issues on certain compilers
-        }
-        template <unsigned long Point, unsigned long Index, typename IndexType, unsigned Dim>
-        KOKKOS_INLINE_FUNCTION constexpr IndexType zigzag_interpolationIndex(
-            const Vector<IndexType, Dim>& args) {
-            if constexpr (Point & (1 << Index)) {
-                return args[Index] - 1;
-            } else {
-                return args[Index];
-            }
-            // device code cannot throw exceptions, but we need a
-            // dummy return to silence the warning
-            return 0;
-        }
-        /**
-         * @brief Calculate a weight for zigzag scattering.
-         *
-         *
-         * @tparam Point A special identifier that affects the weight calculation.
-         * @tparam Index Another identifier used to determine the weight.
-         * @tparam T The type of values used for calculations, like numbers.
-         * @tparam Dim The number of dimensions of the particle
-         * @param wlo The position information for the lower bound of data points.
-         * @param whi The position information for the upper bound of data points.
-         * @return The calculated weight, indicating how far a data point should move.
-         *
-         */
-        template <unsigned long Point, unsigned long Index, typename T, unsigned Dim>
-        KOKKOS_INLINE_FUNCTION constexpr T zigzag_interpolationWeight(const Vector<T, Dim>& wlo,
-                                                                      const Vector<T, Dim>& whi) {
-            if constexpr (Point & (1 << Index)) {
-                return wlo[Index];
-            } else {
-                return whi[Index];
-            }
-            // device code cannot throw exceptions, but we need a
-            // dummy return to silence the warning
         }
        
         template <unsigned long... GatherPoint, typename View, typename T, typename IndexType>
