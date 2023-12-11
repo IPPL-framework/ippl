@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using OpRet = lhs_type;
+        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;  // lhs_type;
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
@@ -83,8 +83,12 @@ namespace ippl {
                            * absDetDPhi;
                 };
 
-            const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet {
-                return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+            // const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet
+            // {
+            //     return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+            // };
+            const auto algoOperator = [](lhs_type field) -> OpRet {
+                return -laplace(field);
             };
 
             algo_m.setOperator(algoOperator);
