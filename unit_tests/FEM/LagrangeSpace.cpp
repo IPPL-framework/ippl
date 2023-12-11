@@ -631,9 +631,49 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     }
 }
 
-// TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
-//     FAIL();
-// }
+TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
+    // using T         = typename TestFixture::value_t;
+    using FieldType = typename TestFixture::FieldType;
+
+    // const auto& refElement = this->ref_element;
+    const auto& lagrangeSpace = this->lagrangeSpaceBigger;
+    auto mesh                 = this->biggerMesh;
+    const std::size_t& dim    = lagrangeSpace.dim;
+    const std::size_t& order  = lagrangeSpace.order;
+    // const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
+
+    const double pi = Kokkos::numbers::pi_v<double>;
+
+    if (order == 1) {
+        if (dim == 1) {
+            // initialize the RHS field
+            ippl::NDIndex<lagrangeSpace.dim> domain(
+                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
+            ippl::FieldLayout<lagrangeSpace.dim> layout(domain);
+
+            FieldType rhs_field(mesh, layout, 0);
+
+            // define the RHS function f
+            auto f = [&pi](ippl::Vector<double, 1> x) {
+                return pi * pi * Kokkos::sin(pi * x[0]);
+            };
+
+            // call evaluateLoadVector
+            lagrangeSpace.evaluateLoadVector(rhs_field, f);
+
+            // compare to analytical solution
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 0), 2.0 - pi, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 1), -4.0, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 2), 0.0, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 3), 4.0, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), 2.0 + pi, 1e-7);
+        } else {
+            GTEST_SKIP();
+        }
+    } else {
+        GTEST_SKIP();
+    }
+}
 
 int main(int argc, char* argv[]) {
     int success = 1;
