@@ -61,13 +61,18 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
         "Assign lhs", lhs.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i) { lhs.getView()(i) = 0.0; });
 
-    // set right hand side
-    Kokkos::parallel_for(
-        "Assign rhs", rhs.getFieldRangePolicy(), KOKKOS_LAMBDA(const int i) {
-            const double x = i * cellSpacing[0] + origin[0];
+    auto f = [&pi](ippl::Vector<double, 1> x) {
+        return pi * pi * Kokkos::sin(pi * x[0]);
+    };
 
-            rhs.getView()(i) = pi * pi * Kokkos::sin(pi * x);
-        });
+    std::cout << std::setw(15) << "f:" << std::endl;
+    for (double x = -1.0; x <= 1.0; x += 2.0 / 8.0) {
+        std::cout << std::setw(15) << f(ippl::Vector<double, 1>(x));
+    }
+    std::cout << std::endl;
+
+    // initialize the solver
+    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f);
 
     // print the RHS
     std::cout << std::setw(15) << "rhs:";
@@ -78,9 +83,6 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
         std::cout << std::setw(15) << rhs(i_x);
     }
     std::cout << std::endl;
-
-    // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // set the parameters
     ippl::ParameterList params;

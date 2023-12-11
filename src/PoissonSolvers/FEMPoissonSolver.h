@@ -45,13 +45,16 @@ namespace ippl {
         //     setDefaultParameters();
         // }
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
+        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                         const std::function<Tlhs(const Vector<Tlhs, Dim>&)>& rhs_f)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+
+            lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
         }
 
         /**

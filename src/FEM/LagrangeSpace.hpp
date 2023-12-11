@@ -312,7 +312,7 @@ namespace ippl {
         // zero by default)
         FieldLHS resultField(field.get_mesh(), field.getLayout(), numGhosts);
 
-        bool checkEssentialBDCs = false;  // TODO get from field
+        bool checkEssentialBDCs = true;  // TODO get from field
         // T bc_const_value        = 1.0;   // TODO get from field
 
         // Allocate memory for the element matrix
@@ -388,11 +388,6 @@ namespace ippl {
             for (i = 0; i < this->numElementDOFs; ++i) {
                 I_nd = global_dof_ndindices[i];
 
-                // Skip boundary DOFs (Zero Dirichlet BCs)
-                if (checkEssentialBDCs && isBoundaryDOF(I_nd)) {
-                    continue;
-                }
-
                 for (j = 0; j < this->numElementDOFs; ++j) {
                     J_nd = global_dof_ndindices[j];
 
@@ -401,8 +396,7 @@ namespace ippl {
                         continue;
                     }
 
-                    getFieldEntry(resultField, I_nd) +=
-                        (A_K[i][j] / this->mesh_m.getCellVolume()) * getFieldEntry(field, J_nd);
+                    getFieldEntry(resultField, I_nd) += A_K[i][j] * getFieldEntry(field, J_nd);
                 }
             }
         }
