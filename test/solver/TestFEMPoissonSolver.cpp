@@ -85,6 +85,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 0.0);
+    params.add("max_iterations", 10);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
         IpplTimings::startTimer(timer);
 
-        const unsigned numPoints = 5;
+        const unsigned numPoints = 9;
 
         test_1D_problem(numPoints);
 

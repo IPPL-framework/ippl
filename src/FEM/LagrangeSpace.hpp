@@ -312,7 +312,7 @@ namespace ippl {
         // zero by default)
         FieldLHS resultField(field.get_mesh(), field.getLayout(), numGhosts);
 
-        bool checkEssentialBDCs = true;  // TODO get from field
+        bool checkEssentialBDCs = false;  // TODO get from field
         // T bc_const_value        = 1.0;   // TODO get from field
 
         // Allocate memory for the element matrix
@@ -401,7 +401,8 @@ namespace ippl {
                         continue;
                     }
 
-                    getFieldEntry(resultField, I_nd) += A_K[i][j] * getFieldEntry(field, J_nd);
+                    getFieldEntry(resultField, I_nd) +=
+                        (A_K[i][j] / this->mesh_m.getCellVolume()) * getFieldEntry(field, J_nd);
                 }
             }
         }

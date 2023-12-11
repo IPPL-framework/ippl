@@ -80,7 +80,7 @@ namespace ippl {
 
             //// DEBUG PRINT //////////////////////////////////////////////
             std::cout << std::setw(15) << "r_0 (= d_0):";
-            for (unsigned i_x = 0; i_x < 5; ++i_x) {
+            for (unsigned i_x = 0; i_x < 9; ++i_x) {
                 if (i_x != 0)
                     std::cout << ",";
 
@@ -116,31 +116,11 @@ namespace ippl {
 
                 //// DEBUG PRINT //////////////////////////////////////////////
                 std::cout << std::endl;
-                std::cout << "iteration " << iterations_m << ", residueNorm: " << residueNorm
+                std::cout << "after iteration " << iterations_m << ", residueNorm: " << residueNorm
                           << std::endl;
 
-                std::cout << std::setw(15) << "alpha = " << alpha << std::endl;
-                std::cout << std::setw(15) << "beta = " << beta << std::endl;
-
-                std::cout << std::setw(15) << "lhs:";
-                for (unsigned i_x = 0; i_x < 5; ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << lhs(i_x);
-                }
-                std::cout << std::endl;
-                std::cout << std::setw(15) << "d:";
-                for (unsigned i_x = 0; i_x < 5; ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << d(i_x);
-                }
-                std::cout << std::endl;
-
-                std::cout << std::setw(15) << "q:";
-                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                std::cout << std::setw(15) << "q (= A*p):";
+                for (unsigned i_x = 0; i_x < 9; ++i_x) {
                     if (i_x != 0)
                         std::cout << ",";
 
@@ -148,12 +128,35 @@ namespace ippl {
                 }
                 std::cout << std::endl;
 
+                std::cout << std::setw(15) << "alpha:" << std::setw(15) << alpha << std::endl;
+
+                std::cout << std::setw(15) << "lhs:";
+                for (unsigned i_x = 0; i_x < 9; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << lhs(i_x);
+                }
+                std::cout << std::endl;
+
                 std::cout << std::setw(15) << "r:";
-                for (unsigned i_x = 0; i_x < 5; ++i_x) {
+                for (unsigned i_x = 0; i_x < 9; ++i_x) {
                     if (i_x != 0)
                         std::cout << ",";
 
                     std::cout << std::setw(15) << r(i_x);
+                }
+                std::cout << std::endl;
+
+                std::cout << std::setw(15) << "beta:" << std::setw(15) << beta << std::endl;
+
+                // d (= p)
+                std::cout << std::setw(15) << "d (= p):";
+                for (unsigned i_x = 0; i_x < 9; ++i_x) {
+                    if (i_x != 0)
+                        std::cout << ",";
+
+                    std::cout << std::setw(15) << d(i_x);
                 }
                 std::cout << std::endl;
                 ///////////////////////////////////////////////////////////////

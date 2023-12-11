@@ -32,16 +32,22 @@ public:
         : meshSizes(3)
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
+        , biggerMesh(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), ippl::Vector<T, Dim>(1.0),
+                     ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element)
-        , lagrangeSpace(mesh, ref_element, quadrature) {
+        , lagrangeSpace(mesh, ref_element, quadrature)
+        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature) {
         // fill the global reference DOFs
     }
 
     const ippl::Vector<unsigned, Dim> meshSizes;
     const ElementType ref_element;
     const MeshType mesh;
+    const MeshType biggerMesh;
     const QuadratureType quadrature;
     const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType> lagrangeSpace;
+    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType>
+        lagrangeSpaceBigger;
 };
 
 using Precisions = TestParams::Precisions;
@@ -510,8 +516,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using FieldType = typename TestFixture::FieldType;
 
     const auto& refElement           = this->ref_element;
-    const auto& lagrangeSpace        = this->lagrangeSpace;
-    auto mesh                        = this->mesh;
+    const auto& lagrangeSpace        = this->lagrangeSpaceBigger;
+    auto mesh                        = this->biggerMesh;
     const std::size_t& dim           = lagrangeSpace.dim;
     const std::size_t& order         = lagrangeSpace.order;
     const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
@@ -519,7 +525,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     if (order == 1) {
         if (dim == 1) {
             // create layout
-            ippl::NDIndex<lagrangeSpace.dim> domain(ippl::Vector<unsigned, lagrangeSpace.dim>(3));
+            ippl::NDIndex<lagrangeSpace.dim> domain(
+                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
             ippl::FieldLayout<lagrangeSpace.dim> layout(domain);
 
             FieldType x(mesh, layout, 0);
@@ -600,7 +607,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             std::cout << "A_ref = " << std::endl;
             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    std::cout << A_ref(i, j) << " ";
+                    std::cout << std::setw(2) << A_ref(i, j) << " ";
                 }
                 std::cout << std::endl;
             }
