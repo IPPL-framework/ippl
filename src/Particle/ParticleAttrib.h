@@ -122,6 +122,13 @@ namespace ippl {
         template <typename Field, typename P2>
         void scatter(Field& f,
                      const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
+        //     scatter the data from this attribute onto the given Field, using
+        //     the given Position attribute
+        //     This performs zigzag deposition!
+        template <typename Field, typename P2>
+        void scatter(Field& f,
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp1,
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp2, T dt_scale) const;
 
         template <typename Field, typename P2>
         void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
