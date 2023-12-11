@@ -388,6 +388,11 @@ namespace ippl {
             for (i = 0; i < this->numElementDOFs; ++i) {
                 I_nd = global_dof_ndindices[i];
 
+                // Skip boundary DOFs (Zero Dirichlet BCs)
+                if (checkEssentialBDCs && isBoundaryDOF(I_nd)) {
+                    continue;
+                }
+
                 for (j = 0; j < this->numElementDOFs; ++j) {
                     J_nd = global_dof_ndindices[j];
 
@@ -449,16 +454,6 @@ namespace ippl {
                                                 const Vector<T, this->numElementDOFs>& basis_q_k) {
             const T& f_q_k = f(this->ref_element_m.localToGlobal(
                 this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k));
-            std::cout << "q_k global = "
-                      << this->ref_element_m.localToGlobal(
-                             this->getElementMeshVertexIndices(
-                                 this->getElementNDIndex(elementIndex)),
-                             q_k)
-                      << std::endl;
-            std::cout << "f_q_k = " << f_q_k << std::endl;
-            std::cout << "basis_q_k[i] = " << basis_q_k[i] << std::endl;
-            std::cout << "absDetDPhi = " << absDetDPhi << std::endl;
-            std::cout << "eval = " << f_q_k * basis_q_k[i] * absDetDPhi << std::endl;
 
             return f_q_k * basis_q_k[i] * absDetDPhi;
         };
@@ -473,13 +468,10 @@ namespace ippl {
                 // TODO fix for higher order
                 const auto& dof_ndindex_I = this->getMeshVertexNDIndex(I);
                 T& b_I                    = getFieldEntry(field, dof_ndindex_I);
-                b_I                       = 0.0;
 
                 for (k = 0; k < QuadratureType::numElementNodes; ++k) {
                     b_I += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
-                    std::cout << "w[" << k << "] = " << w[k] << std::endl;
                 }
-                std::cout << "b_" << I << " = " << b_I << std::endl;
             }
         }
     }
