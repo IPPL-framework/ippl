@@ -141,7 +141,7 @@ namespace ippl {
                 // scatter
                 const value_type& val = dview_m(idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
-                                       args, val);
+                                       args, val * scal);
             });
         IpplTimings::stopTimer(scatterTimer);
 
