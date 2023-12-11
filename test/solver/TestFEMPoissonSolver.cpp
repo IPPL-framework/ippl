@@ -22,12 +22,12 @@
 void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     constexpr unsigned dim = 1;
 
-    using Mesh_t   = ippl::UniformCartesian<double, dim>;
-    using Field_t  = ippl::Field<double, dim, Mesh_t, Cell>;
-    using BConds_t = ippl::BConds<Field_t, dim>;
+    using Mesh_t  = ippl::UniformCartesian<double, dim>;
+    using Field_t = ippl::Field<double, dim, Mesh_t, Cell>;
+    // using BConds_t = ippl::BConds<Field_t, dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
-    const unsigned numGhosts      = 0;
+    const unsigned numGhosts      = 1;
 
     // Domain: [-1, 1]
     ippl::NDIndex<dim> domain(numNodesPerDim);
@@ -41,11 +41,12 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     Field_t sol(mesh, layout, numGhosts);  // exact solution
 
     // Define boundary conditions
-    BConds_t bcField;
-    for (unsigned int i = 0; i < 2 * dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
-    }
-    lhs.setFieldBC(bcField);
+    // BConds_t bcField;
+    // for (unsigned int i = 0; i < 2 * dim; ++i) {
+    //     bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
+    // }
+    // lhs.setFieldBC(bcField);
+    // rhs.setFieldBC(bcField);
 
     // set solution
     const double pi = Kokkos::numbers::pi_v<double>;
@@ -57,26 +58,27 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
         });
 
     // set lhs to zero
-    Kokkos::parallel_for(
-        "Assign lhs", lhs.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const int i) { lhs.getView()(i) = 0.0; });
+    // Kokkos::parallel_for(
+    //     "Assign lhs", lhs.getFieldRangePolicy(),
+    //     KOKKOS_LAMBDA(const int i) { lhs.getView()(i) = 0.0; });
 
     auto f = [&pi](ippl::Vector<double, 1> x) {
         return pi * pi * Kokkos::sin(pi * x[0]);
     };
 
-    std::cout << std::setw(15) << "f:" << std::endl;
-    for (double x = -1.0; x <= 1.0; x += 2.0 / 8.0) {
-        std::cout << std::setw(15) << f(ippl::Vector<double, 1>(x));
+    // TODO remove
+    for (unsigned i = 0; i < rhs.getView().size(); ++i) {
+        const double x = (static_cast<int>(i) - numGhosts) * cellSpacing[0] + origin[0];
+
+        rhs.getView()(i) = f(x);
     }
-    std::cout << std::endl;
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f);
 
     // print the RHS
     std::cout << std::setw(15) << "rhs:";
-    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+    for (unsigned i_x = 0; i_x < rhs.getView().size(); ++i_x) {
         if (i_x != 0)
             std::cout << ",";
 
@@ -86,8 +88,8 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // set the parameters
     ippl::ParameterList params;
-    params.add("tolerance", 0.0);
-    params.add("max_iterations", 10);
+    // params.add("tolerance", 0.0);
+    // params.add("max_iterations", 10);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -98,7 +100,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // print the solution
     std::cout << "Solution:" << std::endl;
-    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+    for (unsigned i_x = 0; i_x < sol.getView().size(); ++i_x) {
         if (i_x != 0)
             std::cout << ",";
 
@@ -108,7 +110,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // print the LHS after solving
     std::cout << "LHS:" << std::endl;
-    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+    for (unsigned i_x = 0; i_x < lhs.getView().size(); ++i_x) {
         if (i_x != 0)
             std::cout << ",";
 
@@ -122,7 +124,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // print the absolute error
     std::cout << "Error:" << std::endl;
-    for (unsigned i_x = 0; i_x < numNodesPerDim; ++i_x) {
+    for (unsigned i_x = 0; i_x < error.getView().size(); ++i_x) {
         if (i_x != 0)
             std::cout << ",";
 
@@ -138,7 +140,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
         IpplTimings::startTimer(timer);
 
-        const unsigned numPoints = 9;
+        const unsigned numPoints = 5;
 
         test_1D_problem(numPoints);
 

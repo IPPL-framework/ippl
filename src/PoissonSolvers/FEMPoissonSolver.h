@@ -54,7 +54,9 @@ namespace ippl {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
+            std::cout << rhs_f(0) << std::endl;
+
+            // lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
         }
 
         /**
