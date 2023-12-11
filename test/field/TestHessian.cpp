@@ -39,12 +39,11 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> owned(I, I, I);
 
         // Specifies SERIAL, PARALLEL dims
-        ippl::e_dim_tag decomp[dim];
-        for (unsigned int d = 0; d < dim; d++)
-            decomp[d] = ippl::PARALLEL;
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(owned, decomp);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // type definitions
         typedef ippl::Vector<double, dim> Vector_t;
@@ -155,8 +154,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(valN));
 
                 double globalN(0.0);
-                MPI_Allreduce(&valN, &globalN, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(valN, globalN, 1, std::plus<double>());
                 double errorN = std::sqrt(globalN);
 
                 double valD(0.0);
@@ -173,8 +171,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(valD));
 
                 double globalD(0.0);
-                MPI_Allreduce(&valD, &globalD, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(valD, globalD, 1, std::plus<double>());
                 double errorD = std::sqrt(globalD);
 
                 // Compute relative Error

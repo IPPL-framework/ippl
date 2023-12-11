@@ -29,7 +29,8 @@ namespace ippl {
         Vector()
             : Vector(value_type(0)) {}
 
-        template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
+        template <typename... Args,
+                  typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
         explicit KOKKOS_FUNCTION Vector(const Args&... args);
 
         template <typename E, size_t N>
@@ -40,6 +41,11 @@ namespace ippl {
 
         KOKKOS_FUNCTION
         Vector(const T& val);
+        
+        
+        Vector(const std::array<T, Dim>& a);
+
+	Vector(const std::array<std::vector<T>, Dim>& a);
 
         /*!
          * @param list of values
@@ -74,6 +80,14 @@ namespace ippl {
 
         template <typename E, size_t N>
         KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator+=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator-=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator*=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const T& val);
 
         using iterator       = T*;
         using const_iterator = const T*;

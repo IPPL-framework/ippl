@@ -14,7 +14,9 @@
 namespace ippl {
 
     void initialize(int& argc, char* argv[], MPI_Comm comm) {
-        Comm = std::make_unique<ippl::Communicate>(argc, argv, comm);
+        Env = std::make_unique<mpi::Environment>(argc, argv, comm);
+
+        Comm = std::make_unique<mpi::Communicator>(comm);
 
         Info  = std::make_unique<Inform>("Ippl");
         Warn  = std::make_unique<Inform>("Warning", std::cerr);
@@ -26,7 +28,7 @@ namespace ippl {
             int nargs     = 0;
             while (nargs < argc) {
                 if (detail::checkOption(argv[nargs], "--help", "-h")) {
-                    if (Comm->myNode() == 0) {
+                    if (Comm->rank() == 0) {
                         IpplInfo::printHelp(argv);
                     }
                     std::exit(0);
@@ -79,14 +81,14 @@ namespace ippl {
             Error->setOutputLevel(0);
             Warn->setOutputLevel(0);
 
-            if (infoLevel > 0 && Comm->myNode() == 0) {
+            if (infoLevel > 0 && Comm->rank() == 0) {
                 for (auto& l : notparsed) {
                     std::cout << "Warning: Option '" << l << "' is not parsed by Ippl."
                               << std::endl;
                 }
             }
         } catch (const std::exception& e) {
-            if (Comm->myNode() == 0) {
+            if (Comm->rank() == 0) {
                 std::cerr << e.what() << std::endl;
             }
             std::exit(0);
@@ -98,6 +100,10 @@ namespace ippl {
     void finalize() {
         Comm->deleteAllBuffers();
         Kokkos::finalize();
+        // we must first delete the communicator and
+        // afterwards the MPI environment
+        Comm.reset(nullptr);
+        Env.reset(nullptr);
     }
 
     void fence() {

@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.20.3)
 project (IPPL CXX)
 set (IPPL_VERSION_MAJOR 3)
 set (IPPL_VERSION_MINOR 0.1)
@@ -67,7 +67,7 @@ if (ENABLE_TESTS)
     add_subdirectory (test)
 endif ()
 
-option (ENABLE_ALPINE, "Enable Alpine" OFF)
+option (ENABLE_ALPINE "Enable Alpine" OFF)
 if (ENABLE_ALPINE)
     if (NOT ENABLE_SOLVERS)
         message (FATAL_ERROR "Cannot enable Alpine since Solver not enabled (-DENABLE_SOLVERS=ON)!")
@@ -81,9 +81,22 @@ endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
-    find_package (GTest REQUIRED HINT $ENV{GTEST_PREFIX})
+    include(FetchContent)
+    include(GoogleTest)
+
+    enable_testing()
+
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP ON # policy hint for CMake > 3.24
+        )
+
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
     add_subdirectory (unit_tests)
-    #add_subdirectory(unit_tests_single_precision)
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in

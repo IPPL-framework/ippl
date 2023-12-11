@@ -37,7 +37,7 @@ namespace ippl {
 
         using hash_type = typename Base::hash_type;
 
-        using view_type  = typename detail::ViewType<T, 1, Properties...>::view_type;
+        using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
         using HostMirror = typename view_type::host_mirror_type;
 

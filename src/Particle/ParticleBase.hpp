@@ -112,8 +112,7 @@ namespace ippl {
             localNum_m += nLocal;
         }
 
-        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
-        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
+        Comm->allreduce(localNum_m, totalNum_m, 1, std::plus<size_type>());
     }
 
     template <class PLayout, typename... IP>
@@ -130,7 +129,7 @@ namespace ippl {
         create(n);
 
         nextID_m   = tmpNextID;
-        numNodes_m = Comm->getNodes();
+        numNodes_m = Comm->size();
     }
 
     template <class PLayout, typename... IP>
@@ -140,7 +139,7 @@ namespace ippl {
         // Compute the number of particles local to each processor
         size_type nLocal = nTotal / numNodes_m;
 
-        const size_t rank = Comm->myNode();
+        const size_t rank = Comm->rank();
 
         size_type rest = nTotal - nLocal * rank;
         if (rank < rest) {
@@ -156,8 +155,7 @@ namespace ippl {
                                                const size_type destroyNum) {
         this->internalDestroy(invalid, destroyNum);
 
-        MPI_Datatype type = get_mpi_datatype<size_type>(localNum_m);
-        MPI_Allreduce(&localNum_m, &totalNum_m, 1, type, MPI_SUM, Comm->getCommunicator());
+        Comm->allreduce(localNum_m, totalNum_m, 1, std::plus<size_type>());
     }
 
     template <class PLayout, typename... IP>
@@ -243,6 +241,9 @@ namespace ippl {
 
         localNum_m -= destroyNum;
 
+        // We need to delete particles in all memory spaces. If there are any attributes not stored
+        // in the memory space we've already been using, we need to copy the index views to the
+        // other spaces.
         auto filter = [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         };
@@ -279,7 +280,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_SEND + sendNum, bufSize);
 
             Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
@@ -295,7 +296,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(IPPL_PARTICLE_RECV + recvNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_RECV + recvNum, bufSize);
 
             Comm->recv(rank, tag++, *this, *buf, bufSize, nRecvs);
             buf->resetReadPos();

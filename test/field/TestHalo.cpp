@@ -25,12 +25,11 @@ int main(int argc, char* argv[]) {
         ippl::Index K(pt[2]);
         ippl::NDIndex<dim> owned(I, J, K);
 
-        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::PARALLEL;
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
 
         typedef ippl::FieldLayout<dim> Layout_t;
-        Layout_t layout(owned, allParallel);
+        Layout_t layout(MPI_COMM_WORLD, owned, isParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
