@@ -33,7 +33,7 @@ namespace ippl {
         int getIterationCount() { return iterations_m; }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
-            // constexpr unsigned Dim = lhs_type::dim;
+            constexpr unsigned Dim = lhs_type::dim;
 
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
@@ -45,43 +45,32 @@ namespace ippl {
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r(mesh, layout, lhs.getNghost());
 
-            // using bc_type  = BConds<lhs_type, Dim>;
-            // bc_type lhsBCs = lhs.getFieldBC();
-            // bc_type bc;
+            using bc_type  = BConds<lhs_type, Dim>;
+            bc_type lhsBCs = lhs.getFieldBC();
+            bc_type bc;
 
-            // bool allFacesPeriodic = true;
-            // for (unsigned int i = 0; i < 2 * Dim; ++i) {
-            //     FieldBC bcType = lhsBCs[i]->getBCType();
-            //     if (bcType == PERIODIC_FACE) {
-            //         // If the LHS has periodic BCs, so does the residue
-            //         bc[i] = std::make_shared<PeriodicFace<lhs_type>>(i);
-            //     } else if (bcType & CONSTANT_FACE) {
-            //         // If the LHS has constant BCs, the residue is zero on the BCs
-            //         // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-            //         bc[i]            = std::make_shared<ZeroFace<lhs_type>>(i);
-            //         allFacesPeriodic = false;
-            //     } else {
-            //         throw IpplException("PCG::operator()",
-            //                             "Only periodic or constant BCs for LHS supported.");
-            //         return;
-            //     }
-            // }
+            bool allFacesPeriodic = true;
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                FieldBC bcType = lhsBCs[i]->getBCType();
+                if (bcType == PERIODIC_FACE) {
+                    // If the LHS has periodic BCs, so does the residue
+                    bc[i] = std::make_shared<PeriodicFace<lhs_type>>(i);
+                } else if (bcType & CONSTANT_FACE) {
+                    // If the LHS has constant BCs, the residue is zero on the BCs
+                    // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
+                    bc[i]            = std::make_shared<ZeroFace<lhs_type>>(i);
+                    allFacesPeriodic = false;
+                } else {
+                    throw IpplException("PCG::operator()",
+                                        "Only periodic or constant BCs for LHS supported.");
+                    return;
+                }
+            }
 
             r = rhs - op_m(lhs);
 
-            //// DEBUG PRINT //////////////////////////////////////////////
-            std::cout << std::setw(15) << "r:";
-            for (unsigned i_x = 0; i_x < r.getView().size(); ++i_x) {
-                if (i_x != 0)
-                    std::cout << ",";
-
-                std::cout << std::setw(15) << r(i_x);
-            }
-            std::cout << std::endl;
-            ///////////////////////////////////////////////////////////////
-
             lhs_type d = r.deepCopy();
-            // d.setFieldBC(bc);
+            d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, r);
             residueNorm       = std::sqrt(delta1);
@@ -89,26 +78,11 @@ namespace ippl {
 
             lhs_type q(mesh, layout, lhs.getNghost());
 
-            //// DEBUG PRINT //////////////////////////////////////////////
-            std::cout << std::setw(15) << "r_0 (= d_0):";
-            for (unsigned i_x = 0; i_x < r.getView().size(); ++i_x) {
-                if (i_x != 0)
-                    std::cout << ",";
-
-                std::cout << std::setw(15) << r(i_x);
-            }
-            std::cout << std::endl;
-            ///////////////////////////////////////////////////////////////
-
             while (iterations_m < maxIterations && residueNorm > tolerance) {
                 q = op_m(d);
 
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
-
-                // TODO remove
-                // lhs.getView()(lhs.getNghost())                            = 0.0;
-                // lhs.getView()(lhs.getView().size() - 1 - lhs.getNghost()) = 0.0;
 
                 // The exact residue is given by
                 // r = rhs - op_m(lhs);
@@ -128,64 +102,12 @@ namespace ippl {
                 d = r + beta * d;
 
                 ++iterations_m;
-
-                //// DEBUG PRINT //////////////////////////////////////////////
-                std::cout << std::endl;
-                std::cout << "after iteration " << iterations_m << ", residueNorm: " << residueNorm
-                          << std::endl;
-
-                std::cout << std::setw(15) << "q (= A*p):";
-                for (unsigned i_x = 0; i_x < q.getView().size(); ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << q(i_x);
-                }
-                std::cout << std::endl;
-
-                std::cout << std::setw(15) << "alpha:" << std::setw(15) << alpha << std::endl;
-
-                std::cout << std::setw(15) << "lhs:";
-                for (unsigned i_x = 0; i_x < lhs.getView().size(); ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << lhs(i_x);
-                }
-                std::cout << std::endl;
-
-                std::cout << std::setw(15) << "r:";
-                for (unsigned i_x = 0; i_x < r.getView().size(); ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << r(i_x);
-                }
-                std::cout << std::endl;
-
-                std::cout << std::setw(15) << "beta:" << std::setw(15) << beta << std::endl;
-
-                // d (= p)
-                std::cout << std::setw(15) << "d (= p):";
-                for (unsigned i_x = 0; i_x < d.getView().size(); ++i_x) {
-                    if (i_x != 0)
-                        std::cout << ",";
-
-                    std::cout << std::setw(15) << d(i_x);
-                }
-                std::cout << std::endl;
-                ///////////////////////////////////////////////////////////////
             }
 
-            // if (allFacesPeriodic) {
-            //     T avg = lhs.getVolumeAverage();
-            //     lhs   = lhs - avg;
-            // }
-
-            std::cout << "iterations_m < maxIterations = " << iterations_m << " < " << maxIterations
-                      << " = " << (iterations_m < maxIterations) << std::endl;
-            std::cout << "residueNorm > tolerance = " << residueNorm << " > " << tolerance << " = "
-                      << (residueNorm > tolerance) << std::endl;
+            if (allFacesPeriodic) {
+                T avg = lhs.getVolumeAverage();
+                lhs   = lhs - avg;
+            }
         }
 
         T getResidue() const { return residueNorm; }

@@ -156,9 +156,9 @@ namespace ippl {
         };
 
         bool isDOFOnBoundary(const ndindex_t& ndindex, const unsigned& numGhosts) const {
+            assert(numGhosts <= 1 && "Only one ghost cell is supported");
             for (index_t k = 0; k < Dim; ++k) {
-                if (ndindex[k] <= numGhosts
-                    || ndindex[k] >= this->mesh_m.getGridsize(k) + 2 * numGhosts - 1) {
+                if (ndindex[k] <= 0 || ndindex[k] >= this->mesh_m.getGridsize(k) - 1) {
                     return true;
                 }
             }
