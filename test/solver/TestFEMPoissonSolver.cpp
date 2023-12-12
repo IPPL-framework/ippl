@@ -27,7 +27,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     // using BConds_t = ippl::BConds<Field_t, dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
-    const unsigned numGhosts      = 1;
+    const unsigned numGhosts      = 0;
 
     // Domain: [-1, 1]
     ippl::NDIndex<dim> domain(numNodesPerDim);
@@ -67,11 +67,11 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     };
 
     // TODO remove
-    for (unsigned i = 0; i < rhs.getView().size(); ++i) {
-        const double x = (static_cast<int>(i) - numGhosts) * cellSpacing[0] + origin[0];
+    // for (unsigned i = 0; i < rhs.getView().size(); ++i) {
+    //     const double x = (static_cast<int>(i) - numGhosts) * cellSpacing[0] + origin[0];
 
-        rhs.getView()(i) = f(x);
-    }
+    //     rhs.getView()(i) = f(x);
+    // }
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f);
@@ -89,7 +89,7 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     // set the parameters
     ippl::ParameterList params;
     // params.add("tolerance", 0.0);
-    // params.add("max_iterations", 10);
+    params.add("max_iterations", 10);
     solver.mergeParameters(params);
 
     // solve the problem

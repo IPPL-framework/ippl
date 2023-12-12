@@ -348,16 +348,6 @@ namespace ippl {
             }
         }
 
-        auto isBoundaryDOF = [&numGhosts, &k, this](const ndindex_t& ndindex) {
-            for (k = 0; k < Dim; ++k) {
-                if (ndindex[k] <= numGhosts
-                    || ndindex[k] >= this->mesh_m.getGridsize(k) + 2 * numGhosts - 1) {
-                    return true;
-                }
-            }
-            return false;
-        };
-
         const std::size_t numElements = this->numElements();
         for (index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
             local_dofs           = this->getLocalDOFIndices();
@@ -389,7 +379,7 @@ namespace ippl {
                 I_nd = global_dof_ndindices[i];
 
                 // Skip boundary DOFs (Zero Dirichlet BCs)
-                if (checkEssentialBDCs && isBoundaryDOF(I_nd)) {
+                if (checkEssentialBDCs && this->isDOFOnBoundary(I_nd, numGhosts)) {
                     continue;
                 }
 
@@ -397,7 +387,7 @@ namespace ippl {
                     J_nd = global_dof_ndindices[j];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    if (checkEssentialBDCs && isBoundaryDOF(J_nd)) {
+                    if (checkEssentialBDCs && this->isDOFOnBoundary(J_nd, numGhosts)) {
                         continue;
                     }
 
@@ -467,7 +457,12 @@ namespace ippl {
                 I = global_dofs[i];
                 // TODO fix for higher order
                 const auto& dof_ndindex_I = this->getMeshVertexNDIndex(I);
-                T& b_I                    = getFieldEntry(field, dof_ndindex_I);
+
+                if (this->isDOFOnBoundary(dof_ndindex_I, field.getNghost())) {
+                    continue;
+                }
+
+                T& b_I = getFieldEntry(field, dof_ndindex_I);
 
                 for (k = 0; k < QuadratureType::numElementNodes; ++k) {
                     b_I += w[k] * eval(elementIndex, i, q[k], basis_q[k]);

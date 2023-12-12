@@ -154,6 +154,16 @@ namespace ippl {
 
             return field.getView()(ndindex[Is]...);
         };
+
+        bool isDOFOnBoundary(const ndindex_t& ndindex, const unsigned& numGhosts) const {
+            for (index_t k = 0; k < Dim; ++k) {
+                if (ndindex[k] <= numGhosts
+                    || ndindex[k] >= this->mesh_m.getGridsize(k) + 2 * numGhosts - 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
     };
 
 }  // namespace ippl

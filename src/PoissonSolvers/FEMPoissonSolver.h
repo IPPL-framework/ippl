@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;  // lhs_type;
+        using OpRet = lhs_type; //UnaryMinus<detail::meta_laplace<lhs_type>>; 
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
@@ -54,9 +54,11 @@ namespace ippl {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
-            std::cout << rhs_f(0) << std::endl;
+            // TODO remove, this is used to avoid the warning for unused rhs_f, which is not used
+            // for debugging
+            // std::cout << rhs_f(0) << std::endl;
 
-            // lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
+            lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
         }
 
         /**
@@ -85,13 +87,12 @@ namespace ippl {
                            * absDetDPhi;
                 };
 
-            // const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet
-            // {
-            //     return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
-            // };
-            const auto algoOperator = [](lhs_type field) -> OpRet {
-                return -laplace(field);
+            const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet {
+                return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             };
+            // const auto algoOperator = [](lhs_type field) -> OpRet {
+            //     return -laplace(field);
+            // };
 
             algo_m.setOperator(algoOperator);
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);

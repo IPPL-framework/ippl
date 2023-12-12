@@ -106,6 +106,10 @@ namespace ippl {
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
+                // TODO remove
+                // lhs.getView()(lhs.getNghost())                            = 0.0;
+                // lhs.getView()(lhs.getView().size() - 1 - lhs.getNghost()) = 0.0;
+
                 // The exact residue is given by
                 // r = rhs - op_m(lhs);
                 // This correction is generally not used in practice because
