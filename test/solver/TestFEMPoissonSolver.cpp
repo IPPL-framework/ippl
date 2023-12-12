@@ -81,17 +81,10 @@ void testFEMSolver1D(const unsigned numNodesPerDim) {
     error                 = lhs - sol;
     const double relError = norm(error) / norm(sol);
 
-    Field_t error2(mesh, layout, numGhosts);
-    error2 = -laplace(lhs) - rhs;
-
-    const double residue = norm(error2) / norm(rhs);
-
-    const unsigned itCount = solver.getIterationCount();
-
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << relError;
-    m << std::setw(25) << std::setprecision(16) << residue;
-    m << std::setw(15) << std::setprecision(16) << itCount;
+    m << std::setw(25) << std::setprecision(16) << solver.getResidue();
+    m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
     m << endl;
 }
 

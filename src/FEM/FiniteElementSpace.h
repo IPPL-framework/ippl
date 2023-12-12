@@ -1,13 +1,10 @@
 // FiniteElementSpace Class
-//   This class is the interface for the solvers with the finite element methods implemented in IPPL
-//   The constructor takes in an IPPL mesh, a quadrature rule and an optional degree (with the
-//   default being 1 at the moment) The class is templated on the floating point type T and the
-//   dimension 'Dim' (1 for 1D, 2 for 2D, 3 for 3D)
-//   When calling the constructor the class first tries to create a FiniteElementMesh using the IPPL
-//   Mesh and select the best supported element type for the mesh. If the mesh is not supported for
-//   FEM, an exception is thrown. The class also takes in a quadrature rule which is used to
-//   evaluate the stiffness matrix and the load vector. Setting the degree of the finite element
-//   space will change the degree of the quadrature rule.
+//   This class is the interface for the solvers with the finite element methods implemented in
+//   IPPL. The constructor takes in an IPPL mesh, a reference element and a quadrature rule. The
+//   class is templated on the floating point type T, the dimension 'Dim' (1 for 1D, 2 for 2D, 3 for
+//   3D), the number of degrees of freedom per element 'NumElementDOFs', the quadrature rule type
+//   'QuadratureType', the left hand side field type 'FieldLHS' and the right hand side field type
+//   'FieldRHS'.
 
 #ifndef IPPL_FEMSPACE_H
 #define IPPL_FEMSPACE_H
@@ -24,17 +21,30 @@ constexpr unsigned calculateNumElementVertices(unsigned Dim) {
 
 namespace ippl {
 
-    // template <typename T>
-    //  concept IsQuadrature = std::is_base_of<Quadrature, T>::value;
-
+    /**
+     * @brief The FiniteElementSpace class handles the mesh index mapping to vertices and elements
+     * and is the base class for other FiniteElementSpace classes (e.g. LagrangeSpace)
+     *
+     * @tparam T The floating point type
+     * @tparam Dim The dimension of the mesh (same dimension as the space)
+     * @tparam NumElementDOFs The number of degrees of freedom per element
+     * @tparam QuadratureType The type of the quadrature rule (e.g. MidpointQuadrature,
+     * GaussJacobiQuadrature)
+     * @tparam FieldLHS The type of the left hand side field
+     * @tparam FieldRHS The type of the right hand side field (can be the same as FieldLHS)
+     */
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     // requires IsElement<QuadratureType>
     class FiniteElementSpace {
     public:
-        static constexpr unsigned dim                = Dim;
+        static constexpr unsigned dim = Dim;
+
+        // the number of mesh vertices per element (not necessarily the same as degrees of freedom,
+        // e.g. a 2D element has 4 vertices)
         static constexpr unsigned numElementVertices = calculateNumElementVertices(Dim);
-        static constexpr unsigned numElementDOFs     = NumElementDOFs;
+
+        static constexpr unsigned numElementDOFs = NumElementDOFs;
 
         typedef Element<T, Dim, numElementVertices> ElementType;
 
@@ -61,6 +71,13 @@ namespace ippl {
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Construct a new Finite Element Space object
+         *
+         * @param mesh The mesh object
+         * @param ref_element The reference element object
+         * @param quadrature The quadrature rule object
+         */
         FiniteElementSpace(const Mesh<T, Dim>& mesh, const ElementType& ref_element,
                            const QuadratureType& quadrature);
 
@@ -68,16 +85,56 @@ namespace ippl {
         /// Mesh and Element operations ///////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Get the number of elements in the mesh of the space
+         *
+         * @return std::size_t - unsigned integer number of elements
+         */
         std::size_t numElements() const;
 
+        /**
+         * @brief Get the number of elements in a given dimension
+         *
+         * @param dim index_t (std::size_t) - representing the dimension
+         *
+         * @return std::size_t - unsigned integer number of elements in the given dimension
+         */
         std::size_t numElementsInDim(const index_t& dim) const;
 
+        /**
+         * @brief Get the NDIndex of a mesh vertex.
+         *
+         * @param vertex_index index_t (std::size_t) - The index of the vertex
+         *
+         * @return ndindex_t (Vector<std::size_t, Dim>) - Returns the NDIndex (vector of indices for
+         * each dimension)
+         */
         ndindex_t getMeshVertexNDIndex(const index_t& vertex_index) const;
 
+        /**
+         * @brief Get the global index of a mesh vertex given its NDIndex
+         *
+         * @param vertex_nd_index ndindex_t (Vector<std::size_t, Dim>) - The NDIndex of the vertex
+         * (vector of indices for each dimension).
+         *
+         * @return index_t (std::size_t) - unsigned integer index of the mesh vertex
+         */
         index_t getMeshVertexIndex(const ndindex_t& vertex_nd_index) const;
 
+        /**
+         * @brief Get the NDIndex (vector of indices for each dimension) of a mesh element.
+         *
+         * @param elementIndex ndindex_t (Vector<std::size_t, Dim>) - The index of the element
+         *
+         * @return ndindex_t (Vector<std::size_t, Dim>) - vector of indices for each dimension
+         */
         ndindex_t getElementNDIndex(const index_t& elementIndex) const;
 
+        /**
+         * @brief Get all the global vertex indices of an element (given by its NDIndex).
+         *
+         * @param elementNDIndex The NDIndex of the element
+         */
         mesh_element_vertex_index_vec_t getElementMeshVertexIndices(
             const ndindex_t& elementNDIndex) const;
 
