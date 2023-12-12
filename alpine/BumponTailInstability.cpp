@@ -17,8 +17,9 @@
 //     Example:
 //     srun ./BumponTailInstability 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 1;
+constexpr unsigned Dim = 3;
 using T = double;
+const char* TestName = "BumponTailInstability";
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -39,8 +40,8 @@ using T = double;
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-       Inform msg("BumponTailInstability");
-       Inform msg2all("BumponTailInstability", INFORM_ALL_NODES);
+       Inform msg(TestName);
+       Inform msg2all(TestName, INFORM_ALL_NODES);
 
        // Read input parameters, assign them to the corresponding memebers of manager
        int arg = 1;

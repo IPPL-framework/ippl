@@ -16,27 +16,25 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
-const char* TestName = "BumponTailInstability";
-
 constexpr bool EnablePhaseDump = false;
 
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
   struct CDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
-           if( d < Dim - 1)
-                return ippl::random::uniform_cdf_func<double>(x);
+           if( d == Dim - 1)
+               	return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
            else
-                return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
+                return ippl::random::uniform_cdf_func<double>(x);
        }
   };
 
   struct PDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
-           if( d < Dim - 1)
-               return ippl::random::uniform_pdf_func<double>();
-           else
+           if( d == Dim - 1)
                return  (1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x));
+           else
+               return ippl::random::uniform_pdf_func<double>();
        }
   };
 
