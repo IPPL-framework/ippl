@@ -83,7 +83,6 @@ private:
     double dt;
     int it;
     Vector_t<double, Dim> kw;
-    double alpha;
     Vector_t<double, Dim> rmin;
     Vector_t<double, Dim> rmax;
     Vector_t<double, Dim> hr;
@@ -175,9 +174,9 @@ public:
             muBeam  = pi / 2.0;
             delta   = 0.01;
         }
-	rmin(0.0);
-        rmax = 2 * pi / kw;
 
+        rmin(0.0);
+        rmax = 2 * pi / kw;
         hr = rmax / nr;
         // Q = -\int\int f dx dv
         Q = std::reduce(rmax.begin(), rmax.end(), -1., std::multiplies<double>());
@@ -309,7 +308,7 @@ public:
 
         this->pcontainer_m->create(nlocal);
 
-        view_type* R_m = &this->pcontainer_m->R.getView();
+        view_type* R_m = &(this->pcontainer_m->R.getView());
         samplingR.generate(*R_m, rand_pool64);
 
         view_type* P_m = &(this->pcontainer_m->P.getView());

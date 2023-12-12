@@ -238,7 +238,7 @@ public:
 
         this->pcontainer_m->create(nlocal);
 
-        view_type* R_m = &this->pcontainer_m->R.getView();
+        view_type* R_m = &(this->pcontainer_m->R.getView());
         samplingR.generate(*R_m, rand_pool64);
 
         view_type* P_m = &this->pcontainer_m->P.getView();
