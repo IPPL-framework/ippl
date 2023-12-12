@@ -19,11 +19,12 @@
  *
  * Exact solution is u(x) = sin(pi * x)
  */
-void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
+template <typename T>
+void testFEMSolver1D(const unsigned numNodesPerDim) {
     constexpr unsigned dim = 1;
 
-    using Mesh_t   = ippl::UniformCartesian<double, dim>;
-    using Field_t  = ippl::Field<double, dim, Mesh_t, Cell>;
+    using Mesh_t   = ippl::UniformCartesian<T, dim>;
+    using Field_t  = ippl::Field<T, dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
@@ -31,8 +32,8 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
 
     // Domain: [-1, 1]
     ippl::NDIndex<dim> domain(numNodesPerDim);
-    ippl::Vector<double, dim> cellSpacing(2.0 / static_cast<double>(numCellsPerDim));
-    ippl::Vector<double, dim> origin(-1.0);
+    ippl::Vector<T, dim> cellSpacing(2.0 / static_cast<T>(numCellsPerDim));
+    ippl::Vector<T, dim> origin(-1.0);
     Mesh_t mesh(domain, cellSpacing, origin);
 
     ippl::FieldLayout<dim> layout(domain);
@@ -49,15 +50,15 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     rhs.setFieldBC(bcField);
 
     // set solution
-    const double pi = Kokkos::numbers::pi_v<double>;
+    const T pi = Kokkos::numbers::pi_v<T>;
     Kokkos::parallel_for(
         "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const int i) {
-            const double x = (i - numGhosts) * cellSpacing[0] + origin[0];
+            const T x = (i - numGhosts) * cellSpacing[0] + origin[0];
 
             sol.getView()(i) = Kokkos::sin(pi * x);
         });
 
-    auto f = [&pi](ippl::Vector<double, 1> x) {
+    auto f = [&pi](ippl::Vector<T, 1> x) {
         return pi * pi * Kokkos::sin(pi * x[0]);
     };
 
@@ -65,32 +66,55 @@ void test_1D_problem(const unsigned numNodesPerDim = 1 << 2) {
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f);
 
     // set the parameters
-    // ippl::ParameterList params;
-    // params.add("tolerance", 0.0);
-    // params.add("max_iterations", 10);
-    // solver.mergeParameters(params);
+    ippl::ParameterList params;
+    params.add("tolerance", 1e-15);
+    params.add("max_iterations", 1000);
+    solver.mergeParameters(params);
 
     // solve the problem
     solver.solve();
 
-    Inform msg("Output");
-    msg << "Iterations: " << solver.getIterationCount() << endl;
+    Inform m("");
 
     // Compute the error
     Field_t error(mesh, layout, numGhosts);
-    error = lhs - sol;
+    error                 = lhs - sol;
+    const double relError = norm(error) / norm(sol);
+
+    Field_t error2(mesh, layout, numGhosts);
+    error2 = -laplace(lhs) - rhs;
+
+    const double residue = norm(error2) / norm(rhs);
+
+    const unsigned itCount = solver.getIterationCount();
+
+    m << std::setw(10) << numNodesPerDim;
+    m << std::setw(25) << std::setprecision(16) << relError;
+    m << std::setw(25) << std::setprecision(16) << residue;
+    m << std::setw(15) << std::setprecision(16) << itCount;
+    m << endl;
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        Inform msg("");
+
         // start the timer
         static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
         IpplTimings::startTimer(timer);
 
-        const unsigned numPoints = 9;
+        msg << std::setw(10) << "Size";
+        msg << std::setw(25) << "Relative Error";
+        msg << std::setw(25) << "Residue";
+        msg << std::setw(15) << "Iterations";
+        msg << endl;
 
-        test_1D_problem(numPoints);
+        const std::array<unsigned, 6> N = {4, 8, 16, 32, 64, 128};
+
+        for (const unsigned numPoints : N) {
+            testFEMSolver1D<double>(numPoints);
+        }
 
         // stop the timer
         IpplTimings::stopTimer(timer);
