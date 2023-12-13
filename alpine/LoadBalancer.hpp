@@ -74,9 +74,9 @@ class LoadBalancer{
             // Repartition the domains
 
             using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-            typename Base::particle_position_type *R_m;
-            R_m = &pc_m->R;
-            bool res = orb.binaryRepartition(*R_m, *fl, isFirstRepartition);
+            typename Base::particle_position_type *R;
+            R = &pc_m->R;
+            bool res = orb.binaryRepartition(*R, *fl, isFirstRepartition);
             if (res != true) {
                 std::cout << "Could not repartition!" << std::endl;
                 return;
