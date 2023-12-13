@@ -126,7 +126,9 @@ namespace ippl {
             const std::index_sequence<Index...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
             const Vector<T, Dim>& wlo, const Vector<T, Dim>& whi,
-            const Vector<IndexType, Dim>& args, const Vector<T, Dim>& val, T scale, const Vector<T, Dim>& hr, const NDIndex<Dim> lDom, int nghost, const Vector<T, Dim>& source);
+            const Vector<IndexType, Dim>& args, const Vector<T, Dim>& val, T scale,
+            const Vector<T, Dim>& hr, const NDIndex<Dim> lDom, int nghost,
+            const Vector<T, Dim>& source);
         /**
          * @brief Scatter particles moving from 'from' to 'to' into a Kokkos View using zigzag
          * interpolation.
@@ -151,9 +153,9 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION void ZigzagScatterToField(
             const std::index_sequence<ScatterPoint...>&,
             const typename ippl::detail::ViewType<ippl::Vector<T, 3>, Dim>::view_type& view,
-            Vector<T, Dim> from, Vector<T, Dim> to,
-            const Vector<T, Dim> hr /*Grid Spacing*/, T scale, NDIndex<Dim> lDom, int nghost);
-        
+            Vector<T, Dim> from, Vector<T, Dim> to, const Vector<T, Dim> hr /*Grid Spacing*/,
+            T scale, NDIndex<Dim> lDom, int nghost);
+
     }  // namespace detail
 }  // namespace ippl
 

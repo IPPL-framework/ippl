@@ -135,6 +135,27 @@ TYPED_TEST(PICTest, Scatter) {
                 tolerance<typename TestFixture::value_type>);
 }
 
+TYPED_TEST(PICTest, VolumetricScatter) {
+    auto& field      = this->field;
+    auto& bunch      = this->bunch;
+    auto& nParticles = this->nParticles;
+
+    *field = 0.0;
+
+    double charge = 0.5;
+
+    bunch->Q = charge;
+
+    bunch->update();
+
+    bunch->Q.scatterVolumetricallyCorrect(*field, bunch->R);
+
+    double totalcharge = field->getVolumeIntegral();
+
+    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
+                tolerance<typename TestFixture::value_type>);
+}
+
 TYPED_TEST(PICTest, Gather) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;

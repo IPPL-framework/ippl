@@ -149,7 +149,6 @@ struct TestParams {
     static bool skipSerialTests;
 
     static void checkArgs([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-        skipSerialTests = true;
 #ifdef KOKKOS_ENABLE_SERIAL
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--run-serial") == 0) {
@@ -160,7 +159,7 @@ struct TestParams {
     }
 };
 
-bool TestParams::skipSerialTests = true;
+bool TestParams::skipSerialTests = false;
 
 using ippl::detail::nestedViewLoop, ippl::detail::nestedLoop;
 
