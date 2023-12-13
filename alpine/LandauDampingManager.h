@@ -15,8 +15,6 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
-const char* TestName = "LandauDamping";
-
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
   struct CDF{
@@ -79,7 +77,6 @@ private:
     bool isFirstRepartition_m;
     ippl::NDIndex<Dim> domain_m;
     std::array<bool, Dim> decomp_m;
-
 public:
     size_type getTotalP() const { return totalP_m; }
 
@@ -172,13 +169,23 @@ public:
 
         initializeParticles(mesh, FL);
 
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        IpplTimings::startTimer(DummySolveTimer);
+
         fcontainer_m->getRho() = 0.0;
 
         fsolver_m->runSolver();
 
+        IpplTimings::stopTimer(DummySolveTimer);
+
         par2grid();
 
+        static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+        IpplTimings::startTimer(SolveTimer);
+
         fsolver_m->runSolver();
+
+        IpplTimings::stopTimer(SolveTimer);
 
         grid2par();
 
@@ -201,8 +208,10 @@ public:
         Vector_t<double, Dim> kw     = kw_m;
         Vector_t<double, Dim> hr     = hr_m;
         Vector_t<double, Dim> origin = origin_m;
+        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         if ((lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
+            IpplTimings::startTimer(domainDecomposition);
             isFirstRepartition_m           = true;
             const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
             const int nghost               = fcontainer_m->getRho().getNghost();
@@ -225,7 +234,11 @@ public:
 
             loadbalancer_m->initializeORB(FL.get(), mesh.get());
             loadbalancer_m->repartition(FL.get(), mesh.get(), isFirstRepartition_m);
+            IpplTimings::stopTimer(domainDecomposition);
         }
+
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        IpplTimings::startTimer(particleCreation);
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
@@ -261,6 +274,8 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
+        IpplTimings::stopTimer(particleCreation);
+
         pcontainer_m->q = Q_m/totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
@@ -276,39 +291,56 @@ public:
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
         // an attribute
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
 
         double dt                               = dt_m;
         std::shared_ptr<ParticleContainer_t> pc = pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = fcontainer_m;
 
+        IpplTimings::startTimer(PTimer);
         pc->P = pc->P - 0.5 * dt * pc->E;
+        IpplTimings::stopTimer(PTimer);
 
         // drift
+        IpplTimings::startTimer(RTimer);
         pc->R = pc->R + dt * pc->P;
+        IpplTimings::stopTimer(RTimer);
 
         // Since the particles have moved spatially update them to correct processors
+        IpplTimings::startTimer(updateTimer);
         pc->update();
+        IpplTimings::stopTimer(updateTimer);
 
         size_type totalP        = totalP_m;
         int it                  = it_m;
         bool isFirstRepartition = false;
         if (loadbalancer_m->balance(totalP, it + 1)) {
+                IpplTimings::startTimer(domainDecomposition);
                 auto* mesh = &fc->getRho().get_mesh();
                 auto* FL = &fc->getFL();
                 loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
+                IpplTimings::stopTimer(domainDecomposition);
         }
 
         // scatter the charge onto the underlying grid
         par2grid();
 
         // Field solve
+        IpplTimings::startTimer(SolveTimer);
         fsolver_m->runSolver();
+        IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
         grid2par();
 
         // kick
+        IpplTimings::startTimer(PTimer);
         pc->P = pc->P - 0.5 * dt * pc->E;
+        IpplTimings::stopTimer(PTimer);
     }
 
     void par2grid() override { scatterCIC(); }
@@ -327,7 +359,7 @@ public:
         Inform m("scatter ");
         fcontainer_m->getRho() = 0.0;
 
-        using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+        using Base                      = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
         ippl::ParticleAttrib<double> *q = &pcontainer_m->q;
         Base::particle_position_type *R = &pcontainer_m->R;
         Field_t<Dim> *rho               = &fcontainer_m->getRho();
@@ -369,7 +401,12 @@ public:
         }
     }
 
-    void dump() { dumpLandau(fcontainer_m->getE().getView()); }
+    void dump() {
+        static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+        IpplTimings::startTimer(dumpDataTimer);
+        dumpLandau(fcontainer_m->getE().getView());
+        IpplTimings::stopTimer(dumpDataTimer);
+    }
 
     template <typename View>
     void dumpLandau(const View& Eview) {

@@ -19,6 +19,7 @@
 
 constexpr unsigned Dim = 3;
 using T = double;
+const char* TestName = "LandauDamping";
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -39,35 +40,42 @@ using T = double;
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-       Inform msg("LandauDamping");
-       Inform msg2all("LandauDamping", INFORM_ALL_NODES);
+        Inform msg(TestName);
+        Inform msg2all(TestName, INFORM_ALL_NODES);
 
-       // Read input parameters, assign them to the corresponding memebers of manager
-       int arg = 1;
-       Vector_t<int, Dim> nr;
-       for (unsigned d = 0; d < Dim; d++) {
-           nr[d] = std::atoi(argv[arg++]);
-       }
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        IpplTimings::startTimer(mainTimer);
 
-       size_type totalP = std::atoll(argv[arg++]);
-       int nt  = std::atoi(argv[arg++]);
-       std::string solver = argv[arg++];
-       double lbt = std::atof(argv[arg++]);
-       std::string step_method = argv[arg++];
+        // Read input parameters, assign them to the corresponding memebers of manager
+        int arg = 1;
+        Vector_t<int, Dim> nr;
+        for (unsigned d = 0; d < Dim; d++) {
+            nr[d] = std::atoi(argv[arg++]);
+        }
 
-       // Create an instance of a manger for the considered application
-       LandauDampingManager manager(totalP, nt, nr, lbt, solver, step_method);
+        size_type totalP = std::atoll(argv[arg++]);
+        int nt  = std::atoi(argv[arg++]);
+        std::string solver = argv[arg++];
+        double lbt = std::atof(argv[arg++]);
+        std::string step_method = argv[arg++];
 
-       // Perform pre-run operations, including creating mesh, particles,...
-       manager.pre_run();
+        // Create an instance of a manger for the considered application
+        LandauDampingManager manager(totalP, nt, nr, lbt, solver, step_method);
 
-       manager.setTime(0.0);
+        // Perform pre-run operations, including creating mesh, particles,...
+        manager.pre_run();
 
-       msg << "Starting iterations ..." << endl;
+        manager.setTime(0.0);
 
-       manager.run(manager.getNt());
+        msg << "Starting iterations ..." << endl;
 
-       msg << "LandauDamping: End." << endl;
+        manager.run(manager.getNt());
+
+        msg << "End." << endl;
+
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 

@@ -20,6 +20,7 @@
 
 constexpr unsigned Dim = 3;
 using T = double;
+const char* TestName = "PenningTrap";
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -40,8 +41,11 @@ using T = double;
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform msg("PenningTrap");
-        Inform msg2all("PenningTrap", INFORM_ALL_NODES);
+        Inform msg(TestName);
+        Inform msg2all(TestName, INFORM_ALL_NODES);
+
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        IpplTimings::startTimer(mainTimer);
 
         // Read input parameters, assign them to the corresponding memebers of manager
         int arg = 1;
@@ -68,6 +72,10 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
+
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 
