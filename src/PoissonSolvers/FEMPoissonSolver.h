@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using OpRet = lhs_type; //UnaryMinus<detail::meta_laplace<lhs_type>>; 
+        using OpRet = lhs_type;  // UnaryMinus<detail::meta_laplace<lhs_type>>;
         using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
@@ -39,12 +39,6 @@ namespace ippl {
 
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
-        // FEMPoissonSolver()
-        //     : Base(), refElement_m(), quadrature_m() {
-        //     static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
-        //     setDefaultParameters();
-        // }
-
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs,
                          const std::function<Tlhs(const Vector<Tlhs, Dim>&)>& rhs_f)
             : Base(lhs, rhs)
@@ -53,10 +47,6 @@ namespace ippl {
             , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-
-            // TODO remove, this is used to avoid the warning for unused rhs_f, which is not used
-            // for debugging
-            // std::cout << rhs_f(0) << std::endl;
 
             lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
         }
@@ -90,9 +80,6 @@ namespace ippl {
             const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet {
                 return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             };
-            // const auto algoOperator = [](lhs_type field) -> OpRet {
-            //     return -laplace(field);
-            // };
 
             algo_m.setOperator(algoOperator);
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);

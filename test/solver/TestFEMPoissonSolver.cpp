@@ -11,6 +11,65 @@
 #include "Meshes/Centering.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
+template <typename T>
+KOKKOS_INLINE_FUNCTION T piSquaredSinPiX1D(T x) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    return pi * pi * Kokkos::sin(pi * x);
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T sinPiX1D(T x) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    return Kokkos::sin(pi * x);
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T prefactor =
+        (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
+    const T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
+
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussianSol(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+
+    return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian1D(T x) {
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T prefactor = (1 / Kokkos::sqrt(2 * pi)) * (1 / sigma);
+    const T r2        = (x - mu) * (x - mu);
+
+    return prefactor * exp(-r2 / (2 * sigma * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussianSol1D(T x) {
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T r = Kokkos::sqrt((x - mu) * (x - mu));
+
+    return (1.0 / 4.0 * pi * r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+}
+
 /**
  * Test problem in 1D:
  *
@@ -20,7 +79,8 @@
  * Exact solution is u(x) = sin(pi * x)
  */
 template <typename T>
-void testFEMSolver1D(const unsigned numNodesPerDim) {
+void testFEMSolver(const unsigned numNodesPerDim, std::function<T(T x)> f_rhs,
+                   std::function<T(T x)> f_sol) {
     constexpr unsigned dim = 1;
 
     using Mesh_t   = ippl::UniformCartesian<T, dim>;
@@ -50,16 +110,15 @@ void testFEMSolver1D(const unsigned numNodesPerDim) {
     rhs.setFieldBC(bcField);
 
     // set solution
-    const T pi = Kokkos::numbers::pi_v<T>;
     Kokkos::parallel_for(
         "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const int i) {
             const T x = (i - numGhosts) * cellSpacing[0] + origin[0];
 
-            sol.getView()(i) = Kokkos::sin(pi * x);
+            sol.getView()(i) = f_sol(x);
         });
 
-    auto f = [&pi](ippl::Vector<T, 1> x) {
-        return pi * pi * Kokkos::sin(pi * x[0]);
+    auto f = [&f_rhs](ippl::Vector<T, 1> x) {
+        return f_rhs(x[0]);
     };
 
     // initialize the solver
@@ -73,6 +132,19 @@ void testFEMSolver1D(const unsigned numNodesPerDim) {
 
     // solve the problem
     solver.solve();
+
+    // DEBUG PRINT OF LHS
+    std::cout << std::setw(15) << "LHS: ";
+    for (unsigned int i = 0; i < lhs.getView().size(); ++i) {
+        std::cout << std::setw(15) << lhs(i);
+    }
+    std::cout << std::endl;
+
+    std::cout << std::setw(15) << "SOL: ";
+    for (unsigned int i = 0; i < sol.getView().size(); ++i) {
+        std::cout << std::setw(15) << sol(i);
+    }
+    std::cout << std::endl;
 
     Inform m("");
 
@@ -91,6 +163,8 @@ void testFEMSolver1D(const unsigned numNodesPerDim) {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        using T = double;
+
         Inform msg("");
 
         // start the timer
@@ -103,10 +177,11 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        const std::array<unsigned, 6> N = {4, 8, 16, 32, 64, 128};
+        const std::vector<T> N = {4, 8};  //, 16, 32, 64, 128};
 
-        for (const unsigned numPoints : N) {
-            testFEMSolver1D<double>(numPoints);
+        for (const T numPoints : N) {
+            // testFEMSolver<T>(numPoints, piSquaredSinPiX1D<T>, sinPiX1D<T>);
+            testFEMSolver<T>(numPoints, gaussian1D<T>, gaussianSol1D<T>);
         }
 
         // stop the timer
