@@ -337,7 +337,7 @@ public:
         this->par2grid();
 #ifdef ENABLE_CATALYST
         std::optional<conduit_cpp::Node> node = std::nullopt;
-        CatalystAdaptor::Execute_Field(it, time_m, ippl::Comm->rank(), fc->getRho(),node);
+        CatalystAdaptor::Execute_Particle(it, time_m, ippl::Comm->rank(),  pc, node);
 #endif
 
         // Field solve

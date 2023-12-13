@@ -7,7 +7,6 @@
 
 #include <catalyst.hpp>
 #include <iostream>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <vector>
@@ -19,7 +18,7 @@ namespace CatalystAdaptor {
 
     using View_vector =
         Kokkos::View<ippl::Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-    void setData(conduit_cpp::Node& node, const View_vector& view) {
+    inline void setData(conduit_cpp::Node& node, const View_vector& view) {
         node["electrostatic/association"].set_string("element");
         node["electrostatic/topology"].set_string("mesh");
         node["electrostatic/volume_dependent"].set_string("false");
@@ -34,7 +33,7 @@ namespace CatalystAdaptor {
     }
 
     using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-    void setData(conduit_cpp::Node& node, const View_scalar& view) {
+    inline void setData(conduit_cpp::Node& node, const View_scalar& view) {
         node["density/association"].set_string("element");
         node["density/topology"].set_string("mesh");
         node["density/volume_dependent"].set_string("false");
@@ -42,7 +41,7 @@ namespace CatalystAdaptor {
         node["density/values"].set_external(view.data(), view.size());
     }
 
-    void callCatalystExecute(const conduit_cpp::Node& node) {
+    inline void callCatalystExecute(const conduit_cpp::Node& node) {
 
         // TODO: we should add here this IPPL-INFO stuff
         if ( static auto called {false}; !std::exchange(called, true) ) {
@@ -198,10 +197,11 @@ namespace CatalystAdaptor {
 
     }
 
-    template <class ChargedParticles>
-    std::optional<conduit_cpp::Node> Execute_Particle(int cycle, double time, int rank, ChargedParticles& particle, std::optional<conduit_cpp::Node>& node_in) {
+    template <class ParticleContainer>
+    std::optional<conduit_cpp::Node> Execute_Particle(int cycle, double time, int rank, ParticleContainer& particleContainer, std::optional<conduit_cpp::Node>& node_in) {
+      assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
 
-        auto layout_view = particle->R.getView();
+        auto layout_view = particleContainer->R.getView();
 
         // if node is passed in, append data to it
         conduit_cpp::Node node;
@@ -222,16 +222,16 @@ namespace CatalystAdaptor {
         auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set_string("explicit");
 
-        mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         mesh["topologies/mesh/type"].set_string("unstructured");
         mesh["topologies/mesh/coordset"].set_string("coords");
         mesh["topologies/mesh/elements/shape"].set_string("point");
-        mesh["topologies/mesh/elements/connectivity"].set_external(particle->ID.getView().data(),particle->getLocalNum());
+        mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
 
-        auto charge_view = particle->q.getView();
+        //auto charge_view = particleContainer->getQ().getView();
 
         // add values for scalar charge field
         auto fields = mesh["fields"];
@@ -239,26 +239,25 @@ namespace CatalystAdaptor {
         fields["charge/topology"].set_string("mesh");
         fields["charge/volume_dependent"].set_string("false");
 
-        fields["charge/values"].set_external(charge_view.data(), particle->getLocalNum());
+        fields["charge/values"].set_external(particleContainer->getQ().getView().data(), particleContainer->getLocalNum());
 
         // add values for vector velocity field
-        auto velocity_view = particle->P.getView();
+        auto velocity_view = particleContainer->getP().getView();
         fields["velocity/association"].set_string("vertex");
         fields["velocity/topology"].set_string("mesh");
         fields["velocity/volume_dependent"].set_string("false");
 
-        fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particle->getLocalNum(),0 ,sizeof(double)*3);
-        fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particle->getLocalNum(),0 ,sizeof(double)*3);
-        fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particle->getLocalNum(),0 ,sizeof(double)*3);
-
+        fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+        fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+        fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
 
         fields["position/association"].set_string("vertex");
         fields["position/topology"].set_string("mesh");
         fields["position/volume_dependent"].set_string("false");
 
-        fields["position/values/x"].set_external(&layout_view.data()[0][0], particle->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/y"].set_external(&layout_view.data()[0][1], particle->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/z"].set_external(&layout_view.data()[0][2], particle->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         // this node we can return as the pointer to velocity and charge is globally valid
         if (node_in == std::nullopt)
@@ -271,13 +270,12 @@ namespace CatalystAdaptor {
     }
 
 
-    template <class Field, class ChargedParticles>
-    void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ChargedParticles& particle) {
+    template <class Field, class ParticleContainer>
+    void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ParticleContainer& particle) {
 
         auto node = std::make_optional<conduit_cpp::Node>();
         node = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
         CatalystAdaptor::Execute_Field(cycle, time, rank, field, node);
-
     }
 
     void Finalize() {
