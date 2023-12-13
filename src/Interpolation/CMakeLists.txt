@@ -3,7 +3,9 @@ set (_SRCS
 
 set (_HDRS
     CIC.h
+    Zigzag.h
     CIC.hpp
+    Zigzag.hpp
     )
 
 include_directories (

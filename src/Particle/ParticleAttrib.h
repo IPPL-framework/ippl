@@ -18,7 +18,7 @@
 
 #include "Expression/IpplExpressions.h"
 
-#include "Interpolation/CIC.h"
+#include "Interpolation/Zigzag.h"
 #include "Particle/ParticleAttribBase.h"
 
 namespace ippl {
