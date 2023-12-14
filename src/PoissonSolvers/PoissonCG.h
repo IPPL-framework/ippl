@@ -7,7 +7,6 @@
 #define IPPL_POISSON_CG_H
 
 #include "LinearSolvers/PCG.h"
-#include "LinearSolvers/Multigrid.h"
 #include "Poisson.h"
 
 namespace ippl {
