@@ -1,8 +1,8 @@
-// Tests the conjugate gradient solver for Poisson problems
+// Tests the Mutigrid solver for Poisson problems
 // by checking the relative error from the exact solution
 // Usage:
-//      TestCGSolver [size [scaling_type , preconditioner]]
-//      ./TestCGSolver 6 j --info 5
+//      TestMGSolver [size]
+//      ./TestMGSolver 6 --info 5
 
 #include "Ippl.h"
 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
             // First argument is the problem size (log2)
             double N = strtol(argv[1], NULL, 10);
             info << "Got " << N << " as size parameter" << endl;
-            pt = ptY = 1 << (int)N;
+            pt = ptY = (1 << (int)N)-1;
             if (argc >= 3) {
                 if (argv[2][0] == 'w') {
                     // If weak scaling is specified, increase the problem size
@@ -62,11 +62,10 @@ int main(int argc, char* argv[]) {
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<dim> layout(owned, allParallel);
 
-        // Unit box
-        double dx                        = 2.0 / double(pt);
-        double dy                        = 2.0 / double(ptY);
+        double dx                        = 1.0 / double(pt);
+        double dy                        = 1.0 / double(ptY);
         ippl::Vector<double, dim> hx     = {dx, dy, dx};
-        ippl::Vector<double, dim> origin = -1;
+        ippl::Vector<double, dim> origin = 0.0;
         Mesh_t mesh(owned, hx, origin);
 
         double pi = Kokkos::numbers::pi_v<double>;
@@ -78,8 +77,9 @@ int main(int argc, char* argv[]) {
 
         bc_type bcField;
 
+        // Set Zero Dirichlet Boundary Conditions
         for (unsigned int i = 0; i < 6; ++i) {
-            bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+            bcField[i] = std::make_shared<ippl::ZeroFace<field_type>>(i);
         }
 
         lhs.setFieldBC(bcField);
@@ -90,44 +90,39 @@ int main(int argc, char* argv[]) {
 
         using Kokkos::pow, Kokkos::sin, Kokkos::cos;
 
-        int shift1     = solution.getNghost();
+       // int shift1     = solution.getNghost();
         auto policySol = solution.getFieldRangePolicy();
         Kokkos::parallel_for(
             "Assign solution", policySol, KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const size_t ig = i + lDom[0].first() - shift1;
-                const size_t jg = j + lDom[1].first() - shift1;
-                const size_t kg = k + lDom[2].first() - shift1;
-                double x        = (ig + 0.5) * hx[0];
-                double y        = (jg + 0.5) * hx[1];
-                double z        = (kg + 0.5) * hx[2];
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
+                double x        = ig  * hx[0];
+                double y        = jg * hx[1];
+                double z        = kg * hx[2];
 
-                viewSol(i, j, k) = sin(sin(pi * x)) * sin(sin(pi * y)) * sin(sin(pi * z));
+                viewSol(i, j, k) = sin(pi * x) + sin(pi * y) + sin(pi * z);
             });
 
-        const int shift2 = rhs.getNghost();
+        //const int shift2 = rhs.getNghost();
         auto policyRHS   = rhs.getFieldRangePolicy();
         Kokkos::parallel_for(
             "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const size_t ig = i + lDom[0].first() - shift2;
-                const size_t jg = j + lDom[1].first() - shift2;
-                const size_t kg = k + lDom[2].first() - shift2;
-                double x        = (ig + 0.5) * hx[0];
-                double y        = (jg + 0.5) * hx[1];
-                double z        = (kg + 0.5) * hx[2];
+                const size_t ig = i + lDom[0].first();
+                const size_t jg = j + lDom[1].first();
+                const size_t kg = k + lDom[2].first();
+                double x        = ig * hx[0];
+                double y        = jg * hx[1];
+                double z        = kg * hx[2];
 
                 // https://gitlab.psi.ch/OPAL/Libraries/ippl-solvers/-/blob/5-fftperiodicpoissonsolver/test/TestFFTPeriodicPoissonSolver.cpp#L91
                 viewRHS(i, j, k) =
-                    pow(pi, 2)
-                    * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
-                       + (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                          + (cos(sin(pi * x)) * sin(pi * x)
-                             + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2) + pow(cos(pi * z), 2))
-                                   * sin(sin(pi * x)))
-                                * sin(sin(pi * y)))
-                             * sin(sin(pi * z)));
+                    -pow(pi, 2) * (sin(pi * x) + sin(pi * y) + sin(pi * z));
             });
 
-        ippl::PoissonMG<field_type> lapsolver;
+        //ippl::detail::write<double , dim>(viewSol);
+        constexpr int levels = 3;
+        ippl::PoissonMG<field_type , field_type ,levels> lapsolver(lhs,rhs);
 
         ippl::ParameterList params;
         params.add("max_iterations", 2000);
@@ -139,7 +134,7 @@ int main(int argc, char* argv[]) {
 
         lhs = 0;
         lapsolver.solve();
-
+        //lapsolver.test(rhs);
         const char* name = isWeak ? "Convergence (weak)" : "Convergence";
         Inform m(name);
 
