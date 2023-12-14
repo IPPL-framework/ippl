@@ -20,7 +20,7 @@ namespace ippl {
         return fun(arg);                        \
     }
 
-    template <typename FieldLHS, typename FieldRHS = FieldLHS>
+    template <typename FieldLHS, typename FieldRHS = FieldLHS , int levels=0>
     class PoissonMG : public Poisson<FieldLHS, FieldRHS> {
         using Tlhs = typename FieldLHS::value_type;
 
@@ -28,31 +28,30 @@ namespace ippl {
         using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
         using OpRet = UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo = Multigrid<OpRet, FieldLHS, FieldRHS>;
-
-        PoissonMG()
-                : Base() {
-            static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
-            setDefaultParameters();
-        }
+        using algo = Multigrid<OpRet, FieldLHS, FieldRHS, levels>;
 
         PoissonMG(lhs_type& lhs, rhs_type& rhs)
-                : Base(lhs, rhs) {
+                : Base(lhs, rhs) , algo_m(lhs) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+            ParameterList CGParameters;
+
+            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
+            CGParameters.add("max_iterations", 100);
+            CGParameters.add("tolerance" , 1e-13);
+            algo_m.setCG(CGParameters , IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
         }
 
         void solve() override {
-            algo_m.setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
-            ParameterList CGParameters;
-            CGParameters.add("max_iterations", 100);
-            CGParameters.add("tolerance" , 1e-5);
-            algo_m.setCG(CGParameters , IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
             algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
                 *(this->grad_mp) = -grad(*(this->lhs_mp));
             }
+        }
+
+        void test(lhs_type& lhs){
+            algo_m.test_restrict(lhs);
         }
 
         /*!
@@ -69,11 +68,10 @@ namespace ippl {
         Tlhs getResidue() const { return algo_m.getResidue(); }
 
     protected:
-        algo algo_m = algo();
+        algo algo_m;
 
         void setDefaultParameters() override {
             this->params_m.add("max_iterations", 2000);
-            this->params_m.add("levels", 1);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
     };

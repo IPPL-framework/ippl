@@ -456,6 +456,7 @@ namespace ippl {
     /*!
     * Geometric Multigrid for rectangular shaped meshes
     */
+    /*
     template<typename Field>
     struct gmg_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
@@ -465,8 +466,9 @@ namespace ippl {
         gmg_preconditioner(unsigned innerloops = 10,unsigned outerloops=2) :
                 type_m("Geometric Multigrid"),
                 innerloops_m(innerloops),
-                outerloops_m(outerloops),
-                Dinv_m(jacobi_preconditioner<Field>()) {}
+                outerloops_m(outerloops) {
+
+        }
 
         Field operator()(Field &b) override {
             Field x = b.deepCopy();
@@ -506,8 +508,10 @@ namespace ippl {
         std::string type_m;
         unsigned innerloops_m;
         unsigned outerloops_m;
+        Multigrid<something  , something , Field , Field , levels>
         jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
     };
+    */
 
     /*!
     * Computes the largest Eigenvalue of the Functor f

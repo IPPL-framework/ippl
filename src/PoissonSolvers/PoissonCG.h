@@ -31,38 +31,22 @@ namespace ippl {
         using PreRet = lhs_type;
 
         PoissonCG()
-            : Base() {
+            : Base() , algo_m(nullptr) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-            algo_m = nullptr;
 
         }
 
         PoissonCG(lhs_type& lhs, rhs_type& rhs)
-            : Base(lhs, rhs) {
+            : Base(lhs, rhs) , algo_m(nullptr) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-            algo_m = nullptr;
-
-        }
-
-        ~PoissonCG(){
-            if (algo_m!=nullptr){
-                delete algo_m;
-                algo_m = nullptr;
-            }
-        }
-
-        PoissonCG (const PoissonCG& other): algo_m(other.algo_m){}
-
-        PoissonCG& operator=(const PoissonCG& other){
-            return *this = PoissonCG(other);
         }
 
         void setSolver() {
             std::string solver_type = this->params_m.template get<std::string>("solver");
             if (solver_type == "preconditioned") {
-                algo_m = new PCG<OpRet, PreRet, FieldLHS, FieldRHS>();
+                algo_m = std::move(std::make_unique<PCG<OpRet, PreRet, FieldLHS, FieldRHS>>());
                 std::string preconditioner_type = this->params_m.template get<std::string>("preconditioner_type");
                 int level = this->params_m.template get<int>("newton_level");
                 int degree = this->params_m.template get<int>("chebyshev_degree");
@@ -72,7 +56,7 @@ namespace ippl {
                 algo_m->setPreconditioner(preconditioner_type, level, degree, richardson_iterations, inner, outer);
 
             } else {
-                algo_m = new CG<OpRet, PreRet, FieldLHS, FieldRHS>();
+                algo_m = std::move(std::make_unique<CG<OpRet, PreRet, FieldLHS, FieldRHS>>());
             }
         }
 
@@ -101,7 +85,7 @@ namespace ippl {
         Tlhs getResidue() const { return algo_m->getResidue(); }
 
     protected:
-        CG<OpRet, PreRet, FieldLHS, FieldRHS> *algo_m;
+        std::unique_ptr<CG<OpRet, PreRet, FieldLHS, FieldRHS>> algo_m;
 
         void setDefaultParameters() override {
             this->params_m.add("max_iterations", 2000);

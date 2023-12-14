@@ -28,11 +28,11 @@ namespace ippl {
          */
         virtual void setOperator(operator_type op) {op_m = std::move(op); }
         virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="",
-                                       [[maybe_unused]] int level = 0, // Dummy default parameters true default parameters need to be set in main
-                                       [[maybe_unused]] int degree = 0, // Dummy default parameters true default parameters need to be set in main
-                                       [[maybe_unused]] int richardson_iterations = 0, // Dummy default parameters true default parameters need to be set in main
-                                       [[maybe_unused]] int inner = 0, // Dummy default parameters true default parameters need to be set in main
-                                       [[maybe_unused]] int outer = 0 // Dummy default parameters true default parameters need to be set in main
+                                       [[maybe_unused]] int level = 0,
+                                       [[maybe_unused]] int degree = 0,
+                                       [[maybe_unused]] int richardson_iterations = 0,
+                                       [[maybe_unused]] int inner = 0,
+                                       [[maybe_unused]] int outer = 0
                                         ) {}
                 /*!
                  * Query how many iterations were required to obtain the solution
@@ -42,9 +42,11 @@ namespace ippl {
          virtual int getIterationCount() { return iterations_m; }
 
         virtual void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
+
             constexpr unsigned Dim = lhs_type::dim;
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
+
 
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
@@ -77,8 +79,6 @@ namespace ippl {
             }
 
             r = rhs - op_m(lhs);
-            auto&& view = lhs.getView();
-            ippl::detail::write<double , Dim>(view);
             d = r.deepCopy();
             d.setFieldBC(bc);
 
@@ -89,15 +89,8 @@ namespace ippl {
 
             lhs_type q(mesh, layout);
 
-            std::cout << "Start iterations" << std::endl;
-            std::cout << iterations_m << std::endl;
-            std::cout << maxIterations << std::endl;
-            std::cout << residueNorm << std::endl;
-            std::cout << tolerance << std::endl;
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                std::cout << "Before op" << std::endl;
                 q       = op_m(d);
-                std::cout << "After op" << std::endl;
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
@@ -114,6 +107,7 @@ namespace ippl {
                 T beta   = delta1 / delta0;
 
                 residueNorm = std::sqrt(delta1);
+                std::cout << "CG residue " << residueNorm << " iteration " << iterations_m << std::endl;
                 d = r + beta * d;
                 ++iterations_m;
             }
@@ -142,54 +136,38 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
         using operator_type = std::function<OpRet(lhs_type)>;
 
-        PCG(): preconditioner_m(nullptr){};
-        ~PCG(){
-            if (preconditioner_m != nullptr){
-                delete preconditioner_m;
-                preconditioner_m = nullptr;
-           }
-        }
-
-        PCG(const PCG& other): preconditioner_m(other.preconditioner_m){}
-
-        PCG& operator=(const PCG& other){
-            return *this = PCG(other);
-        }
-
+        PCG(): CG<OpRet , PreRet , FieldLHS , FieldRHS>() , preconditioner_m(nullptr){};
 
         /*!
         * Sets the differential operator for the conjugate gradient algorithm
         * @param op A function that returns OpRet and takes a field of the LHS type
         */
-        void setOperator(operator_type op) override { BaseCG::op_m = std::move(op); }
         virtual void setPreconditioner(std::string preconditioner_type="",
-                                       int level = 0, // Dummy default parameters true default parameters need to be set in main
-                                       int degree = 0,  // Dummy default parameters true default parameters need to be set in main
-                                       int richardson_iterations = 0, // Dummy default parameters true default parameters need to be set in main
-                                       int inner = 0, // Dummy default parameters true default parameters need to be set in main
-                                       int outer = 0  // Dummy default parameters true default parameters need to be set in main
+                                       int level = 5, // Dummy default parameters true default parameters need to be set in main
+                                       int degree = 31,  // Dummy default parameters true default parameters need to be set in main
+                                       int richardson_iterations = 1, // Dummy default parameters true default parameters need to be set in main
+                                       int inner = 5, // Dummy default parameters true default parameters need to be set in main
+                                       int outer = 1  // Dummy default parameters true default parameters need to be set in main
                                                ) override{
                     if (preconditioner_type == "jacobi"){
-                        preconditioner_m = new jacobi_preconditioner<FieldLHS>();
+                        preconditioner_m = std::move(std::make_unique<jacobi_preconditioner<FieldLHS>>());
                     }
                     else if (preconditioner_type == "newton"){
-                        preconditioner_m = new polynomial_newton_preconditioner<FieldLHS>(level , 1e-3);
+                        preconditioner_m = std::move(std::make_unique<polynomial_newton_preconditioner<FieldLHS>>(level , 1e-3));
                     }
                     else if (preconditioner_type == "chebyshev"){
-                        preconditioner_m = new polynomial_chebyshev_preconditioner<FieldLHS>(degree , 1e-3);
+                        preconditioner_m = std::move(std::make_unique<polynomial_chebyshev_preconditioner<FieldLHS>>(degree , 1e-3));
                     }
                     else if (preconditioner_type == "richardson"){
-                        preconditioner_m = new richardson_preconditioner<FieldLHS>(richardson_iterations);
+                        preconditioner_m = std::move(std::make_unique<richardson_preconditioner<FieldLHS>>(richardson_iterations));
                     }
                     else if (preconditioner_type == "gauss-seidel"){
-                        preconditioner_m = new gs_preconditioner<FieldLHS>(inner , outer);
+                        preconditioner_m = std::move(std::make_unique<gs_preconditioner<FieldLHS>>(inner , outer));
                     }
                     else{
-                        preconditioner_m = new preconditioner<FieldLHS>();
+                        preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
                     }
             }
-
-        int getIterationCount() override { return BaseCG::iterations_m; }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
             constexpr unsigned Dim = lhs_type::dim;
@@ -197,7 +175,7 @@ namespace ippl {
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
 
-            BaseCG::iterations_m            = 0;
+            this->iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
@@ -229,17 +207,17 @@ namespace ippl {
                     }
             }
 
-            r = rhs - BaseCG::op_m(lhs);
+            r = rhs - this->op_m(lhs);
             d = preconditioner_m->operator()(r);
             d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            BaseCG::residueNorm       = std::sqrt(std::abs(delta1));
+            this->residueNorm       = std::sqrt(std::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * delta1;
 
-            while (BaseCG::iterations_m < maxIterations && BaseCG::residueNorm > tolerance) {
-            q       = BaseCG::op_m(d);
+            while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
+            q       = this->op_m(d);
             T alpha = delta1 / innerProduct(d, q);
             lhs     = lhs + alpha * d;
 
@@ -257,11 +235,12 @@ namespace ippl {
             delta1   = innerProduct(r, s);
 
             T beta   = delta1 / delta0;
-            BaseCG::residueNorm = std::sqrt(std::abs(delta1));
+            this->residueNorm = std::sqrt(std::abs(delta1));
 
             d = s + beta * d;
+            std::cout << "PCG residue " << this->residueNorm << " iteration " << this->iterations_m << std::endl;
 
-            ++BaseCG::iterations_m;
+            ++this->iterations_m;
             }
 
             if (allFacesPeriodic) {
@@ -270,10 +249,8 @@ namespace ippl {
             }
         }
 
-        T getResidue() const override { return BaseCG::residueNorm; }
-
     protected:
-        preconditioner<FieldLHS>* preconditioner_m;
+        std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
     };
 
     /* COMPLETELY OUTDATED NEEDS TO BE REWRITTEN FROM SCRATCH
