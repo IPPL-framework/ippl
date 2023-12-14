@@ -138,8 +138,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
 
     // set the parameters
     ippl::ParameterList params;
-    params.add("tolerance", 1e-15);
-    params.add("max_iterations", 1000);
+    params.add("tolerance", 1e-13);
+    params.add("max_iterations", 2000);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -153,6 +153,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     const double relError = norm(error) / norm(sol);
 
     m << std::setw(10) << numNodesPerDim;
+    m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
     m << std::setw(25) << std::setprecision(16) << relError;
     m << std::setw(25) << std::setprecision(16) << solver.getResidue();
     m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
@@ -171,12 +172,13 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(timer);
 
         msg << std::setw(10) << "Size";
+        msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
         msg << std::setw(25) << "Residue";
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        const std::vector<T> N = {4, 8, 16, 32, 64, 128};
+        const std::vector<T> N = {4, 8, 16, 32, 64, 128, 256, 1024, 2048};
 
         for (const T numPoints : N) {
             // testFEMSolver<T, 1>(numPoints, piSquaredSinPiX1D<T>, sinPiX1D<T>, -1.0, 1.0);
