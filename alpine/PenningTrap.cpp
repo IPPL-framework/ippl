@@ -37,20 +37,27 @@
 #include <Kokkos_Random.hpp>
 #include <chrono>
 #include <iostream>
-#include <random>
-#include <set>
 #include <string>
-#include <vector>
 
 #include "Ippl.h"
 #include "Utility/IpplTimings.h"
+
 #include "Manager/PicManager.h"
 #include "datatypes.h"
 #include "PenningTrapManager.h"
 
+#ifdef ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+
+#ifdef ENABLE_CATALYST
+        CatalystAdaptor::Initialize(argc, argv);
+#endif
+
         Inform msg("PenningTrap");
         Inform msg2all("PenningTrap", INFORM_ALL_NODES);
 
@@ -74,11 +81,16 @@ int main(int argc, char* argv[]) {
 
         manager.setTime(0.0);
 
+
         msg << "Starting iterations ..." << endl;
+
 
         manager.run(manager.getNt());
 
         msg << "End." << endl;
+#ifdef ENABLE_CATALYST
+        CatalystAdaptor::Finalize();
+#endif
     }
     ippl::finalize();
 

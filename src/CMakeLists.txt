@@ -63,10 +63,9 @@ add_ippl_sources (Ippl.cpp)
 
 add_subdirectory (Communicate)
 if (ENABLE_FFT)
-    set (HEFFTE_LIBRARY Heffte::Heffte)
+    find_package(Heffte 2.2.0 REQUIRED)
+    message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
     add_subdirectory (FFT)
-else()
-    set (HEFFTE_LIBRARY "")
 endif()
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
@@ -79,6 +78,8 @@ add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
+add_subdirectory (Stream)
+add_subdirectory (Stream/InSitu)
 add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)
@@ -87,6 +88,12 @@ if (ENABLE_SOLVERS)
     add_subdirectory (MaxwellSolvers)
     add_subdirectory (LinearSolvers)
 endif ()
+
+if (ENABLE_CATALYST)
+    find_package(catalyst 2.0 REQUIRED)
+    message (STATUS "Enable Catalyst")
+    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
+endif()
 
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)
@@ -104,9 +111,20 @@ string(REPLACE "SERIAL;" "" KokkosAccelerators "${KokkosAccelerators}")
 if ("${KokkosAccelerators}" MATCHES ".+;.+")
     set(TimerFences false)
 endif()
+
 message("Timer fences for this build: ${TimerFences}")
-target_compile_definitions(ippl PUBLIC IPPL_ENABLE_TIMER_FENCES=${TimerFences})
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
+
+target_compile_definitions(ippl PUBLIC
+  $<$<BOOL:${ENABLE_FFT}>:-DENABLE_FFT>
+  $<$<BOOL:${ENABLE_CATALYST}>:-DENABLE_CATALYST>
+  IPPL_ENABLE_TIMER_FENCES=${TimerFences}
+)
+
+target_link_libraries(ippl PUBLIC
+  Kokkos::kokkos
+  $<$<BOOL:${ENABLE_FFT}>:Heffte::Heffte>
+  $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>
+  )
 
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
