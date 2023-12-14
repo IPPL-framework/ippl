@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        const std::vector<T> N = {4, 8};  //, 16, 32, 64, 128};
+        const std::vector<T> N = {4, 8, 16, 32, 64, 128};
 
         for (const T numPoints : N) {
             // testFEMSolver<T, 1>(numPoints, piSquaredSinPiX1D<T>, sinPiX1D<T>, -1.0, 1.0);
@@ -184,10 +184,10 @@ int main(int argc, char* argv[]) {
             testFEMSolver<T, 1>(
                 numPoints,
                 [](ippl::Vector<T, 1> x) {
-                    return gaussian1D<T>(x[0], 0.05, 0.8);
+                    return gaussian1D<T>(x[0], 0.05, 0.5);
                 },
                 [](ippl::Vector<T, 1> x) {
-                    return gaussianSol1D<T>(x[0], 0.05, 0.8);
+                    return gaussianSol1D<T>(x[0], 0.05, 0.5);
                 },
                 0.0, 1.0);
         }
