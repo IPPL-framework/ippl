@@ -232,12 +232,9 @@ namespace ippl {
 
                 lhs_type prolongated_lhs(meshes_m[level] , layouts_m[level]);
                 prolongated_lhs = prolongate(restricted_lhs , level);
-                //auto view = prolongated_lhs.getView();
-                //ippl::detail::write<T , Dim>(view);
                 lhs_type res(meshes_m[level] , layouts_m[level]);
                 lhs = lhs + prolongated_lhs;
                 res = rhs - op_m(lhs);
-                //std::cout << "Residual After prolongation : " << norm(res) << std::endl;
 
                 //Post-smoothening
                 gauss_seidel_sweep(lhs,rhs);
@@ -275,14 +272,11 @@ namespace ippl {
             r = rhs - op_m(lhs);
             r.setFieldBC(bc_m);
             residueNorm = norm(r); // Update residueNorm
-            print();
             while (iterations_m < maxIterations && residueNorm > tolerance) {
                 recursive_step(lhs , rhs , 0); // Do a V-cycle
                 r = rhs - op_m(lhs); // Update residual
                 residueNorm = norm(r); // Update residueNorm
-                std::cout << "MG residue " << residueNorm << std::endl;
                 ++iterations_m; // Update iteration count
-                //ippl::detail::write<T , Dim>(lhs_view);
             }
             if (allFacesPeriodic) {
                 T avg = lhs.getVolumeAverage();

@@ -107,7 +107,6 @@ namespace ippl {
                 T beta   = delta1 / delta0;
 
                 residueNorm = std::sqrt(delta1);
-                std::cout << "CG residue " << residueNorm << " iteration " << iterations_m << std::endl;
                 d = r + beta * d;
                 ++iterations_m;
             }
@@ -238,8 +237,6 @@ namespace ippl {
             this->residueNorm = std::sqrt(std::abs(delta1));
 
             d = s + beta * d;
-            std::cout << "PCG residue " << this->residueNorm << " iteration " << this->iterations_m << std::endl;
-
             ++this->iterations_m;
             }
 
