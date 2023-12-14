@@ -26,18 +26,32 @@ KOKKOS_INLINE_FUNCTION T sinPiX1D(T x) {
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+KOKKOS_INLINE_FUNCTION T gaussian(ippl::Vector<T, 3> x_vec) {
+    const T& x = x_vec[0];
+    const T& y = x_vec[1];
+    const T& z = x_vec[2];
+
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
     const T pi = Kokkos::numbers::pi_v<T>;
 
     const T prefactor =
         (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     const T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussianSol(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+KOKKOS_INLINE_FUNCTION T gaussianSol(ippl::Vector<T, 3> x_vec) {
+    const T& x = x_vec[0];
+    const T& y = x_vec[1];
+    const T& z = x_vec[2];
+
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
     const T pi = Kokkos::numbers::pi_v<T>;
 
     const T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
@@ -46,83 +60,81 @@ KOKKOS_INLINE_FUNCTION T gaussianSol(T x, T y, T z, T sigma = 0.05, T mu = 0.5) 
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian1D(T x) {
-    const T sigma = 0.05;
-    const T mu    = 0.5;
-
+KOKKOS_INLINE_FUNCTION T gaussian1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
     const T pi = Kokkos::numbers::pi_v<T>;
 
-    const T prefactor = (1 / Kokkos::sqrt(2 * pi)) * (1 / sigma);
+    const T prefactor = (1.0 / Kokkos::sqrt(2.0 * pi)) * (1.0 / sigma);
     const T r2        = (x - mu) * (x - mu);
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * Kokkos::exp(-r2 / (2.0 * sigma * sigma));
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussianSol1D(T x) {
-    const T sigma = 0.05;
-    const T mu    = 0.5;
+KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
+    const T pi     = Kokkos::numbers::pi_v<T>;
+    const T sqrt_2 = Kokkos::sqrt(2.0);
 
-    const T pi = Kokkos::numbers::pi_v<T>;
+    const T r = (x - mu);
 
-    const T r = Kokkos::sqrt((x - mu) * (x - mu));
-
-    return (1.0 / 4.0 * pi * r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+    return (-sigma / sqrt_2)
+               * ((r / (sqrt_2 * sigma)) * Kokkos::erf(r / (sqrt_2 * sigma))
+                  + (1.0 / Kokkos::sqrt(pi)) * Kokkos::exp(-(r * r) / (2.0 * sigma * sigma)))
+           + (0.5 - mu) * x + 0.5 * mu;
 }
 
-/**
- * Test problem in 1D:
- *
- * -Laplacian(u) = pi^2 * sin(pi * x), x in [-1,1]
- * u(-1) = u(1) = 0
- *
- * Exact solution is u(x) = sin(pi * x)
- */
-template <typename T>
-void testFEMSolver(const unsigned numNodesPerDim, std::function<T(T x)> f_rhs,
-                   std::function<T(T x)> f_sol) {
-    constexpr unsigned dim = 1;
-
-    using Mesh_t   = ippl::UniformCartesian<T, dim>;
-    using Field_t  = ippl::Field<T, dim, Mesh_t, Cell>;
-    using BConds_t = ippl::BConds<Field_t, dim>;
+template <typename T, unsigned Dim>
+void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
+                   std::function<T(ippl::Vector<T, Dim> x)> f_sol, const T& domain_start = 0.0,
+                   const T& domain_end = 1.0) {
+    using Mesh_t   = ippl::UniformCartesian<T, Dim>;
+    using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
+    using BConds_t = ippl::BConds<Field_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
 
     // Domain: [-1, 1]
-    ippl::NDIndex<dim> domain(numNodesPerDim);
-    ippl::Vector<T, dim> cellSpacing(2.0 / static_cast<T>(numCellsPerDim));
-    ippl::Vector<T, dim> origin(-1.0);
+    const ippl::Vector<unsigned, Dim> nodesPerDimVec(numNodesPerDim);
+    ippl::NDIndex<Dim> domain(nodesPerDimVec);
+    ippl::Vector<T, Dim> cellSpacing((domain_end - domain_start) / static_cast<T>(numCellsPerDim));
+    ippl::Vector<T, Dim> origin(domain_start);
     Mesh_t mesh(domain, cellSpacing, origin);
 
-    ippl::FieldLayout<dim> layout(domain);
+    ippl::FieldLayout<Dim> layout(domain);
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // exact solution
 
     // Define boundary conditions
     BConds_t bcField;
-    for (unsigned int i = 0; i < 2 * dim; ++i) {
+    for (unsigned int i = 0; i < 2 * Dim; ++i) {
         bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
     }
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
 
     // set solution
+    // if (dim == 1) {
     Kokkos::parallel_for(
-        "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const int i) {
-            const T x = (i - numGhosts) * cellSpacing[0] + origin[0];
+        "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const unsigned i) {
+            const ippl::Vector<unsigned, Dim> indices{i};
+            const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
 
             sol.getView()(i) = f_sol(x);
         });
+    // } else if (dim == 3) {
+    //     Kokkos::parallel_for(
+    //         "Assign solution", sol.getFieldRangePolicy(),
+    //         KOKKOS_LAMBDA(const unsigned i, const unsigned j, const unsigned k) {
+    //             const ippl::Vector<unsigned, Dim> indices{i, j, k};
+    //             const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
 
-    auto f = [&f_rhs](ippl::Vector<T, 1> x) {
-        return f_rhs(x[0]);
-    };
+    //             sol.getView()(i, j, k) = f_sol(x);
+    //         });
+    // }
 
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f);
+    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
 
     // set the parameters
     ippl::ParameterList params;
@@ -132,19 +144,6 @@ void testFEMSolver(const unsigned numNodesPerDim, std::function<T(T x)> f_rhs,
 
     // solve the problem
     solver.solve();
-
-    // DEBUG PRINT OF LHS
-    std::cout << std::setw(15) << "LHS: ";
-    for (unsigned int i = 0; i < lhs.getView().size(); ++i) {
-        std::cout << std::setw(15) << lhs(i);
-    }
-    std::cout << std::endl;
-
-    std::cout << std::setw(15) << "SOL: ";
-    for (unsigned int i = 0; i < sol.getView().size(); ++i) {
-        std::cout << std::setw(15) << sol(i);
-    }
-    std::cout << std::endl;
 
     Inform m("");
 
@@ -180,8 +179,17 @@ int main(int argc, char* argv[]) {
         const std::vector<T> N = {4, 8};  //, 16, 32, 64, 128};
 
         for (const T numPoints : N) {
-            // testFEMSolver<T>(numPoints, piSquaredSinPiX1D<T>, sinPiX1D<T>);
-            testFEMSolver<T>(numPoints, gaussian1D<T>, gaussianSol1D<T>);
+            // testFEMSolver<T, 1>(numPoints, piSquaredSinPiX1D<T>, sinPiX1D<T>, -1.0, 1.0);
+            // testFEMSolver<T, 3>(numPoints, gaussian<T>, gaussianSol<T>, 0.0, 1.0);
+            testFEMSolver<T, 1>(
+                numPoints,
+                [](ippl::Vector<T, 1> x) {
+                    return gaussian1D<T>(x[0], 0.05, 0.8);
+                },
+                [](ippl::Vector<T, 1> x) {
+                    return gaussianSol1D<T>(x[0], 0.05, 0.8);
+                },
+                0.0, 1.0);
         }
 
         // stop the timer
