@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
         std::string step_method = argv[arg++];
 
         // Create an instance of a manger for the considered application
-        LandauDampingManager manager(totalP, nt, nr, lbt, solver, step_method);
+        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();

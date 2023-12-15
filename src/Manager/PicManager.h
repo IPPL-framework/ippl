@@ -20,6 +20,8 @@
 
         virtual void grid2par() = 0;
 
+        virtual void dump() = 0;
+
         inline std::shared_ptr<pc> getParticleContainer() {
             return pcontainer_m;
         }

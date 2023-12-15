@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
         std::string step_method = argv[arg++];
 
         // Create an instance of a manger for the considered application
-        PenningTrapManager manager(totalP, nt, nr, lbt, solver, step_method);
+        PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
