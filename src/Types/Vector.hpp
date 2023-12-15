@@ -203,6 +203,24 @@ namespace ippl {
         }
         return out;
     }
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> min(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+        using Kokkos::min;
+        Vector<T, Dim> ret;
+        for(unsigned d = 0; d < Dim;d++){
+            ret[d] = min(a[d], b[d]);
+        }
+        return ret;
+    }
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+        using Kokkos::max;
+        Vector<T, Dim> ret;
+        for(unsigned d = 0; d < Dim;d++){
+            ret[d] = max(a[d], b[d]);
+        }
+        return ret;
+    }
 }  // namespace ippl
 
 // vi: set et ts=4 sw=4 sts=4:

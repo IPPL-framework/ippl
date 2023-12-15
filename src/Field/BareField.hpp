@@ -4,7 +4,9 @@
 //
 #include "Ippl.h"
 
+#include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
+#include <limits>
 #include <map>
 #include <utility>
 
@@ -12,7 +14,15 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
-
+namespace Kokkos {
+    template <typename T, unsigned Dim>
+    struct reduction_identity<ippl::Vector<T, Dim>> {
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> sum() { return ippl::Vector<T, Dim>(0); }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> prod() { return ippl::Vector<T, Dim>(1); }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() { return ippl::Vector<T, Dim>( std::numeric_limits<T>::max()); }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() { return ippl::Vector<T, Dim>(-std::numeric_limits<T>::max()); }
+    };
+}  // namespace Kokkos
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -149,8 +159,8 @@ namespace ippl {
     }
 
     DefineReduction(Sum, sum, valL += myVal, std::plus)
-    DefineReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
-    DefineReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
+    DefineReduction(Max, max, using Kokkos::max;valL = max(valL, myVal), std::greater)
+    DefineReduction(Min, min, using Kokkos::min;valL = min(valL, myVal), std::less)
     DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
