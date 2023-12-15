@@ -9,15 +9,18 @@
 #include <algorithm>
 #include <complex>
 #include <functional>
+#include <map>
 #include <mpi.h>
+#include <typeindex>
+#include <utility>
 
 namespace ippl {
     namespace mpi {
 
         enum struct binaryOperationKind {
             SUM,
-            MIN, // Min and max are not really supported for nontrivial types such as vectors yet.
-            MAX, // This is due to min and max not being implemented for ippl expressions at all
+            MIN,
+            MAX,
             MULTIPLICATION  // TODO: Add all
         };
         template <typename T>
@@ -42,19 +45,31 @@ namespace ippl {
         template <class>
         struct is_ippl_mpi_type : std::false_type {};
         struct dummy {};
-
+        static std::map<std::pair<std::type_index, std::type_index>, MPI_Op> mpiOperations;
         template <typename CppOpType, typename Datatype_IfNotTrivial>
         struct getMpiOpImpl {
             constexpr MPI_Op operator()() const noexcept {
                 static_assert(false, "This optype is not supported");
-                return 0;  // wtf
+                return 0; //Dummy return
             }
         };
-
-        template <class Op, typename Type>
-        // requires (!is_ippl_mpi_type<Op>::value)
+        /**
+         * @brief Helper struct to look up and store MPI_Op types for custom types 
+         * 
+         */
+        template <class Op, typename Type>        
         struct getNontrivialMpiOpImpl /*<Op, Type>*/ {
+
+            /**
+             * @brief Get the MPI_Op for this CppOp + Type combo
+             * 
+             * @return MPI_Op 
+             */
             MPI_Op operator()() {
+                std::pair<std::type_index, std::type_index> pear{std::type_index(typeid(Op)), std::type_index(typeid(Type))};
+                if(mpiOperations.contains(pear)){
+                    return mpiOperations.at(pear);
+                }
                 constexpr binaryOperationKind opKind = extractBinaryOperationKind<Op>::value;
                 MPI_Op ret;
                 MPI_Op_create(
@@ -80,6 +95,7 @@ namespace ippl {
                     },
                     1, &ret);
                 // static_assert(is_ippl_mpi_type<Op>::value, "type not supported");
+                mpiOperations[pear] = ret;
                 return ret;
                 // return get_mpi_op(op);
             }
