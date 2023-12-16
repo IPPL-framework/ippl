@@ -6,7 +6,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
-#include "PicManagerCommon.h"
+#include "AlpineManager.h"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -38,7 +38,7 @@ struct CustomDistributionFunctions {
 };
 
 template <typename T, unsigned Dim>
-class LandauDampingManager : public PicManagerCommon<T, Dim> {
+class LandauDampingManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -47,7 +47,7 @@ public:
 
     LandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
-        : PicManagerCommon<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
 
     ~LandauDampingManager(){}
 
@@ -212,7 +212,7 @@ public:
     }
 
     void advance() override {
-        if (stepMethod_m == "LeapFrog") {
+        if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
         }
     }

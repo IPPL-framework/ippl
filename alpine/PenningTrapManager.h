@@ -6,7 +6,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
-#include "PicManagerCommon.h"
+#include "AlpineManager.h"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -17,7 +17,7 @@
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
-class PenningTrapManager : public PicManagerCommon<T, Dim> {
+class PenningTrapManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -26,7 +26,7 @@ public:
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
-        : PicManagerCommon<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
 
     ~PenningTrapManager(){}
 
