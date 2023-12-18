@@ -76,13 +76,13 @@ namespace ippl {
 
       virtual ~FieldSolverBase() = default;
 
-      inline std::string& getStype() { return stype_m; }
+      std::string& getStype() { return stype_m; }
 
-      inline void setStype(std::string& solver) { stype_m = solver; }
+      void setStype(std::string& solver) { stype_m = solver; }
 
-      inline Solver_t<T, Dim>& getSolver() { return solver_m; }
+      Solver_t<T, Dim>& getSolver() { return solver_m; }
 
-      inline void setSolver(Solver_t<T, Dim>& solver) { solver_m = solver; }
+      void setSolver(Solver_t<T, Dim>& solver) { solver_m = solver; }
   };
 }
 #endif

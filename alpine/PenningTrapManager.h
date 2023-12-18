@@ -37,7 +37,6 @@ private:
     double dxFinest_m;
     double alpha_m;
     double DrInv_m;
-    double rhoNorm_m;
 
 public:
 
@@ -387,7 +386,7 @@ public:
             }
 
             csvout << this->time_m << " " << potEnergy << " " << gkinEnergy << " "
-                   << potEnergy + gkinEnergy << " " << rhoNorm_m << " ";
+                   << potEnergy + gkinEnergy << " " << this->rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
             }

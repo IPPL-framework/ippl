@@ -54,35 +54,35 @@
         */
         virtual void dump() { /* default does nothing */ };
 
-        inline std::shared_ptr<pc> getParticleContainer() {
+        std::shared_ptr<pc> getParticleContainer() {
             return pcontainer_m;
         }
 
-        inline void setParticleContainer(std::shared_ptr<pc> pcontainer){
+        void setParticleContainer(std::shared_ptr<pc> pcontainer){
             pcontainer_m = pcontainer;
         }
 
-        inline std::shared_ptr<fc> getFieldContainer() {
+        std::shared_ptr<fc> getFieldContainer() {
             return fcontainer_m;
         }
 
-        inline void setFieldContainer(std::shared_ptr<fc> fcontainer){
+        void setFieldContainer(std::shared_ptr<fc> fcontainer){
             fcontainer_m = fcontainer;
         }
 
-        inline std::shared_ptr<ippl::FieldSolverBase<T, Dim>> getFieldSolver() {
+        std::shared_ptr<ippl::FieldSolverBase<T, Dim>> getFieldSolver() {
             return fsolver_m;
         }
 
-        inline void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
+        void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
             fsolver_m = fsolver;
         }
 
-        inline std::shared_ptr<orb> getLoadBalancer() {
+        std::shared_ptr<orb> getLoadBalancer() {
             return loadbalancer_m;
         }
 
-        inline void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
+        void setLoadBalancer(std::shared_ptr<orb> loadbalancer){
             loadbalancer_m = loadbalancer;
         }
 

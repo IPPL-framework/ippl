@@ -26,8 +26,8 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
         ~ParticleContainer(){}
 
-        inline std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
-        inline void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
+        std::shared_ptr<PLayout_t<T, Dim>> getPL() { return pl_m; }
+        void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
 	void registerAttributes() {
 		// register the particle attributes

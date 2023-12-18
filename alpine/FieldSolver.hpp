@@ -23,14 +23,14 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
     ~FieldSolver(){}
 
-    inline Field_t<Dim> *getRho() const { return rho_m; }
-    inline void setRho(Field_t<Dim> *rho){ rho_m = rho; }
+    Field_t<Dim> *getRho() const { return rho_m; }
+    void setRho(Field_t<Dim> *rho){ rho_m = rho; }
 
-    inline VField_t<T, Dim> *getE() const { return E_m; }
-    inline void setE(VField_t<T, Dim> *E){ E_m = E; }
+    VField_t<T, Dim> *getE() const { return E_m; }
+    void setE(VField_t<T, Dim> *E){ E_m = E; }
 
-    inline Field<T, Dim> *getPhi() const { return phi_m; }
-    inline void setPhi(Field<T, Dim> *phi){ phi_m = phi; }
+    Field<T, Dim> *getPhi() const { return phi_m; }
+    void setPhi(Field<T, Dim> *phi){ phi_m = phi; }
 
     void initSolver() override {
         Inform m("solver ");

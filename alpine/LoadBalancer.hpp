@@ -23,23 +23,23 @@ class LoadBalancer{
 
         ~LoadBalancer() {  }
 
-        inline double getLoadBalanceThreshold() const { return loadbalancethreshold_m; }
-        inline void setLoadBalanceThreshold(double threshold) { loadbalancethreshold_m = threshold; }
+        double getLoadBalanceThreshold() const { return loadbalancethreshold_m; }
+        void setLoadBalanceThreshold(double threshold) { loadbalancethreshold_m = threshold; }
 
-        inline Field_t<Dim>* getRho() const { return rho_m; }
-        inline void setRho(Field_t<Dim>* rho) { rho_m = rho; }
+        Field_t<Dim>* getRho() const { return rho_m; }
+        void setRho(Field_t<Dim>* rho) { rho_m = rho; }
 
-        inline VField_t<T, Dim>* getE() const { return E_m; }
-        inline void setE(VField_t<T, Dim>* E) { E_m = E; }
+        VField_t<T, Dim>* getE() const { return E_m; }
+        void setE(VField_t<T, Dim>* E) { E_m = E; }
 
-        inline Field<T, Dim>* getPhi() { return phi_m; }
-        inline void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
+        Field<T, Dim>* getPhi() { return phi_m; }
+        void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
 
-        inline std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
-        inline void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
+        std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
+        void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
 
-        inline std::shared_ptr<FieldSolver_t> getFieldSolver() const { return fs_m; }
-        inline void setFieldSolver(std::shared_ptr<FieldSolver_t> fs) { fs_m = fs; }
+        std::shared_ptr<FieldSolver_t> getFieldSolver() const { return fs_m; }
+        void setFieldSolver(std::shared_ptr<FieldSolver_t> fs) { fs_m = fs; }
 
         void updateLayout(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
             // Update local fields

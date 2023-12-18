@@ -58,6 +58,7 @@ protected:
     bool isFirstRepartition_m;
     ippl::NDIndex<Dim> domain_m;
     std::array<bool, Dim> decomp_m;
+    double rhoNorm_m;
 
 public:
     size_type getTotalP() const { return totalP_m; }
@@ -149,6 +150,8 @@ public:
 
 	double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)          = (*rho) / cellVolume;
+
+        rhoNorm_m = norm(*rho);
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {
