@@ -71,25 +71,19 @@ public:
 
         this->isAllPeriodic_m = true;
 
-        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain_m, this->hr_m, this->origin_m);
+        this->setFieldContainer( std::make_shared<FieldContainer_t>( this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m, this->isAllPeriodic_m) );
 
-        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, this->domain_m, this->decomp_m, this->isAllPeriodic_m);
+        this->setParticleContainer( std::make_shared<ParticleContainer_t>( this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()) );
 
-        std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
+        this->fcontainer_m->initializeFields(this->solver_m);
 
-        this->setParticleContainer( std::make_shared<ParticleContainer_t>(PL) );
-
-        this->setFieldContainer( std::make_shared<FieldContainer_t>(this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m) );
-
-        this->fcontainer_m->initializeFields(mesh, FL, this->solver_m);
-
-        this->setFieldSolver( std::make_shared<FieldSolver_t>(this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
+        this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
 
         this->fsolver_m->initSolver();
 
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-        initializeParticles(mesh, FL);
+        initializeParticles();
 
         static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
         IpplTimings::startTimer(DummySolveTimer);
@@ -116,9 +110,11 @@ public:
         m << "Done";
     }
 
-    void initializeParticles(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> FL){
+    void initializeParticles(){
         Inform m("Initialize Particles");
 
+        auto *mesh = &this->fcontainer_m->getMesh();
+        auto *FL = &this->fcontainer_m->getFL();
         Vector_t<double, Dim> mu, sd;
         for (unsigned d = 0; d < Dim; d++) {
             mu[d] = 0.5 * length_m[d] + this->origin_m[d];
@@ -161,8 +157,8 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(FL.get(), mesh.get());
-            this->loadbalancer_m->repartition(FL.get(), mesh.get(), this->isFirstRepartition_m);
+            this->loadbalancer_m->initializeORB(FL, mesh);
+            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
             IpplTimings::stopTimer(domainDecomposition);
         }
 

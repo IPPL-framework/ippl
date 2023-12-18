@@ -53,6 +53,11 @@ public:
 
     void pre_run() override {
         Inform m("Pre Run");
+
+        if (this->solver_m == "OPEN") {
+            throw IpplException("LandauDamping", "Open boundaries solver incompatible with this simulation!");
+        }
+
         for (unsigned i = 0; i < Dim; i++) {
             this->domain_m[i] = ippl::Index(this->nr_m[i]);
         }
@@ -74,31 +79,21 @@ public:
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
-        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain_m, this->hr_m, this->origin_m);
-
         this->isAllPeriodic_m = true;
 
-        std::shared_ptr<FieldLayout_t<Dim>> FL = std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, this->domain_m, this->decomp_m, this->isAllPeriodic_m);
+        this->setFieldContainer( std::make_shared<FieldContainer_t>( this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m, this->isAllPeriodic_m) );
 
-        std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
+        this->setParticleContainer( std::make_shared<ParticleContainer_t>( this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()) );
 
-        if (this->solver_m == "OPEN") {
-            throw IpplException("LandauDamping", "Open boundaries solver incompatible with this simulation!");
-        }
+        this->fcontainer_m->initializeFields(this->solver_m);
 
-        this->setParticleContainer( std::make_shared<ParticleContainer_t>(PL) );
-
-        this->setFieldContainer( std::make_shared<FieldContainer_t>(this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m) );
-
-        this->fcontainer_m->initializeFields(mesh, FL, this->solver_m);
-
-        this->setFieldSolver( std::make_shared<FieldSolver_t>(this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
+        this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
 
         this->fsolver_m->initSolver();
 
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-        initializeParticles(mesh, FL);
+        initializeParticles();
 
         static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
         IpplTimings::startTimer(DummySolveTimer);
@@ -125,9 +120,11 @@ public:
         m << "Done";
     }
 
-    void initializeParticles(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> FL){
+    void initializeParticles(){
         Inform m("Initialize Particles");
 
+        auto *mesh = &this->fcontainer_m->getMesh();
+        auto *FL = &this->fcontainer_m->getFL();
         using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
         double parR[2 * Dim];
         for(unsigned int i=0; i<Dim; i++){
@@ -163,8 +160,8 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(FL.get(), mesh.get());
-            this->loadbalancer_m->repartition(FL.get(), mesh.get(), this->isFirstRepartition_m);
+            this->loadbalancer_m->initializeORB(FL, mesh);
+            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
             IpplTimings::stopTimer(domainDecomposition);
         }
 

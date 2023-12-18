@@ -14,14 +14,13 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
     private:
-        std::shared_ptr<PLayout_t<T, Dim>> pl_m;
+        PLayout_t<T, Dim> pl_m;
     public:
-        ParticleContainer(std::shared_ptr<PLayout_t<T, Dim>> pl)
-        : Base(*pl.get()) {
-        this->initialize(*pl.get());
+        ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL)
+        : pl_m(FL, mesh) {
+        this->initialize(pl_m);
         registerAttributes();
         setupBCs();
-        pl_m = pl;
         }
 
         ~ParticleContainer(){}
