@@ -19,10 +19,10 @@ namespace ippl {
         }
 
         template <typename T, class Op>
-        void Communicator::reduce(const T* input, T* output, int count, Op op, int root) {
+        void Communicator::reduce(const T* input, T* output, int count, Op, int root) {
             MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-            MPI_Op mpiOp = get_mpi_op<Op, T>(op);
+            MPI_Op mpiOp = get_mpi_op<Op, T>();
 
             MPI_Reduce(const_cast<T*>(input), output, count, type, mpiOp, root, *comm_m);
         }
@@ -33,10 +33,10 @@ namespace ippl {
         }
 
         template <typename T, class Op>
-        void Communicator::allreduce(const T* input, T* output, int count, Op op) {
+        void Communicator::allreduce(const T* input, T* output, int count, Op) {
             MPI_Datatype type = get_mpi_datatype<T>(*input);
 
-            MPI_Op mpiOp = get_mpi_op<Op, T>(op);
+            MPI_Op mpiOp = get_mpi_op<Op, T>();
 
             MPI_Allreduce(const_cast<T*>(input), output, count, type, mpiOp, *comm_m);
         }
@@ -47,10 +47,10 @@ namespace ippl {
         }
 
         template <typename T, class Op>
-        void Communicator::allreduce(T* inout, int count, Op op) {
+        void Communicator::allreduce(T* inout, int count, Op) {
             MPI_Datatype type = get_mpi_datatype<T>(*inout);
 
-            MPI_Op mpiOp = get_mpi_op<Op, T>(op);
+            MPI_Op mpiOp = get_mpi_op<Op, T>();
 
             MPI_Allreduce(MPI_IN_PLACE, inout, count, type, mpiOp, *comm_m);
         }

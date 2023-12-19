@@ -181,8 +181,7 @@ namespace ippl {
         IPPL_MPI_OP(std::logical_and<bool>, MPI_LAND);
 
         template <typename Op, typename Datatype>
-        MPI_Op get_mpi_op(Op op) {
-            (void)op;
+        MPI_Op get_mpi_op() {
             if constexpr (is_ippl_mpi_type<Op>::value) {
                 return getMpiOpImpl<Op, Datatype>{}();
             }

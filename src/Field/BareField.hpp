@@ -17,12 +17,46 @@
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
-        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> sum() { return ippl::Vector<T, Dim>(0); }
-        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> prod() { return ippl::Vector<T, Dim>(1); }
-        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() { return ippl::Vector<T, Dim>( std::numeric_limits<T>::max()); }
-        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() { return ippl::Vector<T, Dim>(-std::numeric_limits<T>::max()); }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> sum() {
+            return ippl::Vector<T, Dim>(0);
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> prod() {
+            return ippl::Vector<T, Dim>(1);
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() {
+            return ippl::Vector<T, Dim>(std::numeric_limits<T>::infinity());
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() {
+            return ippl::Vector<T, Dim>(-std::numeric_limits<T>::infinity());
+        }
     };
 }  // namespace Kokkos
+namespace KokkosCorrection {
+    template <typename Scalar, class Space = Kokkos::HostSpace>
+    struct Max : Kokkos::Max<Scalar, Space> {
+        using Super      = Kokkos::Max<Scalar, Space>;
+        using value_type = Super::value_type;
+        KOKKOS_INLINE_FUNCTION void join(value_type& dest, const value_type& src) const {
+            using ippl::max;
+            using Kokkos::max;
+            dest = max(dest, src);
+        }
+    };
+    template <typename Scalar, class Space = Kokkos::HostSpace>
+    struct Min : Kokkos::Min<Scalar, Space> {
+        using Super      = Kokkos::Max<Scalar, Space>;
+        using value_type = Super::value_type;
+        KOKKOS_INLINE_FUNCTION void join(value_type& dest, const value_type& src) const {
+            using ippl::min;
+            using Kokkos::min;
+            dest = min(dest, src);
+        }
+    };
+    template <typename Scalar, class Space = Kokkos::HostSpace>
+    struct Sum : Kokkos::Sum<Scalar, Space> {};
+    template <typename Scalar, class Space = Kokkos::HostSpace>
+    struct Prod : Kokkos::Prod<Scalar, Space> {};
+}  // namespace KokkosCorrection
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -144,7 +178,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>                                     \
     T BareField<T, Dim, ViewArgs...>::name(int nghost) const {                                 \
         PAssert_LE(nghost, nghost_m);                                                          \
-        T temp                 = 0.0;                                                          \
+        T temp                 = Kokkos::reduction_identity<T>::name();                        \
         using index_array_type = typename RangePolicy<Dim, execution_space>::index_array_type; \
         ippl::parallel_reduce(                                                                 \
             "fun", getRangePolicy(dview_m, nghost_m - nghost),                                 \
@@ -152,15 +186,15 @@ namespace ippl {
                 T myVal = apply(dview_m, args);                                                \
                 op;                                                                            \
             },                                                                                 \
-            Kokkos::fun<T>(temp));                                                             \
+            KokkosCorrection::fun<T>(temp));                                                   \
         T globaltemp = 0.0;                                                                    \
         layout_m->comm.allreduce(temp, globaltemp, 1, MPI_Op<T>());                            \
         return globaltemp;                                                                     \
     }
 
     DefineReduction(Sum, sum, valL += myVal, std::plus)
-    DefineReduction(Max, max, using Kokkos::max;valL = max(valL, myVal), std::greater)
-    DefineReduction(Min, min, using Kokkos::min;valL = min(valL, myVal), std::less)
+    DefineReduction(Max, max, using Kokkos::max; valL = max(valL, myVal), std::greater)
+    DefineReduction(Min, min, using Kokkos::min; valL = min(valL, myVal), std::less)
     DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
