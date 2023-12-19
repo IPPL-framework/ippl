@@ -108,10 +108,7 @@ public:
     void grid2par() override { gatherCIC(); }
 
     void gatherCIC() {
-        typename Base::particle_position_type *Ep = &this->pcontainer_m->E;
-        typename Base::particle_position_type *R  = &this->pcontainer_m->R;
-        VField_t<T, Dim> *Ef             = &this->fcontainer_m->getE();
-        gather(*Ep, *Ef, *R);
+        gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
     void par2grid() override { scatterCIC(); }
