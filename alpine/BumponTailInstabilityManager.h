@@ -287,6 +287,9 @@ public:
         if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
         }
+	else{
+            throw IpplException(TestName, "Step method is not set/recognized!");
+        }
     }
 
     void LeapFrogStep(){
