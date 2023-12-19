@@ -173,19 +173,55 @@ namespace ippl {
          */
         virtual std::size_t numGlobalDOFs() const = 0;
 
-        // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
-
+        /**
+         * @brief Get the elements local DOF from the element index and global DOF
+         * index
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param globalDOFIndex index_t (std::size_t) - The global DOF index
+         *
+         * @return index_t (std::size_t) - The local DOF index
+         */
         virtual index_t getLocalDOFIndex(const index_t& elementIndex,
                                          const index_t& globalDOFIndex) const = 0;
 
+        /**
+         * @brief Get the global DOF index from the element index and local DOF
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param localDOFIndex index_t (std::size_t) - The local DOF index
+         *
+         * @return index_t (std::size_t) - The global DOF index
+         */
         virtual index_t getGlobalDOFIndex(const index_t& elementIndex,
                                           const index_t& localDOFIndex) const = 0;
 
+        /**
+         * @brief Get the local DOF indices (vector of local DOF indices)
+         * They are independent of the specific element because it only depends on
+         * the reference element type
+         *
+         * @return Vector<index_t, NumElementDOFs> - The local DOF indices
+         */
         virtual Vector<index_t, NumElementDOFs> getLocalDOFIndices() const = 0;
 
+        /**
+         * @brief Get the global DOF indices (vector of global DOF indices) of an element
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         *
+         * @return Vector<index_t, NumElementDOFs> - The global DOF indices
+         */
         virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
             const index_t& elementIndex) const = 0;
 
+        /**
+         * @brief Get the global DOF NDIndices (vector of global DOF NDIndices) of an element
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         *
+         * @return Vector<ndindex_t, NumElementDOFs> - The global DOF NDIndices
+         */
         virtual Vector<ndindex_t, NumElementDOFs> getGlobalDOFNDIndices(
             const index_t& elementIndex) const = 0;
 
@@ -222,12 +258,27 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Assemble the left stiffness matrix A of the system Ax = b
+         *
+         * @param field The field to assemble the matrix for
+         *
+         * @return FieldLHS - The LHS field containing A*x
+         */
         virtual FieldLHS evaluateAx(
             const FieldLHS& field,
             const std::function<T(const index_t&, const index_t&,
                                   const Vector<Vector<T, Dim>, NumElementDOFs>&)>& evalFunction)
             const = 0;
 
+        /**
+         * @brief Assemble the load vector b of the system Ax = b
+         *
+         * @param rhs_field The field to set with the load vector
+         * @param f The source function
+         *
+         * @return FieldRHS - The RHS field containing b
+         */
         virtual void evaluateLoadVector(FieldRHS& rhs_field,
                                         const std::function<T(const point_t&)>& f) const = 0;
 

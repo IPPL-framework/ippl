@@ -370,7 +370,7 @@ namespace ippl {
                 I_nd = global_dof_ndindices[i];
 
                 // Skip boundary DOFs (Zero Dirichlet BCs)
-                if (checkEssentialBDCs && this->isDOFOnBoundary(I_nd, numGhosts)) {
+                if (checkEssentialBDCs && this->isDOFOnBoundary(I_nd)) {
                     continue;
                 }
 
@@ -378,7 +378,7 @@ namespace ippl {
                     J_nd = global_dof_ndindices[j];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    if (checkEssentialBDCs && this->isDOFOnBoundary(J_nd, numGhosts)) {
+                    if (checkEssentialBDCs && this->isDOFOnBoundary(J_nd)) {
                         continue;
                     }
 
@@ -445,7 +445,7 @@ namespace ippl {
                 // TODO fix for higher order
                 const auto& dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
-                if (this->isDOFOnBoundary(dof_ndindex_I, field.getNghost())) {
+                if (this->isDOFOnBoundary(dof_ndindex_I)) {
                     continue;
                 }
 

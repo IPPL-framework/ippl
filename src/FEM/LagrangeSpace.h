@@ -16,26 +16,37 @@ constexpr unsigned getLagrangeNumElementDOFs(unsigned Dim, unsigned Order) {
 
 namespace ippl {
 
-    // template <typename T>
-    //  IsQuadrature = std::is_base_of<Quadrature, T>::value;
-
+    /**
+     * @brief A class representing a Lagrange space for finite element methods on a structured,
+     * rectilinear grid.
+     *
+     * @tparam T The data type of the field values
+     * @tparam Dim The dimension of the mesh
+     * @tparam Order The order of the Lagrange space
+     * @tparam QuadratureType The type of the quadrature rule
+     * @tparam FieldLHS The type of the left hand side field
+     * @tparam FieldRHS The type of the right hand side field
+     */
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
     // requires IsQuadrature<QuadratureType>
     class LagrangeSpace : public FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order),
                                                     QuadratureType, FieldLHS, FieldRHS> {
     public:
+        // The number of degrees of freedom per element
         static constexpr unsigned numElementDOFs = getLagrangeNumElementDOFs(Dim, Order);
 
+        // The dimension of the mesh
         static constexpr unsigned dim =
             FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS, FieldRHS>::dim;
+
+        // The order of the Lagrange space
         static constexpr unsigned order = Order;
+
+        // The number of mesh vertices per element
         static constexpr unsigned numElementVertices =
             FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
                                FieldRHS>::numElementVertices;
-        static constexpr unsigned numIntegrationPoints =
-            FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
-                               FieldRHS>::numIntegrationPoints;
 
         typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
                                             FieldRHS>::ElementType ElementType;
@@ -61,6 +72,7 @@ namespace ippl {
                                             FieldRHS>::mesh_element_vertex_index_vec_t
             mesh_element_vertex_index_vec_t;
 
+        // Vector of vertex points of the mesh
         typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
                                             FieldRHS>::mesh_element_vertex_point_vec_t
             mesh_element_vertex_point_vec_t;
@@ -69,6 +81,13 @@ namespace ippl {
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Construct a new LagrangeSpace object
+         *
+         * @param mesh Reference to the mesh
+         * @param ref_element Reference to the reference element
+         * @param quadrature Reference to the quadrature rule
+         */
         LagrangeSpace(const Mesh<T, Dim>& mesh, const ElementType& ref_element,
                       const QuadratureType& quadrature);
 
@@ -76,21 +95,62 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Get the number of global degrees of freedom in the space
+         *
+         * @return std::size_t - unsigned integer number of global degrees of freedom
+         */
         std::size_t numGlobalDOFs() const override;
 
-        // point_t getCoordsOfDOF(const index_t& dof_index) const override;
-
+        /**
+         * @brief Get the elements local DOF from the element index and global DOF
+         * index
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param globalDOFIndex index_t (std::size_t) - The global DOF index
+         *
+         * @return index_t (std::size_t) - The local DOF index
+         */
         index_t getLocalDOFIndex(const index_t& elementIndex,
                                  const index_t& globalDOFIndex) const override;
 
+        /**
+         * @brief Get the global DOF index from the element index and local DOF
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param localDOFIndex index_t (std::size_t) - The local DOF index
+         *
+         * @return index_t (std::size_t) - The global DOF index
+         */
         index_t getGlobalDOFIndex(const index_t& elementIndex,
                                   const index_t& localDOFIndex) const override;
 
+        /**
+         * @brief Get the local DOF indices (vector of local DOF indices)
+         * They are independent of the specific element because it only depends on
+         * the reference element type
+         *
+         * @return Vector<index_t, NumElementDOFs> - The local DOF indices
+         */
         Vector<index_t, numElementDOFs> getLocalDOFIndices() const override;
 
+        /**
+         * @brief Get the global DOF indices (vector of global DOF indices) of an element
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         *
+         * @return Vector<index_t, NumElementDOFs> - The global DOF indices
+         */
         Vector<index_t, numElementDOFs> getGlobalDOFIndices(
             const index_t& element_index) const override;
 
+        /**
+         * @brief Get the global DOF NDIndices (vector of global DOF NDIndices) of an element
+         *
+         * @param elementIndex index_t (std::size_t) - The index of the element
+         *
+         * @return Vector<ndindex_t, NumElementDOFs> - The global DOF NDIndices
+         */
         Vector<ndindex_t, numElementDOFs> getGlobalDOFNDIndices(
             const index_t& element_index) const override;
 
@@ -98,9 +158,28 @@ namespace ippl {
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Evaluate the shape function of a local degree of freedom at a given point in the
+         * reference element
+         *
+         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
+         *
+         * @return T - The value of the shape function at the given point
+         */
         T evaluateRefElementShapeFunction(const index_t& localDOF,
                                           const point_t& localPoint) const override;
 
+        /**
+         * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
+         * given point in the reference element
+         *
+         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
+         *
+         * @return gradient_vec_t (Vector<T, Dim>) - The gradient of the shape function at the given
+         * point
+         */
         gradient_vec_t evaluateRefElementShapeFunctionGradient(
             const index_t& localDOF, const point_t& localPoint) const override;
 
@@ -108,6 +187,13 @@ namespace ippl {
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Assemble the left stiffness matrix A of the system Ax = b
+         *
+         * @param field The field to assemble the matrix for
+         *
+         * @return FieldLHS - The LHS field containing A*x
+         */
         FieldLHS evaluateAx(
             const FieldLHS& field,
             const std::function<T(
@@ -116,6 +202,14 @@ namespace ippl {
                                                            FieldRHS>::numElementDOFs>&)>&
                 evalFunction) const override;
 
+        /**
+         * @brief Assemble the load vector b of the system Ax = b
+         *
+         * @param rhs_field The field to set with the load vector
+         * @param f The source function
+         *
+         * @return FieldRHS - The RHS field containing b
+         */
         void evaluateLoadVector(FieldRHS& rhs_field,
                                 const std::function<T(const point_t&)>& f) const override;
 
@@ -123,11 +217,31 @@ namespace ippl {
         /// Helper functions //////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Get the field entry at a given NDIndex
+         *
+         * @tparam FieldType The type of the field
+         * @param field Reference to field to get the entry from
+         * @param ndindex The NDIndex of the entry
+         *
+         * @return T& - Returns a reference to the field entry
+         */
         template <typename FieldType, std::size_t... Is>
         static T& getFieldEntry(FieldType& field, const ndindex_t& ndindex) {
             return getFieldEntry(field, ndindex, std::make_index_sequence<Dim>());
         }
 
+    private:
+        /**
+         * @brief Get the field entry at a given NDIndex
+         *
+         * @tparam FieldType The type of the field
+         * @param field Reference to field to get the entry from
+         * @param ndindex The NDIndex of the entry
+         * @param seq The index sequence to unpack the NDIndex {0, 1, ..., Dim-1}
+         *
+         * @return T& - Returns a reference to the field entry
+         */
         template <typename FieldType, std::size_t... Is>
         static T& getFieldEntry(FieldType& field, ndindex_t ndindex,
                                 const std::index_sequence<Is...>) {
@@ -155,8 +269,16 @@ namespace ippl {
             return field.getView()(ndindex[Is]...);
         };
 
-        bool isDOFOnBoundary(const ndindex_t& ndindex, const unsigned& numGhosts) const {
-            assert(numGhosts <= 1 && "Only one ghost cell is supported");
+        /**
+         * @brief Check if a DOF is on the boundary of the mesh
+         *
+         * @param ndindex The NDIndex of the DOF
+         * @param numGhosts The number of ghost cells
+         *
+         * @return true - If the DOF is on the boundary
+         * @return false - If the DOF is not on the boundary
+         */
+        bool isDOFOnBoundary(const ndindex_t& ndindex) const {
             for (index_t k = 0; k < Dim; ++k) {
                 if (ndindex[k] <= 0 || ndindex[k] >= this->mesh_m.getGridsize(k) - 1) {
                     return true;
