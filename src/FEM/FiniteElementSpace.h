@@ -72,7 +72,7 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
 
         /**
-         * @brief Construct a new Finite Element Space object
+         * @brief Construct a new FiniteElementSpace object
          *
          * @param mesh The mesh object
          * @param ref_element The reference element object
@@ -134,13 +134,31 @@ namespace ippl {
          * @brief Get all the global vertex indices of an element (given by its NDIndex).
          *
          * @param elementNDIndex The NDIndex of the element
+         *
+         * @return mesh_element_vertex_index_vec_t (Vector<std::size_t, numElementVertices>) -
+         * vector of vertex indices
          */
         mesh_element_vertex_index_vec_t getElementMeshVertexIndices(
             const ndindex_t& elementNDIndex) const;
 
+        /**
+         * @brief Get all the NDIndices of the vertices of an element (given by its NDIndex).
+         *
+         * @param elementNDIndex The NDIndex of the element
+         *
+         * @return mesh_element_vertex_ndindex_vec_t (Vector<Vector<std::size_t, Dim>,
+         * numElementVertices>) - vector of vertex NDIndices
+         */
         mesh_element_vertex_ndindex_vec_t getElementMeshVertexNDIndices(
             const ndindex_t& elementNDIndex) const;
 
+        /**
+         * @brief Get all the global vertex points of an element (given by its NDIndex).
+         *
+         * @param elementNDIndex The NDIndex of the element
+         *
+         * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, Dim>, numElementVertices>) -
+         */
         mesh_element_vertex_point_vec_t getElementMeshVertexPoints(
             const ndindex_t& elementNDIndex) const;
 
@@ -148,6 +166,11 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
+        /**
+         * @brief Get the number of global degrees of freedom in the space
+         *
+         * @return std::size_t - unsigned integer number of global degrees of freedom
+         */
         virtual std::size_t numGlobalDOFs(const unsigned& nghosts = 0) const = 0;
 
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
@@ -170,11 +193,30 @@ namespace ippl {
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        virtual T evaluateRefElementBasis(const index_t& localDOF,
-                                          const point_t& localPoint) const = 0;
+        /**
+         * @brief Evaluate the shape function of a local degree of freedom at a given point in the
+         * reference element
+         *
+         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
+         *
+         * @return T - The value of the shape function at the given point
+         */
+        virtual T evaluateRefElementShapeFunction(const index_t& localDOF,
+                                                  const point_t& localPoint) const = 0;
 
-        virtual gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
-                                                               const point_t& localPoint) const = 0;
+        /**
+         * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
+         * given point in the reference element
+         *
+         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
+         *
+         * @return gradient_vec_t (Vector<T, Dim>) - The gradient of the shape function at the given
+         * point
+         */
+        virtual gradient_vec_t evaluateRefElementShapeFunctionGradient(
+            const index_t& localDOF, const point_t& localPoint) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////

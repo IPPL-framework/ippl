@@ -28,8 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using OpRet = lhs_type;  // UnaryMinus<detail::meta_laplace<lhs_type>>;
-        using algo  = PCG<OpRet, FieldLHS, FieldRHS>;
+        using algo = PCG<lhs_type, FieldLHS, FieldRHS>;
 
         // FEM Space types
         using ElementType =
@@ -56,28 +55,33 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            const std::size_t NumElementDOFs = 8;  // TODO implement higher order elements.
-
             const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
 
-            // Inverse Transpose Transformation Jacobian
-            const Vector<Tlhs, Dim> DPhiInvT =
-                refElement_m.getInverseTransposeTransformationJacobian(
-                    lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex));
+            // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
+            // on translation
+            const auto firstElementVertexPoints =
+                lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
 
-            // Absolute value of det Phi_K
-            const Tlhs absDetDPhi = std::abs(refElement_m.getDeterminantOfTransformationJacobian(
-                lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex)));
+            // Compute Inverse Transpose Transformation Jacobian ()
+            const Vector<Tlhs, Dim> DPhiInvT =
+                refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+            // Compute absolute value of the determinante of the transformation jacobian (|det D
+            // Phi_K|)
+            const Tlhs absDetDPhi = std::abs(
+                refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             const auto poissonEquationEval =
-                [DPhiInvT, absDetDPhi](
+                [this, DPhiInvT, absDetDPhi](
                     const std::size_t& i, const std::size_t& j,
-                    const Vector<Vector<Tlhs, Dim>, NumElementDOFs>& grad_b_q_k) {
+                    const Vector<Vector<Tlhs, Dim>, this->lagrangeSpace_m.numElementDOFs>&
+                        grad_b_q_k) {
                     return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
                            * absDetDPhi;
                 };
 
-            const auto algoOperator = [poissonEquationEval, this](const lhs_type& field) -> OpRet {
+            const auto algoOperator = [poissonEquationEval,
+                                       this](const lhs_type& field) -> lhs_type {
                 return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             };
 

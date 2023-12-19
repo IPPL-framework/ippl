@@ -137,7 +137,7 @@ namespace ippl {
 
             std::size_t its = 1;
             do {
-                // refinement by Newton's method
+                // refinement by Newton's method (from LehrFEM++)
                 temp = 2.0 + alfbet;
 
                 // Start the recurrence with P_0 and P1 to avoid a division by zero when
@@ -156,7 +156,7 @@ namespace ippl {
                 pp = (NumNodes1D * (alpha - beta - temp * z) * p1
                       + 2.0 * (NumNodes1D + alpha) * (NumNodes1D + beta) * p2)
                      / (temp * (1.0 - z * z));
-                // p1 is now the desired jacobia polynomial. We next compute pp, its
+                // p1 is now the desired jacobian polynomial. We next compute pp, its
                 // derivative, by a standard relation involving p2, the polynomial of one
                 // lower order
                 z1 = z;

@@ -153,15 +153,20 @@ namespace ippl {
         vertex_indices[0] = smallest_vertex_index;
         vertex_indices[1] = vertex_indices[0] + 1;
 
-        // vertex_indices[2] = vertex_indices[0] + num_vertices[0];
-        // vertex_indices[3] = vertex_indices[1] + num_vertices[0];
+        /*
+        The following for loop computes the following computations:
 
-        // vertex_indices[4] = vertex_indices[0] + (num_vertices[0] * num_vertices[1]);
-        // vertex_indices[5] = vertex_indices[1] + (num_vertices[0] * num_vertices[1]);
-        // vertex_indices[6] = vertex_indices[2] + (num_vertices[0] * num_vertices[1]);
-        // vertex_indices[7] = vertex_indices[3] + (num_vertices[0] * num_vertices[1]);
+        2D:
+            vertex_indices[2] = vertex_indices[0] + num_vertices[0];
+            vertex_indices[3] = vertex_indices[1] + num_vertices[0];
+        3D:
+            vertex_indices[4] = vertex_indices[0] + (num_vertices[0] * num_vertices[1]);
+            vertex_indices[5] = vertex_indices[1] + (num_vertices[0] * num_vertices[1]);
+            vertex_indices[6] = vertex_indices[2] + (num_vertices[0] * num_vertices[1]);
+            vertex_indices[7] = vertex_indices[3] + (num_vertices[0] * num_vertices[1]);
 
-        // ...
+        ...
+        */
 
         for (std::size_t d = 1; d < Dim; ++d) {
             for (std::size_t i = 0; i < static_cast<unsigned>(1 << d); ++i) {

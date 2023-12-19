@@ -76,7 +76,7 @@ namespace ippl {
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        std::size_t numGlobalDOFs(const unsigned& nghosts = 0) const override;
+        std::size_t numGlobalDOFs() const override;
 
         // point_t getCoordsOfDOF(const index_t& dof_index) const override;
 
@@ -98,11 +98,11 @@ namespace ippl {
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        T evaluateRefElementBasis(const index_t& localDOF,
-                                  const point_t& localPoint) const override;
+        T evaluateRefElementShapeFunction(const index_t& localDOF,
+                                          const point_t& localPoint) const override;
 
-        gradient_vec_t evaluateRefElementBasisGradient(const index_t& localDOF,
-                                                       const point_t& localPoint) const override;
+        gradient_vec_t evaluateRefElementShapeFunctionGradient(
+            const index_t& localDOF, const point_t& localPoint) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////

@@ -21,11 +21,11 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    std::size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numGlobalDOFs(
-        const unsigned& nghosts) const {
+    std::size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::numGlobalDOFs()
+        const {
         std::size_t num_global_dofs = 1;
         for (std::size_t d = 0; d < Dim; ++d) {
-            num_global_dofs *= (this->mesh_m.getGridsize(d) + 2 * nghosts) * Order;
+            num_global_dofs *= (this->mesh_m.getGridsize(d)) * Order;
         }
 
         return num_global_dofs;
@@ -209,10 +209,11 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    T LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateRefElementBasis(
-        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t& localDOF,
-        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::point_t& localPoint)
-        const {
+    T LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::
+        evaluateRefElementShapeFunction(const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
+                                                            FieldRHS>::index_t& localDOF,
+                                        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
+                                                            FieldRHS>::point_t& localPoint) const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < this->numElementDOFs
@@ -243,10 +244,11 @@ namespace ippl {
               typename FieldRHS>
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::gradient_vec_t
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::
-        evaluateRefElementBasisGradient(const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
-                                                            FieldRHS>::index_t& localDOF,
-                                        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
-                                                            FieldRHS>::point_t& localPoint) const {
+        evaluateRefElementShapeFunctionGradient(
+            const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
+                localDOF,
+            const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::point_t&
+                localPoint) const {
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1 && "Only order 1 is supported at the moment");
 
@@ -344,7 +346,7 @@ namespace ippl {
             grad_b_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
-                grad_b_q[k][i] = this->evaluateRefElementBasisGradient(i, q[k]);
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
 
@@ -362,17 +364,6 @@ namespace ippl {
                     }
                 }
             }
-
-            // DEBUG // TODO REMOVE
-            // Print the Element matrix
-            // std::cout << "A_K = " << std::endl;
-            // for (i = 0; i < this->numElementDOFs; ++i) {
-            //     for (j = 0; j < this->numElementDOFs; ++j) {
-            //         std::cout << A_K[i][j] << " ";
-            //     }
-            //     std::cout << std::endl;
-            // }
-            // std::cout << std::endl;
 
             // 2. Compute the contribution to resultAx = A*x with A_K
             for (i = 0; i < this->numElementDOFs; ++i) {
@@ -422,23 +413,19 @@ namespace ippl {
 
         const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
 
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Evaluate the basis functions for the DOF at the quadrature nodes
         Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
-                basis_q[k][i] = this->evaluateRefElementBasis(i, q[k]);
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
             }
         }
-
-        // Inverse Transpose Transformation Jacobian
-        // const Vector<T, Dim> DPhiInvT =
-        //     this->ref_element_m.getInverseTransposeTransformationJacobian(
-        //         this->getElementMeshVertexPoints(zeroNdIndex));
 
         // Absolute value of det Phi_K
         const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
+        // TODO move eval function outside of evaluateLoadVector
         const auto eval = [this, absDetDPhi, f](const index_t elementIndex, const index_t& i,
                                                 const point_t& q_k,
                                                 const Vector<T, this->numElementDOFs>& basis_q_k) {
