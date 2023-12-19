@@ -11,22 +11,31 @@
 #include "Meshes/Centering.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
-template <typename T>
-KOKKOS_INLINE_FUNCTION T piSquaredSinPiX1D(T x) {
+template <typename T, unsigned Dim>
+KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
 
-    return pi * pi * Kokkos::sin(pi * x);
+    T val = 1.0;
+    for (unsigned d = 0; d < Dim; d++) {
+        val *= Kokkos::sin(pi * x_vec[d]);
+    }
+
+    return Dim * pi * pi * val;
+}
+
+template <typename T, unsigned Dim>
+KOKKOS_INLINE_FUNCTION T sinusoidalSourceFunction(ippl::Vector<T, Dim> x_vec) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    T val = 1.0;
+    for (unsigned d = 0; d < Dim; d++) {
+        val *= Kokkos::sin(pi * x_vec[d]);
+    }
+    return val;
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T sinPiX1D(T x) {
-    const T pi = Kokkos::numbers::pi_v<T>;
-
-    return Kokkos::sin(pi * x);
-}
-
-template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian(ippl::Vector<T, 3> x_vec) {
+KOKKOS_INLINE_FUNCTION T gaussian3d(ippl::Vector<T, 3> x_vec) {
     const T& x = x_vec[0];
     const T& y = x_vec[1];
     const T& z = x_vec[2];
@@ -44,7 +53,7 @@ KOKKOS_INLINE_FUNCTION T gaussian(ippl::Vector<T, 3> x_vec) {
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussianSol(ippl::Vector<T, 3> x_vec) {
+KOKKOS_INLINE_FUNCTION T gaussian3dSol(ippl::Vector<T, 3> x_vec) {
     const T& x = x_vec[0];
     const T& y = x_vec[1];
     const T& z = x_vec[2];
@@ -123,7 +132,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
                 sol.getView()(i) = f_sol(x);
             });
     } else if constexpr (Dim == 2) {
-        // TODO
+        Kokkos::parallel_for(
+            "Assign solution", sol.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const unsigned i, const unsigned j) {
+                const ippl::Vector<unsigned, Dim> indices{i, j};
+                const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
+
+                sol.getView()(i, j) = f_sol(x);
+            });
     } else if constexpr (Dim == 3) {
         Kokkos::parallel_for(
             "Assign solution", sol.getFieldRangePolicy(),
@@ -135,14 +151,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
             });
     }
 
-    const unsigned half = lhs.getView().extent(0) / 2;
-    for (unsigned int i = 0; i < lhs.getView().extent(0); ++i) {
-        const ippl::Vector<unsigned, Dim> indices{i, half, half};
-        const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
+    // for (unsigned int i = 0; i < lhs.getView().extent(0); ++i) {
+    //     const ippl::Vector<unsigned, Dim> indices{i};
+    //     const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
 
-        std::cout << std::setw(15) << f_rhs(x);
-    }
-    std::cout << std::endl;
+    //     std::cout << std::setw(15) << f_rhs(x);
+    // }
+    // std::cout << std::endl;
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
@@ -155,17 +170,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
 
     // solve the problem
     solver.solve();
-
-    // print lhs
-    for (unsigned int i = 0; i < lhs.getView().extent(0); ++i) {
-        std::cout << std::setw(15) << lhs(i, half, half);
-    }
-    std::cout << std::endl;
-
-    for (unsigned int i = 0; i < sol.getView().extent(0); ++i) {
-        std::cout << std::setw(15) << sol(i, half, half);
-    }
-    std::cout << std::endl;
 
     Inform m("");
 
@@ -213,23 +217,28 @@ int main(int argc, char* argv[]) {
         //         0.0, 1.0);
         // }
 
-        // // 1D Sinusoidal
-        // for (unsigned n = 1 << 6; n <= 1 << 15; n = n << 1) {
-        //     testFEMSolver<T, 1>(
-        //         n,
-        //         [](ippl::Vector<T, 1> x) {
-        //             return piSquaredSinPiX1D<T>(x[0]);
-        //         },
-        //         [](ippl::Vector<T, 1> x) {
-        //             return sinPiX1D<T>(x[0]);
-        //         },
-        //         -1.0, 1.0);
-        // }
+        // 1D Sinusoidal
+        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            testFEMSolver<T, 1>(n, sinusoidalSolution<T, 1>, sinusoidalSourceFunction<T, 1>, -1.0,
+                                1.0);
+        }
+
+        // 2D Sinusoidal
+        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            testFEMSolver<T, 2>(n, sinusoidalSolution<T, 2>, sinusoidalSourceFunction<T, 2>, -1.0,
+                                1.0);
+        }
+
+        // 3D Sinusoidal
+        for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
+            testFEMSolver<T, 3>(n, sinusoidalSolution<T, 3>, sinusoidalSourceFunction<T, 3>, -1.0,
+                                1.0);
+        }
 
         // 3D Gaussian
-        for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
-            testFEMSolver<T, 3>(n, gaussian<T>, gaussianSol<T>, 0.0, 1.0);
-        }
+        // for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
+        //     testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
+        // }
 
         // stop the timer
         IpplTimings::stopTimer(timer);

@@ -171,7 +171,7 @@ namespace ippl {
          *
          * @return std::size_t - unsigned integer number of global degrees of freedom
          */
-        virtual std::size_t numGlobalDOFs(const unsigned& nghosts = 0) const = 0;
+        virtual std::size_t numGlobalDOFs() const = 0;
 
         // virtual point_t getCoordsOfDOF(const index_t& dof_index) const = 0;
 
