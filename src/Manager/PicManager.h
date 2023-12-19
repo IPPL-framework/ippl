@@ -46,14 +46,6 @@
         */
         virtual void grid2par() { /* default does nothing */ };
 
-       /**
-        * @brief Dump simulation data.
-        *
-        * Derived classes can override this method to implement custom data dumping procedures.
-        * The default implementation does nothing.
-        */
-        virtual void dump() { /* default does nothing */ };
-
         std::shared_ptr<pc> getParticleContainer() {
             return pcontainer_m;
         }

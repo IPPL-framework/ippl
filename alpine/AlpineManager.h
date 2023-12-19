@@ -89,6 +89,8 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
+    virtual void dump() { /* default does nothing */ };
+
     void pre_step() override {
         Inform m("Pre-step");
         m << "Done" << endl;
