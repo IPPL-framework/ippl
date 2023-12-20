@@ -33,18 +33,16 @@
        /**
         * @brief Particle-to-grid operation.
         *
-        * Derived classes can override this method to perform particle-to-grid operations.
-        * The default implementation does nothing.
+        * In a derived class, the user must override this method to perform particle-to-grid operations.
         */
-        virtual void par2grid() { /* default does nothing */ };
+        virtual void par2grid() = 0;
 
        /**
         * @brief Grid-to-particle operation.
         *
-        * Derived classes can override this method to perform grid-to-particle operations.
-        * The default implementation does nothing.
+        * In a derived class, the user must override this method to perform grid-to-particle operations.
         */
-        virtual void grid2par() { /* default does nothing */ };
+        virtual void grid2par() = 0;
 
         std::shared_ptr<pc> getParticleContainer() {
             return pcontainer_m;

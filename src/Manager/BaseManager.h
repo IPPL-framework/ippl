@@ -45,13 +45,12 @@ namespace ippl {
         }
 
        /**
-        * @brief A method that should be used to execute a step of simulation.
+        * @brief A method that should be used to execute/advance a step of simulation.
         *
-        * Derived classes can override this method to implement their own governing equation.
-        * The default implementation does nothing.
+        *  In a derived class, the user must override this method to implement
+        *  their time integration method for solving the considered governing equation.
         */
-        virtual void advance() { /* default does nothing */
-        }
+        virtual void advance() = 0;
 
        /**
         * @brief The main for loop fro running a simulation.
