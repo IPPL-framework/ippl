@@ -12,13 +12,14 @@ class LoadBalancer{
         double loadbalancethreshold_m;
         Field_t<Dim>* rho_m;
         VField_t<T, Dim>* E_m;
+        Field<T, Dim> *phi_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver_t> fs_m;
         unsigned int loadbalancefreq_m;
         ORB<T, Dim> orb;
     public:
         LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver_t> &fs)
-           :loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), E_m(&fc->getE()), pc_m(pc), fs_m(fs) {}
+           :loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), E_m(&fc->getE()), phi_m(&fc->getPhi()), pc_m(pc), fs_m(fs) {}
 
         ~LoadBalancer() {  }
 
@@ -30,6 +31,9 @@ class LoadBalancer{
 
         VField_t<T, Dim>* getE() const { return E_m; }
         void setE(VField_t<T, Dim>* E) { E_m = E; }
+
+        Field<T, Dim>* getPhi() { return phi_m; }
+        void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
 
         std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
         void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
@@ -44,6 +48,11 @@ class LoadBalancer{
             IpplTimings::startTimer(tupdateLayout);
             (*E_m).updateLayout(*fl);
             (*rho_m).updateLayout(*fl);
+
+            if (fs_m->getStype() == "CG") {
+                phi_m->updateLayout(*fl);
+                phi_m->setFieldBC(phi_m->getFieldBC());
+            }
 
             // Update layout with new FieldLayout
             PLayout_t<T, Dim>* layout = &pc_m->getLayout();
@@ -65,9 +74,9 @@ class LoadBalancer{
             // Repartition the domains
 
             using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-            typename Base::particle_position_type *R_m;
-            R_m = &pc_m->R;
-            bool res = orb.binaryRepartition(*R_m, *fl, isFirstRepartition);
+            typename Base::particle_position_type *R;
+            R = &pc_m->R;
+            bool res = orb.binaryRepartition(*R, *fl, isFirstRepartition);
             if (res != true) {
                 std::cout << "Could not repartition!" << std::endl;
                 return;
@@ -75,14 +84,14 @@ class LoadBalancer{
             // Update
             this->updateLayout(fl, mesh, isFirstRepartition);
             if constexpr (Dim == 2 || Dim == 3) {
-                if (fs_m->stype_m == "FFT") {
-                    std::get<FFTSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
+                if (fs_m->getStype() == "FFT") {
+                    std::get<FFTSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
                 }
                 if constexpr (Dim == 3) {
-                    if (fs_m->stype_m == "P3M") {
-                        std::get<P3MSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
-                    } else if (fs_m->stype_m == "OPEN") {
-                        std::get<OpenSolver_t<T, Dim>>(fs_m->solver_m).setRhs(*rho_m);
+                    if (fs_m->getStype() == "P3M") {
+                        std::get<P3MSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
+                    } else if (fs_m->getStype() == "OPEN") {
+                        std::get<OpenSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
                     }
                 }
             }

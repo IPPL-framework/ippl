@@ -62,10 +62,11 @@ using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, 
 namespace ippl {
   template <typename T, unsigned Dim>
   class FieldSolverBase {
-    public:
+    private:
       std::string stype_m;
       Solver_t<T, Dim> solver_m;
 
+   public:
       FieldSolverBase(std::string solver)
          : stype_m(solver) {}
 
@@ -74,6 +75,14 @@ namespace ippl {
       virtual void runSolver() = 0;
 
       virtual ~FieldSolverBase() = default;
+
+      std::string& getStype() { return stype_m; }
+
+      void setStype(std::string& solver) { stype_m = solver; }
+
+      Solver_t<T, Dim>& getSolver() { return solver_m; }
+
+      void setSolver(Solver_t<T, Dim>& solver) { solver_m = solver; }
   };
 }
 #endif

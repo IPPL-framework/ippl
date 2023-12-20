@@ -9,12 +9,16 @@
 template <typename T, unsigned Dim = 3>
 class FieldContainer{
 public:
-    FieldContainer(Vector_t<double, Dim>& hr, Vector_t<double, Dim>& rmin,
-                   Vector_t<double, Dim>& rmax, std::array<bool, Dim> decomp)
+    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin,
+                   Vector_t<T, Dim>& rmax, std::array<bool, Dim> decomp,
+                   ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
+                   bool isAllPeriodic)
         : hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
-        , decomp_m(decomp) {}
+        , decomp_m(decomp)
+        , mesh_m(domain, hr, origin)
+        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {}
 
     ~FieldContainer(){}
 
@@ -25,8 +29,9 @@ private:
     std::array<bool, Dim> decomp_m;
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
-    std::shared_ptr<Mesh_t<Dim>> mesh_m;
-    std::shared_ptr<FieldLayout_t<Dim>> fl_m;
+    Field<T, Dim> phi_m;
+    Mesh_t<Dim> mesh_m;
+    FieldLayout_t<Dim> fl_m;
 
 public:
     VField_t<T, Dim>& getE() { return E_m; }
@@ -34,6 +39,9 @@ public:
 
     Field_t<Dim>& getRho() { return rho_m; }
     void setRho(Field_t<Dim>& rho) { rho_m = rho; }
+
+    Field<T, Dim>& getPhi() { return phi_m; }
+    void setPhi(Field<T, Dim>& phi) { phi_m = phi; }
 
     Vector_t<double, Dim>& getHr() { return hr_m; }
     void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }
@@ -47,18 +55,18 @@ public:
     std::array<bool, Dim> getDecomp() { return decomp_m; }
     void setDecomp(std::array<bool, Dim> decomp) { decomp_m = decomp; }
 
+    Mesh_t<Dim>& getMesh() { return mesh_m; }
+    void setMesh(Mesh_t<Dim> & mesh) { mesh_m = mesh; }
 
-    Mesh_t<Dim>& getMesh() { return *mesh_m; }
-    void setMesh(std::shared_ptr<Mesh_t<Dim>>& mesh) { mesh_m = mesh; }
-
-    FieldLayout_t<Dim>& getFL() { return *fl_m; }
+    FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
-    void initializeFields(std::shared_ptr<Mesh_t<Dim>> mesh, std::shared_ptr<FieldLayout_t<Dim>> fl) {
-        E_m.initialize(*mesh, *fl);
-        rho_m.initialize(*mesh, *fl);
-        fl_m = fl;
-        mesh_m = mesh;
+    void initializeFields(std::string stype_m = "") {
+        E_m.initialize(mesh_m, fl_m);
+        rho_m.initialize(mesh_m, fl_m);
+        if (stype_m == "CG") {
+            phi_m.initialize(mesh_m, fl_m);
+        }
     }
 };
 

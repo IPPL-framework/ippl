@@ -1,5 +1,5 @@
-#ifndef IPPL_LANDAU_DAMPING_MANAGER_H
-#define IPPL_LANDAU_DAMPING_MANAGER_H
+#ifndef IPPL_BUMPON_TAIL_INSTABILITY_MANAGER_H
+#define IPPL_BUMPON_TAIL_INSTABILITY_MANAGER_H
 
 #include <memory>
 
@@ -12,21 +12,30 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
+#include "Random/UniformDistribution.h"
 #include "Random/Randn.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+
+constexpr bool EnablePhaseDump = false;
 
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
   struct CDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, const double *params_p) const {
-           return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
+           if( d == Dim - 1)
+               	return x + (params_p[d * 2 + 0] / params_p[d * 2 + 1]) * Kokkos::sin(params_p[d * 2 + 1] * x);
+           else
+                return ippl::random::uniform_cdf_func<double>(x);
        }
   };
 
   struct PDF{
        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d, double const *params_p) const {
-           return 1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x);
+           if( d == Dim - 1)
+               return  (1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x));
+           else
+               return ippl::random::uniform_pdf_func<double>();
        }
   };
 
@@ -38,24 +47,39 @@ struct CustomDistributionFunctions {
 };
 
 template <typename T, unsigned Dim>
-class LandauDampingManager : public AlpineManager<T, Dim> {
+class BumponTailInstabilityManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
 
-    LandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
+    BumponTailInstabilityManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){
+            phase_m = std::make_shared<PhaseDump>();
+        }
 
-    ~LandauDampingManager(){}
+    ~BumponTailInstabilityManager(){}
 
+    struct PhaseDump;
+
+private:
+    std::shared_ptr<PhaseDump> phase_m;
+
+private:
+    double sigma_m;
+    double  muBulk_m;
+    double  muBeam_m;
+    double epsilon_m;
+    double delta_m;
+
+public:
     void pre_run() override {
         Inform m("Pre Run");
 
         if (this->solver_m == "OPEN") {
-            throw IpplException("LandauDamping", "Open boundaries solver incompatible with this simulation!");
+            throw IpplException("BumpOnTailInstability", "Open boundaries solver incompatible with this simulation!");
         }
 
         for (unsigned i = 0; i < Dim; i++) {
@@ -63,18 +87,42 @@ public:
         }
 
         this->decomp_m.fill(true);
-        this->kw_m    = 0.5;
-        this->alpha_m = 0.05;
-        this->rmin_m  = 0.0;
-        this->rmax_m  = 2 * pi / this->kw_m;
 
+        if (std::strcmp(TestName, "TwoStreamInstability") == 0) {
+            // Parameters for two stream instability as in
+            //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
+            this->kw_m      = 0.5;
+            sigma_m   = 0.1;
+            epsilon_m = 0.5;
+            muBulk_m  = -pi / 2.0;
+            muBeam_m  = pi / 2.0;
+            delta_m   = 0.01;
+        } else if (std::strcmp(TestName, "BumponTailInstability") == 0) {
+            this->kw_m      = 0.21;
+            sigma_m   = 1.0 / std::sqrt(2.0);
+            epsilon_m = 0.1;
+            muBulk_m  = 0.0;
+            muBeam_m  = 4.0;
+            delta_m   = 0.01;
+        } else {
+            // Default value is two stream instability
+            this->kw_m      = 0.5;
+            sigma_m   = 0.1;
+            epsilon_m = 0.5;
+            muBulk_m  = -pi / 2.0;
+            muBeam_m  = pi / 2.0;
+            delta_m   = 0.01;
+        }
+
+        this->rmin_m(0.0);
+        this->rmax_m = 2 * pi / this->kw_m;
         this->hr_m = this->rmax_m / this->nr_m;
         // Q = -\int\int f dx dv
         this->Q_m = std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
         this->origin_m = this->rmin_m;
         this->dt_m     = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m     = 0;
-        this->time_m   = 0.0;
+        this->time_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
@@ -94,6 +142,15 @@ public:
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
         initializeParticles();
+
+        if constexpr (EnablePhaseDump) {
+            if (ippl::Comm->size() != 1) {
+                m << "Phase dump only supported on one rank" << endl;
+                ippl::Comm->abort();
+            }
+            phase_m->initialize(*std::max_element(this->nr_m.begin(), this->nr_m.end()),
+                             *std::max_element(this->rmax_m.begin(), this->rmax_m.end()));
+        }
 
         static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
         IpplTimings::startTimer(DummySolveTimer);
@@ -128,19 +185,18 @@ public:
         using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
         double parR[2 * Dim];
         for(unsigned int i=0; i<Dim; i++){
-            parR[i * 2   ]  = this->alpha_m;
+            parR[i * 2   ]  = this->delta_m;
             parR[i * 2 + 1] = this->kw_m[i];
         }
         DistR_t distR(parR);
 
-        Vector_t<double, Dim> kw     = this->kw_m;
         Vector_t<double, Dim> hr     = this->hr_m;
         Vector_t<double, Dim> origin = this->origin_m;
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             IpplTimings::startTimer(domainDecomposition);
-            this->isFirstRepartition_m           = true;
+            this->isFirstRepartition_m     = true;
             const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
             const int nghost               = this->fcontainer_m->getRho().getNghost();
             auto rhoview                   = this->fcontainer_m->getRho().getView();
@@ -165,25 +221,37 @@ public:
             IpplTimings::stopTimer(domainDecomposition);
         }
 
-        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+	static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
         IpplTimings::startTimer(particleCreation);
 
-        // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
         rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( *FL, *mesh );
 
-        // unsigned int
         size_type totalP = this->totalP_m;
         int seed           = 42;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
         using samplingR_t =
-            ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace,
-                                                   DistR_t>;
+            ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, DistR_t>;
+
         Vector_t<double, Dim> rmin = this->rmin_m;
         Vector_t<double, Dim> rmax = this->rmax_m;
         samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
         size_type nlocal = samplingR.getLocalSamplesNum();
+
+        double factorVelBulk      = 1.0 - epsilon_m;
+        double factorVelBeam      = 1.0 - factorVelBulk;
+        size_type nlocBulk        = (size_type)(factorVelBulk * nlocal);
+        size_type nlocBeam        = (size_type)(factorVelBeam * nlocal);
+        nlocal                    = nlocBulk + nlocBeam;
+
+        int rank = ippl::Comm->rank();
+        size_type nglobal = 0;
+        MPI_Allreduce(&nlocal, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+        int rest = (int)(totalP - nglobal);
+        if (rank < rest) {
+            ++nlocal;
+        }
 
         this->pcontainer_m->create(nlocal);
 
@@ -195,10 +263,17 @@ public:
         double mu[Dim];
         double sd[Dim];
         for(unsigned int i=0; i<Dim; i++){
-            mu[i] = 0.0;
-            sd[i] = 1.0;
+           mu[i] = 0.0;
+           sd[i] = sigma_m;
         }
-        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+        // sample first nlocBulk with muBulk as mean velocity
+        mu[Dim-1] = muBulk_m;
+        Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, nlocBulk), ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+
+        // sample remaining with muBeam as mean velocity
+        mu[Dim-1] = muBeam_m;
+        Kokkos::parallel_for(Kokkos::RangePolicy<int>(nlocBulk, nlocal), ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+
         Kokkos::fence();
         ippl::Comm->barrier();
 
@@ -246,8 +321,8 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        size_type totalP        = this->totalP_m;
-        int it                  = this->it_m;
+        size_type totalP          = this->totalP_m;
+        int it                    = this->it_m;
         bool isFirstRepartition = false;
         if (this->loadbalancer_m->balance(totalP, it + 1)) {
                 IpplTimings::startTimer(domainDecomposition);
@@ -274,57 +349,142 @@ public:
         IpplTimings::stopTimer(PTimer);
     }
 
+    struct PhaseDump {
+        void initialize(size_t nr_, double domain_) {
+           ippl::Index I(nr_);
+           ippl::NDIndex<2> owned(I, I);
+           layout = FieldLayout_t<2>(MPI_COMM_WORLD, owned, isParallel);
+
+           Vector_t<double, 2> hx = {domain_ / nr_, 16. / nr_};
+           Vector_t<double, 2> orgn{0, -8};
+
+           mesh = Mesh_t<2>(owned, hx, orgn);
+           phaseSpace.initialize(mesh, layout);
+           if (ippl::Comm->rank() == 0) {
+               phaseSpaceBuf.initialize(mesh, layout);
+           }
+           std::cout << ippl::Comm->rank() << ": " << phaseSpace.getOwned() << std::endl;
+        }
+
+        void dump(int it_, std::shared_ptr<ParticleContainer_t> pc, bool allDims = false) {
+           const auto pcount = pc->getLocalNum();
+           phase.realloc(pcount);
+           auto& Ri = pc->R;
+           auto& Pi = pc->P;
+           for (unsigned d = allDims ? 0 : Dim - 1; d < Dim; d++) {
+               Kokkos::parallel_for(
+                   "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
+                       phase(i) = {Ri(i)[d], Pi(i)[d]};
+                   });
+               phaseSpace = 0;
+               Kokkos::fence();
+               scatter(pc->q, phaseSpace, phase);
+               auto& view = phaseSpace.getView();
+               MPI_Reduce(view.data(), phaseSpaceBuf.getView().data(), view.size(), MPI_DOUBLE,
+                       MPI_SUM, 0, ippl::Comm->getCommunicator());
+               if (ippl::Comm->rank() == 0) {
+                   std::stringstream fname;
+                   fname << "PhaseSpace_t=" << it_ << "_d=" << d << ".csv";
+
+                   Inform out("Phase Dump", fname.str().c_str(), Inform::OVERWRITE, 0);
+                   phaseSpaceBuf.write(out);
+
+                   auto max = phaseSpaceBuf.max();
+                   auto min = phaseSpaceBuf.min();
+                   if (max > maxValue) {
+                       maxValue = max;
+                   }
+                   if (min < minValue) {
+                       minValue = min;
+                   }
+               }
+               ippl::Comm->barrier();
+           }
+           MPI_Bcast(&maxValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+           MPI_Bcast(&minValue, 1, MPI_DOUBLE, 0, ippl::Comm->getCommunicator());
+        }
+
+        double maxRecorded() const { return maxValue; }
+        double minRecorded() const { return minValue; }
+
+    private:
+        std::array<bool, 2> isParallel = {false, false};
+        FieldLayout_t<2> layout;
+        Mesh_t<2> mesh;
+        Field_t<2> phaseSpace, phaseSpaceBuf;
+        ippl::ParticleAttrib<Vector_t<double, 2>> phase;
+
+        double maxValue = 0, minValue = 0;
+    };
+
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
+
+        dumpBumponTailInstability(this->fcontainer_m->getE().getView());
+        if constexpr (EnablePhaseDump) {
+                phase_m->dump(this->it_m, this->pcontainer_m);
+        }
+
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
     template <typename View>
-    void dumpLandau(const View& Eview) {
+    void dumpBumponTailInstability(const View& Eview) {
         const int nghostE = this->fcontainer_m->getE().getNghost();
+        double fieldEnergy, EzAmp;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double localEx2 = 0, localExNorm = 0;
-        ippl::parallel_reduce(
-            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double val = ippl::apply(Eview, args)[0];
-                double e2  = Kokkos::pow(val, 2);
-                E2 += e2;
+        double temp            = 0.0;
 
-                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
-                if (norm > ENorm) {
-                    ENorm = norm;
-                }
+        ippl::parallel_reduce(
+            "Ex inner product", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::pow(ippl::apply(Eview, args)[Dim - 1], 2);
+                valL += myVal;
             },
-            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
+            Kokkos::Sum<double>(temp));
 
         double globaltemp = 0.0;
-        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
+        ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
 
-        double fieldEnergy =
+        fieldEnergy =
             std::reduce(this->fcontainer_m->getHr().begin(), this->fcontainer_m->getHr().end(), globaltemp, std::multiplies<double>());
 
-        double ExAmp = 0.0;
-        ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
+        double tempMax = 0.0;
+        ippl::parallel_reduce(
+            "Ex max norm", ippl::getRangePolicy(Eview, nghostE),
+            KOKKOS_LAMBDA(const index_array_type& args, double& valL) {
+                // ippl::apply accesses the view at the given indices and obtains a
+                // reference; see src/Expression/IpplOperations.h
+                double myVal = std::fabs(ippl::apply(Eview, args)[Dim - 1]);
+                if (myVal > valL) {
+                    valL = myVal;
+                }
+            },
+            Kokkos::Max<double>(tempMax));
+
+        EzAmp = 0.0;
+        ippl::Comm->reduce(tempMax, EzAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data/FieldLandau_";
+            fname << "data/FieldBumponTail_";
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
+
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
+
             if ( std::fabs(this->time_m) < 1e-14 ) {
-                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+                csvout << "time, Ez_field_energy, Ez_max_norm" << endl;
             }
-            csvout << this->time_m << " " << fieldEnergy << " " << ExAmp << endl;
+
+            csvout << this->time_m << " " << fieldEnergy << " " << EzAmp << endl;
         }
         ippl::Comm->barrier();
     }
