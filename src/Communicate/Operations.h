@@ -6,29 +6,109 @@
 #define IPPL_MPI_OPERATIONS_H
 
 #include <Kokkos_Complex.hpp>
+#include <algorithm>
 #include <complex>
 #include <functional>
+#include <map>
 #include <mpi.h>
+#include <typeindex>
+#include <utility>
 
 namespace ippl {
     namespace mpi {
 
+        enum struct binaryOperationKind {
+            SUM,
+            MIN,
+            MAX,
+            MULTIPLICATION  // TODO: Add all
+        };
+        template <typename T>
+        struct extractBinaryOperationKind {};
+        template <typename T>
+        struct extractBinaryOperationKind<std::plus<T>> {
+            constexpr static binaryOperationKind value = binaryOperationKind::SUM;
+        };
+        template <typename T>
+        struct extractBinaryOperationKind<std::multiplies<T>> {
+            constexpr static binaryOperationKind value = binaryOperationKind::MULTIPLICATION;
+        };
+        template <typename T>
+        struct extractBinaryOperationKind<std::less<T>> {
+            constexpr static binaryOperationKind value = binaryOperationKind::MIN;
+        };
+        template <typename T>
+        struct extractBinaryOperationKind<std::greater<T>> {
+            constexpr static binaryOperationKind value = binaryOperationKind::MAX;
+        };
+
         template <class>
         struct is_ippl_mpi_type : std::false_type {};
+        struct dummy {};
+        static std::map<std::pair<std::type_index, std::type_index>, MPI_Op> mpiOperations;
+        template <typename CppOpType, typename Datatype_IfNotTrivial>
+        struct getMpiOpImpl {
+            constexpr MPI_Op operator()() const noexcept {
+                static_assert(false, "This optype is not supported");
+                return 0; //Dummy return
+            }
+        };
+        /**
+         * @brief Helper struct to look up and store MPI_Op types for custom types 
+         * 
+         */
+        template <class Op, typename Type>        
+        struct getNontrivialMpiOpImpl /*<Op, Type>*/ {
 
-        template <class Op>
-        MPI_Op get_mpi_op(Op op) {
-            static_assert(is_ippl_mpi_type<Op>::value, "type not supported");
-            return get_mpi_op(op);
-        }
+            /**
+             * @brief Get the MPI_Op for this CppOp + Type combo
+             * 
+             * @return MPI_Op 
+             */
+            MPI_Op operator()() {
+                std::pair<std::type_index, std::type_index> pear{std::type_index(typeid(Op)), std::type_index(typeid(Type))};
+                if(mpiOperations.contains(pear)){
+                    return mpiOperations.at(pear);
+                }
+                constexpr binaryOperationKind opKind = extractBinaryOperationKind<Op>::value;
+                MPI_Op ret;
+                MPI_Op_create(
+                    [](void* inputBuffer, void* outputBuffer, int* len, MPI_Datatype*) {
+                        Type* input = (Type*)inputBuffer;
 
-#define IPPL_MPI_OP(CppOp, MPIOp)            \
-    template <>                              \
-    inline MPI_Op get_mpi_op<CppOp>(CppOp) { \
-        return MPIOp;                        \
-    }                                        \
-                                             \
-    template <>                              \
+                        Type* output = (Type*)outputBuffer;
+
+                        for (int i = 0; i < *len; i++) {
+                            if constexpr (opKind == binaryOperationKind::SUM) {
+                                output[i] += input[i];
+                            }
+                            if constexpr (opKind == binaryOperationKind::MIN) {
+                                output[i] = min(output[i], input[i]);
+                            }
+                            if constexpr (opKind == binaryOperationKind::MAX) {
+                                output[i] = max(output[i], input[i]);
+                            }
+                            if constexpr (opKind == binaryOperationKind::MULTIPLICATION) {
+                                output[i] *= input[i];
+                            }
+                        }
+                    },
+                    1, &ret);
+                // static_assert(is_ippl_mpi_type<Op>::value, "type not supported");
+                mpiOperations[pear] = ret;
+                return ret;
+                // return get_mpi_op(op);
+            }
+        };
+
+#define IPPL_MPI_OP(CppOp, MPIOp)                       \
+    template <typename Datatype_IfNotTrivial>           \
+    struct getMpiOpImpl<CppOp, Datatype_IfNotTrivial> { \
+        constexpr MPI_Op operator()() const noexcept {  \
+            return MPIOp;                               \
+        }                                               \
+    };                                                  \
+    template <>                                         \
     struct is_ippl_mpi_type<CppOp> : std::true_type {};
 
         /* with C++14 we should be able
@@ -52,10 +132,10 @@ namespace ippl {
         IPPL_MPI_OP(std::plus<double>, MPI_SUM);
         IPPL_MPI_OP(std::plus<long double>, MPI_SUM);
 
-        IPPL_MPI_OP(std::plus<std::complex<float> >, MPI_SUM);
-        IPPL_MPI_OP(std::plus<std::complex<double> >, MPI_SUM);
-        IPPL_MPI_OP(std::plus<Kokkos::complex<float> >, MPI_SUM);
-        IPPL_MPI_OP(std::plus<Kokkos::complex<double> >, MPI_SUM);
+        IPPL_MPI_OP(std::plus<std::complex<float>>, MPI_SUM);
+        IPPL_MPI_OP(std::plus<std::complex<double>>, MPI_SUM);
+        IPPL_MPI_OP(std::plus<Kokkos::complex<float>>, MPI_SUM);
+        IPPL_MPI_OP(std::plus<Kokkos::complex<double>>, MPI_SUM);
 
         IPPL_MPI_OP(std::less<char>, MPI_MIN);
         IPPL_MPI_OP(std::less<short>, MPI_MIN);
@@ -99,6 +179,16 @@ namespace ippl {
 
         IPPL_MPI_OP(std::logical_or<bool>, MPI_LOR);
         IPPL_MPI_OP(std::logical_and<bool>, MPI_LAND);
+
+        template <typename Op, typename Datatype>
+        MPI_Op get_mpi_op() {
+            if constexpr (is_ippl_mpi_type<Op>::value) {
+                return getMpiOpImpl<Op, Datatype>{}();
+            }
+            else {
+                return getNontrivialMpiOpImpl<Op, Datatype>{}();
+            }
+        }
     }  // namespace mpi
 }  // namespace ippl
 

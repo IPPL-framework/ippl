@@ -178,6 +178,18 @@ namespace ippl {
         struct ExtractRank<Kokkos::MDRangePolicy<T...>> {
             static constexpr int rank = Kokkos::MDRangePolicy<T...>::rank;
         };
+        template<typename T>
+        concept HasMemberValueType = requires(){
+            {typename T::value_type() };
+        };
+        template<typename T>
+        struct ExtractReducerReturnType {
+            using type = T;
+        };
+        template<HasMemberValueType T>
+        struct ExtractReducerReturnType<T> {
+            using type = typename T::value_type;
+        };
 
         /*!
          * Convenience function for wrapping a functor with the wrapper struct.
@@ -207,12 +219,12 @@ namespace ippl {
 
     template <class ExecPolicy, class FunctorType, class... ReducerArgument>
     void parallel_reduce(const std::string& name, const ExecPolicy& policy,
-                         const FunctorType& functor, const ReducerArgument&... reducer) {
+                         const FunctorType& functor, ReducerArgument&&... reducer) {
         Kokkos::parallel_reduce(
             name, policy,
-            detail::functorize<detail::REDUCE, ExecPolicy, typename ReducerArgument::value_type...>(
+            detail::functorize<detail::REDUCE, ExecPolicy, typename detail::ExtractReducerReturnType<ReducerArgument>::type...>(
                 functor),
-            reducer...);
+            std::forward<ReducerArgument>(reducer)...);
     }
 }  // namespace ippl
 

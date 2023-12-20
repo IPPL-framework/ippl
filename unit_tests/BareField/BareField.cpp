@@ -72,7 +72,23 @@ struct FieldVal {
         view(args...) = tot - 1;
     }
 };
+template <typename Params>
+struct VFieldVal {
+    constexpr static unsigned Dim = BareFieldTest<Params>::dim;
+    using T                       = typename BareFieldTest<Params>::value_type;
 
+    const typename BareFieldTest<Params>::vfield_type::view_type view;
+    const ippl::NDIndex<Dim> lDom;
+
+    template <typename... Idx>
+    KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
+        T tot = (args + ...);
+        for (unsigned d = 0; d < Dim; d++) {
+            tot += lDom[d].first();
+        }
+        view(args...) = tot - 1;
+    }
+};
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_CASE(BareFieldTest, Tests);
 
@@ -105,9 +121,17 @@ TYPED_TEST(BareFieldTest, Sum) {
     *field = val;
     T sum  = field->sum();
     assertEqual<T>(expected, sum);
+    auto& vfield = this->vfield;
+    *vfield = ippl::Vector<T, TestFixture::dim>(val);
+    ippl::Vector<T, TestFixture::dim> vsum  = vfield->sum();
+    for(unsigned d = 0;d < TestFixture::dim;d++){
+        assertEqual<T>(expected, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Min) {
+    using T = typename TestFixture::value_type;
+
     auto& field = this->field;
 
     const auto lDom = field->getLayout().getLocalNDIndex();
@@ -115,11 +139,20 @@ TYPED_TEST(BareFieldTest, Min) {
 
     Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
                          FieldVal<TypeParam>{view, lDom});
+    auto& vfield = this->vfield;
+    auto  vview       = vfield->getView();
+    Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                         VFieldVal<TypeParam>{vview, lDom});
     Kokkos::fence();
 
     auto min = field->min();
     // minimum value in 3D: -1 + nghost + nghost + nghost
     assertEqual<typename TestFixture::value_type>(min, field->getNghost() * TestFixture::dim - 1);
+
+    ippl::Vector<T, TestFixture::dim> vsum  = vfield->min();
+    for(unsigned d = 0;d < TestFixture::dim;d++){
+        assertEqual<T>(field->getNghost() * TestFixture::dim - 1, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Max) {
@@ -134,10 +167,19 @@ TYPED_TEST(BareFieldTest, Max) {
 
     Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
                          FieldVal<TypeParam>{view, lDom});
+    auto& vfield = this->vfield;
+    auto  vview       = vfield->getView();
+    Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                         VFieldVal<TypeParam>{vview, lDom});
     Kokkos::fence();
 
     T max = field->max();
     assertEqual<T>(max, expected);
+
+    ippl::Vector<T, TestFixture::dim> vsum  = vfield->max();
+    for(unsigned d = 0;d < TestFixture::dim;d++){
+        assertEqual<T>(expected, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
