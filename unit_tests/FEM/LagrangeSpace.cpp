@@ -364,7 +364,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
     if (order == 1) {
         if (dim == 1) {
             for (T x = 0.0; x < 1.0; x += 0.05) {
-                ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(0, x), 1.0 - x, tolerance);
+                ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(0, x), 1.0 - x,
+                            tolerance);
                 ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(1, x), x, tolerance);
             }
         } else if (dim == 2) {
@@ -375,11 +376,12 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                     point[1] = y;
                     ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(0, point),
                                 (1.0 - x) * (1.0 - y), tolerance);
-                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(1, point), x * (1.0 - y),
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(1, point),
+                                x * (1.0 - y), tolerance);
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(2, point), x * y,
                                 tolerance);
-                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(2, point), x * y, tolerance);
-                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(3, point), (1.0 - x) * y,
-                                tolerance);
+                    ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(3, point),
+                                (1.0 - x) * y, tolerance);
                 }
             }
         } else if (dim == 3) {
@@ -402,8 +404,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                                     (1.0 - x) * (1.0 - y) * z, tolerance);
                         ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(5, point),
                                     x * (1.0 - y) * z, tolerance);
-                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(6, point), x * y * z,
-                                    tolerance);
+                        ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(6, point),
+                                    x * y * z, tolerance);
                         ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(7, point),
                                     (1.0 - x) * y * z, tolerance);
                     }
@@ -441,10 +443,14 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                 for (T y = 0.0; y < 1.0; y += 0.05) {
                     point[1] = y;
 
-                    const auto grad_0 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(0, point);
-                    const auto grad_1 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(1, point);
-                    const auto grad_2 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(2, point);
-                    const auto grad_3 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(3, point);
+                    const auto grad_0 =
+                        lagrangeSpace.evaluateRefElementShapeFunctionGradient(0, point);
+                    const auto grad_1 =
+                        lagrangeSpace.evaluateRefElementShapeFunctionGradient(1, point);
+                    const auto grad_2 =
+                        lagrangeSpace.evaluateRefElementShapeFunctionGradient(2, point);
+                    const auto grad_3 =
+                        lagrangeSpace.evaluateRefElementShapeFunctionGradient(3, point);
 
                     ASSERT_NEAR(grad_0[0], y - 1.0, tolerance);
                     ASSERT_NEAR(grad_0[1], x - 1.0, tolerance);
@@ -468,14 +474,22 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                     for (T z = 0.0; z < 1.0; z += 0.05) {
                         point[2] = z;
 
-                        const auto grad_0 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(0, point);
-                        const auto grad_1 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(1, point);
-                        const auto grad_2 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(2, point);
-                        const auto grad_3 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(3, point);
-                        const auto grad_4 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(4, point);
-                        const auto grad_5 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(5, point);
-                        const auto grad_6 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(6, point);
-                        const auto grad_7 = lagrangeSpace.evaluateRefElementShapeFunctionGradient(7, point);
+                        const auto grad_0 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(0, point);
+                        const auto grad_1 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(1, point);
+                        const auto grad_2 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(2, point);
+                        const auto grad_3 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(3, point);
+                        const auto grad_4 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(4, point);
+                        const auto grad_5 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(5, point);
+                        const auto grad_6 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(6, point);
+                        const auto grad_7 =
+                            lagrangeSpace.evaluateRefElementShapeFunctionGradient(7, point);
 
                         ASSERT_NEAR(grad_0[0], -1.0 * (1.0 - y) * (1.0 - z), tolerance);
                         ASSERT_NEAR(grad_0[1], (1.0 - x) * -1.0 * (1.0 - z), tolerance);
@@ -568,7 +582,11 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    if (i == j) {
+                    if ((i == 0 || i == numGlobalDOFs - 1) || (j == 0 || j == numGlobalDOFs - 1)) {
+                        // zero boundary conditions on the stiffness matrix (essential boundary
+                        // conditions)
+                        A_ref(i, j) = 0.0;
+                    } else if (i == j) {
                         if (i == 0 || i == numGlobalDOFs - 1) {
                             A_ref(i, j) = 1.0;
                         } else {
@@ -576,6 +594,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
                         }
                     } else if (i + 1 == j || j + 1 == i) {
                         A_ref(i, j) = -1.0;
+
                     } else {
                         A_ref(i, j) = 0.0;
                     }
@@ -676,11 +695,13 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             std::cout << std::endl;
 
             // compare to analytical solution
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 0), 2.0 - pi, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 0), 0.0,
+                        1e-7);  // 2.0 - pi (without bounadry conditions)
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 1), -4.0, 1e-7);
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 2), 0.0, 1e-7);
             ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 3), 4.0, 1e-7);
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), pi - 2.0, 1e-7);
+            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), 0.0,
+                        1e-7);  // pi - 2.0 (without boundary conditions)
         } else {
             GTEST_SKIP();
         }
