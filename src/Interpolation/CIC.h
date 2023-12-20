@@ -119,6 +119,7 @@ namespace ippl {
             const std::index_sequence<GatherPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
             const Vector<IndexType, View::rank>& args);
+
     }  // namespace detail
 }  // namespace ippl
 

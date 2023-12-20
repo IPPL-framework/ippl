@@ -102,7 +102,7 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    template <typename Field, class PT>
+    template <typename Field, class PT, bool volumetricallyCorrect>
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp) const {
         constexpr unsigned Dim = Field::dim;
@@ -123,6 +123,13 @@ namespace ippl {
         const vector_type& origin = mesh.getOrigin();
         const vector_type invdx   = 1.0 / dx;
 
+        // Scale factor accounting for volumetric density consistency
+        typename vector_type::value_type spatial_scale = 1.0;
+        if constexpr (volumetricallyCorrect)
+            for (unsigned i = 0; i < Dim; i++) {
+                spatial_scale *= invdx[i];
+            }
+
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
         const int nghost               = f.getNghost();
@@ -142,7 +149,60 @@ namespace ippl {
                 // scatter
                 const value_type& val = dview_m(idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
-                                       args, val);
+                                       args, val * spatial_scale);
+            });
+        IpplTimings::stopTimer(scatterTimer);
+
+        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
+        IpplTimings::startTimer(accumulateHaloTimer);
+        f.accumulateHalo();
+        IpplTimings::stopTimer(accumulateHaloTimer);
+    }
+    template <typename T, class... Properties>
+    template <typename Field, class P2, bool volumetricallyCorrect>
+    void ParticleAttrib<T, Properties...>::scatter(
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp1,
+        const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp2, T dt_scale) const {
+        constexpr unsigned Dim = Field::dim;
+
+        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
+        IpplTimings::startTimer(scatterTimer);
+        using view_type = typename Field::view_type;
+        view_type view  = f.getView();
+
+        using mesh_type       = typename Field::Mesh_t;
+        const mesh_type& mesh = f.get_mesh();
+
+        using vector_type = typename mesh_type::vector_type;
+        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
+
+        const vector_type dx     = mesh.getMeshSpacing();
+        const vector_type origin = mesh.getOrigin();
+        const vector_type invdx  = 1.0 / dx;
+        // Scale factor accounting for volumetric density consistency
+        typename vector_type::value_type spatial_scale = 1.0;
+        if constexpr (volumetricallyCorrect)
+            for (unsigned int d = 0; d < Dim; d++) {
+                spatial_scale *= invdx[d];
+            }
+
+        const FieldLayout<Dim>& layout = f.getLayout();
+        const NDIndex<Dim> lDom        = layout.getLocalNDIndex();
+        const int nghost               = f.getNghost();
+
+        using policy_type = Kokkos::RangePolicy<execution_space>;
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatter", policy_type(0, *(this->localNum_mp)),
+            KOKKOS_CLASS_LAMBDA(const size_t idx) {
+                // Compute offset to origin. Conversion to grid space coordinates happens later!
+                vector_type from = (pp1(idx) - origin);
+                vector_type to   = (pp2(idx) - origin);
+
+                // val is charge (or other quantity)
+                const value_type& val = dview_m(idx);
+                detail::ZigzagScatterToField(std::make_index_sequence<1 << Field::dim>{}, view,
+                                             from, to, dx, val * spatial_scale * dt_scale, lDom,
+                                             nghost);
             });
         IpplTimings::stopTimer(scatterTimer);
 
@@ -198,6 +258,22 @@ namespace ippl {
                                                        view, wlo, whi, args);
             });
         IpplTimings::stopTimer(gatherTimer);
+    }
+    template <typename T, class... Properties>
+    template <typename Field, typename P2>
+    void ParticleAttrib<T, Properties...>::scatterVolumetricallyCorrect(
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const {
+        scatter<Field, P2, true>(f, pp);
+    }
+    //     scatter the data from this attribute onto the given Field, using
+    //     the given Position attribute
+    //     This performs zigzag deposition!
+    template <typename T, class... Properties>
+    template <typename Field, typename P2>
+    void ParticleAttrib<T, Properties...>::scatterVolumetricallyCorrect(
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp1,
+        const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp2, T dt_scale) const {
+        scatter<Field, P2, true>(f, pp1, pp2, dt_scale);
     }
 
     /*

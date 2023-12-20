@@ -24,6 +24,7 @@ public:
     using mesh_type      = ippl::UniformCartesian<double, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
+    using vfield_type    = ippl::Field<ippl::Vector<double, Dim>, Dim, mesh_type, centering_type, ExecSpace>;
     using flayout_type   = ippl::FieldLayout<Dim>;
     using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
 
@@ -32,11 +33,13 @@ public:
         explicit Bunch(PLayout& playout)
             : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(Q);
+            this->addAttribute(R2);
         }
 
         ~Bunch() = default;
-
         ippl::ParticleAttrib<double, ExecSpace> Q;
+
+        ippl::ParticleBase<PLayout>::particle_position_type R2;
     };
 
     using bunch_type = Bunch<playout_type>;
@@ -69,6 +72,7 @@ public:
         mesh   = mesh_type(owned, hx, origin);
 
         field = std::make_unique<field_type>(mesh, layout);
+        vfield = std::make_unique<vfield_type>(mesh, layout);
 
         playout = playout_type(layout, mesh);
 
@@ -90,16 +94,19 @@ public:
         eng.discard(nloc * ippl::Comm->rank());
 
         auto R_host = bunch->R.getHostMirror();
+        auto R2_host = bunch->R2.getHostMirror();
         for (size_t i = 0; i < nloc; ++i) {
             for (unsigned d = 0; d < Dim; d++) {
                 std::uniform_real_distribution<double> unif(hx[0] / 2, domain[d] - (hx[0] / 2));
                 R_host(i)[d] = unif(eng);
+                R2_host(i)[d] = R_host(i)[d] + 1e-2;
             }
         }
 
         Kokkos::deep_copy(bunch->R.getView(), R_host);
     }
 
+    std::shared_ptr<vfield_type> vfield;
     std::shared_ptr<field_type> field;
     std::shared_ptr<bunch_type> bunch;
     size_t nParticles = 32;
@@ -133,6 +140,39 @@ TYPED_TEST(PICTest, Scatter) {
 
     ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
                 tolerance<typename TestFixture::value_type>);
+}
+template<typename... Args>
+decltype(auto) last(Args&&... args){
+   return (std::forward<Args>(args), ...);
+}
+TYPED_TEST(PICTest, VolumetricScatter) {
+    auto& field      = this->field;
+    auto& vfield     = this->vfield;
+    auto& bunch      = this->bunch;
+    auto& nParticles = this->nParticles;
+
+    *field = 0.0;
+
+    double charge = 0.5;
+
+    bunch->Q = charge;
+
+    bunch->update();
+
+    bunch->Q.scatterVolumetricallyCorrect(*field, bunch->R);
+
+    double totalcharge = field->getVolumeIntegral();
+
+    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
+                tolerance<typename TestFixture::value_type>);
+    bunch->Q.scatterVolumetricallyCorrect(*vfield, bunch->R, bunch->R2, 1e2);
+
+    // TODO
+    // using vector_type = typename std::remove_cvref_t<decltype(*vfield.get())>::value_type;
+    // using index_array_type = typename ippl::RangePolicy<std::remove_cvref_t<decltype(*vfield.get())>::dim, typename std::remove_cvref_t<decltype(*vfield.get())>::execution_space>::index_array_type;
+    // vector_type totalcharge = vfield->getVolumeIntegral();
+    // Check 
+      
 }
 
 TYPED_TEST(PICTest, Gather) {
