@@ -10,6 +10,8 @@ link_directories (
     ${Kokkos_DIR}/..
 )
 
+add_subdirectory (ExamplesWithoutPicManager)
+
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
