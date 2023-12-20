@@ -148,13 +148,15 @@ int main(int argc, char *argv[]) {
     
     int type = 2;
     
-    fft = std::make_unique<FFT_type>(layout, type, fftParams);
-
-
     Vector_t minU = {-pi, -pi, -pi};
     Vector_t maxU = {pi, pi, pi};
 
     size_type nloc = Np/Ippl::Comm->size();
+
+
+    fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
+
+
 
     const int nghost = field.getNghost();
     using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;

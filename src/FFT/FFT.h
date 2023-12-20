@@ -130,11 +130,11 @@ namespace ippl {
 
         template <>
         struct CufinufftType<float> {
-            std::function<int(int, int, int*, int, int, 
-                              float, int, cufinufftf_plan*, cufinufft_opts*)> makeplan = cufinufftf_makeplan; 
-            std::function<int(int, float*, float*, float*, 
-                              int, float*, float*, float*, cufinufftf_plan)> setpts = cufinufftf_setpts; 
-            std::function<int(cuFloatComplex*, cuFloatComplex*, cufinufftf_plan)> execute = cufinufftf_execute; 
+            std::function<int(int, int, int64_t*, int, int, 
+                              float, cufinufftf_plan*, cufinufft_opts*)> makeplan = cufinufftf_makeplan; 
+            std::function<int(cufinufftf_plan, int, float*, float*, float*, 
+                              int, float*, float*, float*)> setpts = cufinufftf_setpts; 
+            std::function<int(cufinufftf_plan, cuFloatComplex*, cuFloatComplex*)> execute = cufinufftf_execute; 
             std::function<int(cufinufftf_plan)> destroy = cufinufftf_destroy;
             
             using complexType = cuFloatComplex;
@@ -143,11 +143,11 @@ namespace ippl {
 
         template <>
         struct CufinufftType<double> {
-            std::function<int(int, int, int*, int, int, 
-                              double, int, cufinufft_plan*, cufinufft_opts*)> makeplan = cufinufft_makeplan; 
-            std::function<int(int, double*, double*, double*, 
-                              int, double*, double*, double*, cufinufft_plan)> setpts = cufinufft_setpts; 
-            std::function<int(cuDoubleComplex*, cuDoubleComplex*, cufinufft_plan)> execute = cufinufft_execute; 
+            std::function<int(int, int, int64_t*, int, int, 
+                              double, cufinufft_plan*, cufinufft_opts*)> makeplan = cufinufft_makeplan; 
+            std::function<int(cufinufft_plan, int, double*, double*, double*, 
+                              int, double*, double*, double*)> setpts = cufinufft_setpts; 
+            std::function<int(cufinufft_plan, cuDoubleComplex*, cuDoubleComplex*)> execute = cufinufft_execute; 
             std::function<int(cufinufft_plan)> destroy = cufinufft_destroy; 
             
             using complexType = cuDoubleComplex;
@@ -388,7 +388,7 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(std::array<int, 3>& nmodes,
+        void setup(std::array<int64_t, 3>& nmodes,
                    const ParameterList& params);
 
         detail::CufinufftType<T> nufft_m;

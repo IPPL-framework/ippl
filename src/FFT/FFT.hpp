@@ -795,7 +795,7 @@ namespace ippl {
          * where we fill 0.
          */
         
-        std::array<int, 3> nmodes;
+        std::array<int64_t, 3> nmodes;
 
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
 
@@ -826,7 +826,7 @@ namespace ippl {
     */
     template <size_t Dim, class T>
     void
-    FFT<NUFFTransform,Dim,T>::setup(std::array<int, 3>& nmodes,
+    FFT<NUFFTransform,Dim,T>::setup(std::array<int64_t, 3>& nmodes,
                                     const ParameterList& params)
     {
 
@@ -841,8 +841,9 @@ namespace ippl {
            opts.gpu_kerevalmeth = params.get<int>("gpu_kerevalmeth");
         }
 
-        int maxbatchsize = 0; //default option. ignored for ntransf = 1 which
-                              // is our case
+	opts.gpu_maxbatchsize = 0; //default option. ignored for ntransf = 1 which
+                                   // is our case
+	opts.gpu_device_id = (int)(Ippl::Comm->rank() % 4);
 
         int iflag;
         
@@ -859,7 +860,7 @@ namespace ippl {
         //dim in cufinufft is int
         int dim = static_cast<int>(Dim);
         ier_m = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m,
-                       maxbatchsize, &plan_m, &opts);  
+                       		 &plan_m, &opts);  
 
     }
 
@@ -884,6 +885,7 @@ namespace ippl {
         const Layout_t& layout = f.getLayout(); 
         const UniformCartesian<T, Dim>& mesh = f.get_mesh();
         const Vector<T, Dim>& dx = mesh.getMeshSpacing();
+        const Vector<T, Dim>& origin = mesh.getOrigin();
         const auto& domain = layout.getDomain();
         Vector<T, Dim> Len;
         Vector<int, Dim> N;
@@ -947,16 +949,16 @@ namespace ippl {
                              KOKKOS_LAMBDA(const size_t i)
                              {
                                  for(size_t d = 0; d < Dim; ++d) {
-                                    tempR[d](i) = Rview(i)[d] * (2.0 * pi / Len[d]);
+                                    tempR[d](i) = (Rview(i)[d] - origin[d]) * (2.0 * pi / Len[d]);
                                  }
                                  tempQ(i).x = Qview(i);
                                  tempQ(i).y = 0.0;
                              });
 
-        ier_m = nufft_m.setpts(localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
-                     NULL, NULL, NULL, plan_m);
+        ier_m = nufft_m.setpts(plan_m, localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(), 0, 
+                     NULL, NULL, NULL);
 
-        ier_m = nufft_m.execute(tempQ.data(), tempField.data(), plan_m);
+        ier_m = nufft_m.execute(plan_m, tempQ.data(), tempField.data());
         Kokkos::fence();
 
 

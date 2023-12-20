@@ -419,7 +419,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef deepCopy = IpplTimings::getTimer("deepCopy");
     static IpplTimings::TimerRef finePropagator = IpplTimings::getTimer("finePropagator");
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
-    static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+    //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
     static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
@@ -463,8 +463,8 @@ int main(int argc, char *argv[]){
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
     //double alpha = 0.05;
-    //Vector_t alpha = {0.05, 0.05, 0.05};
-    Vector_t alpha = {0.5, 0.5, 0.5};
+    Vector_t alpha = {0.05, 0.05, 0.05};
+    //Vector_t alpha = {0.5, 0.5, 0.5};
     Vector_t rmin(0.0);
     Vector_t rmax = 2 * pi / kw ;
     Vector_t length = rmax - rmin;
@@ -814,10 +814,10 @@ int main(int argc, char *argv[]){
                 << " Perror: " << Perror
                 << endl;
 
-            IpplTimings::startTimer(dumpData);
-            //Pcoarse->writeError(Rerror, Perror, it+1);
-            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
-            IpplTimings::stopTimer(dumpData);
+            //IpplTimings::startTimer(dumpData);
+            ////Pcoarse->writeError(Rerror, Perror, it+1);
+            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            //IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);
             

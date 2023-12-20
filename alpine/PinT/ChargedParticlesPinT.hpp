@@ -975,11 +975,11 @@ public:
 
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
-                     const unsigned int& iter, int rankTime, int rankSpace,
+                     const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
+                     const unsigned int& /*iter*/, int /*rankTime*/, int /*rankSpace*/,
                      MPI_Comm& spaceComm) {
     
-        static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+        //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
@@ -995,13 +995,13 @@ public:
     
         time_m = tStartMySlice;
 
-        if((time_m == 0.0)) {
-            IpplTimings::startTimer(dumpData);
-            //dumpLandau(iter);         
-            dumpBumponTail(nc, iter, rankTime, rankSpace);         
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
-            IpplTimings::stopTimer(dumpData);
-        }
+        //if((time_m == 0.0)) {
+        //    IpplTimings::startTimer(dumpData);
+        //    //dumpLandau(iter);         
+        //    dumpBumponTail(nc, iter, rankTime, rankSpace);         
+        //    dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+        //    IpplTimings::stopTimer(dumpData);
+        //}
         for (unsigned int it=0; it<nt; it++) {
     
             // kick
@@ -1032,11 +1032,11 @@ public:
     
             time_m += dt;
             
-            IpplTimings::startTimer(dumpData);
-            //dumpLandau(iter);         
-            dumpBumponTail(nc, iter, rankTime, rankSpace);         
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
-            IpplTimings::stopTimer(dumpData);
+            //IpplTimings::startTimer(dumpData);
+            ////dumpLandau(iter);         
+            //dumpBumponTail(nc, iter, rankTime, rankSpace);         
+            //dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
+            //IpplTimings::stopTimer(dumpData);
     
         }
     }
@@ -1044,12 +1044,12 @@ public:
 
     void BorisPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
-                     const unsigned int& iter, const double& Bext,
-                     int rankTime, int rankSpace,
+                     const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
+                     const unsigned int& /*iter*/, const double& Bext,
+                     int /*rankTime*/, int /*rankSpace*/,
                      MPI_Comm& spaceComm) {
     
-        static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+        //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
@@ -1065,11 +1065,11 @@ public:
 
         time_m = tStartMySlice;
 
-        if((time_m == 0.0)) {
-            IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
-            IpplTimings::stopTimer(dumpData);
-        }
+        //if((time_m == 0.0)) {
+        //    IpplTimings::startTimer(dumpData);
+        //    dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+        //    IpplTimings::stopTimer(dumpData);
+        //}
         double alpha = -0.5 * dt;
         double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
         Vector_t rmax = rmax_m;
@@ -1144,9 +1144,9 @@ public:
 
             time_m += dt;
             
-            IpplTimings::startTimer(dumpData);
-            dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
-            IpplTimings::stopTimer(dumpData);
+            //IpplTimings::startTimer(dumpData);
+            //dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
+            //IpplTimings::stopTimer(dumpData);
     
         }
     }
