@@ -10,15 +10,18 @@
 #include "Preconditioner.h"
 
 namespace ippl {
-    template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+    template <typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class CG : public SolverAlgorithm<FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using operator_type = std::function<OpRet(lhs_type)>;
-        using preconditioner_type = std::function<PreRet(lhs_type)>;
+        using OperatorF     = std::function<OperatorRet(lhs_type)>;
+        using LowerF        = std::function<LowerRet(lhs_type)>;
+        using UpperF        = std::function<UpperRet(lhs_type)>;
+        using UpperLowerF   = std::function<UpperLowerRet(lhs_type)>;
+        using InverseDiagF  = std::function<InverseDiagRet(lhs_type)>;
 
         virtual ~CG() = default;
 
@@ -26,13 +29,20 @@ namespace ippl {
          * Sets the differential operator for the conjugate gradient algorithm
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
-        virtual void setOperator(operator_type op) {op_m = std::move(op); }
-        virtual void setPreconditioner([[maybe_unused]] std::string preconditioner_type="",
-                                       [[maybe_unused]] int level = 0,
-                                       [[maybe_unused]] int degree = 0,
-                                       [[maybe_unused]] int richardson_iterations = 0,
-                                       [[maybe_unused]] int inner = 0,
-                                       [[maybe_unused]] int outer = 0
+        virtual void setOperator(OperatorF op) {op_m = std::move(op); }
+        virtual void setPreconditioner( [[maybe_unused]] OperatorF&& op, // Operator passed to chebyshev and newton
+                                        [[maybe_unused]] LowerF&& lower, // Operator passed to 2-step gauss-seidel
+                                        [[maybe_unused]] UpperF&& upper, // Operator passed to 2-step gauss-seidel
+                                        [[maybe_unused]] UpperLowerF&& upper_and_lower, // Operator passed to richardson
+                                        [[maybe_unused]] InverseDiagF&& inverse_diagonal, // Operator passed to jacobi , 2-step gauss-seidel and richardson
+                                        [[maybe_unused]] double alpha,
+                                        [[maybe_unused]] double beta,
+                                        [[maybe_unused]] std::string preconditioner_type="",
+                                        [[maybe_unused]] int level = 0,
+                                        [[maybe_unused]] int degree = 0,
+                                        [[maybe_unused]] int richardson_iterations = 0,
+                                        [[maybe_unused]] int inner = 0,
+                                        [[maybe_unused]] int outer = 0
                                         ) {}
                 /*!
                  * Query how many iterations were required to obtain the solution
@@ -120,53 +130,69 @@ namespace ippl {
         virtual T getResidue() const { return residueNorm; }
 
     protected:
-        operator_type op_m;
+        OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
     };
 
-    template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
-    class PCG : public CG<OpRet , PreRet, FieldLHS, FieldRHS>{
-        using BaseCG = CG<OpRet , PreRet, FieldLHS, FieldRHS>;
+    template <typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+    class PCG : public CG <OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS, FieldRHS>{
+
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using operator_type = std::function<OpRet(lhs_type)>;
+        using OperatorF     = std::function<OperatorRet(lhs_type)>;
+        using LowerF        = std::function<LowerRet(lhs_type)>;
+        using UpperF        = std::function<UpperRet(lhs_type)>;
+        using UpperLowerF   = std::function<UpperLowerRet(lhs_type)>;
+        using InverseDiagF  = std::function<InverseDiagRet(lhs_type)>;
 
-        PCG(): CG<OpRet , PreRet , FieldLHS , FieldRHS>() , preconditioner_m(nullptr){};
+        PCG(): CG<OperatorRet , LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS, FieldRHS>() , preconditioner_m(nullptr){};
 
         /*!
         * Sets the differential operator for the conjugate gradient algorithm
         * @param op A function that returns OpRet and takes a field of the LHS type
-        */
-        virtual void setPreconditioner(std::string preconditioner_type="",
-                                       int level = 5, // Dummy default parameters true default parameters need to be set in main
-                                       int degree = 31,  // Dummy default parameters true default parameters need to be set in main
-                                       int richardson_iterations = 1, // Dummy default parameters true default parameters need to be set in main
-                                       int inner = 5, // Dummy default parameters true default parameters need to be set in main
-                                       int outer = 1  // Dummy default parameters true default parameters need to be set in main
-                                               ) override{
-                    if (preconditioner_type == "jacobi"){
-                        preconditioner_m = std::move(std::make_unique<jacobi_preconditioner<FieldLHS>>());
-                    }
-                    else if (preconditioner_type == "newton"){
-                        preconditioner_m = std::move(std::make_unique<polynomial_newton_preconditioner<FieldLHS>>(level , 1e-3));
-                    }
-                    else if (preconditioner_type == "chebyshev"){
-                        preconditioner_m = std::move(std::make_unique<polynomial_chebyshev_preconditioner<FieldLHS>>(degree , 1e-3));
-                    }
-                    else if (preconditioner_type == "richardson"){
-                        preconditioner_m = std::move(std::make_unique<richardson_preconditioner<FieldLHS>>(richardson_iterations));
-                    }
-                    else if (preconditioner_type == "gauss-seidel"){
-                        preconditioner_m = std::move(std::make_unique<gs_preconditioner<FieldLHS>>(inner , outer));
-                    }
-                    else{
-                        preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
-                    }
+        */ 
+        void setPreconditioner( OperatorF&& op,                         // Operator passed to chebyshev and newton
+                                LowerF&& lower,                         // Operator passed to 2-step gauss-seidel
+                                UpperF&& upper,                         // Operator passed to 2-step gauss-seidel
+                                UpperLowerF&& upper_and_lower,          // Operator passed to 2-step gauss-seidel
+                                InverseDiagF&& inverse_diagonal,        // Operator passed to jacobi and 2-step gauss-seidel
+                                double alpha,                           // smallest eigenvalue of the operator
+                                double beta,                            // largest eigenvalue of the operator
+                                std::string preconditioner_type="",     // Name of the preconditioner that should be used
+                                int level = 5,                          // Dummy default parameters true default parameters need to be set in main
+                                int degree = 31,                        // Dummy default parameters true default parameters need to be set in main
+                                int richardson_iterations = 1,          // Dummy default parameters true default parameters need to be set in main
+                                int inner = 5,                          // Dummy default parameters true default parameters need to be set in main
+                                int outer = 1                           // Dummy default parameters true default parameters need to be set in main
+                                ) override{
+            if (preconditioner_type == "jacobi"){
+                // Turn on damping parameter
+                /*
+                double w = 2.0 / ((alpha + beta));
+                preconditioner_m = std::move(std::make_unique<jacobi_preconditioner<FieldLHS , InverseDiagF>>(std::move(inverse_diagonal), w));
+                */
+                preconditioner_m = std::move(std::make_unique<jacobi_preconditioner<FieldLHS , InverseDiagF>>(std::move(inverse_diagonal)));
             }
+            else if (preconditioner_type == "newton"){
+                preconditioner_m = std::move(std::make_unique<polynomial_newton_preconditioner<FieldLHS , OperatorF>>(std::move(op),alpha, beta, level, 1e-3));
+            }
+            else if (preconditioner_type == "chebyshev"){
+                preconditioner_m = std::move(std::make_unique<polynomial_chebyshev_preconditioner<FieldLHS , OperatorF>>(std::move(op), alpha, beta, degree, 1e-3));
+            }
+            else if (preconditioner_type == "richardson"){
+                preconditioner_m = std::move(std::make_unique<richardson_preconditioner<FieldLHS , UpperLowerF , InverseDiagF>>(std::move(upper_and_lower) , std::move(inverse_diagonal) , richardson_iterations));
+            }
+            else if (preconditioner_type == "gauss-seidel"){
+                preconditioner_m = std::move(std::make_unique<gs_preconditioner<FieldLHS , LowerF , UpperF , InverseDiagF>>(std::move(lower), std::move(upper), std::move(inverse_diagonal), inner , outer));
+            }
+            else{
+                preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
+            }
+        }
 
         void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
             constexpr unsigned Dim = lhs_type::dim;
@@ -249,130 +275,6 @@ namespace ippl {
     protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
     };
-
-    /* COMPLETELY OUTDATED NEEDS TO BE REWRITTEN FROM SCRATCH
-     * Prototype of new PCG algorithm https://www.researchgate.net/publication/361849071
-    template <typename OpRet, typename PreRet, typename FieldLHS, typename FieldRHS = FieldLHS>
-    class EnhancedPCG : public PCG<OpRet, PreRet, FieldLHS, FieldRHS> {
-        using BaseCG = CG<OpRet , PreRet, FieldLHS, FieldRHS>;
-        using BasePCG = PCG<OpRet, PreRet, FieldLHS, FieldRHS>;
-        using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
-        typedef typename Base::lhs_type::value_type T;
-
-    public:
-        using typename Base::lhs_type, typename Base::rhs_type;
-        using operator_type = std::function<OpRet(lhs_type)>;
-
-        void setPreconditioner(std::string preconditioner_type , unsigned level = 3, unsigned depth = 7) override {
-            if (preconditioner_type == "jacobi"){
-                BasePCG::preconditioner_m = jacobi_preconditioner<FieldLHS>();
-            }
-            else if (preconditioner_type == "newton"){
-                BasePCG::preconditioner_m = polynomial_newton_preconditioner<FieldLHS>(level);
-            }
-            else if (preconditioner_type == "chebyshev"){
-                BasePCG::preconditioner_m = polynomial_chebyshev_preconditioner<FieldLHS>(depth);
-            }
-            else{
-                BasePCG::preconditioner_m = preconditioner<FieldLHS>();
-            }
-        }
-
-        void operator()(lhs_type& lhs, rhs_type& rhs, const ParameterList& params) override {
-            constexpr unsigned Dim = lhs_type::dim;
-
-            typename lhs_type::Mesh_t mesh = lhs.get_mesh();
-            typename lhs_type::Layout_t layout = lhs.getLayout();
-
-            BaseCG::iterations_m = 0;
-            const int maxIterations = params.get<int>("max_iterations");
-
-            // Variable names mostly based on description in
-            // Enhancing_data_locality_of_the_conjugate_gradient_method_for_high-order_
-            // matrix-free_finite-element_implementations
-            // https://www.researchgate.net/publication/361849071
-            lhs_type r(mesh, layout);
-            lhs_type p(mesh, layout);
-            lhs_type v(mesh, layout);
-            lhs_type Minvr(mesh, layout);
-            lhs_type Minvv(mesh, layout);
-
-            using bc_type = BConds<lhs_type, Dim>;
-            bc_type lhsBCs = lhs.getFieldBC();
-            bc_type bc;
-
-            bool allFacesPeriodic = true;
-            for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                FieldBC bcType = lhsBCs[i]->getBCType();
-                if (bcType == PERIODIC_FACE) {
-                    // If the LHS has periodic BCs, so does the residue
-                    bc[i] = std::make_shared < PeriodicFace < lhs_type >> (i);
-                } else if (bcType & CONSTANT_FACE) {
-                    // If the LHS has constant BCs, the residue is zero on the BCs
-                    // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i] = std::make_shared < ZeroFace < lhs_type >> (i);
-                    allFacesPeriodic = false;
-                } else {
-                    throw IpplException("PCG::operator()",
-                                        "Only periodic or constant BCs for LHS supported.");
-                    return;
-                }
-            }
-
-            r = rhs - BaseCG::op_m(lhs);
-            p.setFieldBC(bc);
-            v.setFieldBC(bc);
-
-            T gamma = 0.;
-            T a, b, c, d, e, f;
-            T alpha = 0.;
-            T alpha_2 = 0.;
-            T beta = 0.;
-            T beta_2 = 0.;
-
-            //BaseCG::residueNorm = std::sqrt(innerProduct(r, r));
-            const T tolerance = params.get<T>("tolerance") * norm(rhs);
-
-            lhs_type q(mesh, layout);
-
-            while (BaseCG::iterations_m < maxIterations) {
-                ++BaseCG::iterations_m;
-                if (BaseCG::iterations_m > 1 && BaseCG::iterations_m % 2) {
-                    lhs = lhs + alpha * p + (alpha_2 / beta_2) * (p - Minvr);
-                }
-                r = r - alpha * v;
-                Minvr = BasePCG::preconditioner_m(r);
-                p = Minvr + beta * p;
-                v = BaseCG::op_m(p);
-                Minvv = BasePCG::preconditioner_m(v);
-                gamma = innerProduct(r, r);
-                a = innerProduct(p, v);
-                b = innerProduct(r, v);
-                c = innerProduct(v, v);
-                d = innerProduct(r, Minvr);
-                e = innerProduct(r, Minvv);
-                f = innerProduct(v, Minvv);
-                alpha_2 = alpha;
-                alpha = d / a;
-                if (std::sqrt(gamma - 2 * alpha * b + alpha * alpha * c) < tolerance) {
-                    if (BaseCG::iterations_m % 2) {
-                        lhs = lhs + alpha * p;
-                    } else {
-                        lhs = lhs + alpha * p + (alpha_2 / beta_2) * (p - Minvr);
-                    }
-                    break;
-                }
-                beta_2 = beta;
-                beta = (d - (2 * alpha * e) + alpha * alpha * f) / d;
-
-            }
-            BaseCG::residueNorm = std::sqrt(gamma - 2 * alpha * b + alpha * alpha * c);
-            if (allFacesPeriodic) {
-                T avg = lhs.getVolumeAverage();
-                lhs = lhs - avg;
-            }
-        }
-    };*/
 
 };// namespace ippl
 

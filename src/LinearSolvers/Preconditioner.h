@@ -1,12 +1,13 @@
 //
-// Preconditioners for various operators.
+// General Preconditioners for the Preconditioned Conjugate Gradient Solver
+// such as Jacobi, Polynomial Newton, Polynomial Chebyshev, Richardson, Gauss-Seidel
+// provides a function operator() that returns the preconditioned field
 //
 
 #ifndef IPPL_PRECONDITIONER_H
 #define IPPL_PRECONDITIONER_H
 
 #include "Expression/IpplOperations.h" // get the function apply()
-#include "LaplaceHelpers.h"
 
 // Expands to a lambda that acts as a wrapper for a differential operator
 // fun: the function for which to create the wrapper, such as ippl::laplace
@@ -25,18 +26,18 @@ namespace ippl {
         using layout_type = typename Field::Layout_t;
 
         preconditioner() : type_m("Identity") {}
+        
+        preconditioner(std::string name) : type_m(name) {}
 
         virtual ~preconditioner() = default;
 
+        // Placeholder for the function operator, actually implemented in the derived classes
         virtual Field operator()(Field &u) {
-            u.fillHalo();
-            BConds <Field, Dim> &bcField = u.getFieldBC();
-            bcField.apply(u);
             Field res = u.deepCopy();
             return res;
         }
 
-        virtual std::string get_type() { return type_m; };
+        std::string get_type() { return type_m; };
 
     protected :
         std::string type_m;
@@ -46,60 +47,28 @@ namespace ippl {
     * Jacobi preconditioner
     * M = w*diag{A} // w is a damping factor
     */
-    template<typename Field>
+    template<typename Field , typename InvDiagF>
     struct jacobi_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        jacobi_preconditioner(bool analytical = false) : type_m("jacobi"),w_m(1.0),use_analytical_m(analytical) {}
+        jacobi_preconditioner(InvDiagF&& inverse_diagonal, double w=1.0) : preconditioner<Field>("jacobi"),w_m(w) {
+            inverse_diagonal_m = std::move(inverse_diagonal);
+        }
 
         Field operator()(Field &u) override {
-            Field res = u.deepCopy();
-            double sum = 0.0;
-            double factor = 1.0;
-            mesh_type mesh = u.get_mesh();
-            typename mesh_type::vector_type hvector(0);
-            for (unsigned d = 0; d < Dim; ++d) {
-                hvector[d] = std::pow(mesh.getMeshSpacing(d), 2);
-                sum += std::pow(mesh.getMeshSpacing(d), 2) * std::pow(mesh.getMeshSpacing((d + 1) % Dim), 2);
-                factor *= hvector[d];
-            }
-            if (use_analytical_m) {
-                // Analytical eigenvalues for the d dimensional laplace operator
-                // Going brute force through all possible eigenvalues seems to be the only way to find max and min
-                double beta = 0;
-                double alpha = 0;
-                unsigned long n;
-                double h;
-                for (unsigned int d = 0; d < Dim; ++d) {
-                    n = mesh.getGridsize(d);
-                    h = mesh.getMeshSpacing(d);
-                    double local_min = 4 / std::pow(h, 2); // theoretical maximum
-                    double local_max = 0;
-                    double test;
-                    for (unsigned int i = 1; i < n; ++i) {
-                        test = 4. / std::pow(h, 2) * std::pow(std::sin(i * M_PI * h / 2.), 2);
-                        if (test > local_max) {
-                            local_max = test;
-                        }
-                        if (test < local_min) {
-                            local_min = test;
-                        }
-                    }
-                    beta += local_max;
-                    alpha += local_min;
-                }
-                w_m = 2.0 / ((alpha + beta));
-                use_analytical_m = false; //Don't repeat the calculation of w_m
-            }
-            res = res * w_m * 0.5 * factor / sum;
+            mesh_type& mesh     = u.get_mesh();
+            layout_type& layout = u.getLayout();
+            Field res(mesh , layout);
+
+            res = inverse_diagonal_m(u);
+            res =  w_m * res;
             return res;
         }
 
-        std::string get_type() override { return type_m; };
     protected:
-        std::string type_m;
+        InvDiagF inverse_diagonal_m;
         double w_m; // Damping factor
         bool use_analytical_m;
     };
@@ -108,18 +77,23 @@ namespace ippl {
     * Polynomial Newton Preconditioner
     * Computes iteratively approximations for A^-1
     */
-    template<typename Field>
+    template<typename Field, typename OperatorF>
     struct polynomial_newton_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
-        using mesh_type = typename Field::Mesh_t;
+        using mesh_type   = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        polynomial_newton_preconditioner(unsigned int max_level = 6, double zeta = 1e-3, double *eta = nullptr) :
-                type_m("polynomial_newton"),
+        polynomial_newton_preconditioner(OperatorF&& op, double alpha, double beta , unsigned int max_level = 6, double zeta = 1e-3, double *eta = nullptr) :
+                preconditioner<Field>("polynomial_newton"),
+                alpha_m(alpha),
+                beta_m(beta),
                 level_m(max_level),
                 zeta_m(zeta),
-                eta_m(eta) {}
+                eta_m(eta) {
+                    op_m = std::move(op);
+                }
 
+        // Memory management is needed because of runtime defined eta_m
         ~polynomial_newton_preconditioner() {
             if (eta_m != nullptr) {
                 delete[] eta_m;
@@ -127,56 +101,25 @@ namespace ippl {
             }
         }
 
-        polynomial_newton_preconditioner(const polynomial_newton_preconditioner &other) : type_m("polynomial_newton"),
+        polynomial_newton_preconditioner(const polynomial_newton_preconditioner &other) : preconditioner<Field>("polynomial_newton"),
                                                                                           level_m(other.level_m),
                                                                                           alpha_m(other.alpha_m),
                                                                                           beta_m(other.beta_m),
                                                                                           zeta_m(other.zeta_m),
-                                                                                          eta_m(other.eta_m) {}
+                                                                                          eta_m(other.eta_m) {
+                                                                                            op_m = std::move(other.op_m);
+                                                                                          }
 
         polynomial_newton_preconditioner &operator=(const polynomial_newton_preconditioner &other) {
             return *this = polynomial_newton_preconditioner(other);
         }
 
         Field recursive_preconditioner(Field &u, unsigned int level) {
-            mesh_type &mesh = u.get_mesh();
+            mesh_type &mesh     = u.get_mesh();
             layout_type &layout = u.getLayout();
-            //Define Etas if not defined yet
+            // Define etas if not defined yet
             if (eta_m == nullptr) {
-                if (analytical_m) {
-                    // Analytical eigenvalues for the d dimensional laplace operator
-                    // Going brute force through all possible eigenvalues seems to be the only way to find max and min
-                    beta_m = 0;
-                    alpha_m = 0;
-                    unsigned long n;
-                    double h;
-                    for (unsigned int d = 0; d < Dim; ++d) {
-                        n = mesh.getGridsize(d);
-                        h = mesh.getMeshSpacing(d);
-                        double local_min = 4 / std::pow(h, 2); // theoretical maximum
-                        double local_max = 0;
-                        double test;
-                        for (unsigned int i = 1; i < n; ++i) {
-                            test = 4. / std::pow(h, 2) * std::pow(std::sin(i * M_PI * h / 2.), 2);
-                            if (test > local_max) {
-                                local_max = test;
-                            }
-                            if (test < local_min) {
-                                local_min = test;
-                            }
-                        }
-                        beta_m += local_max;
-                        alpha_m += local_min;
-                    }
-                } else {
-                    Field x_0(mesh, layout);
-                    x_0 = u.deepCopy() + 0.1;
-                    beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0);
-                    x_0 = u.deepCopy() + 0.1;
-                    // Trick for computing the smallest Eigenvalue of an SPD Matrix
-                    alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0, beta_m);
-                }
-
+                // Precompute the etas for later use
                 eta_m = new double[level_m + 1];
                 eta_m[0] = 2.0 / ((alpha_m + beta_m) * (1.0 + zeta_m));
                 if (level_m > 0) {
@@ -186,16 +129,19 @@ namespace ippl {
                     eta_m[i] = 2.0 / (1.0 + 2 * eta_m[i - 1] - eta_m[i - 1] * eta_m[i - 1]);
                 }
             }
+            
             Field res(mesh, layout);
+            // Base case
             if (level == 0) {
                 res = eta_m[0] * u;
                 return res;
             }
+            // Recursive case
             Field PAPr(mesh, layout);
             Field Pr(mesh, layout);
 
             Pr = recursive_preconditioner(u, level - 1);
-            PAPr = -laplace(Pr);
+            PAPr = op_m(Pr);
             PAPr = recursive_preconditioner(PAPr, level - 1);
             res = eta_m[level] * (2.0 * Pr - PAPr);
             return res;
@@ -205,15 +151,13 @@ namespace ippl {
             return recursive_preconditioner(u, level_m);
         }
 
-        std::string get_type() override { return type_m; };
-
     protected:
-        std::string type_m;
-        unsigned int level_m;
-        double alpha_m;
-        double beta_m;
-        double zeta_m;
-        double *eta_m = nullptr;
+        OperatorF op_m; // Operator to be preconditioned
+        double alpha_m; // Smallest Eigenvalue
+        double beta_m; // Largest Eigenvalue
+        unsigned int level_m; // Number of recursive calls
+        double zeta_m; // smallest (alpha + beta) is multiplied by (1+zeta) to avoid clustering of Eigenvalues
+        double *eta_m = nullptr; // Size is determined at runtime
         bool analytical_m = true;
 
     };
@@ -222,18 +166,23 @@ namespace ippl {
     * Polynomial Chebyshev Preconditioner
     * Computes iteratively approximations for A^-1
     */
-    template<typename Field>
+    template<typename Field , typename OperatorF>
     struct polynomial_chebyshev_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        polynomial_chebyshev_preconditioner(unsigned int degree = 63, double zeta = 1e-3) :
-                type_m("polynomial_chebyshev"),
+        polynomial_chebyshev_preconditioner(OperatorF&& op , double alpha, double beta, unsigned int degree = 63, double zeta = 1e-3) :
+                preconditioner<Field>("polynomial_chebyshev"),
+                alpha_m(alpha),
+                beta_m(beta),
                 degree_m(degree),
                 zeta_m(zeta),
-                rho_m(nullptr) {}
+                rho_m(nullptr) {
+                    op_m = std::move(op);
+                }
 
+        // Memory management is needed because of runtime defined rho_m
         ~polynomial_chebyshev_preconditioner() {
             if (rho_m != nullptr) {
                 delete[] rho_m;
@@ -241,24 +190,24 @@ namespace ippl {
             }
         }
 
-        polynomial_chebyshev_preconditioner(const polynomial_chebyshev_preconditioner &other) : type_m(
-                "polynomial_chebyshev"),
-                                                                                                degree_m(
-                                                                                                        other.degree_m),
+        polynomial_chebyshev_preconditioner(const polynomial_chebyshev_preconditioner &other) : preconditioner<Field>("polynomial_chebyshev"),
+                                                                                                degree_m(other.degree_m),
                                                                                                 theta_m(other.theta_m),
                                                                                                 sigma_m(other.sigma_m),
                                                                                                 delta_m(other.delta_m),
                                                                                                 alpha_m(other.delta_m),
                                                                                                 beta_m(other.delta_m),
                                                                                                 zeta_m(other.zeta_m),
-                                                                                                rho_m(other.rho_m) {}
+                                                                                                rho_m(other.rho_m) {
+                                                                                                    op_m = std::move(other.op_m);
+                                                                                                }
 
         polynomial_chebyshev_preconditioner &operator=(const polynomial_chebyshev_preconditioner &other) {
             return *this = polynomial_chebyshev_preconditioner(other);
         }
 
         Field operator()(Field &r) override {
-            mesh_type &mesh = r.get_mesh();
+            mesh_type &mesh     = r.get_mesh();
             layout_type &layout = r.getLayout();
 
             Field res(mesh, layout);
@@ -267,41 +216,9 @@ namespace ippl {
             Field A(mesh, layout);
             Field z(mesh, layout);
 
-            // Define rho if not defined yet
+            // Precompute the coefficients if not done yet
             if (rho_m == nullptr) {
-                if (analytical_m) {
-                    // Analytical eigenvalues for the d dimensional laplace operator
-                    // Going brute force through all possible eigenvalues seems to be the only way to find max and min
-                    beta_m = 0;
-                    alpha_m = 0;
-                    unsigned long n;
-                    double h;
-                    for (unsigned int d = 0; d < Dim; ++d) {
-                        n = mesh.getGridsize(d);
-                        h = mesh.getMeshSpacing(d);
-                        double local_min = 4 / std::pow(h, 2); // theoretical maximum
-                        double local_max = 0;
-                        double test;
-                        for (unsigned int i = 1; i < n; ++i) {
-                            test = 4. / std::pow(h, 2) * std::pow(std::sin(i * M_PI * h / 2.), 2);
-                            if (test > local_max) {
-                                local_max = test;
-                            }
-                            if (test < local_min) {
-                                local_min = test;
-                            }
-                        }
-                        beta_m += local_max;
-                        alpha_m += local_min;
-                    }
-                } else {
-                    Field x_0(mesh, layout);
-                    x_0 = r.deepCopy() + 0.1;
-                    beta_m = powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0);
-                    x_0 = r.deepCopy() + 0.1;
-                    // Trick for computing the smallest Eigenvalue of SPD Matrix
-                    alpha_m = adapted_powermethod(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, Field), x_0, beta_m);
-                }
+                // Start precomputing the coefficients
                 theta_m = (beta_m + alpha_m) / 2.0 * (1.0 + zeta_m);
                 delta_m = (beta_m - alpha_m) / 2.0;
                 sigma_m = theta_m / delta_m;
@@ -311,11 +228,12 @@ namespace ippl {
                 for (unsigned int i = 1; i < degree_m + 1; ++i) {
                     rho_m[i] = 1.0 / (2.0 * sigma_m - rho_m[i - 1]);
                 }
-            }
+            } // End of precomputing the coefficients
+
             res = r.deepCopy();
 
             x_old = r / theta_m;
-            A = -laplace(r);
+            A = op_m(r);
             x = 2.0 * rho_m[1] / delta_m * (2.0 * r - A / theta_m);
 
             if (degree_m == 0) {
@@ -326,7 +244,7 @@ namespace ippl {
                 return x;
             }
             for (unsigned int i = 2; i < degree_m + 1; ++i) {
-                A = -laplace(x);
+                A = op_m(x);
                 z = 2.0 / delta_m * (r - A);
                 res = rho_m[i] * (2 * sigma_m * x - rho_m[i - 1] * x_old + z);
                 x_old = x.deepCopy();
@@ -335,183 +253,108 @@ namespace ippl {
             return res;
         }
 
-        std::string get_type() override { return type_m; };
     protected:
-        std::string type_m;
-        unsigned degree_m;
+        OperatorF op_m;
+        double alpha_m;
+        double beta_m;
+        double delta_m;
         double theta_m;
         double sigma_m;
-        double delta_m;
-        double beta_m;
-        double alpha_m;
+        unsigned degree_m;
         double zeta_m;
-        double *rho_m = nullptr;
+        double *rho_m = nullptr; // Size is determined at runtime
         bool analytical_m = true;
     };
 
     /*!
     * Richardson preconditioner
     */
-    template<typename Field>
+    template<typename Field , typename UpperAndLowerF , typename InvDiagF>
     struct richardson_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        richardson_preconditioner(unsigned innerloops = 5) :
-                type_m("Richardson"),
-                innerloops_m(innerloops),
-                Dinv_m(jacobi_preconditioner<Field>()) {}
+        richardson_preconditioner(UpperAndLowerF&& upper_and_lower, InvDiagF&& inverse_diagonal, unsigned innerloops = 5) :
+                preconditioner<Field>("Richardson"), innerloops_m(innerloops) {
+                    upper_and_lower_m = std::move(upper_and_lower);
+                    inverse_diagonal_m = std::move(inverse_diagonal);
+                }
 
         Field operator()(Field &r) override {
-            Field g = r.deepCopy();
+            mesh_type &mesh = r.get_mesh();
+            layout_type &layout = r.getLayout();
+            Field g(mesh, layout);
+            Field ULg(mesh, layout);
             g = 0;
-            Field ULg = r.deepCopy();
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                ULg = upper_and_lower_laplace(g);
-                g = r+ULg;
-                g=Dinv_m(g);
+                ULg = upper_and_lower_m(g);
+                g = r-ULg;
+                g = inverse_diagonal_m(g);
             }
             return g;
         }
 
-        std::string get_type() override { return type_m; };
     protected:
-        std::string type_m;
+        UpperAndLowerF upper_and_lower_m;
+        InvDiagF   inverse_diagonal_m;
         unsigned innerloops_m;
-        jacobi_preconditioner<Field> Dinv_m = jacobi_preconditioner<Field>(true);
     };
 
     /*!
     * 2-step Gauss-Seidel
     */
-    template<typename Field>
+    template<typename Field , typename LowerF , typename UpperF , typename InvDiagF>
     struct gs_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
 
-        gs_preconditioner(unsigned innerloops,unsigned outerloops) :
-                type_m("Gauss-Seidel"),
-                innerloops_m(innerloops),
-                outerloops_m(outerloops),
-                Dinv_m(jacobi_preconditioner<Field>()) {}
-
-        // TODO: In case that this algo. is used change g to x since it is dummy variable
-        // TODO: Remove convergence table to get optimal runtime
-        Field operator()(Field &b) override {
-            Field x = b.deepCopy();
-            Field r = b.deepCopy();
-            Field r_inner = b.deepCopy();
-            Field g  = b.deepCopy();
-            Field L = b.deepCopy();
-            Field U = b.deepCopy();
-            //Field D = b.deepCopy();
-            //Field error_field = b.deepCopy();
-            x = 0;//Initial guess
-            /*
-            double sum = 0.0;
-            mesh_type mesh = b.get_mesh();
-            for (unsigned d = 0; d < Dim; ++d) {
-                sum += 2.0/std::pow(mesh.getMeshSpacing(d), 2);
-            }
-            */
-            for (unsigned int k=0; k<outerloops_m;++k) {
-                U = -upper_laplace(x);
-                r = b - U;
-                g = x.deepCopy();
-                for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    L = -lower_laplace(g);
-                    r_inner = r - L;
-                    g = Dinv_m(r_inner);
-                }
-                x = g.deepCopy();
-                L = -lower_laplace(x);
-                r = b - L;
-                g = x.deepCopy();
-                for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    U = -upper_laplace(g);
-                    r_inner = r - U;
-                    g = Dinv_m(r_inner);
-                }
-                x = g.deepCopy();
-                /*
-                D = -laplace(x);
-                error_field = b-D;
-                double error = norm(error_field);
-                std::cout << "Iteration: " << k << " Error : " << error << std::endl;
-                */
-            }
-            return x;
-        }
-
-        std::string get_type() override { return type_m; };
-    protected:
-        std::string type_m;
-        unsigned innerloops_m;
-        unsigned outerloops_m;
-        jacobi_preconditioner<Field> Dinv_m; //We want the inverse diagonal
-    };
-
-    /*!
-    * Geometric Multigrid for rectangular shaped meshes
-    */
-    /*
-    template<typename Field>
-    struct gmg_preconditioner : public preconditioner<Field> {
-        constexpr static unsigned Dim = Field::dim;
-        using mesh_type = typename Field::Mesh_t;
-        using layout_type = typename Field::Layout_t;
-
-        gmg_preconditioner(unsigned innerloops = 10,unsigned outerloops=2) :
-                type_m("Geometric Multigrid"),
+        gs_preconditioner(LowerF&& lower , UpperF&& upper , InvDiagF&& inverse_diagonal, unsigned innerloops,unsigned outerloops) :
+                preconditioner<Field>("Gauss-Seidel"),
                 innerloops_m(innerloops),
                 outerloops_m(outerloops) {
-
-        }
+                    lower_m = std::move(lower);
+                    upper_m = std::move(upper);
+                    inverse_diagonal_m = std::move(inverse_diagonal);
+                }
 
         Field operator()(Field &b) override {
-            Field x = b.deepCopy();
-            Field r = b.deepCopy();
-            Field r_inner = b.deepCopy();
-            Field g  = b.deepCopy();
-            Field L = b.deepCopy();
-            Field U = b.deepCopy();
-            x = 0;//Initial guess
+            layout_type &layout = b.getLayout();
+            mesh_type &mesh     = b.get_mesh();
+            Field x(mesh, layout);
+            Field r(mesh, layout);
+            Field r_inner(mesh, layout);
+            Field L(mesh, layout);
+            Field U(mesh, layout);
+            x = 0; // Initial guess
 
-            double sum = 0.0;
-            mesh_type mesh = b.get_mesh();
-            for (unsigned d = 0; d < Dim; ++d) {
-                sum += 2.0/std::pow(mesh.getMeshSpacing(d), 2);
-            }
             for (unsigned int k=0; k<outerloops_m;++k) {
-                U = -upper_laplace(x);
+                U = upper_m(x);
                 r = b - U;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    L = -lower_laplace(x);
+                    L = lower_m(x);
                     r_inner = r - L;
-                    x = Dinv_m(r_inner);
+                    x = inverse_diagonal_m(r_inner);
                 }
-                L = -lower_laplace(x);
+                L = lower_m(x);
                 r = b - L;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    U = -upper_laplace(x);
+                    U = upper_m(x);
                     r_inner = r - U;
-                    x = Dinv_m(r_inner);
+                    x = inverse_diagonal_m(r_inner);
                 }
             }
             return x;
         }
 
-        std::string get_type() override { return type_m; };
     protected:
-        std::string type_m;
+        LowerF lower_m;
+        UpperF upper_m;
+        InvDiagF inverse_diagonal_m;
         unsigned innerloops_m;
         unsigned outerloops_m;
-        Multigrid<something  , something , Field , Field , levels>
-        jacobi_preconditioner<Field> Dinv_m;//We want the inverse diagonal
     };
-    */
 
     /*!
     * Computes the largest Eigenvalue of the Functor f
@@ -520,12 +363,12 @@ namespace ippl {
     * @param max_iter maximum number of iterations
     * @param tol tolerance
     */
-    template<typename Functor, typename Field>
+    template<typename Field, typename Functor>
     double powermethod(Functor &&f, Field &x_0, unsigned int max_iter = 5000, double tol = 1e-3) {
         unsigned int i = 0;
-        using mesh_type = typename Field::Mesh_t;
+        using mesh_type   = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
-        mesh_type &mesh = x_0.get_mesh();
+        mesh_type &mesh     = x_0.get_mesh();
         layout_type &layout = x_0.getLayout();
         Field x_new(mesh, layout);
         Field x_diff(mesh, layout);
@@ -547,20 +390,20 @@ namespace ippl {
     }
 
     /*!
-    * Computes the smallest Eigenvalue of the Functor f (must be SPD)
+    * Computes the smallest Eigenvalue of the Functor f (f must be symmetric positive definite)
     * @param f Functor
     * @param x_0 initial guess
     * @param lambda_max largest Eigenvalue
     * @param max_iter maximum number of iterations
     * @param tol tolerance
     */
-    template<typename Functor, typename Field>
+    template<typename Field, typename Functor>
     double
     adapted_powermethod(Functor &&f, Field &x_0, double lambda_max, unsigned int max_iter = 5000, double tol = 1e-3) {
         unsigned int i = 0;
         using mesh_type = typename Field::Mesh_t;
         using layout_type = typename Field::Layout_t;
-        mesh_type &mesh = x_0.get_mesh();
+        mesh_type &mesh     = x_0.get_mesh();
         layout_type &layout = x_0.getLayout();
         Field x_new(mesh, layout);
         Field x_diff(mesh, layout);
@@ -582,6 +425,13 @@ namespace ippl {
         }
         return lambda;
     }
+
+    /*
+    // Use the powermethod to compute the eigenvalues if no analytical solution is known
+    beta = powermethod(std::move(op_m), x_0);
+    // Trick for computing the smallest Eigenvalue of SPD Matrix
+    alpha = adapted_powermethod(std::move(op_m), x_0, beta);
+     */
 
 } //namespace ippl
 

@@ -1,5 +1,5 @@
 //
-// Helper functions used in Preconditioner.h
+// Helper functions used in PoissonCG.h
 //
 
 #ifndef IPPL_LAPLACE_HELPERS_H
@@ -262,9 +262,9 @@ namespace ippl {
         return detail::meta_upper_laplace<Field>(u, hvector, nghosts , ldom, domain);
     }
     /*!
- * User interface of upper+lower triangular Laplacian
- * @param u field
- */
+    * User interface of upper+lower triangular Laplacian
+    * @param u field
+    */
     template<typename Field>
     detail::meta_upper_and_lower_laplace<Field> upper_and_lower_laplace(Field &u) {
         constexpr unsigned Dim = Field::dim;
@@ -284,6 +284,35 @@ namespace ippl {
         const auto &ldom = layout.getLocalNDIndex();
         const auto &domain = layout.getDomain();
         return detail::meta_upper_and_lower_laplace<Field>(u, hvector, nghosts , ldom, domain);
+    }
+
+    /*!
+    * Returns the inverse of the diagonal of the Laplacian applied to a field
+    * @param u field
+    */
+
+    //TODO: Think about negative sign
+    template<typename Field>
+    Field negative_inverse_diagonal_laplace(Field &u) {
+        constexpr unsigned Dim = Field::dim;
+        using mesh_type = typename Field::Mesh_t;
+        using layout_type = typename Field::Layout_t;
+        mesh_type &mesh = u.get_mesh();
+        layout_type &layout = u.getLayout();
+        Field res(mesh , layout);
+        auto&& bc = u.getFieldBC();
+        res.setFieldBC(bc);
+        double sum = 0.0;
+        double factor = 1.0;
+        typename mesh_type::vector_type hvector(0);
+        for (unsigned d = 0; d < Dim; ++d) {
+            hvector[d] = std::pow(mesh.getMeshSpacing(d), 2);
+            sum += std::pow(mesh.getMeshSpacing(d), 2) * std::pow(mesh.getMeshSpacing((d + 1) % Dim), 2);
+            factor *= hvector[d];
+        }
+
+        res = 0.5*(factor / sum) * u;
+        return res;
     }
 }
 #endif // IPPL_LAPLACE_HELPERS_H
