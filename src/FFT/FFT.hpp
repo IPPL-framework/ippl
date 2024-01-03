@@ -831,7 +831,7 @@ namespace ippl {
     {
 
         cufinufft_opts opts;
-	    ier_m = cufinufft_default_opts(type_m, Dim, &opts);
+	    cufinufft_default_opts(&opts);
         tol_m = 1e-6;
 
         if(!params.get<bool>("use_cufinufft_defaults")) {
@@ -841,9 +841,11 @@ namespace ippl {
            opts.gpu_kerevalmeth = params.get<int>("gpu_kerevalmeth");
         }
 
-	opts.gpu_maxbatchsize = 0; //default option. ignored for ntransf = 1 which
+	    opts.gpu_maxbatchsize = 0; //default option. ignored for ntransf = 1 which
                                    // is our case
-	opts.gpu_device_id = (int)(Ippl::Comm->rank() % 4);
+	    //For Perlmutter since the mask to hide the other GPUs in the node is 
+        //somehow not working there
+        //opts.gpu_device_id = (int)(Ippl::Comm->rank() % 4);
 
         int iflag;
         

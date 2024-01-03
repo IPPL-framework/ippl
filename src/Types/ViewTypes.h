@@ -19,6 +19,7 @@
 #define IPPL_VIEW_TYPES_H
 
 #include <Kokkos_Core.hpp>
+#include <iostream>
 
 namespace ippl {
     /**
