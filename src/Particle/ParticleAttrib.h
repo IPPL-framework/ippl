@@ -176,19 +176,21 @@ namespace ippl {
                 const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp);
 
 #ifdef KOKKOS_ENABLE_CUDA
-        template<unsigned Dim>
-        void initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams); 
+        //template<unsigned Dim>
+        //void initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams); 
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
         scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
                 const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
+                FFT<NUFFTransform, 3, P3>* nufft,
                 const MPI_Comm& spaceComm) const;
         
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void
         gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
                 const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
+                FFT<NUFFTransform, 3, P3>* nufft,
                 ParticleAttrib<P4, Properties... >& q);
 #endif
 
@@ -199,11 +201,11 @@ namespace ippl {
 
     private:
         view_type dview_m;
-#ifdef KOKKOS_ENABLE_CUDA
-        //TODO: Remove hard-coded dimension by having Dim as template 
-        //parameter. Does this need to be in CUDA ifdefs?
-        std::shared_ptr<FFT<NUFFTransform, 3, double>> fftType_mp;
-#endif
+//#ifdef KOKKOS_ENABLE_CUDA
+//        //TODO: Remove hard-coded dimension by having Dim as template 
+//        //parameter. Does this need to be in CUDA ifdefs?
+//        std::shared_ptr<FFT<NUFFTransform, 3, double>> fftType_mp;
+//#endif
     };
 }
 

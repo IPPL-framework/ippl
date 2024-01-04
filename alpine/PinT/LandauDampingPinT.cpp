@@ -547,7 +547,12 @@ int main(int argc, char *argv[]){
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
   
-    Pcoarse->initNUFFT(FLPIF);
+    //Pcoarse->initNUFFT(FLPIF);
+    double coarseTol = 1e-2;
+    double fineTol   = 1e-6;
+    Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
+    std::string coarse = "Coarse";
+    std::string fine = "Fine";
 
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
@@ -609,7 +614,9 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
+    //Pcoarse->initNUFFT(FLPIF, coarseTol);
     Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm); 
+    //Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm); 
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
@@ -739,7 +746,8 @@ int main(int argc, char *argv[]){
         while (!isConverged) { 
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
-            Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, rankTime, rankSpace, spaceComm);
+            //Pcoarse->initNUFFT(FLPIF, fineTol);
+            Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, rankTime, rankSpace, fine, spaceComm);
             IpplTimings::stopTimer(finePropagator);
     
 
@@ -778,7 +786,9 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
             IpplTimings::startTimer(coarsePropagator);
-            Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            //Pcoarse->initNUFFT(FLPIF, coarseTol);
+            //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            Pcoarse->LeapFrogPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
@@ -862,7 +872,9 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
-            Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            //Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            //Pcoarse->initNUFFT(FLPIF, coarseTol);
+            Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());

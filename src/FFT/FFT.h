@@ -368,6 +368,9 @@ namespace ippl {
         using view_particle_real_type = typename detail::ViewType<T, 1, Kokkos::LayoutLeft>::view_type;
         using view_particle_complex_type = typename detail::ViewType<complexType, 1, Kokkos::LayoutLeft>::view_type;
 
+
+        FFT() = default;
+
         /** Create a new FFT object with the layout for the input Field, type 
          * (1 or 2) for the NUFFT and parameters for cuFINUFFT.
         */

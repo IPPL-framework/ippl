@@ -52,6 +52,9 @@ extern const char* TestName;
 template<class PLayout>
 class ChargedParticlesPinT : public ippl::ParticleBase<PLayout> {
 public:
+
+    //using nufft_t = typename ippl::FFT<ippl::NUFFTransform, 3, double>;
+
     CxField_t rhoPIF_m;
     Field_t Sk_m;
     Field_t rhoPIC_m;
@@ -78,6 +81,9 @@ public:
     std::string shapetype_m;
 
     int shapedegree_m;
+
+    //nufft_t  nufftType1Fine_m,nufftType2Fine_m,nufftType1Coarse_m,nufftType2Coarse_m; 
+    std::shared_ptr<ippl::FFT<ippl::NUFFTransform, 3, double>> nufftType1Fine_mp,nufftType2Fine_mp,nufftType1Coarse_mp,nufftType2Coarse_mp;
 
 public:
     ParticleAttrib<double>     q; // charge
@@ -161,20 +167,51 @@ public:
     }
 
 
-    void initNUFFT(FieldLayout_t& FLPIF) {
-        ippl::ParameterList fftParams;
+    //void initNUFFT(FieldLayout_t& FLPIF, double& tol) {
+    //    ippl::ParameterList fftParams;
 
-        fftParams.add("gpu_method", 1);
-        fftParams.add("gpu_sort", 0);
-        fftParams.add("gpu_kerevalmeth", 1);
-        fftParams.add("tolerance", 1e-6);
+    //    fftParams.add("gpu_method", 1);
+    //    fftParams.add("gpu_sort", 0);
+    //    fftParams.add("gpu_kerevalmeth", 1);
+    //    //fftParams.add("tolerance", 1e-6);
+    //    fftParams.add("tolerance", tol);
 
-        fftParams.add("use_cufinufft_defaults", false);
+    //    fftParams.add("use_cufinufft_defaults", false);
 
-        q.initializeNUFFT(FLPIF, 1, fftParams);
-        E.initializeNUFFT(FLPIF, 2, fftParams);
+    //    q.initializeNUFFT(FLPIF, 1, fftParams);
+    //    E.initializeNUFFT(FLPIF, 2, fftParams);
+    //}
+
+    void initNUFFTs(FieldLayout_t& FLPIF, double& coarseTol,
+                    double& fineTol) {
+        
+        ippl::ParameterList fftCoarseParams,fftFineParams;
+
+        fftFineParams.add("gpu_method", 1);
+        fftFineParams.add("gpu_sort", 0);
+        fftFineParams.add("gpu_kerevalmeth", 1);
+        fftFineParams.add("tolerance", fineTol);
+
+        fftCoarseParams.add("gpu_method", 1);
+        fftCoarseParams.add("gpu_sort", 0);
+        fftCoarseParams.add("gpu_kerevalmeth", 1);
+        fftCoarseParams.add("tolerance", coarseTol);
+
+        fftFineParams.add("use_cufinufft_defaults", false);
+        fftCoarseParams.add("use_cufinufft_defaults", false);
+        
+        //nufftType1Fine_m = nufft_t(FLPIF, this->getLocalNum(), 1, fftFineParams);
+        //nufftType2Fine_m = nufft_t(FLPIF, this->getLocalNum(), 2, fftFineParams);
+
+        //nufftType1Coarse_m = nufft_t(FLPIF, this->getLocalNum(), 1, fftCoarseParams);
+        //nufftType2Coarse_m = nufft_t(FLPIF, this->getLocalNum(), 2, fftCoarseParams);
+        nufftType1Fine_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, 3, double>>(FLPIF, this->getLocalNum(), 1, fftFineParams);
+        nufftType2Fine_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, 3, double>>(FLPIF, this->getLocalNum(), 2, fftFineParams);
+
+        nufftType1Coarse_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, 3, double>>(FLPIF, this->getLocalNum(), 1, fftCoarseParams);
+        nufftType2Coarse_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, 3, double>>(FLPIF, this->getLocalNum(), 2, fftCoarseParams);
     }
-
+    
     void initializeParareal(ParticleAttrib<Vector_t>& Rbegin,
                             ParticleAttrib<Vector_t>& Pbegin,
                             ParticleAttrib<Vector_t>& Rcoarse,
@@ -977,19 +1014,31 @@ public:
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
                      const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
                      const unsigned int& /*iter*/, int /*rankTime*/, int /*rankSpace*/,
-                     MPI_Comm& spaceComm) {
+                     const std::string& propagator, MPI_Comm& spaceComm) {
     
         //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
+        if(propagator == "Coarse") {
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Coarse_mp.get(), spaceComm);
+        }
+        else if(propagator == "Fine") {
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Fine_mp.get(), spaceComm);
+        }
+
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+        if(propagator == "Coarse") {
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Coarse_mp.get(), q);
+        }
+        else if(propagator == "Fine") {
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Fine_mp.get(), q);
+        }
+        //gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
 
         q = Q_m / Np_m;
     
@@ -1018,12 +1067,24 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
+            if(propagator == "Coarse") {
+                scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Coarse_mp.get(), spaceComm);
+            }
+            else if(propagator == "Fine") {
+                scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Fine_mp.get(), spaceComm);
+            }
+            //scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+            if(propagator == "Coarse") {
+                gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Coarse_mp.get(), q);
+            }
+            else if(propagator == "Fine") {
+                gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Fine_mp.get(), q);
+            }
+            //gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
 
             q = Q_m / Np_m;
 
@@ -1047,19 +1108,29 @@ public:
                      const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
                      const unsigned int& /*iter*/, const double& Bext,
                      int /*rankTime*/, int /*rankSpace*/,
-                     MPI_Comm& spaceComm) {
+                     const std::string& propagator, MPI_Comm& spaceComm) {
     
         //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
         PLayout& PL = this->getLayout();
         //PL.applyBC(Rtemp, PL.getRegionLayout().getDomain());
         //checkBounds(Rtemp);
         rhoPIF_m = {0.0, 0.0};
-        scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
+        if(propagator == "Coarse") {
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Coarse_mp.get(), spaceComm);
+        }
+        else if(propagator == "Fine") {
+            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Fine_mp.get(), spaceComm);
+        }
     
         rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
         // Solve for and gather E field
-        gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+        if(propagator == "Coarse") {
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Coarse_mp.get(), q);
+        }
+        else if(propagator == "Fine") {
+            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Fine_mp.get(), q);
+        }
 
         q = Q_m / Np_m;
 
@@ -1113,12 +1184,22 @@ public:
     
             //scatter the charge onto the underlying grid
             rhoPIF_m = {0.0, 0.0};
-            scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, spaceComm);
+            if(propagator == "Coarse") {
+                scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Coarse_mp.get(), spaceComm);
+            }
+            else if(propagator == "Fine") {
+                scatterPIFNUFFT(q, rhoPIF_m, Sk_m, Rtemp, nufftType1Fine_mp.get(), spaceComm);
+            }
     
             rhoPIF_m = rhoPIF_m / ((rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]));
     
             // Solve for and gather E field
-            gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, q);
+            if(propagator == "Coarse") {
+                gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Coarse_mp.get(), q);
+            }
+            else if(propagator == "Fine") {
+                gatherPIFNUFFT(E, rhoPIF_m, Sk_m, Rtemp, nufftType2Fine_mp.get(), q);
+            }
     
             q = Q_m / Np_m;
             //kick

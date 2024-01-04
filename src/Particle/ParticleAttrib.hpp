@@ -493,12 +493,12 @@ namespace ippl {
 
 #ifdef KOKKOS_ENABLE_CUDA
 
-    template<typename T, class... Properties>
-    template<unsigned Dim>
-    void ParticleAttrib<T, Properties...>::initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams) {
-        
-        fftType_mp = std::make_shared<FFT<NUFFTransform, Dim, double>>(layout, *(this->localNum_mp), type, fftParams);
-    }
+    //template<typename T, class... Properties>
+    //template<unsigned Dim>
+    //void ParticleAttrib<T, Properties...>::initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams) {
+    //    
+    //    fftType_mp = std::make_shared<FFT<NUFFTransform, Dim, double>>(layout, *(this->localNum_mp), type, fftParams);
+    //}
     
     
     
@@ -506,6 +506,7 @@ namespace ippl {
     template <unsigned Dim, class M, class C, class FT, class ST, class PT>
     void ParticleAttrib<T, Properties...>::scatterPIFNUFFT(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp,
+                                                   FFT<NUFFTransform, 3, ST>* nufft,
                                                    const MPI_Comm& spaceComm)
     const
     {
@@ -524,7 +525,8 @@ namespace ippl {
 
         tempField = 0.0;
         
-        fftType_mp->transform(pp, q, tempField);
+        //fftType_mp->transform(pp, q, tempField);
+        nufft->transform(pp, q, tempField);
         //fftType_mp->transform(pp, q, f);
 
         
@@ -566,6 +568,7 @@ namespace ippl {
     template <unsigned Dim, class M, class C, class FT, class ST, class PT>
     void ParticleAttrib<T, Properties...>::gatherPIFNUFFT(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
                                                    const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp, 
+                                                   FFT<NUFFTransform, 3, ST>* nufft,
                                                    ParticleAttrib<PT, Properties... >& q)
     {
         static IpplTimings::TimerRef gatherPIFNUFFTTimer = IpplTimings::getTimer("GatherPIFNUFFT");           
@@ -631,7 +634,8 @@ namespace ippl {
                 tempview(i, j, k) *= -Skview(i, j, k) * (imag * kVec[gd] * factor);
             });
 
-            fftType_mp->transform(pp, q, tempField);
+            //fftType_mp->transform(pp, q, tempField);
+            nufft->transform(pp, q, tempField);
 
             Kokkos::parallel_for("Assign E gather NUFFT",
                                 Np,
@@ -651,10 +655,11 @@ namespace ippl {
     inline
     void scatterPIFNUFFT(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
                  Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                 FFT<NUFFTransform, 3, P3>* nufft,
                  const MPI_Comm& spaceComm = MPI_COMM_WORLD)
     {
 #ifdef KOKKOS_ENABLE_CUDA
-        attrib.scatterPIFNUFFT(f, Sk, pp, spaceComm);
+        attrib.scatterPIFNUFFT(f, Sk, pp, nufft, spaceComm);
 #else
         //throw IpplException("scatterPIFNUFFT", "The NUFFT library cuFINUFFT currently only works with CUDA and hence Kokkos needs to 
         //                     be compiled with CUDA. Otherwise use scatterPIFNUDFT.");
@@ -665,10 +670,11 @@ namespace ippl {
     inline
     void gatherPIFNUFFT(ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
                  Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp, 
+                 FFT<NUFFTransform, 3, P3>* nufft,
                  ParticleAttrib<P4, Properties... >& q)
     {
 #ifdef KOKKOS_ENABLE_CUDA
-        attrib.gatherPIFNUFFT(f, Sk, pp, q);
+        attrib.gatherPIFNUFFT(f, Sk, pp, nufft, q);
 #else
         //throw IpplException("gatherPIFNUFFT",
         //                    "The NUFFT library cuFINUFFT currently only works with CUDA and hence Kokkos needs to 
