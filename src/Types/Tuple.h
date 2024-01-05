@@ -1,6 +1,6 @@
 //
-// Class Vector
-//   Vector class used for vector fields and particle attributes like the coordinate.
+// Class Tuple
+//   Tuple class used for fixed-size containers containing objects of different types, e.g. different KOKKOS_LAMBDAs
 //
 #ifndef IPPL_Tuple_H
 #define IPPL_Tuple_H
@@ -21,7 +21,7 @@ namespace ippl {
      * @brief Implementation details for the Tuple class.
      * @tparam i Current index in the Tuple.
      * @tparam N Total number of elements in the Tuple.
-     * @tparam Ts Types of elements in the Tuple.
+     * @tparam Ts REMAINING Types of subsequent elements in the Tuple going forward from i.
      */
     template <std::size_t i, std::size_t N, typename... Ts>
     struct TupleImpl;
@@ -32,18 +32,23 @@ namespace ippl {
      * @tparam N Total number of elements in the Tuple.
      * @tparam T Type of the current element.
      * @tparam R Type of the next element.
-     * @tparam Ts Types of subsequent elements in the Tuple.
+     * @tparam Ts REMAINING Types of subsequent elements in the Tuple going forward from i.
      */
     template <std::size_t i, std::size_t N, typename T, typename R, typename... Ts>
-    struct TupleImpl<i, N, T, R, Ts...> : TupleImpl<i + 1, N, R, Ts...> {
+    struct TupleImpl<i, N, T, R, Ts...> /* : TupleImpl<i + 1, N, R, Ts...> */{
         T val;
+        /**
+         * @brief Remaining tuple elements:
+         * next doesn't have typename T anymore.
+         */
+        TupleImpl<i + 1, N, R, Ts...> next;
         template <std::size_t Idx>
             requires(Idx < N)
         KOKKOS_INLINE_FUNCTION auto& get() noexcept {
             if constexpr (Idx == i) {
                 return val;
             } else {
-                return static_cast<TupleImpl<i + 1, N, R, Ts...>*>(this)->template get<Idx>();
+                return next.template get<Idx>();
             }
         }
         template <std::size_t Idx>
@@ -52,7 +57,7 @@ namespace ippl {
             if constexpr (Idx == i) {
                 return val;
             } else {
-                return static_cast<const TupleImpl<i + 1, N, R, Ts...>*>(this)->template get<Idx>();
+                return next.template get<Idx>();
             }
         }
         TupleImpl& operator=(const TupleImpl<i, N, T, R, Ts...>& t)
@@ -78,8 +83,7 @@ namespace ippl {
         = default;
         template <typename CtorT, typename CtorR, typename... CtorTs>
         KOKKOS_INLINE_FUNCTION TupleImpl(CtorT&& t, CtorR&& r, CtorTs&&... ts)
-            : TupleImpl<i + 1, N, R, Ts...>(std::forward<CtorR>(r), std::forward<CtorTs>(ts)...)
-            , val(std::forward<T>(t)) {}
+            : val(std::forward<T>(t)), next(std::forward<CtorR>(r), std::forward<CtorTs>(ts)...) {}
     };
     /*!
      * @struct TupleImpl<i, N, T>
@@ -109,7 +113,9 @@ namespace ippl {
      */
     template <typename... Ts>
     struct Tuple {
+        private:
         TupleImpl<0, sizeof...(Ts), Ts...> tupleImpl_m;
+        public:
         constexpr static std::size_t dim  = sizeof...(Ts);
         constexpr static std::size_t size = sizeof...(Ts);
         template <std::size_t Idx>
@@ -333,4 +339,18 @@ namespace ippl {
     using TupleType = typename TupleTypeImpl<Idx, Ts...>::type;
 }  // namespace ippl
 
+namespace std {
+    template <typename... Ts> struct tuple_size<::ippl::Tuple<Ts...>> : std::integral_constant<size_t, sizeof...(Ts)> { };
+
+    template <size_t Idx, typename... Ts> struct tuple_element<Idx, ::ippl::Tuple<Ts...>> { using type = typename ::ippl::TupleType<Idx, Ts...>; };
+
+    template<size_t Idx, typename... Ts>
+    KOKKOS_INLINE_FUNCTION auto& get(::ippl::Tuple<Ts...>& t){
+        return t.template get<Idx>();
+    }
+    template<size_t Idx, typename... Ts>
+    KOKKOS_INLINE_FUNCTION const auto& get(const ::ippl::Tuple<Ts...>& t){
+        return t.template get<Idx>();
+    }
+}
 #endif
