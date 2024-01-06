@@ -15,7 +15,9 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Communicate/Communicator.h"
 #include "Index/NDIndex.h"
+#include "Partition/Partitioner.h"
 
 namespace ippl {
 
@@ -24,12 +26,6 @@ namespace ippl {
 
     template <unsigned Dim>
     std::ostream& operator<<(std::ostream&, const FieldLayout<Dim>&);
-
-    // enumeration used to select serial or parallel axes
-    enum e_dim_tag {
-        SERIAL   = 0,
-        PARALLEL = 1
-    };
 
     // enumeration used to describe a hypercube's relation to
     // a particular axis in a given bounded domain
@@ -202,20 +198,22 @@ namespace ippl {
          * Default constructor, which should only be used if you are going to
          * call 'initialize' soon after (before using in any context)
          */
-        FieldLayout();
+        FieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
-        FieldLayout(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
+        FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
+                    bool isAllPeriodic = false);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
-        virtual ~FieldLayout();
+        virtual ~FieldLayout() = default;
 
         // Initialization functions, only to be called by the user of FieldLayout
         // objects when the FieldLayout was created using the default constructor;
         // otherwise these are only called internally by the various non-default
         // FieldLayout constructors:
 
-        void initialize(const NDIndex<Dim>& domain, e_dim_tag* p = 0, bool isAllPeriodic = false);
+        void initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
+                        bool isAllPeriodic = false);
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
@@ -230,7 +228,7 @@ namespace ippl {
 
         bool operator==(const FieldLayout<Dim>& x) const {
             for (unsigned int i = 0; i < Dim; ++i) {
-                if (hLocalDomains_m(Comm->rank())[i] != x.getLocalNDIndex()[i]) {
+                if (hLocalDomains_m(comm.rank())[i] != x.getLocalNDIndex()[i]) {
                     return false;
                 }
             }
@@ -239,18 +237,15 @@ namespace ippl {
 
         // for the requested dimension, report if the distribution is
         // SERIAL or PARALLEL
-        e_dim_tag getDistribution(unsigned int d) const {
-            if (minWidth_m[d] == (unsigned int)gDomain_m[d].length()) {
-                return SERIAL;
-            }
-            return PARALLEL;
+        bool getDistribution(unsigned int d) const {
+            return minWidth_m[d] == (unsigned int)gDomain_m[d].length();
         }
 
         // for the requested dimension, report if the distribution was requested to
         // be SERIAL or PARALLEL
-        e_dim_tag getRequestedDistribution(unsigned int d) const { return requestedLayout_m[d]; }
+        std::array<bool, Dim> isParallel() const { return isParallelDim_m; }
 
-        const NDIndex_t& getLocalNDIndex(int rank = Comm->rank()) const;
+        const NDIndex_t& getLocalNDIndex(int rank = -1) const;
 
         const host_mirror_type getHostLocalDomains() const;
 
@@ -339,6 +334,8 @@ namespace ippl {
 
         bool isAllPeriodic_m;
 
+        mpi::Communicator comm;
+
     private:
         /*!
          * Obtain the bounds to send / receive. The second domain, i.e.,
@@ -364,7 +361,7 @@ namespace ippl {
         //! Local domains (host mirror view)
         host_mirror_type hLocalDomains_m;
 
-        e_dim_tag requestedLayout_m[Dim];
+        std::array<bool, Dim> isParallelDim_m;
 
         unsigned int minWidth_m[Dim];
 

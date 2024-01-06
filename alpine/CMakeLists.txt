@@ -10,23 +10,16 @@ link_directories (
     ${Kokkos_DIR}/..
 )
 
+add_subdirectory (ExamplesWithoutPicManager)
+
 set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (PenningTrap PenningTrap.cpp)
 target_link_libraries (PenningTrap ${IPPL_LIBS})
 
-add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
-target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
-
 add_executable (LandauDamping LandauDamping.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
-
-add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
-target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
-
-add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
-target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
 
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})

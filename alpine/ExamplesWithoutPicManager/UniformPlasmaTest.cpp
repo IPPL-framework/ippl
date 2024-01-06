@@ -110,24 +110,21 @@ int main(int argc, char* argv[]) {
         Vector_t<double, Dim> rmin(0.0);
         Vector_t<double, Dim> rmax(20.0);
 
-        Vector_t<double, Dim> hr;
+        Vector_t<double, Dim> hr     = rmax / nr;
         Vector_t<double, Dim> origin = rmin;
         const double dt              = 1.0;
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-            hr[d]     = rmax[d] / nr[d];
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         const bool isAllPeriodic = true;
         Mesh_t<Dim> mesh(domain, hr, origin);
-        FieldLayout_t<Dim> FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
         PLayout_t<double, Dim> PL(FL, mesh);
 
         double Q           = -1562.5;
         std::string solver = argv[arg++];
-        P                  = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
+        P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, solver);
 
         P->nr_m        = nr;
         size_type nloc = totalP / ippl::Comm->size();

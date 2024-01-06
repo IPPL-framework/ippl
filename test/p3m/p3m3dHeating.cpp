@@ -102,7 +102,7 @@ public:
     ParticleAttrib<Vector_t> v;  // velocity of the particles
     ParticleAttrib<int> ID;      // velocity of the particles
 
-    ChargedParticles(PL* pl, Vektor<double, 3> nr, e_dim_tag /*decomp*/[Dim],
+    ChargedParticles(PL* pl, Vektor<double, 3> nr, std::array<bool, Dim> /*parallel*/,
                      Vektor<double, 3> extend_l_, Vektor<double, 3> extend_r_)
         : IpplParticleBase<PL>(pl)
         , nr_m(nr)
@@ -491,7 +491,7 @@ public:
 
     FFT_t* fft_m;
 
-    e_dim_tag decomp_m[Dim];
+    std::array<bool, Dim> parallel_m;
 
     Vektor<int, Dim> Nx;
     Vektor<int, Dim> Nv;
@@ -622,7 +622,9 @@ int main(int argc, char* argv[]) {
         int print_every        = atof(argv[param++]);
 
         ///////// setup the initial layout ///////////////////////////////////////
-        e_dim_tag decomp[Dim];
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+
         Mesh_t* mesh;
         FieldLayout_t* FL;
         ChargedParticles<playout_t>* P;
@@ -631,12 +633,9 @@ int main(int argc, char* argv[]) {
         for (unsigned i = 0; i < Dim; i++)
             domain[i] = domain[i] = Index(nr[i] + 1);
 
-        for (unsigned d = 0; d < Dim; ++d)
-            decomp[d] = PARALLEL;
-
         // create mesh and layout objects for this problem domain
         mesh          = new Mesh_t(domain);
-        FL            = new FieldLayout_t(*mesh, decomp);
+        FL            = new FieldLayout_t(*mesh, isParallel);
         playout_t* PL = new playout_t(*FL, *mesh);
 
         PL->setAllCacheDimensions(interaction_radius);
@@ -649,7 +648,7 @@ int main(int argc, char* argv[]) {
         Vektor<double, Dim> extend_r(L, L, L);
 
         Vektor<double, Dim> Vmax(6, 6, 6);
-        P = new ChargedParticles<playout_t>(PL, nr, decomp, extend_l, extend_r);
+        P = new ChargedParticles<playout_t>(PL, nr, isParallel, extend_l, extend_r);
         createParticleDistributionHeating(P, extend_l, extend_r, beam_radius, Nparticle,
                                           charge_per_part, mass_per_part);
 

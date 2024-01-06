@@ -86,7 +86,7 @@ static int FindCutAxis(const NDIndex<Dim>& domain, const FieldLayout<Dim>& layou
     unsigned int maxLength = 0;
     // Loop over dimension.
     for (unsigned int d = 0; d < Dim; ++d) {
-        if (layout.getDistribution(d) != SERIAL || layout.getRequestedDistribution(d) != SERIAL) {
+        if (layout.getDistribution(d) != SERIAL || layout.getDimDecomposition(d) != SERIAL) {
             // Check if this axis is longer than the current max.
             unsigned int length = domain[d].length();
             if (maxLength < length) {
@@ -337,7 +337,7 @@ static void ReceiveReduce(NDIndex<Dim>& domain, BareField<T, Dim>& weights, int 
     // Build a count of the number of messages to expect.
     // We get *one message* from each node that has a touch.
     int expected      = 0;
-    int nodes         = Comm->getNodes();
+    int nodes         = Comm->size();
     int mynode        = Comm->myNode();
     bool* found_touch = new bool[nodes];
     for (i = 0; i < nodes; ++i)
@@ -524,7 +524,7 @@ NDIndex<Dim> CalcBinaryRepartition(FieldLayout<Dim>& layout, BareField<T, Dim>& 
         << endl;*/
 
     // Get the processors we'll be dealing with.
-    int nprocs = Comm->getNodes();
+    int nprocs = Comm->size();
     int myproc = Comm->myNode();
     domains.reserve(nprocs);
     procs.reserve(nprocs);

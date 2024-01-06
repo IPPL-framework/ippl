@@ -9,7 +9,7 @@
 //   in the case that the amount of data to be exchanged increases, when a new buffer
 //   is created, an amount of memory greater than the requested size is allocated
 //   for the new buffer. The factor by which memory is overallocated is determined by
-//   a data member in Communicate, which can be set and queried at runtime. Only new
+//   a data member in Communicator, which can be set and queried at runtime. Only new
 //   buffers are overallocated. If a buffer is requested with the same ID as a buffer
 //   that has been previously allocated, the same buffer will be used. If the requested
 //   size exceeds the buffer size, that buffer will be resized to have exactly
@@ -22,18 +22,19 @@
 
 #include "Ippl.h"
 
-#include "Communicate.h"
+#include "Communicator.h"
 
 namespace ippl {
+    namespace mpi {
 
-    void Communicate::setDefaultOverallocation(double factor) {
-        defaultOveralloc_m = factor;
-    }
+        void Communicator::setDefaultOverallocation(double factor) {
+            defaultOveralloc_m = factor;
+        }
 
-    void Communicate::deleteAllBuffers() {
-        buffers_m.forAll([]<typename Map>(Map&& m) {
-            m.clear();
-        });
-    }
-
+        void Communicator::deleteAllBuffers() {
+            buffers_m.forAll([]<typename Map>(Map&& m) {
+                m.clear();
+            });
+        }
+    }  // namespace mpi
 }  // namespace ippl
