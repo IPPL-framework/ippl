@@ -214,18 +214,15 @@ int main(int argc, char* argv[]) {
                                 "Open boundaries solver incompatible with this simulation!");
         }
 
-        if (solver == "PCG"){
+        if (solver == "PCG") {
             preconditioner_type = argv[arg++];
-            if (preconditioner_type == "newton"){
+            if (preconditioner_type == "newton") {
                 newton_level = std::atoi(argv[arg++]);
-            }
-            else if (preconditioner_type == "chebyshev"){
+            } else if (preconditioner_type == "chebyshev") {
                 chebyshev_degree = std::atoi(argv[arg++]);
-            }
-            else if (preconditioner_type == "richardson"){
+            } else if (preconditioner_type == "richardson") {
                 richardson_iterations = std::atoi(argv[arg++]);
-            }
-            else if (preconditioner_type == "gauss-seidel"){
+            } else if (preconditioner_type == "gauss-seidel") {
                 gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
                 gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
             }
@@ -237,12 +234,10 @@ int main(int argc, char* argv[]) {
         params.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
         params.add("newton_level", newton_level);
         params.add("chebyshev_degree", chebyshev_degree);
-        params.add("richardson_iterations",richardson_iterations);
+        params.add("richardson_iterations", richardson_iterations);
 
-        std::cout << "Before make bunch" << std::endl;
         P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q, solver);
-        std::cout << "After make bunch" << std::endl;
-        //MOD END
+        // MOD END
 
         P->nr_m = nr;
 
