@@ -1,5 +1,7 @@
 #!/bin/sh
 git diff --cached --name-only | grep -e '\.h$' -e '\.cpp$' -e '\.hpp$' | while read FILE; do
-	clang-format -i "$FILE"
-	git add "$FILE"
+    if [ -f "$FILE" ]; then
+        clang-format -i "$FILE"
+        git add "$FILE"
+    fi
 done

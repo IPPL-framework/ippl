@@ -5,56 +5,66 @@
 #ifndef IPPL_MPI_DATATYPES_H
 #define IPPL_MPI_DATATYPES_H
 
+#include <complex>
+#include <cstdint>
 #include <mpi.h>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
 
-template <typename>
-struct is_ippl_mpi_datatype : std::false_type {};
+#include "Utility/IpplException.h"
 
-template <typename T>
-MPI_Datatype get_mpi_datatype(const T& /*x*/) {
-    static_assert(is_ippl_mpi_datatype<T>::value, "type isn't an MPI type");
-    return get_mpi_datatype(T());
-}
+namespace ippl {
+    namespace mpi {
+        namespace core {
+            const std::unordered_map<std::type_index, MPI_Datatype> type_names = {
+                {std::type_index(typeid(std::int8_t)), MPI_INT8_T},
+                {std::type_index(typeid(std::int16_t)), MPI_INT16_T},
+                {std::type_index(typeid(std::int32_t)), MPI_INT32_T},
+                {std::type_index(typeid(std::int64_t)), MPI_INT64_T},
 
-#define IPPL_MPI_DATATYPE(CppType, MPIType)                         \
-    template <>                                                     \
-    inline MPI_Datatype get_mpi_datatype<CppType>(const CppType&) { \
-        return MPIType;                                             \
-    }                                                               \
-                                                                    \
-    template <>                                                     \
-    struct is_ippl_mpi_datatype<CppType> : std::true_type {};
+                {std::type_index(typeid(std::uint8_t)), MPI_UINT8_T},
+                {std::type_index(typeid(std::uint16_t)), MPI_UINT16_T},
+                {std::type_index(typeid(std::uint32_t)), MPI_UINT32_T},
+                {std::type_index(typeid(std::uint64_t)), MPI_UINT64_T},
 
-IPPL_MPI_DATATYPE(char, MPI_CHAR);
+                {std::type_index(typeid(char)), MPI_CHAR},
+                {std::type_index(typeid(short)), MPI_SHORT},
+                {std::type_index(typeid(int)), MPI_INT},
+                {std::type_index(typeid(long)), MPI_LONG},
+                {std::type_index(typeid(long long)), MPI_LONG_LONG_INT},  // synonym: MPI_LONG_LONG
 
-IPPL_MPI_DATATYPE(short, MPI_SHORT);
+                {std::type_index(typeid(unsigned char)), MPI_UNSIGNED_CHAR},
+                {std::type_index(typeid(unsigned short)), MPI_UNSIGNED_SHORT},
+                {std::type_index(typeid(unsigned int)), MPI_UNSIGNED},
+                {std::type_index(typeid(unsigned long)), MPI_UNSIGNED_LONG},
+                {std::type_index(typeid(unsigned long long)), MPI_UNSIGNED_LONG_LONG},
 
-IPPL_MPI_DATATYPE(int, MPI_INT);
+                {std::type_index(typeid(float)), MPI_FLOAT},
+                {std::type_index(typeid(double)), MPI_DOUBLE},
+                {std::type_index(typeid(long double)), MPI_LONG_DOUBLE},
 
-IPPL_MPI_DATATYPE(long, MPI_LONG);
+                {std::type_index(typeid(bool)), MPI_CXX_BOOL},
 
-IPPL_MPI_DATATYPE(long long, MPI_LONG_LONG);
+                {std::type_index(typeid(std::complex<float>)), MPI_CXX_FLOAT_COMPLEX},
+                {std::type_index(typeid(std::complex<double>)), MPI_CXX_DOUBLE_COMPLEX},
+                {std::type_index(typeid(std::complex<long double>)), MPI_CXX_LONG_DOUBLE_COMPLEX},
 
-IPPL_MPI_DATATYPE(unsigned char, MPI_UNSIGNED_CHAR);
+                {std::type_index(typeid(Kokkos::complex<double>)), MPI_CXX_FLOAT_COMPLEX},
+                {std::type_index(typeid(Kokkos::complex<float>)), MPI_CXX_FLOAT_COMPLEX}};
+        }
 
-IPPL_MPI_DATATYPE(unsigned short, MPI_UNSIGNED_SHORT);
-
-IPPL_MPI_DATATYPE(unsigned int, MPI_UNSIGNED);
-
-IPPL_MPI_DATATYPE(unsigned long, MPI_UNSIGNED_LONG);
-
-IPPL_MPI_DATATYPE(unsigned long long, MPI_UNSIGNED_LONG_LONG);
-
-IPPL_MPI_DATATYPE(float, MPI_FLOAT);
-
-IPPL_MPI_DATATYPE(double, MPI_DOUBLE);
-
-IPPL_MPI_DATATYPE(long double, MPI_LONG_DOUBLE);
-
-IPPL_MPI_DATATYPE(std::complex<float>, MPI_C_FLOAT_COMPLEX);
-
-IPPL_MPI_DATATYPE(std::complex<double>, MPI_C_DOUBLE_COMPLEX);
-
-IPPL_MPI_DATATYPE(bool, MPI_CXX_BOOL);
+        template <typename T>
+        MPI_Datatype get_mpi_datatype(const T& /*x*/) {
+            MPI_Datatype type = MPI_BYTE;
+            try {
+                type = core::type_names.at(std::type_index(typeid(T)));
+            } catch (...) {
+                throw IpplException("ippl::mpi::get_mpi_datatype", "No such type available.");
+            }
+            return type;
+        }
+    }  // namespace mpi
+}  // namespace ippl
 
 #endif
