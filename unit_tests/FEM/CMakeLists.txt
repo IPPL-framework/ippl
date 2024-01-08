@@ -31,6 +31,15 @@ target_link_libraries (
     ${GTEST_BOTH_LIBRARIES}
 )
 
+add_executable(HexahedralElement HexahedralElement.cpp)
+target_link_libraries(
+    HexahedralElement
+    ippl
+    pthread
+    ${MPI_CXX_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
+)
+
 add_executable (FiniteElementSpace FiniteElementSpace.cpp)
 target_link_libraries (
     FiniteElementSpace

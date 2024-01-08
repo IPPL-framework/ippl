@@ -12,7 +12,7 @@
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
 template <typename T, unsigned Dim>
-KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
+KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
 
     T val = 1.0;
@@ -24,7 +24,7 @@ KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
 }
 
 template <typename T, unsigned Dim>
-KOKKOS_INLINE_FUNCTION T sinusoidalSourceFunction(ippl::Vector<T, Dim> x_vec) {
+KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
 
     T val = 1.0;
@@ -218,20 +218,25 @@ int main(int argc, char* argv[]) {
         // }
 
         // 1D Sinusoidal
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-            testFEMSolver<T, 1>(n, sinusoidalSolution<T, 1>, sinusoidalSourceFunction<T, 1>, -1.0,
-                                1.0);
-        }
+        // for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+        //     testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>,
+        //     -1.0,
+        //                         1.0);
+        // }
 
-        // 2D Sinusoidal
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-            testFEMSolver<T, 2>(n, sinusoidalSolution<T, 2>, sinusoidalSourceFunction<T, 2>, -1.0,
-                                1.0);
-        }
+        // // 2D Sinusoidal
+        // for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+        //     testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>,
+        //     -1.0,
+        //                         1.0);
+        // }
 
         // 3D Sinusoidal
-        for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
-            testFEMSolver<T, 3>(n, sinusoidalSolution<T, 3>, sinusoidalSourceFunction<T, 3>, -1.0,
+        const int n_arg = std::atoi(argv[1]);
+        std::cout << "size = " << (1 << n_arg) << std::endl;
+
+        for (int n = 1 << n_arg; n <= 1 << n_arg; n = n << 1) {
+            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
                                 1.0);
         }
 

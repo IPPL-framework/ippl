@@ -7,6 +7,12 @@
 
 namespace ippl {
 
+    /**
+     * @brief Base class for all elements.
+     * @tparam T The type of the coordinates of the vertices of the element.
+     * @tparam Dim The dimension of the element.
+     * @tparam NumVertices The number of vertices of the element.
+     */
     template <typename T, unsigned Dim, unsigned NumVertices>
     class Element {
     public:
