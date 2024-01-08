@@ -245,6 +245,27 @@ namespace ippl {
     }
 
     /*!
+     * User interface of lower triangular Laplacian without exchange of halo cells
+     * @param u field
+     */
+    template <typename Field>
+    detail::meta_lower_laplace<Field> lower_laplace_no_comm(Field& u) {
+        constexpr unsigned Dim = Field::dim;
+
+        using mesh_type = typename Field::Mesh_t;
+        mesh_type& mesh = u.get_mesh();
+        typename mesh_type::vector_type hvector(0);
+        for (unsigned d = 0; d < Dim; d++) {
+            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+        }
+        const auto& layout = u.getLayout();
+        unsigned nghosts   = u.getNghost();
+        const auto& ldom   = layout.getLocalNDIndex();
+        const auto& domain = layout.getDomain();
+        return detail::meta_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+    }
+
+    /*!
      * User interface of upper triangular Laplacian
      * @param u field
      */
@@ -270,6 +291,27 @@ namespace ippl {
     }
 
     /*!
+     * User interface of upper triangular Laplacian without exchange of halo cells
+     * @param u field
+     */
+    template <typename Field>
+    detail::meta_upper_laplace<Field> upper_laplace_no_comm(Field& u) {
+        constexpr unsigned Dim = Field::dim;
+
+        using mesh_type = typename Field::Mesh_t;
+        mesh_type& mesh = u.get_mesh();
+        typename mesh_type::vector_type hvector(0);
+        for (unsigned d = 0; d < Dim; d++) {
+            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+        }
+        const auto& layout = u.getLayout();
+        unsigned nghosts   = u.getNghost();
+        const auto& ldom   = layout.getLocalNDIndex();
+        const auto& domain = layout.getDomain();
+        return detail::meta_upper_laplace<Field>(u, hvector, nghosts, ldom, domain);
+    }
+
+    /*!
      * User interface of upper+lower triangular Laplacian
      * @param u field
      */
@@ -280,6 +322,27 @@ namespace ippl {
         u.fillHalo();
         BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
+
+        using mesh_type = typename Field::Mesh_t;
+        mesh_type& mesh = u.get_mesh();
+        typename mesh_type::vector_type hvector(0);
+        for (unsigned d = 0; d < Dim; d++) {
+            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+        }
+        const auto& layout = u.getLayout();
+        unsigned nghosts   = u.getNghost();
+        const auto& ldom   = layout.getLocalNDIndex();
+        const auto& domain = layout.getDomain();
+        return detail::meta_upper_and_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+    }
+
+    /*!
+     * User interface of upper+lower triangular Laplacian without exchange of halo cells
+     * @param u field
+     */
+    template <typename Field>
+    detail::meta_upper_and_lower_laplace<Field> upper_and_lower_laplace_no_comm(Field& u) {
+        constexpr unsigned Dim = Field::dim;
 
         using mesh_type = typename Field::Mesh_t;
         mesh_type& mesh = u.get_mesh();

@@ -65,6 +65,7 @@ namespace ippl {
                 int outer  = this->params_m.template get<int>("gauss_seidel_outer_iterations");
                 int richardson_iterations =
                     this->params_m.template get<int>("richardson_iterations");
+                int communication = this->params_m.template get<int>("communication");
                 // Analytical eigenvalues for the d dimensional laplace operator
                 // Going brute force through all possible eigenvalues seems to be the only way to
                 // find max and min
@@ -89,15 +90,25 @@ namespace ippl {
                     beta += local_max;
                     alpha += local_min;
                 }
-                algo_m->setPreconditioner(
-                    IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
-                    IPPL_SOLVER_OPERATOR_WRAPPER(-lower_laplace, lhs_type),
-                    IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace, lhs_type),
-                    IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace, lhs_type),
-                    IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
-                    alpha, beta, preconditioner_type, level, degree, richardson_iterations, inner,
-                    outer);
-
+                if (communication) {
+                    algo_m->setPreconditioner(
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-lower_laplace, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
+                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
+                        inner, outer);
+                } else {
+                    algo_m->setPreconditioner(
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-lower_laplace_no_comm, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace_no_comm, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace_no_comm, lhs_type),
+                        IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
+                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
+                        inner, outer);
+                }
             } else {
                 algo_m =
                     std::move(std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,

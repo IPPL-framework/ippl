@@ -10,8 +10,8 @@
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
 #include <iostream>
-#include <typeinfo>
 #include <string>
+#include <typeinfo>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
@@ -33,7 +33,8 @@ int main(int argc, char* argv[]) {
         int newton_level;
         int chebyshev_degree;
         int richardson_iterations;
-        std::string solver = "not preconditioned";
+        int communication;
+        std::string solver              = "not preconditioned";
         std::string preconditioner_type = "";
         // Preconditioner Setup End
         Inform info("Config");
@@ -51,68 +52,68 @@ int main(int argc, char* argv[]) {
                     pt  = 32;
                     info << "Performing weak scaling" << endl;
                     isWeak = true;
-                }
-                else{
-                    if(argv[2][0] == 'j'){
-                        solver = "preconditioned";
+                } else {
+                    if (argv[2][0] == 'j') {
+                        solver              = "preconditioned";
                         preconditioner_type = "jacobi";
-
                     }
-                    if(argv[2][0] == 'n'){
-                        solver = "preconditioned";
+                    if (argv[2][0] == 'n') {
+                        solver              = "preconditioned";
                         preconditioner_type = "newton";
-                        newton_level = std::atoi(argv[3]);
+                        newton_level        = std::atoi(argv[3]);
                     }
-                    if(argv[2][0] == 'c'){
-                        solver = "preconditioned";
+                    if (argv[2][0] == 'c') {
+                        solver              = "preconditioned";
                         preconditioner_type = "chebyshev";
-                        chebyshev_degree = std::atoi(argv[3]);
+                        chebyshev_degree    = std::atoi(argv[3]);
                     }
-                    if(argv[2][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
+                    if (argv[2][0] == 'g') {
+                        solver                        = "preconditioned";
+                        preconditioner_type           = "gauss-seidel";
                         gauss_seidel_inner_iterations = std::atoi(argv[3]);
                         gauss_seidel_outer_iterations = std::atoi(argv[4]);
+                        communication                 = std::atoi(argv[5]);
                     }
-                    if(argv[2][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
+                    if (argv[2][0] == 'r') {
+                        solver                = "preconditioned";
+                        preconditioner_type   = "richardson";
                         richardson_iterations = std::atoi(argv[3]);
+                        communication         = std::atoi(argv[4]);
                     }
                 }
-                if (argc >= 4){
-                    if(argv[3][0] == 'j'){
-                        solver = "preconditioned";
+                if (argc >= 4) {
+                    if (argv[3][0] == 'j') {
+                        solver              = "preconditioned";
                         preconditioner_type = "jacobi";
                     }
-                    if(argv[3][0] == 'n'){
-                        solver = "preconditioned";
+                    if (argv[3][0] == 'n') {
+                        solver              = "preconditioned";
                         preconditioner_type = "newton";
-                        newton_level = std::atoi(argv[4]);
-
+                        newton_level        = std::atoi(argv[4]);
                     }
-                    if(argv[3][0] == 'c'){
-                        solver = "preconditioned";
+                    if (argv[3][0] == 'c') {
+                        solver              = "preconditioned";
                         preconditioner_type = "chebyshev";
-                        chebyshev_degree = std::atoi(argv[4]);
-
+                        chebyshev_degree    = std::atoi(argv[4]);
                     }
-                    if(argv[3][0] == 'g'){
-                        solver = "preconditioned";
-                        preconditioner_type = "gauss-seidel";
+                    if (argv[3][0] == 'g') {
+                        solver                        = "preconditioned";
+                        preconditioner_type           = "gauss-seidel";
                         gauss_seidel_inner_iterations = std::atoi(argv[4]);
                         gauss_seidel_outer_iterations = std::atoi(argv[5]);
+                        communication                 = std::atoi(argv[6]);
                     }
-                    if(argv[3][0] == 'r'){
-                        solver = "preconditioned";
-                        preconditioner_type = "richardson";
+                    if (argv[3][0] == 'r') {
+                        solver                = "preconditioned";
+                        preconditioner_type   = "richardson";
                         richardson_iterations = std::atoi(argv[4]);
+                        communication         = std::atoi(argv[5]);
                     }
                 }
             }
         }
         info << "Solver is " << solver << endl;
-        if (solver == "preconditioned"){
+        if (solver == "preconditioned") {
             info << "Preconditioner is " << preconditioner_type << endl;
         }
 
@@ -204,6 +205,7 @@ int main(int argc, char* argv[]) {
         params.add("newton_level", newton_level);
         params.add("chebyshev_degree", chebyshev_degree);
         params.add("richardson_iterations", richardson_iterations);
+        params.add("communication", communication);
 
         lapsolver.mergeParameters(params);
 

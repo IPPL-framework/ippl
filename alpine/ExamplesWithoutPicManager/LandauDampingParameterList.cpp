@@ -16,7 +16,8 @@
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./LandauDampingParameterList 64 64 64 10000 10 PCG [jacobi, chebyshev [degree], newton [level], gauss-seidel [inner outer]] 0.01 --overallocate 2.0 --info 10
+//     srun ./LandauDampingParameterList 64 64 64 10000 10 PCG [jacobi, chebyshev [degree], newton
+//     [level], gauss-seidel [inner outer comm] , richardson [iter comm]] 0.01 --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -205,6 +206,7 @@ int main(int argc, char* argv[]) {
         int newton_level;
         int chebyshev_degree;
         int richardson_iterations;
+        int communication;
         std::string preconditioner_type = "";
 
         if (solver == "OPEN") {
@@ -220,9 +222,11 @@ int main(int argc, char* argv[]) {
                 chebyshev_degree = std::atoi(argv[arg++]);
             } else if (preconditioner_type == "richardson") {
                 richardson_iterations = std::atoi(argv[arg++]);
+                communication         = std::atoi(argv[arg++]);
             } else if (preconditioner_type == "gauss-seidel") {
                 gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
                 gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
+                communication                 = std::atoi(argv[arg++]);
             }
         }
 
@@ -233,6 +237,7 @@ int main(int argc, char* argv[]) {
         params.add("newton_level", newton_level);
         params.add("chebyshev_degree", chebyshev_degree);
         params.add("richardson_iterations", richardson_iterations);
+        params.add("communication", communication);
 
         P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, solver);
         // MOD END
