@@ -20,7 +20,7 @@ namespace ippl {
      * @brief A class representing a Lagrange space for finite element methods on a structured,
      * rectilinear grid.
      *
-     * @tparam T The data type of the field values
+     * @tparam T The floating point number type of the field values
      * @tparam Dim The dimension of the mesh
      * @tparam Order The order of the Lagrange space
      * @tparam QuadratureType The type of the quadrature rule
