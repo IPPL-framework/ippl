@@ -1136,7 +1136,7 @@ public:
 
         time_m = tStartMySlice;
 
-        //if((time_m == 0.0)) {
+        //if((time_m == 0.0) && (propagator == "Fine")) {
         //    IpplTimings::startTimer(dumpData);
         //    dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
         //    IpplTimings::stopTimer(dumpData);
@@ -1226,7 +1226,9 @@ public:
             time_m += dt;
             
             //IpplTimings::startTimer(dumpData);
-            //dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
+            //if(propagator == "Fine") {
+            //    dumpEnergy(this->getLocalNum(), nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+            //}
             //IpplTimings::stopTimer(dumpData);
     
         }

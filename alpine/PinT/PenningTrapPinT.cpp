@@ -440,10 +440,13 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef deepCopy = IpplTimings::getTimer("deepCopy");
     static IpplTimings::TimerRef finePropagator = IpplTimings::getTimer("finePropagator");
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
-    //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
     static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
     static IpplTimings::TimerRef initializeCycles = IpplTimings::getTimer("initializeCycles");
+    static IpplTimings::TimerRef initialComm = IpplTimings::getTimer("initialComm");
+    static IpplTimings::TimerRef initialCoarse = IpplTimings::getTimer("initialCoarse");
+    static IpplTimings::TimerRef warmupStep = IpplTimings::getTimer("warmupStep");
 
     IpplTimings::startTimer(mainTimer);
 
@@ -552,7 +555,6 @@ int main(int argc, char *argv[]){
 
     Pcoarse->initFFTSolver();
 
-    IpplTimings::startTimer(particleCreation);
 
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
@@ -576,7 +578,56 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
     
     
-    Pcoarse->initNUFFT(FLPIF);
+    double coarseTol = 1e-3;
+    double fineTol   = 1e-6;
+    Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
+    std::string coarse = "Coarse";
+    std::string fine = "Fine";
+
+    //tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+
+    //IpplTimings::startTimer(warmupStep);
+    //if(rankTime == 0) {
+    //    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*rankSpace));
+    //    Kokkos::parallel_for(nloc,
+    //                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+    //                         Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, mu, sd, 
+    //                         minU, maxU));
+
+
+    //    Kokkos::fence();
+    //}
+    //else {
+    //    size_type bufSize = Pbegin->packedSize(nloc);
+    //    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
+    //    Ippl::Comm->recv(rankTime-1, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
+    //    buf->resetReadPos();
+    //}
+
+    //Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
+    //Kokkos::deep_copy(Pend->P.getView(), Pbegin->P.getView());
+    //Kokkos::deep_copy(Pcoarse->R0.getView(), Pbegin->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
+    ////Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+    //Pcoarse->BorisPIF(Pend->R, Pend->P, 45, dtCoarse, rankTime * dtSlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+    //
+    //Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
+    //Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
+    //if(rankTime < sizeTime-1) {
+    //    size_type bufSize = Pend->packedSize(nloc);
+    //    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
+    //    MPI_Request request;
+    //    Ippl::Comm->isend(rankTime+1, tag, *Pend, *buf, request, nloc, timeComm);
+    //    buf->resetWritePos();
+    //    MPI_Wait(&request, MPI_STATUS_IGNORE);
+    //}
+    //IpplTimings::stopTimer(warmupStep);
+    
+
+    
+    IpplTimings::startTimer(particleCreation);
+    
+    //Pcoarse->initNUFFT(FLPIF);
 
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
@@ -614,6 +665,7 @@ int main(int argc, char *argv[]){
     //condition is not the same on different GPUs
     tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
 
+    IpplTimings::startTimer(initialComm);
     if(rankTime == 0) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*rankSpace));
         Kokkos::parallel_for(nloc,
@@ -630,6 +682,7 @@ int main(int argc, char *argv[]){
         Ippl::Comm->recv(rankTime-1, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
         buf->resetReadPos();
     }
+    IpplTimings::stopTimer(initialComm);
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
@@ -638,13 +691,17 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
-    Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+    IpplTimings::startTimer(initialCoarse);
+    //Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+    Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+    IpplTimings::stopTimer(initialCoarse);
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
     Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
     IpplTimings::stopTimer(deepCopy);
     
+    IpplTimings::startTimer(initialComm);
     if(rankTime < sizeTime-1) {
         size_type bufSize = Pend->packedSize(nloc);
         buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
@@ -653,6 +710,7 @@ int main(int argc, char *argv[]){
         buf->resetWritePos();
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
+    IpplTimings::stopTimer(initialComm);
 #else
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
@@ -776,7 +834,7 @@ int main(int argc, char *argv[]){
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
             Pcoarse->BorisPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, 
-                              Bext, rankTime, rankSpace, spaceComm);
+                              Bext, rankTime, rankSpace, fine, spaceComm);
             IpplTimings::stopTimer(finePropagator);
         
 
@@ -819,7 +877,8 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
             IpplTimings::startTimer(coarsePropagator);
-            Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            Pcoarse->BorisPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+            //Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
@@ -859,11 +918,11 @@ int main(int argc, char *argv[]){
                 << " Perror: " << Perror
                 << endl;
 
-            //IpplTimings::startTimer(dumpData);
+            IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
-            //IpplTimings::stopTimer(dumpData);
+            IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);
 
@@ -915,7 +974,8 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
-            Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+            //Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
