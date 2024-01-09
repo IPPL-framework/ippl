@@ -5,7 +5,6 @@ set (_HDRS
     PoissonCG.h
     Poisson.h
 )
-
 if (ENABLE_FFT)
     list (APPEND _HDRS
                  FFTOpenPoissonSolver.h
