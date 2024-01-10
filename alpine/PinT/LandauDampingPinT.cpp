@@ -522,22 +522,13 @@ int main(int argc, char *argv[]){
     //Pcoarse->EfieldPICprevIter_m.initialize(meshPIC, FLPIC);
 
     Pcoarse->initFFTSolver();
-
-    IpplTimings::startTimer(particleCreation);
-
+    
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
         minU[d] = CDF(rmin[d], alpha[d], kw[d]);
         maxU[d]   = CDF(rmax[d], alpha[d], kw[d]);
     }
 
-
-    Pcoarse->create(nloc);
-    Pbegin->create(nloc);
-    Pend->create(nloc);
-
-    Pcoarse->q = Pcoarse->Q_m/Total_particles;
-    
     using buffer_type = ippl::Communicate::buffer_type;
     int tag;
 
@@ -548,11 +539,21 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
   
     //Pcoarse->initNUFFT(FLPIF);
-    double coarseTol = 1e-2;
+    double coarseTol = 1e-3;
     double fineTol   = 1e-6;
     Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
     std::string coarse = "Coarse";
     std::string fine = "Fine";
+
+
+    IpplTimings::startTimer(particleCreation);
+
+    Pcoarse->create(nloc);
+    Pbegin->create(nloc);
+    Pend->create(nloc);
+
+    Pcoarse->q = Pcoarse->Q_m/Total_particles;
+    
 
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
