@@ -14,8 +14,6 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     class NullSolver : public Poisson<FieldLHS, FieldRHS> {
-        constexpr static unsigned Dim = FieldLHS::dim;
-
     public:
         using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
