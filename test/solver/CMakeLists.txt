@@ -82,6 +82,13 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable (TestNullSolver TestNullSolver.cpp)
+    target_link_libraries (
+        TestNullSolver
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:
