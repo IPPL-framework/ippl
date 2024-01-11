@@ -13,7 +13,6 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
 #include "PoissonSolvers/NullSolver.h"

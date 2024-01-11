@@ -8,13 +8,6 @@
 #ifndef IPPL_NULL_SOLVER_H
 #define IPPL_NULL_SOLVER_H
 
-#include <Kokkos_MathematicalConstants.hpp>
-
-#include "Types/ViewTypes.h"
-
-#include "FFT/FFT.h"
-#include "FieldLayout/FieldLayout.h"
-#include "Index/NDIndex.h"
 #include "Poisson.h"
 
 namespace ippl {
