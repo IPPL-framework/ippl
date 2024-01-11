@@ -4,6 +4,7 @@ set (_SRCS
 set (_HDRS
     PoissonCG.h
     Poisson.h
+    NullSolver.h
 )
 
 if (ENABLE_FFT)
