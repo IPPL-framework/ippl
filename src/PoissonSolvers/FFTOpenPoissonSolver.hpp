@@ -555,7 +555,6 @@ namespace ippl {
 
                     solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection, ldom1,
                                 nghost1, view1, fd_m, requests);
-
                 }
             }
 
@@ -584,7 +583,6 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
-            Comm->barrier();
 
         } else {
             Kokkos::parallel_for(
@@ -654,8 +652,9 @@ namespace ippl {
                     case Algorithm::DCT_VICO:
                         rho2_mr = rho2_mr * (1.0 / 4.0);
                         break;
-                    default: 
-                        throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                    default:
+                        throw IpplException(
+                            "FFTOpenPoissonSolver::initializeFields()",
                             "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
                             "supported for open BCs");
                 }
@@ -682,7 +681,6 @@ namespace ippl {
 
                         solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection, ldom2,
                                     nghost2, view2, fd_m, requests);
-
                     }
                 }
 
@@ -712,7 +710,6 @@ namespace ippl {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
-                Comm->barrier();
 
             } else {
                 Kokkos::parallel_for(
@@ -813,8 +810,9 @@ namespace ippl {
                         case Algorithm::DCT_VICO:
                             rho2_mr = rho2_mr * (1.0 / 4.0);
                             break;
-                        default: 
-                            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                        default:
+                            throw IpplException(
+                                "FFTOpenPoissonSolver::initializeFields()",
                                 "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
                                 "supported for open BCs");
                     }
@@ -840,7 +838,6 @@ namespace ippl {
 
                             solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection,
                                         ldom2, nghost2, view2, fd_m, requests);
-
                         }
                     }
 
@@ -870,7 +867,6 @@ namespace ippl {
                     if (requests.size() > 0) {
                         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                     }
-                    Comm->barrier();
 
                 } else {
                     Kokkos::parallel_for(
@@ -972,8 +968,9 @@ namespace ippl {
                             case Algorithm::DCT_VICO:
                                 rho2_mr = rho2_mr * (1.0 / 4.0);
                                 break;
-                            default: 
-                                throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                            default:
+                                throw IpplException(
+                                    "FFTOpenPoissonSolver::initializeFields()",
                                     "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
                                     "supported for open BCs");
                         }
@@ -999,7 +996,6 @@ namespace ippl {
 
                                 solver_send(IPPL_SOLVER_SEND, OPEN_SOLVER_TAG, 0, i, intersection,
                                             ldom2, nghost2, view2, fd_m, requests);
-
                             }
                         }
 
@@ -1029,7 +1025,6 @@ namespace ippl {
                         if (requests.size() > 0) {
                             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                         }
-                        Comm->barrier();
 
                     } else {
                         Kokkos::parallel_for(
@@ -1448,7 +1443,6 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 0, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1467,7 +1461,6 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 1, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1486,7 +1479,6 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 2, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1505,7 +1497,6 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 3, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1526,7 +1517,6 @@ namespace ippl {
 
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 4, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1546,7 +1536,6 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 5, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1566,7 +1555,6 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 6, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
 
@@ -1588,7 +1576,6 @@ namespace ippl {
                     intersection = ldom_g.intersect(domain4);
                     solver_send(IPPL_VICO_SEND, VICO_SOLVER_TAG, 7, i, intersection, ldom_g,
                                 nghost_g, view_g, fd_m, requests);
-
                 }
             }
         }
@@ -1603,7 +1590,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 0, i, intersection, ldom, nghost,
                                 view, fd_m);
-
                 }
             }
 
@@ -1627,7 +1613,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 1, i, intersection, ldom, nghost,
                                 view, fd_m, true, false, false);
-
                 }
             }
 
@@ -1651,7 +1636,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 2, i, intersection, ldom, nghost,
                                 view, fd_m, false, true, false);
-
                 }
             }
 
@@ -1675,7 +1659,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 3, i, intersection, ldom, nghost,
                                 view, fd_m, false, false, true);
-
                 }
             }
 
@@ -1703,7 +1686,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 4, i, intersection, ldom, nghost,
                                 view, fd_m, true, true, false);
-
                 }
             }
 
@@ -1731,7 +1713,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 5, i, intersection, ldom, nghost,
                                 view, fd_m, false, true, true);
-
                 }
             }
 
@@ -1759,7 +1740,6 @@ namespace ippl {
 
                     solver_recv(IPPL_VICO_RECV, VICO_SOLVER_TAG, 6, i, intersection, ldom, nghost,
                                 view, fd_m, true, false, true);
-
                 }
             }
 
@@ -1798,7 +1778,6 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        Comm->barrier();
     };
 
     // CommunicateVico for DCT_VICO (2N+1 to 2N)
@@ -1809,7 +1788,6 @@ namespace ippl {
         const int nghost) {
         const auto& lDomains2   = layout2_m->getHostLocalDomains();
         const auto& lDomains2n1 = layout2n1_m->getHostLocalDomains();
-
 
         std::vector<MPI_Request> requests(0);
         const int ranks = ippl::Comm->size();
@@ -2205,6 +2183,5 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
-        ippl::Comm->barrier();
     };
 }  // namespace ippl
