@@ -109,6 +109,12 @@ namespace ippl {
     }
 
     template <typename ComplexField>
+    void FFT<CCTransform, ComplexField>::warmup(ComplexField& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
+    }
+
+    template <typename ComplexField>
     void FFT<CCTransform, ComplexField>::transform(TransformDirection direction, ComplexField& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
@@ -188,6 +194,12 @@ namespace ippl {
     }
 
     template <typename RealField>
+    void FFT<RCTransform, RealField>::warmup(RealField& f, ComplexField& g) {
+        this->transform(FORWARD, f, g);
+        this->transform(BACKWARD, f, g);
+    }
+
+    template <typename RealField>
     void FFT<RCTransform, RealField>::transform(TransformDirection direction, RealField& f,
                                                 ComplexField& g) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
@@ -251,13 +263,19 @@ namespace ippl {
     }
 
     template <typename Field>
+    void FFT<SineTransform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
+    }
+
+    template <typename Field>
     void FFT<SineTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == FORWARD) {
-                    f = f / 8.0;
-                }
-        #endif
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -296,21 +314,27 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == BACKWARD) {
-                    f = f * 8.0;
-                }
-        #endif
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
+    }
+
+    template <typename Field>
+    void FFT<CosTransform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
     }
 
     template <typename Field>
     void FFT<CosTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == FORWARD) {
-                    f = f / 8.0;
-                }
-        #endif
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -349,26 +373,32 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == BACKWARD) {
-                    f = f * 8.0;
-                }
-        #endif
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
+    }
+
+    template <typename Field>
+    void FFT<Cos1Transform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
     }
 
     template <typename Field>
     void FFT<Cos1Transform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
-        /**
-         * This rescaling is needed to match the normalization constant
-         * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
-         */
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == FORWARD) {
-                    f = f / 8.0;
-                }
-        #endif
+/**
+ * This rescaling is needed to match the normalization constant
+ * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+ */
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -408,15 +438,15 @@ namespace ippl {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
 
-        /**
-         * This rescaling is needed to match the normalization constant
-         * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
-         */
-        #ifdef Heffte_ENABLE_FFTW
-                if (direction == BACKWARD) {
-                    f = f * 8.0;
-                }
-        #endif
+/**
+ * This rescaling is needed to match the normalization constant
+ * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+ */
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
     }
 
 }  // namespace ippl
