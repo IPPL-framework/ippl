@@ -177,6 +177,12 @@ namespace ippl {
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(ComplexField& f);
+
+        /*!
          * Perform in-place FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute (and overwrite)
@@ -210,6 +216,13 @@ namespace ippl {
         FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute
+         * @param g Field in which to store the transformation
+         */
+        void warmup(RealField& f, ComplexField& g);
+
+        /*!
          * Perform FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute
@@ -234,6 +247,12 @@ namespace ippl {
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
+
+        /*!
          * Perform in-place FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute (and overwrite)
@@ -253,6 +272,12 @@ namespace ippl {
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
+
+        /*!
          * Perform in-place FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute (and overwrite)
@@ -270,6 +295,12 @@ namespace ippl {
     public:
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
+
+        /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
 
         /*!
          * Perform in-place FFT
