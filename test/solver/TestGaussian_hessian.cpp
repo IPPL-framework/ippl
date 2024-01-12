@@ -311,6 +311,8 @@ void compute_convergence(std::string algorithm, int pt) {
         params.add("algorithm", Solver_t<T>::HOCKNEY);
     } else if (algorithm == "VICO") {
         params.add("algorithm", Solver_t<T>::VICO);
+    } else if (algorithm == "DCT_VICO") {
+        params.add("algorithm", Solver_t<T>::DCT_VICO);
     } else {
         throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
     }
@@ -436,6 +438,7 @@ int main(int argc, char* argv[]) {
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
