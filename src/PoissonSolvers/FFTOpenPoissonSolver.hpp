@@ -464,12 +464,12 @@ namespace ippl {
         IpplTimings::startTimer(warmup);
 
         // "empty" transforms to warmup all the FFTs
-        fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
+        fft_m->warmup(rho2_mr, rho2tr_m);
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-            fft4n_m->transform(FORWARD, grnL_m);
+            fft4n_m->warmup(grnL_m);
         }
         if (alg == Algorithm::DCT_VICO) {
-            fft2n1_m->transform(FORWARD, grn2n1_m);
+            fft2n1_m->warmup(grn2n1_m);
         }
 
         IpplTimings::stopTimer(warmup);
