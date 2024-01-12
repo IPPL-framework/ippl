@@ -1086,6 +1086,7 @@ namespace ippl {
 
             // size of truncation window
             L_sum = std::sqrt(L_sum);
+            // we choose a window 10% larger than domain (arbitrary choice)
             L_sum = 1.1 * L_sum;
 
             // initialize grnL_m
