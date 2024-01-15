@@ -156,21 +156,13 @@ namespace ippl {
         template <typename E>
         struct meta_upper_and_lower_laplace
             : public Expression<meta_upper_and_lower_laplace<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)
-                                    + 2 * sizeof(typename E::Layout_t::NDIndex_t)
-                                    + sizeof(unsigned)> {
+                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_upper_and_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector,
-                                         unsigned nghosts,
-                                         const typename E::Layout_t::NDIndex_t& ldom,
-                                         const typename E::Layout_t::NDIndex_t& domain)
+            meta_upper_and_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
-                , hvector_m(hvector)
-                , nghosts_m(nghosts)
-                , ldom_m(ldom)
-                , domain_m(domain) {}
+                , hvector_m(hvector) {}
 
             /*
              * n-dimensional upper+lower triangular Laplacian
@@ -192,15 +184,9 @@ namespace ippl {
             }
 
         private:
-            using Mesh_t      = typename E::Mesh_t;
-            using Layout_t    = typename E::Layout_t;
-            using vector_type = typename Mesh_t::vector_type;
-            using domain_type = typename Layout_t::NDIndex_t;
+            using vector_type = typename E::Mesh_t::vector_type;
             const E u_m;
             const vector_type hvector_m;
-            const unsigned nghosts_m;
-            const domain_type ldom_m;
-            const domain_type domain_m;
         };
     }  // namespace detail
 
@@ -231,17 +217,7 @@ namespace ippl {
         BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type& mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        const auto& layout = u.getLayout();
-        unsigned nghosts   = u.getNghost();
-        const auto& ldom   = layout.getLocalNDIndex();
-        const auto& domain = layout.getDomain();
-        return detail::meta_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return lower_laplace_no_comm(u);
     }
 
     /*!
@@ -277,17 +253,7 @@ namespace ippl {
         BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type& mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        const auto& layout = u.getLayout();
-        unsigned nghosts   = u.getNghost();
-        const auto& ldom   = layout.getLocalNDIndex();
-        const auto& domain = layout.getDomain();
-        return detail::meta_upper_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return upper_laplace_no_comm(u);
     }
 
     /*!
@@ -323,17 +289,7 @@ namespace ippl {
         BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
-        using mesh_type = typename Field::Mesh_t;
-        mesh_type& mesh = u.get_mesh();
-        typename mesh_type::vector_type hvector(0);
-        for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
-        }
-        const auto& layout = u.getLayout();
-        unsigned nghosts   = u.getNghost();
-        const auto& ldom   = layout.getLocalNDIndex();
-        const auto& domain = layout.getDomain();
-        return detail::meta_upper_and_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return upper_and_lower_laplace_no_comm(u);
     }
 
     /*!
@@ -350,11 +306,7 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
         }
-        const auto& layout = u.getLayout();
-        unsigned nghosts   = u.getNghost();
-        const auto& ldom   = layout.getLocalNDIndex();
-        const auto& domain = layout.getDomain();
-        return detail::meta_upper_and_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return detail::meta_upper_and_lower_laplace<Field>(u, hvector);
     }
 
     /*!
