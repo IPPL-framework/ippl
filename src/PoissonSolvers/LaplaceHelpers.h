@@ -79,6 +79,9 @@ namespace ippl {
                     coords[d] += 2;
                     auto&& right = apply(u_m, coords);
 
+                    // not_left_boundary and right_boundary are boolean values
+                    // Because of periodic boundary conditions we need to add this boolean mask to
+                    // obtain the lower triangular part of the Laplace Operator
                     res += hvector_m[d] * (not_left_boundary * left + right_boundary * right);
                 }
                 return res;
@@ -136,6 +139,9 @@ namespace ippl {
                     coords[d] += 2;
                     auto&& right = apply(u_m, coords);
 
+                    // left_boundary and not_right_boundary are boolean values
+                    // Because of periodic boundary conditions we need to add this boolean mask to
+                    // obtain the upper triangular part of the Laplace Operator
                     res += hvector_m[d] * (left_boundary * left + not_right_boundary * right);
                 }
                 return res;
