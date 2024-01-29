@@ -6,6 +6,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "AlpineManager.h"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -15,202 +16,129 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
-const char* TestName = "PenningTrap";
-
-class PenningTrapManager
-    : public ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>,
-                              LoadBalancer<double, 3>> {
+template <typename T, unsigned Dim>
+class PenningTrapManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
-private:
-    size_type totalP;
-    int nt;
-    Vector_t<int, Dim> nr;
-    double lbt;
-    std::string solver;
-    std::string step_method;
-public:
-    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& step_method_)
-        : ippl::PicManager<double, 3, ParticleContainer<double, 3>, FieldContainer<double, 3>, LoadBalancer<double, 3>>()
-        , totalP(totalP_)
-        , nt(nt_)
-        , nr(nr_)
-        , lbt(lbt_)
-        , solver(solver_)
-        , step_method(step_method_){}
+
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
+                       double lbt_, std::string& solver_, std::string& stepMethod_)
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+
     ~PenningTrapManager(){}
+
 private:
-    double loadbalancethreshold_m;
-    double time_m;
-    double dt;
-    int it;
-    Vector_t<double, Dim> rmin;
-    Vector_t<double, Dim> rmax;
-    Vector_t<double, Dim> length;
-    Vector_t<double, Dim> hr;
-    double Q;
-    double Bext;
-    Vector_t<double, Dim> origin;
-    unsigned int nrMax;
-    double dxFinest;
-    bool isAllPeriodic;
-    bool isFirstRepartition;
-    double alpha;
-    double DrInv;
-    double rhoNorm_m;
-    ippl::NDIndex<Dim> domain;
-    std::array<bool, Dim> decomp;
+    Vector_t<double, Dim> length_m;
+    double Bext_m;
+    unsigned int nrMax_m;
+    double dxFinest_m;
+    double alpha_m;
+    double DrInv_m;
 
 public:
-    size_type getTotalP() const { return totalP; }
 
-    void setTotalP(size_type totalP_) { totalP = totalP_; }
-
-    int getNt() const { return nt; }
-
-    void setNt(int nt_) { nt = nt_; }
-
-    const std::string& getSolver() const { return solver; }
-
-    void setSolver(const std::string& solver_) { solver = solver_; }
-
-    double getLoadBalanceThreshold() const { return lbt; }
-
-    void setLoadBalanceThreshold(double lbt_) { lbt = lbt_; }
-
-    const std::string& getStepMethod() const { return step_method; }
-
-    void setStepMethod(const std::string& step_method_) { step_method = step_method_; }
-
-    const Vector_t<int, Dim>& getNr() const { return nr; }
-
-    void setNr(const Vector_t<int, Dim>& nr_) { nr = nr_; }
-
-    double getTime() const { return time_m; }
-
-    void setTime(double time_) { time_m = time_; }
-
-    void pre_step() override {
-        Inform m("Pre-step");
-        m << "Done" << endl;
-    }
-    void post_step() override {
-        // Update time
-        this->time_m += this->dt;
-        this->it++;
-        // wrtie solution to output file
-        this->dump();
-
-        Inform m("Post-step:");
-        m << "Finished time step: " << this->it << " time: " << this->time_m << endl;
-    }
     void pre_run() override {
         Inform m("Pre Run");
         for (unsigned i = 0; i < Dim; i++) {
-            this->domain[i] = ippl::Index(this->nr[i]);
+            this->domain_m[i] = ippl::Index(this->nr_m[i]);
         }
-        decomp.fill(true);
+        this->decomp_m.fill(true);
 
-        this->rmin = 0;
-        this->rmax = 20;
+        this->rmin_m = 0;
+        this->rmax_m = 20;
 
-        this->length = this->rmax - this->rmin;
-        this->hr     = this->length / this->nr;
+        length_m = this->rmax_m - this->rmin_m;
+        this->hr_m     = length_m / this->nr_m;
 
-        this->Q      = -1562.5;
-        this->Bext   = 5.0;
-        this->origin = this->rmin;
+        this->Q_m      = -1562.5;
+        Bext_m   = 5.0;
+        this->origin_m = this->rmin_m;
 
-        this->nrMax    = 2048;  // Max grid size in our studies
-        this->dxFinest = this->length[0] / this->nrMax;
-        this->dt       = 0.5 * this->dxFinest;  // size of timestep
+        nrMax_m    = 2048;  // Max grid size in our studies
+        dxFinest_m = length_m[0] / nrMax_m;
+        this->dt_m = 0.5 * dxFinest_m;  // size of timestep
 
-        this->it = 0;
+        this->it_m   = 0;
+        this->time_m = 0.0;
 
-        this->alpha = -0.5 * this->dt;
-        this->DrInv = 1.0 / (1 + (std::pow((this->alpha * this->Bext), 2)));
+        this->alpha_m = -0.5 * this->dt_m;
+        DrInv_m = 1.0 / (1 + (std::pow((this->alpha_m * Bext_m), 2)));
 
-        m << "Discretization:" << endl
-          << "nt " << this->nt << " Np= " << this->totalP << " grid = " << this->nr << endl;
+        m << "Discretization:" << endl << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
-        this->isAllPeriodic = true;
+        this->isAllPeriodic_m = true;
 
-        std::shared_ptr<Mesh_t<Dim>> mesh = std::make_shared<Mesh_t<Dim>>(this->domain, this->hr, this->origin);
+        this->setFieldContainer( std::make_shared<FieldContainer_t>( this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m, this->isAllPeriodic_m) );
 
-        std::shared_ptr<FieldLayout_t<Dim>> FL =
-            std::make_shared<FieldLayout_t<Dim>>(MPI_COMM_WORLD, this->domain, this->decomp, this->isAllPeriodic);
+        this->setParticleContainer( std::make_shared<ParticleContainer_t>( this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()) );
 
-        std::shared_ptr<PLayout_t<T, Dim>> PL = std::make_shared<PLayout_t<T, Dim>>(*FL, *mesh);
+        this->fcontainer_m->initializeFields(this->solver_m);
 
-        this->pcontainer_m = std::make_shared<ParticleContainer_t>(PL);
-
-        this->fcontainer_m =
-            std::make_shared<FieldContainer_t>(this->hr, this->rmin, this->rmax, this->decomp);
-
-        this->fcontainer_m->initializeFields(mesh, FL);
-
-        this->fsolver_m = std::make_shared<FieldSolver_t>(this->solver, &this->fcontainer_m->getRho(),
-            &this->fcontainer_m->getE());
+        this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
 
         this->fsolver_m->initSolver();
 
-        this->loadbalancer_m = std::make_shared<LoadBalancer_t>(
-            this->lbt, this->fcontainer_m, this->pcontainer_m, this->fsolver_m);
+        this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-        this->setParticleContainer(pcontainer_m);
+        initializeParticles();
 
-        this->setFieldContainer(fcontainer_m);
-
-        this->setFieldSolver(fsolver_m);
-
-        this->setLoadBalancer(loadbalancer_m);
-
-        this ->initializeParticles(mesh, FL);
+        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
+        IpplTimings::startTimer(DummySolveTimer);
 
         this->fcontainer_m->getRho() = 0.0;
 
         this->fsolver_m->runSolver();
 
+        IpplTimings::stopTimer(DummySolveTimer);
+
         this->par2grid();
+
+        static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+        IpplTimings::startTimer(SolveTimer);
 
         this->fsolver_m->runSolver();
 
+        IpplTimings::stopTimer(SolveTimer);
+
         this->grid2par();
+
+        this->dump();
 
         m << "Done";
     }
 
-    void initializeParticles(std::shared_ptr<Mesh_t<Dim>> mesh_m, std::shared_ptr<FieldLayout_t<Dim>> FL_m){
+    void initializeParticles(){
         Inform m("Initialize Particles");
 
+        auto *mesh = &this->fcontainer_m->getMesh();
+        auto *FL = &this->fcontainer_m->getFL();
         Vector_t<double, Dim> mu, sd;
         for (unsigned d = 0; d < Dim; d++) {
-            mu[d] = 0.5 * this->length[d] + this->origin[d];
+            mu[d] = 0.5 * length_m[d] + this->origin_m[d];
         }
-        sd[0] = 0.15 * this->length[0];
-        sd[1] = 0.05 * this->length[1];
-        sd[2] = 0.20 * this->length[2];
+        sd[0] = 0.15 * length_m[0];
+        sd[1] = 0.05 * length_m[1];
+        sd[2] = 0.20 * length_m[2];
 
         using DistR_t = ippl::random::NormalDistribution<double, Dim>;
-        // const double parR[2*Dim] = {mu[0], sd[0], mu[1], sd[1], mu[2], sd[2]};
-        double* parR = new double[2 * Dim];
-        parR[0]      = mu[0];
-        parR[1]      = sd[0];
-        parR[2]      = mu[1];
-        parR[3]      = sd[1];
-        parR[4]      = mu[2];
-        parR[5]      = sd[2];
+        double parR[2 * Dim];
+        for(unsigned int i=0; i<Dim; i++){
+            parR[i * 2   ]  = mu[i];
+            parR[i * 2 + 1] = sd[i];
+        }
         DistR_t distR(parR);
 
-        Vector_t<double, Dim> hr_m     = this->hr;
-        Vector_t<double, Dim> origin_m = this->origin;
-        if ((this->loadbalancethreshold_m != 1.0) && (ippl::Comm->size() > 1)) {
+        Vector_t<double, Dim> hr     = this->hr_m;
+        Vector_t<double, Dim> origin = this->origin_m;
+        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
+        if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
-            this->isFirstRepartition       = true;
-            const ippl::NDIndex<Dim>& lDom = FL_m->getLocalNDIndex();
+            IpplTimings::startTimer(domainDecomposition);
+            this->isFirstRepartition_m     = true;
+            const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
             const int nghost               = this->fcontainer_m->getRho().getNghost();
             auto rhoview                   = this->fcontainer_m->getRho().getView();
 
@@ -220,7 +148,7 @@ public:
                 KOKKOS_LAMBDA (const index_array_type& args) {
                     // local to global index conversion
                     Vector_t<double, Dim> xvec =
-                        (args + lDom.first() - nghost + 0.5) * hr_m + origin_m;
+                        (args + lDom.first() - nghost + 0.5) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
@@ -229,14 +157,18 @@ public:
 
             Kokkos::fence();
 
-            this->loadbalancer_m->initializeORB(FL_m.get(), mesh_m.get());
-            this->loadbalancer_m->repartition(FL_m.get(), mesh_m.get(), this->isFirstRepartition);
+            this->loadbalancer_m->initializeORB(FL, mesh);
+            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
+            IpplTimings::stopTimer(domainDecomposition);
         }
+
+	static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
+        IpplTimings::startTimer(particleCreation);
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL_m, *mesh_m);
-        size_type totalP_m = this->totalP;
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh);
+        size_type totalP = this->totalP_m;
         int seed           = 42;
         using size_type    = ippl::detail::size_type;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
@@ -244,32 +176,37 @@ public:
         using samplingR_t =
             ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace,
                                                    DistR_t>;
-        Vector_t<double, Dim> rmin_m = rmin;
-        Vector_t<double, Dim> rmax_m = rmax;
-        samplingR_t samplingR(distR, rmax_m, rmin_m, rlayout, totalP_m);
+        Vector_t<double, Dim> rmin = this->rmin_m;
+        Vector_t<double, Dim> rmax = this->rmax_m;
+        samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
         size_type nlocal = samplingR.getLocalSamplesNum();
 
         this->pcontainer_m->create(nlocal);
 
-        view_type* R_m = &this->pcontainer_m->R.getView();
-        samplingR.generate(*R_m, rand_pool64);
+        view_type* R = &(this->pcontainer_m->R.getView());
+        samplingR.generate(*R, rand_pool64);
 
-        view_type* P_m = &this->pcontainer_m->getP().getView();
+        view_type* P = &(this->pcontainer_m->P.getView());
 
         double muP[Dim] = {0.0, 0.0, 0.0};
         double sdP[Dim] = {1.0, 1.0, 1.0};
-        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P_m, rand_pool64, muP, sdP));
+        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P, rand_pool64, muP, sdP));
 
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        this->pcontainer_m->getQ() = this->Q / this->totalP;
+        IpplTimings::stopTimer(particleCreation);
+
+        this->pcontainer_m->q = this->Q_m / this->totalP_m;
         m << "particles created and initial conditions assigned " << endl;
     }
 
     void advance() override {
-        if (this->step_method == "LeapFrog") {
+        if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
+        }
+	else{
+            throw IpplException(TestName, "Step method is not set/recognized!");
         }
     }
 
@@ -278,145 +215,118 @@ public:
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
         // an attribute
-        Inform m("LeapFrog");
+        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
+        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
 
-        double alpha_m = this->alpha;
-        double Bext_m = this->Bext;
-        double DrInv_m = this->DrInv;
-        double V0  = 30 * this->length[2];
-        Vector_t<double, Dim> length_m = this->length;
-        Vector_t<double, Dim> origin_m = origin;
-        double dt_m = this->dt;
+        double alpha = this->alpha_m;
+        double Bext = this->Bext_m;
+        double DrInv = this->DrInv_m;
+        double V0  = 30 * this->length_m[2];
+        Vector_t<double, Dim> length = this->length_m;
+        Vector_t<double, Dim> origin = this->origin_m;
+        double dt = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
 
+        IpplTimings::startTimer(PTimer);
         auto Rview = pc->R.getView();
-        auto Pview = pc->getP().getView();
-        auto Eview = pc->getE().getView();
+        auto Pview = pc->P.getView();
+        auto Eview = pc->E.getView();
         Kokkos::parallel_for(
                "Kick1", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                double Eext_x = -(Rview(j)[0] - origin_m[0] - 0.5 * length_m[0])
-                                * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-                double Eext_y = -(Rview(j)[1] - origin_m[1] - 0.5 * length_m[1])
-                                * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-                double Eext_z = (Rview(j)[2] - origin_m[2] - 0.5 * length_m[2])
-                                * (V0 / (Kokkos::pow(length_m[2], 2)));
+                double Eext_x = -(Rview(j)[0] - origin[0] - 0.5 * length[0])
+                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                double Eext_y = -(Rview(j)[1] - origin[1] - 0.5 * length[1])
+                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
+                double Eext_z = (Rview(j)[2] - origin[2] - 0.5 * length[2])
+                                * (V0 / (Kokkos::pow(length[2], 2)));
 
                 Eext_x += Eview(j)[0];
                 Eext_y += Eview(j)[1];
                 Eext_z += Eview(j)[2];
 
-                Pview(j)[0] += alpha_m * (Eext_x + Pview(j)[1] * Bext_m);
-                Pview(j)[1] += alpha_m * (Eext_y - Pview(j)[0] * Bext_m);
-                Pview(j)[2] += alpha_m * Eext_z;
+                Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
+                Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
+                Pview(j)[2] += alpha * Eext_z;
         });
         Kokkos::fence();
         ippl::Comm->barrier();
+        IpplTimings::stopTimer(PTimer);
 
         // drift
-        pc->R = pc->R + dt_m * pc->getP();
+        IpplTimings::startTimer(RTimer);
+        pc->R = pc->R + dt * pc->P;
+        IpplTimings::stopTimer(RTimer);
 
         // Since the particles have moved spatially update them to correct processors
+        IpplTimings::startTimer(updateTimer);
         pc->update();
+        IpplTimings::stopTimer(updateTimer);
 
-        size_type totalP_m = this->totalP;
-        int it_m = this->it;
-        bool isFirstRepartition_m = false;
-        if (loadbalancer_m->balance(totalP_m, it_m + 1)) {
+        size_type totalP = this->totalP_m;
+        int it = this->it_m;
+        bool isFirstRepartition = false;
+        if (this->loadbalancer_m->balance(totalP, it + 1)) {
+            IpplTimings::startTimer(domainDecomposition);
             auto* mesh = &fc->getRho().get_mesh();
             auto* FL = &fc->getFL();
-            loadbalancer_m->repartition(FL, mesh, isFirstRepartition_m);
+            this->loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
+            IpplTimings::stopTimer(domainDecomposition);
         }
 
         // scatter the charge onto the underlying grid
         this->par2grid();
 
         // Field solve
+        IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
+        IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
         this->grid2par();
 
+        IpplTimings::startTimer(PTimer);
         auto R2view = pc->R.getView();
-        auto P2view = pc->getP().getView();
-        auto E2view = pc->getE().getView();
+        auto P2view = pc->P.getView();
+        auto E2view = pc->E.getView();
         Kokkos::parallel_for(
            "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-           double Eext_x = -(R2view(j)[0] - origin_m[0] - 0.5 * length_m[0])
-                         * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-           double Eext_y = -(R2view(j)[1] - origin_m[1] - 0.5 * length_m[1])
-                          * (V0 / (2 * Kokkos::pow(length_m[2], 2)));
-           double Eext_z = (R2view(j)[2] - origin_m[2] - 0.5 * length_m[2])
-                           * (V0 / (Kokkos::pow(length_m[2], 2)));
+           double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
+                         * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
+                          * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
+                           * (V0 / (Kokkos::pow(length[2], 2)));
 
            Eext_x += E2view(j)[0];
            Eext_y += E2view(j)[1];
            Eext_z += E2view(j)[2];
 
-           P2view(j)[0] = DrInv_m * (P2view(j)[0] + alpha_m * (Eext_x + P2view(j)[1] * Bext_m + alpha_m * Bext_m * Eext_y));
-           P2view(j)[1] = DrInv_m * (P2view(j)[1] + alpha_m * (Eext_y - P2view(j)[0] * Bext_m - alpha_m * Bext_m * Eext_x));
-           P2view(j)[2] += alpha_m * Eext_z;
+           P2view(j)[0] = DrInv * (P2view(j)[0] + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+           P2view(j)[1] = DrInv * (P2view(j)[1] + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+           P2view(j)[2] += alpha * Eext_z;
         });
         Kokkos::fence();
         ippl::Comm->barrier();
+        IpplTimings::stopTimer(PTimer);
     }
 
-    void par2grid() override { scatterCIC(); }
-
-    void grid2par() override { gatherCIC(); }
-
-    void gatherCIC() {
-        using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        Base::particle_position_type *E_p = &this->pcontainer_m->getE();
-        Base::particle_position_type *R_m = &this->pcontainer_m->R;
-        VField_t<T, Dim> *E_f             = &this->fcontainer_m->getE();
-        gather(*E_p, *E_f, *R_m);
+    void dump() override {
+        static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
+        IpplTimings::startTimer(dumpDataTimer);
+        dumpData();
+        IpplTimings::stopTimer(dumpDataTimer);
     }
-
-    void scatterCIC() {
-        Inform m("scatter ");
-        this->fcontainer_m->getRho() = 0.0;
-
-        using Base                        = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-        ippl::ParticleAttrib<double> *q_m = &this->pcontainer_m->getQ();
-        Base::particle_position_type *R_m = &this->pcontainer_m->R;
-        Field_t<Dim> *rho_m               = &this->fcontainer_m->getRho();
-        double Q_m                        = this->Q;
-        Vector_t<double, Dim> rmin_m      = rmin;
-        Vector_t<double, Dim> rmax_m      = rmax;
-        Vector_t<double, Dim> hr_m        = hr;
-
-        scatter(*q_m, *rho_m, *R_m);
-        m << std::fabs((Q_m - (*rho_m).sum()) / Q_m) << endl;
-
-        size_type Total_particles = 0;
-        size_type local_particles = pcontainer_m->getLocalNum();
-
-        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<size_type>());
-
-        double cellVolume = std::reduce(hr_m.begin(), hr_m.end(), 1., std::multiplies<double>());
-        (*rho_m)          = (*rho_m) / cellVolume;
-
-        this->rhoNorm_m = norm(*rho_m);
-
-        // rho = rho_e - rho_i (only if periodic BCs)
-        if (this->fsolver_m->stype_m != "OPEN") {
-            double size = 1;
-            for (unsigned d = 0; d < Dim; d++) {
-                size *= rmax_m[d] - rmin_m[d];
-            }
-            *rho_m = *rho_m - (Q_m / size);
-        }
-    }
-
-    void dump() { dumpData(); }
 
     void dumpData() {
-        auto Pview                   = this->pcontainer_m->getP().getView();
+        auto Pview                   = this->pcontainer_m->P.getView();
         double kinEnergy             = 0.0;
         double potEnergy             = 0.0;
         this->fcontainer_m->getRho() = dot(this->fcontainer_m->getE(), this->fcontainer_m->getE());
-        potEnergy = 0.5 * this->hr[0] * this->hr[1] * this->hr[2] * this->fcontainer_m->getRho().sum();
+        potEnergy = 0.5 * this->hr_m[0] * this->hr_m[1] * this->hr_m[2] * this->fcontainer_m->getRho().sum();
 
         Kokkos::parallel_reduce(
             "Particle Kinetic Energy", this->pcontainer_m->getLocalNum(),
@@ -466,7 +376,7 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (time_m == 0.0) {
+            if ( std::fabs(this->time_m) < 1e-14 ) {
                 csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";
@@ -474,7 +384,7 @@ public:
                 csvout << endl;
             }
 
-            csvout << time_m << " " << potEnergy << " " << gkinEnergy << " "
+            csvout << this->time_m << " " << potEnergy << " " << gkinEnergy << " "
                    << potEnergy + gkinEnergy << " " << this->rhoNorm_m << " ";
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << normE[d] << " ";
