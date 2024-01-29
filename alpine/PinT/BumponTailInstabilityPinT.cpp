@@ -436,7 +436,7 @@ int main(int argc, char *argv[]){
     static IpplTimings::TimerRef deepCopy = IpplTimings::getTimer("deepCopy");
     static IpplTimings::TimerRef finePropagator = IpplTimings::getTimer("finePropagator");
     static IpplTimings::TimerRef coarsePropagator = IpplTimings::getTimer("coarsePropagator");
-    //static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
+    static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
     static IpplTimings::TimerRef computeErrors = IpplTimings::getTimer("computeErrors");
     static IpplTimings::TimerRef initializeShapeFunctionPIF = IpplTimings::getTimer("initializeShapeFunctionPIF");
 
@@ -591,19 +591,25 @@ int main(int argc, char *argv[]){
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
     
-    double coarseTol = 1e-3;
-    double fineTol   = 1e-6;
+    IpplTimings::startTimer(particleCreation);
+
+    Pcoarse->create(nloc);
+    Pbegin->create(nloc);
+    Pend->create(nloc);
+
+    Pcoarse->q = Pcoarse->Q_m/Total_particles;
+   
+    IpplTimings::stopTimer(particleCreation);
+
+    
+    double coarseTol = std::atof(argv[17]);
+    double fineTol   = 1e-12;
     Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
     std::string coarse = "Coarse";
     std::string fine = "Fine";
     
     IpplTimings::startTimer(particleCreation);
 
-    Pcoarse->create(nloc);
-    Pbegin->create(nloc);
-    Pend->create(nloc);
-    
-    Pcoarse->q = Pcoarse->Q_m/Total_particles;
 
   
     //Pcoarse->initNUFFT(FLPIF);
@@ -892,13 +898,13 @@ int main(int argc, char *argv[]){
                 << " Perror: " << Perror
                 << endl;
 
-            //IpplTimings::startTimer(dumpData);
-            ////Pcoarse->writeError(Rerror, Perror, it+1);
-            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
-            ////if(Ippl::Comm->rank() == Ippl::Comm->size()-1) {
-            ////Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
-            ////}
-            //IpplTimings::stopTimer(dumpData);
+            IpplTimings::startTimer(dumpData);
+            //Pcoarse->writeError(Rerror, Perror, it+1);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            //if(Ippl::Comm->rank() == Ippl::Comm->size()-1) {
+            //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
+            //}
+            IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);
             

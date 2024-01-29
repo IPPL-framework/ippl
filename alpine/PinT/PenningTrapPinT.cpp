@@ -572,9 +572,18 @@ int main(int argc, char *argv[]){
     Pcoarse->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
     
+    IpplTimings::startTimer(particleCreation);
+
+    Pcoarse->create(nloc);
+    Pbegin->create(nloc);
+    Pend->create(nloc);
+
+    Pcoarse->q = Pcoarse->Q_m/Total_particles;
+   
+    IpplTimings::stopTimer(particleCreation);
     
-    double coarseTol = 1e-3;
-    double fineTol   = 1e-6;
+    double coarseTol = std::atof(argv[17]);
+    double fineTol   = 1e-12;
     Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
     std::string coarse = "Coarse";
     std::string fine = "Fine";
@@ -582,11 +591,6 @@ int main(int argc, char *argv[]){
     
     IpplTimings::startTimer(particleCreation);
     
-    Pcoarse->create(nloc);
-    Pbegin->create(nloc);
-    Pend->create(nloc);
-
-    Pcoarse->q = Pcoarse->Q_m/Total_particles;
     
     
     //Pcoarse->initNUFFT(FLPIF);
@@ -884,11 +888,11 @@ int main(int argc, char *argv[]){
                 << " Perror: " << Perror
                 << endl;
 
-            //IpplTimings::startTimer(dumpData);
+            IpplTimings::startTimer(dumpData);
             //Pcoarse->writeError(Rerror, Perror, it+1);
-            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             //Pcoarse->dumpParticleData(it+1, Pend->R, Pend->P, "Parareal");
-            //IpplTimings::stopTimer(dumpData);
+            IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);
 
