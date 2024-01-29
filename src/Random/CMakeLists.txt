@@ -9,6 +9,7 @@ set (_HDRS
     NormalDistribution.h
     Randn.h
     Randu.h
+    CorrRandn.h
     )
 
 include_DIRECTORIES (

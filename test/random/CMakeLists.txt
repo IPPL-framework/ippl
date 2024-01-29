@@ -34,6 +34,13 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable (TestUnboundedCorrNormal TestUnboundedCorrNormal.cpp)
+target_link_libraries (
+    TestUnboundedCorrNormal
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
