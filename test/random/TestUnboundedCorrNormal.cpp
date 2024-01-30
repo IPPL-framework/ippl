@@ -1,6 +1,6 @@
-// Testing Correlated Normal Distribution on unbounded domains
+// Testing Correlated Normal Distribution in unbounded domain
 //     Example:
-//     srun ./TestInverseTransformSamplingNormal --overallocate 2.0 --info 10
+//     srun ./TestUnboundedCorrNormal --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -31,32 +31,34 @@ using Matrix_t = ippl::Vector< ippl::Vector<double, Dim>, Dim>;
 
 void computeMeanCovariance(Vector_t &mu, Matrix_t &cov, view_type position, size_type ntotal) {
 
-    mu(0.0);
-    for (unsigned int i = 0; i < ntotal; i++) {
-        for (unsigned int j = 0; j < Dim; j++) {
-            mu[j] += position(i)[j];
-        }
-    }
-    for (unsigned int j = 0; j < Dim; j++) {
-        mu[j] /= ntotal;
-    }
+   double temp;
+   mu(0.0);
+   cov(0.0);
 
-    cov(0.0);
-    for (unsigned int i = 0; i < ntotal; i++) {
-        for (unsigned int j = 0; j < Dim; j++) {
-            for (unsigned int k = 0; k < Dim; k++) {
-                cov[j][k] += (position(i)[j] - mu[j]) * (position(i)[k] - mu[k]);
-            }
-        }
-    }
-    for (unsigned int j = 0; j < Dim; j++) {
+   for (unsigned int j = 0; j < Dim; j++) {
+        temp = 0.0;
+        Kokkos::parallel_reduce("mean", position.extent(0),
+                                KOKKOS_LAMBDA(const int i, double& valL) {
+            valL += position(i)[j];
+        }, Kokkos::Sum<double>(temp));
+        mu[j] = temp / ntotal;
+   }
+
+   for (unsigned int j = 0; j < Dim; j++) {
         for (unsigned int k = 0; k < Dim; k++) {
-            cov[j][k] /= (ntotal - 1); // Unbiased estimator
+            temp = 0.0;
+            Kokkos::parallel_reduce("cov", position.extent(0),
+                                KOKKOS_LAMBDA(const int i, double& valL) {
+               valL += (position(i)[j] - mu[j]) * (position(i)[k] - mu[k]);
+            }, Kokkos::Sum<double>(temp));
+            cov[j][k] = temp / ntotal;
         }
-    }
+   }
+
 }
 
 void write_error_in_moments(Vector_t &mu, Vector_t &mu_est, Matrix_t &cov, Matrix_t &cov_est){
+
     Inform csvout(NULL, "data/error_mean_CorrRandn.csv", Inform::APPEND);
     csvout.precision(16);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
