@@ -151,14 +151,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
             });
     }
 
-    // for (unsigned int i = 0; i < lhs.getView().extent(0); ++i) {
-    //     const ippl::Vector<unsigned, Dim> indices{i};
-    //     const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
-
-    //     std::cout << std::setw(15) << f_rhs(x);
-    // }
-    // std::cout << std::endl;
-
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
 

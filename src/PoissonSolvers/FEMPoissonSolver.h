@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using algo = PCG<lhs_type, FieldLHS, FieldRHS>;
+        using PCGSolverAlgorithm_t = PCG<lhs_type, FieldLHS, FieldRHS>;
 
         // FEM Space types
         using ElementType =
@@ -85,8 +85,8 @@ namespace ippl {
                 return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             };
 
-            algo_m.setOperator(algoOperator);
-            algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
+            pcg_algo_m.setOperator(algoOperator);
+            pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
@@ -99,16 +99,16 @@ namespace ippl {
          * the last time this solver was used
          * @return Iteration count of last solve
          */
-        int getIterationCount() { return algo_m.getIterationCount(); }
+        int getIterationCount() { return pcg_algo_m.getIterationCount(); }
 
         /**
          * Query the residue
          * @return Residue norm from last solve
          */
-        Tlhs getResidue() const { return algo_m.getResidue(); }
+        Tlhs getResidue() const { return pcg_algo_m.getResidue(); }
 
     protected:
-        algo algo_m = algo();
+        PCGSolverAlgorithm_t pcg_algo_m;
 
         virtual void setDefaultParameters() override {
             this->params_m.add("max_iterations", 1000);

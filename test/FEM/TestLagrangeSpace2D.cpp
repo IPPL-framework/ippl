@@ -7,7 +7,7 @@
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform out("Test LagrangeSpace1DMidpoint");
+        Inform out("Test LagrangeSpace2DMidpoint");
 
         const unsigned number_of_points_per_dim = 200;
 

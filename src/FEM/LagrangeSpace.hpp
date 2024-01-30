@@ -314,8 +314,8 @@ namespace ippl {
         // zero by default)
         FieldLHS resultField(field.get_mesh(), field.getLayout(), numGhosts);
 
-        bool checkEssentialBDCs = true;  // TODO get from field
-        // T bc_const_value        = 1.0;   // TODO get from field
+        bool checkEssentialBDCs = true;  // TODO get from field in the future
+        // T bc_const_value        = 1.0;   // TODO get from field (non-homogeneous BCs)
 
         // Allocate memory for the element matrix
         Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
@@ -341,6 +341,7 @@ namespace ippl {
         Vector<index_t, this->numElementDOFs> local_dofs;
         Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
 
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
         Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
             grad_b_q;
