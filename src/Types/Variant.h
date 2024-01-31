@@ -1,4 +1,4 @@
-#ifdef USE_ALTERNATE_VARIANT
+#ifdef USE_ALTERNATIVE_VARIANT
 // <variant> -*- C++ -*-
 
 // Copyright (C) 2016-2023 Free Software Foundation, Inc.

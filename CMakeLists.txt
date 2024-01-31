@@ -58,9 +58,9 @@ message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
-option(USE_ALTERNATE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
-if (USE_ALTERNATE_VARIANT)
-    add_definitions (-DUSE_ALTERNATE_VARIANT)
+option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
+if (USE_ALTERNATIVE_VARIANT)
+    add_definitions (-DUSE_ALTERNATIVE_VARIANT)
 endif()
 
 
