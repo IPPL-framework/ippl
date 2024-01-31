@@ -39,7 +39,7 @@ set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
-    set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G")
+    set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -G")
 endif()
 
 # Resolve all library dependencies
