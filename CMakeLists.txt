@@ -58,10 +58,16 @@ message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
+option(USE_ALTERNATE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
+if (USE_ALTERNATE_VARIANT)
+    add_definitions (-DUSE_ALTERNATE_VARIANT)
+endif()
+
+
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
-    find_package(Heffte 2.2.0 REQUIRED)
+    find_package (Heffte 2.2.0 REQUIRED)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
