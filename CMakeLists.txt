@@ -42,6 +42,13 @@ if ("${Kokkos_DEVICES}" MATCHES "CUDA")
     set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -G")
 endif()
 
+# Suppress erroneous buffer overflow warnings when compiling under GCC 12
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" MATCHES "12*")
+    add_compile_options (-Wno-stringop-overflow)
+    add_compile_options (-Wno-array-bounds)
+    add_compile_options (-Wno-restrict)
+endif()
+
 # Resolve all library dependencies
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
