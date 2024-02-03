@@ -183,7 +183,18 @@ int main(int argc, char* argv[]) {
     {
         using T = double;
 
+        unsigned dim = 3;
+
+        if (argc > 1 && std::atoi(argv[1]) == 1) {
+            dim = 1;
+        } else if (argc > 1 && std::atoi(argv[1]) == 2) {
+            dim = 2;
+        }
+
+        // const std::string filename = "sinus" + std::to_string(dim) + "d.dat";
+
         Inform msg("");
+        msg.setOutputLevel(5);
 
         // start the timer
         static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
@@ -209,40 +220,36 @@ int main(int argc, char* argv[]) {
         //         0.0, 1.0);
         // }
 
-        // 1D Sinusoidal
-        // for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-        //     testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>,
-        //     -1.0,
-        //                         1.0);
-        // }
+        if (dim == 1) {
+            // 1D Sinusoidal
+            dim = 1;
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+                testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0,
+                                    1.0);
+            }
+        } else if (dim == 2) {
+            // 2D Sinusoidal
+            dim = 2;
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+                testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0,
+                                    1.0);
+            }
+        } else {
+            // 3D Sinusoidal
+            const int n_arg = std::atoi(argv[1]);
+            std::cout << "size = " << (1 << n_arg) << std::endl;
 
-        // // 2D Sinusoidal
-        // for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-        //     testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>,
-        //     -1.0,
-        //                         1.0);
-        // }
-
-        // 3D Sinusoidal
-        const int n_arg = std::atoi(argv[1]);
-        std::cout << "size = " << (1 << n_arg) << std::endl;
-
-        for (int n = 1 << n_arg; n <= 1 << n_arg; n = n << 1) {
-            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
-                                1.0);
+            for (int n = 1 << n_arg; n <= 1 << n_arg; n = n << 1) {
+                testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
+                                    1.0);
+            }
         }
-
-        // 3D Gaussian
-        // for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
-        //     testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
-        // }
 
         // stop the timer
         IpplTimings::stopTimer(timer);
 
         // print
-        IpplTimings::print();
-        IpplTimings::print("fem_solver_timings.dat");
+        // IpplTimings::print();
     }
     ippl::finalize();
 

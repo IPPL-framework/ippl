@@ -19,11 +19,34 @@ namespace ippl {
             mesh_element_vertex_point_vec_t;
         typedef typename Element3D<T, NumVertices>::diag_matrix_vec_t diag_matrix_vec_t;
 
+        /**
+         * @brief Returns the coordinates of the vertices of the reference element.
+         *
+         * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, 3>, 8>)
+         */
         mesh_element_vertex_point_vec_t getLocalVertices() const override;
 
+        /**
+         * @brief Returns the Jacobian of the transformation matrix.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         * transform to.
+         *
+         * @return diag_matrix_vec_t (Vector<T, 3>) - A vector representing the diagonal elements of
+         * the Jacobian matrix
+         */
         diag_matrix_vec_t getTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const override;
 
+        /**
+         * @brief Returns the inverse of the Jacobian of the transformation matrix.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         * transform to.
+         *
+         * @return diag_matrix_vec_t (Vector<T, 3>) - A vector representing the diagonal elements of
+         *  the inverse Jacobian matrix
+         */
         diag_matrix_vec_t getInverseTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const override;
     };

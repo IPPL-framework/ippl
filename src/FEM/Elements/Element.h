@@ -28,8 +28,23 @@ namespace ippl {
         // a matrix defining a transformtaion in the local or global coordinate system
         typedef Vector<T, Dim> diag_matrix_vec_t;
 
+        /**
+         * @brief Pure virtual function to return the coordinates of the vertices of the reference
+         * element.
+         *
+         * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, Dim>, NumVertices>)
+         */
         virtual mesh_element_vertex_point_vec_t getLocalVertices() const = 0;
 
+        /**
+         * @brief Transforms a point from global to local coordinates.
+         *
+         * @param global_vertices A vector of the vertex indices of the global element to transform
+         * to in the mesh.
+         * @param point A point in global coordinates with respect to the global element.
+         *
+         * @return point_t
+         */
         point_t globalToLocal(const mesh_element_vertex_point_vec_t&, const point_t&) const;
 
         /**
@@ -49,9 +64,26 @@ namespace ippl {
         point_t localToGlobal(const mesh_element_vertex_point_vec_t& global_vertices,
                               const point_t& point) const;
 
+        /**
+         * @brief Returns the determinant of the transformation Jacobian.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         * transform to.
+         *
+         * @return T - The determinant of the transformation Jacobian
+         */
         T getDeterminantOfTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const;
 
+        /**
+         * @brief Returns the inverse of the transpose of the transformation Jacobian.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         *  transform to.
+         *
+         * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
+         * of the inverse transpose Jacobian matrix
+         */
         diag_matrix_vec_t getInverseTransposeTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const;
 
@@ -66,19 +98,53 @@ namespace ippl {
         bool isPointInRefElement(const Vector<T, Dim>& point) const;
 
     protected:
+        /**
+         * @brief Pure virtual function to return the Jacobian of the transformation matrix.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         * transform to.
+         *
+         * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
+         * of the Jacobian matrix
+         */
         virtual diag_matrix_vec_t getTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
 
+        /**
+         * @brief Pure virtual function to return the inverse of the Jacobian of the transformation
+         * matrix.
+         *
+         * @param global_vertices A vector of the vertex coordinates of the global element to
+         * transform to.
+         *
+         * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
+         * of the inverse Jacobian matrix
+         */
         virtual diag_matrix_vec_t getInverseTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
     };
 
+    /**
+     * @brief Base class for all 1D elements.
+     * @tparam T The type of the coordinates of the vertices of the element.
+     * @tparam NumVertices The number of vertices of the element.
+     */
     template <typename T, unsigned NumVertices>
     using Element1D = Element<T, 1, NumVertices>;
 
+    /**
+     * @brief Base class for all 2D elements.
+     * @tparam T The type of the coordinates of the vertices of the element.
+     * @tparam NumVertices The number of vertices of the element.
+     */
     template <typename T, unsigned NumVertices>
     using Element2D = Element<T, 2, NumVertices>;
 
+    /**
+     * @brief Base class for all 3D elements.
+     * @tparam T The type of the coordinates of the vertices of the element.
+     * @tparam NumVertices The number of vertices of the element.
+     */
     template <typename T, unsigned NumVertices>
     using Element3D = Element<T, 3, NumVertices>;
 
