@@ -35,6 +35,7 @@ namespace ippl {
 
       T rmin[Dim];
       T rmax[Dim];
+      unsigned int d;
 
       /*!
        * @brief Constructor for the randu functor.
@@ -61,6 +62,17 @@ namespace ippl {
                 rmax[i] = 1.0;
              }
 	}
+        
+    KOKKOS_INLINE_FUNCTION randu(view_type v_, GeneratorPool rand_pool_, unsigned int d_)
+          : v(v_)
+          , rand_pool(rand_pool_) {
+             for(unsigned int i=0; i<Dim; i++){
+                  rmin[i] = 0.0;
+                  rmax[i] = 1.0;
+               }
+              d = d_;
+      }
+        
 
       /*!
        * @brief Operator to generate random numbers.
@@ -78,6 +90,16 @@ namespace ippl {
 	// Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
       }
+    
+       KOKKOS_INLINE_FUNCTION void operator()(const size_t i, const unsigned int d) const {
+                // Get a random number state from the pool for the active thread
+                typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+                v(i)[d] = rand_gen.drand(rmin[d], rmax[d]);
+
+                // Give the state back, which will allow another thread to acquire it
+                rand_pool.free_state(rand_gen);
+       }
     };
   }  // namespace random
 }  // namespace ippl

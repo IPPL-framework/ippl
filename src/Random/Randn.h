@@ -35,6 +35,8 @@ namespace ippl {
 
       T mu[Dim];
       T sd[Dim];
+      unsigned int d;
+        
       /*!
        * @brief Constructor for the randn functor.
        *
@@ -60,6 +62,16 @@ namespace ippl {
                 sd[i] = 1.0;
              }
           }
+
+      KOKKOS_INLINE_FUNCTION randn(view_type v_, GeneratorPool rand_pool_, unsigned int d_)
+            : v(v_)
+            , rand_pool(rand_pool_) {
+               for(unsigned int i=0; i<Dim; i++){
+                  mu[i] = 0.0;
+                  sd[i] = 1.0;
+               }
+                d = d_;
+            }
 
       /*!
       * @brief Getter function for mean in idx dimension
@@ -94,6 +106,16 @@ namespace ippl {
 
           // Give the state back, which will allow another thread to acquire it
           rand_pool.free_state(rand_gen);
+      }
+        
+      KOKKOS_INLINE_FUNCTION void operator()(const size_t i, const unsigned int d) const {
+            // Get a random number state from the pool for the active thread
+            typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+            v(i)[d] = mu[d] + sd[d]*rand_gen.normal(0.0, 1.0);
+
+            // Give the state back, which will allow another thread to acquire it
+            rand_pool.free_state(rand_gen);
       }
     };
   }  // namespace random

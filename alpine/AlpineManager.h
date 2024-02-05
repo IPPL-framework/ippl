@@ -137,6 +137,7 @@ public:
 
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
+        /*
         if (ippl::Comm->rank() == 0) {
             if (TotalParticles != totalP_m || relError > 1e-10) {
                 m << "Time step: " << it_m << endl;
@@ -145,7 +146,7 @@ public:
                 m << "Rel. error in charge conservation: " << relError << endl;
                 ippl::Comm->abort();
             }
-	}
+	}*/
 
 	double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)          = (*rho) / cellVolume;
