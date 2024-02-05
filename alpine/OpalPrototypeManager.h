@@ -115,23 +115,24 @@ public:
 
         size_type totalP = this->totalP_m;
         size_type nlocal = totalP/ippl::Comm->size();
+        Vector_t<double, Dim> origin = this->origin_m;
 
         this->pcontainer_m->create(nlocal);
 
         view_type R = this->pcontainer_m->R.getView();
-        Kokkos::parallel_for("init R", R.extent(0), KOKKOS_LAMBDA(const int i) {
-            for(unsigned int d=0; d<Dim; d++){
-                R(i)[d] = this->origin_m[d] - 1e-15; // initialize particles outside domain
-            }
-        });
-        
+        for(unsigned int d=0; d<Dim; d++){
+            Kokkos::parallel_for("init R", R.extent(0), KOKKOS_LAMBDA(const int i) {
+                R(i)[d] = origin[d] - 1e-15; // initialize particles outside domain
+            });
+        }
+
 
         view_type P = this->pcontainer_m->P.getView();
-        Kokkos::parallel_for("init P", R.extent(0), KOKKOS_LAMBDA(const int i) {
-            for(unsigned int d=0; d<Dim; d++){
+        for(unsigned int d=0; d<Dim; d++){
+            Kokkos::parallel_for("init P", P.extent(0), KOKKOS_LAMBDA(const int i) {
                 P(i)[d] = 0.0; // initialize velocity
-            }
-        });
+            });
+        }
 
         this->pcontainer_m->q = this->Q_m/totalP;
     }
@@ -177,8 +178,8 @@ public:
         
         size_type Np = countInflowParticles(); // number of particles to be emitted
         
-        view_type R = (this->pcontainer_m->R.getView());
-        view_type P = (this->pcontainer_m->P.getView());
+        view_type R = this->pcontainer_m->R.getView();
+        view_type P = this->pcontainer_m->P.getView();
         
         Vector_t<double, Dim> mu;
         Matrix_t cov;
@@ -203,7 +204,7 @@ public:
         
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(P, rand_pool64, mu, cov));
         
-        double dt                               = this->dt_m;
+        double dt                    = this->dt_m;
         Vector_t<double, Dim> origin = this->origin_m;
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), KOKKOS_LAMBDA(const size_t i) {
             for(unsigned int d=0; d<Dim; d++){
