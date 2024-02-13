@@ -99,6 +99,7 @@ namespace ippl {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
+            using backendCos1 = heffte::backend::stock_cos1;
         };
 #endif
 
