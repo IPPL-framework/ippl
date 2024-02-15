@@ -82,59 +82,19 @@ public:
 
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-        initializeParticles();
-
-        static IpplTimings::TimerRef DummySolveTimer  = IpplTimings::getTimer("solveWarmup");
-        IpplTimings::startTimer(DummySolveTimer);
-
         this->fcontainer_m->getRho() = 0.0;
 
-        this->fsolver_m->runSolver();
+        this->fcontainer_m->getE() = 0.0;
 
-        IpplTimings::stopTimer(DummySolveTimer);
+        bool isFirstRepartition = true;
 
-        this->par2grid();
+        this->loadbalancer_m->initializeORB(&this->fcontainer_m->getFL(), &this->fcontainer_m->getMesh());
 
-        static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-        IpplTimings::startTimer(SolveTimer);
-
-        this->fsolver_m->runSolver();
-
-        IpplTimings::stopTimer(SolveTimer);
-
-        this->grid2par();
+        this->loadbalancer_m->repartition(&this->fcontainer_m->getFL(), &this->fcontainer_m->getMesh(), isFirstRepartition);
 
         this->dump();
 
         m << "Done";
-    }
-
-    void initializeParticles(){
-        Inform m("Initialize Particles");
-        // allocate memory of particles outside the domian with zero velocity and charge
-
-        size_type totalP = this->totalP_m;
-        size_type nlocal = totalP/ippl::Comm->size();
-        Vector_t<double, Dim> origin = this->origin_m;
-
-        this->pcontainer_m->create(nlocal);
-
-        view_type R = this->pcontainer_m->R.getView();
-        for(unsigned int d=0; d<Dim; d++){
-            Kokkos::parallel_for("init R", R.extent(0), KOKKOS_LAMBDA(const int i) {
-                R(i)[d] = origin[d] - 1e-15; // initialize particles outside domain
-            });
-        }
-
-
-        view_type P = this->pcontainer_m->P.getView();
-        for(unsigned int d=0; d<Dim; d++){
-            Kokkos::parallel_for("init P", P.extent(0), KOKKOS_LAMBDA(const int i) {
-                P(i)[d] = 0.0; // initialize velocity
-            });
-        }
-
-        this->pcontainer_m->q = this->Q_m/totalP;
     }
 
     void advance() override {
@@ -170,17 +130,25 @@ public:
         double IntInTime = 0.5*A*( pow(2.*pi*sigR*sigR, 0.5) + pow(2.*pi*sigF*sigF, 0.5) ) + A*(tF-tR);
         double da = 0.5*(y0+y1)*this->dt_m; // trapezoidal rule
 
-        return (size_type) ( da/IntInTime*this->totalP_m ); // return how many particles are emitted during dt
+        return (size_type) ( da/IntInTime*this->totalP_m/ippl::Comm->size() ); // return how many particles are emitted during dt
     }
 
     void GenEntParticles(){
         Inform m("Sample inflow particles");
-        
+
         size_type Np = countInflowParticles(); // number of particles to be emitted
+        size_type Ncount = this->Ncount_m;
         
-        view_type R = this->pcontainer_m->R.getView();
-        view_type P = this->pcontainer_m->P.getView();
-        
+       // Allocate Ncount + Np particles
+        this->pcontainer_m->R.resize(Ncount+Np);
+        this->pcontainer_m->P.resize(Ncount+Np);
+        this->pcontainer_m->q.resize(Ncount+Np);
+
+        auto *R = &this->pcontainer_m->R.getView();
+        auto *P = &this->pcontainer_m->P.getView();
+        this->pcontainer_m->q = this->Q_m/this->totalP_m;
+
+       // sample the new ones, i=Ncount+1,...,Ncount + Np
         Vector_t<double, Dim> mu;
         Matrix_t cov;
         
@@ -200,28 +168,41 @@ public:
         
         // sample velocity of emitted particles
         Kokkos::Random_XorShift64_Pool<> rand_pool64 = rand_pool64_m;
-        size_type Ncount = this->Ncount_m;
         
-        Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(P, rand_pool64, mu, cov));
+        Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(*P, rand_pool64, mu, cov));
         
-        double dt                    = this->dt_m;
         Vector_t<double, Dim> origin = this->origin_m;
+
+       	Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(*R, rand_pool64, mu, cov));
+
+/*
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), KOKKOS_LAMBDA(const size_t i) {
             for(unsigned int d=0; d<Dim; d++){
                 if(d==0){
-                    ippl::random::randu<double, Dim>(R, rand_pool64)(i,d);
-                    R(i)[d] = origin[d] + R(i)[d]*P(i)[d]*dt;//stream particles with the velocity to capture flux
+                    ippl::random::randu<double, Dim>(*R, rand_pool64)(i,d);
+                    (*R)(i)[d] = origin[d] ;
                 }
                 else{
-                    ippl::random::randn<double, Dim>(R, rand_pool64)(i,d);
+                    ippl::random::randn<double, Dim>(*R, rand_pool64)(i,d);
                 }
             }
         });
+*/
         this->Ncount_m += Np;
         
         Kokkos::fence();
         ippl::Comm->barrier();
-        m << "Sampled " << Np << "/" << this->totalP_m << " Ncount=" << this->Ncount_m << endl;
+
+        size_type gNcount = 0;
+        size_type gNp = 0;
+
+        MPI_Allreduce(&this->Ncount_m, &gNcount, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+
+        MPI_Allreduce(&Np, &gNp, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                          ippl::Comm->getCommunicator());
+
+        m << "Sampled " << gNp << "/" << this->totalP_m << ", So far %" << 100*gNcount/this->totalP_m << " done" << endl;
     }
 
     void LeapFrogStep(){
@@ -259,6 +240,7 @@ public:
         size_type totalP        = this->totalP_m;
         int it                  = this->it_m;
         bool isFirstRepartition = false;
+
         if (this->loadbalancer_m->balance(totalP, it + 1)) {
                 IpplTimings::startTimer(domainDecomposition);
                 auto* mesh = &fc->getRho().get_mesh();
