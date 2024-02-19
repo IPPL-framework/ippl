@@ -52,7 +52,7 @@ public:
         this->kw_m    = 0.5;
         this->alpha_m = 0.05;
         this->rmin_m  = 0.0;
-        this->rmax_m  = 2 * pi / this->kw_m;
+        this->rmax_m  = 10; //2 * pi / this->kw_m;
 
         this->hr_m = this->rmax_m / this->nr_m;
         // Q = -\int\int f dx dv
@@ -81,6 +81,8 @@ public:
         this->fsolver_m->initSolver();
 
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
+
+        this->pcontainer_m->create(0);
 
         this->fcontainer_m->getRho() = 0.0;
 
@@ -139,55 +141,60 @@ public:
         size_type Np = countInflowParticles(); // number of particles to be emitted
         size_type Ncount = this->Ncount_m;
         
-       // Allocate Ncount + Np particles
+       // Resize attributes to Ncount + Np particles
         this->pcontainer_m->R.resize(Ncount+Np);
         this->pcontainer_m->P.resize(Ncount+Np);
         this->pcontainer_m->q.resize(Ncount+Np);
+        this->pcontainer_m->E.resize(Ncount+Np);
 
-        auto *R = &this->pcontainer_m->R.getView();
-        auto *P = &this->pcontainer_m->P.getView();
+        // update number of active particles
+        this->pcontainer_m->setLocalNum(Ncount+Np);
+
+        auto &R = this->pcontainer_m->R.getView();
+        auto &P = this->pcontainer_m->P.getView();
         this->pcontainer_m->q = this->Q_m/this->totalP_m;
 
-       // sample the new ones, i=Ncount+1,...,Ncount + Np
-        Vector_t<double, Dim> mu;
-        Matrix_t cov;
-        
-        mu(0.0);
-        mu[0] = 1.;
-        
-        for(unsigned int i=0; i<Dim; i++){
-            for(unsigned int j=0; j<Dim; j++){
-                if(i==j){
-                    cov[i][j] = 1.;
-                }
-                else{
-                    cov[i][j] = 0.5;
-                }
-            }
-        }
-        
-        // sample velocity of emitted particles
+        // sample the new ones, i=Ncount+1,...,Ncount + Np
+        // for velocity of entering particles, sample Gaussian with v0>0
         Kokkos::Random_XorShift64_Pool<> rand_pool64 = rand_pool64_m;
-        
-        Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(*P, rand_pool64, mu, cov));
-        
+
+        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
+
+        auto *mesh = &this->fcontainer_m->getMesh();
+        auto *FL = &this->fcontainer_m->getFL();
+
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( *FL, *mesh );
+
+        const double par[6] = {1., 1., 0., 1., 0., 1.};
+        using Dist_t = ippl::random::NormalDistribution<double, Dim>;
+        using sampling_t = ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace, Dist_t>;
+
+        Dist_t dist(par);
+        Vector_t<double, Dim> vmin, vmax;
+        vmin = -5;
+        vmax = 5.;
+        vmin[0] = 0.0;// make sure the velocity in 0th dimension is positive
+
+        sampling_t samplingP(dist, vmax, vmin, rlayout, Np);
+        samplingP.setLocalSamplesNum(Np);
+        samplingP.generate(P, rand_pool64);
+
+       // for position, sample normally distributed in x1,x2 and x0=x_wall=0
         Vector_t<double, Dim> origin = this->origin_m;
+        Vector_t<double, Dim> mid = this->origin_m + 0.5*(this->rmax_m-this->rmin_m);
 
-       	Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), ippl::random::CorrRandn<double, Dim>(*R, rand_pool64, mu, cov));
-
-/*
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), KOKKOS_LAMBDA(const size_t i) {
             for(unsigned int d=0; d<Dim; d++){
                 if(d==0){
-                    ippl::random::randu<double, Dim>(*R, rand_pool64)(i,d);
-                    (*R)(i)[d] = origin[d] ;
+                    R(i)[d] = origin[d];
                 }
                 else{
-                    ippl::random::randn<double, Dim>(*R, rand_pool64)(i,d);
+                    ippl::random::randn<double, Dim>(R, rand_pool64)(i,d);
+                    R(i)[d] += mid[d];
                 }
             }
         });
-*/
+
         this->Ncount_m += Np;
         
         Kokkos::fence();
@@ -202,7 +209,7 @@ public:
         MPI_Allreduce(&Np, &gNp, 1, MPI_UNSIGNED_LONG, MPI_SUM,
                           ippl::Comm->getCommunicator());
 
-        m << "Sampled " << gNp << "/" << this->totalP_m << ", So far %" << 100*gNcount/this->totalP_m << " done" << endl;
+        m << "Sampled " << gNp << "/" << this->totalP_m << ", So far %" << 100.*gNcount/(1.*this->totalP_m) << " done" << endl;
     }
 
     void LeapFrogStep(){
@@ -222,7 +229,7 @@ public:
 
         // generate particles that enter domain
         GenEntParticles();
-        
+
         IpplTimings::startTimer(PTimer);
         pc->P = pc->P - 0.5 * dt * pc->E;
         IpplTimings::stopTimer(PTimer);
