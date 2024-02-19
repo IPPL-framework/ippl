@@ -82,7 +82,7 @@ public:
 
         this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-        this->pcontainer_m->create(0);
+        this->initializeParticles();
 
         this->fcontainer_m->getRho() = 0.0;
 
@@ -135,27 +135,16 @@ public:
         return (size_type) ( da/IntInTime*this->totalP_m/ippl::Comm->size() ); // return how many particles are emitted during dt
     }
 
-    void GenEntParticles(){
-        Inform m("Sample inflow particles");
+    void initializeParticles(){
+        Inform m("Initialize Particles");
 
-        size_type Np = countInflowParticles(); // number of particles to be emitted
-        size_type Ncount = this->Ncount_m;
-        
-       // Resize attributes to Ncount + Np particles
-        this->pcontainer_m->R.resize(Ncount+Np);
-        this->pcontainer_m->P.resize(Ncount+Np);
-        this->pcontainer_m->q.resize(Ncount+Np);
-        this->pcontainer_m->E.resize(Ncount+Np);
-
-        // update number of active particles
-        this->pcontainer_m->setLocalNum(Ncount+Np);
+        size_type nlocal = this->totalP_m/ippl::Comm->size();
+        this->pcontainer_m->create(nlocal);
 
         auto &R = this->pcontainer_m->R.getView();
         auto &P = this->pcontainer_m->P.getView();
         this->pcontainer_m->q = this->Q_m/this->totalP_m;
 
-        // sample the new ones, i=Ncount+1,...,Ncount + Np
-        // for velocity of entering particles, sample Gaussian with v0>0
         Kokkos::Random_XorShift64_Pool<> rand_pool64 = rand_pool64_m;
 
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
@@ -175,15 +164,15 @@ public:
         vmax = 5.;
         vmin[0] = 0.0;// make sure the velocity in 0th dimension is positive
 
-        sampling_t samplingP(dist, vmax, vmin, rlayout, Np);
-        samplingP.setLocalSamplesNum(Np);
+        sampling_t samplingP(dist, vmax, vmin, rlayout, nlocal);
+        samplingP.setLocalSamplesNum(nlocal);
         samplingP.generate(P, rand_pool64);
 
        // for position, sample normally distributed in x1,x2 and x0=x_wall=0
         Vector_t<double, Dim> origin = this->origin_m;
         Vector_t<double, Dim> mid = this->origin_m + 0.5*(this->rmax_m-this->rmin_m);
 
-        Kokkos::parallel_for(Kokkos::RangePolicy<int>(Ncount, Ncount+Np), KOKKOS_LAMBDA(const size_t i) {
+        Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, nlocal), KOKKOS_LAMBDA(const size_t i) {
             for(unsigned int d=0; d<Dim; d++){
                 if(d==0){
                     R(i)[d] = origin[d];
@@ -193,13 +182,22 @@ public:
                     R(i)[d] += mid[d];
                 }
             }
-        });
+	});
+
+        this->pcontainer_m->setLocalNum(0);
+    }
+
+    void GenEntParticles(){
+        Inform m("Sample inflow particles");
+
+        size_type Np = countInflowParticles(); // number of particles to be emitted per processor
+        size_type Ncount = this->Ncount_m;
+
+        // update number of active particles
+        this->pcontainer_m->setLocalNum(Ncount+Np);
 
         this->Ncount_m += Np;
         
-        Kokkos::fence();
-        ippl::Comm->barrier();
-
         size_type gNcount = 0;
         size_type gNp = 0;
 
