@@ -292,8 +292,6 @@ namespace ippl {
 
         invalidCount = red_val.count[0];
         nLeft        = red_val.count[1];
-
-        std::cout << "Rank " << myRank << " has " << invalidCount << " invalids and " << nLeft << " left " << std::endl;
  
         /// Step 4
         if (nLeft > 0) {
