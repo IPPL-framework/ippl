@@ -15,7 +15,8 @@
 #include <map>
 #include <string>
 #include <utility>
-#include <variant>
+
+#include "Types/Variant.h"
 
 #include "Utility/IpplException.h"
 
@@ -160,13 +161,13 @@ namespace ippl {
 
             return os;
         }
-     ParameterList& operator=(const ParameterList& other) {
-        if (this != &other) {
-            // Copy members from 'other' to 'this'
-            params_m = other.params_m;
+        ParameterList& operator=(const ParameterList& other) {
+            if (this != &other) {
+                // Copy members from 'other' to 'this'
+                params_m = other.params_m;
+            }
+            return *this;
         }
-        return *this;
-    }
 
     protected:
         std::map<std::string, variant_t> params_m;

@@ -39,7 +39,14 @@ set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3")
 set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
-    set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -G")
+    set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -G")
+endif()
+
+# Suppress erroneous buffer overflow warnings when compiling under GCC 12
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" MATCHES "12*")
+    add_compile_options (-Wno-stringop-overflow)
+    add_compile_options (-Wno-array-bounds)
+    add_compile_options (-Wno-restrict)
 endif()
 
 # Resolve all library dependencies
@@ -51,10 +58,16 @@ message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
+option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
+if (USE_ALTERNATIVE_VARIANT)
+    add_definitions (-DUSE_ALTERNATIVE_VARIANT)
+endif()
+
+
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
-    find_package(Heffte 2.2.0 REQUIRED)
+    find_package (Heffte 2.2.0 REQUIRED)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
