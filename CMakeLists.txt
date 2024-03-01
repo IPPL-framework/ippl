@@ -21,11 +21,14 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#add_compile_options (-Werror)
+add_compile_options (-Werror)
 
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
+add_compile_options (-Wno-stringop-overflow)
+add_compile_options (-Wno-array-bounds)
+add_compile_options (-Wno-restrict)
 
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 

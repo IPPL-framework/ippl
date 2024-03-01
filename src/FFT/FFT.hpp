@@ -124,8 +124,10 @@ namespace ippl {
            }
         }
 
+        //heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
+        //           (inbox, outbox, Ippl::getComm(), heffteOptions);
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
-                   (inbox, outbox, Ippl::getComm(), heffteOptions);
+                   (inbox, outbox, MPI_COMM_SELF, heffteOptions);
 
         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
         if(workspace_m.size() < heffte_m->size_workspace())

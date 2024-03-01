@@ -1,6 +1,6 @@
 // Electrostatic Two-stream/Bump-on-tail instability test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./BumponTailInstabilityPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> --info 5
+//     srun ./BumponTailInstabilityPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol> --info 5
 //     nx       = No. of Fourier modes in the x-direction
 //     ny       = No. of Fourier modes in the y-direction
 //     nz       = No. of Fourier modes in the z-direction
@@ -9,8 +9,9 @@
 //     dt       = Time stepsize
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
+//     tol = tolerance of NUFFT
 //     Example:
-//     srun ./BumponTailInstabilityPIF 32 32 32 655360 20 0.05 B-spline 1 --info 5
+//     srun ./BumponTailInstabilityPIF 32 32 32 655360 20 0.05 B-spline 1 1e-4 --info 5
 //
 // Copyright (c) 2023, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -262,6 +263,42 @@ int main(int argc, char *argv[]){
     P->rho_m.initialize(mesh, FL);
     P->Sk_m.initialize(mesh, FL);
 
+    ////////////////////////////////////////////////////////////
+    //Initialize an FFT object for getting rho in real space and 
+    //doing charge conservation check
+    
+    ippl::ParameterList fftParams;
+    fftParams.add("use_heffte_defaults", false);  
+    fftParams.add("use_pencils", true);  
+    fftParams.add("use_reorder", false);  
+    fftParams.add("use_gpu_aware", true);  
+    fftParams.add("comm", ippl::p2p_pl);  
+    fftParams.add("r2c_direction", 0);  
+
+    ippl::NDIndex<Dim> domainPIFhalf;
+
+    for(unsigned d = 0; d < Dim; ++d) {
+        if(fftParams.template get<int>("r2c_direction") == (int)d)
+            domainPIFhalf[d] = ippl::Index(domain[d].length()/2 + 1);
+        else
+            domainPIFhalf[d] = ippl::Index(domain[d].length());
+    }
+    
+
+    FieldLayout_t FLPIFhalf(domainPIFhalf, decomp);
+
+    ippl::Vector<double, 3> hDummy = {1.0, 1.0, 1.0};
+    ippl::Vector<double, 3> originDummy = {0.0, 0.0, 0.0};
+    Mesh_t meshPIFhalf(domainPIFhalf, hDummy, originDummy);
+
+    P->rhoPIFreal_m.initialize(mesh, FL);
+    P->rhoPIFhalf_m.initialize(meshPIFhalf, FLPIFhalf);
+
+    P->fft_mp = std::make_shared<FFT_t>(FL, FLPIFhalf, fftParams);
+   
+    ////////////////////////////////////////////////////////////
+
+
     P->time_m = 0.0;
 
     P->shapetype_m = argv[7]; 
@@ -269,11 +306,7 @@ int main(int argc, char *argv[]){
 
     IpplTimings::startTimer(particleCreation);
 
-    //typedef ippl::detail::RegionLayout<double, Dim, Mesh_t> RegionLayout_t;
-    //const RegionLayout_t& RLayout = PL.getRegionLayout();
-    //const typename RegionLayout_t::host_mirror_type Regions = RLayout.gethLocalRegions();
     Vector_t minU, maxU;
-    //int myRank = Ippl::Comm->rank();
     for (unsigned d = 0; d <Dim; ++d) {
         minU[d] = CDF(rmin[d], delta, kw[d], d);
         maxU[d]   = CDF(rmax[d], delta, kw[d], d);
@@ -303,7 +336,9 @@ int main(int argc, char *argv[]){
     P->initializeShapeFunctionPIF();
     IpplTimings::stopTimer(initializeShapeFunctionPIF);
 
-    P->initNUFFT(FL);
+    
+    double tol   = std::atof(argv[9]);
+    P->initNUFFT(FL,tol);
 
     P->scatter();
 

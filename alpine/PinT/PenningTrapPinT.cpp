@@ -599,22 +599,20 @@ int main(int argc, char *argv[]){
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
     //tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-    //if(Ippl::Comm->rank() == 0) {
-    //    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
+    //if(rankTime == 0) {
+    //    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*rankSpace));
     //    Kokkos::parallel_for(nloc,
     //                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
     //                         Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, mu, sd, 
     //                         minU, maxU));
-
-
     //    Kokkos::fence();
     //    size_type bufSize = Pbegin->packedSize(nloc);
     //    std::vector<MPI_Request> requests(0);
     //    int sends = 0;
-    //    for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
+    //    for(int rank = 1; rank < sizeTime; ++rank) {
     //        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
     //        requests.resize(requests.size() + 1);
-    //        Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc);
+    //        Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc, timeComm);
     //        buf->resetWritePos();
     //        ++sends;
     //    }
@@ -623,9 +621,13 @@ int main(int argc, char *argv[]){
     //else {
     //    size_type bufSize = Pbegin->packedSize(nloc);
     //    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-    //    Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc);
+    //    Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
     //    buf->resetReadPos();
     //}
+
+    //Kokkos::deep_copy(Pcoarse->Rfine.getView(), Pbegin->R.getView());
+    //Kokkos::deep_copy(Pcoarse->Pfine.getView(), Pbegin->P.getView());
+
 
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
@@ -658,8 +660,8 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(deepCopy);
 
     IpplTimings::startTimer(initialCoarse);
-    Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
-    //Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+    //Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, Bext, spaceComm); 
+    Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
     IpplTimings::stopTimer(initialCoarse);
 
     IpplTimings::startTimer(deepCopy);
@@ -765,6 +767,8 @@ int main(int argc, char *argv[]){
     int sign = 1;
     //coarseTol = 1e-3;
     //Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
+    //Pcoarse->BorisPIF(Pcoarse->Rfine, Pcoarse->Pfine, (rankTime+1)*ntFine, dtFine, 0, 0, 0, 
+    //                          Bext, rankTime, rankSpace, fine, spaceComm);
     for (unsigned int nc=0; nc < nCycles; nc++) {
         
         double tStartMySlice; 
@@ -847,8 +851,8 @@ int main(int argc, char *argv[]){
             IpplTimings::startTimer(coarsePropagator);
             //coarseTol = 1e-4;//(double)(std::pow(0.1,std::min((int)(it+2),4)));
             //Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
-            //Pcoarse->BorisPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
-            Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            Pcoarse->BorisPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+            //Pcoarse->BorisPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
@@ -861,6 +865,8 @@ int main(int argc, char *argv[]){
             //double localRerror, localPerror;
             double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, length, spaceComm);
             double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, spaceComm);
+            //double Rerror = computeRL2Error(Pcoarse->Rfine, Pend->R, length, spaceComm);
+            //double Perror = computePL2Error(Pcoarse->Pfine, Pend->P, spaceComm);
         
             IpplTimings::stopTimer(computeErrors);
 
@@ -944,8 +950,8 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
-            //Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
-            Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
+            Pcoarse->BorisPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, Bext, 0, 0, coarse, spaceComm); 
+            //Pcoarse->BorisPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, Bext, spaceComm); 
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());

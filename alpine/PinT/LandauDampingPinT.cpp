@@ -39,8 +39,6 @@
 #include "ChargedParticlesPinT.hpp"
 #include "StatesBeginSlice.hpp"
 #include "StatesEndSlice.hpp"
-//#include "LeapFrogPIC.cpp"
-//#include "LeapFrogPIF.cpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -156,6 +154,11 @@ double computeRL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
                             KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
                                 Vector_t diff = Qview(i) - QprevIterView(i);
 
+                                //This is just to undo the effect of periodic BCs during the 
+                                //error calculation. Otherwise even though the actual error is 
+                                //small the computed error might be very large. 
+                                //The values (e.g. 10) mentioned here are just an adhoc
+                                //value depending on the domain length. 
                                 for (unsigned d = 0; d < 3; ++d) {
                                     bool isLeft = (diff[d] <= -10.0);
                                     bool isRight = (diff[d] >= 10.0);
@@ -211,8 +214,7 @@ double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
 }
 
 double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                      const unsigned int& /*iter*/, const int& /*myrank*/, double& lError, 
-                      Vector_t& length) {
+                         Vector_t& length, MPI_Comm& spaceComm) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -223,6 +225,11 @@ double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& 
                             KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
                                 Vector_t diff = Qview(i) - QprevIterView(i);
                                 
+                                //This is just to undo the effect of periodic BCs during the 
+                                //error calculation. Otherwise even though the actual error is 
+                                //small the computed error might be very large. 
+                                //The values (e.g. 10) mentioned here are just an adhoc
+                                //value depending on the domain length. 
                                 for (unsigned d = 0; d < 3; ++d) {
                                     bool isLeft = (diff[d] <= -10.0);
                                     bool isRight = (diff[d] >= 10.0);
@@ -235,33 +242,30 @@ double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& 
 
                                 myValError = std::sqrt(myValError);
 
-                                //bool isIncluded = (myValError < 10.0);
-
-                                //myValError *= isIncluded;
-                                
                                 if(myValError > valLError) valLError = myValError;
                                 
                                 double myValnorm = dot(Qview(i), Qview(i)).apply();
                                 myValnorm = std::sqrt(myValnorm);
 
-                                //myValnorm *= isIncluded;
-                                
                                 if(myValnorm > valLnorm) valLnorm = myValnorm;
                                 
-                                //excluded += (!isIncluded);
                             }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm));
 
     Kokkos::fence();
-    lError = localError/localNorm;
     
-    double relError = lError;
+    double globalError = 0.0;
+    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
+    double globalNorm = 0.0;
+    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
+    
+    double relError = globalError/globalNorm;
     
     return relError;
 
 }
 
 double computePLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                      const unsigned int& /*iter*/, const int& /*myrank*/, double& lError) {
+                         MPI_Comm& spaceComm) {
     
     auto Qview = Q.getView();
     auto QprevIterView = QprevIter.getView();
@@ -283,97 +287,17 @@ double computePLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& 
                             }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm));
 
     Kokkos::fence();
-    lError = localError/localNorm;
     
-    double relError = lError;
-    
-    return relError;
-
-}
-
-
-double computeFieldError(CxField_t& rhoPIF, CxField_t& rhoPIFprevIter) {
-
-    auto rhoview = rhoPIF.getView();
-    auto rhoprevview = rhoPIFprevIter.getView();
-    const int nghost = rhoPIF.getNghost();
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<Dim>>;
-    
-    const FieldLayout_t& layout = rhoPIF.getLayout(); 
-    const Mesh_t& mesh = rhoPIF.get_mesh();
-    const Vector<double, Dim>& dx = mesh.getMeshSpacing();
-    const auto& domain = layout.getDomain();
-    Vector<double, Dim> Len;
-    Vector<int, Dim> N;
-
-    for (unsigned d=0; d < Dim; ++d) {
-        N[d] = domain[d].length();
-        Len[d] = dx[d] * N[d];
-    }
-
-    double AbsError = 0.0;
-    double Enorm = 0.0;
-    Kokkos::complex<double> imag = {0.0, 1.0};
-    double pi = std::acos(-1.0);
-    Kokkos::parallel_reduce("Ex field error",
-                          mdrange_type({0, 0, 0},
-                                       {N[0],
-                                        N[1],
-                                        N[2]}),
-                          KOKKOS_LAMBDA(const int i,
-                                        const int j,
-                                        const int k,
-                                        double& errorSum,
-                                        double& fieldSum)
-    {
-    
-        Vector<int, 3> iVec = {i, j, k};
-        Vector<double, 3> kVec;
-        double Dr = 0.0;
-        for(size_t d = 0; d < Dim; ++d) {
-            bool shift = (iVec[d] > (N[d]/2));
-            kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-            Dr += kVec[d] * kVec[d];
-        }
-
-        double myError = 0.0;
-        double myField = 0.0;
-        Kokkos::complex<double> Ek = {0.0, 0.0};
-        Kokkos::complex<double> Ekprev = {0.0, 0.0};
-        for(size_t d = 0; d < Dim; ++d) {
-            if(Dr != 0.0) {
-                Ek = -(imag * kVec[d] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-                Ekprev = -(imag * kVec[d] * rhoprevview(i+nghost,j+nghost,k+nghost) / Dr);
-            }
-            Ekprev = Ekprev - Ek;
-            myError += Ekprev.real() * Ekprev.real() + Ekprev.imag() * Ekprev.imag();
-            myField += Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
-        }
-        errorSum += myError;
-        fieldSum += myField;
-        //Kokkos::complex<double> rhok = rhoview(i+nghost,j+nghost,k+nghost);
-        //Kokkos::complex<double> rhokprev = rhoprevview(i+nghost,j+nghost,k+nghost);
-        //rhokprev = rhokprev - rhok;
-        //myError = rhokprev.real() * rhokprev.real() + rhokprev.imag() * rhokprev.imag();
-        //errorSum += myError;
-        //myField = rhok.real() * rhok.real() + rhok.imag() * rhok.imag();
-        //fieldSum += myField;
-
-    }, Kokkos::Sum<double>(AbsError), Kokkos::Sum<double>(Enorm));
-    
-    Kokkos::fence();
     double globalError = 0.0;
-    MPI_Allreduce(&AbsError, &globalError, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
     double globalNorm = 0.0;
-    MPI_Allreduce(&Enorm, &globalNorm, 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-    //double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
-    //fieldEnergy *= volume;
-
-    double relError = std::sqrt(globalError)/std::sqrt(globalNorm);
-
+    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
+    
+    double relError = globalError/globalNorm;
+    
     return relError;
-}
 
+}
 
 const char* TestName = "LandauDampingPinT";
 
@@ -436,9 +360,6 @@ int main(int argc, char *argv[]){
     const unsigned int ntCoarse = std::ceil(dtSlice / dtCoarse);
     const double tol = std::atof(argv[11]);
 
-    //const double tStartMySlice = Ippl::Comm->rank() * dtSlice; 
-    //const double tEndMySlice = (Ippl::Comm->rank() + 1) * dtSlice; 
-
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
     using states_begin_type = StatesBeginSlice<PLayout_t>;
@@ -462,7 +383,6 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
-    //double alpha = 0.05;
     Vector_t alpha = {0.05, 0.05, 0.05};
     //Vector_t alpha = {0.5, 0.5, 0.5};
     Vector_t rmin(0.0);
@@ -493,15 +413,6 @@ int main(int argc, char *argv[]){
 
     size_type Total_particles = 0;
 
-    //MPI_Allreduce(&nloc, &Total_particles, 1,
-    //            MPI_UNSIGNED_LONG, MPI_SUM, spaceComm);
-
-    //int rest = (int) (totalP - Total_particles);
-
-    //if ( (rankTime == 0) && (rankSpace < rest) ) {
-    //    ++nloc;
-    //}
-
     MPI_Allreduce(&nloc, &Total_particles, 1,
                 MPI_UNSIGNED_LONG, MPI_SUM, spaceComm);
 
@@ -516,10 +427,44 @@ int main(int argc, char *argv[]){
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
     Pcoarse->Sk_m.initialize(meshPIF, FLPIF);
-    //Pcoarse->rhoPIFprevIter_m.initialize(meshPIF, FLPIF);
     Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
     Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
-    //Pcoarse->EfieldPICprevIter_m.initialize(meshPIC, FLPIC);
+
+
+    ////////////////////////////////////////////////////////////
+    //Initialize an FFT object for getting rho in real space and 
+    //doing charge conservation check
+    
+    ippl::ParameterList fftParams;
+    fftParams.add("use_heffte_defaults", false);  
+    fftParams.add("use_pencils", true);  
+    fftParams.add("use_reorder", false);  
+    fftParams.add("use_gpu_aware", true);  
+    fftParams.add("comm", ippl::p2p_pl);  
+    fftParams.add("r2c_direction", 0);  
+
+    ippl::NDIndex<Dim> domainPIFhalf;
+
+    for(unsigned d = 0; d < Dim; ++d) {
+        if(fftParams.template get<int>("r2c_direction") == (int)d)
+            domainPIFhalf[d] = ippl::Index(domainPIF[d].length()/2 + 1);
+        else
+            domainPIFhalf[d] = ippl::Index(domainPIF[d].length());
+    }
+    
+
+    FieldLayout_t FLPIFhalf(domainPIFhalf, decomp);
+
+    ippl::Vector<double, 3> hDummy = {1.0, 1.0, 1.0};
+    ippl::Vector<double, 3> originDummy = {0.0, 0.0, 0.0};
+    Mesh_t meshPIFhalf(domainPIFhalf, hDummy, originDummy);
+
+    Pcoarse->rhoPIFreal_m.initialize(meshPIF, FLPIF);
+    Pcoarse->rhoPIFhalf_m.initialize(meshPIFhalf, FLPIFhalf);
+
+    Pcoarse->fft_mp = std::make_shared<FFT_t>(FLPIF, FLPIFhalf, fftParams);
+   
+    ////////////////////////////////////////////////////////////
 
     Pcoarse->initFFTSolver();
     
@@ -550,7 +495,7 @@ int main(int argc, char *argv[]){
     
     //Pcoarse->initNUFFT(FLPIF);
     double coarseTol = std::atof(argv[17]);
-    double fineTol   = 1e-12;
+    double fineTol   = std::atof(argv[18]);
     Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
     std::string coarse = "Coarse";
     std::string fine = "Fine";
@@ -596,7 +541,7 @@ int main(int argc, char *argv[]){
     //IpplTimings::stopTimer(deepCopy);
     
 
-    tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
+    tag = 500;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
 
     if(rankTime == 0) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*rankSpace));
@@ -621,8 +566,8 @@ int main(int argc, char *argv[]){
     IpplTimings::stopTimer(deepCopy);
 
     //Pcoarse->initNUFFT(FLPIF, coarseTol);
-    Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm); 
-    //Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm); 
+    //Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm); 
+    Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm); 
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
@@ -796,8 +741,8 @@ int main(int argc, char *argv[]){
             //double coarseTol = (double)(std::pow(0.1,std::min((int)(it+2),3)));
             //double fineTol = 1e-6;
             //Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
-            Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
-            //Pcoarse->LeapFrogPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
+            //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            Pcoarse->LeapFrogPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
@@ -881,9 +826,9 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
-            Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
+            //Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
             //Pcoarse->initNUFFT(FLPIF, coarseTol);
-            //Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
+            Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());

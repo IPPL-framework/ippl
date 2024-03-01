@@ -44,6 +44,8 @@ typedef Field<Kokkos::complex<double>, Dim>   CxField_t;
 typedef Field<Vector_t, Dim> VField_t;
 typedef ippl::FFTPeriodicPoissonSolver<Vector_t, double, Dim> Solver_t;
 
+typedef ippl::FFT<ippl::RCTransform, Dim, double> FFT_t;
+
 const double pi = std::acos(-1.0);
 
 // Test programs have to define this variable for VTK dump purposes
@@ -56,6 +58,8 @@ public:
     //using nufft_t = typename ippl::FFT<ippl::NUFFTransform, 3, double>;
 
     CxField_t rhoPIF_m;
+    CxField_t rhoPIFhalf_m;
+    Field_t rhoPIFreal_m;
     Field_t Sk_m;
     Field_t rhoPIC_m;
     VField_t EfieldPIC_m;
@@ -75,6 +79,7 @@ public:
     size_type Np_m;
     
     std::shared_ptr<Solver_t> solver_mp;
+    std::shared_ptr<FFT_t> fft_mp;
     
     double time_m;
 
@@ -96,6 +101,9 @@ public:
     typename ippl::ParticleBase<PLayout>::particle_position_type RprevIter;  // G(R^(k-1)_n)
     typename ippl::ParticleBase<PLayout>::particle_position_type PprevIter;  // G(P^(k-1)_n)
 
+    //typename ippl::ParticleBase<PLayout>::particle_position_type Rfine;  
+    //typename ippl::ParticleBase<PLayout>::particle_position_type Pfine; 
+
     /*
       This constructor is mandatory for all derived classes from
       ParticleBase as the bunch buffer uses this
@@ -111,6 +119,8 @@ public:
         this->addAttribute(P0);
         this->addAttribute(RprevIter);
         this->addAttribute(PprevIter);
+        //this->addAttribute(Rfine);
+        //this->addAttribute(Pfine);
     }
     
     ChargedParticlesPinT(PLayout& pl,
@@ -135,6 +145,8 @@ public:
         this->addAttribute(P0);
         this->addAttribute(RprevIter);
         this->addAttribute(PprevIter);
+        //this->addAttribute(Rfine);
+        //this->addAttribute(Pfine);
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i]=decomp[i];
@@ -624,7 +636,7 @@ public:
         Kokkos::parallel_reduce("Kinetic Energy", this->getLocalNum(),
                                 KOKKOS_LAMBDA(const int i, double& valL){
                                     double myVal = dot(Pview(i), Pview(i)).apply();
-                                    myVal *= -qView(i);
+                                    myVal *= -qView(i); //q/(q/m) where q/m=-1 for us
                                     valL += myVal;
                                 }, Kokkos::Sum<double>(temp));
 
@@ -634,6 +646,77 @@ public:
         MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM, spaceComm);
 
         kineticEnergy = globaltemp;
+
+        auto rhoPIFhalfview = rhoPIFhalf_m.getView();
+        const int nghostHalf = rhoPIFhalf_m.getNghost();
+      
+        const FieldLayout_t& layoutHalf = rhoPIFhalf_m.getLayout(); 
+        const auto& domainHalf = layoutHalf.getDomain();
+
+        Vector<int, Dim> Nhalf;
+        for (unsigned d=0; d < Dim; ++d) {
+            Nhalf[d] = domainHalf[d].length();
+        }
+
+        Kokkos::parallel_for("Transfer complex rho to half domain",
+                              mdrange_type({0, 0, 0},
+                                           {Nhalf[0],
+                                            Nhalf[1],
+                                            Nhalf[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k)
+        {
+            Vector<int, 3> iVec = {i, j, k};
+            int shift;
+            for(size_t d = 0; d < Dim; ++d) {
+                bool isLessThanHalf = (iVec[d] < (Nhalf[d]/2));
+                shift = ((int)isLessThanHalf * 2) - 1;
+                iVec[d] = (iVec[d] + shift * (Nhalf[d]/2)) + nghostHalf;
+            }
+            rhoPIFhalfview(Nhalf[0]-1-i+nghostHalf, iVec[1], iVec[2]) = 
+            rhoview(i+nghostHalf,j+nghostHalf,k+nghostHalf);
+        });
+
+
+        rhoPIFreal_m = 0.0;
+        fft_mp->transform(-1, rhoPIFreal_m, rhoPIFhalf_m);
+
+        rhoPIFreal_m = (1.0/(N[0]*N[1]*N[2])) * volume * rhoPIFreal_m;
+        auto rhoPIFrealview = rhoPIFreal_m.getView();
+        temp = 0.0;
+        Kokkos::parallel_reduce("Rho real sum",
+                              mdrange_type({0, 0, 0},
+                                           {N[0],
+                                            N[1],
+                                            N[2]}),
+                              KOKKOS_LAMBDA(const int i,
+                                            const int j,
+                                            const int k,
+                                            double& valL)
+        {
+            valL += rhoPIFrealview(i+nghost, j+nghost, k+nghost);
+        }, Kokkos::Sum<double>(temp));
+
+
+        double chargeTotal = temp;
+
+        Vector_t totalMomentum = 0.0;
+        
+        Kokkos::parallel_reduce("Total Momentum", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, Vector_t& valL){
+                                    valL  += (-qView(i)) * Pview(i);
+                                }, Kokkos::Sum<ippl::Vector<double,3>>(totalMomentum));
+        
+        Vector_t globalMom;
+
+        double magMomentum = 0.0;
+        for(size_t d = 0; d < Dim; ++d) {
+            MPI_Allreduce(&totalMomentum[d], &globalMom[d], 1, MPI_DOUBLE, MPI_SUM, spaceComm);
+            magMomentum += globalMom[d] * globalMom[d];
+        }
+
+        magMomentum  = std::sqrt(magMomentum);
 
         if(rankSpace == 0) {
             std::stringstream fname;
@@ -647,7 +730,7 @@ public:
 
 
             Inform csvout(NULL, fname.str().c_str(), Inform::APPEND, Ippl::Comm->rank());
-            csvout.precision(10);
+            csvout.precision(17);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
             //csvout << "time, Potential energy, Kinetic energy, Total energy" << endl;
@@ -655,7 +738,9 @@ public:
             csvout << time_m << " "
                    << potentialEnergy << " "
                    << kineticEnergy << " "
-                   << potentialEnergy + kineticEnergy << endl;
+                   << potentialEnergy + kineticEnergy << " " 
+                   << chargeTotal << " " 
+                   << magMomentum << endl;
         }
 
     }
