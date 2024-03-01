@@ -9,15 +9,15 @@
 //     Np           = Total no. of macro-particles in the simulation
 //     Nt           = Number of time steps
 //     stype        = Field solver type (FFT, CG and PCG supported) , PCG needs extra arguments
-//     pre_args     = when using the PCG, a preconditioner and its corresponding parameters need to be defined.
-//     Supported pre_args are: [jacobi, chebyshev <degree>, newton <level>,
+//     pre_args     = when using the PCG, a preconditioner and its corresponding parameters need to
+//     be defined. Supported pre_args are: [jacobi, chebyshev <degree>, newton <level>,
 //                              gauss-seidel <inner outer comm> , richardson <iter comm>]
 //     jacobi       = diagonal preconditioner
 //     chebyshev    = polynomial preconditioner (algo=chebyshev) of degree <degree>
 //     newton       = polynomial preconditioner (algo=newton)    of degree 2^<level> - 1
-//     gauss-seidel = symmetric 2-step gauss-seidel with <inner> inner iterations, <outer> outer iterations
-//     richardson   = jacobi-richardson preconditioner with <iter> iterations
-//     comm         = 0 means that there is no halo-exchange during preconditioning, 1 means there is halo-exchange
+//     gauss-seidel = symmetric 2-step gauss-seidel with <inner> inner iterations, <outer> outer
+//     iterations richardson   = jacobi-richardson preconditioner with <iter> iterations comm = 0
+//     means that there is no halo-exchange during preconditioning, 1 means there is halo-exchange
 //     lbthres      = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                    percentage which can be tolerated and beyond which
 //                    particle load balancing occurs. A value of 0.01 is good for many typical
@@ -25,8 +25,9 @@
 //     ovfactor     = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Examples:
-//     srun ./LandauDampingParameterList 64 64 64 10000 10 PCG chebyshev 31 0.01 --overallocate 2.0 --info 10
-//     srun ./LandauDampingParameterList 64 64 64 10000 10 PCG gauss-seidel 5 2 0 0.01 --overallocate 2.0 --info 10
+//     srun ./LandauDampingParameterList 64 64 64 10000 10 PCG chebyshev 31 0.01 --overallocate 2.0
+//     --info 10 srun ./LandauDampingParameterList 64 64 64 10000 10 PCG gauss-seidel 5 2 0 0.01
+//     --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -231,11 +232,11 @@ int main(int argc, char* argv[]) {
                 chebyshev_degree = std::atoi(argv[arg++]);
             } else if (preconditioner_type == "richardson") {
                 richardson_iterations = std::atoi(argv[arg++]);
-                communication = std::atoi(argv[arg++]);
+                communication         = std::atoi(argv[arg++]);
             } else if (preconditioner_type == "gauss-seidel") {
                 gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
                 gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
-                communication = std::atoi(argv[arg++]);
+                communication                 = std::atoi(argv[arg++]);
             }
 
             params.add("preconditioner_type", preconditioner_type);
@@ -288,7 +289,7 @@ int main(int argc, char* argv[]) {
         }
 
         msg << "First domain decomposition done" << endl;
-            IpplTimings::startTimer(particleCreation);
+        IpplTimings::startTimer(particleCreation);
 
         typedef ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>::uniform_type RegionLayout_t;
         const RegionLayout_t& RLayout                           = PL.getRegionLayout();
