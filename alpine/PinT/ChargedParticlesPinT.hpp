@@ -85,6 +85,8 @@ public:
 
     std::string shapetype_m;
 
+    std::string coarsetype_m;
+
     int shapedegree_m;
 
     //nufft_t  nufftType1Fine_m,nufftType2Fine_m,nufftType1Coarse_m,nufftType2Coarse_m; 

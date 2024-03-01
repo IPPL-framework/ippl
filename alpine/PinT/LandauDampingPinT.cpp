@@ -6,20 +6,27 @@
 // European Conference on Parallel Processing. Springer, Cham, 2017.
 // 
 //  Usage:
-//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tol> 
-//          <nCycles> <ShapeType> <degree> --info 5
+//     srun ./LandauDampingPinT <nmx> <nmy> <nmz> <nx> <ny> <nz> <Np> <Tend> <dtfine> <dtcoarse> <tolParareal> 
+//          <nCycles> <ShapeType> <degree> <No. of space procs> <No. of time procs> 
+//          <coarseTol> <fineTol> <coarseType> --info 5
 //     nmx       = No. of Fourier modes in the x-direction
 //     nmy       = No. of Fourier modes in the y-direction
 //     nmz       = No. of Fourier modes in the z-direction
-//     nx       = No. of grid points in the x-direction
-//     ny       = No. of grid points in the y-direction
-//     nz       = No. of grid points in the z-direction
+//     nx       = No. of grid points in the x-direction (not used if PIF is also used as coarse propagator)
+//     ny       = No. of grid points in the y-direction (not used if PIF is also used as coarse propagator)
+//     nz       = No. of grid points in the z-direction (not used if PIF is also used as coarse propagator)
 //     Np       = Total no. of macro-particles in the simulation
+//     tolParareal      = Parareal tolerance
 //     nCycles = No. of Parareal blocks/cycles
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
+//     No. of space procs = Number of MPI ranks to be used in the spatial parallelization
+//     No. of time procs = Number of MPI ranks to be used in the time parallelization
+//     coarseTol = Coarse tolerance for PIF if we use PIF as a coarse propagator (will not be used when PIC is used)
+//     fineTol = fine tolerance for PIF
+//     coarseType = Type of coarse propagator (PIF or PIC)
 //     Example:
-//     srun ./LandauDampingPinT 32 32 32 32 32 32 655360 20.0 0.05 0.05 1e-5 4 B-spline 1 --info 5
+//     srun ./LandauDampingPinT 32 32 32 16 16 16 655360 19.2 0.05 0.05 1e-5 1 B-spline 1 4 16 1e-2 1e-4 PIC --info 5
 //
 // Copyright (c) 2022, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -212,92 +219,6 @@ double computePL2Error(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& Qp
 
 }
 
-double computeRLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                         Vector_t& length, MPI_Comm& spaceComm) {
-    
-    auto Qview = Q.getView();
-    auto QprevIterView = QprevIter.getView();
-    double localError = 0.0;
-    double localNorm = 0.0;
-
-    Kokkos::parallel_reduce("Abs. max error and norm", Q.size(),
-                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
-                                Vector_t diff = Qview(i) - QprevIterView(i);
-                                
-                                //This is just to undo the effect of periodic BCs during the 
-                                //error calculation. Otherwise even though the actual error is 
-                                //small the computed error might be very large. 
-                                //The values (e.g. 10) mentioned here are just an adhoc
-                                //value depending on the domain length. 
-                                for (unsigned d = 0; d < 3; ++d) {
-                                    bool isLeft = (diff[d] <= -10.0);
-                                    bool isRight = (diff[d] >= 10.0);
-                                    bool isInside = ((diff[d] > -10.0) && (diff[d] < 10.0));
-                                    diff[d] = (isInside * diff[d]) + (isLeft * (diff[d] + length[d]))
-                                              +(isRight * (diff[d] - length[d]));
-                                }
-                                
-                                double myValError = dot(diff, diff).apply();
-
-                                myValError = std::sqrt(myValError);
-
-                                if(myValError > valLError) valLError = myValError;
-                                
-                                double myValnorm = dot(Qview(i), Qview(i)).apply();
-                                myValnorm = std::sqrt(myValnorm);
-
-                                if(myValnorm > valLnorm) valLnorm = myValnorm;
-                                
-                            }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm));
-
-    Kokkos::fence();
-    
-    double globalError = 0.0;
-    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
-    double globalNorm = 0.0;
-    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
-    
-    double relError = globalError/globalNorm;
-    
-    return relError;
-
-}
-
-double computePLinfError(ParticleAttrib<Vector_t>& Q, ParticleAttrib<Vector_t>& QprevIter, 
-                         MPI_Comm& spaceComm) {
-    
-    auto Qview = Q.getView();
-    auto QprevIterView = QprevIter.getView();
-    double localError = 0.0;
-    double localNorm = 0.0;
-
-    Kokkos::parallel_reduce("Abs. max error and norm", Q.size(),
-                            KOKKOS_LAMBDA(const int i, double& valLError, double& valLnorm){
-                                Vector_t diff = Qview(i) - QprevIterView(i);
-                                double myValError = dot(diff, diff).apply();
-                                myValError = std::sqrt(myValError);
-                                
-                                if(myValError > valLError) valLError = myValError;
-                                
-                                double myValnorm = dot(Qview(i), Qview(i)).apply();
-                                myValnorm = std::sqrt(myValnorm);
-                                
-                                if(myValnorm > valLnorm) valLnorm = myValnorm;
-                            }, Kokkos::Max<double>(localError), Kokkos::Max<double>(localNorm));
-
-    Kokkos::fence();
-    
-    double globalError = 0.0;
-    MPI_Allreduce(&localError, &globalError, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
-    double globalNorm = 0.0;
-    MPI_Allreduce(&localNorm, &globalNorm, 1, MPI_DOUBLE, MPI_MAX, spaceComm);
-    
-    double relError = globalError/globalNorm;
-    
-    return relError;
-
-}
-
 const char* TestName = "LandauDampingPinT";
 
 int main(int argc, char *argv[]){
@@ -425,9 +346,14 @@ int main(int argc, char *argv[]){
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
     Pcoarse->Sk_m.initialize(meshPIF, FLPIF);
-    Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
-    Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
-
+    
+    Pcoarse->coarsetype_m = argv[19];
+   
+    if(Pcoarse->coarsetype_m == "PIC") {
+        Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);
+        Pcoarse->EfieldPIC_m.initialize(meshPIC, FLPIC);
+        Pcoarse->initFFTSolver();
+    }
 
     ////////////////////////////////////////////////////////////
     //Initialize an FFT object for getting rho in real space and 
@@ -464,7 +390,6 @@ int main(int argc, char *argv[]){
    
     ////////////////////////////////////////////////////////////
 
-    Pcoarse->initFFTSolver();
     
     Vector_t minU, maxU;
     for (unsigned d = 0; d <Dim; ++d) {
@@ -491,54 +416,20 @@ int main(int argc, char *argv[]){
    
     IpplTimings::stopTimer(particleCreation);
     
-    //Pcoarse->initNUFFT(FLPIF);
     double coarseTol = std::atof(argv[17]);
     double fineTol   = std::atof(argv[18]);
     Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
     std::string coarse = "Coarse";
     std::string fine = "Fine";
 
-
     IpplTimings::startTimer(particleCreation);
-
-    
 
 #ifdef KOKKOS_ENABLE_CUDA
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
-    //tag = Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
-    //if(Ippl::Comm->rank() == 0) {
-    //    Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*Ippl::Comm->rank()));
-    //    Kokkos::parallel_for(nloc,
-    //                         generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-    //                         Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
 
-    //    Kokkos::fence();
-    //    size_type bufSize = Pbegin->packedSize(nloc);
-    //    std::vector<MPI_Request> requests(0);
-    //    int sends = 0;
-    //    for(int rank = 1; rank < Ippl::Comm->size(); ++rank) {
-    //        buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND + sends, bufSize);
-    //        requests.resize(requests.size() + 1);
-    //        Ippl::Comm->isend(rank, tag, *Pbegin, *buf, requests.back(), nloc);
-    //        buf->resetWritePos();
-    //        ++sends;
-    //    }
-    //    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-    //}
-    //else {
-    //    size_type bufSize = Pbegin->packedSize(nloc);
-    //    buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
-    //    Ippl::Comm->recv(0, tag, *Pbegin, *buf, bufSize, nloc);
-    //    buf->resetReadPos();
-    //}
-    //Ippl::Comm->barrier();
-    //IpplTimings::startTimer(deepCopy);
-    //Kokkos::deep_copy(Pcoarse->R.getView(), Pbegin->R.getView());
-    //Kokkos::deep_copy(Pcoarse->P.getView(), Pbegin->P.getView());
-    //IpplTimings::stopTimer(deepCopy);
-    
-
+    //For some reason using the next_tag with multiple cycles is not 
+    //working so we use static tags here
     tag = 500;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
 
     if(rankTime == 0) {
@@ -563,9 +454,14 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
-    //Pcoarse->initNUFFT(FLPIF, coarseTol);
-    //Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm); 
-    Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm); 
+    
+    if(Pcoarse->coarsetype_m == "PIC") {
+        Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm);
+    }
+    else {
+        //PIF with coarse tolerance as coarse propagator
+        Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm);
+    }
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
@@ -581,6 +477,7 @@ int main(int argc, char *argv[]){
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
 #else
+    //Note the CPU version has not been tested.
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
     Kokkos::parallel_for(nloc,
                          generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
@@ -612,57 +509,6 @@ int main(int argc, char *argv[]){
     
     msg << "particles created and initial conditions assigned " << endl;
 
-    //Copy initial conditions as they are needed later
-    //IpplTimings::startTimer(deepCopy);
-    //Kokkos::deep_copy(Pcoarse->R0.getView(), Pcoarse->R.getView());
-    //Kokkos::deep_copy(Pcoarse->P0.getView(), Pcoarse->P.getView());
-    //IpplTimings::stopTimer(deepCopy);
-
-
-    ////Get initial guess for ranks other than 0 by propagating the coarse solver
-    //IpplTimings::startTimer(coarsePropagator);
-    //if (Ippl::Comm->rank() > 0) {
-    //    Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, Ippl::Comm->rank()*ntCoarse, dtCoarse, tStartMySlice); 
-    //}
-    //
-    //Ippl::Comm->barrier();
-    //
-    //IpplTimings::stopTimer(coarsePropagator);
-
-    //msg << "First Leap frog PIC done " << endl;
-
-    //
-    //IpplTimings::startTimer(deepCopy);
-    //Kokkos::deep_copy(Pbegin->R.getView(), Pcoarse->R.getView());
-    //Kokkos::deep_copy(Pbegin->P.getView(), Pcoarse->P.getView());
-    //IpplTimings::stopTimer(deepCopy);
-
-
-    ////Run the coarse integrator to get the values at the end of the time slice 
-    //IpplTimings::startTimer(coarsePropagator);
-    //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice); 
-    //IpplTimings::stopTimer(coarsePropagator);
-    //msg << "Second Leap frog PIC done " << endl;
-
-
-    ////The following might not be needed
-    //IpplTimings::startTimer(deepCopy);
-    //Kokkos::deep_copy(Pend->R.getView(), Pcoarse->R.getView());
-    //Kokkos::deep_copy(Pend->P.getView(), Pcoarse->P.getView());
-    //IpplTimings::stopTimer(deepCopy);
-
-
-    //msg << "Starting parareal iterations ..." << endl;
-    //bool isConverged = false;
-    //bool isPreviousDomainConverged;
-    //if(Ippl::Comm->rank() == 0) {
-    //    isPreviousDomainConverged = true;
-    //}
-    //else {
-    //    isPreviousDomainConverged = false;
-    //}
-
-    
     int sign = 1;
     for (unsigned int nc=0; nc < nCycles; nc++) {
         double tStartMySlice; 
@@ -695,7 +541,6 @@ int main(int argc, char *argv[]){
         while (!isConverged) { 
             //Run fine integrator in parallel
             IpplTimings::startTimer(finePropagator);
-            //Pcoarse->initNUFFT(FLPIF, fineTol);
             Pcoarse->LeapFrogPIF(Pbegin->R, Pbegin->P, ntFine, dtFine, tStartMySlice, nc+1, it+1, rankTime, rankSpace, fine, spaceComm);
             IpplTimings::stopTimer(finePropagator);
     
@@ -735,18 +580,19 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
             IpplTimings::startTimer(coarsePropagator);
-            //Pcoarse->initNUFFT(FLPIF, coarseTol);
-            //double coarseTol = (double)(std::pow(0.1,std::min((int)(it+2),3)));
-            //double fineTol = 1e-6;
-            //Pcoarse->initNUFFTs(FLPIF, coarseTol, fineTol);
-            //Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
-            Pcoarse->LeapFrogPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
+            if(Pcoarse->coarsetype_m == "PIC") {
+                Pcoarse->LeapFrogPIC(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm);
+            }
+            else {
+                Pcoarse->LeapFrogPIF(Pcoarse->R, Pcoarse->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm);
+            }
             IpplTimings::stopTimer(coarsePropagator);
 
             Pend->R = Pend->R + Pcoarse->R;
             Pend->P = Pend->P + Pcoarse->P;
 
             PL.applyBC(Pend->R, PL.getRegionLayout().getDomain());
+            
             IpplTimings::startTimer(computeErrors);
             double Rerror = computeRL2Error(Pcoarse->R, Pcoarse->RprevIter, length, spaceComm);
             double Perror = computePL2Error(Pcoarse->P, Pcoarse->PprevIter, spaceComm);
@@ -777,7 +623,6 @@ int main(int argc, char *argv[]){
                 << endl;
 
             IpplTimings::startTimer(dumpData);
-            //Pcoarse->writeError(Rerror, Perror, it+1);
             Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             IpplTimings::stopTimer(dumpData);
 
@@ -824,9 +669,12 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
-            //Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm); 
-            //Pcoarse->initNUFFT(FLPIF, coarseTol);
-            Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
+            if(Pcoarse->coarsetype_m == "PIC") {
+                Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm);
+            }
+            else {
+                Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
+            }
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
