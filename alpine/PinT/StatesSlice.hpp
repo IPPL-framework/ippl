@@ -14,18 +14,18 @@
 
 
 template<class PLayout>
-class StatesBeginSlice : public ippl::ParticleBase<PLayout> {
+class StatesSlice : public ippl::ParticleBase<PLayout> {
 
 public:
     typename ippl::ParticleBase<PLayout>::particle_position_type P;
 
-    StatesBeginSlice(PLayout& pl)
+    StatesSlice(PLayout& pl)
     : ippl::ParticleBase<PLayout>(pl)
     {
         // register the particle attributes
         this->addAttribute(P);
     }
 
-    ~StatesBeginSlice(){ }
+    ~StatesSlice(){ }
 
 };

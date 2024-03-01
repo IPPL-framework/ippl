@@ -37,8 +37,7 @@
 //
 
 #include "ChargedParticlesPinT.hpp"
-#include "StatesBeginSlice.hpp"
-#include "StatesEndSlice.hpp"
+#include "StatesSlice.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -362,12 +361,11 @@ int main(int argc, char *argv[]){
 
 
     using bunch_type = ChargedParticlesPinT<PLayout_t>;
-    using states_begin_type = StatesBeginSlice<PLayout_t>;
-    using states_end_type = StatesEndSlice<PLayout_t>;
+    using states_type = StatesSlice<PLayout_t>;
 
     std::unique_ptr<bunch_type>  Pcoarse;
-    std::unique_ptr<states_begin_type>  Pbegin;
-    std::unique_ptr<states_end_type>  Pend;
+    std::unique_ptr<states_type>  Pbegin;
+    std::unique_ptr<states_type>  Pend;
 
     ippl::NDIndex<Dim> domainPIC;
     ippl::NDIndex<Dim> domainPIF;
@@ -419,8 +417,8 @@ int main(int argc, char *argv[]){
     //Q = -\int\int f dx dv
     double Q = -length[0] * length[1] * length[2];
     Pcoarse = std::make_unique<bunch_type>(PL,hrPIC,rmin,rmax,decomp,Q,Total_particles);
-    Pbegin = std::make_unique<states_begin_type>(PL);
-    Pend = std::make_unique<states_end_type>(PL);
+    Pbegin = std::make_unique<states_type>(PL);
+    Pend = std::make_unique<states_type>(PL);
 
     Pcoarse->nr_m = nrPIC;
     Pcoarse->nm_m = nmPIF;
