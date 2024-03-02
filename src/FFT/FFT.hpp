@@ -124,10 +124,8 @@ namespace ippl {
            }
         }
 
-        //heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
-        //           (inbox, outbox, Ippl::getComm(), heffteOptions);
         heffte_m = std::make_shared<heffte::fft3d<heffteBackend, long long>>
-                   (inbox, outbox, MPI_COMM_SELF, heffteOptions);
+                  (inbox, outbox, Ippl::getComm(), heffteOptions);
 
         //heffte::gpu::device_set(Ippl::Comm->rank() % heffte::gpu::device_count());
         if(workspace_m.size() < heffte_m->size_workspace())
@@ -901,28 +899,6 @@ namespace ippl {
 
         const double pi = std::acos(-1.0);
 
-        /**
-         * cuFINUFFT's layout is left, hence we allocate the temporary
-         * Kokkos views with the same layout
-         */
-        //Kokkos::View<complexType***,Kokkos::LayoutLeft>
-        //    tempField("tempField", fview.extent(0) - 2*nghost,
-        //                           fview.extent(1) - 2*nghost,
-        //                           fview.extent(2) - 2*nghost);
-
-
-        ////Initialize the pointers to NULL and fill only relevant dimensions
-        ////CUFINUFFT requires the input like this.
-        //Kokkos::View<PT1*,Kokkos::LayoutLeft> tempR[3] = {};
-      
-
-        //for(size_t d = 0; d < Dim; ++d) {
-        //    Kokkos::realloc(tempR[d], localNp);
-        //}
-
-       
-        //Kokkos::View<complexType*,Kokkos::LayoutLeft> tempQ("tempQ", localNp);
-  
         auto tempField = tempField_m;
         auto tempQ = tempQ_m;
         Kokkos::View<T*,Kokkos::LayoutLeft> tempR[3] = {};

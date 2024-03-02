@@ -39,7 +39,6 @@
 #include "Types/IpplTypes.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Field/Field.h"
-//#include "Particle/ParticleAttrib.h"
 #include "Utility/ParameterList.h"
 #include "Utility/IpplException.h"
 
