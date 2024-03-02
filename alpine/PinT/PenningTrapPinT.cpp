@@ -44,8 +44,7 @@
 //
 
 #include "ChargedParticlesPinT.hpp"
-#include "StatesBeginSlice.hpp"
-#include "StatesEndSlice.hpp"
+#include "StatesSlice.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -351,6 +350,8 @@ int main(int argc, char *argv[]){
 
     Pcoarse->rhoPIF_m.initialize(meshPIF, FLPIF);
     Pcoarse->Sk_m.initialize(meshPIF, FLPIF);
+
+    Pcoarse->coarsetype_m = argv[19];
 
     if(Pcoarse->coarsetype_m == "PIC") {
         Pcoarse->rhoPIC_m.initialize(meshPIC, FLPIC);

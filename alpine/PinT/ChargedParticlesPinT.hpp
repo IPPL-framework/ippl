@@ -420,10 +420,14 @@ public:
 
         Vector_t totalMomentum = 0.0;
         
-        Kokkos::parallel_reduce("Total Momentum", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const int i, Vector_t& valL){
-                                    valL  += (-qView(i)) * Pview(i);
-                                }, Kokkos::Sum<ippl::Vector<double,3>>(totalMomentum));
+        for(size_t d = 0; d < Dim; ++d) {
+             double tempD = 0.0;
+             Kokkos::parallel_reduce("Total Momentum", this->getLocalNum(),
+                                KOKKOS_LAMBDA(const int i, double& valL){
+                                    valL  += (-qView(i)) * Pview(i)[d];
+                                }, Kokkos::Sum<double>(tempD));
+             totalMomentum[d] = tempD;
+        }
         
         Vector_t globalMom;
 

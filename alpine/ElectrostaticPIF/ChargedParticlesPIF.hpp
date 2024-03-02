@@ -523,22 +523,26 @@ public:
 
        double charge = temp;
 
-        Vector_t totalMomentum = 0.0;
-        
-        Kokkos::parallel_reduce("Total Momentum", this->getLocalNum(),
-                                KOKKOS_LAMBDA(const int i, Vector_t& valL){
-                                    valL  += (-qView(i)) * Pview(i);
-                                }, Kokkos::Sum<ippl::Vector<double,3>>(totalMomentum));
-        
-        Vector_t globalMom;
+       Vector_t totalMomentum = 0.0;
+       
+       for(size_t d = 0; d < Dim; ++d) {
+            double tempD = 0.0;
+            Kokkos::parallel_reduce("Total Momentum", this->getLocalNum(),
+                               KOKKOS_LAMBDA(const int i, double& valL){
+                                   valL  += (-qView(i)) * Pview(i)[d];
+                               }, Kokkos::Sum<double>(tempD));
+            totalMomentum[d] = tempD;
+       }
+       
+       Vector_t globalMom;
 
-        double magMomentum = 0.0;
-        for(size_t d = 0; d < Dim; ++d) {
-            MPI_Allreduce(&totalMomentum[d], &globalMom[d], 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
-            magMomentum += globalMom[d] * globalMom[d];
-        }
+       double magMomentum = 0.0;
+       for(size_t d = 0; d < Dim; ++d) {
+           MPI_Allreduce(&totalMomentum[d], &globalMom[d], 1, MPI_DOUBLE, MPI_SUM, Ippl::getComm());
+           magMomentum += globalMom[d] * globalMom[d];
+       }
 
-        magMomentum  = std::sqrt(magMomentum);
+       magMomentum  = std::sqrt(magMomentum);
 
        if (Ippl::Comm->rank() == 0) {
            std::stringstream fname;
