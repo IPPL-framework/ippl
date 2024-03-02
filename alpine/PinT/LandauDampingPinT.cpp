@@ -428,6 +428,8 @@ int main(int argc, char *argv[]){
     //If we don't do the following even with the same seed the initial 
     //condition is not the same on different GPUs
 
+    
+    IpplTimings::startTimer(timeCommunication);
     //For some reason using the next_tag with multiple cycles is not 
     //working so we use static tags here
     tag = 500;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
@@ -447,6 +449,8 @@ int main(int argc, char *argv[]){
         Ippl::Comm->recv(rankTime-1, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
         buf->resetReadPos();
     }
+    IpplTimings::stopTimer(timeCommunication);
+    
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
     Kokkos::deep_copy(Pend->P.getView(), Pbegin->P.getView());
@@ -454,7 +458,7 @@ int main(int argc, char *argv[]){
     Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
-    
+    IpplTimings::startTimer(coarsePropagator);
     if(Pcoarse->coarsetype_m == "PIC") {
         Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, spaceComm);
     }
@@ -462,12 +466,14 @@ int main(int argc, char *argv[]){
         //PIF with coarse tolerance as coarse propagator
         Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, rankTime * dtSlice, 0, 0, 0, 0, coarse, spaceComm);
     }
+    IpplTimings::stopTimer(coarsePropagator);
 
     IpplTimings::startTimer(deepCopy);
     Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
     Kokkos::deep_copy(Pcoarse->P.getView(), Pend->P.getView());
     IpplTimings::stopTimer(deepCopy);
 
+    IpplTimings::startTimer(timeCommunication);
     if(rankTime < sizeTime-1) {
         size_type bufSize = Pend->packedSize(nloc);
         buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
@@ -476,6 +482,7 @@ int main(int argc, char *argv[]){
         buf->resetWritePos();
         MPI_Wait(&request, MPI_STATUS_IGNORE);
     }
+    IpplTimings::stopTimer(timeCommunication);
 #else
     //Note the CPU version has not been tested.
     Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(0));
@@ -633,7 +640,6 @@ int main(int argc, char *argv[]){
         
         MPI_Barrier(MPI_COMM_WORLD);
         if((nCycles > 1) && (nc < (nCycles - 1))) {  
-            IpplTimings::startTimer(timeCommunication);
             tag = 1000;//Ippl::Comm->next_tag(IPPL_PARAREAL_APP, IPPL_APP_CYCLE);
            
             //send, receive criteria and tStartMySlice are reversed at the end of the cycle
@@ -655,12 +661,14 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
 
+            IpplTimings::startTimer(timeCommunication);
             if(recvCriteria) {
                 size_type bufSize = Pbegin->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_RECV, bufSize);
                 Ippl::Comm->recv(rankTime+sign, tag, *Pbegin, *buf, bufSize, nloc, timeComm);
                 buf->resetReadPos();
             }
+            IpplTimings::stopTimer(timeCommunication);
 
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pend->R.getView(), Pbegin->R.getView());
@@ -669,12 +677,14 @@ int main(int argc, char *argv[]){
             Kokkos::deep_copy(Pcoarse->P0.getView(), Pbegin->P.getView());
             IpplTimings::stopTimer(deepCopy);
             
+            IpplTimings::startTimer(coarsePropagator);
             if(Pcoarse->coarsetype_m == "PIC") {
                 Pcoarse->LeapFrogPIC(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, spaceComm);
             }
             else {
                 Pcoarse->LeapFrogPIF(Pend->R, Pend->P, ntCoarse, dtCoarse, tStartMySlice, 0, 0, 0, 0, coarse, spaceComm); 
             }
+            IpplTimings::stopTimer(coarsePropagator);
             
             IpplTimings::startTimer(deepCopy);
             Kokkos::deep_copy(Pcoarse->R.getView(), Pend->R.getView());
@@ -682,6 +692,7 @@ int main(int argc, char *argv[]){
             IpplTimings::stopTimer(deepCopy);
 
 
+            IpplTimings::startTimer(timeCommunication);
             if(sendCriteria) {
                 size_type bufSize = Pend->packedSize(nloc);
                 buffer_type buf = Ippl::Comm->getBuffer(IPPL_PARAREAL_SEND, bufSize);
