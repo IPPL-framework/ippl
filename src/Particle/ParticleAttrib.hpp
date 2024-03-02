@@ -185,12 +185,6 @@ namespace ippl {
                 const int j = index[1] - lDom[1].first() + nghost;
                 const int k = index[2] - lDom[2].first() + nghost;
 
-                //if((i < 1) || (i > lDom[0].last() + 2) || (j < 1) || (j > lDom[1].last() + 2)
-                //   || (k < 1) || (k > lDom[0].last() + 2)) {
-                //    std::cout << "i: " << i << ", j: " << j << ", k: " << k << std::endl;
-                //    std::cout << "Invalid particle co-ordinates: " << pp(idx) << std::endl;
-                //}
-
                 // scatter
                 const value_type& val = dview_m(idx);
                 Kokkos::atomic_add(&viewLocal(i-1, j-1, k-1), wlo[0] * wlo[1] * wlo[2] * val);
@@ -203,12 +197,10 @@ namespace ippl {
                 Kokkos::atomic_add(&viewLocal(i,   j,   k  ), whi[0] * whi[1] * whi[2] * val);
             }
         );
-        IpplTimings::stopTimer(scatterPICTimer);
             
-        //static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("AccumulateHalo");           
-        //IpplTimings::startTimer(accumulateHaloTimer);                                               
         tempField.accumulateHalo();
-        //IpplTimings::stopTimer(accumulateHaloTimer);
+
+        IpplTimings::stopTimer(scatterPICTimer);
 
         static IpplTimings::TimerRef scatterAllReducePICTimer = IpplTimings::getTimer("scatterAllReducePIC");           
         IpplTimings::startTimer(scatterAllReducePICTimer);                                               
@@ -222,7 +214,8 @@ namespace ippl {
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class FT, class ST, class PT>
     void ParticleAttrib<T, Properties...>::scatterPIFNUDFT(Field<FT,Dim,M,C>& f, Field<ST,Dim,M,C>& Sk,
-                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp)
+                                                   const ParticleAttrib< Vector<PT,Dim>, Properties... >& pp,
+                                                   const MPI_Comm& spaceComm)
     const
     {
         
@@ -250,11 +243,6 @@ namespace ippl {
         
         typedef Kokkos::TeamPolicy<> team_policy;
         typedef Kokkos::TeamPolicy<>::member_type member_type;
-
-
-        //using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
-
-        //view_type_temp viewLocal("viewLocal",fview.extent(0),fview.extent(1),fview.extent(2));
 
         double pi = std::acos(-1.0);
         Kokkos::complex<double> imag = {0.0, 1.0};
@@ -304,8 +292,8 @@ namespace ippl {
                 }, Kokkos::Sum<FT>(reducedValue));
 
                 if(teamMember.team_rank() == 0) {
-                    //viewLocal(i+nghost,j+nghost,k+nghost) = reducedValue;
-                    fview(i+nghost,j+nghost,k+nghost) = reducedValue;
+                    viewLocal(i+nghost,j+nghost,k+nghost) = reducedValue;
+                    //fview(i+nghost,j+nghost,k+nghost) = reducedValue;
                 }
 
                 }
@@ -313,12 +301,12 @@ namespace ippl {
 
         IpplTimings::stopTimer(scatterPIFNUDFTTimer);
 
-        //static IpplTimings::TimerRef scatterAllReduceTimer = IpplTimings::getTimer("scatterAllReduce");           
-        //IpplTimings::startTimer(scatterAllReduceTimer);                                               
-        //int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
-        //MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
-        //              MPI_C_DOUBLE_COMPLEX, MPI_SUM, Ippl::getComm());  
-        //IpplTimings::stopTimer(scatterAllReduceTimer);
+        static IpplTimings::TimerRef scatterAllReducePIFTimer = IpplTimings::getTimer("scatterAllReducePIF");           
+        IpplTimings::startTimer(scatterAllReducePIFTimer);                                               
+        int viewSize = fview.extent(0)*fview.extent(1)*fview.extent(2);
+        MPI_Allreduce(viewLocal.data(), fview.data(), viewSize, 
+                      MPI_C_DOUBLE_COMPLEX, MPI_SUM, spaceComm);  
+        IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
     }
 
@@ -329,13 +317,10 @@ namespace ippl {
                                                   const ParticleAttrib<Vector<P2, Dim>, Properties...>& pp)
     {
 
-        //static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("FillHalo");           
-        //IpplTimings::startTimer(fillHaloTimer);                                               
-        f.fillHalo();
-        //IpplTimings::stopTimer(fillHaloTimer);                                               
-
         static IpplTimings::TimerRef gatherPICTimer = IpplTimings::getTimer("GatherPIC");           
         IpplTimings::startTimer(gatherPICTimer);                                               
+
+        f.fillHalo();
         
         const typename Field<T, Dim, M, C>::view_type view = f.getView();
 
@@ -407,8 +392,6 @@ namespace ippl {
             N[d] = domain[d].length();
             Len[d] = dx[d] * N[d];
         }
-
-
 
         typedef Kokkos::TeamPolicy<> team_policy;
         typedef Kokkos::TeamPolicy<>::member_type member_type;
@@ -492,15 +475,6 @@ namespace ippl {
     }
 
 #ifdef KOKKOS_ENABLE_CUDA
-
-    //template<typename T, class... Properties>
-    //template<unsigned Dim>
-    //void ParticleAttrib<T, Properties...>::initializeNUFFT(FieldLayout<Dim>& layout, int type, ParameterList& fftParams) {
-    //    
-    //    fftType_mp = std::make_shared<FFT<NUFFTransform, Dim, double>>(layout, *(this->localNum_mp), type, fftParams);
-    //}
-    
-    
     
     template<typename T, class... Properties>
     template <unsigned Dim, class M, class C, class FT, class ST, class PT>
@@ -525,10 +499,7 @@ namespace ippl {
 
         tempField = 0.0;
         
-        //fftType_mp->transform(pp, q, tempField);
         nufft->transform(pp, q, tempField);
-        //fftType_mp->transform(pp, q, f);
-
         
         using view_type = typename Field<FT, Dim, M, C>::view_type;
         view_type fview = f.getView();
@@ -622,7 +593,6 @@ namespace ippl {
                 double Dr = 0.0;
                 for(size_t d = 0; d < Dim; ++d) {
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
-                    //kVec[d] = (iVec[d] - (N[d] / 2));
                     Dr += kVec[d] * kVec[d];
                 }
 
@@ -634,7 +604,6 @@ namespace ippl {
                 tempview(i, j, k) *= -Skview(i, j, k) * (imag * kVec[gd] * factor);
             });
 
-            //fftType_mp->transform(pp, q, tempField);
             nufft->transform(pp, q, tempField);
 
             Kokkos::parallel_for("Assign E gather NUFFT",
@@ -644,12 +613,16 @@ namespace ippl {
                 dview_m(i)[gd] = qview(i);
             });
         }
-
         
         IpplTimings::stopTimer(gatherPIFNUFFTTimer);
 
     }
 #endif
+
+    /*
+     * Non-class functions
+     *
+     */
 
     template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
     inline
@@ -682,10 +655,6 @@ namespace ippl {
 #endif
     }
 
-    /*
-     * Non-class function
-     *
-     */
 
 
     template<typename P1, unsigned Dim, class M, class C, typename P2, class... Properties>
@@ -700,7 +669,8 @@ namespace ippl {
     template<typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4, class... Properties>
     inline
     void scatterPIFNUDFT(const ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
-                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp)
+                 Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                 const MPI_Comm& spaceComm = MPI_COMM_WORLD)
     {
         attrib.scatterPIFNUDFT(f, Sk, pp);
     }
