@@ -244,6 +244,10 @@ namespace ippl {
         typedef Kokkos::TeamPolicy<> team_policy;
         typedef Kokkos::TeamPolicy<>::member_type member_type;
 
+        using view_type_temp = typename detail::ViewType<FT, 3>::view_type;
+
+        view_type_temp viewLocal("viewLocal",fview.extent(0),fview.extent(1),fview.extent(2));
+        
         double pi = std::acos(-1.0);
         Kokkos::complex<double> imag = {0.0, 1.0};
 
@@ -672,7 +676,7 @@ namespace ippl {
                  Field<P3, Dim, M, C>& Sk, const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
                  const MPI_Comm& spaceComm = MPI_COMM_WORLD)
     {
-        attrib.scatterPIFNUDFT(f, Sk, pp);
+        attrib.scatterPIFNUDFT(f, Sk, pp, spaceComm);
     }
 
 
