@@ -22,6 +22,9 @@ target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
 add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
 target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
 
+add_executable (LandauDampingParameterList LandauDampingParameterList.cpp)
+target_link_libraries (LandauDampingParameterList ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
