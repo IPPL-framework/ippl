@@ -1,6 +1,6 @@
 // Adjoint Landau Damping Test
 //   Usage:
-//     srun ./AdjointLandauDamping
+//     srun ./Adjoint
 //                  <nx> [<ny>...] <Np> <Nt> <stype>
 //                  <lbthres> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
@@ -12,14 +12,15 @@
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical
 //                simulations.
+//     optIt    = Number of Gradient Descent steps for the optimization
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun ./AdjointLandauDamping 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
+//     srun ./Adjoint 128 128 128 10000 10 FFT 0.01 LeapFrog 10 --overallocate 2.0 --info 10
 
 constexpr unsigned Dim = 3;
 using T = double;
-const char* TestName = "AdjointLandauDamping";
+const char* TestName = "Adjoint";
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -35,7 +36,7 @@ const char* TestName = "AdjointLandauDamping";
 #include "Utility/IpplTimings.h"
 #include "Manager/PicManager.h"
 #include "datatypes.h"
-#include "AdjointLandauDampingManager.h"
+#include "AdjointManager.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -58,21 +59,13 @@ int main(int argc, char* argv[]) {
         std::string solver = argv[arg++];
         double lbt = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
+        int optIt = std::atoi(argv[arg++]);
 
         // Create an instance of a manger for the considered application
-        AdjointLandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        AdjointManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
 
         // Perform pre-run operations, including creating mesh, particles,...
-        manager.pre_run();
-
-        //TODO: run the simulation forward/backward in a loop and update the design parameter
-        manager.setTime(0.0);
-
-        msg << "Starting iterations ..." << endl;
-
-        manager.run(manager.getNt());
-
-        msg << "End." << endl;
+        manager.runOptimization(optIt);
 
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();

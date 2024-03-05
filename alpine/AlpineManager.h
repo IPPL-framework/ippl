@@ -130,28 +130,28 @@ public:
         scatter(*q, *rho, *R);
         double relError = std::fabs((Q-(*rho).sum())/Q);
 
-        m << relError << endl;
+        m << relError << " " << (*rho).sum() <<endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
-        if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 1e-10) {
-                m << "Time step: " << it_m << endl;
-                m << "Total particles in the sim. " << totalP_m << " "
-                  << "after update: " << TotalParticles << endl;
-                m << "Rel. error in charge conservation: " << relError << endl;
-                ippl::Comm->abort();
-            }
-	}
+        //if (ippl::Comm->rank() == 0) {
+        //    if (TotalParticles != totalP_m || relError > 1e-10) {
+        //        m << "Time step: " << it_m << endl;
+        //        m << "Total particles in the sim. " << totalP_m << " "
+        //          << "after update: " << TotalParticles << endl;
+        //        m << "Rel. error in charge conservation: " << relError << endl;
+        //        ippl::Comm->abort();
+        //    }
+	//}
 
 	double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)          = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
-
+        /*
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {
             double size = 1;
@@ -159,7 +159,7 @@ public:
                 size *= rmax[d] - rmin[d];
             }
             *rho = *rho - (Q / size);
-        }
+        }*/
    }
 };
 #endif

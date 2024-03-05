@@ -13,6 +13,8 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
         ippl::ParticleAttrib<double> q;                 // charge
         typename Base::particle_position_type P;  // particle velocity
         typename Base::particle_position_type E;  // electric field at particle position
+        typename Base::particle_position_type F;  // external force field at particle position
+
     private:
         PLayout_t<T, Dim> pl_m;
     public:
@@ -33,6 +35,7 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 		this->addAttribute(q);
 		this->addAttribute(P);
 		this->addAttribute(E);
+                this->addAttribute(F);
 	}
 	void setupBCs() { setBCAllPeriodic(); }
 

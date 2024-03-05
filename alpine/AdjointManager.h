@@ -1,5 +1,5 @@
-#ifndef IPPL_ADJOINT_LANDAU_DAMPING_MANAGER_H
-#define IPPL_ADJOINT_LANDAU_DAMPING_MANAGER_H
+#ifndef IPPL_ADJOINT_MANAGER_H
+#define IPPL_ADJOINT_MANAGER_H
 
 #include <memory>
 
@@ -15,6 +15,47 @@
 #include "Random/Randn.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+
+//using Vector_t = ippl::Vector<double, Dim>;
+
+using Matrix_t = ippl::Vector< ippl::Vector<double, Dim>, Dim>;
+
+// phi_ext = a * exp(-(x-b)^2)
+// dphi_ext/dxi = - a * 2 * (x_i-b_i) * exp(-(x-b)^2)
+// dphi_ext/da = exp(-(x-b)^2)
+// dphi_ext/db = a * 2 * (x-b) * exp(-(x-b)^2)
+
+template <unsigned Dim>
+struct ExternalForceField{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
+           double y = -params[0]* 2.0 * ( x[d]-params[d+1] );
+
+           for(unsigned int dim=0; dim<Dim; dim++){
+               y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
+           }
+           return y;
+      }
+};
+
+template <unsigned Dim>
+struct DExternalForceFieldDparms{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
+           double y = 0.;
+           if(d==0){
+               y = 1.0;
+               for(unsigned int dim=0; dim<Dim; dim++){
+                   y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
+               }
+           }
+           else{
+               y =  params[0] * 2. * ( x[d-1]-params[d] );
+               for(unsigned int dim=0; dim<Dim; dim++){
+                    y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
+               }
+           }
+           return y;
+       }
+};
 
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
@@ -38,18 +79,22 @@ struct CustomDistributionFunctions {
 };
 
 template <typename T, unsigned Dim>
-class AdjointLandauDampingManager : public AlpineManager<T, Dim> {
+class AdjointManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
 
-    AdjointLandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
+    AdjointManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
 
-    ~AdjointLandauDampingManager(){}
+    ~AdjointManager(){}
+
+    int nparams_m;
+    Vector_t<T, 4> params_m;
+    Vector_t<T, 4> dparams_m;
 
     void pre_run() override {
         Inform m("Pre Run");
@@ -75,6 +120,10 @@ public:
         this->dt_m     = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m     = 0;
         this->time_m   = 0.0;
+
+        //this->nparams_m = 4;
+        //this->params_m = 1.e-4;
+        //this->dparams_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
@@ -114,6 +163,8 @@ public:
         IpplTimings::stopTimer(SolveTimer);
 
         this->grid2par();
+
+        this->externalForceField();
 
         this->dump();
 
@@ -207,9 +258,23 @@ public:
         this->pcontainer_m->q = this->Q_m/totalP;
         m << "particles created and initial conditions assigned " << endl;
     }
+    void externalForceField(){
 
-    // TODO: Implement the perturbation of particles at the final time according to the merit, to be called at the end of forward run
-    void PerturbParticles(){
+        auto &F = this->pcontainer_m->F.getView();
+        auto &R = this->pcontainer_m->R.getView();
+
+        Vector_t params = this->params_m;
+        Vector_t dparams = this->dparams_m;
+
+        // compute F given external force field
+        Kokkos::parallel_for(this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+            for(unsigned int d=0; d<Dim; d++){
+                F(i)[d] = ExternalForceField<Dim>()(R(i), d, params);
+            }
+	});
+
+	Kokkos::fence();
+        ippl::Comm->barrier();
     }
 
     void advance() override {
@@ -236,10 +301,11 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        //TODO: Implement the gradient of the cost function in the backward run.
+        // external force on particle
+        externalForceField();
 
         IpplTimings::startTimer(PTimer);
-        pc->P = pc->P - 0.5 * dt * pc->E;
+        pc->P = pc->P - 0.5 * dt * ( pc->E + pc->F );
         IpplTimings::stopTimer(PTimer);
 
         // drift
@@ -263,8 +329,10 @@ public:
                 IpplTimings::stopTimer(domainDecomposition);
         }
 
-        // scatter the charge onto the underlying grid
+	// scatter the charge onto the underlying grid
         this->par2grid();
+
+        //delFdelparm();
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -274,12 +342,199 @@ public:
         // gather E field
         this->grid2par();
 
+        // recomputed external force on particle since they have moved
+        this->externalForceField();
+
         // kick
         IpplTimings::startTimer(PTimer);
-        pc->P = pc->P - 0.5 * dt * pc->E;
+        pc->P = pc->P - 0.5 * dt * ( pc->E + pc->F );
         IpplTimings::stopTimer(PTimer);
     }
 
+    // TODO: Implement the perturbation of particles at the final time according to the merit, to be called at the end of forward run
+    void PerturbParticles(){
+        // compute Dl
+
+        auto &P = this->pcontainer_m->P.getView();
+        auto &R = this->pcontainer_m->R.getView();
+
+        double gD = costFunction();
+        //costFunction();
+
+        Kokkos::parallel_for(this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+            for (unsigned int j = 0; j < 3; ++j) {
+                double tempR = R(i)[j];
+                double tempP = P(i)[j];
+                P(i)[j] += -2.0 * gD * tempR*0.01;
+                R(i)[j] +=  2.0 * gD * tempP*0.01;
+            }
+        });
+    }
+
+    // computation of dC/dalpha
+    void delFdelparm(){
+        //Inform m("delF: ");
+        auto *FL = &this->fcontainer_m->getFL();
+
+        Field_t<Dim> *rho     = &this->fcontainer_m->getRho();
+
+        auto rhoview         = this->fcontainer_m->getRho().getView();
+
+        Vector_t<double, Dim> hr     = this->hr_m;
+        Vector_t<double, Dim> origin = this->origin_m;
+
+        Vector_t params = this->params_m;
+        unsigned int nparams = this->nparams_m;
+
+        const int nghost = (*rho).getNghost();
+        const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        for (unsigned idparams = 0; idparams < nparams; ++idparams) {
+            T temp = 0.0;
+            ippl::parallel_reduce(
+                "rho*dphi_dalpha0 reduce", (*rho).getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
+                    Vector_t<double, Dim> xvec =
+                        (args + lDom.first() - nghost + 0.5) * hr + origin;
+                    T myVal = ippl::apply(rhoview, args) * DExternalForceFieldDparms<Dim>()(xvec, idparams, params);
+                    valL += myVal;
+              }, Kokkos::Sum<T>(temp));
+            Kokkos::fence();
+
+            T globaltemp          = 0.0;
+            ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
+            ippl::Comm->barrier();
+
+            this->dparams_m[idparams] += this->dt_m*globaltemp*this->hr_m[0]*this->hr_m[1]*this->hr_m[2];
+        }
+    }
+
+    void post_step() override {
+
+        this->par2grid();
+        delFdelparm();
+
+        int sign = (this->dt_m >= 0) ? 1 : -1;
+
+        // print cost function - target
+        //if( sign < 0 )
+        //    costFunction();
+
+        this->time_m += this->dt_m;
+
+        this->it_m += sign;
+
+        //if( sign > 0 )
+        //    costFunction();
+
+        this->dump();
+
+        Inform m("Post-step:");
+        m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
+    }
+
+   double costFunction(){
+        // compute Dl
+        auto Pview = this->pcontainer_m->P.getView();
+        auto Rview = this->pcontainer_m->R.getView();
+        double D   = 0.0;
+        double gD  = 0.0;
+
+        Kokkos::parallel_reduce(
+            "Dl", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i, double& valL) {
+                double myVal = dot(Pview(i), Pview(i)).apply();
+                myVal       += dot(Rview(i), Rview(i)).apply();
+                valL        += myVal;
+            },
+            Kokkos::Sum<double>(D));
+        ippl::Comm->reduce(D, gD, 1, std::plus<double>());
+        gD = gD/this->totalP_m;
+        gD = gD - 160;// global D - final time D
+        if(this->it_m==this->nt_m){
+            Inform csvout(NULL, "data/D.csv", Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            csvout << gD << endl;
+            ippl::Comm->barrier();
+
+            Inform m("Estimate moment:");
+            m << " -------    res: " << gD << endl;
+        }
+        return gD;
+   }
+   void runOptimization(int optIt){
+        Inform m("Optimization");
+
+        this->nparams_m = 4;
+        this->params_m = 1.e-16;
+        this->dparams_m = 0.0;
+
+        this->pre_run();
+
+        double dt0 = this->dt_m;
+
+        for(int iter = 0; iter < optIt; iter++) {
+             m << "iter " << iter << endl << endl;
+
+             //this->pre_run();
+
+             // Forward run, umpurturbed potential
+             this->dt_m = dt0;
+             this->run(this->nt_m); // compute unpertubed terms of df/dalpha during forward simulation
+
+             PerturbParticles();
+
+             // Backward
+             this->dt_m = -this->dt_m;
+             this->run(this->nt_m); // compute pertubed terms of df/dalpha during backward simulation
+
+             this->params_m = this->params_m - 0.0001*this->dparams_m;
+
+             m << this->params_m << " " << this->dparams_m << endl;
+         }
+   }
+};
+
+/*
+  void delFdelparm{
+     Field_t<Dim> *rhoA     = &pertSim->fcontainer_m->getRho();
+     Field_t<Dim> *rho     = &unpertSim->fcontainer_m->getRho();
+
+     const int nghostrhoA = pertSim->fcontainer_m->getRho().getNghost();
+     auto rhoAview        = pertSim->fcontainer_m->getRho().getView();
+     const ippl::NDIndex<Dim>& lDomA = pertSim->fcontainer_m->getFL()->getLocalNDIndex();
+
+     const int nghostrho = unpertSim->fcontainer_m->getRho().getNghost();
+     auto rhoview        = unpertSim->fcontainer_m->getRho().getView();
+
+     Vector_t<double, Dim> hr     = unpertSim->hr_m;
+     Vector_t<double, Dim> origin = unpertSim->origin_m;
+
+     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+     for (unsigned idparams = 0; idparams < unpertSim.nparams; ++idparams) {
+         T temp = 0.0;
+         ippl::parallel_reduce(
+                "rhoA*dphi_dalpha0 reduce", rhoA.getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
+                    Vector_t<double, Dim> xvec =
+                        (args + lDom.first() - nghost + 0.5) * hr + origin;
+
+                    T myVal = ippl::apply(rhoAview, args) * dphi_dparams(xvec, idparams);
+                    valL += myVal;
+              }, Kokkos::Sum<T>(temp));
+          Kokkos::fence();
+
+          T globaltemp          = 0.0;
+          ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
+          ippl::Comm->barrier();
+
+          pertSim.dparams[iparams] += globaltemp;
+  }
+*/
+
+
+/*
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
@@ -334,5 +589,6 @@ public:
         }
         ippl::Comm->barrier();
     }
-};
+*/
+//};
 #endif
