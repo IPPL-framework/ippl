@@ -24,7 +24,7 @@ using Matrix_t = ippl::Vector< ippl::Vector<double, Dim>, Dim>;
 // dphi_ext/dxi = - a * 2 * (x_i-b_i) * exp(-(x-b)^2)
 // dphi_ext/da = exp(-(x-b)^2)
 // dphi_ext/db = a * 2 * (x-b) * exp(-(x-b)^2)
-
+/*
 template <unsigned Dim>
 struct ExternalForceField{
        KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
@@ -36,7 +36,6 @@ struct ExternalForceField{
            return y;
       }
 };
-
 template <unsigned Dim>
 struct DExternalForceFieldDparms{
        KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
@@ -54,6 +53,50 @@ struct DExternalForceFieldDparms{
                }
            }
            return y;
+       }
+};*/
+
+// phi_ext = p0*x0 + p1*x1 + p2*x2 + p3*x0*x1 + p4*x0*x2 + p5*x1*x2 + p6*x0^2 + p7*x1^2 + p8*x2^2
+// dphi_ext/dx0 = p0 + p3*x1 + p4*x2 + 2*p6*x0
+// dphi_ext/dx1 = p1 + p3*x0 + p5*x2 + 2*p7*x1
+// dphi_ext/dx2 = p2 + p4*x0 + p5*x1 + 2*p8*x2
+// dphi_ext/dpi = [x0, x1, x2, x0*x1, x0*x2, x1*x2, x0^2, x1^2, x2^2
+template <unsigned Dim>
+struct ExternalForceField{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto p) const {
+           if(d==0)
+		return p[0] + p[3]*x[1] + p[4]*x[2] + 2.*p[6]*x[0];
+           else if(d==1)
+		return p[1] + p[3]*x[0] + p[5]*x[2] + 2*p[7]*x[1];
+           else if(d==2)
+		return p[2] + p[4]*x[0] + p[5]*x[1] + 2*p[8]*x[2];
+           else
+                return 0.0;
+      }
+};
+template <unsigned Dim>
+struct DExternalForceFieldDparms{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto p) const {
+           if(d==0)
+                return x[0] + 0.*p[0];
+           else if(d==1)
+                return x[1];
+           else if(d==2)
+                return x[2];
+           else if(d==3)
+                return x[0]*x[1];
+           else if(d==4)
+                return x[0]*x[2];
+           else if(d==5)
+                return x[1]*x[2];
+           else if(d==6)
+                return x[0]*x[0];
+           else if(d==7)
+                return x[1]*x[1];
+           else if(d==8)
+                return x[2]*x[2];
+           else
+                return 0.0;
        }
 };
 
@@ -93,8 +136,8 @@ public:
     ~AdjointManager(){}
 
     int nparams_m;
-    Vector_t<T, 4> params_m;
-    Vector_t<T, 4> dparams_m;
+    Vector_t<T, 9> params_m;
+    Vector_t<T, 9> dparams_m;
 
     void pre_run() override {
         Inform m("Pre Run");
@@ -110,12 +153,13 @@ public:
         this->decomp_m.fill(true);
         this->kw_m    = 0.5;
         this->alpha_m = 0.05;
-        this->rmin_m  = 0.0;
-        this->rmax_m  = 2 * pi / this->kw_m;
+        this->rmin_m  =  0.0;//-2 * pi / this->kw_m;
+        this->rmax_m  =   2 * pi / this->kw_m;
 
-        this->hr_m = this->rmax_m / this->nr_m;
+        this->hr_m = (this->rmax_m-this->rmin_m) / this->nr_m;
         // Q = -\int\int f dx dv
-        this->Q_m = std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
+        this->Q_m =  std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
+        this->Q_m -= std::reduce(this->rmin_m.begin(), this->rmin_m.end(), -1., std::multiplies<double>());
         this->origin_m = this->rmin_m;
         this->dt_m     = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m     = 0;
@@ -177,6 +221,7 @@ public:
         auto *mesh = &this->fcontainer_m->getMesh();
         auto *FL = &this->fcontainer_m->getFL();
         using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
+        //using DistR_t = ippl::random::NormalDistribution<double, Dim>;
         double parR[2 * Dim];
         for(unsigned int i=0; i<Dim; i++){
             parR[i * 2   ]  = this->alpha_m;
@@ -332,7 +377,7 @@ public:
 	// scatter the charge onto the underlying grid
         this->par2grid();
 
-        //delFdelparm();
+        delFdelparm();
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -359,14 +404,13 @@ public:
         auto &R = this->pcontainer_m->R.getView();
 
         double gD = costFunction();
-        //costFunction();
 
         Kokkos::parallel_for(this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
             for (unsigned int j = 0; j < 3; ++j) {
                 double tempR = R(i)[j];
                 double tempP = P(i)[j];
-                P(i)[j] += -2.0 * gD * tempR*0.01;
-                R(i)[j] +=  2.0 * gD * tempP*0.01;
+                P(i)[j] += -2.0 * gD * tempR * 1.e-3;
+                R(i)[j] +=  2.0 * gD * tempP * 1.e-3;
             }
         });
     }
@@ -411,21 +455,14 @@ public:
 
     void post_step() override {
 
-        this->par2grid();
-        delFdelparm();
+        //this->par2grid();
+        //delFdelparm();
 
         int sign = (this->dt_m >= 0) ? 1 : -1;
-
-        // print cost function - target
-        //if( sign < 0 )
-        //    costFunction();
 
         this->time_m += this->dt_m;
 
         this->it_m += sign;
-
-        //if( sign > 0 )
-        //    costFunction();
 
         this->dump();
 
@@ -455,18 +492,18 @@ public:
             Inform csvout(NULL, "data/D.csv", Inform::APPEND);
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            csvout << gD << endl;
+            csvout << gD << " " << D/this->totalP_m << endl;
             ippl::Comm->barrier();
 
             Inform m("Estimate moment:");
-            m << " -------    res: " << gD << endl;
+            m << " -------    res: " << gD << " " << D/this->totalP_m << endl;
         }
         return gD;
    }
    void runOptimization(int optIt){
         Inform m("Optimization");
 
-        this->nparams_m = 4;
+        this->nparams_m = 9;
         this->params_m = 1.e-16;
         this->dparams_m = 0.0;
 
@@ -477,7 +514,9 @@ public:
         for(int iter = 0; iter < optIt; iter++) {
              m << "iter " << iter << endl << endl;
 
-             //this->pre_run();
+             this->dparams_m = 0.0;
+
+             this->pre_run();
 
              // Forward run, umpurturbed potential
              this->dt_m = dt0;
@@ -489,7 +528,7 @@ public:
              this->dt_m = -this->dt_m;
              this->run(this->nt_m); // compute pertubed terms of df/dalpha during backward simulation
 
-             this->params_m = this->params_m - 0.0001*this->dparams_m;
+             this->params_m = this->params_m + 0.001*this->dparams_m;
 
              m << this->params_m << " " << this->dparams_m << endl;
          }

@@ -151,7 +151,7 @@ public:
         (*rho)          = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
-        /*
+        
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {
             double size = 1;
@@ -159,7 +159,7 @@ public:
                 size *= rmax[d] - rmin[d];
             }
             *rho = *rho - (Q / size);
-        }*/
+        }
    }
 };
 #endif
