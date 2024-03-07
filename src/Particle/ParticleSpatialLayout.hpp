@@ -217,7 +217,7 @@ namespace ippl {
         const neighbor_list& neighbors = flayout_m.getNeighbors();
 
         /// Container of particles that travelled more than one cell
-        locate_type notFoundIds("Not found", size_type(0.1 * pc.getLocalNum()));
+        locate_type notFoundIds("Not found", size_type(pc.getLocalNum()));
         /// Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
         bool_type found("Found", pc.getLocalNum());
         size_type nLeft              = 0;
