@@ -220,7 +220,6 @@ namespace ippl {
         /// Container of particles that travelled more than one cell
         locate_type notFoundIds("Not found", size_type(pc.getLocalNum()));
         /// Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
-        bool_type found("Found", pc.getLocalNum());
         size_type nLeft              = 0;
         size_type invalidCount       = 0;
         const size_type neighborSize = getNeighborSize(neighbors);
@@ -257,13 +256,14 @@ namespace ippl {
                 /// Step 1
                 bool inCurr = false;
                 bool inNeighbor = false;
+                bool found = false;
                 bool increment[2];
 
                 inCurr = positionInRegion(is, positions(i), Regions(myRank)); 
 
                 ranks(i)     = inCurr * myRank;
                 invalid(i)   = !inCurr;
-                found(i) =  inCurr || found(i);
+                found =  inCurr || found;
 
                 /// Step 2
                 for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
@@ -271,16 +271,16 @@ namespace ippl {
 
                     inNeighbor = positionInRegion(is, positions(i), Regions(rank));
                     
-                    ranks(i)     = !(inNeighbor) * ranks(i) + inNeighbor * rank;
-                    found(i) =  inNeighbor || found(i);
+                    ranks(i) = !(inNeighbor) * ranks(i) + inNeighbor * rank;
+                    found =  inNeighbor || found;
                 }
 
                 /// Step 3
-                bool isOut = (final && !found(i));
+                bool isOut = (final && !found);
 
                 notFoundIds(val.count[1]) = i * isOut;
                 increment[0] = invalid(i);
-                increment[1] = !found(i);
+                increment[1] = !found;
                 val += increment;
 
             },
