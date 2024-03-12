@@ -302,9 +302,9 @@ namespace ippl {
                 mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
                 KOKKOS_LAMBDA(const size_t i, const size_type j) {
                     size_type pId = notFoundIds(i);
-                    bool inNeighbor = positionInRegion(is, positions(pId), Regions(j));
+                    bool inRegion = positionInRegion(is, positions(pId), Regions(j));
 
-                    ranks(pId) = inNeighbor * j;
+                    ranks(pId) = inRegion * j;
             
                 });
             Kokkos::fence();
