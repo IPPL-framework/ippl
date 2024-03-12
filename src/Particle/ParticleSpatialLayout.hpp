@@ -159,6 +159,7 @@ namespace ippl {
         pc.internalDestroy(invalid, invalidCount);
         Kokkos::fence();
 
+
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
@@ -254,34 +255,31 @@ namespace ippl {
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
                 /// Step 1
-                bool xyz_bool = false;
+                bool inCurr = false;
+                bool inNeighbor = false;
                 bool increment[2];
 
-                xyz_bool = positionInRegion(is, positions(i), Regions(myRank));
+                inCurr = positionInRegion(is, positions(i), Regions(myRank)); 
 
-                ranks(i)     = xyz_bool * myRank;
-                invalid(i)   = !xyz_bool;
-                found(i) =  xyz_bool || found(i);
+                ranks(i)     = inCurr * myRank;
+                invalid(i)   = !inCurr;
+                found(i) =  inCurr || found(i);
 
                 /// Step 2
                 for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
                     size_type rank = neighbors_view(j);
 
-                    xyz_bool = positionInRegion(is, positions(i), Regions(rank));
+                    inNeighbor = positionInRegion(is, positions(i), Regions(rank));
                     
-                    ranks(i)     = !(xyz_bool) * ranks(i) + xyz_bool * rank;
-                    invalid(i)   = xyz_bool || invalid(i);
-                    found(i) =  xyz_bool || found(i);
-
+                    ranks(i)     = !(inNeighbor) * ranks(i) + inNeighbor * rank;
+                    found(i) =  inNeighbor || found(i);
                 }
 
                 /// Step 3
                 bool isOut = (final && !found(i));
-                bool isInvalid = isOut || invalid(i);
-                 
+
                 notFoundIds(val.count[1]) = i * isOut;
-                invalid(i) = isInvalid;
-                increment[0] = isInvalid;
+                increment[0] = invalid(i);
                 increment[1] = !found(i);
                 val += increment;
 
@@ -292,7 +290,7 @@ namespace ippl {
 
         invalidCount = red_val.count[0];
         nLeft        = red_val.count[1];
- 
+
         /// Step 4
         if (nLeft > 0) {
             static IpplTimings::TimerRef nonNeighboringParticles =
@@ -304,9 +302,9 @@ namespace ippl {
                 mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
                 KOKKOS_LAMBDA(const size_t i, const size_type j) {
                     size_type pId = notFoundIds(i);
-                    bool xyz_bool = positionInRegion(is, positions(pId), Regions(j));
+                    bool inNeighbor = positionInRegion(is, positions(pId), Regions(j));
 
-                    ranks(pId) = xyz_bool * j;
+                    ranks(pId) = inNeighbor * j;
             
                 });
             Kokkos::fence();
