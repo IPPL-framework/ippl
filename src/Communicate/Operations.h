@@ -23,6 +23,12 @@ namespace ippl {
             MAX,
             MULTIPLICATION  // TODO: Add all
         };
+
+        /**
+         * @brief Helper struct to distinguish between the four basic associative operation types
+         * 
+         * @tparam T 
+         */
         template <typename T>
         struct extractBinaryOperationKind {};
         template <typename T>
@@ -41,21 +47,30 @@ namespace ippl {
         struct extractBinaryOperationKind<std::greater<T>> {
             constexpr static binaryOperationKind value = binaryOperationKind::MAX;
         };
-
+        template<typename T>
+        struct always_false : std::false_type{};
         template <class>
         struct is_ippl_mpi_type : std::false_type {};
         struct dummy {};
+
+        
+        //Global map from {Operation, Type} to MPI_Op, for example: {std::plus<Vector<double, 3>>, Vector<double, 3>} -> _some MPI_Op_
         static std::map<std::pair<std::type_index, std::type_index>, MPI_Op> mpiOperations;
+        
         template <typename CppOpType, typename Datatype_IfNotTrivial>
         struct getMpiOpImpl {
             constexpr MPI_Op operator()() const noexcept {
-                static_assert(false, "This optype is not supported");
+                //We can't do static_assert(false) because static_assert(false), even if never instantiated,
+                //was only made well-formed in 2022 (https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2593r1.html)
+                static_assert(always_false<CppOpType>::value, "This optype is not supported");
                 return 0; //Dummy return
             }
         };
         /**
-         * @brief Helper struct to look up and store MPI_Op types for custom types 
+         * @brief Helper struct to look up and store MPI_Op types for custom types and custom operations
          * 
+         * @tparam Op Operation type, for examples std::plus<Vector<double, 3>>, std::multiplies<...> etc.
+         * @tparam Type The underlying datatype, such as Vector<double, 3>, Matrix<...> etc.
          */
         template <class Op, typename Type>        
         struct getNontrivialMpiOpImpl /*<Op, Type>*/ {
@@ -73,6 +88,13 @@ namespace ippl {
                 constexpr binaryOperationKind opKind = extractBinaryOperationKind<Op>::value;
                 MPI_Op ret;
                 MPI_Op_create(
+                    /**
+                     * @brief Construct a new lambda object without captures, therefore convertible to a function pointer
+                     * 
+                     * @param inputBuffer pointing to a Type object
+                     * @param outputBuffer pointing to a Type object
+                     * @param len Amount of _Type objects_! NOT amount of bytes!
+                     */
                     [](void* inputBuffer, void* outputBuffer, int* len, MPI_Datatype*) {
                         Type* input = (Type*)inputBuffer;
 
@@ -94,10 +116,8 @@ namespace ippl {
                         }
                     },
                     1, &ret);
-                // static_assert(is_ippl_mpi_type<Op>::value, "type not supported");
                 mpiOperations[pear] = ret;
                 return ret;
-                // return get_mpi_op(op);
             }
         };
 
