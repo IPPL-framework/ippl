@@ -7,7 +7,7 @@ set (_SRCS
     Timer.cpp
     Unique.cpp
     User.cpp
-     UserList.cpp
+#   UserList.cpp
     )
 
 set (_HDRS
@@ -20,7 +20,7 @@ set (_HDRS
     Timer.h
     Unique.h
     User.h
-    UserList.h
+#   UserList.h
     my_auto_ptr.h
     vmap.h
     vmap.hpp

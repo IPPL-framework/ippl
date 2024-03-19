@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
         // Read input parameters, assign them to the corresponding memebers of manager
         int arg = 1;
         Vector_t<int, Dim> nr;
+
         for (unsigned d = 0; d < Dim; d++) {
             nr[d] = std::atoi(argv[arg++]);
         }

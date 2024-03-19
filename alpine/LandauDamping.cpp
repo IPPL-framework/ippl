@@ -56,6 +56,7 @@ int main(int argc, char* argv[]) {
         size_type totalP = std::atoll(argv[arg++]);
         int nt  = std::atoi(argv[arg++]);
         std::string solver = argv[arg++];
+
         double lbt = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
 
