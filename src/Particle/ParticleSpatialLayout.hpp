@@ -270,7 +270,7 @@ namespace ippl {
                     size_type rank = neighbors_view(j);
 
                     inNeighbor = positionInRegion(is, positions(i), Regions(rank));
-                    
+
                     ranks(i) = !(inNeighbor) * ranks(i) + inNeighbor * rank;
                     found =  inNeighbor || found;
                 }
@@ -302,9 +302,9 @@ namespace ippl {
                 mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
                 KOKKOS_LAMBDA(const size_t i, const size_type j) {
                     size_type pId = notFoundIds(i);
+                    
                     bool inRegion = positionInRegion(is, positions(pId), Regions(j));
-
-                    ranks(pId) = inRegion * j;
+                    ranks(pId) = inRegion * j + !(inRegion) * ranks(pId);
             
                 });
             Kokkos::fence();
@@ -336,6 +336,7 @@ namespace ippl {
                 }
             });
         Kokkos::fence();
+
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
