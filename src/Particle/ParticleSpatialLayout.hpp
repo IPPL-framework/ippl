@@ -217,14 +217,25 @@ namespace ippl {
 
         const neighbor_list& neighbors = flayout_m.getNeighbors();
 
-        /// Container of particles that travelled more than one cell
-        locate_type notFoundIds("Not found", size_type(pc.getLocalNum()));
-        /// Now: dimension hard-coded, for future implementations maybe make it as a run parameter.
-        size_type nLeft              = 0;
+        /// outsideIds: Container of particle IDs that travelled outside of the neighborhood.
+        locate_type outsideIds("Particles outside of neighborhood", size_type(pc.getLocalNum()));
+
+        /// outsideCount: Tracks the number of particles that travelled outside of the neighborhood.
+        size_type outsideCount       = 0;
+        /// invalidCount: Tracks the number of particles that need to be sent to other ranks.
         size_type invalidCount       = 0;
+
+        /// neighborSize: Size of a neighborhood in D dimentions.
         const size_type neighborSize = getNeighborSize(neighbors);
+
+        /// neighbors_view: Kokkos view with the IDs of the neighboring MPI ranks.
         locate_type neighbors_view("Nearest neighbors IDs", neighborSize);
 
+        /* red_val: Used to reduce both the number of invalid particles and the number of particles 
+         * outside of the neighborhood (Kokkos::parallel_scan doesn't allow multiple reduction values, so we
+         * use the helper class increment_type). First element updates InvalidCount, second
+         * one updates outsideCount.
+        */
         increment_type red_val;
         red_val.init();
 
@@ -253,7 +264,12 @@ namespace ippl {
             "ParticleSpatialLayout::locateParticles()",
             Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
-                /// Step 1
+                /* Step 1
+                * inCurr: True if the particle hasn't left the current MPI rank.
+                * inNeighbor: True if the particle is found in a neighboring rank.
+                * found: True either if inCurr = True or inNeighbor = True.
+                * increment: Helper variable to update red_val.
+                */
                 bool inCurr = false;
                 bool inNeighbor = false;
                 bool found = false;
@@ -276,9 +292,13 @@ namespace ippl {
                 }
 
                 /// Step 3
+                /* isOut: When the last thread has finished the search, checks whether the particle has been found 
+                 * either in the current rank or in a neighboring one.
+                 * Used to avoid race conditions when updating outsideIds.
+                 */
                 bool isOut = (final && !found);
 
-                notFoundIds(val.count[1]) = i * isOut;
+                outsideIds(val.count[1]) = i * isOut;
                 increment[0] = invalid(i);
                 increment[1] = !found;
                 val += increment;
@@ -288,21 +308,23 @@ namespace ippl {
 
         Kokkos::fence();
 
-        invalidCount = red_val.count[0];
-        nLeft        = red_val.count[1];
+        invalidCount  = red_val.count[0];
+        outsideCount  = red_val.count[1];
 
-        /// Step 4
-        if (nLeft > 0) {
+        /// Step 4 
+        if (outsideCount > 0)
             static IpplTimings::TimerRef nonNeighboringParticles =
                 IpplTimings::getTimer("nonNeighboringParticles");
             IpplTimings::startTimer(nonNeighboringParticles);
 
             Kokkos::parallel_for(
                 "ParticleSpatialLayout::leftParticles()",
-                mdrange_type({0, 0}, {nLeft, Regions.extent(0)}),
+                mdrange_type({0, 0}, {outsideCount, Regions.extent(0)}),
                 KOKKOS_LAMBDA(const size_t i, const size_type j) {
-                    size_type pId = notFoundIds(i);
+                    /// pID: (local) ID of the particle that is currently being searched.
+                    size_type pId = outsideIds(i);
                     
+                    /// inRegion: Checks whether particle pID is inside region j.
                     bool inRegion = positionInRegion(is, positions(pId), Regions(j));
                     ranks(pId) = inRegion * j + !(inRegion) * ranks(pId);
             
