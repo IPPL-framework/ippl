@@ -190,6 +190,8 @@ namespace ippl {
         return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
+    /* Helper function that evaluates the total number of neighbors for the current rank in Dim dimensions.
+    */
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     detail::size_type ParticleSpatialLayout<T, Dim, Mesh, Properties...>::getNeighborSize(
         const neighbor_list& neighbors) const {
