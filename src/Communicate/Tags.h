@@ -83,10 +83,10 @@ namespace ippl {
                 PARTICLE_RECV = 10000,
 
                 // FFT Poisson Solver
-                SOLVER_SEND = 13000,
-                SOLVER_RECV = 14000,
-                VICO_SEND   = 16000,
-                VICO_RECV   = 17000,
+                SOLVER_SEND = 30000,
+                SOLVER_RECV = 35000,
+                VICO_SEND   = 40000,
+                VICO_RECV   = 45000,
 
                 OPEN_SOLVER = 18000,
                 VICO_SOLVER = 70000
