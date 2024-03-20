@@ -10,6 +10,11 @@
 //   we have referred Cabana library.
 //   https://github.com/ECP-copa/Cabana.
 //
+// Copyright (c) 2021, Sriramkrishnan Muralikrishnan,
+// Paul Scherrer Institut, Villigen PSI, Switzerland
+// All rights reserved
+//
+// This file is part of IPPL.
 //
 /**
    Implementations for FFT constructor/destructor and transforms
@@ -104,6 +109,12 @@ namespace ippl {
     }
 
     template <typename ComplexField>
+    void FFT<CCTransform, ComplexField>::warmup(ComplexField& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
+    }
+
+    template <typename ComplexField>
     void FFT<CCTransform, ComplexField>::transform(TransformDirection direction, ComplexField& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
@@ -114,7 +125,7 @@ namespace ippl {
          *This copy to a temporary Kokkos view is needed because of following
          *reasons:
          *1) heffte wants the input and output fields without ghost layers
-         *2) heffte accepts data in layout left (by default) eventhough this
+         *2) heffte accepts data in layout left (by default) even though this
          *can be changed during heffte box creation
          */
         auto& tempField = this->tempField;
@@ -183,6 +194,12 @@ namespace ippl {
     }
 
     template <typename RealField>
+    void FFT<RCTransform, RealField>::warmup(RealField& f, ComplexField& g) {
+        this->transform(FORWARD, f, g);
+        this->transform(BACKWARD, f, g);
+    }
+
+    template <typename RealField>
     void FFT<RCTransform, RealField>::transform(TransformDirection direction, RealField& f,
                                                 ComplexField& g) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
@@ -246,8 +263,19 @@ namespace ippl {
     }
 
     template <typename Field>
+    void FFT<SineTransform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
+    }
+
+    template <typename Field>
     void FFT<SineTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -286,11 +314,27 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
+    }
+
+    template <typename Field>
+    void FFT<CosTransform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
     }
 
     template <typename Field>
     void FFT<CosTransform, Field>::transform(TransformDirection direction, Field& f) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
 
         auto fview       = f.getView();
         const int nghost = f.getNghost();
@@ -329,7 +373,82 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(fview, args) = apply(tempField, args - nghost);
             });
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
     }
+
+    template <typename Field>
+    void FFT<Cos1Transform, Field>::warmup(Field& f) {
+        this->transform(FORWARD, f);
+        this->transform(BACKWARD, f);
+    }
+
+    template <typename Field>
+    void FFT<Cos1Transform, Field>::transform(TransformDirection direction, Field& f) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+/**
+ * This rescaling is needed to match the normalization constant
+ * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+ */
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == FORWARD) {
+            f = f / 8.0;
+        }
+#endif
+
+        auto fview       = f.getView();
+        const int nghost = f.getNghost();
+
+        /**
+         *This copy to a temporary Kokkos view is needed because of following
+         *reasons:
+         *1) heffte wants the input and output fields without ghost layers
+         *2) heffte accepts data in layout left (by default) eventhough this
+         *can be changed during heffte box creation
+         */
+        auto& tempField = this->tempField;
+        if (tempField.size() != f.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", fview, nghost);
+        }
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "copy from Kokkos FFT", getRangePolicy(fview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(tempField, args - nghost) = apply(fview, args);
+            });
+
+        if (direction == FORWARD) {
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+        } else if (direction == BACKWARD) {
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
+        } else {
+            throw std::logic_error("Only 1:forward and -1:backward are allowed as directions");
+        }
+
+        ippl::parallel_for(
+            "copy to Kokkos FFT", getRangePolicy(fview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(fview, args) = apply(tempField, args - nghost);
+            });
+
+/**
+ * This rescaling is needed to match the normalization constant
+ * between fftw and the other gpu interfaces. fftw rescales with an extra factor of 8.
+ */
+#ifdef Heffte_ENABLE_FFTW
+        if (direction == BACKWARD) {
+            f = f * 8.0;
+        }
+#endif
+    }
+
 }  // namespace ippl
 
 // vi: set et ts=4 sw=4 sts=4:

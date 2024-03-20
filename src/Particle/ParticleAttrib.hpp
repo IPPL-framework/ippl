@@ -45,30 +45,24 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::pack(void* buffer, const hash_type& hash) const {
-        using this_type     = ParticleAttrib<T, Properties...>;
-        this_type* buffer_p = static_cast<this_type*>(buffer);
-        auto& view          = buffer_p->dview_m;
-        auto size           = hash.extent(0);
-        if (view.extent(0) < size) {
+    void ParticleAttrib<T, Properties...>::pack(const hash_type& hash) {
+        auto size = hash.extent(0);
+        if (buf_m.extent(0) < size) {
             int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(view, size * overalloc);
+            Kokkos::realloc(buf_m, size * overalloc);
         }
 
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::pack()", policy_type(0, size),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { view(i) = dview_m(hash(i)); });
+            KOKKOS_CLASS_LAMBDA(const size_t i) { buf_m(i) = dview_m(hash(i)); });
         Kokkos::fence();
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::unpack(void* buffer, size_type nrecvs) {
-        using this_type     = ParticleAttrib<T, Properties...>;
-        this_type* buffer_p = static_cast<this_type*>(buffer);
-        auto& view          = buffer_p->dview_m;
-        auto size           = dview_m.extent(0);
-        size_type required  = *(this->localNum_mp) + nrecvs;
+    void ParticleAttrib<T, Properties...>::unpack(size_type nrecvs) {
+        auto size          = dview_m.extent(0);
+        size_type required = *(this->localNum_mp) + nrecvs;
         if (size < required) {
             int overalloc = Comm->getDefaultOverallocation();
             this->resize(required * overalloc);
@@ -78,7 +72,7 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()", policy_type(0, nrecvs),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(count + i) = view(i); });
+            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(count + i) = buf_m(i); });
         Kokkos::fence();
     }
 
@@ -112,6 +106,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp) const {
         constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
 
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
@@ -137,10 +132,10 @@ namespace ippl {
             "ParticleAttrib::scatter", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index = l;
-                Vector<T, Field::dim> whi     = l - index;
-                Vector<T, Field::dim> wlo     = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Field::dim> index        = l;
+                Vector<PositionType, Field::dim> whi = l - index;
+                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
@@ -162,6 +157,7 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gather(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) {
         constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
@@ -190,10 +186,10 @@ namespace ippl {
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                 = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index = l;
-                Vector<T, Field::dim> whi     = l - index;
-                Vector<T, Field::dim> wlo     = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                Vector<int, Field::dim> index        = l;
+                Vector<PositionType, Field::dim> whi = l - index;
+                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
@@ -219,26 +215,25 @@ namespace ippl {
         attrib.gather(f, pp);
     }
 
-#define DefineParticleReduction(fun, name, op, MPI_Op)                               \
-    template <typename T, class... Properties>                                       \
-    T ParticleAttrib<T, Properties...>::name() {                                     \
-        T temp            = 0.0;                                                     \
-        using policy_type = Kokkos::RangePolicy<execution_space>;                    \
-        Kokkos::parallel_reduce(                                                     \
-            "fun", policy_type(0, *(this->localNum_mp)),                             \
-            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {                           \
-                T myVal = dview_m(i);                                                \
-                op;                                                                  \
-            },                                                                       \
-            Kokkos::fun<T>(temp));                                                   \
-        T globaltemp      = 0.0;                                                     \
-        MPI_Datatype type = get_mpi_datatype<T>(temp);                               \
-        MPI_Allreduce(&temp, &globaltemp, 1, type, MPI_Op, Comm->getCommunicator()); \
-        return globaltemp;                                                           \
+#define DefineParticleReduction(fun, name, op, MPI_Op)            \
+    template <typename T, class... Properties>                    \
+    T ParticleAttrib<T, Properties...>::name() {                  \
+        T temp            = 0.0;                                  \
+        using policy_type = Kokkos::RangePolicy<execution_space>; \
+        Kokkos::parallel_reduce(                                  \
+            "fun", policy_type(0, *(this->localNum_mp)),          \
+            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {        \
+                T myVal = dview_m(i);                             \
+                op;                                               \
+            },                                                    \
+            Kokkos::fun<T>(temp));                                \
+        T globaltemp = 0.0;                                       \
+        Comm->allreduce(temp, globaltemp, 1, MPI_Op<T>());        \
+        return globaltemp;                                        \
     }
 
-    DefineParticleReduction(Sum, sum, valL += myVal, MPI_SUM)
-    DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, MPI_MAX)
-    DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, MPI_MIN)
-    DefineParticleReduction(Prod, prod, valL *= myVal, MPI_PROD)
+    DefineParticleReduction(Sum, sum, valL += myVal, std::plus)
+    DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
+    DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
+    DefineParticleReduction(Prod, prod, valL *= myVal, std::multiplies)
 }  // namespace ippl

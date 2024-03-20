@@ -27,12 +27,11 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<3> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[3];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < 3; d++)
-            allParallel[d] = ippl::PARALLEL;
+        std::array<bool, 3> isParallel;
+        isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<3> layout(owned, allParallel);
+        ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
         double dx                      = 1.0 / double(pt);
         ippl::Vector<double, 3> hx     = {dx, dx, dx};
@@ -79,8 +78,7 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
 
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Sum coord: " << global_sum_coord << std::endl;
@@ -88,8 +86,7 @@ int main(int argc, char* argv[]) {
 
         bunch.Q = 1.0;
 
-        bunch_type bunchBuffer(pl);
-        pl.update(bunch, bunchBuffer);
+        bunch.update();
 
         field = 0.0;
 

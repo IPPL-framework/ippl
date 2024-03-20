@@ -21,11 +21,10 @@ int main(int argc, char* argv[]) {
         ippl::Index Kinput(pt[2]);
         ippl::NDIndex<dim> ownedInput(Iinput, Jinput, Kinput);
 
-        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++)
-            allParallel[d] = ippl::PARALLEL;
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
 
-        ippl::FieldLayout<dim> layoutInput(ownedInput, allParallel);
+        ippl::FieldLayout<dim> layoutInput(MPI_COMM_WORLD, ownedInput, isParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -67,7 +66,7 @@ int main(int argc, char* argv[]) {
             }
             return 0;
         }
-        ippl::FieldLayout<dim> layoutOutput(ownedOutput, allParallel);
+        ippl::FieldLayout<dim> layoutOutput(MPI_COMM_WORLD, ownedOutput, isParallel);
 
         Mesh_t meshOutput(ownedOutput, hx, origin);
         field_type_complex fieldOutput(meshOutput, layoutOutput);

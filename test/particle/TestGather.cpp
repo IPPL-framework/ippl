@@ -27,12 +27,11 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<3> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[3];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < 3; d++)
-            allParallel[d] = ippl::PARALLEL;
+        std::array<bool, 3> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<3> layout(owned, allParallel);
+        ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
         double dx                      = 1.0 / double(pt);
         ippl::Vector<double, 3> hx     = {dx, dx, dx};
@@ -59,8 +58,7 @@ int main(int argc, char* argv[]) {
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         Kokkos::deep_copy(bunch.Q.getView(), Q_host);
 
-        bunch_type buffer(pl);
-        pl.update(bunch, buffer);
+        bunch.update();
 
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field_type;
 

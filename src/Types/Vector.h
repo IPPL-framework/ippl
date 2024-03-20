@@ -29,6 +29,10 @@ namespace ippl {
         Vector()
             : Vector(value_type(0)) {}
 
+        template <typename... Args,
+                  typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
+        explicit KOKKOS_FUNCTION Vector(const Args&... args);
+
         template <typename E, size_t N>
         KOKKOS_FUNCTION Vector(const detail::Expression<E, N>& expr);
 
@@ -37,6 +41,11 @@ namespace ippl {
 
         KOKKOS_FUNCTION
         Vector(const T& val);
+        
+        
+        Vector(const std::array<T, Dim>& a);
+
+	    Vector(const std::array<std::vector<T>, Dim>& a);
 
         /*!
          * @param list of values
@@ -72,6 +81,14 @@ namespace ippl {
         template <typename E, size_t N>
         KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const detail::Expression<E, N>& expr);
 
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator+=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator-=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator*=(const T& val);
+
+        KOKKOS_INLINE_FUNCTION Vector<T, Dim>& operator/=(const T& val);
+
         using iterator       = T*;
         using const_iterator = const T*;
         KOKKOS_INLINE_FUNCTION constexpr iterator begin();
@@ -79,9 +96,17 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr const_iterator begin() const;
         KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
-    private:
+        KOKKOS_INLINE_FUNCTION T dot(const Vector<T, Dim>& rhs) const;
+
+    //Needs to be public to be a standard-layout type
+    //private:
         T data_m[Dim];
     };
+    
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> min(const Vector<T, Dim>& a, const Vector<T, Dim>& b);
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b);
 }  // namespace ippl
 
 #include "Vector.hpp"

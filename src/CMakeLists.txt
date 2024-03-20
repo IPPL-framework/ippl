@@ -79,17 +79,20 @@ add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
+add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)
-    message (STATUS "Adding Solver subdirectory")
-    add_subdirectory (Solver)
+    message (STATUS "Adding Solver subdirectories")
+    add_subdirectory (PoissonSolvers)
+    add_subdirectory (MaxwellSolvers)
+    add_subdirectory (LinearSolvers)
 endif ()
 
 include_directories (
     BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
+add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT})
 
 set(TimerFences true)
 string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")

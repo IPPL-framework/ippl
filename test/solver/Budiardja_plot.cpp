@@ -1,6 +1,6 @@
 //
 // Budiardja_plot
-// This programs tests the FFTPoissonSolver by recreating the
+// This programs tests the FFTOpenPoissonSolver by recreating the
 // convergence test plot from the Budiardja et al. (2010) paper.
 // The solution is the gravitational potential of a sphere.
 //   Usage:
@@ -13,7 +13,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "Solver/FFTPoissonSolver.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 KOKKOS_INLINE_FUNCTION double source(double x, double y, double z, double density = 1.0,
                                      double R = 1.0, double mu = 1.2) {
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         using Centering_t = Mesh_t::DefaultCentering;
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field;
         using vfield   = ippl::Field<ippl::Vector<double, 3>, 3, Mesh_t, Centering_t>;
-        using Solver_t = ippl::FFTPoissonSolver<vfield, field>;
+        using Solver_t = ippl::FFTOpenPoissonSolver<vfield, field>;
 
         // number of gridpoints to iterate over
         std::array<int, n> N = {48, 144, 288, 384, 576};
@@ -62,9 +62,8 @@ int main(int argc, char* argv[]) {
             ippl::NDIndex<3> owned(I, I, I);
 
             // specifies decomposition; here all dimensions are parallel
-            ippl::e_dim_tag decomp[3];
-            for (unsigned int d = 0; d < 3; d++)
-                decomp[d] = ippl::PARALLEL;
+            std::array<bool, 3> isParallel;
+            isParallel.fill(true);
 
             // define computational box of side 2.4
             double dx                      = 2.4 / pt;
@@ -73,7 +72,7 @@ int main(int argc, char* argv[]) {
             Mesh_t mesh(owned, hx, origin);
 
             // all parallel layout, standard domain, normal axis order
-            ippl::FieldLayout<3> layout(owned, decomp);
+            ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
             // define the L (phi) and R (rho) fields
             field rho;
@@ -134,7 +133,7 @@ int main(int argc, char* argv[]) {
             // choose Hockney algorithm for Open BCs solver
             params.add("algorithm", Solver_t::HOCKNEY);
 
-            // define an FFTPoissonSolver object
+            // define an FFTOpenPoissonSolver object
             Solver_t FFTsolver(rho, params);
 
             // solve the Poisson equation -> rho contains the solution (phi) now

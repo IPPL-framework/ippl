@@ -14,6 +14,11 @@ namespace ippl {
     }  // namespace detail
 
     template <typename T, unsigned Dim>
+    template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
+        : Vector({static_cast<T>(args)...}) {}
+
+    template <typename T, unsigned Dim>
     template <typename E, size_t N>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const detail::Expression<E, N>& expr) {
         for (unsigned int i = 0; i < Dim; ++i) {
@@ -21,11 +26,11 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim>
-    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const T& val) {
-        for (unsigned i = 0; i < Dim; ++i) {
-            data_m[i] = val;
-        }
+    template<typename T, unsigned Dim>
+    KOKKOS_FUNCTION
+    Vector<T, Dim>::Vector(const T& val){ 
+        for (unsigned int i = 0; i < Dim; ++i)
+	  	data_m[i] = val;
     }
 
     template <typename T, unsigned Dim>
@@ -127,6 +132,32 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator+=(const T& val) {
+        for (unsigned int i = 0; i < Dim; ++i) {
+            data_m[i] += val;
+        }
+        return *this;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator-=(const T& val) {
+        return this->operator+=(-val);
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator*=(const T& val) {
+        for (unsigned int i = 0; i < Dim; ++i) {
+            data_m[i] *= val;
+        }
+        return *this;
+    }
+
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator/=(const T& val) {
+        return this->operator*=(T(1.0) / val);
+    }
+
+    template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION constexpr typename Vector<T, Dim>::iterator Vector<T, Dim>::begin() {
         return data_m;
     }
@@ -149,6 +180,15 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::dot(const Vector<T, Dim>& rhs) const {
+        T res = 0.0;
+        for (unsigned i = 0; i < Dim; ++i) {
+            res += data_m[i] * rhs[i];
+        }
+        return res;
+    }
+
+    template <typename T, unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {
         std::streamsize sw = out.width();
         out << std::setw(1);
@@ -162,6 +202,24 @@ namespace ippl {
             out << "( " << std::setw(sw) << v[0] << " )";
         }
         return out;
+    }
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> min(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+        using Kokkos::min;
+        Vector<T, Dim> ret;
+        for(unsigned d = 0; d < Dim;d++){
+            ret[d] = min(a[d], b[d]);
+        }
+        return ret;
+    }
+    template<typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+        using Kokkos::max;
+        Vector<T, Dim> ret;
+        for(unsigned d = 0; d < Dim;d++){
+            ret[d] = max(a[d], b[d]);
+        }
+        return ret;
     }
 }  // namespace ippl
 

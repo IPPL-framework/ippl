@@ -30,6 +30,7 @@
 #include "Region/RegionLayout.h"
 
 namespace ippl {
+
     /*!
      * ParticleSpatialLayout class definition.
      * @tparam T value type
@@ -50,6 +51,7 @@ namespace ippl {
         using vector_type = typename Base::vector_type;
         using RegionLayout_t =
             typename detail::RegionLayout<T, Dim, Mesh, position_memory_space>::uniform_type;
+        using FieldLayout_t = typename ippl::FieldLayout<Dim>;
 
         using size_type = detail::size_type;
 
@@ -64,8 +66,8 @@ namespace ippl {
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
-        template <class BufferType>
-        void update(BufferType& pdata, BufferType& buffer);
+        template <class ParticleContainer>
+        void update(ParticleContainer& pc);
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
@@ -73,25 +75,41 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
-        using region_type = typename RegionLayout_t::view_type::value_type;
+        //! The FieldLayout containing information on nearest neighbors
+        FieldLayout_t flayout_m;
+
+        //! Type of the Kokkos view containing the local regions.
+        using region_view_type = typename RegionLayout_t::view_type;
+        //! Type of a single Region object.
+        using region_type = typename region_view_type::value_type;
+        //! Array of N rank lists, where N = number of hypercubes for the dimension Dim.
+        using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region);
 
+        /*!
+         * Evaluates the total number of MPI ranks sharing the spatial nearest neighbors.
+         * @param neighbors structure containing, for every spatial direction, a list of
+         * MPI ranks IDs corresponding to the nearest neighbors of the current local domain section.
+         * @return The total number of the ranks.
+         */
+        size_type getNeighborSize(const neighbor_list& neighbors) const;
+
     public:
         /*!
          * For each particle in the bunch, determine the rank on which it should
          * be stored based on its location
-         * @tparam ParticleBunch the bunch type
-         * @param pdata the particle bunch
+         * @tparam ParticleContainer the particle container type
+         * @param pc the particle container
          * @param ranks the integer view in which to store the destination ranks
          * @param invalid the boolean view in which to store whether each particle
          * is invalidated, i.e. needs to be sent to another rank
          * @return The total number of invalidated particles
          */
-        template <typename ParticleBunch>
-        size_type locateParticles(const ParticleBunch& pdata, locate_type& ranks,
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
                                   bool_type& invalid) const;
 
         /*!

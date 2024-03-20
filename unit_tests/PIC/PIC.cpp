@@ -19,6 +19,7 @@ protected:
 
 public:
     constexpr static unsigned dim = Dim;
+    using value_type              = T;
 
     using mesh_type      = ippl::UniformCartesian<double, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
@@ -56,14 +57,15 @@ public:
         ippl::Vector<double, Dim> hx;
         ippl::Vector<double, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
+
         for (unsigned int d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout = flayout_type(owned, domDec);
+        layout = flayout_type(MPI_COMM_WORLD, owned, isParallel);
         mesh   = mesh_type(owned, hx, origin);
 
         field = std::make_unique<field_type>(mesh, layout);
@@ -115,7 +117,6 @@ TYPED_TEST_CASE(PICTest, Tests);
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 0.0;
@@ -124,28 +125,26 @@ TYPED_TEST(PICTest, Scatter) {
 
     bunch->Q = charge;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     scatter(bunch->Q, *field, bunch->R);
 
     double totalcharge = field->sum();
 
-    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0, 1e-13);
+    ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
+                tolerance<typename TestFixture::value_type>);
 }
 
 TYPED_TEST(PICTest, Gather) {
     auto& field      = this->field;
     auto& bunch      = this->bunch;
-    auto& pl         = this->playout;
     auto& nParticles = this->nParticles;
 
     *field = 1.0;
 
     bunch->Q = 0.0;
 
-    typename TestFixture::bunch_type bunchBuffer(pl);
-    pl.update(*bunch, bunchBuffer);
+    bunch->update();
 
     gather(bunch->Q, *field, bunch->R);
 

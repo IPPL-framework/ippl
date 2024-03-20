@@ -11,7 +11,6 @@
 #include "Utility/TypeUtils.h"
 #include "Utility/ViewUtils.h"
 
-#include "MultirankUtils.h"
 #include "gtest/gtest.h"
 
 /*!
@@ -82,6 +81,17 @@ struct TestForTypes<std::tuple<Types...>> {
     using type = ::testing::Types<Types...>;
 };
 
+/*!
+ * Numerical tolerance for equality checks for computed results
+ * @tparam T precision
+ */
+template <typename T>
+constexpr T tolerance = std::is_same_v<T, double> ? 1e-13 : 1e-6;
+
+/*!
+ * Verifies that two values are equal to the correct level of precision
+ * @tparam T data type
+ */
 template <typename T>
 void assertEqual(T valA, T valB) {
     if constexpr (std::is_same_v<T, double>) {
@@ -91,6 +101,12 @@ void assertEqual(T valA, T valB) {
     }
 };
 
+/*!
+ * Generates the mesh refinement for unit tests such that the refinement and domain
+ * are heterogeneous along all axes
+ * @tparam Dim number of dimensions
+ * @return Mesh refinement
+ */
 template <unsigned Dim>
 constexpr std::array<size_t, Dim> getGridSizes() {
     constexpr unsigned max = std::max(6U, Dim);
@@ -105,6 +121,10 @@ constexpr std::array<size_t, Dim> getGridSizes() {
     return nr;
 }
 
+/*!
+ * Dummy struct for holding an unsigned number as a template parameter
+ * @param _ number of dimensions
+ */
 template <unsigned>
 struct Rank;
 
@@ -129,7 +149,7 @@ struct TestParams {
     static bool skipSerialTests;
 
     static void checkArgs([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-        skipSerialTests = true;
+        skipSerialTests = false;
 #ifdef KOKKOS_ENABLE_SERIAL
         for (int i = 1; i < argc; i++) {
             if (strcmp(argv[i], "--run-serial") == 0) {
@@ -140,7 +160,7 @@ struct TestParams {
     }
 };
 
-bool TestParams::skipSerialTests = true;
+bool TestParams::skipSerialTests = false;
 
 using ippl::detail::nestedViewLoop, ippl::detail::nestedLoop;
 
