@@ -22,6 +22,7 @@ public:
 
     ~FieldContainer(){}
 
+    //VField_t<double, 3> Et_m[11];
 private:
     Vector_t<double, Dim> hr_m;
     Vector_t<double, Dim> rmin_m;

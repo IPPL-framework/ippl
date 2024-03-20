@@ -16,88 +16,56 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
-//using Vector_t = ippl::Vector<double, Dim>;
-
 using Matrix_t = ippl::Vector< ippl::Vector<double, Dim>, Dim>;
 
-// phi_ext = a * exp(-(x-b)^2)
-// dphi_ext/dxi = - a * 2 * (x_i-b_i) * exp(-(x-b)^2)
-// dphi_ext/da = exp(-(x-b)^2)
-// dphi_ext/db = a * 2 * (x-b) * exp(-(x-b)^2)
-/*
-template <unsigned Dim>
-struct ExternalForceField{
-       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
-           double y = -params[0]* 2.0 * ( x[d]-params[d+1] );
+// phi_ext = p0*x0 + p1*x1 + p2*x2 + p3*x0*x1 + p4*x0*x2 + p5*x1*x2 + p6*x0^2 + p7*x1^2 + p8*x2^2 /// + p9*x0^4 + p10*x1^4 + p11*x2^4
+// dphi_ext/dx0 = p0 + p3*x1 + p4*x2 + 2*p6*x0 ///+ 4*p9*x0**3
+// dphi_ext/dx1 = p1 + p3*x0 + p5*x2 + 2*p7*x1 ///+ 4*p10*x1**3
+// dphi_ext/dx2 = p2 + p4*x0 + p5*x1 + 2*p8*x2 ///+ 4*p11*x2**3
+// dphi_ext/dpi = [x0, x1, x2, x0*x1, x0*x2, x1*x2, x0^2, x1^2, x2^2] ///, x0^4, x1^4, x2^4]
 
-           for(unsigned int dim=0; dim<Dim; dim++){
-               y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
-           }
-           return y;
-      }
-};
 template <unsigned Dim>
-struct DExternalForceFieldDparms{
-       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto params) const {
-           double y = 0.;
-           if(d==0){
-               y = 1.0;
-               for(unsigned int dim=0; dim<Dim; dim++){
-                   y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
-               }
-           }
-           else{
-               y =  params[0] * 2. * ( x[d-1]-params[d] );
-               for(unsigned int dim=0; dim<Dim; dim++){
-                    y *= Kokkos::exp(-Kokkos::pow(x[dim]-params[1+dim], 2) );
-               }
-           }
-           return y;
-       }
-};*/
-
-// phi_ext = p0*x0 + p1*x1 + p2*x2 + p3*x0*x1 + p4*x0*x2 + p5*x1*x2 + p6*x0^2 + p7*x1^2 + p8*x2^2
-// dphi_ext/dx0 = p0 + p3*x1 + p4*x2 + 2*p6*x0
-// dphi_ext/dx1 = p1 + p3*x0 + p5*x2 + 2*p7*x1
-// dphi_ext/dx2 = p2 + p4*x0 + p5*x1 + 2*p8*x2
-// dphi_ext/dpi = [x0, x1, x2, x0*x1, x0*x2, x1*x2, x0^2, x1^2, x2^2
-template <unsigned Dim>
-struct ExternalForceField{
-       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto p) const {
-           if(d==0)
-		return p[0] + p[3]*x[1] + p[4]*x[2] + 2.*p[6]*x[0];
-           else if(d==1)
-		return p[1] + p[3]*x[0] + p[5]*x[2] + 2*p[7]*x[1];
-           else if(d==2)
-		return p[2] + p[4]*x[0] + p[5]*x[1] + 2*p[8]*x[2];
-           else
-                return 0.0;
-      }
-};
-template <unsigned Dim>
-struct DExternalForceFieldDparms{
-       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto p) const {
-           if(d==0)
-                return x[0] + 0.*p[0];
-           else if(d==1)
+struct dphi_dparam{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int idp) const {
+           if(idp==0)
+                return x[0];
+           else if(idp==1)
                 return x[1];
-           else if(d==2)
+           else if(idp==2)
                 return x[2];
-           else if(d==3)
+           else if(idp==3)
                 return x[0]*x[1];
-           else if(d==4)
+           else if(idp==4)
                 return x[0]*x[2];
-           else if(d==5)
+           else if(idp==5)
                 return x[1]*x[2];
-           else if(d==6)
+           else if(idp==6)
                 return x[0]*x[0];
-           else if(d==7)
+           else if(idp==7)
                 return x[1]*x[1];
-           else if(d==8)
+           else if(idp==8)
                 return x[2]*x[2];
+           else if(idp==9)
+                return Kokkos::pow(x[0], 4);
+           else if(idp==10)
+                return Kokkos::pow(x[1], 4);
+           else //if(idp==11)
+               	return Kokkos::pow(x[2], 4);
+      }
+};
+
+template <unsigned Dim>
+struct ExternalForceField{
+       KOKKOS_INLINE_FUNCTION double operator()(auto x, unsigned int d, auto p) const {
+           if(d==0)
+		return p[0] + p[3]*x[1] + p[4]*x[2] + 2.*p[6]*x[0];// + 4.*p[9]*Kokkos::pow(x[0],3);
+           else if(d==1)
+		return p[1] + p[3]*x[0] + p[5]*x[2] + 2.*p[7]*x[1];// + 4.*p[10]*Kokkos::pow(x[1],3);
+           else if(d==2)
+		return p[2] + p[4]*x[0] + p[5]*x[1] + 2.*p[8]*x[2];// + 4.*p[11]*Kokkos::pow(x[2],3);
            else
                 return 0.0;
-       }
+      }
 };
 
 // define functions used in sampling particles
@@ -135,6 +103,8 @@ public:
 
     ~AdjointManager(){}
 
+    int optit;
+    double fD;
     int nparams_m;
     Vector_t<T, 9> params_m;
     Vector_t<T, 9> dparams_m;
@@ -153,8 +123,10 @@ public:
         this->decomp_m.fill(true);
         this->kw_m    = 0.5;
         this->alpha_m = 0.05;
-        this->rmin_m  =  0.0;//-2 * pi / this->kw_m;
-        this->rmax_m  =   2 * pi / this->kw_m;
+        //this->rmin_m  =  0.0;//-2 * pi / this->kw_m;
+        //this->rmax_m  =   2 * pi / this->kw_m;
+        this->rmin_m  = - pi / this->kw_m;
+        this->rmax_m  =   pi / this->kw_m;
 
         this->hr_m = (this->rmax_m-this->rmin_m) / this->nr_m;
         // Q = -\int\int f dx dv
@@ -164,10 +136,6 @@ public:
         this->dt_m     = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m     = 0;
         this->time_m   = 0.0;
-
-        //this->nparams_m = 4;
-        //this->params_m = 1.e-4;
-        //this->dparams_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
@@ -210,81 +178,24 @@ public:
 
         this->externalForceField();
 
-        this->dump();
+        //this->fcontainer_m->Et_m[0] = this->fcontainer_m->getE();
 
         m << "Done";
     }
 
     void initializeParticles(){
         Inform m("Initialize Particles");
-
-        auto *mesh = &this->fcontainer_m->getMesh();
-        auto *FL = &this->fcontainer_m->getFL();
-        using DistR_t = ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
-        //using DistR_t = ippl::random::NormalDistribution<double, Dim>;
-        double parR[2 * Dim];
-        for(unsigned int i=0; i<Dim; i++){
-            parR[i * 2   ]  = this->alpha_m;
-            parR[i * 2 + 1] = this->kw_m[i];
-        }
-        DistR_t distR(parR);
-
-        Vector_t<double, Dim> kw     = this->kw_m;
-        Vector_t<double, Dim> hr     = this->hr_m;
-        Vector_t<double, Dim> origin = this->origin_m;
-        static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
-        if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
-            m << "Starting first repartition" << endl;
-            IpplTimings::startTimer(domainDecomposition);
-            this->isFirstRepartition_m           = true;
-            const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
-            const int nghost               = this->fcontainer_m->getRho().getNghost();
-            auto rhoview                   = this->fcontainer_m->getRho().getView();
-
-            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            ippl::parallel_for(
-                "Assign initial rho based on PDF", this->fcontainer_m->getRho().getFieldRangePolicy(),
-                KOKKOS_LAMBDA (const index_array_type& args) {
-                    // local to global index conversion
-                    Vector_t<double, Dim> xvec =
-                        (args + lDom.first() - nghost + 0.5) * hr + origin;
-
-                    // ippl::apply accesses the view at the given indices and obtains a
-                    // reference; see src/Expression/IpplOperations.h
-                    ippl::apply(rhoview, args) = distR.getFullPdf(xvec);
-                });
-
-            Kokkos::fence();
-
-            this->loadbalancer_m->initializeORB(FL, mesh);
-            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
-            IpplTimings::stopTimer(domainDecomposition);
-        }
-
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
         IpplTimings::startTimer(particleCreation);
 
-        // Sample particle positions:
-        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>( *FL, *mesh );
-
-        // unsigned int
         size_type totalP = this->totalP_m;
         int seed           = 42;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-        using samplingR_t =
-            ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace,
-                                                   DistR_t>;
-        Vector_t<double, Dim> rmin = this->rmin_m;
-        Vector_t<double, Dim> rmax = this->rmax_m;
-        samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
-        size_type nlocal = samplingR.getLocalSamplesNum();
-
+        size_type nlocal = this->totalP_m;
         this->pcontainer_m->create(nlocal);
 
         view_type* R = &(this->pcontainer_m->R.getView());
-        samplingR.generate(*R, rand_pool64);
 
         view_type* P = &(this->pcontainer_m->P.getView());
 
@@ -294,6 +205,12 @@ public:
             mu[i] = 0.0;
             sd[i] = 1.0;
         }
+
+        //// also sample gaussian for R
+        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*R, rand_pool64, mu, sd));
+        Kokkos::fence();
+        ippl::Comm->barrier();
+
         Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
         Kokkos::fence();
         ippl::Comm->barrier();
@@ -343,6 +260,7 @@ public:
         static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
 
         double dt                               = this->dt_m;
+        int it                  = this->it_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
@@ -350,6 +268,13 @@ public:
         externalForceField();
 
         IpplTimings::startTimer(PTimer);
+
+	//if(this->dt_m<0){
+        //    fc->setE( fc->Et_m[it] );
+        //    this->grid2par();
+        //    std::cout << "read  E at it: " << it-0.5 << " indexed " << it << std::endl << std::endl;
+        //}
+
         pc->P = pc->P - 0.5 * dt * ( pc->E + pc->F );
         IpplTimings::stopTimer(PTimer);
 
@@ -364,7 +289,6 @@ public:
         IpplTimings::stopTimer(updateTimer);
 
         size_type totalP        = this->totalP_m;
-        int it                  = this->it_m;
         bool isFirstRepartition = false;
         if (this->loadbalancer_m->balance(totalP, it + 1)) {
                 IpplTimings::startTimer(domainDecomposition);
@@ -381,7 +305,15 @@ public:
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
-        this->fsolver_m->runSolver();
+        //if(this->dt_m>0){
+            this->fsolver_m->runSolver();
+        //    fc->Et_m[it+1] = fc->getE();
+        //    std::cout << "store E at it: " << it+0.5 << " indexed "<< it+1 << std::endl << std::endl;
+        //}
+        //else{
+        //    fc->setE( fc->Et_m[it-1] );
+        //    std::cout << "read  E at it: " << it-1 << " indexed " << it-1 << std::endl << std::endl;
+        //}
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
@@ -397,27 +329,80 @@ public:
     }
 
     // TODO: Implement the perturbation of particles at the final time according to the merit, to be called at the end of forward run
-    void PerturbParticles(){
-        // compute Dl
-
+    void PerturbParticles(double sgn){
         auto &P = this->pcontainer_m->P.getView();
         auto &R = this->pcontainer_m->R.getView();
 
+        // Following perturbs particles given moments
         double gD = costFunction();
-
         Kokkos::parallel_for(this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
             for (unsigned int j = 0; j < 3; ++j) {
                 double tempR = R(i)[j];
                 double tempP = P(i)[j];
-                P(i)[j] += -2.0 * gD * tempR * 1.e-3;
-                R(i)[j] +=  2.0 * gD * tempP * 1.e-3;
+                P(i)[j] += - sgn * 2.0 * gD * tempR * 1.e-4;
+                R(i)[j] +=  sgn * 2.0 * gD * tempP * 1.e-4;
             }
         });
+
+        /*
+        // Following uses gradient flow to perturb final time distribution
+        // compute mean of R and P
+        Vector_t<T, 3> Rmean = 0.0;
+        Vector_t<T, 3> Pmean = 0.0;
+
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(1 + 100 * ippl::Comm->rank()));
+
+        double dt = 1.e-9;
+        double Rtemp, Ptemp;
+        for (unsigned int iter = 0; iter < 10; ++iter) {
+
+          for (unsigned int j = 0; j < 3; ++j){
+            Rtemp = 0.0;
+            Ptemp = 0.0;
+            Kokkos::parallel_reduce(
+                "Ptemp", this->pcontainer_m->getLocalNum(),
+                KOKKOS_LAMBDA(const int i, double& valL) {
+                    valL        = P(i)[j];
+                 },
+                 Kokkos::Sum<double>(Ptemp));
+
+            Kokkos::parallel_reduce(
+                "Rtemp", this->pcontainer_m->getLocalNum(),
+                KOKKOS_LAMBDA(const int i, double& valL) {
+                    valL        = R(i)[j];
+                 },
+                 Kokkos::Sum<double>(Rtemp));
+
+            ippl::Comm->reduce(Ptemp, Pmean[j], 1, std::plus<double>());
+            ippl::Comm->reduce(Rtemp, Rmean[j], 1, std::plus<double>());
+            Rmean[j] = Rmean[j]/this->totalP_m;
+            Pmean[j] = Pmean[j]/this->totalP_m;
+          }
+
+          Kokkos::parallel_for(this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const size_t i) {
+            for (unsigned int j = 0; j < 3; ++j) {
+                auto generator = rand_pool64.get_state();
+                double dW = generator.drand(0., 1.);
+                rand_pool64.free_state(generator);
+                P(i)[j] += -sgn*( P(i)[j]-Pmean[j] )*dt + Kokkos::sqrt(2.*dt)*dW;
+
+                dW = generator.drand(0., 1.);
+                rand_pool64.free_state(generator);
+                R(i)[j] += -sgn*( R(i)[j]-Rmean[j] )*dt + Kokkos::sqrt(2.*dt)*dW;
+            }
+          });
+        }
+        */
     }
 
     // computation of dC/dalpha
     void delFdelparm(){
         //Inform m("delF: ");
+
+        Vector_t params = this->params_m;
+        unsigned int nparams = this->nparams_m;
+
+        // Following computes dF/dparam using grid
         auto *FL = &this->fcontainer_m->getFL();
 
         Field_t<Dim> *rho     = &this->fcontainer_m->getRho();
@@ -426,9 +411,6 @@ public:
 
         Vector_t<double, Dim> hr     = this->hr_m;
         Vector_t<double, Dim> origin = this->origin_m;
-
-        Vector_t params = this->params_m;
-        unsigned int nparams = this->nparams_m;
 
         const int nghost = (*rho).getNghost();
         const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
@@ -440,7 +422,7 @@ public:
                 KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
                     Vector_t<double, Dim> xvec =
                         (args + lDom.first() - nghost + 0.5) * hr + origin;
-                    T myVal = ippl::apply(rhoview, args) * DExternalForceFieldDparms<Dim>()(xvec, idparams, params);
+                    T myVal = ippl::apply(rhoview, args) * dphi_dparam<Dim>()(xvec, idparams);
                     valL += myVal;
               }, Kokkos::Sum<T>(temp));
             Kokkos::fence();
@@ -451,12 +433,24 @@ public:
 
             this->dparams_m[idparams] += this->dt_m*globaltemp*this->hr_m[0]*this->hr_m[1]*this->hr_m[2];
         }
+
+        /*
+        // Following computes dC/dparam using particles, it's converging
+        auto R = this->pcontainer_m->R.getView();
+        for (unsigned idparams = 0; idparams < nparams; ++idparams) {
+             T temp = 0.0;
+             Kokkos::parallel_reduce(
+                "Dl", this->pcontainer_m->getLocalNum(),
+                KOKKOS_LAMBDA(const int i, double& valL) {
+                   valL += dphi_dparam<Dim>()( R(i), idparams );
+                },
+                Kokkos::Sum<double>(temp));
+             this->dparams_m[idparams] += -this->dt_m*temp;
+        }
+        */
     }
 
     void post_step() override {
-
-        //this->par2grid();
-        //delFdelparm();
 
         int sign = (this->dt_m >= 0) ? 1 : -1;
 
@@ -471,7 +465,6 @@ public:
     }
 
    double costFunction(){
-        // compute Dl
         auto Pview = this->pcontainer_m->P.getView();
         auto Rview = this->pcontainer_m->R.getView();
         double D   = 0.0;
@@ -487,147 +480,173 @@ public:
             Kokkos::Sum<double>(D));
         ippl::Comm->reduce(D, gD, 1, std::plus<double>());
         gD = gD/this->totalP_m;
-        gD = gD - 160;// global D - final time D
-        if(this->it_m==this->nt_m){
-            Inform csvout(NULL, "data/D.csv", Inform::APPEND);
-            csvout.precision(10);
-            csvout.setf(std::ios::scientific, std::ios::floatfield);
-            csvout << gD << " " << D/this->totalP_m << endl;
-            ippl::Comm->barrier();
-
-            Inform m("Estimate moment:");
-            m << " -------    res: " << gD << " " << D/this->totalP_m << endl;
-        }
+        gD = (gD - this->fD);// global D - final time D
         return gD;
    }
+
    void runOptimization(int optIt){
         Inform m("Optimization");
 
+        this->fD = 6.;// second moment of 6 variables [R, P], where each is a normal distribution
         this->nparams_m = 9;
         this->params_m = 1.e-16;
         this->dparams_m = 0.0;
 
+        Vector_t<T, 9> params0;
+        Vector_t<T, 9> params1, params2;
+
         this->pre_run();
 
         double dt0 = this->dt_m;
+        double gD;
+        //double L1, L;
+        for(optit = 0; optit < optIt; optit++) {
+             m << "iter " << optit << endl << endl;
 
-        for(int iter = 0; iter < optIt; iter++) {
-             m << "iter " << iter << endl << endl;
+             params0 = this->params_m;
 
+             ///// first run
              this->dparams_m = 0.0;
-
              this->pre_run();
-
              // Forward run, umpurturbed potential
              this->dt_m = dt0;
+             this->dump();
              this->run(this->nt_m); // compute unpertubed terms of df/dalpha during forward simulation
+             gD = costFunction();
+             PerturbParticles(1.);
+             // Backward
+             this->dt_m = -dt0;
+             this->dump();
+             this->run(this->nt_m); // compute pertubed terms of df/dalpha during backward simulation
+             this->params_m = params0 - 0.1*this->dparams_m; // 0.001
 
-             PerturbParticles();
-
+             m << this->params_m << endl;
+             /*
+             ///// second run
+             this->dparams_m = 0.0;
+             this->pre_run();
+             // Forward run, umpurturbed potential
+             this->dt_m = dt0;
+             this->dump();
+             this->run(this->nt_m); // compute unpertubed terms of df/dalpha during forward simulation
+             PerturbParticles(-1.);
              // Backward
              this->dt_m = -this->dt_m;
+             this->dump();
              this->run(this->nt_m); // compute pertubed terms of df/dalpha during backward simulation
+             params2 = params0 + 0.001*this->dparams_m;
+             */
+             // test each run
+             //this->params_m = params1;
+             //this->pre_run();
+             // Forward run, umpurturbed potential
+             //this->dt_m = dt0;
+             //this->run(this->nt_m); // compute unpertubed terms of df/dalpha during forward simulation
+             //L1 = fabs( costFunction() );
 
-             this->params_m = this->params_m + 0.001*this->dparams_m;
+             //this->params_m = params2;
+             //this->pre_run();
+             // Forward run, umpurturbed potential
+             //this->dt_m = dt0;
+             //this->run(this->nt_m); // compute unpertubed terms of df/dalpha during forward simulation
+             //L2 = fabs( costFunction() );
+             //L = L2;
+             //if(L1<L2){
+             //    this->params_m = params1;
+             //    L = L1;
+             //}
 
-             m << this->params_m << " " << this->dparams_m << endl;
+             std::stringstream fname;
+             fname << "data/L.csv";
+             Inform tcsvout(NULL, fname.str().c_str(), Inform::APPEND);
+             tcsvout.precision(10);
+             tcsvout.setf(std::ios::scientific, std::ios::floatfield);
+             tcsvout << gD << endl;
+             ippl::Comm->barrier();
          }
    }
-};
 
-/*
-  void delFdelparm{
-     Field_t<Dim> *rhoA     = &pertSim->fcontainer_m->getRho();
-     Field_t<Dim> *rho     = &unpertSim->fcontainer_m->getRho();
-
-     const int nghostrhoA = pertSim->fcontainer_m->getRho().getNghost();
-     auto rhoAview        = pertSim->fcontainer_m->getRho().getView();
-     const ippl::NDIndex<Dim>& lDomA = pertSim->fcontainer_m->getFL()->getLocalNDIndex();
-
-     const int nghostrho = unpertSim->fcontainer_m->getRho().getNghost();
-     auto rhoview        = unpertSim->fcontainer_m->getRho().getView();
-
-     Vector_t<double, Dim> hr     = unpertSim->hr_m;
-     Vector_t<double, Dim> origin = unpertSim->origin_m;
-
-     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-     for (unsigned idparams = 0; idparams < unpertSim.nparams; ++idparams) {
-         T temp = 0.0;
-         ippl::parallel_reduce(
-                "rhoA*dphi_dalpha0 reduce", rhoA.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args, T& valL) {
-                    Vector_t<double, Dim> xvec =
-                        (args + lDom.first() - nghost + 0.5) * hr + origin;
-
-                    T myVal = ippl::apply(rhoAview, args) * dphi_dparams(xvec, idparams);
-                    valL += myVal;
-              }, Kokkos::Sum<T>(temp));
-          Kokkos::fence();
-
-          T globaltemp          = 0.0;
-          ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
-          ippl::Comm->barrier();
-
-          pertSim.dparams[iparams] += globaltemp;
-  }
-*/
-
-
-/*
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
-        IpplTimings::stopTimer(dumpDataTimer);
-    }
 
-    template <typename View>
-    void dumpLandau(const View& Eview) {
-        const int nghostE = this->fcontainer_m->getE().getNghost();
+        //if(this->it_m==this->nt_m && ippl::Comm->rank() == 0 && this->dt_m > 0){
+        std::cout << "---------       it: " << this->it_m << "  time: " << this->time_m << std::endl << std::endl;
+        if( (this->it_m==this->nt_m || this->it_m==0 || this->it_m==1) && ippl::Comm->rank() == 0 ){
+            auto &P = this->pcontainer_m->P.getView();
+            auto &R = this->pcontainer_m->R.getView();
 
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        double localEx2 = 0, localExNorm = 0;
-        ippl::parallel_reduce(
-            "Ex stats", ippl::getRangePolicy(Eview, nghostE),
-            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& ENorm) {
-                // ippl::apply<unsigned> accesses the view at the given indices and obtains a
-                // reference; see src/Expression/IpplOperations.h
-                double val = ippl::apply(Eview, args)[0];
-                double e2  = Kokkos::pow(val, 2);
-                E2 += e2;
+            auto hostPView = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), P);
+            auto hostRView = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), R);
 
-                double norm = Kokkos::fabs(ippl::apply(Eview, args)[0]);
-                if (norm > ENorm) {
-                    ENorm = norm;
-                }
-            },
-            Kokkos::Sum<double>(localEx2), Kokkos::Max<double>(localExNorm));
-
-        double globaltemp = 0.0;
-        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
-
-        double fieldEnergy =
-            std::reduce(this->fcontainer_m->getHr().begin(), this->fcontainer_m->getHr().end(), globaltemp, std::multiplies<double>());
-
-        double ExAmp = 0.0;
-        ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
-
-        if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data/FieldLandau_";
-            fname << ippl::Comm->size();
-            fname << "_manager";
+            fname << "data/particles_";
+            fname << optit;
+            fname << "_" << this->it_m;
+            fname << "_" << this->dt_m;
             fname << ".csv";
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
-            csvout.precision(16);
+            Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+            csvout.precision(4);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if ( std::fabs(this->time_m) < 1e-14 ) {
-                csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
+
+            for (size_t i = 0; i < this->totalP_m; ++i) {
+               for (size_t j = 0; j < Dim; ++j){
+                   csvout << hostRView(i)[j] << " ";
+              }
+               for (size_t j = 0; j < Dim; ++j){
+                   csvout << hostPView(i)[j] << " ";
+              }
+              csvout << endl;
             }
-            csvout << this->time_m << " " << fieldEnergy << " " << ExAmp << endl;
+            ippl::Comm->barrier();
         }
-        ippl::Comm->barrier();
-    }
+/*
+        if( ippl::Comm->rank() == 0 && this->dt_m > 0){
+          auto Pview = this->pcontainer_m->P.getView();
+          auto Rview = this->pcontainer_m->R.getView();
+          double D   = 0.0;
+          double gD  = 0.0;
+
+          Kokkos::parallel_reduce(
+            "Dl", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i, double& valL) {
+                double myVal = dot(Pview(i), Pview(i)).apply();
+                myVal       += dot(Rview(i), Rview(i)).apply();
+                valL        += myVal;
+            },
+            Kokkos::Sum<double>(D));
+          ippl::Comm->reduce(D, gD, 1, std::plus<double>());
+          gD = gD/this->totalP_m;
+
+          std::stringstream fname;
+          fname << "data/D_";
+          fname << optit;
+          fname << ".csv";
+          Inform tcsvout(NULL, fname.str().c_str(), Inform::APPEND);
+          tcsvout.precision(10);
+          tcsvout.setf(std::ios::scientific, std::ios::floatfield);
+          tcsvout << gD << endl;
+          ippl::Comm->barrier();
+
+          gD = (gD - this->fD);// global D - final time D
+
+          Inform m("Estimate moment:");
+          m << gD << " " << D/this->totalP_m << endl;
+
+          if(this->it_m==this->nt_m){
+            Inform csvout(NULL, "data/D.csv", Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            csvout << gD << " " << D/this->totalP_m << " " << this->fD << endl;
+            ippl::Comm->barrier();
+
+            Inform m("Estimate moment:");
+            m << " -------    res: " << gD << " " << D/this->totalP_m << endl;
+          }
+        }
 */
-//};
+        IpplTimings::stopTimer(dumpDataTimer);
+   }
+};
+
 #endif
