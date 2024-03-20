@@ -105,11 +105,11 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION const auto& get() const noexcept {
             return val;
         }
-        TupleImpl<i, N, T>()
+        TupleImpl()
             requires(std::is_default_constructible_v<T>)
          = default;
-        TupleImpl<i, N, T>(const T& t) : val(t){}
-        TupleImpl<i, N, T>(T&& t) : val(std::forward<T>(t)){}
+        TupleImpl(const T& t) : val(t){}
+        TupleImpl(T&& t) : val(std::forward<T>(t)){}
     };
     /*!
      * @class Tuple
