@@ -7,6 +7,7 @@
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
 #include "Manager/BaseManager.h"
+#include "Manager/PicManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
