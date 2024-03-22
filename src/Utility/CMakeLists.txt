@@ -13,6 +13,7 @@ set (_HDRS
     IpplTimings.h
     PAssert.h
     Timer.h
+    my_auto_ptr.h
     ParameterList.h
     TypeUtils.h
     )
