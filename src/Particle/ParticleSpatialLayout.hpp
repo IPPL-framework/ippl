@@ -314,7 +314,7 @@ namespace ippl {
         outsideCount  = red_val.count[1];
 
         /// Step 4 
-        if (outsideCount > 0)
+        if (outsideCount > 0){
             static IpplTimings::TimerRef nonNeighboringParticles =
                 IpplTimings::getTimer("nonNeighboringParticles");
             IpplTimings::startTimer(nonNeighboringParticles);
