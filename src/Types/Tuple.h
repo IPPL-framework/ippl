@@ -108,10 +108,15 @@ namespace ippl {
         TupleImpl()
             requires(std::is_default_constructible_v<T>)
          = default;
+<<<<<<< HEAD
+        KOKKOS_INLINE_FUNCTION TupleImpl(const T& t) : val(t){}
+        KOKKOS_INLINE_FUNCTION TupleImpl(T&& t) : val(std::forward<T>(t)){}
+=======
         KOKKOS_INLINE_FUNCTION
         TupleImpl(const T& t) : val(t){}
         KOKKOS_INLINE_FUNCTION
         TupleImpl(T&& t) : val(std::forward<T>(t)){}
+>>>>>>> 6decd08773c66d2441c4ce4f5d453196d3e8b0e9
     };
     /*!
      * @class Tuple
