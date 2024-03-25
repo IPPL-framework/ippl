@@ -37,13 +37,14 @@ take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UN
 ## Citing IPPL
 
 ```
-@article{muralikrishnan2022scaling,
-  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics
-         applications through mini-apps targeting exascale architectures},
-  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro
-          and Ligotino, Michael and Cerfon, Antoine J and Stoyanov, Miroslav and
-          Gayatri, Rahulkumar and Adelmann, Andreas},
-  journal={arXiv preprint arXiv:2205.11052},
-  year={2022}
+@inproceedings{muralikrishnan2024scaling,
+  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications
+         through mini-apps targeting exascale architectures},
+  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael
+          and Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas},
+  booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)},
+  pages={26--38},
+  year={2024},
+  organization={SIAM}
 }
 ```
