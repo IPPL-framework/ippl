@@ -188,7 +188,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::positionInRegion(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
-        return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
+        return ((pos[Idx] > region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
     /* Helper function that evaluates the total number of neighbors for the current rank in Dim dimensions.
