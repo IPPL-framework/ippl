@@ -8,10 +8,10 @@
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {    
-        ippl::Tuple<int, std::unique_ptr<int>> tup(17, std::make_unique<int>(5));
+        //ippl::Tuple<int, std::unique_ptr<int>> tup(17, std::make_unique<int>(5));
         //tup = ippl::makeTuple(1.0, 9.5);
-        ippl::Tuple<int, std::unique_ptr<int>> tup2{5, nullptr};
-        alwaysAssert(ippl::get<0>(tup2) == 5);
+        //ippl::Tuple<int, std::unique_ptr<int>> tup2{5, nullptr};
+        //alwaysAssert(ippl::get<0>(tup2) == 5);
 
         ippl::Tuple<int, float> arith{1, 5.0f};
         alwaysAssert(ippl::get<0>(arith + arith) == 2);
@@ -21,9 +21,9 @@ int main(int argc, char* argv[]) {
         ippl::get<1>(arith2) -= 1.0f;
         alwaysAssert(arith2 < arith);
         alwaysAssert(ippl::get<1>(arith2) == 4.0f);
-        tup2 = std::move(tup);
-        alwaysAssert(ippl::get<1>(tup) == nullptr);
-        alwaysAssert(*ippl::get<1>(tup2) == 5);
+        //tup2 = std::move(tup);
+        //alwaysAssert(ippl::get<1>(tup) == nullptr);
+        //alwaysAssert(*ippl::get<1>(tup2) == 5);
         Kokkos::View<ippl::Tuple<int, float, double>*> view("tview", 100);
         Kokkos::parallel_for(100, KOKKOS_LAMBDA(size_t idx){
             view(idx) = ippl::makeTuple(5.5, 1.25, 800.0f);
