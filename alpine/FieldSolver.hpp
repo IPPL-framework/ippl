@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "Manager/BaseManager.h"
+#include "Manager/FieldSolverBase.h"
 
 // Define the FieldSolver class
 template <typename T, unsigned Dim>
