@@ -8,7 +8,9 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <variant>
+#include "Types/Variant.h"
+
+#include "Utility/IpplException.h"
 
 namespace ippl {
     namespace detail {

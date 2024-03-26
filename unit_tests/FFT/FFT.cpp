@@ -49,16 +49,17 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
+
         for (unsigned d = 0; d < Dim; d++) {
-            domDec[d]  = ippl::PARALLEL;
             domains[d] = ippl::Index(pt[d]);
             hx[d]      = len[d] / pt[d];
             origin[d]  = 0;
         }
 
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(domains);
-        layout     = layout_type(owned, domDec);
+        layout     = layout_type(MPI_COMM_WORLD, owned, isParallel);
 
         mesh = mesh_type(owned, hx, origin);
 
@@ -136,11 +137,8 @@ public:
             ASSERT_NEAR(error, 0, tol);
         });
 
-        T max_error           = 0.0;
-        MPI_Datatype mpi_data = get_mpi_datatype<T>(max_error);
-
-        MPI_Reduce(&max_error_local, &max_error, 1, mpi_data, MPI_MAX, 0,
-                   ippl::Comm->getCommunicator());
+        T max_error = 0.0;
+        ippl::Comm->reduce(max_error_local, max_error, 1, std::greater<T>());
         ASSERT_NEAR(max_error, 0, tol);
     }
 
@@ -202,10 +200,11 @@ TYPED_TEST(FFTTest, RC) {
     fftParams.add("use_heffte_defaults", true);
     fftParams.add("r2c_direction", 0);
 
+    std::array<bool, Dim> isParallel;
+    isParallel.fill(true);
+
     ippl::NDIndex<Dim> ownedOutput;
-    ippl::e_dim_tag allParallel[Dim];
     for (unsigned d = 0; d < Dim; d++) {
-        allParallel[d] = ippl::PARALLEL;
         if (static_cast<int>(d) == fftParams.get<int>("r2c_direction")) {
             ownedOutput[d] = ippl::Index(this->pt[d] / 2 + 1);
         } else {
@@ -213,7 +212,7 @@ TYPED_TEST(FFTTest, RC) {
         }
     }
 
-    typename TestFixture::layout_type layoutOutput(ownedOutput, allParallel);
+    typename TestFixture::layout_type layoutOutput(MPI_COMM_WORLD, ownedOutput, isParallel);
 
     typename TestFixture::mesh_type meshOutput(ownedOutput, mesh.getMeshSpacing(),
                                                mesh.getOrigin());
@@ -286,10 +285,9 @@ TYPED_TEST(FFTTest, CC) {
     });
 
     Kokkos::complex<T> max_error(0, 0);
-    MPI_Datatype mpi_data = get_mpi_datatype<std::complex<T>>(max_error);
 
-    MPI_Allreduce(&max_error_local, &max_error, 1, mpi_data, MPI_SUM,
-                  ippl::Comm->getCommunicator());
+    ippl::Comm->allreduce(max_error_local, max_error, 1, std::plus<Kokkos::complex<T>>());
+
     ASSERT_NEAR(max_error.real(), 0, tol);
     ASSERT_NEAR(max_error.imag(), 0, tol);
 }

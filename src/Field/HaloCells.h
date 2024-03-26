@@ -56,7 +56,7 @@ namespace ippl {
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
              */
-            void accumulateHalo(view_type& view, const Layout_t* layout);
+            void accumulateHalo(view_type& view, Layout_t* layout);
 
             /*!
              * Send interal data to halo cells. This operation uses
@@ -64,7 +64,7 @@ namespace ippl {
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
              */
-            void fillHalo(view_type&, const Layout_t* layout);
+            void fillHalo(view_type&, Layout_t* layout);
 
             /*!
              * Pack the field data to be sent into a contiguous array.
@@ -128,7 +128,7 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeBoundaries(view_type& view, const Layout_t* layout, SendOrder order);
+            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order);
 
             /*!
              * Extract the subview of the original data. This does not copy.

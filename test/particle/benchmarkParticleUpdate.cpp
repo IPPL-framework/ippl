@@ -34,11 +34,11 @@ class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
     Vector<int, Dim> nr_m;
 
-    ippl::e_dim_tag decomp_m[Dim];
-
     Vector_t hr_m;
     Vector_t rmin_m;
     Vector_t rmax_m;
+
+    std::array<bool, Dim> isParallel_m;
 
     double Q_m;
 
@@ -49,18 +49,17 @@ public:
         E;  // electric field at particle position
 
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     ippl::e_dim_tag decomp[Dim], double Q)
+                     std::array<bool, Dim> isParallel, double Q)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
+        , isParallel_m(isParallel)
         , Q_m(Q) {
         this->addAttribute(qm);
         this->addAttribute(P);
         this->addAttribute(E);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++)
-            decomp_m[i] = decomp[i];
     }
 
     ~ChargedParticles() {}
@@ -71,8 +70,7 @@ public:
         unsigned int Total_particles = 0;
         unsigned int local_particles = this->getLocalNum();
 
-        MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
         if (ippl::Comm->rank() == 0) {
             if (Total_particles != totalP) {
@@ -143,10 +141,8 @@ int main(int argc, char* argv[]) {
             domain[i] = ippl::Index(nr[i]);
         }
 
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // create mesh and layout objects for this problem domain
         Vector_t rmin(0.0);
@@ -160,7 +156,7 @@ int main(int argc, char* argv[]) {
         const double dt = 1.0;  // size of timestep
 
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(domain, decomp);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, isParallel);
         PLayout_t PL(FL, mesh);
 
         /*
@@ -169,7 +165,7 @@ int main(int argc, char* argv[]) {
          */
 
         double Q = 1e6;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, Q);
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 
@@ -194,8 +190,7 @@ int main(int argc, char* argv[]) {
             }
         }
         double global_sum_coord = 0.0;
-        MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
-                   ippl::Comm->getCommunicator());
+        ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
@@ -239,8 +234,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             double global_sum_coord = 0.0;
-            MPI_Reduce(&sum_coord, &global_sum_coord, 1, MPI_DOUBLE, MPI_SUM, 0,
-                       ippl::Comm->getCommunicator());
+            ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
             if (ippl::Comm->rank() == 0) {
                 std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord
                           << std::endl;

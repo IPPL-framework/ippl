@@ -25,12 +25,15 @@
 
 #include "Utility/IpplTimings.h"
 
+#include "Communicate/Window.h"
+
 namespace ippl {
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
                                                                               Mesh& mesh)
-        : rlayout_m(fl, mesh) {}
+        : rlayout_m(fl, mesh)
+        , flayout_m(fl) {}
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::updateLayout(FieldLayout<Dim>& fl,
@@ -85,14 +88,13 @@ namespace ippl {
         // figure out how many receives
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
         IpplTimings::startTimer(preprocTimer);
-        MPI_Win win;
+        mpi::rma::Window<mpi::rma::Active> window;
         std::vector<size_type> nRecvs(nRanks, 0);
-        MPI_Win_create(nRecvs.data(), nRanks * sizeof(size_type), sizeof(size_type), MPI_INFO_NULL,
-                       Comm->getCommunicator(), &win);
+        window.create(*Comm, nRecvs.begin(), nRecvs.end());
 
         std::vector<size_type> nSends(nRanks, 0);
 
-        MPI_Win_fence(0, win);
+        window.fence(0);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Comm->rank()) {
@@ -100,11 +102,9 @@ namespace ippl {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);
-            MPI_Put(nSends.data() + rank, 1, MPI_LONG_LONG_INT, rank, Comm->rank(), 1,
-                    MPI_LONG_LONG_INT, win);
+            window.put<size_type>(nSends.data() + rank, rank, Comm->rank());
         }
-        MPI_Win_fence(0, win);
-        MPI_Win_free(&win);
+        window.fence(0);
         IpplTimings::stopTimer(preprocTimer);
 
         static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
@@ -112,7 +112,7 @@ namespace ippl {
         // send
         std::vector<MPI_Request> requests(0);
 
-        int tag = Comm->next_tag(P_SPATIAL_LAYOUT_TAG, P_LAYOUT_CYCLE);
+        int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
         int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
@@ -131,6 +131,7 @@ namespace ippl {
 
         pc.internalDestroy(invalid, invalidCount);
         Kokkos::fence();
+
 
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
@@ -159,7 +160,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::positionInRegion(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region) {
-        return ((pos[Idx] >= region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
+        return ((pos[Idx] > region[Idx].min()) && ...) && ((pos[Idx] <= region[Idx].max()) && ...);
     };
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -214,6 +215,7 @@ namespace ippl {
                 }
             });
         Kokkos::fence();
+
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -228,4 +230,5 @@ namespace ippl {
         Kokkos::fence();
         return nSends;
     }
+
 }  // namespace ippl

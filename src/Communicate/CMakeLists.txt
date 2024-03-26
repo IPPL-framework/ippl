@@ -1,18 +1,25 @@
 set (_SRCS
-    Communicate.cpp
+    Communicator.cpp
+    Environment.cpp
     Buffers.cpp
+    Request.cpp
     )
 
 set (_HDRS
     Archive.h
     Archive.hpp
-    Communicate.h
+    Buffers.hpp
+    Communicator.h
+    Environment.h
     DataTypes.h
-#     GlobalComm.hpp
-#     GlobalComm.h
     Operations.h
+    Collectives.hpp
+    Serializable.h
+    Request.h
+    Status.h
     TagMaker.h
     Tags.h
+    Wait.h
     )
 
 include_directories (

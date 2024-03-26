@@ -14,7 +14,9 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <variant>
+#include <utility>
+
+#include "Types/Variant.h"
 
 #include "Utility/IpplException.h"
 
@@ -29,6 +31,9 @@ namespace ippl {
         // allowed parameter types
         using variant_t =
             std::variant<double, float, bool, std::string, unsigned int, int, ParameterList>;
+
+        ParameterList()                     = default;
+        ParameterList(const ParameterList&) = default;
 
         /*!
          * Add a single parameter to this list.
@@ -55,6 +60,21 @@ namespace ippl {
             if (!params_m.contains(key)) {
                 throw IpplException("ParameterList::get()",
                                     "Parameter '" + key + "' not contained.");
+            }
+            return std::get<T>(params_m.at(key));
+        }
+
+        /*!
+         * Obtain the value of a parameter. If the key is
+         * not contained, the default value is returned.
+         * @param key the name of the parameter
+         * @param defval the default value of the parameter
+         * @returns the value of a parameter
+         */
+        template <typename T>
+        T get(const std::string& key, const T& defval) const {
+            if (!params_m.contains(key)) {
+                return defval;
             }
             return std::get<T>(params_m.at(key));
         }
@@ -96,6 +116,21 @@ namespace ippl {
             params_m[key] = value;
         }
 
+        template <class Stream>
+        friend Stream& operator<<(Stream& stream, const ParameterList& sp) {
+            std::cout << "HI" << std::endl;
+            for (const auto& [key, value] : sp.params_m) {
+                const auto& keyLocal = key;
+                std::visit(
+                    [&](auto&& arg) {
+                        stream << std::make_pair(keyLocal, arg);
+                    },
+                    value);
+            }
+
+            return stream;
+        }
+
         /*!
          * Print this parameter list.
          */
@@ -126,8 +161,15 @@ namespace ippl {
 
             return os;
         }
+        ParameterList& operator=(const ParameterList& other) {
+            if (this != &other) {
+                // Copy members from 'other' to 'this'
+                params_m = other.params_m;
+            }
+            return *this;
+        }
 
-    private:
+    protected:
         std::map<std::string, variant_t> params_m;
     };
 }  // namespace ippl

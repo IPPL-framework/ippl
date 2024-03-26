@@ -22,7 +22,7 @@ namespace ippl {
             bc->findBCNeighbors(field);
         }
         Kokkos::fence();
-        Comm->barrier();
+        field.getCommunicator().barrier();
     }
 
     template <typename Field, unsigned Dim>
@@ -31,7 +31,7 @@ namespace ippl {
             bc->apply(field);
         }
         Kokkos::fence();
-        Comm->barrier();
+        field.getCommunicator().barrier();
     }
 
     template <typename Field, unsigned Dim>

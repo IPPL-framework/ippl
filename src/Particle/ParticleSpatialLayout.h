@@ -30,6 +30,7 @@
 #include "Region/RegionLayout.h"
 
 namespace ippl {
+
     /*!
      * ParticleSpatialLayout class definition.
      * @tparam T value type
@@ -50,6 +51,7 @@ namespace ippl {
         using vector_type = typename Base::vector_type;
         using RegionLayout_t =
             typename detail::RegionLayout<T, Dim, Mesh, position_memory_space>::uniform_type;
+        using FieldLayout_t = typename ippl::FieldLayout<Dim>;
 
         using size_type = detail::size_type;
 
@@ -73,7 +75,15 @@ namespace ippl {
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
 
-        using region_type = typename RegionLayout_t::view_type::value_type;
+        //! The FieldLayout containing information on nearest neighbors
+        FieldLayout_t flayout_m;
+
+        //! Type of the Kokkos view containing the local regions.
+        using region_view_type = typename RegionLayout_t::view_type;
+        //! Type of a single Region object.
+        using region_type = typename region_view_type::value_type;
+        //! Array of N rank lists, where N = number of hypercubes for the dimension Dim.
+        using neighbor_list = typename FieldLayout_t::neighbor_list;
 
         template <size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(

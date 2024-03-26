@@ -26,7 +26,6 @@
 #include "Poisson.h"
 
 namespace ippl {
-
     namespace detail {
 
         /*!
@@ -90,7 +89,8 @@ namespace ippl {
         enum Algorithm {
             HOCKNEY    = 0b01,
             VICO       = 0b10,
-            BIHARMONIC = 0b11
+            BIHARMONIC = 0b11,
+            DCT_VICO    = 0b100
         };
 
         // define a type for a 3 dimensional field (e.g. charge density field)
@@ -112,7 +112,7 @@ namespace ippl {
 
         // type for communication buffers
         using memory_space = typename FieldLHS::memory_space;
-        using buffer_type  = Communicate::buffer_type<memory_space>;
+        using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
 
         // types of mesh and mesh spacing
         using vector_type = typename mesh_type::vector_type;
@@ -155,6 +155,12 @@ namespace ippl {
 
         // communication used for multi-rank Vico-Greengard's Green's function
         void communicateVico(Vector<int, Dim> size, typename CxField_gt::view_type view_g,
+                             const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
+                             typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
+                             const int nghost);
+
+        // needed for improved Vico-Greengard (DCT VICO)
+        void communicateVico(Vector<int, Dim> size, typename Field_t::view_type view_g,
                              const ippl::NDIndex<Dim> ldom_g, const int nghost_g,
                              typename Field_t::view_type view, const ippl::NDIndex<Dim> ldom,
                              const int nghost);
@@ -222,6 +228,16 @@ namespace ippl {
 
         NDIndex<Dim> domain4_m;
 
+        // members for improved Vico-Greengard (DCT VICO)
+        Field_t grn2n1_m;
+
+        std::unique_ptr<FFT<Cos1Transform, Field_t>> fft2n1_m;
+
+        std::unique_ptr<mesh_type> mesh2n1_m;
+        std::unique_ptr<FieldLayout_t> layout2n1_m;
+
+        NDIndex<Dim> domain2n1_m;
+
         // bool indicating whether we want gradient of solution to calculate E field
         bool isGradFD_m;
 
@@ -256,7 +272,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
-            this->params_m.add("hessian", true);
+            this->params_m.add("hessian", false);
         }
     };
 }  // namespace ippl

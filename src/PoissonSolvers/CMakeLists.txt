@@ -4,8 +4,8 @@ set (_SRCS
 set (_HDRS
     PoissonCG.h
     Poisson.h
+    NullSolver.h
 )
-
 if (ENABLE_FFT)
     list (APPEND _HDRS
                  FFTOpenPoissonSolver.h

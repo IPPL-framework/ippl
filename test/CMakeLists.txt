@@ -15,7 +15,7 @@ endmacro()
 #endforeach()
 
 add_subdirectory (kokkos)
-add_subdirectory (vector)
+add_subdirectory (types)
 add_subdirectory (field)
 if (ENABLE_FFT)
     add_subdirectory (FFT)
@@ -25,6 +25,7 @@ if (ENABLE_SOLVERS)
 endif()
 add_subdirectory (particle)
 add_subdirectory (region)
+add_subdirectory (random)
 add_subdirectory (serialization)
 
 # vi: set et ts=4 sw=4 sts=4:

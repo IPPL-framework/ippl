@@ -14,12 +14,10 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        ippl::e_dim_tag allParallel[dim];  // Specifies SERIAL, PARALLEL dims
-        for (unsigned int d = 0; d < dim; d++) {
-            allParallel[d] = ippl::PARALLEL;
-        }
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);
 
-        ippl::FieldLayout<dim> layout(owned, allParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         double dx                        = 1.0 / double(pt);
         ippl::Vector<double, dim> hx     = dx;
