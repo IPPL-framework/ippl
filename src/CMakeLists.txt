@@ -79,6 +79,7 @@ add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
+add_subdirectory (P3M)
 add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)

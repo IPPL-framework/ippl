@@ -27,7 +27,7 @@ add_subdirectory (particle)
 add_subdirectory (region)
 add_subdirectory (random)
 add_subdirectory (serialization)
-
+add_subdirectory (p3m)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
