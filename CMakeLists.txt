@@ -18,10 +18,11 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
 
-add_compile_options (-Wall)
-add_compile_options (-Wunused)
-add_compile_options (-Wextra)
-add_compile_options (-Werror)
+# currently prototyping
+# add_compile_options (-Wall)
+# add_compile_options (-Wunused)
+# add_compile_options (-Wextra)
+# add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
