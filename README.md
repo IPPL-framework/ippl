@@ -8,8 +8,8 @@ All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since 
 
 ## Installing IPPL and its dependencies
 
-All the new developments of IPPL are merged in to the `master` branch which can make it potentially unstable from time to time. So if you want a stable and more tested version
-please checkout the tagged branch correspodning to the last release (e.g. `git checkout tags/IPPL-x.x.x`). Otherwise if you want the latest developments go with the master with the above caveat in mind.
+All the new developments of IPPL are merged into the `master` branch which can make it potentially unstable from time to time. So if you want a stable and more tested version
+please checkout the tagged branch correspodning to the latest release (e.g. `git checkout tags/IPPL-x.x.x`). Otherwise if you want the latest developments go with the master with the above caveat in mind.
 
 ### Requirements
 The following libraries are required:
