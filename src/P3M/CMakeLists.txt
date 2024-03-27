@@ -3,7 +3,6 @@ set (_SRCS
 
 set (_HDRS
     P3MParticleContainer.hpp
-    P3MHeatingManager.hpp
     )
 
 include_DIRECTORIES (

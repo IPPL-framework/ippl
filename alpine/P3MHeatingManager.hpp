@@ -9,12 +9,12 @@
 
 // Alpine Headers
 // #include "../alpine/LoadBalancer.hpp"
-#include "../alpine/FieldContainer.hpp"
+#include "FieldContainer.hpp"
 
 // P3M Headers
 #include "Manager/P3M3DManager.h"
 #include "PoissonSolvers/P3MSolver.h"
-#include "P3MParticleContainer.hpp"
+#include "../src/P3M/P3MParticleContainer.hpp"
 
 // Distribution functions
 #include "Random/Distribution.h"
@@ -194,6 +194,8 @@ public:
         unsigned start = rank * nloc;
 
         // do domain decomp?
+
+	std::cout << nloc << std::endl;
 
         // get Position and momentum view
         view_type* P = &(this->pcontainer_m->P.getView());
