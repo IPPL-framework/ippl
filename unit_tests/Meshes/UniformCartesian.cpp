@@ -83,7 +83,6 @@ TYPED_TEST(UniformCartesianTest, Initialize) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
