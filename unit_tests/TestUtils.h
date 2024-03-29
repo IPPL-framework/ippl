@@ -145,42 +145,8 @@ struct TestParams {
     template <unsigned... Dims>
     using tests = typename TestForTypes<
         std::conditional_t<sizeof...(Dims) == 0, Combos, CombosWithRanks<Dims...>>>::type;
-
-    static bool skipSerialTests;
-
-    static void checkArgs([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-        skipSerialTests = false;
-#ifdef KOKKOS_ENABLE_SERIAL
-        for (int i = 1; i < argc; i++) {
-            if (strcmp(argv[i], "--run-serial") == 0) {
-                skipSerialTests = false;
-            }
-        }
-#endif
-    }
 };
 
-bool TestParams::skipSerialTests = false;
-
 using ippl::detail::nestedViewLoop, ippl::detail::nestedLoop;
-
-// Allow the user to skip serial execution tests, since they could be slow and don't test anything
-// different from OpenMP tests, given that both execution spaces use host memory
-#ifdef KOKKOS_ENABLE_SERIAL
-#define CHECK_SKIP_SERIAL                                                           \
-    if (std::is_same_v<ExecSpace, Kokkos::Serial> && TestParams::skipSerialTests) { \
-        GTEST_SKIP();                                                               \
-    }
-
-#define CHECK_SKIP_SERIAL_CONSTRUCTOR                                               \
-    if (std::is_same_v<ExecSpace, Kokkos::Serial> && TestParams::skipSerialTests) { \
-        return;                                                                     \
-    }
-#else
-#define CHECK_SKIP_SERIAL \
-    {}
-#define CHECK_SKIP_SERIAL_CONSTRUCTOR \
-    {}
-#endif
 
 #endif
