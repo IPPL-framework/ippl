@@ -13,7 +13,7 @@ include_directories (
 ADD_IPPL_SOURCES (${_SRCS})
 ADD_IPPL_HEADERS (${_HDRS})
 
-install (FILES ${_HDRS} DESTINATION include/Index)
+install (FILES ${_HDRS} DESTINATION include/Interpolation)
 
 # vi: set et ts=4 sw=4 sts=4:
 
