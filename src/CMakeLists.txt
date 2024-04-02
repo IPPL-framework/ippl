@@ -57,6 +57,7 @@ endmacro ()
 set (IPPL_BASEDIR_HDRS
     Ippl.h
     IpplVersions.h
+    IpplCore.h 
     )
 add_ippl_headers (${IPPL_BASEDIR_HDRS})
 add_ippl_sources (Ippl.cpp)
@@ -70,8 +71,10 @@ else()
 endif()
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
+add_subdirectory (Decomposition)
 add_subdirectory (Index)
 add_subdirectory (Interpolation)
+add_subdirectory (Manager)
 add_subdirectory (Meshes)
 add_subdirectory (Particle)
 add_subdirectory (Region)
