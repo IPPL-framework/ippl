@@ -4,7 +4,6 @@ set (_SRCS
 set (_HDRS
     PoissonCG.h
     Poisson.h
-    LaplaceHelpers.h	
     NullSolver.h
     LaplaceHelpers.h
 )
