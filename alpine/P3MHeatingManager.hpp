@@ -22,7 +22,7 @@
 #include "Random/UniformDistribution.h"
 
 // Required Datatypes
-template <typename T = double, unsigned Dim = 3>
+template <typename T, unsigned Dim>
 using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T, unsigned Dim>
@@ -31,7 +31,7 @@ using Vector_t = ippl::Vector<T, Dim>;
 template <unsigned Dim, class... ViewArgs>
 using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T = double, unsigned Dim=3, class... ViewArgs>
+template <typename T, unsigned Dim, class... ViewArgs>
 using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
@@ -154,7 +154,7 @@ public:
         sp.add("use_heffte_defaults", false);
         sp.add("use_pencils", true);
         sp.add("use_reorder", false);
-        sp.add("use_gpu_aware", false);
+        sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
 
@@ -187,31 +187,31 @@ public:
         unsigned np = this->totalP_m;
         unsigned nloc = np / commSize;
         
+	// make sure all particles are accounted for
         if(rank == commSize-1){
             nloc = np - (commSize-1)*nloc;
         }
 
-        unsigned start = rank * nloc;
-
-        // do domain decomp?
-
 	std::cout << nloc << std::endl;
-
-        // get Position and momentum view
-        view_type* P = &(this->pcontainer_m->P.getView());
-        view_type* R = &(this->pcontainer_m->R.getView());
-        double beamRad = this->beamRad_m;
-
+	
         IpplTimings::startTimer(CTimer);
         this->pcontainer_m->create(nloc);
         IpplTimings::stopTimer(CTimer);
+        
+	// get HostMirror of particle view
+	view_type::HostMirror P = Kokkos::create_mirror_view(this->pcontainer_m->P.getView());
+        view_type::HostMirror R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+
+	double beamRad = this->beamRad_m;
 
         Kokkos::fence();
-
-        Kokkos::Random_XorShift64_Pool<> rand_pool((size_type)(42 + 24 * rank));
+	
+	// make sure this runs on the host, device does not work yet
+	using HostSpace = Kokkos::DefaultHostExecutionSpace;	
+        Kokkos::Random_XorShift64_Pool<HostSpace> rand_pool((size_type)(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
-        Kokkos::parallel_for(nloc,
+        Kokkos::parallel_for("initialize particles", Kokkos::RangePolicy<HostSpace>(0, nloc),
             KOKKOS_LAMBDA(const size_t index) {
                 Vector_t<T, Dim> x(0.0);
 
@@ -230,8 +230,8 @@ public:
                 Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1./3.) / Kokkos::sqrt(normsq)) * x;
 
                 for(int d = 0; d < Dim; ++d){
-                    (*P)(index)[d] = 0;         // initialize with zero momentum
-                    (*R)(index)[d] = pos[d];
+                    P(index)[d] = 0;		// initialize with zero momentum
+		    R(index)[d] = pos[d];
                 }
             }
         );
@@ -240,19 +240,22 @@ public:
         // before we can update them to their corresponding rank
         Kokkos::fence();
         ippl::Comm->barrier();
-
+	
         IpplTimings::stopTimer(GTimer);
 
-        // send particles to corresponding processes
+	// copy from host to device
+	Kokkos::deep_copy(this->pcontainer_m->P.getView(), P);
+	Kokkos::deep_copy(this->pcontainer_m->R.getView(), R); 
+        
         IpplTimings::startTimer(UTimer);
         this->pcontainer_m->update();
         IpplTimings::stopTimer(UTimer);
-
+    
         IpplTimings::stopTimer(ITimer);
-
-        // debug output, can be ignored
-        // std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
-    }
+	
+	// debug output, can be ignored
+        std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
+     }
 
     /**
      * @brief Initializes a neighbor list to be used in PP interaction calculation
@@ -260,15 +263,17 @@ public:
     void initializeNeighborList() {
         Inform m("Initialize Neighbor List");
 
+	using Device = Kokkos::DefaultExecutionSpace;
+
         // get communicator size and rank
         int commSize = ippl::Comm->size();
         int rank = ippl::Comm->rank();
 
         // get other relevant information
         size_type nLoc = this->pcontainer_m->getLocalNum();
-        view_type *R = &(this->pcontainer_m->R.getView());
-        view_type *P = &(this->pcontainer_m->P.getView());
-        auto ID = &(this->pcontainer_m->ID.getView());
+        view_type R = this->pcontainer_m->R.getView();
+        view_type P = this->pcontainer_m->P.getView();
+        auto ID = this->pcontainer_m->ID.getView();
 
         // get local domain extend
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
@@ -288,59 +293,64 @@ public:
         }
 
         // allocate required (temporary) Kokkos views
-        Kokkos::View<unsigned *> cellIndex("cellIndex", nLoc);
-        Kokkos::View<size_type *> cellParticleCount("cellParticleCount", totalCells);
-        Kokkos::View<unsigned *> cellStartingIdx("cellStartingIdx", totalCells+1);
-        Kokkos::View<unsigned *> cellCurrentIdx("cellCurrentIdx", totalCells+1);
-        Kokkos::View<size_type*> tempID("tempID", nLoc);
-        view_type tempR("tempPos", nLoc);
+        Kokkos::View<unsigned *, Device> cellIndex("cellIndex", nLoc);
+        Kokkos::View<unsigned *, Device> cellParticleCount("cellParticleCount", totalCells);
+        Kokkos::View<unsigned *, Device> cellStartingIdx("cellStartingIdx", totalCells+1);
+        Kokkos::View<unsigned *, Device> cellCurrentIdx("cellCurrentIdx", totalCells+1);
+        Kokkos::View<size_type*, Device> tempID("tempID", nLoc);
+        Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
         // view_type P_temp("tempMomenta", nLoc); // required for update
 
         // calculate cell index for each particle
-        Kokkos::parallel_for(nLoc, KOKKOS_LAMBDA(const int i) {
-            unsigned x_Idx = floor(((*R)(i)[0] - l_extend[0]) / hCM[0]);
-            unsigned y_Idx = floor(((*R)(i)[1] - l_extend[1]) / hCM[1]);
-            unsigned z_Idx = floor(((*R)(i)[2] - l_extend[2]) / hCM[2]);
+        Kokkos::parallel_for("CalcCellIndices", Kokkos::RangePolicy<Device>(0, nLoc), 
+	    KOKKOS_LAMBDA(const int i) {
+            	unsigned x_Idx = floor((R(i)[0] - l_extend[0]) / hCM[0]);
+            	unsigned y_Idx = floor((R(i)[1] - l_extend[1]) / hCM[1]);
+            	unsigned z_Idx = floor((R(i)[2] - l_extend[2]) / hCM[2]);
 
-            unsigned locCMeshIdx = x_Idx * nCells[1] * nCells[2] + y_Idx * nCells[2] + z_Idx;
-            assert(locCMeshIdx < totalCells && "Invalid Grid Position");
+            	unsigned locCMeshIdx = x_Idx * nCells[1] * nCells[2] + y_Idx * nCells[2] + z_Idx;
+            	//assert(locCMeshIdx < totalCells && "Invalid Grid Position");
 
-            cellParticleCount(locCMeshIdx)++;
-            cellIndex(i) = locCMeshIdx;
+            	cellParticleCount(locCMeshIdx)++;
+            	cellIndex(i) = locCMeshIdx;
         });
 
         Kokkos::fence();
-
+ 	
         // compute starting indices for each cell
-        Kokkos::parallel_scan("Calculate Starting Indices", totalCells,
+        Kokkos::parallel_scan("Calculate Starting Indices", Kokkos::RangePolicy<Device>(0, totalCells),
             KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
                 if(isFinal) cellStartingIdx(i) = localSum;
                 localSum += cellParticleCount(i);
             }
         );
-        cellStartingIdx(totalCells) = nLoc;
 
+	Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
+	    KOKKOS_LAMBDA(const int i){
+		cellStartingIdx(i) = totalCells;
+	    }
+	);
+        
         Kokkos::fence();
 
         Kokkos::deep_copy(cellCurrentIdx, cellStartingIdx);
 
         Kokkos::fence();
-
+	
         // Build temp views
-        Kokkos::parallel_for(nLoc, KOKKOS_LAMBDA(const size_type i){
-            unsigned cellNumber = cellIndex(i);
-            size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
-            tempR(newIdx) = (*R)(i);
-            tempID(newIdx) = (*ID)(i);
+        Kokkos::parallel_for("Build view", Kokkos::RangePolicy<Device>(0, nLoc), 
+	    KOKKOS_LAMBDA(const size_type i){
+            	unsigned cellNumber = cellIndex(i);
+            	size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
+            	tempR(newIdx) = R(i);
+            	tempID(newIdx) = ID(i);
         });
 
         Kokkos::fence();
-
-        // Reorder particles, replace with copy later?
-        Kokkos::parallel_for(nLoc, KOKKOS_LAMBDA(const size_type i){
-            (*R)(i) = tempR(i);
-            (*ID)(i) = tempID(i);
-        });
+	
+	// copy into original paticle view
+	Kokkos::deep_copy(R, tempR);
+	Kokkos::deep_copy(ID, tempID);
 
         /* Ghost NL Build - Halo exchange
          * 1. Figure out who to send particles to
@@ -348,9 +358,8 @@ public:
          * 3. Recieve Particles
          */
 
-        auto FL = this->fcontainer_m->getFL();
-        auto neighbors = FL.getNeighbors();
-
+        // auto FL = this->fcontainer_m->getFL();
+        // auto neighbors = FL.getNeighbors();
         // TODO
 
     }
@@ -368,7 +377,7 @@ public:
         this->it_m++;
 
         // print_every + dump?
-    }
+ }
 
     void grid2par() override {
         gatherCIC();
