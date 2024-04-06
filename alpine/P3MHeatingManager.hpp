@@ -250,7 +250,8 @@ public:
         IpplTimings::startTimer(UTimer);
         this->pcontainer_m->update();
         IpplTimings::stopTimer(UTimer);
-    
+        
+        ippl::Comm->barrier();
         IpplTimings::stopTimer(ITimer);
 	
 	// debug output, can be ignored
@@ -348,20 +349,59 @@ public:
 
         Kokkos::fence();
 	
-	// copy into original paticle view
-	Kokkos::deep_copy(R, tempR);
-	Kokkos::deep_copy(ID, tempID);
+	// copy into original paticle view (does not work nLoc < size(R))
+	// Kokkos::deep_copy(R, tempR);
+	// Kokkos::deep_copy(ID, tempID);
+	
+	Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
+	    KOKKOS_LAMBDA(const size_type i){
+		R(i) = tempR(i);
+		ID(i) = tempID(i);
+	    }
+	);
 
         /* Ghost NL Build - Halo exchange
-         * 1. Figure out who to send particles to
+         * 1. Figure out where neighbors are located relative to rank
          * 2. Build Send Buffer
          * 3. Recieve Particles
          */
 
-        // auto FL = this->fcontainer_m->getFL();
-        // auto neighbors = FL.getNeighbors();
-        // TODO
+	// STEP 1
+	
+	// get FieldLayout and list of naighboring domains
+        auto FL = this->fcontainer_m->getFL();
+        auto neighbors = FL.getNeighbors();
+        
+	unsigned totalRequests = 0;
+	unsigned neighborcubes = 0;
+	for (const auto& componentNeighbors : neighbors) {
+	    ++neighborcubes;
+            totalRequests += componentNeighbors.size();
+	    for(auto component : componentNeighbors) {
+		
+		// 0: no overlap; 1: left from domain; 2: right from domain
+		int overlapInDim[3];
 
+		int cellStartIdx[3];
+		int cellEndIdx[3];
+		
+		// 0: no overlap; 1: face; 2: edge; 3: corner
+		int overlapType = 0;
+		for(unsigned d = 0; d < Dim; ++d){
+		    overlapInDim[d] = (l_extend[d] == hLocalRegions(component)[d].max())
+				    + 2 * (r_extend[d] == hLocalRegions(component)[d].min());
+		    overlapType += (overlapInDim[d] > 0);
+		    cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * nCells[d];
+		    cellEndIdx[d] = (overlapInDim[d] ? cellStartIdx[d] : nCells[d]) + 1;
+		}
+		
+		//Kokkos::parallel_reduce("Compute #particles to send", 	
+		//std::cout << overlapType << std::endl;
+	        // std::cerr << component << " requests form rank " << rank<< std::endl;
+	    }
+        }
+	//std::cerr << neighborcubes << std::endl;
+	// TODO
     }
 
     void pre_step() override {
