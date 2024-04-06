@@ -36,6 +36,9 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
 
+// Kokkos Device and Host Spaces
+using Device = Kokkos::DefaultExecutionSpace;
+using Host = Kokkos::DefaultHostExecutionSpace;
 
 // physical constants
 const double ke = 2.532638e8;
@@ -207,11 +210,10 @@ public:
         Kokkos::fence();
 	
 	// make sure this runs on the host, device does not work yet
-	using HostSpace = Kokkos::DefaultHostExecutionSpace;	
-        Kokkos::Random_XorShift64_Pool<HostSpace> rand_pool((size_type)(42 + 24 * rank));
+        Kokkos::Random_XorShift64_Pool<Host> rand_pool((size_type)(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
-        Kokkos::parallel_for("initialize particles", Kokkos::RangePolicy<HostSpace>(0, nloc),
+        Kokkos::parallel_for("initialize particles", Kokkos::RangePolicy<Host>(0, nloc),
             KOKKOS_LAMBDA(const size_t index) {
                 Vector_t<T, Dim> x(0.0);
 
@@ -263,8 +265,6 @@ public:
     */
     void initializeNeighborList() {
         Inform m("Initialize Neighbor List");
-
-	using Device = Kokkos::DefaultExecutionSpace;
 
         // get communicator size and rank
         int commSize = ippl::Comm->size();
@@ -368,10 +368,14 @@ public:
 
 	// STEP 1
 	
-	// get FieldLayout and list of naighboring domains
+	// get FieldLayout and list of neighboring domains
         auto FL = this->fcontainer_m->getFL();
         auto neighbors = FL.getNeighbors();
+
+	
         
+	auto host_cellParticleCount = Kokkos::create_mirror_view(cellParticleCount);
+	
 	unsigned totalRequests = 0;
 	unsigned neighborcubes = 0;
 	for (const auto& componentNeighbors : neighbors) {
@@ -382,20 +386,43 @@ public:
 		// 0: no overlap; 1: left from domain; 2: right from domain
 		int overlapInDim[3];
 
+		// these are the starting and end indices of the cell range in each dim
+		// Note that currently, the cellRange is flattened
 		int cellStartIdx[3];
 		int cellEndIdx[3];
 		
+		// this tells us over how many surface cells we need to iterate
+		int numSurfaceCells = 1;
+
 		// 0: no overlap; 1: face; 2: edge; 3: corner
 		int overlapType = 0;
+
 		for(unsigned d = 0; d < Dim; ++d){
+
+		    // checks for overlap in Dimension d and assigns
+		    // 0: when there is no overlap
+		    // 1: for an overlap at the lower domain extend
+		    // 2: for an overlap at the upper domain extend
 		    overlapInDim[d] = (l_extend[d] == hLocalRegions(component)[d].max())
 				    + 2 * (r_extend[d] == hLocalRegions(component)[d].min());
+		    
 		    overlapType += (overlapInDim[d] > 0);
-		    cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * nCells[d];
-		    cellEndIdx[d] = (overlapInDim[d] ? cellStartIdx[d] : nCells[d]) + 1;
+		    
+		    // if there is no overlap in a certain dimension, we want to iterate from 0 to nCells
+		    // if there is an overlap, its index is fixed at either 0 or nCells[d]-1
+		    cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * (nCells[d]-1);
+		    cellEndIdx[d] = (overlapInDim[d] ? (cellStartIdx[d]+1) : nCells[d]);
+		    
+		    // this is either 1 or nCells per Dimension
+		    numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
 		}
 		
-		//Kokkos::parallel_reduce("Compute #particles to send", 	
+		int nParticlesToSend = 0;
+		Kokkos::parallel_reduce("Compute #particles to send", Kokkos::RangePolicy<Host>(0, numSurfaceCells),
+		    KOKKOS_LAMBDA(const int i, int& locSum){
+			//TODO 
+		    }
+		, nParticlesToSend);	
 		//std::cout << overlapType << std::endl;
 	        // std::cerr << component << " requests form rank " << rank<< std::endl;
 	    }
