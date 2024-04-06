@@ -378,11 +378,8 @@ public:
 	
 	unsigned totalRequests = 0;
 	unsigned neighborcubes = 0;
-	for (const auto& componentNeighbors : neighbors) {
-	    ++neighborcubes;
-            totalRequests += componentNeighbors.size();
-	    for(auto component : componentNeighbors) {
-		
+	for (int recvRank = 0; recvRank < commSize; ++recvRank) {
+	    if (recvRank != rank) {
 		// 0: no overlap; 1: left from domain; 2: right from domain
 		int overlapInDim[3];
 
@@ -403,8 +400,8 @@ public:
 		    // 0: when there is no overlap
 		    // 1: for an overlap at the lower domain extend
 		    // 2: for an overlap at the upper domain extend
-		    overlapInDim[d] = (l_extend[d] == hLocalRegions(component)[d].max())
-				    + 2 * (r_extend[d] == hLocalRegions(component)[d].min());
+		    overlapInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].max())
+				    + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].min());
 		    
 		    overlapType += (overlapInDim[d] > 0);
 		    
@@ -418,16 +415,29 @@ public:
 		}
 		
 		int nParticlesToSend = 0;
-		Kokkos::parallel_reduce("Compute #particles to send", Kokkos::RangePolicy<Host>(0, numSurfaceCells),
+		if(overlapType != 0) {
+		    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
+		    	for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
+			    for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
+			    	unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
+			    	nParticlesToSend += host_cellParticleCount(CellIdx);
+			    }
+			}
+		    }
+		}
+		std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
+		/*
+ * 		Kokkos::parallel_reduce("Compute #particles to send", Kokkos::RangePolicy<Host>(0, numSurfaceCells),
 		    KOKKOS_LAMBDA(const int i, int& locSum){
-			//TODO 
+			// TODO 
 		    }
 		, nParticlesToSend);	
+		*/
 		//std::cout << overlapType << std::endl;
 	        // std::cerr << component << " requests form rank " << rank<< std::endl;
 	    }
         }
-	//std::cerr << neighborcubes << std::endl;
+	std::cerr << neighborcubes << std::endl;
 	// TODO
     }
 
