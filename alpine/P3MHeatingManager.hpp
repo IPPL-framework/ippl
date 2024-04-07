@@ -275,8 +275,8 @@ public:
         view_type R = this->pcontainer_m->R.getView();
         view_type P = this->pcontainer_m->P.getView();
         auto ID = this->pcontainer_m->ID.getView();
-
-        // get local domain extend
+        
+	// get local domain extend
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         // std::cout << hLocalRegions(rank) << std::endl;
         
@@ -372,8 +372,11 @@ public:
         auto FL = this->fcontainer_m->getFL();
         auto neighbors = FL.getNeighbors();
 
-	
+	// get host mirror of particle view
+        view_type::HostMirror R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
         
+	auto comm = FL.comm; 
+	
 	auto host_cellParticleCount = Kokkos::create_mirror_view(cellParticleCount);
 	
 	unsigned totalRequests = 0;
@@ -424,16 +427,37 @@ public:
 			    }
 			}
 		    }
+
+		    // allocate space for sendbuf
+		    double sendBuf[3 * nParticlesToSend];
+
+		    // build send buffer
+		    size_type sendBufIdx = 0;
+                    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
+		    	for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
+			    for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
+			    	unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
+			    	size_type start = cellStartingIdx(CellIdx);
+			    	size_type end = cellStartingIdx(CellIdx+1);
+				
+				// loop over all particles in a cell
+				for(size_type i = start; i < end; ++i){
+				    for(int d = 0; d < Dim; ++d){
+					sendBuf[3*sendBufIdx + d] = R_host(i)[d];
+				    }
+				    ++sendBufIdx;
+				}
+			    }
+			}
+		    }
+		    assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");  
+		    //MPI_Request sendRequest;
+		    //ippl::Comm->isend(sendBuf, nParticlesToSend, recvRank, rank, &sendRequest);
+		    //ippl::Comm->isend(recvRank, rank, 
 		}
 		std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
-		/*
- * 		Kokkos::parallel_reduce("Compute #particles to send", Kokkos::RangePolicy<Host>(0, numSurfaceCells),
-		    KOKKOS_LAMBDA(const int i, int& locSum){
-			// TODO 
-		    }
-		, nParticlesToSend);	
-		*/
-		//std::cout << overlapType << std::endl;
+		//ippl::Comm.irecv(
+		// std::cout << overlapType << std::endl;
 	        // std::cerr << component << " requests form rank " << rank<< std::endl;
 	    }
         }
