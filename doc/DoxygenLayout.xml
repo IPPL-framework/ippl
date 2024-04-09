@@ -4,8 +4,8 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="user" visible="yes" title="Basics Usage" url="md_extras_Basics.html" intro=""/>
-    <tab type="user" visible="yes" title="Installation" url="md_extras_IPPLonEULER.html" intro=""/>
+    <tab type="user" visible="yes" title="Basics Usage" url="@ref Basics" intro=""/>
+    <tab type="user" visible="yes" title="Installation" url="@ref Installation" intro=""/>
     <tab type="pages" visible="no" title="" intro=""/>
     <tab type="topics" visible="yes" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro="">

@@ -1,4 +1,4 @@
-# Installing IPPL on EULER 
+# Installing IPPL on EULER {#Installation}
 
 This guide outlines the steps to install the IPPL library on the EULER cluster. Before beginning, ensure you are connected to the ETH-VPN to access the cluster. 
 

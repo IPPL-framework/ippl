@@ -1,4 +1,4 @@
-Basic Usage of Main IPPL Classes
+Basic Usage of Main IPPL Classes {#Basics}
 ===============
 Following classes are core components of the IPPL library. The examples are meant to show how to use these classes.
 
