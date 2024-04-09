@@ -1,0 +1,28 @@
+name: IPPL documentation
+run-name: ${{ github.actor }} is hosting the IPPL Documentation
+on:
+  push:
+    - master
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Doxygen Action
+        uses: mattnotmitt/doxygen-action@v1.9.5
+        with:
+          # Path to Doxyfile
+          doxyfile-path: "doc/Doxyfile"
+          # Working directory
+          working-directory: "." # default is .
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: doc/html
