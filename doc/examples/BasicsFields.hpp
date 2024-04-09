@@ -168,8 +168,8 @@ ippl::parallel_for(
     });
 *@endcode
 
-- To write dimension independent kernels use the wrappers 'ippl::parallel_for', 'ippl::parallel_reduce' and 'ippl::parallel_scan'.
-- If you don't want dimension independence in your application then you can just use 'Kokkos::parallel_for', 'Kokkos::parallel_reduce' and 'Kokkos::parallel_scan'.
+- To write dimension independent kernels use the wrappers 'ippl::parallel_for' and 'ippl::parallel_reduce'.
+- If you don't want dimension independence in your application then you can just use 'Kokkos::parallel_for' and 'Kokkos::parallel_reduce'.
 * @subsubsection boundary_conditions_fields Boundary Conditions for Fields
 Setting BCs for fields is a necessary prerequisite before applying differential operators on fields! Otherwise
 you will get garbage for the points close to the boundary.

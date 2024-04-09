@@ -18,8 +18,8 @@ IPPL provides different variants:
 - ippl::FFTPeriodicPoissonSolver: Solves Poisson equation with periodic bcs spectrally 
 - ippl::FFTOpenPoissonSolver: Solves Poisson equation with Open BCs using FFTs (subtypes: Hockney (2nd order
 solver), Vico (spectral solver))
-- ippl::P3MSolver
-- ippl::PoissonCG 
+- ippl::P3MSolver: Solves Poisson equation with periodic bcs, based on FFT
+- ippl::PoissonCG: Solves Poison equation with Conjugate Gradient method
 
 All these inherit from the Poisson class.
 
@@ -28,7 +28,8 @@ The FFT based solvers are not available for 1D as heFFTe doesn't support 1D FFTs
 For Poisson equation solved with these different types of solvers see:
 
 - test/solver/TestFFTPeriodicPoissonSolver.cpp (for FFTPeriodicPoissonSolver)
-- test/solver/TestGaussian convergence.cpp (for FFTOpenPoissonSolver)
+- test/solver/TestGaussian_convergence.cpp (for FFTOpenPoissonSolver)
+- test/solver/TestP3MSolver.cpp (for P3MSolver)
 - test/solver/TestCGSolver.cpp (for CG Poisson solver)
 
 @subsection example_poisson_solver Example: Poisson solver
