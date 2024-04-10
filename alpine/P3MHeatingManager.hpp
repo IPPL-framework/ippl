@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <Kokkos_Random.hpp>
+#include <Kokkos_ScatterView.hpp>
 
 // Alpine Headers
 // #include "../alpine/LoadBalancer.hpp"
@@ -236,7 +237,7 @@ public:
 
                 for(int d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
-		    R(index)[d] = pos[d];
+		            R(index)[d] = pos[d];
                 }
             }
         );
@@ -477,7 +478,7 @@ public:
                         assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
                         
                         MPI_Request request;
-                        MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);  
+                        MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request); 
                     
                         //std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
                     } else {
@@ -490,6 +491,11 @@ public:
             }
         }   
         neighbors[rank] = false;
+        
+        // set neighbor list after initialization
+        this->pcontainer_m->setNL(cellStartingIdx);
+        this->pcontainer_m->setNeighbors(neighbors);
+        
         if(totalNeighbors > 0){
             double *recvBuffers[totalNeighbors];
             int senderCount = 0;	
@@ -541,6 +547,18 @@ public:
 
     void par2par() override {
         /* TODO */
+        auto R = this->pcontainer_m->R.getView();
+        auto cellStartingIdx = this->pcontainer_m->getNL();
+        size_type nLoc = this->pcontainer_m->getLocalNum();
+
+        Kokkos::Experimental::ScatterView<double *> svF_sr(this->pcontainer_m->F_sr.getView());
+
+        // calculate interaction force
+        Kokkos::parallel_for("Particle-Particle", nLoc,
+            KOKKOS_LAMBDA(unsigned i){
+                //TODO
+            }
+        );
     }
 
 

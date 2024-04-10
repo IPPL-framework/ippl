@@ -4,6 +4,9 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
+using Device = Kokkos::DefaultExecutionSpace;
+using NList_t = Kokkos::View<unsigned *, Device>;
+
 /**
  * @class P3MParticleContainer
  * @brief Particle Container Class for running P3M Simulations (in 3D).
@@ -27,16 +30,48 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
         typename Base::particle_position_type F_sr; // short-range interaction force
 
     private:
-        PLayout_t<T, Dim> pl_m;               
+        PLayout_t<T, Dim> pl_m;     // Particle layout 
+        NList_t nl_m;               // NeighborList
+        bool nlValid_m;             // true if neighbor list was initialized
+        bool *neighbors_m;
+
 
     public:
-        P3MParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL) : pl_m(FL, mesh) {
+        P3MParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL) : pl_m(FL, mesh), nlValid_m(false) {
             this->initialize(pl_m);
+            
+            // initialize to zero
+            neighbors_m = new bool[(ippl::Comm->size())];
+            for (int i = 0; i < ippl::Comm->size(); ++i){
+                neighbors_m[i] = false;
+            }
+
             registerAttributes();
             setBCAllPeriodic();
         }
 
         ~P3MParticleContainer() {}
+
+        void setNL(NList_t& nl) {
+            this->nlValid_m = true;
+            this->nl_m = nl;
+        }
+
+        NList_t& getNL() {
+            if(nlValid_m){
+                return nl_m;
+            } else {
+                throw 0;
+            }
+        }
+
+        void setNeighbors(bool *neighbors_) {
+            neighbors_m = neighbors_;
+        }
+
+        bool *getNeighbors() {
+            return neighbors_m;
+        }
 
     private:
         void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
