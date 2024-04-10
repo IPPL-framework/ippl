@@ -279,7 +279,7 @@ public:
         view_type P = this->pcontainer_m->P.getView();
         auto ID = this->pcontainer_m->ID.getView();
         
-	// get local domain extend
+	    // get local domain extend
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         // std::cout << hLocalRegions(rank) << std::endl;
         
@@ -322,18 +322,18 @@ public:
         Kokkos::fence();
  	
         // compute starting indices for each cell
-	Kokkos::parallel_scan(Kokkos::RangePolicy<Device>(0, totalCells),
-	    KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
-		if(isFinal) cellStartingIdx(i) = localSum;
-	        localSum += cellParticleCount(i);
-	    }
-	);
+	    Kokkos::parallel_scan(Kokkos::RangePolicy<Device>(0, totalCells),
+	        KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
+		        if(isFinal) cellStartingIdx(i) = localSum;
+	            localSum += cellParticleCount(i);
+	        }
+	    );
 	
-	Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
-	    KOKKOS_LAMBDA(const int i){
-		cellStartingIdx(i) = nLoc;
-	    }
-	);
+        Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
+            KOKKOS_LAMBDA(const int i){
+                cellStartingIdx(i) = nLoc;
+            }
+        );
         
         Kokkos::fence();
 
@@ -343,184 +343,177 @@ public:
 	
         // Build temp views
         Kokkos::parallel_for("Build view", Kokkos::RangePolicy<Device>(0, nLoc), 
-	    KOKKOS_LAMBDA(const size_type i){
-            	unsigned cellNumber = cellIndex(i);
-            	size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
-            	tempR(newIdx) = R(i);
-            	tempID(newIdx) = ID(i);
+            KOKKOS_LAMBDA(const size_type i){
+                unsigned cellNumber = cellIndex(i);
+                size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
+                tempR(newIdx) = R(i);
+                tempID(newIdx) = ID(i);
         });
 
         Kokkos::fence();
 	
-	// move data from Temp view into main view
-	Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
-	    KOKKOS_LAMBDA(const size_type i){
-		R(i) = tempR(i);
-		ID(i) = tempID(i);
-	    }
-	);
+        // move data from Temp view into main view
+        Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
+            KOKKOS_LAMBDA(const size_type i){
+                R(i) = tempR(i);
+                ID(i) = tempID(i);
+            }
+        );
 
         /* Ghost NL Build - Halo exchange
          * 1. Figure out where neighbors are located relative to rank
          * 2. Build Send Buffer
-         * 3. Recieve Particles
+         * 3. Send / Recieve Particles
          */
-
-	// STEP 1
 	
-	// get FieldLayout and list of neighboring domains
+	    // get FieldLayout and list of neighboring domains
         auto FL = this->fcontainer_m->getFL();
-        // auto neighbors = FL.getNeighbors();
 	
-	// get host mirror of particle view
+        // get host mirror of particle view
         view_type::HostMirror R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+            
+        auto comm = FL.comm; 
         
-	auto comm = FL.comm; 
-	
         Kokkos::View<unsigned *, Host> host_cellStartingIdx("host_cellStartingIdx", totalCells+1);
-	Kokkos::deep_copy(host_cellStartingIdx, cellStartingIdx);
+        Kokkos::deep_copy(host_cellStartingIdx, cellStartingIdx);
 
-	Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
-	Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
-	
-	bool neighbors[commSize];	
+        Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
+        Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
+        
+        bool neighbors[commSize];	
 
-	unsigned totalNeighbors = 0;
-	// unsigned neighborcubes = 0;
-	for (int recvRank = 0; recvRank < commSize; ++recvRank) {
-	    if (recvRank != rank) {
-		// 0: no overlap; 1: left from domain; 2: right from domain
-		int overlapInDim[3];
-		int equalInDim[3];
+        unsigned totalNeighbors = 0;
+        // unsigned neighborcubes = 0;
+        for (int recvRank = 0; recvRank < commSize; ++recvRank) {
+            if (recvRank != rank) {
+                // 0: no overlap; 1: left from domain; 2: right from domain
+                int overlapInDim[3];
+                int equalInDim[3];
 
-		// these are the starting and end indices of the cell range in each dim
-		// Note that currently, the cellRange is flattened
-		int cellStartIdx[3];
-		int cellEndIdx[3];
-		
-		// this tells us over how many surface cells we need to iterate
-		int numSurfaceCells = 1;
+                // these are the starting and end indices of the cell range in each dim
+                // Note that currently, the cellRange is flattened
+                int cellStartIdx[3];
+                int cellEndIdx[3];
+                
+                // this tells us over how many surface cells we need to iterate
+                int numSurfaceCells = 1;
 
-		// 0: no overlap; 1: face; 2: edge; 3: corner
-		int overlapType = 0;
-		int equalType = 0;
-		
-		for(unsigned d = 0; d < Dim; ++d){
+                // 0: no overlap; 1: face; 2: edge; 3: corner
+                int overlapType = 0;
+                int equalType = 0;
+                
+                for(unsigned d = 0; d < Dim; ++d){
 
-		    // checks for overlap in Dimension d and assigns
-		    // 0: when there is no overlap
-		    // 1: for an overlap at the lower domain extend
-		    // 2: for an overlap at the upper domain extend
-		    overlapInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].max())
-				    + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].min());
+                    // checks for overlap in Dimension d and assigns
+                    // 0: when there is no overlap
+                    // 1: for an overlap at the lower domain extend
+                    // 2: for an overlap at the upper domain extend
+                    overlapInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].max())
+                            + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].min());
 
-		    equalInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].min())
-				  + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].max()); 
-		    
-		    overlapType += (overlapInDim[d] > 0);
-		    equalType += equalInDim[d] > 0;
-		    
-		    // if there is no overlap in a certain dimension, we want to iterate from 0 to nCells
-		    // if there is an overlap, its index is fixed at either 0 or nCells[d]-1
-		    cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * (nCells[d]-1);
-		    cellEndIdx[d] = (overlapInDim[d] ? (cellStartIdx[d]+1) : nCells[d]);
-		    
-		    // this is either 1 or nCells per Dimension
-		    numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
-		}
-		overlapType = (overlapType + equalType == 3);
-		int nParticlesToSend = 0;
-		if(overlapType + equalType == 3) {
-		    neighbors[recvRank] = true;
-		    totalNeighbors++;
-		} else {
-		    neighbors[recvRank] = false;
-		    continue;
-		}
+                    equalInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].min())
+                        + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].max()); 
+                    
+                    overlapType += (overlapInDim[d] > 0);
+                    equalType += equalInDim[d] > 0;
+                    
+                    // if there is no overlap in a certain dimension, we want to iterate from 0 to nCells
+                    // if there is an overlap, its index is fixed at either 0 or nCells[d]-1
+                    cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * (nCells[d]-1);
+                    cellEndIdx[d] = (overlapInDim[d] ? (cellStartIdx[d]+1) : nCells[d]);
+                    
+                    // this is either 1 or nCells per Dimension
+                    numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
+                }
+                overlapType = (overlapType + equalType == 3);
+                
+                int nParticlesToSend = 0;
 
-		if(overlapType+equalType == 3 && nLoc > 0) {
-		    
-		    // find out how many particles to send
-		    // (we may merge with create sendbuf, by using a vector instead of an array)
-		    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-		    	for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-			    for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-			    	unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-			    	nParticlesToSend += host_cellParticleCount(CellIdx);
-			    }
-			}
-		    }
-	
-		    if (nParticlesToSend > 0){
-		        double sendBuf[nParticlesToSend * 3];
+                if(overlapType + equalType == 3) {
+                    neighbors[recvRank] = true;
+                    totalNeighbors++;
+                } else {
+                    neighbors[recvRank] = false;
+                    continue;
+                }
 
-		        // build send buffer
-		    	size_type sendBufIdx = 0;
-                    	    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-		    		for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-			    	    for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-			    	    	unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-			    	    	size_type start = host_cellStartingIdx(CellIdx);
-			    	    	size_type end = host_cellStartingIdx(CellIdx+1);
-				
-				    	// loop over all particles in a cell
-				    	for(size_type i = start; i < end; ++i){
-				    	    for(int d = 0; d < Dim; ++d){
-					    	// assert(sendBufIdx < nParticlesToSend && "too many particles");
-					    	sendBuf[3*sendBufIdx + d] = R_host(i)[d];
-				    	    }
-					    ++sendBufIdx;
-					}
-				    }
-			    	}
-			    }
-		    	
-			if(sendBufIdx != nParticlesToSend) {
-			    std::cout << sendBufIdx << " last particle in send buffer, expected size " << nParticlesToSend << " overlap type "<<overlapType <<" nLoc " << nLoc <<std::endl;
-			    for(int d = 0; d < Dim; ++d){
-				std::cout << cellStartIdx[d] << ", " << cellEndIdx[d] << " in dim " << d << std::endl;
-			    }
-			}
-		        assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
-		        MPI_Request request;
-		    
-		        MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);  
-		    
-		        //std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
-		    } else {
-			// send dummy message, remove later
-			double dummy = 0;
-			MPI_Request request;
-			MPI_Isend(&dummy, 1, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);
-		    }
-		}
-	    }
+                if(overlapType+equalType == 3 && nLoc > 0) {
+                    
+                    // find out how many particles to send
+                    // (we may merge with create sendbuf, by using a vector instead of an array)
+                    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
+                        for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
+                            for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
+                                unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
+                                nParticlesToSend += host_cellParticleCount(CellIdx);
+                            }
+                        }
+                    }
+            
+                    if (nParticlesToSend > 0){
+                        double sendBuf[nParticlesToSend * 3];
+
+                        // build send buffer
+                        size_type sendBufIdx = 0;
+                        for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
+                            for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
+                                for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
+                                    unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
+                                    size_type start = host_cellStartingIdx(CellIdx);
+                                    size_type end = host_cellStartingIdx(CellIdx+1);
+                        
+                                    // loop over all particles in a cell
+                                    for(size_type i = start; i < end; ++i){
+                                        for(int d = 0; d < Dim; ++d){
+                                            // assert(sendBufIdx < nParticlesToSend && "too many particles");
+                                            sendBuf[3*sendBufIdx + d] = R_host(i)[d];
+                                        }
+                                        ++sendBufIdx;
+                                    }
+                                }
+                            }
+                        }
+                        // make sure we send as many particles as expected
+                        assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
+                        
+                        MPI_Request request;
+                        MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);  
+                    
+                        //std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
+                    } else {
+                        // send dummy message, remove later
+                        double dummy = 0;
+                        MPI_Request request;
+                        MPI_Isend(&dummy, 1, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);
+                    }
+                }
+            }
+        }   
+        neighbors[rank] = false;
+        if(totalNeighbors > 0){
+            double *recvBuffers[totalNeighbors];
+            int senderCount = 0;	
+            // recieve Messages
+            for(int sender = 0; sender < commSize; ++sender){
+                if (neighbors[sender]){
+                    // MPI stuff to facilitate exchange
+                    MPI_Status status;
+                    int count;
+
+                    // Probe for message and get number of doubles
+                    MPI_Probe(sender, /*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    MPI_Get_count(&status, MPI_DOUBLE, &count);
+
+                    // allocate buffer and recieve
+                    double recvBuf[count];
+                    recvBuffers[senderCount] = recvBuf;
+                    ++senderCount;
+                    MPI_Recv(recvBuf, count, MPI_DOUBLE, sender,/*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    //std::cerr << "Rank " << rank << " recieved " << count/3 << " paricles from " << sender << std::endl;
+                }
+            }
         }
-	neighbors[rank] = false;
-	if(totalNeighbors > 0){
-	    double *recvBuffers[totalNeighbors];
-	    int senderCount = 0;	
-	    // recieve Messages
-	    for(int sender = 0; sender < commSize; ++sender){
-	        if (neighbors[sender]){
-		    // MPI stuff to facilitate exchange
-		    MPI_Status status;
-		    int count;
-
-	    	    // Probe for message and get number of doubles
-	    	    MPI_Probe(sender, /*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		    MPI_Get_count(&status, MPI_DOUBLE, &count);
-
-		    // allocate buffer and recieve
-		    double recvBuf[count];
-		    recvBuffers[senderCount] = recvBuf;
-		    ++senderCount;
-		    MPI_Recv(recvBuf, count, MPI_DOUBLE, sender,/*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		    //std::cerr << "Rank " << rank << " recieved " << count/3 << " paricles from " << sender << std::endl;
-	    	}
-	    }
-	}
-	std::cerr << "Rank " << rank << " is done :) " << std::endl;
+        std::cerr << "Rank " << rank << " is done :) " << std::endl;
     }
 
     void pre_step() override {
