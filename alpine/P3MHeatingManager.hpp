@@ -322,14 +322,6 @@ public:
         Kokkos::fence();
  	
         // compute starting indices for each cell
-        /*
-        Kokkos::parallel_scan("Calculate Starting Indices", Kokkos::RangePolicy<Device>(1, totalCells+1),
-            KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
-                if(isFinal) cellStartingIdx(i) = localSum;
-                localSum += cellParticleCount(i-1);
-            }
-        );*/
-
 	Kokkos::parallel_scan(Kokkos::RangePolicy<Device>(0, totalCells),
 	    KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
 		if(isFinal) cellStartingIdx(i) = localSum;
@@ -360,10 +352,7 @@ public:
 
         Kokkos::fence();
 	
-	// copy into original paticle view (does not work nLoc < size(R))
-	// Kokkos::deep_copy(R, tempR);
-	// Kokkos::deep_copy(ID, tempID);
-	
+	// move data from Temp view into main view
 	Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
 	    KOKKOS_LAMBDA(const size_type i){
 		R(i) = tempR(i);
@@ -393,9 +382,6 @@ public:
 
 	Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
 	Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
-	// auto host_cellParticleCount = Kokkos::create_mirror_view(cellParticleCount);
-	// auto host_cellStartingIdx = Kokkos::create_mirror_view(cellStartingIdx);
-	// neighbors array inefficient for large Communicators
 	
 	bool neighbors[commSize];	
 
