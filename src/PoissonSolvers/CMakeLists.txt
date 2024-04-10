@@ -5,6 +5,7 @@ set (_HDRS
     PoissonCG.h
     Poisson.h
     NullSolver.h
+    LaplaceHelpers.h
 )
 if (ENABLE_FFT)
     list (APPEND _HDRS

@@ -15,9 +15,6 @@ class FieldBCTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class FieldBCTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -30,7 +27,6 @@ public:
 
     FieldBCTest()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 10;
         }
@@ -194,7 +190,6 @@ TYPED_TEST(FieldBCTest, ExtrapolateBC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
