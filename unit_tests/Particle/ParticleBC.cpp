@@ -12,9 +12,6 @@ class ParticleBCTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class ParticleBCTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     constexpr static unsigned dim = Dim;
@@ -23,7 +20,6 @@ public:
     using bunch_type   = ippl::ParticleBase<playout_type>;
 
     ParticleBCTest() {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             len[d] = (d + 1) * 0.2;
         }
@@ -223,7 +219,6 @@ TYPED_TEST(ParticleBCTest, LowerSinkBC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

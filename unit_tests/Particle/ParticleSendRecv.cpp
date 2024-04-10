@@ -15,9 +15,6 @@ class ParticleSendRecv;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class ParticleSendRecv<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using flayout_type   = ippl::FieldLayout<Dim>;
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
@@ -46,7 +43,6 @@ public:
 
     ParticleSendRecv()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 16.;
         }
@@ -173,7 +169,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
