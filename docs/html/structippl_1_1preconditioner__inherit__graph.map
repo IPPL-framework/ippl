@@ -1,8 +1,0 @@
-<map id="ippl::preconditioner&lt; Field &gt;" name="ippl::preconditioner&lt; Field &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="458,5,610,171"/>
-<area shape="rect" id="node2" href="$structippl_1_1gs__preconditioner.html" title=" " alt="" coords="5,292,188,487"/>
-<area shape="rect" id="node3" href="$structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="213,321,407,457"/>
-<area shape="rect" id="node4" href="$structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="432,219,636,560"/>
-<area shape="rect" id="node5" href="$structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="660,248,936,531"/>
-<area shape="rect" id="node6" href="$structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="960,314,1228,465"/>
-</map>

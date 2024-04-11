@@ -1,9 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL." alt="" coords="5,122,148,149"/>
-<area shape="rect" id="node2" href="$classippl_1_1PicManager.html" title=" " alt="" coords="196,49,399,134"/>
-<area shape="rect" id="node7" href="$classippl_1_1PicManager.html" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="219,159,376,200"/>
-<area shape="rect" id="node3" href="$classAlpineManager.html" title=" " alt="" coords="447,78,640,105"/>
-<area shape="rect" id="node4" href="$classBumponTailInstabilityManager.html" title=" " alt="" coords="688,5,908,47"/>
-<area shape="rect" id="node5" href="$classLandauDampingManager.html" title=" " alt="" coords="705,71,891,112"/>
-<area shape="rect" id="node6" href="$classPenningTrapManager.html" title=" " alt="" coords="719,136,877,177"/>
-</map>
