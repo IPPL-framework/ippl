@@ -1,0 +1,52 @@
+<map id="ParticleAttrib.h" name="ParticleAttrib.h">
+<area shape="rect" id="node1" title=" " alt="" coords="787,5,906,32"/>
+<area shape="rect" id="node2" href="$IpplExpressions_8h.html" title=" " alt="" coords="261,453,472,480"/>
+<area shape="rect" id="node7" href="$CIC_8h.html" title=" " alt="" coords="1223,80,1366,107"/>
+<area shape="rect" id="node9" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="182,229,385,256"/>
+<area shape="rect" id="node22" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="844,80,1030,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="320,528,412,555"/>
+<area shape="rect" id="node4" href="$IpplOperations_8h.html" title=" " alt="" coords="510,528,714,555"/>
+<area shape="rect" id="node5" title=" " alt="" coords="484,603,739,629"/>
+<area shape="rect" id="node6" title=" " alt="" coords="939,603,994,629"/>
+<area shape="rect" id="node8" href="$CIC_8hpp.html" title=" " alt="" coords="1299,155,1458,181"/>
+<area shape="rect" id="node10" href="$IpplTypes_8h.html" title=" " alt="" coords="44,379,180,405"/>
+<area shape="rect" id="node12" href="$ViewTypes_8h.html" title=" " alt="" coords="204,379,348,405"/>
+<area shape="rect" id="node14" href="$Archive_8h.html" title=" " alt="" coords="245,304,424,331"/>
+<area shape="rect" id="node11" title=" " alt="" coords="75,453,146,480"/>
+<area shape="rect" id="node13" title=" " alt="" coords="550,453,684,480"/>
+<area shape="rect" id="node15" href="$Vector_8h.html" title=" " alt="" coords="957,379,1072,405"/>
+<area shape="rect" id="node20" href="$Archive_8hpp.html" title=" " alt="" coords="372,379,470,405"/>
+<area shape="rect" id="node16" title=" " alt="" coords="916,453,1027,480"/>
+<area shape="rect" id="node17" href="$Vector_8hpp.html" title=" " alt="" coords="801,453,892,480"/>
+<area shape="rect" id="node18" title=" " alt="" coords="944,528,1018,555"/>
+<area shape="rect" id="node19" title=" " alt="" coords="806,528,886,555"/>
+<area shape="rect" id="node21" title=" " alt="" coords="170,453,237,480"/>
+<area shape="rect" id="node23" href="$Ippl_8h.html" title=" " alt="" coords="865,155,924,181"/>
+<area shape="rect" id="node36" href="$DataTypes_8h.html" title=" " alt="" coords="1476,304,1673,331"/>
+<area shape="rect" id="node42" href="$IpplTimings_8h.html" title=" " alt="" coords="2293,304,2448,331"/>
+<area shape="rect" id="node24" href="$Inform_8h.html" title=" " alt="" coords="1051,453,1172,480"/>
+<area shape="rect" id="node26" href="$ParallelDispatch_8h.html" title=" " alt="" coords="1147,304,1330,331"/>
+<area shape="rect" id="node29" href="$Communicator_8h.html" title=" " alt="" coords="500,229,724,256"/>
+<area shape="rect" id="node34" href="$Environment_8h.html" title=" " alt="" coords="747,229,959,256"/>
+<area shape="rect" id="node35" href="$IpplCore_8h.html" title=" " alt="" coords="984,229,1072,256"/>
+<area shape="rect" id="node25" title=" " alt="" coords="1074,528,1149,555"/>
+<area shape="rect" id="node27" href="$IpplException_8h.html" title=" " alt="" coords="1299,379,1466,405"/>
+<area shape="rect" id="node28" title=" " alt="" coords="2677,453,2736,480"/>
+<area shape="rect" id="node30" title=" " alt="" coords="498,304,576,331"/>
+<area shape="rect" id="node31" title=" " alt="" coords="718,453,777,480"/>
+<area shape="rect" id="node32" href="$Request_8h.html" title=" " alt="" coords="651,304,834,331"/>
+<area shape="rect" id="node33" href="$Status_8h.html" title=" " alt="" coords="657,379,828,405"/>
+<area shape="rect" id="node37" title=" " alt="" coords="1940,379,2019,405"/>
+<area shape="rect" id="node38" title=" " alt="" coords="1490,379,1557,405"/>
+<area shape="rect" id="node39" title=" " alt="" coords="1582,379,1668,405"/>
+<area shape="rect" id="node40" title=" " alt="" coords="1692,379,1768,405"/>
+<area shape="rect" id="node41" title=" " alt="" coords="1792,379,1916,405"/>
+<area shape="rect" id="node43" title=" " alt="" coords="2815,453,2902,480"/>
+<area shape="rect" id="node44" title=" " alt="" coords="2044,379,2102,405"/>
+<area shape="rect" id="node45" title=" " alt="" coords="2126,379,2177,405"/>
+<area shape="rect" id="node46" title=" " alt="" coords="2202,379,2259,405"/>
+<area shape="rect" id="node47" title=" " alt="" coords="2283,379,2346,405"/>
+<area shape="rect" id="node48" href="$PAssert_8h.html" title=" " alt="" coords="2744,379,2871,405"/>
+<area shape="rect" id="node49" href="$Timer_8h.html" title=" " alt="" coords="2370,379,2485,405"/>
+<area shape="rect" id="node50" href="$my__auto__ptr_8h.html" title=" " alt="" coords="2510,379,2668,405"/>
+</map>
