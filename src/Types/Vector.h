@@ -66,7 +66,7 @@ namespace ippl {
 #ifndef __CUDA_ARCH__
             using std::sqrt;
 #endif
-            return sqrt(squaredNorm());
+            return Kokkos::sqrt(squaredNorm());
         }
         KOKKOS_INLINE_FUNCTION Vector<T, Dim> normalized() const noexcept { return *this / norm(); }
         KOKKOS_INLINE_FUNCTION value_type sum() const noexcept {

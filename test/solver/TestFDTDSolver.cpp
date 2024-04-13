@@ -5,6 +5,7 @@
 #include "Field/Field.h"
 
 #include "MaxwellSolvers/FDTD.h"
+#define JSON_HAS_RANGES 0 //Merlin compilation
 #include <json.hpp>
 #include <fstream>
 #include <list>
@@ -40,7 +41,17 @@ KOKKOS_INLINE_FUNCTION bool isINF(double x){
     #endif
 }
 #define assert_isreal(X) assert(!isNaN(X) && !isINF(X))
-
+template<unsigned int Dim, typename callable, typename... Ts>
+KOKKOS_INLINE_FUNCTION void serial_for(callable c, ippl::Vector<uint32_t, Dim> from, ippl::Vector<uint32_t, Dim> to, Ts... args){
+    if constexpr(sizeof...(Ts) == Dim){
+        c(args...);
+    }
+    else{
+        for(uint32_t i = from[sizeof...(Ts)];i < to[sizeof...(Ts)];i++){
+            serial_for(c, from, to, args..., i);
+        }
+    }
+}
 
 
 
@@ -647,6 +658,7 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
      * macro-particles and perform the corresponding changes.                                         	*/
     bunchInit.numberOfParticles_ = chargeVector.size();
 }
+
 template<typename Double>
 void boost_bunch(ChargeVector<Double>& chargeVectorn_, Double frame_gamma){
     Double frame_beta = std::sqrt((double)frame_gamma * frame_gamma - 1.0) / double(frame_gamma);
@@ -828,6 +840,7 @@ KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gr
 template<typename view_type, typename scalar>
 KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value){
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
+    ipos -= ldom.first();
     if(
         ipos[0] < 0
         ||ipos[1] < 0
@@ -855,7 +868,7 @@ KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view
     assert(one_minus_fracpos[2] >= 0.0f);
     assert(one_minus_fracpos[2] <= 1.0f);
     scalar accum = 0;
-    ipos -= ldom.first();
+    
     for(unsigned i = 0;i < 8;i++){
         scalar weight = 1;
         ippl::Vector<int, 3> ipos_l = ipos;
@@ -874,6 +887,7 @@ template<typename view_type, typename scalar>
 KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const ippl::Vector<scalar, 3>& value){
     //std::cout << "Value: " << value << "\n";
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
+    ipos -= ldom.first();
     if(
         ipos[0] < 0
         ||ipos[1] < 0
@@ -902,7 +916,7 @@ KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view
     assert(one_minus_fracpos[2] >= 0.0f);
     assert(one_minus_fracpos[2] <= 1.0f);
     scalar accum = 0;
-    ipos -= ldom.first();
+    
     for(unsigned i = 0;i < 8;i++){
         scalar weight = 1;
         ippl::Vector<int, 3> ipos_l = ipos;
@@ -930,7 +944,7 @@ KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view
         //if(abs(from_grid.first[d] - to_grid.first[d]) > 1){
         //    std::cout <<abs(from_grid.first[d] - to_grid.first[d]) << " violation " << from_grid.first << " " << to_grid.first << std::endl;
         //}
-        assert(abs(from_grid.first[d] - to_grid.first[d]) <= 1);
+        //assert(abs(from_grid.first[d] - to_grid.first[d]) <= 1);
     }
     //const uint32_t nghost = g.nghost();
     //from_ipos += ippl::Vector<int, 3>(nghost);
@@ -1205,7 +1219,9 @@ struct second_order_mur_boundary_conditions{
             uint32_t(A_n.extent(1)),
             uint32_t(A_n.extent(2))
         };
-        Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
+        constexpr uint32_t min_abc_boundary = 1;
+        constexpr uint32_t max_abc_boundary_sub = min_abc_boundary + 1;
+        Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
             uint32_t ig = i + lDom.first()[0];
             uint32_t jg = j + lDom.first()[1];
             uint32_t kg = k + lDom.first()[2];
@@ -1214,38 +1230,39 @@ struct second_order_mur_boundary_conditions{
                          + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
 
             if(Kokkos::popcount(lval) > 1)return;
-            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
-                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+            uint32_t val = uint32_t(ig == min_abc_boundary) + (uint32_t(jg == min_abc_boundary) << 1) + (uint32_t(kg == min_abc_boundary) << 2)
+                             + (uint32_t(ig == true_nr[0] - max_abc_boundary_sub) << 3) + (uint32_t(jg == true_nr[1] - max_abc_boundary_sub) << 4) + (uint32_t(kg == true_nr[2] - max_abc_boundary_sub) << 5);
 
             if(Kokkos::popcount(val) == 1){
-                if(ig == 0){
+                if(ig == min_abc_boundary){
                     second_order_abc_face<scalar, 0, 1, 2> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(jg == 0){
+                if(jg == min_abc_boundary){
                     second_order_abc_face<scalar, 1, 0, 2> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(kg == 0){
+                if(kg == min_abc_boundary){
                     second_order_abc_face<scalar, 2, 0, 1> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(ig == true_nr[0] - 1){
+                if(ig == true_nr[0] - max_abc_boundary_sub){
                     second_order_abc_face<scalar, 0, 1, 2> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(jg == true_nr[1] - 1){
+                if(jg == true_nr[1] - max_abc_boundary_sub){
                     second_order_abc_face<scalar, 1, 0, 2> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(kg == true_nr[2] - 1){
+                if(kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_face<scalar, 2, 0, 1> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
             }
         });
         Kokkos::fence();
-        Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
+        FA_np1.fillHalo();
+        Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
             uint32_t ig = i + lDom.first()[0];
             uint32_t jg = j + lDom.first()[1];
             uint32_t kg = k + lDom.first()[2];
@@ -1254,57 +1271,57 @@ struct second_order_mur_boundary_conditions{
                          + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
 
             if(Kokkos::popcount(lval) > 2)return;
-            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
-                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+            uint32_t val = uint32_t(ig == min_abc_boundary) + (uint32_t(jg == min_abc_boundary) << 1) + (uint32_t(kg == min_abc_boundary) << 2)
+                             + (uint32_t(ig == true_nr[0] - max_abc_boundary_sub) << 3) + (uint32_t(jg == true_nr[1] - max_abc_boundary_sub) << 4) + (uint32_t(kg == true_nr[2] - max_abc_boundary_sub) << 5);
             if(Kokkos::popcount(val) == 2){ //Edge
-                if(ig == 0 && kg == 0){
+                if(ig == min_abc_boundary && kg == min_abc_boundary){
                     second_order_abc_edge<scalar, 1, 2, 0, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == 0 && jg == 0){
+                else if(ig == min_abc_boundary && jg == min_abc_boundary){
                     second_order_abc_edge<scalar, 2, 0, 1, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(jg == 0 && kg == 0){
+                else if(jg == min_abc_boundary && kg == min_abc_boundary){
                     second_order_abc_edge<scalar, 0, 1, 2, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(ig == 0 && kg == true_nr[2] - 1){
+                else if(ig == min_abc_boundary && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 1, 2, 0, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == 0 && jg == true_nr[1] - 1){
+                else if(ig == min_abc_boundary && jg == true_nr[1] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 2, 0, 1, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(jg == 0 && kg == true_nr[2] - 1){
+                else if(jg == min_abc_boundary && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 0, 1, 2, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(ig == true_nr[0] - 1 && kg == 0){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && kg == min_abc_boundary){
                     second_order_abc_edge<scalar, 1, 2, 0, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == 0){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == min_abc_boundary){
                     second_order_abc_edge<scalar, 2, 0, 1, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(jg == true_nr[1] - 1 && kg == 0){
+                else if(jg == true_nr[1] - max_abc_boundary_sub && kg == min_abc_boundary){
                     second_order_abc_edge<scalar, 0, 1, 2, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(ig == true_nr[0] - 1 && kg == true_nr[2] - 1){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 1, 2, 0, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == true_nr[1] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 2, 0, 1, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
+                else if(jg == true_nr[1] - max_abc_boundary_sub && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_edge<scalar, 0, 1, 2, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
@@ -1314,7 +1331,8 @@ struct second_order_mur_boundary_conditions{
             }
         });
         Kokkos::fence();
-        Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
+        FA_np1.fillHalo();
+        Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
             uint32_t ig = i + lDom.first()[0];
             uint32_t jg = j + lDom.first()[1];
             uint32_t kg = k + lDom.first()[2];
@@ -1323,40 +1341,40 @@ struct second_order_mur_boundary_conditions{
             //             + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
 
             //if(Kokkos::popcount(lval) > 1)return;
-            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
-                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+            uint32_t val = uint32_t(ig == min_abc_boundary) + (uint32_t(jg == min_abc_boundary) << 1) + (uint32_t(kg == min_abc_boundary) << 2)
+                             + (uint32_t(ig == true_nr[0] - max_abc_boundary_sub) << 3) + (uint32_t(jg == true_nr[1] - max_abc_boundary_sub) << 4) + (uint32_t(kg == true_nr[2] - max_abc_boundary_sub) << 5);
             
             if(Kokkos::popcount(val) == 3){
                 //printf("Corner: %d, %d, %d\n", i, j, k);
-                if(ig == 0 && jg == 0 && kg == 0){
+                if(ig == min_abc_boundary && jg == min_abc_boundary && kg == min_abc_boundary){
                     second_order_abc_corner<scalar, 1, 1, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == 0 && kg == 0){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == min_abc_boundary && kg == min_abc_boundary){
                     second_order_abc_corner<scalar, 0, 1, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == 0 && jg == true_nr[1] - 1 && kg == 0){
+                else if(ig == min_abc_boundary && jg == true_nr[1] - max_abc_boundary_sub && kg == min_abc_boundary){
                     second_order_abc_corner<scalar, 1, 0, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1 && kg == 0){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == true_nr[1] - max_abc_boundary_sub && kg == min_abc_boundary){
                     second_order_abc_corner<scalar, 0, 0, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == 0 && jg == 0 && kg == true_nr[2] - 1){
+                else if(ig == min_abc_boundary && jg == min_abc_boundary && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_corner<scalar, 1, 1, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == 0 && kg == true_nr[2] - 1){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == min_abc_boundary && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_corner<scalar, 0, 1, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == 0 && jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
+                else if(ig == min_abc_boundary && jg == true_nr[1] - max_abc_boundary_sub && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_corner<scalar, 1, 0, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
+                else if(ig == true_nr[0] - max_abc_boundary_sub && jg == true_nr[1] - max_abc_boundary_sub && kg == true_nr[2] - max_abc_boundary_sub){
                     second_order_abc_corner<scalar, 0, 0, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
@@ -1468,7 +1486,8 @@ namespace ippl {
         scalar dt;
         Mesh_t* mesh_mp;
         FieldLayout<dim>* layout_mp;
-        ParticleSpatialLayout<scalar, 3> playout;
+        using playout_type = ParticleSpatialLayout<scalar, 3>;
+        playout_type playout;
         Bunch<scalar, ParticleSpatialLayout<scalar, 3>> particles;
         using bunch_type =  Bunch<scalar, ParticleSpatialLayout<scalar, 3>>;
 
@@ -1580,30 +1599,42 @@ namespace ippl {
             auto source = this->J.getView();
             FA_nm1.fillHalo();
             FA_n.fillHalo();
+            ippl::Vector<uint32_t, 3> true_nr{this->nr_global[0] + 2, this->nr_global[1] + 2, this->nr_global[2] + 2};
+            const auto& ldom = layout_mp->getLocalNDIndex();
             Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(size_t i, size_t j, size_t k){
-                A_np1(i, j, k) =    -A_nm1(i,j,k)
-                        + ndisp.a1 * A_n  (i,j,k)
-                        + ndisp.a2 * (calA * A_n(i + 1, j, k - 1) + (1 - 2 * calA) * A_n(i + 1, j, k) + calA * A_n(i + 1, j, k + 1))
-                        + ndisp.a2 * (calA * A_n(i - 1, j, k - 1) + (1 - 2 * calA) * A_n(i - 1, j, k) + calA * A_n(i - 1, j, k + 1))
-                        + ndisp.a4 * (calA * A_n(i, j + 1, k - 1) + (1 - 2 * calA) * A_n(i, j + 1, k) + calA * A_n(i, j + 1, k + 1))
-                        + ndisp.a4 * (calA * A_n(i, j - 1, k - 1) + (1 - 2 * calA) * A_n(i, j - 1, k) + calA * A_n(i, j - 1, k + 1))
-                        + ndisp.a6 * A_n(i, j, k + 1) + ndisp.a6 * A_n(i, j, k - 1) + ndisp.a8 * source(i, j, k);
+                uint32_t ig = i + ldom.first()[0];
+                uint32_t jg = j + ldom.first()[1];
+                uint32_t kg = k + ldom.first()[2];
+                uint32_t val = uint32_t(ig == 1) + (uint32_t(jg == 1) << 1) + (uint32_t(kg == 1) << 2)
+                             + (uint32_t(ig == true_nr[0] - 2) << 3) + (uint32_t(jg == true_nr[1] - 2) << 4) + (uint32_t(kg == true_nr[2] - 2) << 5);
+                if(!val){
+                    A_np1(i, j, k) =    -A_nm1(i,j,k)
+                            + ndisp.a1 * A_n  (i,j,k)
+                            + ndisp.a2 * (calA * A_n(i + 1, j, k - 1) + (1 - 2 * calA) * A_n(i + 1, j, k) + calA * A_n(i + 1, j, k + 1))
+                            + ndisp.a2 * (calA * A_n(i - 1, j, k - 1) + (1 - 2 * calA) * A_n(i - 1, j, k) + calA * A_n(i - 1, j, k + 1))
+                            + ndisp.a4 * (calA * A_n(i, j + 1, k - 1) + (1 - 2 * calA) * A_n(i, j + 1, k) + calA * A_n(i, j + 1, k + 1))
+                            + ndisp.a4 * (calA * A_n(i, j - 1, k - 1) + (1 - 2 * calA) * A_n(i, j - 1, k) + calA * A_n(i, j - 1, k + 1))
+                            + ndisp.a6 * A_n(i, j, k + 1) + ndisp.a6 * A_n(i, j, k - 1) + ndisp.a8 * source(i, j, k);
+                }
             });
             Kokkos::fence();
             
             if(!periodic_bc){
+                FA_np1.fillHalo();
                 second_order_mur_boundary_conditions bc;
-                const auto& ldom = layout_mp->getLocalNDIndex();
-                ippl::Vector<uint32_t, 3> true_nr{this->nr_global[0] + 2, this->nr_global[1] + 2, this->nr_global[2] + 2};
+                
+                
                 bc.apply(this->FA_n, this->FA_nm1, this->FA_np1, dt, true_nr, ldom);
             }
             Kokkos::deep_copy(this->FA_nm1.getView(), this->FA_n.getView());
             Kokkos::deep_copy(this->FA_n.getView(), this->FA_np1.getView());
             //std::swap(this->A_n, this->A_nm1);
             //std::swap(this->A_np1, this->A_n);
+            
             evaluate_EB();
         }
         void evaluate_EB(){
+            FA_n.fillHalo();FA_nm1.fillHalo();
             ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
             const scalar idt = scalar(1.0) / dt;
             auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
@@ -1679,6 +1710,27 @@ namespace ippl {
                 });
                 Kokkos::fence();
             }
+            Kokkos::View<bool*> invalid("OOB Particcel", particles.getLocalNum());
+            size_t invalid_count = 0;
+            auto origo = mesh_mp->getOrigin();
+            ippl::Vector<scalar, 3> extenz;//
+            extenz[0] = nr_global[0] * hr_m[0];
+            extenz[1] = nr_global[1] * hr_m[1];
+            extenz[2] = nr_global[2] * hr_m[2];
+            Kokkos::parallel_reduce(
+                Kokkos::RangePolicy<typename playout_type::RegionLayout_t::view_type::execution_space>(0, particles.getLocalNum()),
+                KOKKOS_LAMBDA(size_t i, size_t& ref){
+                    bool out_of_bounds = false;
+                    ippl::Vector<scalar, dim> ppos = rview(i);
+                    for(size_t d = 0;d < dim;d++){
+                        out_of_bounds |= (ppos[d] <= origo[d]);
+                        out_of_bounds |= (ppos[d] >= origo[d] + extenz[d]); //Check against simulation domain
+                    }
+                    invalid(i) = out_of_bounds;
+                    ref += out_of_bounds;
+                }, 
+                invalid_count);
+            particles.destroy(invalid, invalid_count);
             Kokkos::fence();
             
         }
@@ -1772,6 +1824,7 @@ int main(int argc, char* argv[]) {
         //std::cout << cfg.charge << "\n";
         
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
+        
         for(size_t i = 0;i < timesteps_required;i++){
             if(ippl::Comm->rank() == 0){
                 std::cout << "Step: " << i << std::endl;
@@ -1789,9 +1842,10 @@ int main(int argc, char* argv[]) {
             if((cfg.output_rhythm != 0) && (i % cfg.output_rhythm == 0)){
 
                 auto ldom = layout.getLocalNDIndex();
-                int img_height = 500;
-                int img_width = int(500.0 * cfg.extents[2] / cfg.extents[0]);
+                int img_height = 1000;
+                int img_width = int(1000.0 * cfg.extents[2] / cfg.extents[0]);
                 float* imagedata = new float[img_width * img_height * 3];
+                std::fill(imagedata, imagedata + img_width * img_height * 3, 0.0f);
                 float* idata_recvbuffer = new float[img_width * img_height * 3];
                 int floatcount = img_width * img_height * 3;
                 uint8_t* imagedata_final = new uint8_t[img_width * img_height * 3];
@@ -1812,6 +1866,28 @@ int main(int argc, char* argv[]) {
                         std::min(255.f, imagedata[(y_imgcoord * img_width + x_imgcoord) * 3 + 1] + intensity);
                     }
                 };
+                auto ebh = fdtd_state.EB.getHostMirror();
+                Kokkos::deep_copy(ebh, fdtd_state.EB.getView());
+
+                //double exp_avg = double(exp_sum) / double(acount);
+                {
+                    for(int i = 1;i < img_width;i++){
+                        for(int j = 1;j < img_height;j++){
+                            int i_remap = (double(i) / (img_width  - 1)) * (fdtd_state.nr_global[2] - 4) + 2;
+                            int j_remap = (double(j) / (img_height - 1)) * (fdtd_state.nr_global[0] - 4) + 2;
+                            if(i_remap >= ldom.first()[2] && i_remap <= ldom.last()[2]){
+                                if(j_remap >= ldom.first()[0] && j_remap <= ldom.last()[0]){
+                                    ippl::Vector<ippl::Vector<scalar, 3>, 2> acc = ebh(j_remap + 1 - ldom.first()[0], fdtd_state.nr_global[1] / 2, i_remap + 1 - ldom.first()[2]);
+                                    ippl::Vector<scalar, 3> poynting = acc[0].cross(acc[1]);
+                                    if(poynting.norm() > 0){
+                                        //std::cout << poynting.norm() << "\n";
+                                    }
+                                    imagedata[(j * img_width + i) * 3 + 0] += std::sqrt(poynting.norm()) * 0.5f;//(unsigned char)(std::min(255u, (unsigned int)(0.5f * std::sqrt(std::sqrt(poynting.squaredNorm())))));
+                                }
+                            }
+                        }
+                    }
+                }
                 int mask = 1;
                 while (mask < size) {
                     int partner = rank ^ mask;
@@ -1835,7 +1911,7 @@ int main(int argc, char* argv[]) {
                 if(rank == 0){
                     char output[1024] = {0};
                     snprintf(output, 1023, "../data/outimage%.05d.bmp", i);
-                    std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)x;});
+                    std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)std::min(255.0f, std::max(0.0f,x));});
                     stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
                 }
                 delete[] imagedata;
