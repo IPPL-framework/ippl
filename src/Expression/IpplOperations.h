@@ -282,7 +282,7 @@ namespace ippl {
              */
             template <typename... Args>
             KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {
-                return dot(u_m(args...), v_m(args...)).apply();
+                return dot(u_m(args...), v_m(args...));
             }
 
         private:

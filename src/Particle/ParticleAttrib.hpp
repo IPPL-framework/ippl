@@ -121,7 +121,7 @@ namespace ippl {
 
         const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
+        const vector_type invdx   = vector_type(1.0) / dx;
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
@@ -132,12 +132,12 @@ namespace ippl {
             "ParticleAttrib::scatter", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index        = l;
-                Vector<PositionType, Field::dim> whi = l - index;
-                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + vector_type(1.0); // Terribile;
+                Vector<int, Field::dim> index        = l.template cast<int>();
+                Vector<PositionType, Field::dim> whi = l - index.template cast<PositionType>();
+                Vector<PositionType, Field::dim> wlo = vector_type(1.0) - whi;
 
-                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
+                Vector<size_t, Field::dim> args = (index - lDom.first() + nghost).template cast<size_t>();
 
                 // scatter
                 const value_type& val = dview_m(idx);
@@ -175,7 +175,7 @@ namespace ippl {
 
         const vector_type& dx     = mesh.getMeshSpacing();
         const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
+        const vector_type invdx   = vector_type(1.0) / dx;
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
@@ -186,12 +186,12 @@ namespace ippl {
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index        = l;
-                Vector<PositionType, Field::dim> whi = l - index;
-                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
+                vector_type l                        = (pp(idx) - origin) * invdx + vector_type(1.0); //terribile
+                Vector<int, Field::dim> index        = l.template cast<int>();
+                Vector<PositionType, Field::dim> whi = l - index.template cast<PositionType>();
+                Vector<PositionType, Field::dim> wlo = vector_type(1.0) - whi;
 
-                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
+                Vector<size_t, Field::dim> args = (index - lDom.first() + nghost).template cast<size_t>();
 
                 // gather
                 dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},

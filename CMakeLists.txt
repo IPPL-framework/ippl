@@ -1,19 +1,33 @@
 cmake_minimum_required (VERSION 3.20.3)
 project (IPPL CXX)
 set (IPPL_VERSION_MAJOR 3)
-set (IPPL_VERSION_MINOR 0.1)
-
+set (IPPL_VERSION_MINOR 0.2)
+include(FetchContent)
 set (IPPL_VERSION_NAME "V${IPPL_VERSION_MAJOR}.${IPPL_VERSION_MINOR}")
-
+option(DOWNLOAD_EXTRACT_TIMESTAMP ON FORCE)
 set (IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(NOT WIN32)
+  string(ASCII 27 Esc)
+  set(ColourReset "${Esc}[m")
+  set(Red         "${Esc}[31m")
+  set(Green       "${Esc}[32m")
+  set(Yellow      "${Esc}[1;33m")
+endif()
+
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+
     set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
         "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
         FORCE
-        )
-endif ()
-
+    )
+    message(STATUS "${Yellow}CMAKE_BUILD_TYPE not set, defaulting to ${CMAKE_BUILD_TYPE} ${ColourReset}")
+else ()
+    message (STATUS "${Green}Build type is: ${CMAKE_BUILD_TYPE}${ColourReset}")
+endif()
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
@@ -21,27 +35,85 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-add_compile_options (-Werror)
+#add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
-
+file(
+    DOWNLOAD
+    https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
+    "${CMAKE_BINARY_DIR}/downloaded_headers/json.hpp"
+)
+file(
+    DOWNLOAD
+    https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h
+    "${CMAKE_BINARY_DIR}/downloaded_headers/stb_image_write.hpp"
+)
+include_directories("${CMAKE_BINARY_DIR}/downloaded_headers/")
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
-message (STATUS "Build type is: " ${CMAKE_BUILD_TYPE})
+if(NOT IPPL_PLATFORMS)
+    message(STATUS "${Yellow}IPPL_PLATFORMS flag is not set, defaulting to serial backend${ColourReset}")
+    set(IPPL_PLATFORMS "SERIAL")
+endif()
 
-find_package(Kokkos 4.0.0 REQUIRED)
+if(IPPL_PLATFORMS)
+    #message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+    string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
+    # Perform case distinction
+    if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
+        message(STATUS "${Green}CUDA backend enabled${ColourReset}")
+        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
+        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
+    elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
+        message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
+        if(NOT Heffte_ENABLE_FFTW)
+            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
+        else()
+            message(STATUS "${Green}Enabled FFTW${ColourReset}")
+        endif()
+        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+    elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
 
+        message(STATUS "${Green}Serial backend enabled${ColourReset}")
+        if(NOT Heffte_ENABLE_FFTW)
+            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
+        endif()
+
+    elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
+        message(STATUS "${Green}CUDA and OpenMP backend enabled${ColourReset}")
+        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
+        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend") 
+    else()
+        message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
+        # Handle unknown or unsupported platform
+    endif()
+endif()
+
+find_package(Kokkos 4.0.0 QUIET)
+if(NOT Kokkos_FOUND)
+    FetchContent_Declare(
+        #DOWNLOAD_EXTRACT_TIMESTAMP
+        kokko
+        URL https://github.com/kokkos/kokkos/archive/refs/tags/4.1.00.tar.gz                
+    )
+    FetchContent_MakeAvailable(kokko)
+endif()
 # Select flags.
 set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CUDA_EXTENSIONS OFF)
+set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ")
-set (CMAKE_CXX_FLAGS_RELEASE "-O3")
-set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINGO} -O3 -g ")
+set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+#set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # Use sanitizer flags for GCC or Clang only
-    set (CMAKE_CXX_FLAGS_DEBUG  "-O0 -g -fsanitize=address,undefined")
+    set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
 endif ()
 
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
@@ -73,7 +145,16 @@ endif()
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
-    find_package (Heffte 2.2.0 REQUIRED)
+    find_package (Heffte 2.2.0 QUIET)
+    if(NOT Heffte_FOUND)
+        message(STATUS "Using FetchContent for Heffte")
+        FetchContent_Declare(
+             Heffte
+             #DOWNLOAD_EXTRACT_TIMESTAMP
+             GIT_REPOSITORY https://github.com/icl-utk-edu/heffte 
+        )
+        FetchContent_MakeAvailable(Heffte)
+    endif()
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
@@ -100,6 +181,9 @@ endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
+    if (NOT ENABLE_FFT)
+        message(WARNING "Enabling unit tests even though FFT not enabled (-DENABLE_FFT=ON)!")
+    endif ()
     include(FetchContent)
     include(GoogleTest)
 
