@@ -707,7 +707,6 @@ size_t initialize_bunch_mithra(
             std::cout << "Pos before boost: " << c.rnp << "\n";
     }
     boost_bunch(oof, frame_gamma);
-    std::cout << "boost gamma" << frame_gamma << "\n";
     for(auto& c : oof){
          if(std::isnan(c.rnp[0]) || std::isnan(c.rnp[1]) || std::isnan(c.rnp[2])){
             std::cout << "Pos after boost: " << c.rnp << "\n";
@@ -748,12 +747,7 @@ size_t initialize_bunch_mithra(
         gbview(i) = dgammabetas(i);
     });
     Kokkos::fence();
-    ippl::Vector<scalar, 3> meanpos = bunch.R.sum() * (1.0 / oof.size());
     
-    Kokkos::parallel_for(oof.size(), KOKKOS_LAMBDA(size_t i){
-        rview(i) -= meanpos;
-        rm1view(i) -= meanpos;
-    });
     return oof.size();
 }
 
@@ -832,7 +826,7 @@ KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gr
     return ret;
 }
 template<typename view_type, typename scalar>
-KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value){
+KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value){
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
     if(
         ipos[0] < 0
@@ -861,7 +855,7 @@ KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, 
     assert(one_minus_fracpos[2] >= 0.0f);
     assert(one_minus_fracpos[2] <= 1.0f);
     scalar accum = 0;
-    
+    ipos -= ldom.first();
     for(unsigned i = 0;i < 8;i++){
         scalar weight = 1;
         ippl::Vector<int, 3> ipos_l = ipos;
@@ -877,7 +871,7 @@ KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, 
     assert(abs(accum - 1.0f) < 1e-6f);
 }
 template<typename view_type, typename scalar>
-KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const ippl::Vector<scalar, 3>& value){
+KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const ippl::Vector<scalar, 3>& value){
     //std::cout << "Value: " << value << "\n";
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
     if(
@@ -908,7 +902,7 @@ KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, 
     assert(one_minus_fracpos[2] >= 0.0f);
     assert(one_minus_fracpos[2] <= 1.0f);
     scalar accum = 0;
-    
+    ipos -= ldom.first();
     for(unsigned i = 0;i < 8;i++){
         scalar weight = 1;
         ippl::Vector<int, 3> ipos_l = ipos;
@@ -926,7 +920,7 @@ KOKKOS_FUNCTION void scatterToGrid(view_type& view, ippl::Vector<scalar, 3> hr, 
 }
 
 template<typename view_type, typename scalar>
-KOKKOS_INLINE_FUNCTION void scatterLineToGrid(view_type& Jview, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> origin, const ippl::Vector<scalar, 3>& from, const ippl::Vector<scalar, 3>& to, const scalar factor){ 
+KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view_type& Jview, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> origin, const ippl::Vector<scalar, 3>& from, const ippl::Vector<scalar, 3>& to, const scalar factor){ 
 
     
     Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<scalar, 3>> from_grid = gridCoordinatesOf(hr, origin, from);
@@ -943,7 +937,7 @@ KOKKOS_INLINE_FUNCTION void scatterLineToGrid(view_type& Jview, ippl::Vector<sca
     //to_ipos += ippl::Vector<int, 3>(nghost);
     
     if(from_grid.first[0] == to_grid.first[0] && from_grid.first[1] == to_grid.first[1] && from_grid.first[2] == to_grid.first[2]){
-        scatterToGrid(Jview, hr, origin, ippl::Vector<scalar, 3>((from + to) * scalar(0.5)), ippl::Vector<scalar, 3>((to - from) * factor));
+        scatterToGrid(ldom, Jview, hr, origin, ippl::Vector<scalar, 3>((from + to) * scalar(0.5)), ippl::Vector<scalar, 3>((to - from) * factor));
         
         return;
     }
@@ -957,8 +951,8 @@ KOKKOS_INLINE_FUNCTION void scatterLineToGrid(view_type& Jview, ippl::Vector<sca
                        max(max(from_grid.first[i] - nghost, to_grid.first[i] - nghost) * hr[i] + scalar(0.0) * hr[i] + orig[i],
                            scalar(0.5) * (to[i] + from[i])));
     }
-    scatterToGrid(Jview, hr, origin, ippl::Vector<scalar, 3>((from + relay) * scalar(0.5)), ippl::Vector<scalar, 3>((relay - from) * factor));
-    scatterToGrid(Jview, hr, origin, ippl::Vector<scalar, 3>((relay + to) * scalar(0.5))  , ippl::Vector<scalar, 3>((to - relay) * factor));
+    scatterToGrid(ldom, Jview, hr, origin, ippl::Vector<scalar, 3>((from + relay) * scalar(0.5)), ippl::Vector<scalar, 3>((relay - from) * factor));
+    scatterToGrid(ldom, Jview, hr, origin, ippl::Vector<scalar, 3>((relay + to) * scalar(0.5))  , ippl::Vector<scalar, 3>((to - relay) * factor));
 }
 
 // END PREAMBLE
@@ -1195,7 +1189,7 @@ struct second_order_abc_corner{
 
 struct second_order_mur_boundary_conditions{
     template<typename field_type, typename dt_type>
-    void apply(field_type& FA_n, field_type& FA_nm1, field_type& FA_np1, dt_type dt, ippl::Vector<uint32_t, 3> true_nr){
+    void apply(field_type& FA_n, field_type& FA_nm1, field_type& FA_np1, dt_type dt, ippl::Vector<uint32_t, 3> true_nr, ippl::NDIndex<3> lDom){
         using scalar = decltype(dt);
         //TODO: tbh don't know
         //const unsigned nghost = 1;
@@ -1206,32 +1200,45 @@ struct second_order_mur_boundary_conditions{
         auto A_n   = FA_n.getView();
         auto A_np1 = FA_np1.getView();
         auto A_nm1 = FA_nm1.getView();
-        
+        ippl::Vector<uint32_t, 3> local_nr{
+            uint32_t(A_n.extent(0)),
+            uint32_t(A_n.extent(1)),
+            uint32_t(A_n.extent(2))
+        };
         Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
-            uint32_t val = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
-                             + (uint32_t(i == true_nr[0] - 1) << 3) + (uint32_t(j == true_nr[1] - 1) << 4) + (uint32_t(k == true_nr[2] - 1) << 5);
+            uint32_t ig = i + lDom.first()[0];
+            uint32_t jg = j + lDom.first()[1];
+            uint32_t kg = k + lDom.first()[2];
+            
+            uint32_t lval = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
+                         + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
+
+            if(Kokkos::popcount(lval) > 1)return;
+            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
+                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+
             if(Kokkos::popcount(val) == 1){
-                if(i == 0){
+                if(ig == 0){
                     second_order_abc_face<scalar, 0, 1, 2> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(j == 0){
+                if(jg == 0){
                     second_order_abc_face<scalar, 1, 0, 2> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(k == 0){
+                if(kg == 0){
                     second_order_abc_face<scalar, 2, 0, 1> soa(hr, dt, 1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(i == true_nr[0] - 1){
+                if(ig == true_nr[0] - 1){
                     second_order_abc_face<scalar, 0, 1, 2> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(j == true_nr[1] - 1){
+                if(jg == true_nr[1] - 1){
                     second_order_abc_face<scalar, 1, 0, 2> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                if(k == true_nr[2] - 1){
+                if(kg == true_nr[2] - 1){
                     second_order_abc_face<scalar, 2, 0, 1> soa(hr, dt, -1);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
@@ -1239,57 +1246,65 @@ struct second_order_mur_boundary_conditions{
         });
         Kokkos::fence();
         Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
-            uint32_t val = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
-                             + (uint32_t(i == true_nr[0] - 1) << 3) + (uint32_t(j == true_nr[1] - 1) << 4) + (uint32_t(k == true_nr[2] - 1) << 5);
+            uint32_t ig = i + lDom.first()[0];
+            uint32_t jg = j + lDom.first()[1];
+            uint32_t kg = k + lDom.first()[2];
+
+            uint32_t lval = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
+                         + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
+
+            if(Kokkos::popcount(lval) > 2)return;
+            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
+                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
             if(Kokkos::popcount(val) == 2){ //Edge
-                if(i == 0 && k == 0){
+                if(ig == 0 && kg == 0){
                     second_order_abc_edge<scalar, 1, 2, 0, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == 0 && j == 0){
+                else if(ig == 0 && jg == 0){
                     second_order_abc_edge<scalar, 2, 0, 1, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(j == 0 && k == 0){
+                else if(jg == 0 && kg == 0){
                     second_order_abc_edge<scalar, 0, 1, 2, true, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(i == 0 && k == true_nr[2] - 1){
+                else if(ig == 0 && kg == true_nr[2] - 1){
                     second_order_abc_edge<scalar, 1, 2, 0, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == 0 && j == true_nr[1] - 1){
+                else if(ig == 0 && jg == true_nr[1] - 1){
                     second_order_abc_edge<scalar, 2, 0, 1, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(j == 0 && k == true_nr[2] - 1){
+                else if(jg == 0 && kg == true_nr[2] - 1){
                     second_order_abc_edge<scalar, 0, 1, 2, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(i == true_nr[0] - 1 && k == 0){
+                else if(ig == true_nr[0] - 1 && kg == 0){
                     second_order_abc_edge<scalar, 1, 2, 0, true, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == 0){
+                else if(ig == true_nr[0] - 1 && jg == 0){
                     second_order_abc_edge<scalar, 2, 0, 1, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(j == true_nr[1] - 1 && k == 0){
+                else if(jg == true_nr[1] - 1 && kg == 0){
                     second_order_abc_edge<scalar, 0, 1, 2, false, true> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
 
-                else if(i == true_nr[0] - 1 && k == true_nr[2] - 1){
+                else if(ig == true_nr[0] - 1 && kg == true_nr[2] - 1){
                     second_order_abc_edge<scalar, 1, 2, 0, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == true_nr[1] - 1){
+                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1){
                     second_order_abc_edge<scalar, 2, 0, 1, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(j == true_nr[1] - 1 && k == true_nr[2] - 1){
+                else if(jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
                     second_order_abc_edge<scalar, 0, 1, 2, false, false> soa(hr, dt);
                     A_np1(i, j, k) = soa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
@@ -1300,40 +1315,48 @@ struct second_order_mur_boundary_conditions{
         });
         Kokkos::fence();
         Kokkos::parallel_for(ippl::getRangePolicy(A_n), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
-            uint32_t val = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
-                             + (uint32_t(i == true_nr[0] - 1) << 3) + (uint32_t(j == true_nr[1] - 1) << 4) + (uint32_t(k == true_nr[2] - 1) << 5);
+            uint32_t ig = i + lDom.first()[0];
+            uint32_t jg = j + lDom.first()[1];
+            uint32_t kg = k + lDom.first()[2];
+
+            //uint32_t lval = uint32_t(i == 0) + (uint32_t(j == 0) << 1) + (uint32_t(k == 0) << 2)
+            //             + (uint32_t(i == local_nr[0] - 1) << 3) + (uint32_t(j == local_nr[1] - 1) << 4) + (uint32_t(k == local_nr[2] - 1) << 5);
+
+            //if(Kokkos::popcount(lval) > 1)return;
+            uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
+                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
             
             if(Kokkos::popcount(val) == 3){
                 //printf("Corner: %d, %d, %d\n", i, j, k);
-                if(i == 0 && j == 0 && k == 0){
+                if(ig == 0 && jg == 0 && kg == 0){
                     second_order_abc_corner<scalar, 1, 1, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == 0 && k == 0){
+                else if(ig == true_nr[0] - 1 && jg == 0 && kg == 0){
                     second_order_abc_corner<scalar, 0, 1, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == 0 && j == true_nr[1] - 1 && k == 0){
+                else if(ig == 0 && jg == true_nr[1] - 1 && kg == 0){
                     second_order_abc_corner<scalar, 1, 0, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == true_nr[1] - 1 && k == 0){
+                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1 && kg == 0){
                     second_order_abc_corner<scalar, 0, 0, 1> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == 0 && j == 0 && k == true_nr[2] - 1){
+                else if(ig == 0 && jg == 0 && kg == true_nr[2] - 1){
                     second_order_abc_corner<scalar, 1, 1, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == 0 && k == true_nr[2] - 1){
+                else if(ig == true_nr[0] - 1 && jg == 0 && kg == true_nr[2] - 1){
                     second_order_abc_corner<scalar, 0, 1, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == 0 && j == true_nr[1] - 1 && k == true_nr[2] - 1){
+                else if(ig == 0 && jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
                     second_order_abc_corner<scalar, 1, 0, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
-                else if(i == true_nr[0] - 1 && j == true_nr[1] - 1 && k == true_nr[2] - 1){
+                else if(ig == true_nr[0] - 1 && jg == true_nr[1] - 1 && kg == true_nr[2] - 1){
                     second_order_abc_corner<scalar, 0, 0, 0> coa(hr, dt);
                     A_np1(i, j, k) = coa(A_n, A_nm1, A_np1, ippl::Vector<uint32_t, 3>{i, j, k});
                 }
@@ -1444,6 +1467,7 @@ namespace ippl {
         ippl::Vector<uint32_t, 3> nr_local;
         scalar dt;
         Mesh_t* mesh_mp;
+        FieldLayout<dim>* layout_mp;
         ParticleSpatialLayout<scalar, 3> playout;
         Bunch<scalar, ParticleSpatialLayout<scalar, 3>> particles;
         using bunch_type =  Bunch<scalar, ParticleSpatialLayout<scalar, 3>>;
@@ -1456,7 +1480,7 @@ namespace ippl {
          * @param layout 
          * @param mesch 
          */
-        FDTDFieldState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles) : mesh_mp(&mesch), playout(layout, mesch), particles(playout){
+        FDTDFieldState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout){
             FA_np1.initialize(mesch, layout, 1);
             FA_n.initialize(mesch, layout, 1);
             FA_nm1.initialize(mesch, layout, 1);
@@ -1528,14 +1552,16 @@ namespace ippl {
             auto orig = mesh_mp->getOrigin();
             auto hr = mesh_mp->getMeshSpacing();
             auto dt = this->dt;
+            ippl::NDIndex<dim> lDom = layout_mp->getLocalNDIndex();
             Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                 Vector_t pos = rview(i);
                 Vector_t to = rview(i);
                 Vector_t from = rm1view(i);
                 //scatterToGrid(Jview,hr, orig, pos, qview(i) / volume);
-                scatterLineToGrid(Jview, hr, orig, from, to , scalar(qview(i)) / (volume * dt));
+                scatterLineToGrid(lDom, Jview, hr, orig, from, to , scalar(qview(i)) / (volume * dt));
             });
             Kokkos::fence();
+            J.accumulateHalo();
         }
 
         void fieldStep(){
@@ -1547,11 +1573,13 @@ namespace ippl {
                 .a6 = sq(dt / hr_m[2]) - 2 * calA * sq(dt / hr_m[0])  - 2 * calA * sq(dt / hr_m[1]),
                 .a8 = sq(dt)
             };
-            if(periodic_bc){
-                FA_n.getFieldBC().apply(FA_n);
-            }
+            //if(periodic_bc){
+            //    FA_n.getFieldBC().apply(FA_n);
+            //}
             auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
             auto source = this->J.getView();
+            FA_nm1.fillHalo();
+            FA_n.fillHalo();
             Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(size_t i, size_t j, size_t k){
                 A_np1(i, j, k) =    -A_nm1(i,j,k)
                         + ndisp.a1 * A_n  (i,j,k)
@@ -1565,8 +1593,9 @@ namespace ippl {
             
             if(!periodic_bc){
                 second_order_mur_boundary_conditions bc;
+                const auto& ldom = layout_mp->getLocalNDIndex();
                 ippl::Vector<uint32_t, 3> true_nr{this->nr_global[0] + 2, this->nr_global[1] + 2, this->nr_global[2] + 2};
-                bc.apply(this->FA_n, this->FA_nm1, this->FA_np1, dt, true_nr);
+                bc.apply(this->FA_n, this->FA_nm1, this->FA_np1, dt, true_nr, ldom);
             }
             Kokkos::deep_copy(this->FA_nm1.getView(), this->FA_n.getView());
             Kokkos::deep_copy(this->FA_n.getView(), this->FA_np1.getView());
@@ -1700,7 +1729,8 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<3> owned(cfg.resolution[0], cfg.resolution[1], cfg.resolution[2]);
 
         std::array<bool, 3> isParallel;
-        isParallel.fill(true);
+        isParallel.fill(false);
+        isParallel[2] = true;
 
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
@@ -1718,35 +1748,57 @@ int main(int argc, char* argv[]) {
         }
 
         ippl::FDTDFieldState<scalar> fdtd_state(layout, mesh, 0 /*no resize function exists wtf cfg.num_particles*/);
-        fdtd_state.particles.Q = scalar(cfg.charge / cfg.num_particles);
-        fdtd_state.particles.mass = scalar(cfg.mass / cfg.num_particles);
-        auto rv = fdtd_state.particles.R.getView();
-        auto rm1 = fdtd_state.particles.R_nm1.getView();
-        size_t actual_pc = initialize_bunch_mithra(fdtd_state.particles, mithra_config, frame_gamma);
-        fdtd_state.particles.Q = cfg.charge / actual_pc;
-        fdtd_state.particles.mass = cfg.mass / actual_pc;
+        
+        if(ippl::Comm->rank() == 0){
+            std::cout << "Init particles: " << std::endl;
+            size_t actual_pc = initialize_bunch_mithra(fdtd_state.particles, mithra_config, frame_gamma);
+            fdtd_state.particles.Q = cfg.charge / actual_pc;
+            fdtd_state.particles.mass = cfg.mass / actual_pc;
+        }
+        else{
+            fdtd_state.particles.create(0);
+        }
+        {
+            auto rview = fdtd_state.particles.R.getView();
+            auto rm1view = fdtd_state.particles.R_nm1.getView();
+            ippl::Vector<scalar, 3> meanpos = fdtd_state.particles.R.sum() * (1.0 / fdtd_state.particles.getTotalNum());
+    
+            Kokkos::parallel_for(fdtd_state.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
+                rview(i) -= meanpos;
+                rm1view(i) -= meanpos;
+            });
+        }
         //fdtd_state.scatterBunch();
         //std::cout << cfg.charge << "\n";
         
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
-        for(int i = 0;i < timesteps_required;i++){
+        for(size_t i = 0;i < timesteps_required;i++){
+            if(ippl::Comm->rank() == 0){
+                std::cout << "Step: " << i << std::endl;
+            }
             fdtd_state.J = scalar(0.0);
+            fdtd_state.playout.update(fdtd_state.particles);
             fdtd_state.scatterBunch();
             //std::cout << fdtd_state.J.getVolumeIntegral() << "\n";
             fdtd_state.fieldStep();
             fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
             //std::cout << "A: " << fdtd_state.FA_n.getVolumeIntegral() << "\n";
             //std::cout << "J: " << fdtd_state.J.getVolumeIntegral() << "\n";
-
+            int rank = ippl::Comm->rank();
+            int size = ippl::Comm->size();
             if((cfg.output_rhythm != 0) && (i % cfg.output_rhythm == 0)){
+
+                auto ldom = layout.getLocalNDIndex();
                 int img_height = 500;
                 int img_width = int(500.0 * cfg.extents[2] / cfg.extents[0]);
                 float* imagedata = new float[img_width * img_height * 3];
+                float* idata_recvbuffer = new float[img_width * img_height * 3];
+                int floatcount = img_width * img_height * 3;
                 uint8_t* imagedata_final = new uint8_t[img_width * img_height * 3];
                 std::memset(imagedata, 0, img_width * img_height * 3 * sizeof(float));
                 auto phmirror = fdtd_state.particles.R.getHostMirror();
                 Kokkos::deep_copy(phmirror, fdtd_state.particles.R.getView());
-                for(size_t hi = 0;hi < phmirror.extent(0);hi++){
+                for(size_t hi = 0;hi < fdtd_state.particles.getLocalNum();hi++){
                     ippl::Vector<scalar, 3> ppos = phmirror(hi);
                     ppos -= mesh.getOrigin();
                     ppos /= cfg.extents.cast<scalar>();
@@ -1760,12 +1812,34 @@ int main(int argc, char* argv[]) {
                         std::min(255.f, imagedata[(y_imgcoord * img_width + x_imgcoord) * 3 + 1] + intensity);
                     }
                 };
-                    
-                char output[1024] = {0};
-                snprintf(output, 1023, "../data/outimage%.05d.bmp", i);
-                std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)x;});
-                stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
+                int mask = 1;
+                while (mask < size) {
+                    int partner = rank ^ mask;
+                    //if((rank & (mask - 1)) == 0)
+                    {
+                        if ((rank & mask) == 0) {
+                            // Send data to partner
+                            MPI_Recv(idata_recvbuffer, floatcount, MPI_FLOAT, partner, 0, ippl::Comm->getCommunicator(), MPI_STATUS_IGNORE);
+                            // Apply image summation
+                            for(int f = 0;f < floatcount;f++){
+                                imagedata[f] += idata_recvbuffer[f];
+                            }
+                        } else {
+                            MPI_Send(imagedata, floatcount, MPI_FLOAT, partner, 0, ippl::Comm->getCommunicator());
+                            // Receive data from partner and apply reduction
+                            
+                        }
+                    }
+                    mask <<= 1;  // Move to next bit position for pairing
+                }
+                if(rank == 0){
+                    char output[1024] = {0};
+                    snprintf(output, 1023, "../data/outimage%.05d.bmp", i);
+                    std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)x;});
+                    stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
+                }
                 delete[] imagedata;
+                delete[] idata_recvbuffer;
                 delete[] imagedata_final;
             }
         }

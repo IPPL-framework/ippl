@@ -1,0 +1,84 @@
+{
+    "timestep-ratio" : 1.0,
+    "mesh": {
+      "length-scale" : "micrometers",
+      "time-scale"   : "picoseconds",
+      "extents": [3400.0, 3400.0, 280.0],
+      "resolution": [64, 64, 2800],
+      "mesh-center": [0.0, 0.0, 0.0],
+      "total-time": 30000.0,
+      "bunch-time-step": 1.6,
+      "mesh-truncation-order": 2,
+      "space-charge": false,
+      "solver": "NSFD"
+    },
+    "bunch": {
+      "type": "ellipsoid",
+      "distribution": "uniform",
+      "_charge": 1,
+      "_mass": 1,
+      "charge": 1.846e8,
+      "mass": 1.846e8,
+      "number-of-particles": 500000,
+      "gamma": 100.41,
+      "_gamma": 1.0,
+      "direction (ignored)": [0.0, 0.0, 1.0],
+      "position is 0 because that's the center": "",
+      "position": [0.0, 0.0, 0.0],
+      "_sigma-position (those are commented out)": [260.0, 260.0, 50.25],
+      "_sigma-momentum (those are commented out)": [1.0e-8, 1.0e-8, 100.41e-4],
+      "sigma-position": [260.0, 260.0, 50.25],
+      "sigma-momentum": [1.0e-8, 1.0e-8, 100.41e-4],
+      "particle-gammabetas": [0, 0, 0],
+      "transverse-truncation   (Deprecated! see distribution-truncations)": 1040.0,
+      "longitudinal-truncation (Deprecated! see distribution-truncations)": 90.0,
+      "distribution-truncations" : [1040.0, 1040.0, 90.0],
+      "bunching-factor": 0.01,
+      "update-rule" : {"type" : "lorentz"}
+    },
+    "field": {
+      "update-rule" : "do",
+      "strength" : 100,
+      "field-sampling": {
+        "sample": true,
+        "type": "at-point",
+        "field": ["Ex", "Ey", "Ez"],
+        "directory": "./",
+        "base-name": "field-sampling/field",
+        "rhythm": 3.2,
+        "position": [0.0, 0.0, 110.0]
+      }
+    },
+    "undulator": {
+      "static-undulator": {
+        "undulator-parameter": 1.417,
+        "_undulator-parameter": 0,
+        "period": 30000.0,
+        "length": 5e6,
+        "polarization-angle": 0.0
+      }
+    },
+    "output":{
+      "rhythm" : 30,
+      "count" : 20,
+      "type" : "E",
+      "track" : {
+        "radiation" : "boundary_radiation.txt",
+        "particle-position" : "p0pos.txt"
+      }
+    },
+    "fel-output": {
+      "radiation-power": {
+        "sample": true,
+        "type": "at-point",
+        "directory": "./",
+        "base-name": "power-sampling/power-NSFD",
+        "plane-position": 110.0,
+        "normalized-frequency": 1.0
+      }
+    },
+    "experimentation" : {
+      "stretch-factor" : 1.0,
+      "resort" : 1.0
+    }
+  }
