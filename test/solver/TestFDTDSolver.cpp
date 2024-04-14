@@ -3,6 +3,7 @@
 #include "Types/Vector.h"
 
 #include "Field/Field.h"
+#include <chrono>
 
 #include "MaxwellSolvers/FDTD.h"
 #define JSON_HAS_RANGES 0 //Merlin compilation
@@ -11,6 +12,12 @@
 #include <list>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.hpp>
+
+uint64_t nanoTime(){
+    using namespace std;
+    using namespace chrono;
+    return duration_cast<nanoseconds>(high_resolution_clock::now().time_since_epoch()).count();
+}
 //CONFIG
 KOKKOS_INLINE_FUNCTION bool isNaN(float x){
     #ifdef __CUDA_ARCH__
@@ -1261,7 +1268,7 @@ struct second_order_mur_boundary_conditions{
             }
         });
         Kokkos::fence();
-        FA_np1.fillHalo();
+        //FA_np1.fillHalo();
         Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
             uint32_t ig = i + lDom.first()[0];
             uint32_t jg = j + lDom.first()[1];
@@ -1331,7 +1338,7 @@ struct second_order_mur_boundary_conditions{
             }
         });
         Kokkos::fence();
-        FA_np1.fillHalo();
+        //FA_np1.fillHalo();
         Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k){
             uint32_t ig = i + lDom.first()[0];
             uint32_t jg = j + lDom.first()[1];
@@ -1824,11 +1831,8 @@ int main(int argc, char* argv[]) {
         //std::cout << cfg.charge << "\n";
         
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
-        
+        uint64_t starttime =  nanoTime();
         for(size_t i = 0;i < timesteps_required;i++){
-            if(ippl::Comm->rank() == 0){
-                std::cout << "Step: " << i << std::endl;
-            }
             fdtd_state.J = scalar(0.0);
             fdtd_state.playout.update(fdtd_state.particles);
             fdtd_state.scatterBunch();
@@ -1917,8 +1921,10 @@ int main(int argc, char* argv[]) {
                 delete[] imagedata;
                 delete[] idata_recvbuffer;
                 delete[] imagedata_final;
-            }
+            }    
         }
+        uint64_t endtime = nanoTime();
+        std::cout << ippl::Comm->size() << " " << double(endtime - starttime) / 1e9 << std::endl;
     }
     ippl::finalize();
 }
