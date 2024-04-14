@@ -96,6 +96,7 @@ struct config {
     scalar undulator_length;
 
     uint32_t output_rhythm;
+    std::string output_path;
     std::unordered_map<std::string, double> experiment_options;
 };
 template<typename scalar, unsigned Dim>
@@ -292,6 +293,13 @@ config read_config(const char *filepath){
     ret.position_truncations = getVector<config::scalar, 3>(j["bunch"]["distribution-truncations"]) * lmult / unit_length_in_meters;
     ret.sigma_momentum = getVector<config::scalar, 3>(j["bunch"]["sigma-momentum"]);
     ret.output_rhythm = j["output"].contains("rhythm") ? uint32_t(j["output"]["rhythm"]) : 0;
+    ret.output_path = "../data/";
+    if(j["output"].contains("path")){
+        ret.output_path = j["output"]["path"];
+        if(!ret.output_path.ends_with('/')){
+            ret.output_path.push_back('/');
+        }
+    }
     if(j.contains("experimentation")){
         nlohmann::json je = j["experimentation"];
         for(auto it = je.begin(); it!= je.end();it++){
@@ -1579,12 +1587,15 @@ namespace ippl {
             auto orig = mesh_mp->getOrigin();
             auto hr = mesh_mp->getMeshSpacing();
             auto dt = this->dt;
+            bool space_charge = m_config.space_charge;
             ippl::NDIndex<dim> lDom = layout_mp->getLocalNDIndex();
             Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                 Vector_t pos = rview(i);
                 Vector_t to = rview(i);
                 Vector_t from = rm1view(i);
-                //scatterToGrid(Jview,hr, orig, pos, qview(i) / volume);
+                if(space_charge){
+                    scatterToGrid(lDom, Jview,hr, orig, pos, qview(i) / volume);
+                }
                 scatterLineToGrid(lDom, Jview, hr, orig, from, to , scalar(qview(i)) / (volume * dt));
             });
             Kokkos::fence();
@@ -1918,7 +1929,8 @@ int main(int argc, char* argv[]) {
                 }
                 if(rank == 0){
                     char output[1024] = {0};
-                    snprintf(output, 1023, "../data/outimage%.05d.bmp", i);
+                    
+                    snprintf(output, 1023, "%soutimage%.05lu.bmp", cfg.output_path.c_str(), i);
                     std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)std::min(255.0f, std::max(0.0f,x));});
                     stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
                 }
