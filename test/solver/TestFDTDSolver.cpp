@@ -1869,8 +1869,8 @@ int main(int argc, char* argv[]) {
                 //uint32_t ig = i + ldom.first()[0];
                 //uint32_t jg = j + ldom.first()[1];
                 Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> buncheb{ebv(i,j,k)[0], ebv(i,j,k)[1]};
-                ippl::Vector<scalar, 3> Elab = frame_boost.transform_EB(buncheb).first;
-                ippl::Vector<scalar, 3> Blab = frame_boost.transform_EB(buncheb).second;
+                ippl::Vector<scalar, 3> Elab = frame_boost.inverse_transform_EB(buncheb).first;
+                ippl::Vector<scalar, 3> Blab = frame_boost.inverse_transform_EB(buncheb).second;
                 uint32_t kg = k + ldom.first()[2];
                 if(kg == nrg[2] - 3){
                     ref += Elab.cross(Blab)[2];
