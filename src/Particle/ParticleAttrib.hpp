@@ -159,10 +159,11 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
 
-        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
-        IpplTimings::startTimer(fillHaloTimer);
-        f.fillHalo();
-        IpplTimings::stopTimer(fillHaloTimer);
+        //This completely klönks performance for subdivided particle timesteps
+        //static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
+        //IpplTimings::startTimer(fillHaloTimer);
+        //f.fillHalo();
+        //IpplTimings::stopTimer(fillHaloTimer);
 
         static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");
         IpplTimings::startTimer(gatherTimer);

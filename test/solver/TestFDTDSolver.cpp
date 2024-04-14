@@ -1497,6 +1497,7 @@ namespace ippl {
         playout_type playout;
         Bunch<scalar, ParticleSpatialLayout<scalar, 3>> particles;
         using bunch_type =  Bunch<scalar, ParticleSpatialLayout<scalar, 3>>;
+        config m_config;
 
         /**
          * @brief Construct a new FDTDFieldState object
@@ -1506,7 +1507,7 @@ namespace ippl {
          * @param layout 
          * @param mesch 
          */
-        FDTDFieldState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout){
+        FDTDFieldState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout), m_config(cfg){
             FA_np1.initialize(mesch, layout, 1);
             FA_n.initialize(mesch, layout, 1);
             FA_nm1.initialize(mesch, layout, 1);
@@ -1604,7 +1605,7 @@ namespace ippl {
             //}
             auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
             auto source = this->J.getView();
-            FA_nm1.fillHalo();
+            //FA_nm1.fillHalo();
             FA_n.fillHalo();
             ippl::Vector<uint32_t, 3> true_nr{this->nr_global[0] + 2, this->nr_global[1] + 2, this->nr_global[2] + 2};
             const auto& ldom = layout_mp->getLocalNDIndex();
@@ -1641,7 +1642,7 @@ namespace ippl {
             evaluate_EB();
         }
         void evaluate_EB(){
-            FA_n.fillHalo();FA_nm1.fillHalo();
+            FA_n.fillHalo();//FA_nm1.fillHalo();
             ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
             const scalar idt = scalar(1.0) / dt;
             auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
@@ -1679,9 +1680,11 @@ namespace ippl {
             auto rp1view = particles.R_np1.getView();
             scalar bunch_dt = dt / 3;
             Kokkos::deep_copy(particles.R_nm1.getView(), particles.R.getView());
+            EB.fillHalo();
             Kokkos::fence();
             for(int bts = 0;bts < 3;bts++){
-                gather(particles.EB_gather, EB, particles.R);
+                
+                particles.EB_gather.gather(EB, particles.R);
                 Kokkos::fence();
                 Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                     const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
@@ -1806,7 +1809,7 @@ int main(int argc, char* argv[]) {
             abort();
         }
 
-        ippl::FDTDFieldState<scalar> fdtd_state(layout, mesh, 0 /*no resize function exists wtf cfg.num_particles*/);
+        ippl::FDTDFieldState<scalar> fdtd_state(layout, mesh, 0 /*no resize function exists wtf cfg.num_particles*/, cfg);
         
         if(ippl::Comm->rank() == 0){
             std::cout << "Init particles: " << std::endl;
@@ -1827,6 +1830,7 @@ int main(int argc, char* argv[]) {
                 rm1view(i) -= meanpos;
             });
         }
+        fdtd_state.particles.setParticleBC(ippl::NO);
         //fdtd_state.scatterBunch();
         //std::cout << cfg.charge << "\n";
         
@@ -1846,8 +1850,8 @@ int main(int argc, char* argv[]) {
             if((cfg.output_rhythm != 0) && (i % cfg.output_rhythm == 0)){
 
                 auto ldom = layout.getLocalNDIndex();
-                int img_height = 1000;
-                int img_width = int(1000.0 * cfg.extents[2] / cfg.extents[0]);
+                int img_height = 400;
+                int img_width = int(400.0 * cfg.extents[2] / cfg.extents[0]);
                 float* imagedata = new float[img_width * img_height * 3];
                 std::fill(imagedata, imagedata + img_width * img_height * 3, 0.0f);
                 float* idata_recvbuffer = new float[img_width * img_height * 3];
