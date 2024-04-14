@@ -1847,6 +1847,10 @@ int main(int argc, char* argv[]) {
         
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
         uint64_t starttime =  nanoTime();
+        std::ofstream rad;
+        if(ippl::Comm->rank() == 0){
+            rad = std::ofstream("radiation.txt");
+        }
         for(size_t i = 0;i < timesteps_required;i++){
             fdtd_state.J = scalar(0.0);
             fdtd_state.playout.update(fdtd_state.particles);
@@ -1854,13 +1858,36 @@ int main(int argc, char* argv[]) {
             //std::cout << fdtd_state.J.getVolumeIntegral() << "\n";
             fdtd_state.fieldStep();
             fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
+            auto ldom = layout.getLocalNDIndex();
+            auto nrg = fdtd_state.nr_global;
+            auto ebv = fdtd_state.EB.getView();
+            double radiation = 0.0;
+            Kokkos::parallel_reduce(ippl::getRangePolicy(fdtd_state.EB.getView(), 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k, double& ref){
+                uint32_t ig = i + ldom.first()[0];
+                uint32_t jg = j + ldom.first()[1];
+                uint32_t kg = k + ldom.first()[2];
+                if(kg == nrg[2] - 3){
+                    ref += ebv(i,j,k)[0].cross(ebv(i,j,k)[1])[2];
+                }
+
+            }, radiation);
+            double radiation_in_watt_on_this_rank = radiation *
+            unit_powerdensity_in_watt_per_square_meter *
+            fdtd_state.hr_m[0] * fdtd_state.hr_m[1] * unit_length_in_meters * unit_length_in_meters;
+            double radiation_in_watt_global = 0.0;
+            MPI_Reduce(&radiation_in_watt_on_this_rank, &radiation_in_watt_global, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+            if(ippl::Comm->rank() == 0){
+                ippl::Vector<scalar, 3> pos{0,0,0};
+                frame_boost.primedToUnprimed(pos, fdtd_state.dt * i);
+                rad << pos[2] * unit_length_in_meters << " " << radiation_in_watt_global << "\n";
+            }
             //std::cout << "A: " << fdtd_state.FA_n.getVolumeIntegral() << "\n";
             //std::cout << "J: " << fdtd_state.J.getVolumeIntegral() << "\n";
             int rank = ippl::Comm->rank();
             int size = ippl::Comm->size();
             if((cfg.output_rhythm != 0) && (i % cfg.output_rhythm == 0)){
 
-                auto ldom = layout.getLocalNDIndex();
+                
                 int img_height = 400;
                 int img_width = int(400.0 * cfg.extents[2] / cfg.extents[0]);
                 float* imagedata = new float[img_width * img_height * 3];
