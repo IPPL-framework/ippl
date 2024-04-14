@@ -416,6 +416,9 @@ struct UniaxialLorentzframe{
         ret.second[axis] -= (gamma_m - 1) * unprimedEB.second[axis];
         return ret;
     }
+    KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>> inverse_transform_EB(const Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>>& primedEB)const noexcept{
+        return UniaxialLorentzframe<T, 2>(-gammaBeta_m).transform_EB(primedEB);
+    }
 };
 template<typename scalar>
 BunchInitialize<scalar> generate_mithra_config(const config& cfg, const UniaxialLorentzframe<scalar>& /*frame_boost unused*/) {
@@ -1863,17 +1866,20 @@ int main(int argc, char* argv[]) {
             auto ebv = fdtd_state.EB.getView();
             double radiation = 0.0;
             Kokkos::parallel_reduce(ippl::getRangePolicy(fdtd_state.EB.getView(), 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k, double& ref){
-                uint32_t ig = i + ldom.first()[0];
-                uint32_t jg = j + ldom.first()[1];
+                //uint32_t ig = i + ldom.first()[0];
+                //uint32_t jg = j + ldom.first()[1];
+                Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> buncheb{ebv(i,j,k)[0], ebv(i,j,k)[1]};
+                ippl::Vector<scalar, 3> Elab = frame_boost.transform_EB(buncheb).first;
+                ippl::Vector<scalar, 3> Blab = frame_boost.transform_EB(buncheb).second;
                 uint32_t kg = k + ldom.first()[2];
                 if(kg == nrg[2] - 3){
-                    ref += ebv(i,j,k)[0].cross(ebv(i,j,k)[1])[2];
+                    ref += Elab.cross(Blab)[2];
                 }
 
             }, radiation);
             double radiation_in_watt_on_this_rank = radiation *
-            unit_powerdensity_in_watt_per_square_meter *
-            fdtd_state.hr_m[0] * fdtd_state.hr_m[1] * unit_length_in_meters * unit_length_in_meters;
+            double(unit_powerdensity_in_watt_per_square_meter * unit_length_in_meters * unit_length_in_meters) *
+            fdtd_state.hr_m[0] * fdtd_state.hr_m[1];
             double radiation_in_watt_global = 0.0;
             MPI_Reduce(&radiation_in_watt_on_this_rank, &radiation_in_watt_global, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
             if(ippl::Comm->rank() == 0){
