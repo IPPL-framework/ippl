@@ -4,7 +4,7 @@
 
 #include "Field/Field.h"
 #include <chrono>
-
+#include <cstdio> // For popen
 #include "MaxwellSolvers/FDTD.h"
 #define JSON_HAS_RANGES 0 //Merlin compilation
 #include <json.hpp>
@@ -2022,7 +2022,23 @@ namespace ippl {
     };
     // clang-format on
 }  // namespace ippl
+bool writeBMPToFD(FILE* fd, int width, int height, const unsigned char* data) {
+    const int channels = 3; // RGB
+    const int stride = width * channels;
+    std::vector<unsigned char> flippedData(data, data + stride * height);
 
+    // Use stb_image_write to write the BMP image to the file descriptor
+    if (!stbi_write_bmp_to_func(
+            [](void* context, void* data, int size) {
+                FILE* f = reinterpret_cast<FILE*>(context);
+                fwrite(data, 1, size, f);
+            },
+            fd, width, height, channels, flippedData.data())) {
+        return false;
+    }
+
+    return true;
+}
 int main(int argc, char* argv[]) {
     using scalar = float;
     ippl::initialize(argc, argv);
@@ -2068,7 +2084,7 @@ int main(int argc, char* argv[]) {
         std::array<bool, 3> isParallel;
         isParallel.fill(false);
         isParallel[2] = true;
-
+        
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
@@ -2112,9 +2128,16 @@ int main(int argc, char* argv[]) {
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
         uint64_t starttime =  nanoTime();
         std::ofstream rad;
+        FILE* ffmpeg_file = nullptr;
         if(ippl::Comm->rank() == 0){
             rad = std::ofstream("radiation.txt");
+            const char* ffmpegCmd = "ffmpeg -y -f image2pipe -vcodec bmp -r 30 -i - -vf scale=force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p -c:v libx264 -movflags +faststart ffmpeg_popen.mkv";
+            if(cfg.output_rhythm != 0){
+                ffmpeg_file = popen(ffmpegCmd, "w");
+            }
         }
+
+
         for(size_t i = 0;i < timesteps_required;i++){
             fdtd_state.J = scalar(0.0);
             fdtd_state.playout.update(fdtd_state.particles);
@@ -2236,7 +2259,7 @@ int main(int argc, char* argv[]) {
                     
                     snprintf(output, 1023, "%soutimage%.05lu.bmp", cfg.output_path.c_str(), i);
                     std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)std::min(255.0f, std::max(0.0f,x));});
-                    stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
+                    writeBMPToFD(ffmpeg_file, img_width, img_height, imagedata_final);
                 }
                 delete[] imagedata;
                 delete[] idata_recvbuffer;
