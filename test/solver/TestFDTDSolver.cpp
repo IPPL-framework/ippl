@@ -10,6 +10,7 @@
 #include <json.hpp>
 #include <fstream>
 #include <list>
+#include <Kokkos_Random.hpp>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.hpp>
 constexpr float turbo_cm[256][3] = {
@@ -2038,6 +2039,48 @@ bool writeBMPToFD(FILE* fd, int width, int height, const unsigned char* data) {
     }
 
     return true;
+}
+template<typename scalar>
+scalar test_gauss_law(uint32_t n){
+
+    ippl::NDIndex<3> owned(n / 2, n / 2, n);
+    ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, n};
+    ippl::Vector<scalar, 3> extents{1,1,1};
+    std::array<bool, 3> isParallel;
+    isParallel.fill(false);
+    isParallel[2] = true;
+        
+        // all parallel layout, standard domain, normal axis order
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
+
+        //[-1, 1] box
+    ippl::Vector<scalar, 3> hx     = extents / nr.cast<scalar>();
+    ippl::Vector<scalar, 3> origin = {scalar(-0.5), scalar(-0.5), scalar(-0.5)};
+    ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
+    ippl::FDTDFieldState<scalar> field_state(layout, mesh, (1 << 20), config{});
+    field_state.particles.Q = scalar(coulomb_in_unit_charges) / (1 << 20);
+    field_state.particles.mass = scalar(1.0) / (1 << 20); //Irrelefant
+    auto pview = field_state.particles.R.getView();
+    auto p1view = field_state.particles.R_nm1.getView();
+
+    //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
+    Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
+    scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
+    
+    Kokkos::parallel_for((1 << 20), KOKKOS_LAMBDA(size_t i){
+        //bunch.gammaBeta[i].fill(scalar(0));
+        auto state = random_pool.get_state();
+        pview(i)[0] = state.normal(0.01 * meter_in_unit_lengths);
+        pview(i)[1] = state.normal(0.01 * meter_in_unit_lengths);
+        pview(i)[2] = state.normal(0.01 * meter_in_unit_lengths);
+        p1view(i) = pview(i);
+        random_pool.free_state(state);
+    });
+    Kokkos::fence();
+    field_state.scatterBunch();
+    for(size_t i = 0;i < 8*n;i++){
+        field_state.fieldStep();
+    }
 }
 int main(int argc, char* argv[]) {
     using scalar = float;
