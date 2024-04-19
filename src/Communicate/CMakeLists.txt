@@ -20,6 +20,9 @@ set (_HDRS
     TagMaker.h
     Tags.h
     Wait.h
+    Window.h
+    Window.hpp
+    PointToPoint.hpp
     )
 
 include_directories (

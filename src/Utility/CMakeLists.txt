@@ -16,6 +16,8 @@ set (_HDRS
     my_auto_ptr.h
     ParameterList.h
     TypeUtils.h
+    ParallelDispatch.h
+    ViewUtils.h
     )
 
 include_directories (
