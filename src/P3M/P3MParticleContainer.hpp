@@ -5,7 +5,8 @@
 #include "Manager/BaseManager.h"
 
 using Device = Kokkos::DefaultExecutionSpace;
-using NList_t = Kokkos::View<unsigned *, Device>;
+using NList_t = Kokkos::View<unsigned int *, Device>;
+using Offset_t = Kokkos::View<int [14][3], Device>;
 
 /**
  * @class P3MParticleContainer
@@ -34,6 +35,7 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
         NList_t nl_m;               // NeighborList
         bool nlValid_m;             // true if neighbor list was initialized
         bool *neighbors_m;
+        Offset_t offset_m;
 
 
     public:
@@ -63,6 +65,14 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
             } else {
                 throw 0;
             }
+        }
+
+        void setOffset(Offset_t& offset) {
+            this->offset_m = offset;
+        }
+
+        Offset_t& getOffset() {
+            return offset_m;
         }
 
         void setNeighbors(bool *neighbors_) {

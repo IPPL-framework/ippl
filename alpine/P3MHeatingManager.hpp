@@ -153,6 +153,24 @@ public:
     
         this->fcontainer_m->initializeFields("P3M");
 
+        int offset_arr[14][3] = {
+            {0,0,0}, {0,0,1}, {0,1,-1}, {0,1,0}, {0,1,1}, {1,-1,-1}, {1,-1,0}, {1,-1,1},
+            {1,0,-1}, {1,0,0}, {1,0,1}, {1,1,-1}, {1,1,0}, {1,1,1}
+        };
+        Kokkos::View<int[14][3], Host> offset_host("offset_host");
+
+        Kokkos::parallel_for("Fill offset array", 14,
+            KOKKOS_LAMBDA(const int i){
+                for(int j = 0; j < 3; ++j){
+                    offset_host(i, j) = offset_arr[i][j];
+                }
+            }
+        );
+
+        Kokkos::View<int[14][3], Device> offset_device("offset_device");
+        Kokkos::deep_copy(offset_device, offset_host);
+        this->pcontainer_m->setOffset(offset_device);
+
         // initialize solver
         ippl::ParameterList sp;
         sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
@@ -548,27 +566,22 @@ public:
     }
 
     void par2par() override {
-        
+
         // get particle data
         auto R = this->pcontainer_m->R.getView();
         auto F_sr = this->pcontainer_m->F_sr.getView();
         auto P = this->pcontainer_m->P.getView();
+        auto offset = this->pcontainer_m->getOffset();
 
         // get neighbor list
         auto cellStartingIdx = this->pcontainer_m->getNL();
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
 
-        using team_t = typename Kokkos::TeamPolicy<Device>::member_type;
-
-        Kokkos::View<size_t[14][3], Kokkos::LayoutRight, Kokkos::Device<Device, Kokkos::MemoryTraits<Kokkos::Unmanaged>> > offset("offset");
-        Kokkos::deep_copy(offset, size_t[14][3]{
-            {0,0,0}, {0,0,1}, {0,1,-1}, {0,1,0}, {0,1,1}, {1,-1,-1}, {1,-1,0}, {1,-1,1},
-            {1,0,-1}, {1,0,0}, {1,0,1}, {1,1,-1}, {1,1,0}, {1,1,1}
-        });
-
+        using team_t = typename Kokkos::TeamPolicy<>::member_type;
+        
         // calculate interaction force
-        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<Device>(nCells, 14, Kokkos::AUTO, Kokkos::AUTO),
+        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<>(totalCells, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
                 const size_type cellIdx = team.league_rank();
 
@@ -587,7 +600,7 @@ public:
                     const int offsetZ = offset(neighborIdx, 2);
                     
                     // Calculate the index of the neighboring cell
-                    const size_type neighborCellIdx = cellIdx + offsetX + offsetY * nr_m[0] + offsetZ * nr_m[0] * nr_m[1];
+                    const int neighborCellIdx = cellIdx + offsetX + offsetY * nr_m[0] + offsetZ * nr_m[0] * nr_m[1];
                     
                     // Check if the neighboring cell is within the domain
 
