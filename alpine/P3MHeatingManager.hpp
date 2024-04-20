@@ -586,13 +586,15 @@ public:
                 const size_type cellIdx = team.league_rank();
 
                 // Calculate cellIdx in each dimension
-                size_type xIdx = cellIdx / (nCells[1] * nCells[2]);
-                size_type yIdx = (cellIdx % (nCells[1] * nCells[2])) / nCells[2];
-                size_type zIdx = cellIdx % nCells[2];
+                int xIdx = cellIdx / (nCells[1] * nCells[2]);
+                int yIdx = (cellIdx % (nCells[1] * nCells[2])) / nCells[2];
+                int zIdx = cellIdx % nCells[2];
 
                 const size_type start = cellStartingIdx(cellIdx);
                 const size_type end = cellStartingIdx(cellIdx+1);
                 const size_type nParticles = end - start;
+
+                unsigned nNeighbors = 14;
 
                 Kokkos::parallel_for("loop over all neighbor cells", 14, KOKKOS_LAMBDA(const int& neighborIdx) {
                     const int offsetX = offset(neighborIdx, 0);
@@ -600,7 +602,11 @@ public:
                     const int offsetZ = offset(neighborIdx, 2);
                     
                     // Calculate the index of the neighboring cell
-                    const int neighborCellIdx = cellIdx + offsetX + offsetY * nr_m[0] + offsetZ * nr_m[0] * nr_m[1];
+                    if (xIdx + offsetX < 0 || xIdx + offsetX >= nCells[0] ||
+                        yIdx + offsetY < 0 || yIdx + offsetY >= nCells[1] ||
+                        zIdx + offsetZ < 0 || zIdx + offsetZ >= nCells[2]) {
+                        return;
+                    }
                     
                     // Check if the neighboring cell is within the domain
 
@@ -623,6 +629,7 @@ public:
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
         /* TODO */
+
     }
 
     void applyConstantFocusing() {
