@@ -87,6 +87,7 @@ protected:
     Vector_t<double, Dim> rmin_m;   // minimum domain extend
     Vector_t<double, Dim> rmax_m;   // maximum domain extend
     Vector_t<double, Dim> hr_m;     // PM Meshwidth
+    Vector_t<int, Dim> nCells_m;    // Number of cells in each dimension
     double Q_m;                     // Particle Charge
     Vector_t<double, Dim> origin_m;
     bool isAllPeriodic_m;
@@ -293,6 +294,7 @@ public:
             double length = hLocalRegions(rank)[d].length();
 
             nCells[d] = floor(length / this->rcut_m);
+            this->nCells_m[d] = nCells[d];
             totalCells *= nCells[d];
             hCM[d] = length / nCells[d];
         }
@@ -546,19 +548,54 @@ public:
     }
 
     void par2par() override {
-        /* TODO */
+        
+        // get particle data
         auto R = this->pcontainer_m->R.getView();
-        auto cellStartingIdx = this->pcontainer_m->getNL();
-        size_type nLoc = this->pcontainer_m->getLocalNum();
+        auto F_sr = this->pcontainer_m->F_sr.getView();
+        auto P = this->pcontainer_m->P.getView();
 
-        Kokkos::Experimental::ScatterView<double *> svF_sr(this->pcontainer_m->F_sr.getView());
+        // get neighbor list
+        auto cellStartingIdx = this->pcontainer_m->getNL();
+        size_type totalCells = cellStartingIdx.size() - 1;
+        auto nCells = this->nCells_m;
+
+        using team_t = typename Kokkos::TeamPolicy<Device>::member_type;
+
+        Kokkos::View<size_t[14][3], Kokkos::LayoutRight, Kokkos::Device<Device, Kokkos::MemoryTraits<Kokkos::Unmanaged>> > offset("offset");
+        Kokkos::deep_copy(offset, size_t[14][3]{
+            {0,0,0}, {0,0,1}, {0,1,-1}, {0,1,0}, {0,1,1}, {1,-1,-1}, {1,-1,0}, {1,-1,1},
+            {1,0,-1}, {1,0,0}, {1,0,1}, {1,1,-1}, {1,1,0}, {1,1,1}
+        });
 
         // calculate interaction force
-        Kokkos::parallel_for("Particle-Particle", nLoc,
-            KOKKOS_LAMBDA(unsigned i){
-                //TODO
-            }
-        );
+        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<Device>(nCells, 14, Kokkos::AUTO, Kokkos::AUTO),
+            KOKKOS_LAMBDA(const team_t& team){
+                const size_type cellIdx = team.league_rank();
+
+                // Calculate cellIdx in each dimension
+                size_type xIdx = cellIdx / (nCells[1] * nCells[2]);
+                size_type yIdx = (cellIdx % (nCells[1] * nCells[2])) / nCells[2];
+                size_type zIdx = cellIdx % nCells[2];
+
+                const size_type start = cellStartingIdx(cellIdx);
+                const size_type end = cellStartingIdx(cellIdx+1);
+                const size_type nParticles = end - start;
+
+                Kokkos::parallel_for("loop over all neighbor cells", 14, KOKKOS_LAMBDA(const int& neighborIdx) {
+                    const int offsetX = offset(neighborIdx, 0);
+                    const int offsetY = offset(neighborIdx, 1);
+                    const int offsetZ = offset(neighborIdx, 2);
+                    
+                    // Calculate the index of the neighboring cell
+                    const size_type neighborCellIdx = cellIdx + offsetX + offsetY * nr_m[0] + offsetZ * nr_m[0] * nr_m[1];
+                    
+                    // Check if the neighboring cell is within the domain
+
+
+                    // Perform computation on the neighboring cell
+                    
+                });
+            });
     }
 
 
