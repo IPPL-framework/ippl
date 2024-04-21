@@ -187,6 +187,15 @@ namespace ippl {
         }
         return res;
     }
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, 3> Vector<T, Dim>::cross(const Vector<T, 3>& rhs) const {
+        
+        Vector<T, 3> ret;
+        ret[0] = data_m[1] * rhs[2] - data_m[2] * rhs[1];
+        ret[1] = data_m[2] * rhs[0] - data_m[0] * rhs[2];
+        ret[2] = data_m[0] * rhs[1] - data_m[1] * rhs[0];
+        return ret;
+    }
 
     template <typename T, unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {

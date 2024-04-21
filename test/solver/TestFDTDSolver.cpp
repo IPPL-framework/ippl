@@ -1434,7 +1434,7 @@ struct second_order_abc_corner{
         constexpr uint32_t yoff = (y0) ? 1 : uint32_t(-1);
         constexpr uint32_t zoff = (z0) ? 1 : uint32_t(-1);
         using ippl::apply;
-        constexpr ippl::Vector<uint32_t, 3> offsets[8] = {
+        const ippl::Vector<uint32_t, 3> offsets[8] = {
             ippl::Vector<uint32_t, 3>{0,0,0},
             ippl::Vector<uint32_t, 3>{xoff,0,0},
             ippl::Vector<uint32_t, 3>{0,yoff,0},
