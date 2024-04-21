@@ -64,7 +64,6 @@ if(ENABLE_RENDERING)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
-    message(WARNING "Shit ass: ${eglutils_SOURCE_DIR}")
     target_include_directories(TestRendering PUBLIC "${eglutils_SOURCE_DIR}")
 endif()
 
