@@ -23,7 +23,9 @@ set (_HDRS
 include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
-
+if(ENABLE_RENDERING)
+   list(APPEND _SRCS stbi_write.cpp)
+endif()
 add_ippl_sources (${_SRCS})
 add_ippl_headers (${_HDRS})
 
