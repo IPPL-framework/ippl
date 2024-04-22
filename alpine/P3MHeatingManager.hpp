@@ -192,6 +192,9 @@ public:
 
         // intialize Neighbor List
         initializeNeighborList();
+
+        // particle - particle interaction
+        par2par();
     }
 
     void initializeParticles() {
@@ -322,7 +325,7 @@ public:
         Kokkos::View<unsigned *, Device> cellParticleCount("cellParticleCount", totalCells);
         Kokkos::View<unsigned *, Device> cellStartingIdx("cellStartingIdx", totalCells+1);
         Kokkos::View<unsigned *, Device> cellCurrentIdx("cellCurrentIdx", totalCells+1);
-        Kokkos::View<size_type*, Device> tempID("tempID", nLoc);
+        // Kokkos::View<size_type*, Device> tempID("tempID", nLoc);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
         // view_type P_temp("tempMomenta", nLoc); // required for update
 	
@@ -340,6 +343,8 @@ public:
             	cellIndex(i) = locCMeshIdx;
         });
 
+        // std::cerr << "Rank " << rank << " has finished calculating cell indices" << std::endl;
+
         Kokkos::fence();
  	
         // compute starting indices for each cell
@@ -349,12 +354,18 @@ public:
 	            localSum += cellParticleCount(i);
 	        }
 	    );
+
+        // std::cerr << "Rank " << rank << " has finished calculating starting indices" << std::endl;
+
+        Kokkos::fence();
 	
         Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
             KOKKOS_LAMBDA(const int i){
                 cellStartingIdx(i) = nLoc;
             }
         );
+
+        // std::cerr << "Rank " << rank << " has finished setting last position" << std::endl;
         
         Kokkos::fence();
 
@@ -364,12 +375,16 @@ public:
 	
         // Build temp views
         Kokkos::parallel_for("Build view", Kokkos::RangePolicy<Device>(0, nLoc), 
-            KOKKOS_LAMBDA(const size_type i){
+            KOKKOS_LAMBDA(const size_type& i){
                 unsigned cellNumber = cellIndex(i);
+                // assert(cellNumber < totalCells && "Invalid Cell Number");
                 size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
+                // assert(newIdx < nLoc && "Invalid Index");
                 tempR(newIdx) = R(i);
-                tempID(newIdx) = ID(i);
+                // tempID(newIdx) = ID(i);
         });
+
+        // std::cerr << "Rank " << rank << " has finished building the temp view" << std::endl;
 
         Kokkos::fence();
 	
@@ -377,9 +392,16 @@ public:
         Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
             KOKKOS_LAMBDA(const size_type i){
                 R(i) = tempR(i);
-                ID(i) = tempID(i);
+                // ID(i) = tempID(i);
             }
         );
+
+        // std::cerr << "Rank " << rank << " has finished building the neighbor list" << std::endl;
+
+        if(commSize == 1){
+            this->pcontainer_m->setNL(cellStartingIdx);
+            return;
+        }
 
         /* Ghost NL Build - Halo exchange
          * 1. Figure out where neighbors are located relative to rank
@@ -602,8 +624,8 @@ public:
 
                 //unsigned nNeighbors = 14;
 
-                Kokkos::parallel_for("loop over all neighbor cells", 14, 
-                    [&] (const int& neighborIdx) {
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 14),
+                    [&](const int neighborIdx){
                     const int offsetX = offset(neighborIdx, 0);
                     const int offsetY = offset(neighborIdx, 1);
                     const int offsetZ = offset(neighborIdx, 2);
@@ -619,7 +641,7 @@ public:
                     const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
                     const size_type nNeighborParticles = neighborEnd - neighborStart;
                     
-                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nParticles),
+                    Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nParticles),
                         [&](const int i){
                             // const size_type ii = start + team.team_rank();
                             const size_type ii = start + i;
@@ -627,7 +649,7 @@ public:
                             double force = 0.0;
 
                             Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, nNeighborParticles),
-                                [=](const size_t j, Vector_t<T, Dim> sum){
+                                [=](const size_t j, Vector_t<T, Dim>& sum){
                                     const size_type jj = neighborStart + j;
                                     if (ii == jj) return;
 
@@ -639,13 +661,15 @@ public:
                                     }
 
                                     double r_ij = Kokkos::sqrt(rsq_ij);
+                                    // std::cerr << r_ij << std::endl;
 
                                     // only consider particles within cutoff radius
                                     if (r_ij > rcut) return;
                                     else {
                                         double Q_ij = Q(ii) * Q(jj);
-                                        // sum += ke * (1.0 / (dist + epsilon) - alpha * dist);
-                                        
+                                        Vector_t<T, Dim> F_ij = Q_ij * dist_ij / (r_ij * r_ij * r_ij);
+                                        Kokkos::atomic_sub(&F_sr(jj), F_ij);
+                                        sum += F_ij;
                                     }
                                 }, F_sr(ii)
                             );
@@ -668,7 +692,7 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        par2par();
+        // par2par();
 
         /* TODO */
 
