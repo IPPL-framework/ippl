@@ -1121,6 +1121,7 @@ template<typename view_type, typename scalar>
 KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value){
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
     ipos -= ldom.first();
+    //std::cout << pos << " 's scatter args (will have 1 added): " << ipos << "\n";
     if(
         ipos[0] < 0
         ||ipos[1] < 0
@@ -1751,8 +1752,11 @@ namespace ippl {
 
         bool periodic_bc;
         
-        //Fields
         using VField_t = ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+        using EBField_t = ippl::Field<EB_type   , dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+        using view_type = VField_t::view_type;
+        using ev_view_type = EBField_t::view_type;
+        //Fields
         ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_np1;
         ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_n;
         ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_nm1;
@@ -1800,8 +1804,8 @@ namespace ippl {
                 uint32_t(layout.getLocalNDIndex()[1].last() - layout.getLocalNDIndex()[1].first() + 1),
                 uint32_t(layout.getLocalNDIndex()[2].last() - layout.getLocalNDIndex()[2].first() + 1)
             };
-            std::cout << "NR_M_g: " << nr_global << "\n";
-            std::cout << "NR_M_l: " << nr_local << "\n";
+            //std::cout << "NR_M_g: " << nr_global << "\n";
+            //std::cout << "NR_M_l: " << nr_local << "\n";
             dt = hr_m[2];//0.5 * std::min(hr_m[0], std::min(hr_m[1], hr_m[2]));
             particles.create(nparticles);
             setNoBoundaryConditions();
@@ -1859,7 +1863,7 @@ namespace ippl {
                 Vector_t to = rview(i);
                 Vector_t from = rm1view(i);
                 if(space_charge){
-                    scatterToGrid(lDom, Jview,hr, orig, pos, qview(i) / volume);
+                    scatterToGrid(lDom, Jview, hr, orig, pos, qview(i) / volume);
                 }
                 scatterLineToGrid(lDom, Jview, hr, orig, from, to , scalar(qview(i)) / (volume * dt));
             });
@@ -2040,12 +2044,39 @@ bool writeBMPToFD(FILE* fd, int width, int height, const unsigned char* data) {
 
     return true;
 }
+template<typename View, typename T, unsigned Dim>
+KOKKOS_INLINE_FUNCTION typename View::value_type gather_helper(const View& v, const ippl::Vector<T, Dim>& pos, const ippl::Vector<T, 3>& origin, const ippl::Vector<T, 3>& hr, const ippl::NDIndex<3>& lDom){
+    using vector_type = ippl::Vector<T, 3>;
+
+    vector_type l;
+    //vector_type origin = v.get_mesh().getOrigin();
+    //auto lDom = v.getLayout().getLocalNDIndex();
+    //vector_type hr = v.get_mesh().getMeshSpacing();
+    for(unsigned k = 0;k < 3;k++){
+        l[k] = (pos[k] - origin[k]) / hr[k] + 1.0; //gather is implemented wrong
+    }                     
+
+    ippl::Vector<int, 3> index{int(l[0]), int(l[1]), int(l[2])};
+    ippl::Vector<T, 3> whi = l - index;
+    ippl::Vector<T, 3> wlo(1.0);
+    wlo -= whi;
+    //TODO: nghost
+    ippl::Vector<size_t, 3> args = index - lDom.first() + 1;
+    for(unsigned k = 0;k < 3;k++){
+        if(args[k] >= v.extent(k) || args[k] == 0){
+            return typename View::value_type(0);
+        }
+    }
+    //std::cout << pos << " 's Gather args (will have 1 subtracted): " << args << "\n";
+    return /*{true,*/ ippl::detail::gatherFromField(std::make_index_sequence<(1u << Dim)>{}, v, wlo, whi, args)/*}*/;
+
+}
 template<typename scalar>
 scalar test_gauss_law(uint32_t n){
 
-    ippl::NDIndex<3> owned(n / 2, n / 2, n);
-    ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, n};
-    ippl::Vector<scalar, 3> extents{1,1,1};
+    ippl::NDIndex<3> owned(n / 2, n / 2, 2 * n);
+    ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
+    ippl::Vector<scalar, 3> extents{meter_in_unit_lengths,meter_in_unit_lengths,meter_in_unit_lengths};
     std::array<bool, 3> isParallel;
     isParallel.fill(false);
     isParallel[2] = true;
@@ -2055,38 +2086,127 @@ scalar test_gauss_law(uint32_t n){
 
         //[-1, 1] box
     ippl::Vector<scalar, 3> hx     = extents / nr.cast<scalar>();
-    ippl::Vector<scalar, 3> origin = {scalar(-0.5), scalar(-0.5), scalar(-0.5)};
+    using vector_type = ippl::Vector<scalar, 3>;
+    ippl::Vector<scalar, 3> origin = {scalar(-0.5 * meter_in_unit_lengths), scalar(-0.5 * meter_in_unit_lengths), scalar(-0.5 * meter_in_unit_lengths)};
     ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
-    ippl::FDTDFieldState<scalar> field_state(layout, mesh, (1 << 20), config{});
-    field_state.particles.Q = scalar(coulomb_in_unit_charges) / (1 << 20);
-    field_state.particles.mass = scalar(1.0) / (1 << 20); //Irrelefant
+
+    uint32_t pcount = 1 << 20;
+    ippl::FDTDFieldState<scalar> field_state(layout, mesh, pcount, config{.space_charge = true});
+    field_state.particles.Q = scalar(coulomb_in_unit_charges) / pcount;
+    field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
     auto pview = field_state.particles.R.getView();
     auto p1view = field_state.particles.R_nm1.getView();
 
     //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
     Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
-    scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
+    //scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
     
-    Kokkos::parallel_for((1 << 20), KOKKOS_LAMBDA(size_t i){
+    Kokkos::parallel_for(pcount, KOKKOS_LAMBDA(size_t i){
         //bunch.gammaBeta[i].fill(scalar(0));
         auto state = random_pool.get_state();
-        pview(i)[0] = state.normal(0.01 * meter_in_unit_lengths);
-        pview(i)[1] = state.normal(0.01 * meter_in_unit_lengths);
-        pview(i)[2] = state.normal(0.01 * meter_in_unit_lengths);
+        pview(i)[0] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
+        pview(i)[1] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
+        pview(i)[2] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
         p1view(i) = pview(i);
         random_pool.free_state(state);
     });
     Kokkos::fence();
+    field_state.J = scalar(0.0);
     field_state.scatterBunch();
     for(size_t i = 0;i < 8*n;i++){
         field_state.fieldStep();
     }
+    field_state.evaluate_EB();
+    Kokkos::fence();
+    auto lDom = field_state.EB.getLayout().getLocalNDIndex();
+    
+    std::ofstream line("gauss_line.txt");
+    typename ippl::FDTDFieldState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
+    for(unsigned i = 1;i < nr[2];i++){
+        vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
+        pos[2] += hx[2] * scalar(i);
+        ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, pos, origin, hx, lDom);
+        //line << pos.norm() * unit_length_in_meters << " " << (view(n / 4, n / 4, i)[0].norm()) * unit_electric_fieldstrength_in_voltpermeters << "\n";
+        line << pos.norm() * unit_length_in_meters << " " << ebg[0].norm() * unit_electric_fieldstrength_in_voltpermeters << "\n";
+    }
+    return 0.0f;
+}
+template<typename scalar>
+scalar test_amperes_law(uint32_t n){
+
+    ippl::NDIndex<3> owned(n / 2, n / 2, 2 * n);
+    ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
+    ippl::Vector<scalar, 3> extents{meter_in_unit_lengths,(scalar)(4 * meter_in_unit_lengths),meter_in_unit_lengths};
+    std::array<bool, 3> isParallel;
+    isParallel.fill(false);
+    isParallel[2] = true;
+        
+        // all parallel layout, standard domain, normal axis order
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
+
+        //[-1, 1] box
+    ippl::Vector<scalar, 3> hx;
+    for(unsigned d = 0;d < 3;d++){
+        hx[d] = extents[d] / (scalar)nr[d];
+    }
+    using vector_type = ippl::Vector<scalar, 3>;
+    ippl::Vector<scalar, 3> origin = {scalar(-0.5 * meter_in_unit_lengths), scalar(-2.0 * meter_in_unit_lengths), scalar(-0.5 * meter_in_unit_lengths)};
+    ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
+
+    uint32_t pcount = 1 << 20;
+    ippl::FDTDFieldState<scalar> field_state(layout, mesh, pcount, config{.space_charge = true});
+    field_state.particles.Q = scalar(4.0 * coulomb_in_unit_charges) / pcount;
+    field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
+    auto pview = field_state.particles.R.getView();
+    auto p1view = field_state.particles.R_nm1.getView();
+    constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
+    scalar timestep = field_state.dt;
+    //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
+    Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
+    //scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
+    
+    Kokkos::parallel_for(pcount, KOKKOS_LAMBDA(size_t i){
+        //bunch.gammaBeta[i].fill(scalar(0));
+        auto state = random_pool.get_state();
+        pview(i)[0] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
+        pview(i)[2] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
+        pview(i)[1] = origin[1] + 4.0 * meter_in_unit_lengths * scalar(i) / (pcount - 1);
+        p1view(i) = pview(i);
+        p1view(i)[1] -= vy * timestep;
+        random_pool.free_state(state);
+    });
+    Kokkos::fence();
+    field_state.J = scalar(0.0);
+    field_state.scatterBunch();
+    for(size_t i = 0;i < 8*n;i++){
+        field_state.fieldStep();
+    }
+    field_state.evaluate_EB();
+    Kokkos::fence();
+    auto lDom = field_state.EB.getLayout().getLocalNDIndex();
+    
+    std::ofstream line("ampere_line.txt");
+    
+    typename ippl::FDTDFieldState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
+    for(unsigned i = 1;i < nr[2];i++){
+        vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
+        pos[2] += hx[2] * scalar(i);
+        ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, pos, origin, hx, lDom);
+        //line << pos.norm() * unit_length_in_meters << " " << (view(n / 4, n / 4, i)[0].norm()) * unit_electric_fieldstrength_in_voltpermeters << "\n";
+        line << pos.norm() * unit_length_in_meters << " " << ebg[1][0] * unit_magnetic_fluxdensity_in_tesla << "\n";
+    }
+    return 0.0f;
 }
 int main(int argc, char* argv[]) {
-    using scalar = float;
+    using scalar = double;
     ippl::initialize(argc, argv);
     {
-
+        
+        test_gauss_law<scalar>(64);
+        test_amperes_law<scalar>(64);
+        goto exit;
         config cfg = read_config("../config.json");
         const scalar frame_gamma = std::max(decltype(cfg)::scalar(1), cfg.bunch_gamma / std::sqrt(1.0 + cfg.undulator_K * cfg.undulator_K * config::scalar(0.5)));
         cfg.extents[2] *= frame_gamma;
@@ -2302,7 +2422,8 @@ int main(int argc, char* argv[]) {
                     
                     snprintf(output, 1023, "%soutimage%.05lu.bmp", cfg.output_path.c_str(), i);
                     std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)std::min(255.0f, std::max(0.0f,x));});
-                    writeBMPToFD(ffmpeg_file, img_width, img_height, imagedata_final);
+                    if(ffmpeg_file != nullptr)
+                        writeBMPToFD(ffmpeg_file, img_width, img_height, imagedata_final);
                 }
                 delete[] imagedata;
                 delete[] idata_recvbuffer;
@@ -2312,5 +2433,6 @@ int main(int argc, char* argv[]) {
         uint64_t endtime = nanoTime();
         std::cout << ippl::Comm->size() << " " << double(endtime - starttime) / 1e9 << std::endl;
     }
+    exit:
     ippl::finalize();
 }
