@@ -602,7 +602,8 @@ public:
 
                 //unsigned nNeighbors = 14;
 
-                Kokkos::parallel_for("loop over all neighbor cells", 14, KOKKOS_LAMBDA(const int& neighborIdx) {
+                Kokkos::parallel_for("loop over all neighbor cells", 14, 
+                    [&] (const int& neighborIdx) {
                     const int offsetX = offset(neighborIdx, 0);
                     const int offsetY = offset(neighborIdx, 1);
                     const int offsetZ = offset(neighborIdx, 2);
