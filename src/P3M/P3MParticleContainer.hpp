@@ -28,7 +28,7 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
         typename Base::particle_position_type P;    // particle velocity
         typename Base::particle_position_type E;    // electric field at particle position
         // typename Base::particle_index_type ID;      // particle global index
-        typename Base::particle_position_type F_sr; // short-range interaction force
+        // typename Base::particle_position_type F_sr; // short-range interaction force
 
     private:
         PLayout_t<T, Dim> pl_m;     // Particle layout 
@@ -92,7 +92,7 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
             this->addAttribute(P);
             this->addAttribute(E);
             // this->addAttribute(ID);
-            this->addAttribute(F_sr);
+            // this->addAttribute(F_sr);
         }
              
 };

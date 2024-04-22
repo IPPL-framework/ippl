@@ -193,8 +193,16 @@ public:
         // intialize Neighbor List
         initializeNeighborList();
 
-        // particle - particle interaction
-        par2par();
+        // calculate par2par interaction dummy run
+        // this->par2par();
+
+        // this->par2grid();
+
+        // this->grid2par();
+
+        // this->pcontainer_m->update();
+
+        std::cerr << "Pre Run finished" << endl;
     }
 
     void initializeParticles() {
@@ -300,7 +308,7 @@ public:
         size_type nLoc = this->pcontainer_m->getLocalNum();
         view_type R = this->pcontainer_m->R.getView();
         view_type P = this->pcontainer_m->P.getView();
-        auto ID = this->pcontainer_m->ID.getView();
+        // auto ID = this->pcontainer_m->ID.getView();
         
 	    // get local domain extend
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
@@ -325,9 +333,9 @@ public:
         Kokkos::View<unsigned *, Device> cellParticleCount("cellParticleCount", totalCells);
         Kokkos::View<unsigned *, Device> cellStartingIdx("cellStartingIdx", totalCells+1);
         Kokkos::View<unsigned *, Device> cellCurrentIdx("cellCurrentIdx", totalCells+1);
-        // Kokkos::View<size_type*, Device> tempID("tempID", nLoc);
+        Kokkos::View<ippl::Vector<double, 3> *, Device> tempP("tempMom", nLoc);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
-        // view_type P_temp("tempMomenta", nLoc); // required for update
+        
 	
         // calculate cell index for each particle
         Kokkos::parallel_for("CalcCellIndices", Kokkos::RangePolicy<Device>(0, nLoc), 
@@ -381,7 +389,7 @@ public:
                 size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
                 // assert(newIdx < nLoc && "Invalid Index");
                 tempR(newIdx) = R(i);
-                // tempID(newIdx) = ID(i);
+                tempP(newIdx) = P(i);
         });
 
         // std::cerr << "Rank " << rank << " has finished building the temp view" << std::endl;
@@ -392,7 +400,7 @@ public:
         Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
             KOKKOS_LAMBDA(const size_type i){
                 R(i) = tempR(i);
-                // ID(i) = tempID(i);
+                P(i) = tempP(i);
             }
         );
 
@@ -568,6 +576,13 @@ public:
         Inform m("pre step");
         /* TODO */
         // initialize neighborlist?
+
+        auto P = this->pcontainer_m->P;
+        auto R = this->pcontainer_m->R;
+
+        R = R + this->dt_m * P;
+
+        this->pcontainer_m->update();
     }
 
     void post_step() override {
@@ -591,7 +606,8 @@ public:
 
         // get particle data
         auto R = this->pcontainer_m->R.getView();
-        auto F_sr = this->pcontainer_m->F_sr.getView();
+        // auto F_sr = this->pcontainer_m->F_sr.getView();
+        auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
         auto offset = this->pcontainer_m->getOffset();
         auto Q = this->pcontainer_m->Q.getView();
@@ -645,7 +661,6 @@ public:
                         [&](const int i){
                             // const size_type ii = start + team.team_rank();
                             const size_type ii = start + i;
-                            F_sr(ii) = 0.0;
                             double force = 0.0;
 
                             Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, nNeighborParticles),
@@ -667,13 +682,12 @@ public:
                                     // only consider particles within cutoff radius
                                     if (r_ij > rcut) return;
                                     else {
-                                        double Q_ij = Q(ii) * Q(jj);
                                         // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
-                                        Vector_t<T, Dim> F_ij = Q_ij * ke * -1.0 * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r) + (1.0 - Kokkos::erf(alpha * r_ij)) / (r * r));
-                                        Kokkos::atomic_sub(&F_sr(jj), F_ij);
-                                        sum += F_ij;
+                                        Vector_t<T, Dim> F_ij = ke * -1.0 * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r) + (1.0 - Kokkos::erf(alpha * r_ij)) / (r * r));
+                                        Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
+                                        sum += Q(jj) * F_ij;
                                     }
-                                }, F_sr(ii)
+                                }, E(ii)
                             );
                         }
                     
@@ -681,6 +695,10 @@ public:
                     
                 });
             });
+            Kokkos::fence();
+            ippl::Comm->barrier();
+
+            std::cerr << "Particle-Particle Interaction finished" << std::endl;
     }
 
 
@@ -694,9 +712,26 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        // par2par();
+        // TODO : Debug this
+        // pc->P = pc->P + 0.5 * dt * pc->E;
 
-        /* TODO */
+        // pc->R = pc->R + dt * pc->P;
+
+        // pc->update();
+
+        // this->initializeNeighborList();
+
+        // this->par2grid();
+
+        // this->fsolver_m->solve();
+
+        // this->grid2par();
+
+        // this->par2par();
+
+        // pc->P = pc->P + 0.5 * dt * pc->E;
+
+        std::cerr << "LeapFrog Step" << std::endl;
 
     }
 
