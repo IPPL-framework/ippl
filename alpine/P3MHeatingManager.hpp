@@ -661,13 +661,15 @@ public:
                                     }
 
                                     double r_ij = Kokkos::sqrt(rsq_ij);
+                                    double r = Kokkos::sqrt(rsq_ij + epsilon*epsilon);
                                     // std::cerr << r_ij << std::endl;
 
                                     // only consider particles within cutoff radius
                                     if (r_ij > rcut) return;
                                     else {
                                         double Q_ij = Q(ii) * Q(jj);
-                                        Vector_t<T, Dim> F_ij = Q_ij * dist_ij / (r_ij * r_ij * r_ij);
+                                        // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
+                                        Vector_t<T, Dim> F_ij = Q_ij * ke * -1.0 * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r) + (1.0 - Kokkos::erf(alpha * r_ij)) / (r * r));
                                         Kokkos::atomic_sub(&F_sr(jj), F_ij);
                                         sum += F_ij;
                                     }
