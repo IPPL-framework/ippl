@@ -572,6 +572,12 @@ public:
         auto F_sr = this->pcontainer_m->F_sr.getView();
         auto P = this->pcontainer_m->P.getView();
         auto offset = this->pcontainer_m->getOffset();
+        auto Q = this->pcontainer_m->Q.getView();
+
+        // get simulation specific data
+        auto rcut = this->rcut_m;
+        auto alpha = this->alpha_m;
+        auto epsilon = this->epsilon_m;
 
         // get neighbor list
         auto cellStartingIdx = this->pcontainer_m->getNL();
@@ -594,24 +600,57 @@ public:
                 const size_type end = cellStartingIdx(cellIdx+1);
                 const size_type nParticles = end - start;
 
-                unsigned nNeighbors = 14;
+                //unsigned nNeighbors = 14;
 
                 Kokkos::parallel_for("loop over all neighbor cells", 14, KOKKOS_LAMBDA(const int& neighborIdx) {
                     const int offsetX = offset(neighborIdx, 0);
                     const int offsetY = offset(neighborIdx, 1);
                     const int offsetZ = offset(neighborIdx, 2);
                     
-                    // Calculate the index of the neighboring cell
                     if (xIdx + offsetX < 0 || xIdx + offsetX >= nCells[0] ||
                         yIdx + offsetY < 0 || yIdx + offsetY >= nCells[1] ||
                         zIdx + offsetZ < 0 || zIdx + offsetZ >= nCells[2]) {
                         return;
                     }
+
+                    const size_type neighborCellIdx = (xIdx + offsetX) * nCells[1] * nCells[2] + (yIdx + offsetY) * nCells[2] + (zIdx + offsetZ);
+                    const size_type neighborStart = cellStartingIdx(neighborCellIdx);
+                    const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
+                    const size_type nNeighborParticles = neighborEnd - neighborStart;
                     
-                    // Check if the neighboring cell is within the domain
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nParticles),
+                        [&](const int i){
+                            // const size_type ii = start + team.team_rank();
+                            const size_type ii = start + i;
+                            F_sr(ii) = 0.0;
+                            double force = 0.0;
 
+                            Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, nNeighborParticles),
+                                [=](const size_t j, Vector_t<T, Dim> sum){
+                                    const size_type jj = neighborStart + j;
+                                    if (ii == jj) return;
 
-                    // Perform computation on the neighboring cell
+                                    double rsq_ij = 0.0;
+                                    
+                                    Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
+                                    for (int d = 0; d < Dim; ++d) {
+                                        rsq_ij += dist_ij[d] * dist_ij[d];
+                                    }
+
+                                    double r_ij = Kokkos::sqrt(rsq_ij);
+
+                                    // only consider particles within cutoff radius
+                                    if (r_ij > rcut) return;
+                                    else {
+                                        double Q_ij = Q(ii) * Q(jj);
+                                        // sum += ke * (1.0 / (dist + epsilon) - alpha * dist);
+                                        
+                                    }
+                                }, F_sr(ii)
+                            );
+                        }
+                    
+                    );
                     
                 });
             });
@@ -627,6 +666,8 @@ public:
         double dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
+
+        par2par();
 
         /* TODO */
 
