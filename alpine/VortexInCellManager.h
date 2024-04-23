@@ -259,6 +259,18 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
+        Inform csvout(NULL, "data/particle_positions.txt", Inform::APPEND);
+        csvout.precision(4);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+        if (std::fabs(this->time_m) < 1e-14) {
+            csvout << "time,x,y,z" << endl;
+        }
+
+        for (size_t i = 0; i < this->totalP_m; ++i) {
+            csvout << this->time_m << "," << pc->R(i) << endl;
+        }
+        
+
         size_type totalP        = this->totalP_m;
         int it                  = this->it_m;
         bool isFirstRepartition = false;
