@@ -187,14 +187,21 @@ public:
             )
         );
 
+        // probably not needed
+        // this->fsolver_m->initSolver();
+
         // initialize particle positions and momenta
         initializeParticles();
 
         // intialize Neighbor List
         initializeNeighborList();
 
+        this->fcontainer_m->getRho() = 0.0;
+
+        this->fsolver_m->solve();
+
         // calculate par2par interaction dummy run
-        // this->par2par();
+        this->par2par();
 
         // this->par2grid();
 
@@ -308,6 +315,7 @@ public:
         size_type nLoc = this->pcontainer_m->getLocalNum();
         view_type R = this->pcontainer_m->R.getView();
         view_type P = this->pcontainer_m->P.getView();
+        view_type E = this->pcontainer_m->E.getView();
         // auto ID = this->pcontainer_m->ID.getView();
         
 	    // get local domain extend
@@ -335,6 +343,7 @@ public:
         Kokkos::View<unsigned *, Device> cellCurrentIdx("cellCurrentIdx", totalCells+1);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempP("tempMom", nLoc);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
+        Kokkos::View<ippl::Vector<double, 3> *, Device> tempE("tempEn", nLoc);
         
 	
         // calculate cell index for each particle
@@ -390,6 +399,7 @@ public:
                 // assert(newIdx < nLoc && "Invalid Index");
                 tempR(newIdx) = R(i);
                 tempP(newIdx) = P(i);
+                tempE(newIdx) = E(i);
         });
 
         // std::cerr << "Rank " << rank << " has finished building the temp view" << std::endl;
@@ -401,6 +411,7 @@ public:
             KOKKOS_LAMBDA(const size_type i){
                 R(i) = tempR(i);
                 P(i) = tempP(i);
+                E(i) = tempE(i);
             }
         );
 
@@ -713,13 +724,13 @@ public:
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
         // TODO : Debug this
-        // pc->P = pc->P + 0.5 * dt * pc->E;
+        pc->P = pc->P + 0.5 * dt * pc->E;
 
-        // pc->R = pc->R + dt * pc->P;
+        pc->R = pc->R + dt * pc->P;
 
-        // pc->update();
+        pc->update();
 
-        // this->initializeNeighborList();
+        this->initializeNeighborList();
 
         // this->par2grid();
 
