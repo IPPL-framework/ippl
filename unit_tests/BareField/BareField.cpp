@@ -18,9 +18,6 @@ class BareFieldTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class BareFieldTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -31,7 +28,6 @@ public:
 
     BareFieldTest()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         std::array<ippl::Index, Dim> indices;
         for (unsigned d = 0; d < Dim; d++) {
             indices[d] = ippl::Index(nPoints[d]);
@@ -265,7 +261,6 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

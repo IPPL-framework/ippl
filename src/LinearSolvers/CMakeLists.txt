@@ -3,6 +3,7 @@ set (_SRCS
 
 set (_HDRS
     SolverAlgorithm.h
+    Preconditioner.h
     PCG.h
 )
 
