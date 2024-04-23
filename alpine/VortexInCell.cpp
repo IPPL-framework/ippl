@@ -1,6 +1,6 @@
-// Landau Damping Test
+// Vortex In Cell Test
 //   Usage:
-//     srun ./LandauDamping
+//     srun ./VortexInCell
 //                  <nx> [<ny>...] <Np> <Nt> <stype> <lbthres>
 //                  <t_method> --overallocate <ovfactor> --info 10
 //     nx       = No. cell-centered points in the x-direction
@@ -19,6 +19,10 @@
 //     makdir build_*/alpine/data
 //     chmod +x data
 //     srun ./VortexInCell 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
+// 
+//     to build, call 
+//          make VortexInCell 
+//     in the build directory to only build this target
 
 constexpr unsigned Dim = 3;
 using T                = double;
@@ -67,7 +71,7 @@ int main(int argc, char* argv[]) {
         std::string step_method = argv[arg++];
 
         // Create an instance of a manger for the considered application
-        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        VortexInCellManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();

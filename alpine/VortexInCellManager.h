@@ -43,18 +43,18 @@ struct CustomDistributionFunctions {
 };
 
 template <typename T, unsigned Dim>
-class LandauDampingManager : public AlpineManager<T, Dim> {
+class VortexInCellManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
-    LandauDampingManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+    VortexInCellManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
 
-    ~LandauDampingManager() {}
+    ~VortexInCellManager() {}
 
     void pre_run() override {
         Inform m("Pre Run");
