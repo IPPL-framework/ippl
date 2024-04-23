@@ -35,7 +35,7 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#add_compile_options (-Werror)
+add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
@@ -82,13 +82,18 @@ if(IPPL_PLATFORMS)
         # Handle unknown or unsupported platform
     endif()
 endif()
-
-find_package(Kokkos 4.0.0 QUIET)
+if(NOT KOKKOS_VERSION)
+    set(KOKKOS_VERSION "4.1.00")
+    message(STATUS "${Green}Selecting default Kokkos version: ${KOKKOS_VERSION} ${ColourReset}")
+else()
+    message(STATUS "${Green}Selected Kokkos version: ${KOKKOS_VERSION} ${ColourReset}")
+endif()
+find_package(Kokkos ${KOKKOS_VERSION} QUIET)
 if(NOT Kokkos_FOUND)
     FetchContent_Declare(
         #DOWNLOAD_EXTRACT_TIMESTAMP
         kokko
-        URL https://github.com/kokkos/kokkos/archive/refs/tags/4.1.00.tar.gz                
+        URL https://github.com/kokkos/kokkos/archive/refs/tags/${KOKKOS_VERSION}.tar.gz                
     )
     FetchContent_MakeAvailable(kokko)
 endif()
@@ -135,14 +140,31 @@ endif()
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
+    if(NOT HEFFTE_VERSION)
+        set(HEFFTE_VERSION "MASTER")
+        message(STATUS "${Green}Selecting default Heffte version: Master branch on ttps://github.com/icl-utk-edu/heffte ${ColourReset}")
+    else()
+    endif()
+    if(HEFFTE_VERSION MATCHES "MASTER")
     find_package (Heffte 2.2.0 QUIET)
+    else()
+    find_package (Heffte ${HEFFTE_VERSION} QUIET)
+    endif()
     if(NOT Heffte_FOUND)
         message(STATUS "Using FetchContent for Heffte")
+        if(HEFFTE_VERSION MATCHES "MASTER")
         FetchContent_Declare(
              Heffte
              #DOWNLOAD_EXTRACT_TIMESTAMP
              GIT_REPOSITORY https://github.com/icl-utk-edu/heffte 
         )
+        else()
+        FetchContent_Declare(
+             Heffte
+             #DOWNLOAD_EXTRACT_TIMESTAMP
+             URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${HEFFTE_VERSION}.tar.gz
+        )
+        endif()
         FetchContent_MakeAvailable(Heffte)
     endif()
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
