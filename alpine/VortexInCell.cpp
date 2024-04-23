@@ -38,8 +38,8 @@ const char* TestName   = "VortexInCell";
 
 #include "Utility/IpplTimings.h"
 
-#include "VortexInCellManager.h"
 #include "Manager/PicManager.h"
+#include "VortexInCellManager.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
