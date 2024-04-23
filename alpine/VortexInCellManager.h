@@ -1,5 +1,5 @@
-#ifndef IPPL_LANDAU_DAMPING_MANAGER_H
-#define IPPL_LANDAU_DAMPING_MANAGER_H
+#ifndef IPPL_VORTEX_IN_CELL_MANAGER_H
+#define IPPL_VORTEX_IN_CELL_MANAGER_H
 
 #include <memory>
 
@@ -60,7 +60,7 @@ public:
         Inform m("Pre Run");
 
         if (this->solver_m == "OPEN") {
-            throw IpplException("LandauDamping",
+            throw IpplException("VortexInCell",
                                 "Open boundaries solver incompatible with this simulation!");
         }
 
@@ -302,12 +302,12 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
+        dumpVortex(this->fcontainer_m->getE().getView());
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
     template <typename View>
-    void dumpLandau(const View& Eview) {
+    void dumpVortex(const View& Eview) {
         const int nghostE = this->fcontainer_m->getE().getNghost();
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
@@ -340,7 +340,7 @@ public:
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data/FieldLandau_";
+            fname << "data/FieldVortex_";
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
