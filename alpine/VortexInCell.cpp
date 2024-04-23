@@ -60,15 +60,15 @@ int main(int argc, char* argv[]) {
         int arg = 1;
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
+            nr[d] = std::atoi(argv[arg++]); // No. of points in each of DIM directions
         }
 
-        size_type totalP   = std::atoll(argv[arg++]);
-        int nt             = std::atoi(argv[arg++]);
-        std::string solver = argv[arg++];
+        size_type totalP   = std::atoll(argv[arg++]); // Total no. of particles in the simulation
+        int nt             = std::atoi(argv[arg++]);  // Number of time steps
+        std::string solver = argv[arg++];             // Field solver
 
-        double lbt              = std::atof(argv[arg++]);
-        std::string step_method = argv[arg++];
+        double lbt              = std::atof(argv[arg++]); // Load balancing threshold
+        std::string step_method = argv[arg++];        // Time-stepping method
 
         // Create an instance of a manger for the considered application
         VortexInCellManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
