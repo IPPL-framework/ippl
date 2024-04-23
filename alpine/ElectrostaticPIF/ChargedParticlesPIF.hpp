@@ -604,7 +604,7 @@ public:
                 double Sk = 1.0;
                 for(size_t d = 0; d < Dim; ++d) {
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
-                    double kh = kVec[d] * dx[d];
+                    double kh = kVec[d] * dx[d] / 2;
                     bool isNotZero = (kh != 0.0);
                     double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
                     double arg = isNotZero * (Kokkos::sin(kh) * factor) + 

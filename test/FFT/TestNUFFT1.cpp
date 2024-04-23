@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     typedef Bunch<playout_type> bunch_type;
 
     
-    ippl::Vector<int, dim> pt = {512, 512, 512};
+    ippl::Vector<int, dim> pt = {16, 16, 16};
     ippl::Index I(pt[0]);
     ippl::Index J(pt[1]);
     ippl::Index K(pt[2]);
@@ -85,22 +85,21 @@ int main(int argc, char *argv[]) {
 
     ippl::FieldLayout<dim> layout(owned, decomp);
 
-    std::array<double, dim> dx = {
-        2.0 * pi / double(pt[0]),
-        2.0 * pi / double(pt[1]),
-        2.0 * pi / double(pt[2]),
-    };
-
-    //std::array<double, dim> dx = {
-    //    25.0 / double(pt[0]),
-    //    25.0 / double(pt[1]),
-    //    25.0 / double(pt[2]),
-    //};
     typedef ippl::Vector<double, 3> Vector_t;
+    Vector_t minU = {-pi, -pi, -pi};
+    Vector_t maxU = {pi, pi, pi};
+    //Vector_t minU = {0.0, 0.0, 0.0};
+    //Vector_t maxU = {25.0, 25.0, 25.0};
+    
+    std::array<double, dim> dx = {
+    (maxU[0] - minU[0]) / double(pt[0]),
+    (maxU[1] - minU[1]) / double(pt[1]),
+    (maxU[2] - minU[2]) / double(pt[2]),
+    };
+    
 
     Vector_t hx = {dx[0], dx[1], dx[2]};
-    Vector_t origin = {-pi, -pi, -pi};
-    //Vector_t origin = {0, 0, 0};
+    Vector_t origin = {minU[0], minU[1], minU[2]};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     playout_type pl(layout, mesh);
@@ -111,7 +110,7 @@ int main(int argc, char *argv[]) {
     using size_type = ippl::detail::size_type;
 
 
-    size_type Np = std::pow(512,3) * 5;
+    size_type Np = std::pow(16,3);
     
     typedef ippl::Field<Kokkos::complex<double>, dim> field_type;
 
@@ -123,7 +122,7 @@ int main(int argc, char *argv[]) {
     fftParams.add("gpu_method", 1);
     fftParams.add("gpu_sort", 0);
     fftParams.add("gpu_kerevalmeth", 1);
-    fftParams.add("tolerance", 1e-6);
+    fftParams.add("tolerance", 1e-12);
 
     fftParams.add("use_cufinufft_defaults", false);  
     
@@ -133,12 +132,6 @@ int main(int argc, char *argv[]) {
     
     int type = 1;
     
-
-    Vector_t minU = {-pi, -pi, -pi};
-    Vector_t maxU = {pi, pi, pi};
-    //Vector_t minU = {0.0, 0.0, 0.0};
-    //Vector_t maxU = {25.0, 25.0, 25.0};
-
 
     size_type nloc = Np/Ippl::Comm->size();
 
@@ -175,82 +168,82 @@ int main(int argc, char *argv[]) {
     auto Qview = bunch.Q.getView();
 
     Kokkos::complex<double> imag = {0.0, 1.0};
-    //size_t flatN = pt[0] * pt[1] * pt[2];
-    //auto fview = field_dft.getView();
+    size_t flatN = pt[0] * pt[1] * pt[2];
+    auto fview = field_dft.getView();
   
 
 
-    //typedef Kokkos::TeamPolicy<> team_policy;
-    //typedef Kokkos::TeamPolicy<>::member_type member_type;
+    typedef Kokkos::TeamPolicy<> team_policy;
+    typedef Kokkos::TeamPolicy<>::member_type member_type;
 
-    //Kokkos::parallel_for("NUDFT type 1",
-    //       team_policy(flatN, Kokkos::AUTO),
-    //       KOKKOS_LAMBDA(const member_type& teamMember) {
-    //       const size_t flatIndex = teamMember.league_rank();
-    //      
-    //       const int k = (int)(flatIndex / (pt[0] * pt[1]));
-    //       const int flatIndex2D = flatIndex - (k * pt[0] * pt[1]);
-    //       const int i = flatIndex2D % pt[0];
-    //       const int j = (int)(flatIndex2D / pt[0]);
-    //       
-    //       Kokkos::complex<double> reducedValue = 0.0;
-    //       ippl::Vector<int, 3> iVec = {i, j, k};
-    //       ippl::Vector<double, 3>kVec;
-    //       for(size_t d = 0; d < 3; ++d) {
-    //           kVec[d] = (2.0 * pi / (maxU[d] - minU[d])) * (iVec[d] - (pt[d] / 2));
-    //       }
-    //       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, nloc),
-    //       [=](const size_t idx, Kokkos::complex<double>& innerReduce)
-    //       {
-    //           double arg = 0.0;
-    //           for(size_t d = 0; d < 3; ++d) {
-    //               arg += kVec[d]*Rview(idx)[d];
-    //           }
-    //           const double& val = Qview(idx);
+    Kokkos::parallel_for("NUDFT type 1",
+           team_policy(flatN, Kokkos::AUTO),
+           KOKKOS_LAMBDA(const member_type& teamMember) {
+           const size_t flatIndex = teamMember.league_rank();
+          
+           const int k = (int)(flatIndex / (pt[0] * pt[1]));
+           const int flatIndex2D = flatIndex - (k * pt[0] * pt[1]);
+           const int i = flatIndex2D % pt[0];
+           const int j = (int)(flatIndex2D / pt[0]);
+           
+           Kokkos::complex<double> reducedValue = 0.0;
+           ippl::Vector<int, 3> iVec = {i, j, k};
+           ippl::Vector<double, 3>kVec;
+           for(size_t d = 0; d < 3; ++d) {
+               kVec[d] = (2.0 * pi / (maxU[d] - minU[d])) * (iVec[d] - (pt[d] / 2));
+           }
+           Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, nloc),
+           [=](const size_t idx, Kokkos::complex<double>& innerReduce)
+           {
+               double arg = 0.0;
+               for(size_t d = 0; d < 3; ++d) {
+                   arg += kVec[d]*Rview(idx)[d];
+               }
+               const double& val = Qview(idx);
 
-    //           innerReduce += (Kokkos::cos(arg) 
-    //                       - imag * Kokkos::sin(arg)) * val;
-    //       }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
+               innerReduce += (Kokkos::cos(arg) 
+                           - imag * Kokkos::sin(arg)) * val;
+           }, Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
 
-    //       if(teamMember.team_rank() == 0) {
-    //           fview(i+nghost,j+nghost,k+nghost) = reducedValue;
-    //       }
+           if(teamMember.team_rank() == 0) {
+               fview(i+nghost,j+nghost,k+nghost) = reducedValue;
+           }
 
-    //       });
-    //
-    //typename field_type::HostMirror rhoNUDFT_host = field_dft.getHostMirror();
-    //Kokkos::deep_copy(rhoNUDFT_host, field_dft.getView());
-    //std::stringstream pname;
-    //pname << "data/FieldFFT_";
-    //pname << Ippl::Comm->rank();
-    //pname << ".csv";
-    //Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-    //pcsvout.precision(10);
-    //pcsvout.setf(std::ios::scientific, std::ios::floatfield);
-    //pcsvout << "rho" << endl;
-    //for (int i = 0; i< pt[0]; i++) {
-    //     for (int j = 0; j< pt[1]; j++) {
-    //         for (int k = 0; k< pt[2]; k++) {
-    //             pcsvout << field_result(i+nghost,j+nghost, k+nghost) << endl;
-    //         }
-    //     }
-    //}
-    //std::stringstream pname2;
-    //pname2 << "data/FieldDFT_";
-    //pname2 << Ippl::Comm->rank();
-    //pname2 << ".csv";
-    //Inform pcsvout2(NULL, pname2.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
-    //pcsvout2.precision(10);
-    //pcsvout2.setf(std::ios::scientific, std::ios::floatfield);
-    //pcsvout2 << "rho" << endl;
-    //for (int i = 0; i< pt[0]; i++) {
-    //     for (int j = 0; j< pt[1]; j++) {
-    //         for (int k = 0; k< pt[2]; k++) {
-    //             pcsvout2 << rhoNUDFT_host(i+nghost,j+nghost, k+nghost) << endl;
-    //         }
-    //     }
-    //   }
-    //   Ippl::Comm->barrier();
+           });
+    
+    typename field_type::HostMirror rhoNUDFT_host = field_dft.getHostMirror();
+    Kokkos::deep_copy(rhoNUDFT_host, field_dft.getView());
+    std::stringstream pname;
+    pname << "data/FieldFFT_";
+    pname << Ippl::Comm->rank();
+    pname << ".csv";
+    Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+    pcsvout.precision(10);
+    pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+    pcsvout << "rho" << endl;
+    for (int i = 0; i< pt[0]; i++) {
+         for (int j = 0; j< pt[1]; j++) {
+             for (int k = 0; k< pt[2]; k++) {
+                 pcsvout << field_result(i+nghost,j+nghost, k+nghost) << endl;
+             }
+         }
+    }
+    std::stringstream pname2;
+    pname2 << "data/FieldDFT_";
+    pname2 << Ippl::Comm->rank();
+    pname2 << ".csv";
+    Inform pcsvout2(NULL, pname2.str().c_str(), Inform::OVERWRITE, Ippl::Comm->rank());
+    pcsvout2.precision(10);
+    pcsvout2.setf(std::ios::scientific, std::ios::floatfield);
+    pcsvout2 << "rho" << endl;
+    for (int i = 0; i< pt[0]; i++) {
+         for (int j = 0; j< pt[1]; j++) {
+             for (int k = 0; k< pt[2]; k++) {
+                 pcsvout2 << rhoNUDFT_host(i+nghost,j+nghost, k+nghost) << endl;
+             }
+         }
+       }
+       Ippl::Comm->barrier();
     
     
     
@@ -259,7 +252,7 @@ int main(int argc, char *argv[]) {
 
                                 double arg = 0.0;
                                 for(size_t d = 0; d < dim; ++d) {
-                                    arg += kVec[d]*Rview(idx)[d];
+                                    arg += (2 * pi / (hx[d] * pt[d])) * kVec[d] * Rview(idx)[d];
                                 }
 
                                 valL += (Kokkos::cos(arg) 

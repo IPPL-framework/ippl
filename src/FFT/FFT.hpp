@@ -929,7 +929,9 @@ namespace ippl {
                              KOKKOS_LAMBDA(const size_t i)
                              {
                                  for(size_t d = 0; d < Dim; ++d) {
-                                    tempR[d](i) = (Rview(i)[d] - origin[d]) * (2.0 * pi / Len[d]);
+                                    //tempR[d](i) = (Rview(i)[d] - (twopiFactor * 2.0 * pi)) * (2.0 * pi / Len[d]);
+                                    tempR[d](i) = Rview(i)[d] * (2.0 * pi / Len[d]);
+                                    //tempR[d](i) = Rview(i)[d];
                                  }
                                  tempQ(i).x = Qview(i);
                                  tempQ(i).y = 0.0;

@@ -631,7 +631,7 @@ int main(int argc, char *argv[]){
                 << endl;
 
             IpplTimings::startTimer(dumpData);
-            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);

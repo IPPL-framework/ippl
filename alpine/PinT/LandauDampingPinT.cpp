@@ -302,6 +302,7 @@ int main(int argc, char *argv[]){
 
     // create mesh and layout objects for this problem domain
     Vector_t kw = {0.5, 0.5, 0.5};
+    //Vector_t kw = {1.0, 1.0, 1.0};
     Vector_t alpha = {0.05, 0.05, 0.05};
     //Vector_t alpha = {0.5, 0.5, 0.5};
     Vector_t rmin(0.0);
@@ -436,6 +437,7 @@ int main(int argc, char *argv[]){
 
     if(rankTime == 0) {
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100*rankSpace));
+        //Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(79 + 100*rankSpace));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                              Pbegin->R.getView(), Pbegin->P.getView(), rand_pool64, alpha, kw, minU, maxU));
@@ -630,7 +632,7 @@ int main(int argc, char *argv[]){
                 << endl;
 
             IpplTimings::startTimer(dumpData);
-            //Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
+            Pcoarse->writelocalError(Rerror, Perror, nc+1, it+1, rankTime, rankSpace);
             IpplTimings::stopTimer(dumpData);
 
             MPI_Barrier(spaceComm);

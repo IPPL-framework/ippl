@@ -106,17 +106,21 @@ int main(int argc, char *argv[]) {
 
     ippl::FieldLayout<dim> layout(owned, decomp);
 
-    std::array<double, dim> dx = {
-        2.0 * pi / double(pt[0]),
-        2.0 * pi / double(pt[1]),
-        2.0 * pi / double(pt[2]),
-    };
-
     typedef ippl::Vector<double, 3> Vector_t;
+    Vector_t minU = {-pi, -pi, -pi};
+    Vector_t maxU = {pi, pi, pi};
+    //Vector_t minU = {0.0, 0.0, 0.0};
+    //Vector_t maxU = {25.0, 25.0, 25.0};
+
+    std::array<double, dim> dx = {
+    (maxU[0] - minU[0]) / double(pt[0]),
+    (maxU[1] - minU[1]) / double(pt[1]),
+    (maxU[2] - minU[2]) / double(pt[2]),
+    };
     //typedef ippl::Vector<Kokkos::complex<double>, 3> CxVector_t;
 
     Vector_t hx = {dx[0], dx[1], dx[2]};
-    Vector_t origin = {-pi, -pi, -pi};
+    Vector_t origin = {minU[0], minU[1], minU[2]};
     ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
 
     playout_type pl(layout, mesh);
@@ -148,8 +152,6 @@ int main(int argc, char *argv[]) {
     
     int type = 2;
     
-    Vector_t minU = {-pi, -pi, -pi};
-    Vector_t maxU = {pi, pi, pi};
 
     size_type nloc = Np/Ippl::Comm->size();
 
@@ -203,7 +205,7 @@ int main(int argc, char *argv[]) {
                                 ippl::Vector<int, 3> iVec = {i, j, k};
                                 double arg = 0.0;
                                 for(size_t d = 0; d < dim; ++d) {
-                                    arg += (iVec[d] - (pt[d]/2)) * Rview(idx)[d];
+                                    arg += (2 * pi / (hx[d] * pt[d])) * (iVec[d] - (pt[d]/2)) * Rview(idx)[d];
                                 }
 
                                 valL += (Kokkos::cos(arg) 

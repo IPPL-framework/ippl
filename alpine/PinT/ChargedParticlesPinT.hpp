@@ -524,7 +524,7 @@ public:
                 double Sk = 1.0;
                 for(size_t d = 0; d < Dim; ++d) {
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
-                    double kh = kVec[d] * dx[d];
+                    double kh = kVec[d] * dx[d] / 2;
                     bool isNotZero = (kh != 0.0);
                     double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
                     double arg = isNotZero * (Kokkos::sin(kh) * factor) + 
@@ -697,8 +697,8 @@ public:
 
     void LeapFrogPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
-                     const unsigned int& /*iter*/, int /*rankTime*/, int /*rankSpace*/,
+                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter, int rankTime, int rankSpace,
                      const std::string& propagator, MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
@@ -729,8 +729,8 @@ public:
 
         if((time_m == 0.0) && (propagator == "Fine")) {
             IpplTimings::startTimer(dumpData);
-            //dumpFieldEnergy(nc, iter, rankTime, rankSpace);         
-            //dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+            dumpFieldEnergy(nc, iter, rankTime, rankSpace);         
+            dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(dumpData);
         }
         for (unsigned int it=0; it<nt; it++) {
@@ -772,8 +772,8 @@ public:
             
             if(propagator == "Fine") {
                 IpplTimings::startTimer(dumpData);
-                //dumpFieldEnergy(nc, iter, rankTime, rankSpace);         
-                //dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
+                dumpFieldEnergy(nc, iter, rankTime, rankSpace);         
+                dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);         
                 IpplTimings::stopTimer(dumpData);
             }
         }
@@ -782,9 +782,9 @@ public:
 
     void BorisPIF(ParticleAttrib<Vector_t>& Rtemp,
                      ParticleAttrib<Vector_t>& Ptemp, const unsigned int& nt, 
-                     const double& dt, const double& tStartMySlice, const unsigned& /*nc*/, 
-                     const unsigned int& /*iter*/, const double& Bext,
-                     int /*rankTime*/, int /*rankSpace*/,
+                     const double& dt, const double& tStartMySlice, const unsigned& nc, 
+                     const unsigned int& iter, const double& Bext,
+                     int rankTime, int rankSpace,
                      const std::string& propagator, MPI_Comm& spaceComm) {
     
         static IpplTimings::TimerRef dumpData = IpplTimings::getTimer("dumpData");
@@ -813,7 +813,7 @@ public:
 
         if((time_m == 0.0) && (propagator == "Fine")) {
             IpplTimings::startTimer(dumpData);
-            //dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+            dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
             IpplTimings::stopTimer(dumpData);
         }
         double alpha = -0.5 * dt;
@@ -899,7 +899,7 @@ public:
             
             if(propagator == "Fine") {
                 IpplTimings::startTimer(dumpData);
-                //dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
+                dumpEnergy(nc, iter, Ptemp, rankTime, rankSpace, spaceComm);
                 IpplTimings::stopTimer(dumpData);
             }
         }
