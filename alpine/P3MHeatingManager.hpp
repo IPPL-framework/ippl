@@ -201,11 +201,13 @@ public:
         this->fsolver_m->solve();
 
         // calculate par2par interaction dummy run
-        this->par2par();
+        // this->par2par();
 
-        // this->par2grid();
+        this->par2grid();
 
-        // this->grid2par();
+        this->fsolver_m->solve();
+
+        this->grid2par();
 
         // this->pcontainer_m->update();
 
@@ -228,6 +230,8 @@ public:
         unsigned np = this->totalP_m;
         unsigned nloc = np / commSize;
         
+        this->Q_m = np;
+        
 	// make sure all particles are accounted for
         if(rank == commSize-1){
             nloc = np - (commSize-1)*nloc;
@@ -245,6 +249,7 @@ public:
 
 	auto P = this->pcontainer_m->P.getView();
 	auto R = this->pcontainer_m->R.getView();
+    auto Q = this->pcontainer_m->Q.getView();
 
 	double beamRad = this->beamRad_m;
 
@@ -275,6 +280,7 @@ public:
                 for(int d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
 		            R(index)[d] = pos[d];
+                    Q(index) = 1;
                 }
             }
         );
@@ -732,15 +738,15 @@ public:
 
         this->initializeNeighborList();
 
-        // this->par2grid();
+        this->par2grid();
 
-        // this->fsolver_m->solve();
+        this->fsolver_m->solve();
 
-        // this->grid2par();
+        this->grid2par();
 
-        // this->par2par();
+        this->par2par();
 
-        // pc->P = pc->P + 0.5 * dt * pc->E;
+        pc->P = pc->P + 0.5 * dt * pc->E;
 
         std::cerr << "LeapFrog Step" << std::endl;
 
@@ -764,15 +770,21 @@ public:
         ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
         typename Base::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
-        double Q                        = Q_m;
+        double Q                        = this->Q_m;
         Vector_t<double, Dim> rmin	= rmin_m;
         Vector_t<double, Dim> rmax	= rmax_m;
         Vector_t<double, Dim> hr        = hr_m;
 
+        // scatter(this->pcontainer_m->Q, this->fcontainer_m->getRho(), this->pcontainer_m->R);
         scatter(*q, *rho, *R);
         double relError = std::fabs((Q-(*rho).sum())/Q);
 
-        m << relError << endl;
+        // ippl::ParticleAttrib<double> q = this->pcontainer_m->Q;
+        // typename Base::particle_position_type R = this->pcontainer_m->R;
+        // Field_t<Dim> rho               = this->fcontainer_m->getRho();
+        
+
+        std::cerr << "Relative Error: " << relError << std::endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
