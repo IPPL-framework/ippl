@@ -35,7 +35,7 @@ The relevant options of IPPL are
 - `ENABLE_SOLVERS`, default `OFF`
 - `ENABLE_FFT`, default `OFF`
   - If `ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
-  - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enable explicitly.
+  - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enabled explicitly.
 - `Heffte_ENABLE_FFTW`, default `OFF` 
 - `ENABLE_TESTS`, default `OFF`
 - `ENABLE_UNIT_TESTS`, default `OFF`
