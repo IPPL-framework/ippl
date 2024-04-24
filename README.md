@@ -32,7 +32,6 @@ The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
 - `KOKKOS_VERSION`, default `4.1.00`
 - `HEFFTE_VERSION`, default `MASTER`
-- `HEFFTE_VERSION`, can be default `MASTER`
 - `ENABLE_SOLVERS`, default `OFF`
 - `ENABLE_FFT`, default `OFF`
   - If `ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
