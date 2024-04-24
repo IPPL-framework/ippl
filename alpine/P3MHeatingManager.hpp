@@ -638,18 +638,21 @@ public:
         auto cellStartingIdx = this->pcontainer_m->getNL();
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
+        int xCells = nCells[0];
+        int yCells = nCells[1];
+        int zCells = nCells[2];
 
         using team_t = typename Kokkos::TeamPolicy<>::member_type;
-        
+        /**/
         // calculate interaction force
         Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<>(totalCells, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
                 const size_type cellIdx = team.league_rank();
 
                 // Calculate cellIdx in each dimension
-                int xIdx = cellIdx / (nCells[1] * nCells[2]);
-                int yIdx = (cellIdx % (nCells[1] * nCells[2])) / nCells[2];
-                int zIdx = cellIdx % nCells[2];
+                int xIdx = cellIdx / (yCells * zCells);
+                int yIdx = (cellIdx % (yCells * zCells)) / zCells;
+                int zIdx = cellIdx % zCells;
 
                 const size_type start = cellStartingIdx(cellIdx);
                 const size_type end = cellStartingIdx(cellIdx+1);
@@ -663,13 +666,13 @@ public:
                     const int offsetY = offset(neighborIdx, 1);
                     const int offsetZ = offset(neighborIdx, 2);
                     
-                    if (xIdx + offsetX < 0 || xIdx + offsetX >= nCells[0] ||
-                        yIdx + offsetY < 0 || yIdx + offsetY >= nCells[1] ||
-                        zIdx + offsetZ < 0 || zIdx + offsetZ >= nCells[2]) {
+                    if (xIdx + offsetX < 0 || xIdx + offsetX >= xCells ||
+                        yIdx + offsetY < 0 || yIdx + offsetY >= yCells ||
+                        zIdx + offsetZ < 0 || zIdx + offsetZ >= zCells) {
                         return;
                     }
 
-                    const size_type neighborCellIdx = (xIdx + offsetX) * nCells[1] * nCells[2] + (yIdx + offsetY) * nCells[2] + (zIdx + offsetZ);
+                    const size_type neighborCellIdx = (xIdx + offsetX) * yCells * zCells + (yIdx + offsetY) * zCells + (zIdx + offsetZ);
                     const size_type neighborStart = cellStartingIdx(neighborCellIdx);
                     const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
                     const size_type nNeighborParticles = neighborEnd - neighborStart;
