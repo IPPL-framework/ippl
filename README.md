@@ -60,7 +60,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=True -DKOKKOS_VERSION=4.2.00
 ```
 #### OpenMP release build with tests and FFTW
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW -DENABLE_TESTS=True
+cmake .. -DCMAKE_BUILD_TYPE=Release -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True -DENABLE_TESTS=True
 ```
 #### Cuda + OpenMP alpine release build 
 ```
