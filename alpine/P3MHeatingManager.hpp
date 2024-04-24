@@ -157,19 +157,20 @@ public:
             {0,0,0}, {0,0,1}, {0,1,-1}, {0,1,0}, {0,1,1}, {1,-1,-1}, {1,-1,0}, {1,-1,1},
             {1,0,-1}, {1,0,0}, {1,0,1}, {1,1,-1}, {1,1,0}, {1,1,1}
         };
-        Kokkos::View<int[14][3], Host> offset_host("offset_host");
+        Kokkos::View<int[14][3], Device> offset("offset");
 
-        Kokkos::parallel_for("Fill offset array", 14,
+        Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Device>(0, 14),
+
             KOKKOS_LAMBDA(const int i){
                 for(int j = 0; j < 3; ++j){
-                    offset_host(i, j) = offset_arr[i][j];
+                    offset(i, j) = offset_arr[i][j];
                 }
             }
         );
 
-        Kokkos::View<int[14][3], Device> offset_device("offset_device");
-        Kokkos::deep_copy(offset_device, offset_host);
-        this->pcontainer_m->setOffset(offset_device);
+        // Kokkos::View<int[14][3], Device> offset_device("offset_device");
+        // Kokkos::deep_copy(offset_device, offset_host);
+        this->pcontainer_m->setOffset(offset);
 
         // initialize solver
         ippl::ParameterList sp;
@@ -643,7 +644,7 @@ public:
         int zCells = nCells[2];
 
         using team_t = typename Kokkos::TeamPolicy<>::member_type;
-        /**/
+        
         // calculate interaction force
         Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<>(totalCells, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
@@ -682,9 +683,10 @@ public:
                             // const size_type ii = start + team.team_rank();
                             const size_type ii = start + i;
                             double force = 0.0;
+			    //double result = 0.;
 
                             Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team, nNeighborParticles),
-                                [=](const size_t j, Vector_t<T, Dim>& sum){
+                                [&](const size_t j, Vector_t<T, Dim>& sum){
                                     const size_type jj = neighborStart + j;
                                     if (ii == jj) return;
 
