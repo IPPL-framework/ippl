@@ -734,9 +734,6 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        // TODO : Debug this
-        pc->P = pc->P + 0.5 * dt * pc->E;
-
         pc->R = pc->R + dt * pc->P;
 
         pc->update();
@@ -751,21 +748,56 @@ public:
 
         this->par2par();
 
-        pc->P = pc->P + 0.5 * dt * pc->E;
+        this->applyConstantFocusing();
+
+        pc->P = pc->P + pc->Q * dt * pc->E;
 
         std::cerr << "LeapFrog Step" << std::endl;
 
     }
 
-    void computeAvgSpaceChargeForces() {
+    Vector_t<T, Dim> computeAvgSpaceChargeForces() {
         auto totalP = this->totalP_m;
-        auto E = this->pcontainer_m->E;
+        auto nLoc = this->pcontainer_m->getLocalNum();
+        auto E = this->pcontainer_m->E.getView();
+        // Vector_t<T, Dim> locAvgE = 0.0;
+        Vector_t<T, Dim> avgE = 0.0;
 
+        Kokkos::parallel_reduce("compute average space charge forces", nLoc, 
+            KOKKOS_LAMBDA(const size_type i, Vector_t<T, Dim>& sum){
+                sum[0] += Kokkos::abs(E(i)[0]);
+                sum[1] += Kokkos::abs(E(i)[1]);
+                sum[2] += Kokkos::abs(E(i)[2]);
+            }, avgE
+        );
 
+        avgE = avgE / totalP;
+        double focusingf = 0.0;
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            focusingf += avgE[d] * avgE[d];
+        }
+
+        double globFocus = 0.0;
+        ippl::Comm->reduce(globFocus, focusingf, 1, std::plus<T>());
+        return Kokkos::sqrt(globFocus);
     }
 
     void applyConstantFocusing() {
-        /* TODO */
+        auto focusingf = computeAvgSpaceChargeForces();
+
+        auto E = this->pcontainer_m->E.getView();
+        auto R = this->pcontainer_m->R.getView();
+
+        double beamRad = this->beamRad_m;
+        double focusStrength = this->focusingF_m;
+        auto nLoc = this->pcontainer_m->getLocalNum();
+
+        Kokkos::parallel_for("apply constant focusing", nLoc,
+            KOKKOS_LAMBDA(const size_type i){
+                E(i) += focusStrength * focusingf * R(i) / beamRad;
+            }
+        );
     }
 
     void gatherCIC(){
