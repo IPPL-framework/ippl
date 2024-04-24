@@ -755,6 +755,13 @@ public:
 
     }
 
+    void computeAvgSpaceChargeForces() {
+        auto totalP = this->totalP_m;
+        auto E = this->pcontainer_m->E;
+
+
+    }
+
     void applyConstantFocusing() {
         /* TODO */
     }
