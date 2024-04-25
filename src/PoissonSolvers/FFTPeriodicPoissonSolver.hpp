@@ -18,18 +18,16 @@ namespace ippl {
         const Layout_t& layout_r = this->rhs_mp->getLayout();
         domain_m                 = layout_r.getDomain();
 
-        e_dim_tag decomp[Dim];
-
         NDIndex<Dim> domainComplex;
 
         vector_type hComplex;
         vector_type originComplex;
 
+        std::array<bool, Dim> isParallel = layout_r.isParallel();
         for (unsigned d = 0; d < Dim; ++d) {
             hComplex[d]      = 1.0;
             originComplex[d] = 0.0;
 
-            decomp[d] = layout_r.getRequestedDistribution(d);
             if (this->params_m.template get<int>("r2c_direction") == (int)d) {
                 domainComplex[d] = Index(domain_m[d].length() / 2 + 1);
             } else {
@@ -37,7 +35,7 @@ namespace ippl {
             }
         }
 
-        layoutComplex_mp = std::make_shared<Layout_t>(domainComplex, decomp);
+        layoutComplex_mp = std::make_shared<Layout_t>(layout_r.comm, domainComplex, isParallel);
 
         mesh_type meshComplex(domainComplex, hComplex, originComplex);
 

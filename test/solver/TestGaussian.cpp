@@ -3,16 +3,15 @@
 // This program tests the FFTOpenPoissonSolver class with a Gaussian source.
 // The solve is iterated 5 times for the purpose of timing studies.
 //   Usage:
-//     srun ./TestGaussian
-//                  <nx> <ny> <nz> <reshape> <comm>
-//                  <reorder> <algorithm> --info 5
+//     srun ./TestGaussian <nx> <ny> <nz> <reshape> <comm> <reorder>
+//                         <algorithm> --info 5
 //     nx        = No. cell-centered points in the x-direction
 //     ny        = No. cell-centered points in the y-direction
 //     nz        = No. cell-centered points in the z-direction
 //     reshape   = "pencils" or "slabs" (heffte parameter)
 //     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
 //     reorder   = "reorder" or "no-reorder" (heffte parameter)
-//     algorithm = "HOCKNEY" or "VICO", types of open BC algorithms
+//     algorithm = "HOCKNEY", "VICO", or "DCT_VICO", types of open BC algorithms
 //
 //     For more info on the heffte parameters, see:
 //     https://github.com/icl-utk-edu/heffte
@@ -95,7 +94,7 @@ int main(int argc, char* argv[]) {
         // print out info and title for the relative error (L2 norm)
         msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
             << communication << " " << reordering << ", algorithm = " << algorithm << endl;
-        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error" << endl;  // ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
         ippl::NDIndex<Dim> owned;
@@ -104,10 +103,8 @@ int main(int argc, char* argv[]) {
         }
 
         // specifies decomposition; here all dimensions are parallel
-        ippl::e_dim_tag decomp[Dim];
-        for (unsigned int d = 0; d < Dim; d++) {
-            decomp[d] = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
         // unit box
         double dx                        = 1.0 / nr[0];
@@ -118,7 +115,7 @@ int main(int argc, char* argv[]) {
         Mesh_t mesh(owned, hr, origin);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<Dim> layout(owned, decomp);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         // define the R (rho) field
         field exact, rho;
@@ -126,9 +123,11 @@ int main(int argc, char* argv[]) {
         rho.initialize(mesh, layout);
 
         // define the Vector field E (LHS)
+        /*
         fieldV exactE, fieldE;
         exactE.initialize(mesh, layout);
         fieldE.initialize(mesh, layout);
+        */
 
         // assign the rho field with a gaussian
         auto view_rho    = rho.getView();
@@ -168,6 +167,7 @@ int main(int argc, char* argv[]) {
                 view_exact(i, j, k) = exact_fct(x, y, z);
             });
 
+        /*
         // assign the exact E field
         auto view_exactE = exactE.getView();
 
@@ -184,6 +184,7 @@ int main(int argc, char* argv[]) {
 
                 view_exactE(i, j, k) = exact_E(x, y, z);
             });
+        */
 
         // Parameter List to pass to solver
         ippl::ParameterList params;
@@ -225,15 +226,17 @@ int main(int argc, char* argv[]) {
             params.add("algorithm", Solver_t::HOCKNEY);
         } else if (algorithm == "VICO") {
             params.add("algorithm", Solver_t::VICO);
+        } else if (algorithm == "DCT_VICO") {
+            params.add("algorithm", Solver_t::DCT_VICO);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
         }
 
         // add output type
-        params.add("output_type", Solver_t::SOL_AND_GRAD);
+        params.add("output_type", Solver_t::SOL);
 
-        // define an FFTOpenPoissonSolver object
-        Solver_t FFTsolver(fieldE, rho, params);
+        // define an FFTPoissonSolver object
+        Solver_t FFTsolver(rho, params);  // Solver_t FFTsolver(fieldE, rho, params);
 
         // iterate over 5 timesteps
         for (int times = 0; times < 5; ++times) {
@@ -245,6 +248,7 @@ int main(int argc, char* argv[]) {
             double err = norm(rho) / norm(exact);
 
             // compute relative error norm for the E-field components
+            /*
             ippl::Vector<double, Dim> errE{0.0, 0.0, 0.0};
             fieldE = fieldE - exactE;
 
@@ -261,8 +265,7 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 double globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorNr = std::sqrt(globaltemp);
 
                 temp = 0.0;
@@ -275,15 +278,15 @@ int main(int argc, char* argv[]) {
                     Kokkos::Sum<double>(temp));
 
                 globaltemp = 0.0;
-                MPI_Allreduce(&temp, &globaltemp, 1, MPI_DOUBLE, MPI_SUM,
-                              ippl::Comm->getCommunicator());
+                ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<double>());
                 double errorDr = std::sqrt(globaltemp);
 
                 errE[d] = errorNr / errorDr;
             }
+            */
 
-            msg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1]
-                << " " << errE[2] << endl;
+            msg << std::setprecision(16) << dx << " " << err << endl;
+            // << " " << errE[0] << " " << errE[1] << " " << errE[2] << endl;
 
             // reassign the correct values to the fields for the loop to work
             Kokkos::parallel_for(
@@ -316,6 +319,7 @@ int main(int argc, char* argv[]) {
                     view_exact(i, j, k) = exact_fct(x, y, z);
                 });
 
+            /*
             Kokkos::parallel_for(
                 "Assign exact E-field", exactE.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -329,10 +333,12 @@ int main(int argc, char* argv[]) {
 
                     view_exactE(i, j, k) = exact_E(x, y, z);
                 });
+            */
         }
 
         // stop the timers
         IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();

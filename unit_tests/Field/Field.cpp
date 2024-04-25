@@ -7,6 +7,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include "../src/PoissonSolvers/LaplaceHelpers.h"
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
@@ -15,9 +16,6 @@ class FieldTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class FieldTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -32,7 +30,6 @@ public:
 
     FieldTest()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 32.;
         }
@@ -46,14 +43,15 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+
         for (unsigned d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout = std::make_shared<layout_type>(owned, domDec);
+        layout = std::make_shared<layout_type>(MPI_COMM_WORLD, owned, isParallel);
         mesh   = std::make_shared<mesh_type>(owned, hx, origin);
         field  = std::make_shared<field_type>(*mesh, *layout);
     }
@@ -460,10 +458,99 @@ TYPED_TEST(FieldTest, Laplace) {
         assertEqual<T>(mirror(args...), 0.);
     });
 }
+TYPED_TEST(FieldTest, LowerLaplace) {
+    auto& mesh   = this->mesh;
+    auto& layout = this->layout;
+    auto& field  = this->field;
+
+    using field_type     = typename TestFixture::field_type;
+    using T              = typename TestFixture::value_type;
+    constexpr size_t Dim = TestFixture::dim;
+
+    field_type laplacian(*mesh, *layout);
+    field_type lower_laplacian(*mesh, *layout);
+    field_type upper_laplacian(*mesh, *layout);
+    field_type diagonal_laplacian(*mesh, *layout);
+
+    const int nghost = field->getNghost();
+
+    using bc_type = ippl::BConds<field_type, Dim>;
+    bc_type bcField;
+    for (size_t i = 0; i < 2 * Dim; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+    }
+
+    field->setFieldBC(bcField);
+
+    lower_laplacian.setFieldBC(bcField);
+    upper_laplacian.setFieldBC(bcField);
+    diagonal_laplacian.setFieldBC(bcField);
+    laplacian.setFieldBC(bcField);
+
+    double diagonal_factor = 0;
+    for (unsigned d = 0; d < Dim; ++d) {
+        diagonal_factor += 2.0 / std::pow(mesh->getMeshSpacing(d), 2);
+    }
+
+    *field             = 1;
+    lower_laplacian    = ippl::lower_laplace(*field);
+    upper_laplacian    = ippl::upper_laplace(*field);
+    diagonal_laplacian = -diagonal_factor * (*field);
+    laplacian          = lower_laplacian + diagonal_laplacian + upper_laplacian;
+
+    auto mirror = laplacian.getHostMirror();
+    Kokkos::deep_copy(mirror, laplacian.getView());
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        assertEqual<T>(mirror(args...), 0.);
+    });
+}
+
+TYPED_TEST(FieldTest, UpperAndLowerLaplace) {
+    auto& mesh   = this->mesh;
+    auto& layout = this->layout;
+    auto& field  = this->field;
+
+    using field_type     = typename TestFixture::field_type;
+    using T              = typename TestFixture::value_type;
+    constexpr size_t Dim = TestFixture::dim;
+
+    field_type laplacian(*mesh, *layout);
+    field_type upper_and_lower_laplacian(*mesh, *layout);
+    field_type diagonal_laplacian(*mesh, *layout);
+
+    const int nghost = field->getNghost();
+
+    using bc_type = ippl::BConds<field_type, Dim>;
+    bc_type bcField;
+    for (size_t i = 0; i < 2 * Dim; ++i) {
+        bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
+    }
+
+    field->setFieldBC(bcField);
+
+    upper_and_lower_laplacian.setFieldBC(bcField);
+    diagonal_laplacian.setFieldBC(bcField);
+    laplacian.setFieldBC(bcField);
+
+    double diagonal_factor = 0;
+    for (unsigned d = 0; d < Dim; ++d) {
+        diagonal_factor += 2.0 / std::pow(mesh->getMeshSpacing(d), 2);
+    }
+
+    *field                    = 1;
+    upper_and_lower_laplacian = ippl::upper_and_lower_laplace(*field);
+    diagonal_laplacian        = -diagonal_factor * (*field);
+    laplacian                 = upper_and_lower_laplacian + diagonal_laplacian;
+
+    auto mirror = laplacian.getHostMirror();
+    Kokkos::deep_copy(mirror, laplacian.getView());
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        assertEqual<T>(mirror(args...), 0.);
+    });
+}
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

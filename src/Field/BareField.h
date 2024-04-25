@@ -125,8 +125,9 @@ namespace ippl {
         int getNghost() const { return nghost_m; }
 
         void fillHalo();
-
         void accumulateHalo();
+
+        auto& getCommunicator() const { return getLayout().comm; }
 
         // Access to the layout.
         Layout_t& getLayout() const {

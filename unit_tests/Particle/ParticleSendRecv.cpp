@@ -15,9 +15,6 @@ class ParticleSendRecv;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class ParticleSendRecv<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using flayout_type   = ippl::FieldLayout<Dim>;
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
@@ -46,7 +43,6 @@ public:
 
     ParticleSendRecv()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 16.;
         }
@@ -60,14 +56,15 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+
         for (unsigned int d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout  = flayout_type(owned, domDec);
+        layout  = flayout_type(MPI_COMM_WORLD, owned, isParallel);
         mesh    = mesh_type(owned, hx, origin);
         playout = playout_type(layout, mesh);
         bunch   = std::make_shared<bunch_type>(playout);
@@ -149,7 +146,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     auto& bunch           = this->bunch;
 
     bunch->update();
-    // bunch->update();
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();
 
@@ -164,8 +160,7 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     unsigned int Total_particles = 0;
     unsigned int local_particles = bunch->getLocalNum();
 
-    MPI_Reduce(&local_particles, &Total_particles, 1, MPI_UNSIGNED, MPI_SUM, 0,
-               ippl::Comm->getCommunicator());
+    ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
 
     if (ippl::Comm->rank() == 0) {
         ASSERT_EQ(nParticles, Total_particles);
@@ -174,7 +169,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

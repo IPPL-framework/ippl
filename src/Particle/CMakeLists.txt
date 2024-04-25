@@ -2,13 +2,9 @@ set (_SRCS
     )
 
 set (_HDRS
-#     Interpolator.h
-#     IntNGP.h
     ParticleAttribBase.h
     ParticleAttrib.h
     ParticleAttrib.hpp
-#     ParticleBalancer.hpp
-#     ParticleBalancer.h
     ParticleBase.h
     ParticleBase.hpp
     ParticleBC.h

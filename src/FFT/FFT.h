@@ -47,6 +47,10 @@ namespace ippl {
     class RCTransform {};
     class SineTransform {};
     class CosTransform {};
+    /**
+       Tag classes for Cosine of type 1 transforms
+    */
+    class Cos1Transform {};
 
     enum FFTComm {
         a2av   = 0,
@@ -74,6 +78,7 @@ namespace ippl {
             using backend     = heffte::backend::fftw;
             using backendSine = heffte::backend::fftw_sin;
             using backendCos  = heffte::backend::fftw_cos;
+            using backendCos1 = heffte::backend::fftw_cos1;
         };
 #elif defined(Heffte_ENABLE_MKL)
         template <>
@@ -82,7 +87,9 @@ namespace ippl {
             using backendSine = heffte::backend::mkl_sin;
             using backendCos  = heffte::backend::mkl_cos;
         };
-#else
+#endif
+
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
@@ -92,6 +99,7 @@ namespace ippl {
             using backend     = heffte::backend::stock;
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
+            using backendCos1 = heffte::backend::stock_cos1;
         };
 #endif
 
@@ -102,6 +110,7 @@ namespace ippl {
             using backend     = heffte::backend::cufft;
             using backendSine = heffte::backend::cufft_sin;
             using backendCos  = heffte::backend::cufft_cos;
+            using backendCos1 = heffte::backend::cufft_cos1;
         };
 #else
 #error cuFFT backend is enabled for heFFTe but CUDA is not enabled for Kokkos!
@@ -169,6 +178,12 @@ namespace ippl {
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(ComplexField& f);
+
+        /*!
          * Perform in-place FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute (and overwrite)
@@ -202,6 +217,13 @@ namespace ippl {
         FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput, const ParameterList& params);
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute
+         * @param g Field in which to store the transformation
+         */
+        void warmup(RealField& f, ComplexField& g);
+
+        /*!
          * Perform FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute
@@ -226,6 +248,12 @@ namespace ippl {
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
 
         /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
+
+        /*!
          * Perform in-place FFT
          * @param direction Forward or backward transformation
          * @param f Field whose transformation to compute (and overwrite)
@@ -243,6 +271,37 @@ namespace ippl {
     public:
         using Base::Base;
         using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
+
+        /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
+
+        /*!
+         * Perform in-place FFT
+         * @param direction Forward or backward transformation
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void transform(TransformDirection direction, Field& f);
+    };
+    /**
+       Cosine type 1 transform class
+    */
+    template <typename Field>
+    class FFT<Cos1Transform, Field> : public IN_PLACE_FFT_BASE_CLASS(Field, backendCos1) {
+        constexpr static unsigned Dim = Field::dim;
+        using Base                    = IN_PLACE_FFT_BASE_CLASS(Field, backendCos1);
+
+    public:
+        using Base::Base;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
+
+        /*!
+         * Warmup the FFT object by forward & backward FFT on an empty field
+         * @param f Field whose transformation to compute (and overwrite)
+         */
+        void warmup(Field& f);
 
         /*!
          * Perform in-place FFT

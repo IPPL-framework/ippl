@@ -39,17 +39,18 @@ namespace ippl {
 
         unsigned int face = this->face_m;
         unsigned d        = face / 2;
-        if (Comm->size() > 1) {
+        if (field.getCommunicator().size() > 1) {
             const Layout_t& layout = field.getLayout();
             const auto& lDomains   = layout.getHostLocalDomains();
             const auto& domain     = layout.getDomain();
-            int myRank             = Comm->rank();
+            int myRank             = field.getCommunicator().rank();
 
             bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
                               || (lDomains[myRank][d].min() == domain[d].min());
 
-            if (!isBoundary)
+            if (!isBoundary) {
                 return;
+            }
         }
 
         // If we are here then it is a processor with the face on the physical
@@ -135,11 +136,12 @@ namespace ippl {
 
     template <typename Field>
     void PeriodicFace<Field>::findBCNeighbors(Field& field) {
+        auto& comm = field.getCommunicator();
         // For cell centering only face neighbors are needed
         unsigned int face      = this->face_m;
         unsigned int d         = face / 2;
         const int nghost       = field.getNghost();
-        int myRank             = Comm->rank();
+        int myRank             = comm.rank();
         const Layout_t& layout = field.getLayout();
         const auto& lDomains   = layout.getHostLocalDomains();
         const auto& domain     = layout.getDomain();
@@ -174,7 +176,7 @@ namespace ippl {
                 gnd[d] = gnd[d] + offset;
 
                 // Now, we are ready to intersect
-                for (int rank = 0; rank < Comm->size(); ++rank) {
+                for (int rank = 0; rank < comm.size(); ++rank) {
                     if (rank == myRank) {
                         continue;
                     }
@@ -189,18 +191,19 @@ namespace ippl {
 
     template <typename Field>
     void PeriodicFace<Field>::apply(Field& field) {
+        auto& comm                      = field.getCommunicator();
         unsigned int face               = this->face_m;
         unsigned int d                  = face / 2;
         typename Field::view_type& view = field.getView();
         const Layout_t& layout          = field.getLayout();
         const int nghost                = field.getNghost();
-        int myRank                      = Comm->rank();
+        int myRank                      = comm.rank();
         const auto& lDomains            = layout.getHostLocalDomains();
         const auto& domain              = layout.getDomain();
 
         // We have to put tag here so that the matchtag inside
         // the if is proper.
-        int tag = Comm->next_tag(BC_PARALLEL_PERIODIC_TAG, BC_TAG_CYCLE);
+        int tag = comm.next_tag(mpi::tag::BC_PARALLEL_PERIODIC, mpi::tag::BC_CYCLE);
 
         if (lDomains[myRank][d].length() < domain[d].length()) {
             // Only along this dimension we need communication.
@@ -218,18 +221,18 @@ namespace ippl {
                     // upper face
                     offset     = -domain[d].length();
                     offsetRecv = nghost;
-                    matchtag   = Comm->preceding_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = comm.preceding_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 } else {
                     // lower face
                     offset     = domain[d].length();
                     offsetRecv = -nghost;
-                    matchtag   = Comm->following_tag(BC_PARALLEL_PERIODIC_TAG);
+                    matchtag   = comm.following_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 }
 
                 auto& neighbors = faceNeighbors_m[face];
 
                 using memory_space = typename Field::memory_space;
-                using buffer_type  = Communicate::buffer_type<memory_space>;
+                using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
                 std::vector<MPI_Request> requests(neighbors.size());
 
                 using HaloCells_t = typename Field::halo_type;
@@ -259,10 +262,10 @@ namespace ippl {
                     detail::size_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
-                    buffer_type buf =
-                        Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_SEND + i, nSends);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(
+                        mpi::tag::PERIODIC_BC_SEND + i, nSends);
 
-                    Comm->isend(rank, tag, haloData_m, *buf, requests[i], nSends);
+                    comm.isend(rank, tag, haloData_m, *buf, requests[i], nSends);
                     buf->resetWritePos();
                 }
 
@@ -276,15 +279,15 @@ namespace ippl {
 
                     detail::size_type nRecvs = range.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<memory_space, T>(IPPL_PERIODIC_BC_RECV + i, nRecvs);
-                    Comm->recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(
+                        mpi::tag::PERIODIC_BC_RECV + i, nRecvs);
+                    comm.recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 
                     using assign_t = typename HaloCells_t::assign;
                     halo.template unpack<assign_t>(range, view, haloData_m);
                 }
-                if (requests.size() > 0) {
+                if (!requests.empty()) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
             }

@@ -18,9 +18,6 @@ class BareFieldTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class BareFieldTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -31,19 +28,16 @@ public:
 
     BareFieldTest()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         std::array<ippl::Index, Dim> indices;
         for (unsigned d = 0; d < Dim; d++) {
             indices[d] = ippl::Index(nPoints[d]);
         }
         auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
-        ippl::e_dim_tag domDec[Dim];
-        for (auto& tag : domDec) {
-            tag = ippl::PARALLEL;
-        }
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
 
-        layout = ippl::FieldLayout<Dim>(owned, domDec);
+        layout = ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, isParallel);
 
         field  = std::make_shared<field_type>(layout);
         vfield = std::make_shared<vfield_type>(layout);
@@ -74,7 +68,23 @@ struct FieldVal {
         view(args...) = tot - 1;
     }
 };
+template <typename Params>
+struct VFieldVal {
+    constexpr static unsigned Dim = BareFieldTest<Params>::dim;
+    using T                       = typename BareFieldTest<Params>::value_type;
 
+    const typename BareFieldTest<Params>::vfield_type::view_type view;
+    const ippl::NDIndex<Dim> lDom;
+
+    template <typename... Idx>
+    KOKKOS_INLINE_FUNCTION void operator()(const Idx... args) const {
+        T tot = (args + ...);
+        for (unsigned d = 0; d < Dim; d++) {
+            tot += lDom[d].first();
+        }
+        view(args...) = tot - 1;
+    }
+};
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_CASE(BareFieldTest, Tests);
 
@@ -107,9 +117,17 @@ TYPED_TEST(BareFieldTest, Sum) {
     *field = val;
     T sum  = field->sum();
     assertEqual<T>(expected, sum);
+    auto& vfield                           = this->vfield;
+    *vfield                                = ippl::Vector<T, TestFixture::dim>(val);
+    ippl::Vector<T, TestFixture::dim> vsum = vfield->sum();
+    for (unsigned d = 0; d < TestFixture::dim; d++) {
+        assertEqual<T>(expected, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Min) {
+    using T = typename TestFixture::value_type;
+
     auto& field = this->field;
 
     const auto lDom = field->getLayout().getLocalNDIndex();
@@ -117,11 +135,20 @@ TYPED_TEST(BareFieldTest, Min) {
 
     Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
                          FieldVal<TypeParam>{view, lDom});
+    auto& vfield = this->vfield;
+    auto vview   = vfield->getView();
+    Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                         VFieldVal<TypeParam>{vview, lDom});
     Kokkos::fence();
 
     auto min = field->min();
     // minimum value in 3D: -1 + nghost + nghost + nghost
     assertEqual<typename TestFixture::value_type>(min, field->getNghost() * TestFixture::dim - 1);
+
+    ippl::Vector<T, TestFixture::dim> vsum = vfield->min();
+    for (unsigned d = 0; d < TestFixture::dim; d++) {
+        assertEqual<T>(field->getNghost() * TestFixture::dim - 1, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Max) {
@@ -136,10 +163,19 @@ TYPED_TEST(BareFieldTest, Max) {
 
     Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
                          FieldVal<TypeParam>{view, lDom});
+    auto& vfield = this->vfield;
+    auto vview   = vfield->getView();
+    Kokkos::parallel_for("Set field", field->getFieldRangePolicy(),
+                         VFieldVal<TypeParam>{vview, lDom});
     Kokkos::fence();
 
     T max = field->max();
     assertEqual<T>(max, expected);
+
+    ippl::Vector<T, TestFixture::dim> vsum = vfield->max();
+    for (unsigned d = 0; d < TestFixture::dim; d++) {
+        assertEqual<T>(expected, vsum[d]);
+    }
 }
 
 TYPED_TEST(BareFieldTest, Prod) {
@@ -225,7 +261,6 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

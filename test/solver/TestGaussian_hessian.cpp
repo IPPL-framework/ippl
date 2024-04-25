@@ -194,9 +194,8 @@ void compute_convergence(std::string algorithm, int pt) {
     ippl::NDIndex<3> owned(I, I, I);
 
     // specifies decomposition; here all dimensions are parallel
-    ippl::e_dim_tag decomp[3];
-    for (unsigned int d = 0; d < 3; d++)
-        decomp[d] = ippl::PARALLEL;
+    std::array<bool, 3> isParallel;
+    isParallel.fill(true);
 
     // unit box
     T dx                      = 1.0 / pt;
@@ -205,7 +204,7 @@ void compute_convergence(std::string algorithm, int pt) {
     Mesh_t<T> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(owned, decomp);
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
     // define the R (rho) field
     ScalarField_t<T> rho;
@@ -312,6 +311,8 @@ void compute_convergence(std::string algorithm, int pt) {
         params.add("algorithm", Solver_t<T>::HOCKNEY);
     } else if (algorithm == "VICO") {
         params.add("algorithm", Solver_t<T>::VICO);
+    } else if (algorithm == "DCT_VICO") {
+        params.add("algorithm", Solver_t<T>::DCT_VICO);
     } else {
         throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
     }
@@ -351,8 +352,7 @@ void compute_convergence(std::string algorithm, int pt) {
 
         T globaltemp = 0.0;
 
-        MPI_Datatype mpi_type = get_mpi_datatype<T>(temp);
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorNr = std::sqrt(globaltemp);
 
         temp = 0.0;
@@ -365,7 +365,7 @@ void compute_convergence(std::string algorithm, int pt) {
             Kokkos::Sum<T>(temp));
 
         globaltemp = 0.0;
-        MPI_Allreduce(&temp, &globaltemp, 1, mpi_type, MPI_SUM, ippl::Comm->getCommunicator());
+        ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
         T errorDr = std::sqrt(globaltemp);
 
         errE[d] = errorNr / errorDr;
@@ -389,14 +389,11 @@ void compute_convergence(std::string algorithm, int pt) {
                 },
                 Kokkos::Sum<T>(diffNorm), Kokkos::Sum<T>(exactNorm));
 
-            T global_diff         = 0.0;
-            T global_exact        = 0.0;
-            MPI_Datatype mpi_type = get_mpi_datatype<T>(diffNorm);
+            T global_diff  = 0.0;
+            T global_exact = 0.0;
 
-            MPI_Allreduce(&diffNorm, &global_diff, 1, mpi_type, MPI_SUM,
-                          ippl::Comm->getCommunicator());
-            MPI_Allreduce(&exactNorm, &global_exact, 1, mpi_type, MPI_SUM,
-                          ippl::Comm->getCommunicator());
+            ippl::Comm->allreduce(diffNorm, global_diff, 1, std::plus<T>());
+            ippl::Comm->allreduce(exactNorm, global_exact, 1, std::plus<T>());
 
             errH[m][n] = Kokkos::sqrt(global_diff / global_exact);
         }
@@ -441,6 +438,7 @@ int main(int argc, char* argv[]) {
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();

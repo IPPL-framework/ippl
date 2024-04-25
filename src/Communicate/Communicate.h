@@ -10,7 +10,8 @@
 // For message size check; see below
 #include <climits>
 #include <cstdlib>
-#include <variant>
+
+#include "Types/Variant.h"
 
 #include "Utility/TypeUtils.h"
 
@@ -157,7 +158,7 @@ namespace ippl {
     template <class Buffer, typename Archive>
     void Communicate::isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                             size_type nsends) {
-        if (ar.getSize() > INT_MAX) {
+        if (ar.getBufferSize() > INT_MAX) {
             std::cerr << "Message size exceeds range of int" << std::endl;
             this->abort();
         }

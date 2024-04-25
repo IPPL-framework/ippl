@@ -1,31 +1,23 @@
 set (_SRCS
     Inform.cpp
     IpplInfo.cpp
-#     IpplMemoryUsage.cpp
     IpplTimings.cpp
     PAssert.cpp
     Timer.cpp
-    Unique.cpp
-    User.cpp
-     UserList.cpp
     )
 
 set (_HDRS
     Inform.h
     IpplException.h
     IpplInfo.h
-#     IpplMemoryUsage.h
     IpplTimings.h
     PAssert.h
     Timer.h
-    Unique.h
-    User.h
-    UserList.h
     my_auto_ptr.h
-    vmap.h
-    vmap.hpp
     ParameterList.h
     TypeUtils.h
+    ParallelDispatch.h
+    ViewUtils.h
     )
 
 include_directories (

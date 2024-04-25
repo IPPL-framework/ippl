@@ -12,8 +12,8 @@ namespace ippl {
 
         template <unsigned Dim>
         template <typename view_type>
-        void Partitioner<Dim>::split(const NDIndex<Dim>& domain, view_type& view, e_dim_tag* decomp,
-                                     int nSplits) const {
+        void Partitioner<Dim>::split(const NDIndex<Dim>& domain, view_type& view,
+                                     const std::array<bool, Dim>& isParallel, int nSplits) const {
             using NDIndex_t = NDIndex<Dim>;
 
             // Recursively split the domain until we have generated all the domains.
@@ -39,7 +39,7 @@ namespace ippl {
 
                 for (v = 1; v < nSplits; v *= 2) {
                     // Go to the next parallel dimension.
-                    while (decomp[d] != PARALLEL)
+                    while (!isParallel[d])
                         if (++d == Dim)
                             d = 0;
 
@@ -97,7 +97,7 @@ namespace ippl {
                         lmax       = 0;
                         d          = std::numeric_limits<unsigned int>::max();
                         for (unsigned int dd = 0; dd < Dim; ++dd) {
-                            if (decomp[dd] == PARALLEL) {
+                            if (isParallel[dd]) {
                                 if ((len = leftDomain[dd].length()) > lmax) {
                                     lmax = len;
                                     d    = dd;

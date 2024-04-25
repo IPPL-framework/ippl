@@ -12,9 +12,6 @@ class HaloTest;
 
 template <typename T, typename ExecSpace, unsigned Dim>
 class HaloTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -27,7 +24,6 @@ public:
 
     HaloTest()
         : nPoints(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = nPoints[d] / 10;
         }
@@ -41,14 +37,14 @@ public:
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
 
-        ippl::e_dim_tag domDec[Dim];  // Specifies SERIAL, PARALLEL dims
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
-            domDec[d] = ippl::PARALLEL;
             hx[d]     = domain[d] / nPoints[d];
             origin[d] = 0;
         }
 
-        layout = layout_type(owned, domDec);
+        layout = layout_type(MPI_COMM_WORLD, owned, isParallel);
         mesh   = mesh_type(owned, hx, origin);
         field  = std::make_shared<field_type>(mesh, layout);
     }
@@ -225,7 +221,6 @@ TYPED_TEST(HaloTest, AccumulateHalo) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

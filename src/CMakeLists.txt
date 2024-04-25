@@ -57,6 +57,7 @@ endmacro ()
 set (IPPL_BASEDIR_HDRS
     Ippl.h
     IpplVersions.h
+    IpplCore.h 
     )
 add_ippl_headers (${IPPL_BASEDIR_HDRS})
 add_ippl_sources (Ippl.cpp)
@@ -70,8 +71,10 @@ else()
 endif()
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
+add_subdirectory (Decomposition)
 add_subdirectory (Index)
 add_subdirectory (Interpolation)
+add_subdirectory (Manager)
 add_subdirectory (Meshes)
 add_subdirectory (Particle)
 add_subdirectory (Region)
@@ -80,6 +83,7 @@ add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
 add_subdirectory (FEM)
+add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)
     message (STATUS "Adding Solver subdirectories")
@@ -88,15 +92,11 @@ if (ENABLE_SOLVERS)
     add_subdirectory (LinearSolvers)
 endif ()
 
-if (ENABLE_AMR)
-    add_subdirectory(AmrParticle)
-endif ()
-
 include_directories (
     BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT} )
+add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT})
 
 set(TimerFences true)
 string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")
