@@ -595,12 +595,12 @@ public:
         /* TODO */
         // initialize neighborlist?
 
-        auto P = this->pcontainer_m->P;
-        auto R = this->pcontainer_m->R;
+        // auto P = this->pcontainer_m->P;
+        // auto R = this->pcontainer_m->R;
 
-        R = R + this->dt_m * P;
+        // R = R + this->dt_m * P;
 
-        this->pcontainer_m->update();
+        // this->pcontainer_m->update();
     }
 
     void post_step() override {
@@ -705,7 +705,7 @@ public:
                                     if (r_ij > rcut) return;
                                     else {
                                         // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
-                                        Vector_t<T, Dim> F_ij = ke * -1.0 * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r) + (1.0 - Kokkos::erf(alpha * r_ij)) / (r * r));
+                                        Vector_t<T, Dim> F_ij = ke /* * -1.0*/ * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r) + (1.0 - Kokkos::erf(alpha * r_ij)) / (r * r));
                                         Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
                                         sum += Q(jj) * F_ij;
                                     }
@@ -726,6 +726,48 @@ public:
 
     void advance() override {
         LeapFrogStep();
+    }
+
+    double calcKineticEnergy() {
+        double localEnergy = 0.0;
+        Kokkos::parallel_reduce("calc kinetic energy", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const size_type i, double& sum){
+                sum += 0.5 * this->pcontainer_m->P(i).dot(this->pcontainer_m->P(i));
+            }, localEnergy
+        );
+
+        double globalEnergy = 0.0;
+        ippl::Comm->reduce(localEnergy, globalEnergy, 1, std::plus<double>());
+        ippl::Comm->barrier();
+        return globalEnergy;
+    }
+
+    double calcPotentialEnergy() {
+        auto Q = this->pcontainer_m->Q.getView();
+        auto E = this->pcontainer_m->E.getView();
+
+        double localPotential = 0.0;
+        Kokkos::parallel_reduce("calc potential energy", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const size_type i, double& sum){
+                for (unsigned d = 0; d < Dim; ++d) sum += Q(i)/156055 * E(i)[d];
+            }, localPotential
+        );
+
+        double globalPotential = 0.0;
+        ippl::Comm->reduce(localPotential, globalPotential, 1, std::plus<double>());
+        ippl::Comm->barrier();
+        return globalPotential;
+    }
+
+    void dump() override {
+        Inform m("Dump");
+        double E_kin = calcKineticEnergy();
+        double E_pot = calcPotentialEnergy();
+        std::cerr << "Dumping data, Energy: " << E_kin + E_pot << std::endl;
+        std::cerr << "Dumping data, Kinetic Energy: " << E_kin << std::endl;
+        std::cerr << "Dumping data, Potential Energy: " << E_pot << std::endl;
+        std::cerr << "Dumping data, Gamma eq: " << E_kin/E_pot << std::endl;
+
     }
 
     void LeapFrogStep() {
@@ -751,6 +793,8 @@ public:
         this->applyConstantFocusing();
 
         pc->P = pc->P + pc->Q * dt * pc->E;
+
+        this->dump();
 
         std::cerr << "LeapFrog Step" << std::endl;
 

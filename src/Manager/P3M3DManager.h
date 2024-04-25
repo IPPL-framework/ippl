@@ -55,6 +55,13 @@ namespace ippl {
         */
         virtual void par2par() = 0;
 
+        /**
+         * @brief Dump Simulation Data
+         * 
+         * In a derived class, the user must override this method to dump simulation data.
+         */
+        virtual void dump() = 0;
+
 
         std::shared_ptr<pc> getParticleContainer() {
             return pcontainer_m;

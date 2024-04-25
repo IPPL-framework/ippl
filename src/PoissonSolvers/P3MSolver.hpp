@@ -315,7 +315,7 @@ namespace ippl {
         // for the P3M collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        Trhs alpha = 1e6;
+        Trhs alpha = 6400;
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
