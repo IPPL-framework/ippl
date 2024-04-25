@@ -13,8 +13,11 @@ Following classes are core components of the IPPL library. The examples are mean
 - [Fields](basics_fields.html)
 - [Particles](basic_particle.html)
 - [FFT](basics_fft.html)
-- [Solver](basic_solver.html)
+- [Solver](basic_solver.html) 
 
+**Extras**
+- [Creating a Custom Preconditioner](custom_preconditioner.html)
+- [Creating a Custom Solver](custom_solver.html)
 
 # Example Code
 
@@ -23,3 +26,4 @@ Following classes are core components of the IPPL library. The examples are mean
 
 **Case Study of the LandauDamping Manager**
 - [LandauDamping](LandauDamping.html) 
+
