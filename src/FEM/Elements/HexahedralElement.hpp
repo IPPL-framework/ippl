@@ -10,7 +10,8 @@ namespace ippl {
     }
 
     template <typename T>
-    HexahedralElement<T>::diag_matrix_vec_t HexahedralElement<T>::getTransformationJacobian(
+    typename HexahedralElement<T>::diag_matrix_vec_t
+    HexahedralElement<T>::getTransformationJacobian(
         const HexahedralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         HexahedralElement::diag_matrix_vec_t jacobian;
 
@@ -22,7 +23,8 @@ namespace ippl {
     }
 
     template <typename T>
-    HexahedralElement<T>::diag_matrix_vec_t HexahedralElement<T>::getInverseTransformationJacobian(
+    typename HexahedralElement<T>::diag_matrix_vec_t
+    HexahedralElement<T>::getInverseTransformationJacobian(
         const HexahedralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         HexahedralElement::diag_matrix_vec_t inv_jacobian;
 

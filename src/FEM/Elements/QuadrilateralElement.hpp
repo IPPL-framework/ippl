@@ -10,7 +10,8 @@ namespace ippl {
     }
 
     template <typename T>
-    QuadrilateralElement<T>::diag_matrix_vec_t QuadrilateralElement<T>::getTransformationJacobian(
+    typename QuadrilateralElement<T>::diag_matrix_vec_t
+    QuadrilateralElement<T>::getTransformationJacobian(
         const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         QuadrilateralElement::diag_matrix_vec_t jacobian;
 
@@ -21,7 +22,7 @@ namespace ippl {
     }
 
     template <typename T>
-    QuadrilateralElement<T>::diag_matrix_vec_t
+    typename QuadrilateralElement<T>::diag_matrix_vec_t
     QuadrilateralElement<T>::getInverseTransformationJacobian(
         const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         QuadrilateralElement::diag_matrix_vec_t inv_jacobian;

@@ -1,6 +1,6 @@
 namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
-    Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::globalToLocal(
+    typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::globalToLocal(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
@@ -12,7 +12,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
-    Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::localToGlobal(
+    typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::localToGlobal(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
@@ -39,7 +39,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
-    Element<T, Dim, NumVertices>::diag_matrix_vec_t
+    typename Element<T, Dim, NumVertices>::diag_matrix_vec_t
     Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
         const {

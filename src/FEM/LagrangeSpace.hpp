@@ -33,7 +33,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
+    typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
         const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
             elementIndex,
@@ -72,7 +72,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
+    typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndex(
         const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
             elementIndex,
@@ -242,7 +242,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::gradient_vec_t
+    typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::gradient_vec_t
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::
         evaluateRefElementShapeFunctionGradient(
             const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&

@@ -41,7 +41,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::ndindex_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getMeshVertexNDIndex(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
@@ -75,7 +76,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::index_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getMeshVertexIndex(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
@@ -97,7 +98,8 @@ namespace ippl {
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::ndindex_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getElementNDIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                                    FieldRHS>::index_t& element_index) const {
@@ -131,8 +133,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                       FieldRHS>::mesh_element_vertex_index_vec_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::mesh_element_vertex_index_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexIndices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
@@ -183,8 +185,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                       FieldRHS>::mesh_element_vertex_ndindex_vec_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::mesh_element_vertex_ndindex_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexNDIndices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
@@ -223,8 +225,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                       FieldRHS>::mesh_element_vertex_point_vec_t
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::mesh_element_vertex_point_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexPoints(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,

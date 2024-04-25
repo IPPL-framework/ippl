@@ -38,7 +38,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
+    typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getLehrFEMInitialGuess(
         const std::size_t& i,
         const Vector<GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t, NumNodes1D>&
