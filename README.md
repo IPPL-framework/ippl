@@ -32,11 +32,10 @@ The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
 - `KOKKOS_VERSION`, default `4.1.00`
 - `HEFFTE_VERSION`, default `MASTER`
-- `HEFFTE_VERSION`, can be default `MASTER`
 - `ENABLE_SOLVERS`, default `OFF`
 - `ENABLE_FFT`, default `OFF`
   - If `ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
-  - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enable explicitly.
+  - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enabled explicitly.
 - `Heffte_ENABLE_FFTW`, default `OFF` 
 - `ENABLE_TESTS`, default `OFF`
 - `ENABLE_UNIT_TESTS`, default `OFF`
@@ -61,7 +60,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=True -DKOKKOS_VERSION=4.2.00
 ```
 #### OpenMP release build with tests and FFTW
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW -DENABLE_TESTS=True
+cmake .. -DCMAKE_BUILD_TYPE=Release -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True -DENABLE_TESTS=True
 ```
 #### Cuda + OpenMP alpine release build 
 ```
