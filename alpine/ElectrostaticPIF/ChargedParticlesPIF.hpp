@@ -480,6 +480,8 @@ public:
            Nhalf[d] = domainHalf[d].length();
        }
 
+       //Heffte needs FFTshifted field whereas the field from cuFINUFFT
+       //is not shifted. Hence, here we do the shift. 
        Kokkos::parallel_for("Transfer complex rho to half domain",
                              mdrange_type({0, 0, 0},
                                           {Nhalf[0],
