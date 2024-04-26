@@ -1,5 +1,5 @@
-#ifndef IPPL_ALPINE_MANAGER_H
-#define IPPL_ALPINE_MANAGER_H
+#ifndef IPPL_ALVINE_MANAGER_H
+#define IPPL_ALVINE_MANAGER_H
 
 #include <memory>
 
@@ -17,7 +17,7 @@
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
-class AlpineManager
+class AlvineManager
     : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
                               LoadBalancer<T, Dim>> {
 public:
@@ -34,7 +34,7 @@ protected:
     std::string solver_m;
     std::string stepMethod_m;
 public:
-    AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
+    AlvineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
         , totalP_m(totalP_)
         , nt_m(nt_)
@@ -42,7 +42,7 @@ public:
         , lbt_m(lbt_)
         , solver_m(solver_)
         , stepMethod_m(stepMethod_){}
-    ~AlpineManager(){}
+    ~AlvineManager(){}
 
 protected:
     double time_m;

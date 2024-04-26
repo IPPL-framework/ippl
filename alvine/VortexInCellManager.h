@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "AlpineManager.h"
+#include "AlvineManager.h"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
@@ -43,7 +43,7 @@ struct CustomDistributionFunctions {
 };
 
 template <typename T, unsigned Dim>
-class VortexInCellManager : public AlpineManager<T, Dim> {
+class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
@@ -52,7 +52,7 @@ public:
 
     VortexInCellManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
+        : AlvineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
 
     ~VortexInCellManager() {}
 
