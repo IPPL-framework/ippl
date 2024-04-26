@@ -14,6 +14,14 @@ if(NOT WIN32)
   set(Green       "${Esc}[32m")
   set(Yellow      "${Esc}[1;33m")
 endif()
+macro(remove_flag_from_target _target _flag)
+    get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
+    if(_target_cxx_flags)
+        list(REMOVE_ITEM _target_cxx_flags ${_flag})
+        set_target_properties(${_target} PROPERTIES COMPILE_OPTIONS "${_target_cxx_flags}")
+    endif()
+endmacro()
+
 
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 
@@ -35,7 +43,7 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-add_compile_options (-Werror)
+#add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
@@ -152,12 +160,14 @@ if (ENABLE_FFT)
     find_package (Heffte ${HEFFTE_VERSION} QUIET)
     endif()
     if(NOT Heffte_FOUND)
+        message (STATUS "${CMAKE_CXX_COMPILER}")
         message(STATUS "Using FetchContent for Heffte")
         if(HEFFTE_VERSION MATCHES "MASTER")
         FetchContent_Declare(
              Heffte
              #DOWNLOAD_EXTRACT_TIMESTAMP
-             GIT_REPOSITORY https://github.com/icl-utk-edu/heffte 
+             GIT_REPOSITORY https://github.com/icl-utk-edu/heffte
+             GIT_TAG 9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda
         )
         else()
         FetchContent_Declare(
@@ -167,6 +177,9 @@ if (ENABLE_FFT)
         )
         endif()
         FetchContent_MakeAvailable(Heffte)
+        set(Heffte_DIR "${Heffte_SOURCE_DIR}")
+        remove_flag_from_target(Heffte "-Werror")
+        remove_flag_from_target(Heffte "-Wall")
     endif()
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
