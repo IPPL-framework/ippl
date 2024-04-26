@@ -17,6 +17,7 @@
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 // define functions used in sampling particles
+// TODO: check which ones are needed, delete rest
 struct CustomDistributionFunctions {
     struct CDF {
         KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d,
@@ -45,10 +46,10 @@ struct CustomDistributionFunctions {
 template <typename T, unsigned Dim>
 class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
-    using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>;
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    using ParticleContainer_t = ParticleContainer<T, Dim>;  // TODO: change attributes in ParticleContainer.hpp
+    using FieldContainer_t    = FieldContainer<T, Dim>; // TODO: change Field in FieldContainer.hpp (no electric field)
+    using FieldSolver_t       = FieldSolver<T, Dim>;    // TODO: change FieldSolver in FieldSolver.hpp (no electric field)
+    using LoadBalancer_t      = LoadBalancer<T, Dim>;   // TODO: check this as soon as we start parallelization
 
     VortexInCellManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double visc_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
@@ -68,16 +69,16 @@ public:
             this->domain_m[i] = ippl::Index(this->nr_m[i]);
         }
 
-        this->decomp_m.fill(true);
-        this->kw_m    = 0.5;
-        this->alpha_m = 0.05;
+        this->decomp_m.fill(true);  // TODO: check this as soon as we start parallelization
+        this->kw_m    = 0.5;    // TODO: check this value, do we need this , check together with distribution function in initializeParticles
+        this->alpha_m = 0.05;   // TODO: check this value
         this->rmin_m  = 0.0;
-        this->rmax_m  = 2 * pi / this->kw_m;
+        this->rmax_m  = 2 * pi / this->kw_m;    // TODO: check this value, if kw_m not needed, change this value
 
-        this->hr_m = this->rmax_m / this->nr_m;
+        this->hr_m = (this->rmax_m - this->rmin_m) / this->nr_m;
         // Q = -\int\int f dx dv
         this->Q_m =
-            std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
+            std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());  // TODO: check if needed
         this->origin_m = this->rmin_m;
         this->dt_m   = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m   = 0;
@@ -90,16 +91,16 @@ public:
 
         this->setFieldContainer(std::make_shared<FieldContainer_t>(
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
-            this->isAllPeriodic_m));
+            this->isAllPeriodic_m));    // TODO: change Fields in FieldContainer.hpp (no electric field)
 
         this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
+            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));   // TODO: change Attributes and type of vorticity (fancy type 2D->scalar, 3D->3D vector)
 
-        this->fcontainer_m->initializeFields(this->solver_m);
+        this->fcontainer_m->initializeFields(this->solver_m);   // TODO: change this function
 
         this->setFieldSolver(std::make_shared<FieldSolver_t>(
             this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
-            &this->fcontainer_m->getPhi()));
+            &this->fcontainer_m->getPhi()));    // TODO: change this call
 
         this->fsolver_m->initSolver();
 
@@ -111,28 +112,31 @@ public:
         static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
         IpplTimings::startTimer(DummySolveTimer);
 
-        this->fcontainer_m->getRho() = 0.0;
+        this->fcontainer_m->getRho() = 0.0; // TODO: check if this can be deleted
 
-        this->fsolver_m->runSolver();
+        this->fsolver_m->runSolver();   // TODO: find out if this is necessary, and why it is done
 
         IpplTimings::stopTimer(DummySolveTimer);
 
-        this->par2grid();
+        this->par2grid();   // TODO: change that correct attributes are passed
 
         static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
         IpplTimings::startTimer(SolveTimer);
 
         this->fsolver_m->runSolver();
 
+        // TODO: add velocity calculation function
+
         IpplTimings::stopTimer(SolveTimer);
 
-        this->grid2par();
+        this->grid2par();   // TODO: change that correct attributes are passed (attention 3D passes velocity and vorticity change, 2D only velocity)
 
-        this->dump();
+        this->dump();   // TODO: change the outputs, we want positions and vorticity
 
         m << "Done";
     }
 
+    // TODO: change this to our problem
     void initializeParticles() {
         Inform m("Initialize Particles");
 
@@ -141,8 +145,9 @@ public:
         
         // Sample particle positions from custom distribution
         using DistR_t =
-            ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
+            ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;  // TODO: use correct ditribution
         
+        // TODO: check if needed, probably not so delete if possible
         double parR[2 * Dim];
         for (unsigned int i = 0; i < Dim; i++) {
             parR[i * 2]     = this->alpha_m;
@@ -150,10 +155,12 @@ public:
         }
         DistR_t distR(parR);
 
-        Vector_t<double, Dim> kw                         = this->kw_m;
+        Vector_t<double, Dim> kw                         = this->kw_m;  // TODO: check if needed
         Vector_t<double, Dim> hr                         = this->hr_m;
         Vector_t<double, Dim> origin                     = this->origin_m;
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
+        
+        // TODO: check this as soon as we start parallelization
         if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
             m << "Starting first repartition" << endl;
             IpplTimings::startTimer(domainDecomposition);
@@ -184,6 +191,9 @@ public:
 
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
         IpplTimings::startTimer(particleCreation);
+
+
+        // TODO: understand what happens from here, sample positions and vorticity according to both test cases
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
@@ -233,6 +243,7 @@ public:
         }
     }
 
+    // TODO: take leapfrog formulas (given by José and Daniele) and implement it here
     void LeapFrogStep() {
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
         // Here, we assume a constant charge-to-mass ratio of -1 for
@@ -285,13 +296,15 @@ public:
             IpplTimings::stopTimer(domainDecomposition);
         }
 
-        // scatter the charge onto the underlying grid
+        // scatter the vorticity onto the underlying grid
         this->par2grid();
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
+
+        // TODO: add velcoity calculation function here
 
         // gather E field
         this->grid2par();
