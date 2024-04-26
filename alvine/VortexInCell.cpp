@@ -20,12 +20,12 @@
 //     makdir build_*/alvine/data
 //     chmod +x data
 //     srun ./VortexInCell 128 128 128 10000 10 0 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
-// 
+//     srun ./VortexInCell 128 128 128
 //     to build, call 
 //          make VortexInCell 
 //     in the build directory to only build this target
 
-constexpr unsigned Dim = 3; // TODO: optional to do this as an input parameter
+constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "VortexInCell";
 
@@ -52,43 +52,23 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         Inform msg(TestName);
-        Inform msg2all(TestName, INFORM_ALL_NODES);
 
-        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
-        IpplTimings::startTimer(mainTimer);
-
-        // Read input parameters, assign them to the corresponding memebers of manager
-        int arg = 1;
+        unsigned arg = 1;    
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]); // No. of points in each of DIM directions
+            nr[d] = std::atoi(argv[arg++]);
         }
 
-        size_type totalP   = std::atoll(argv[arg++]); // Total no. of particles in the simulation
-        int nt             = std::atoi(argv[arg++]);  // Number of time steps
-        double visc        = std::atof(argv[arg++]);  // Viscosity
-        std::string solver = argv[arg++];             // Field solver
+        msg << nr[0] << " " << nr[1] << " " << nr[2] << endl;
 
-        double lbt              = std::atof(argv[arg++]); // Load balancing threshold
-        std::string step_method = argv[arg++];        // Time-stepping method
+        int nt  = std::atoi(argv[arg++]);
+        msg << nt << endl;
 
-        // Create an instance of a manger for the considered application
-        VortexInCellManager<T, Dim> manager(totalP, nt, nr, visc, lbt, solver, step_method);
+        VortexInCellManager<T, Dim> manager(nt, nr);
 
-        // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
 
-        manager.setTime(0.0);
-
-        msg << "Starting iterations ..." << endl;
-
         manager.run(manager.getNt());
-
-        msg << "End." << endl;
-
-        IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
-        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 
