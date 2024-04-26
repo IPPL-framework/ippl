@@ -55,9 +55,8 @@ namespace ippl {
             [[maybe_unused]] int inner =
                 5,  // This is a dummy default parameter, actual default parameter should be
             // set in main
-            [[maybe_unused]] int outer =
-                1  // This is a dummy default parameter, actual default parameter should be
-                   // set in main
+            [[maybe_unused]] int outer = 1  // This is a dummy default parameter, actual default
+                                            // parameter should be set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -111,7 +110,7 @@ namespace ippl {
             residueNorm       = std::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
-            lhs_type q(mesh, layout, lhs.getNghost());
+            lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
                 q = op_m(d);

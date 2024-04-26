@@ -232,7 +232,6 @@ int main(int argc, char* argv[]) {
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
           << endl;
 
-        IpplTimings::stopTimer(allTimer);
         IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }
     ippl::finalize();
