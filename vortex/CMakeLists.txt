@@ -21,6 +21,9 @@ target_link_libraries (PenningTrap ${IPPL_LIBS})
 add_executable (LandauDamping LandauDamping.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
 
+add_executable (VortexInCell VortexInCell.cpp)
+target_link_libraries (VortexInCell ${IPPL_LIBS})
+
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 
