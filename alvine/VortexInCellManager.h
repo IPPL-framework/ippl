@@ -50,9 +50,9 @@ public:
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
-    VortexInCellManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+    VortexInCellManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double visc_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
-        : AlvineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
+        : AlvineManager<T, Dim>(totalP_, nt_, nr_, visc_, lbt_, solver_, stepMethod_) {}
 
     ~VortexInCellManager() {}
 

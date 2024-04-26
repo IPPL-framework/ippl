@@ -7,6 +7,7 @@
 //     ny...    = No. cell-centered points in the y-, z-, ...-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
+//     visc     = Viscosity
 //     stype    = Field solver type (FFT and CG supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
@@ -18,7 +19,7 @@
 //     Example:
 //     makdir build_*/alvine/data
 //     chmod +x data
-//     srun ./VortexInCell 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
+//     srun ./VortexInCell 128 128 128 10000 10 0 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
 // 
 //     to build, call 
 //          make VortexInCell 
@@ -65,13 +66,14 @@ int main(int argc, char* argv[]) {
 
         size_type totalP   = std::atoll(argv[arg++]); // Total no. of particles in the simulation
         int nt             = std::atoi(argv[arg++]);  // Number of time steps
+        double visc        = std::atof(argv[arg++]);  // Viscosity
         std::string solver = argv[arg++];             // Field solver
 
         double lbt              = std::atof(argv[arg++]); // Load balancing threshold
         std::string step_method = argv[arg++];        // Time-stepping method
 
         // Create an instance of a manger for the considered application
-        VortexInCellManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        VortexInCellManager<T, Dim> manager(totalP, nt, nr, visc, lbt, solver, step_method);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();

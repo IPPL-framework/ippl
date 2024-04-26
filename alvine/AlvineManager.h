@@ -29,15 +29,17 @@ public:
 protected:
     size_type totalP_m;
     int nt_m;
+    double visc_m;
     Vector_t<int, Dim> nr_m;
     double lbt_m;
     std::string solver_m;
     std::string stepMethod_m;
 public:
-    AlvineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
+    AlvineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double visc_, double lbt_, std::string& solver_, std::string& stepMethod_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
         , totalP_m(totalP_)
         , nt_m(nt_)
+        , visc_m(visc_)
         , nr_m(nr_)
         , lbt_m(lbt_)
         , solver_m(solver_)
@@ -69,6 +71,10 @@ public:
     int getNt() const { return nt_m; }
 
     void setNt(int nt_) { nt_m = nt_; }
+
+    void getVisc() { return visc_m; }
+
+    void setVisc(double visc_) { visc_m = visc_; }
 
     const std::string& getSolver() const { return solver_m; }
 
