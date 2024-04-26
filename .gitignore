@@ -10,10 +10,11 @@ notes/
 build_serial/
 build/
 
-# ignore *.exe and *.out files
+# ignore *.exe, *.gif and *.out files
 *.exe
 *.out
 *.err
+*.gif
 # ignore *.swp, *.a, *.aux, *.log, *.o, *.pyc
 *.swp
 *.a
