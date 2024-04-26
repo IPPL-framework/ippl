@@ -6,6 +6,7 @@
 #define IPPL_FEMPOISSONSOLVER_H
 
 // #include "FEM/FiniteElementSpace.h"
+#include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 
@@ -26,9 +27,15 @@ namespace ippl {
     public:
         using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
+        using OperatorRet        = UnaryMinus<detail::meta_laplace<lhs_type>>;
+        using LowerRet           = UnaryMinus<detail::meta_lower_laplace<lhs_type>>;
+        using UpperRet           = UnaryMinus<detail::meta_upper_laplace<lhs_type>>;
+        using UpperAndLowerRet   = UnaryMinus<detail::meta_upper_and_lower_laplace<lhs_type>>;
+        using InverseDiagonalRet = lhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using PCGSolverAlgorithm_t = PCG<lhs_type, FieldLHS, FieldRHS>;
+        using PCGSolverAlgorithm_t = PCG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
+                                         InverseDiagonalRet, FieldLHS, FieldRHS>;
 
         // FEM Space types
         using ElementType =
