@@ -25,7 +25,7 @@
 //          make VortexInCell 
 //     in the build directory to only build this target
 
-constexpr unsigned Dim = 3;
+constexpr unsigned Dim = 3; // TODO: optional to do this as an input parameter
 using T                = double;
 const char* TestName   = "VortexInCell";
 

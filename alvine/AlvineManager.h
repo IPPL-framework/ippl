@@ -72,7 +72,7 @@ public:
 
     void setNt(int nt_) { nt_m = nt_; }
 
-    void getVisc() { return visc_m; }
+    double getVisc() { return visc_m; }
 
     void setVisc(double visc_) { visc_m = visc_; }
 
