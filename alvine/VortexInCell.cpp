@@ -25,7 +25,7 @@
 //          make VortexInCell 
 //     in the build directory to only build this target
 
-constexpr unsigned Dim = 3;
+constexpr unsigned Dim = 2;
 using T                = double;
 const char* TestName   = "VortexInCell";
 
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        msg << nr[0] << " " << nr[1] << " " << nr[2] << endl;
 
         int nt  = std::atoi(argv[arg++]);
         msg << nt << endl;

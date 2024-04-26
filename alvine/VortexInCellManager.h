@@ -39,6 +39,16 @@ public:
 
     void pre_run() override {
 
+      Inform csvout(NULL, "particles.csv", Inform::OVERWRITE);
+      csvout.precision(16);
+      csvout.setf(std::ios::scientific, std::ios::floatfield);
+
+      if constexpr (Dim == 2) {
+        csvout << "time,index,pos_x,pos_y" << endl;
+      } else {
+        csvout << "time,index,pos_x,pos_y,pos_z" << endl;
+      }
+
       for (unsigned i = 0; i < Dim; i++) {
           this->domain_m[i] = ippl::Index(this->nr_m[i]);
       }
@@ -48,10 +58,14 @@ public:
 
       this->hr_m = dr / this->nr_m;
 
-      this->dt_m = std::min(.05, 0.5 * ( *std::min_element(this->hr_m.begin(), this->hr_m.end()) ) );
+      this->dt_m = std::min(0.05, 0.5 * ( *std::min_element(this->hr_m.begin(), this->hr_m.end()) ) );
 
       this->it_m = 0;
       this->time_m = 0.0;
+
+
+      this->np_m = this->nr_m[0];
+      std::cout<< this->np_m << std::endl;
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -67,16 +81,58 @@ public:
     }
 
     void initializeParticles() {
-      this->pcontainer_m->create(10);
-    }
+
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+      this->pcontainer_m->create(this->np_m);
+
+      //TODO: Make proper distribution ideally by templating the class with a distribution struct
+      std::mt19937_64 eng;
+      std::uniform_real_distribution<double> unif(0, 1);
+      typename ParticleContainer_t::particle_position_type::HostMirror P_host = pc->P.getHostMirror();
+      typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
+
+      for (unsigned i = 0; i < this->np_m; i++) {
+        ippl::Vector<double, Dim> p; 
+        ippl::Vector<double, Dim> r;
+
+        for (unsigned d = 0; d < Dim; d++) {
+          p(d) = unif(eng) - 0.5;
+          r(d) = unif(eng);
+        }
+
+        P_host(i) = p * 3;
+        R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
+      }
+      Kokkos::deep_copy(pc->P.getView(), P_host);
+      Kokkos::deep_copy(pc->R.getView(), R_host);
+  
 
     void advance() override {
+
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      pc->R = pc->R + pc->P * this->dt_m;
+      pc->update();
+
+      
     }
 
     void LeapFrogStep() {
     }
 
     void dump() override {
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+      Inform csvout(NULL, "particles.csv", Inform::APPEND);
+
+      for (unsigned i = 0; i < this->np_m; i++) {
+        csvout << this->it_m << "," << i; 
+        for (unsigned d = 0; d < Dim; d++) {
+          csvout << "," << pc->R(i)[d];
+        }
+        csvout << endl;
+      }
+       
     }
 
 };

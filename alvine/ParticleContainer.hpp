@@ -8,11 +8,12 @@
 template <typename T, unsigned Dim = 3>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using vorticity_type = std::conditional<Dim == 2, ippl::ParticleAttrib<double>, typename Base::particle_position_type>::type;
 
     public:
-        ippl::ParticleAttrib<double> q;                 // charge
-        typename Base::particle_position_type P;  // particle velocity
-        typename Base::particle_position_type E;  // electric field at particle position
+        typename Base::particle_position_type P;  
+        vorticity_type vorticity;
+
     private:
         PLayout_t<T, Dim> pl_m;
     public:
@@ -30,9 +31,9 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
 	void registerAttributes() {
 		// register the particle attributes
-		this->addAttribute(q);
+
 		this->addAttribute(P);
-		this->addAttribute(E);
+    this->addAttribute(vorticity);
 	}
 	void setupBCs() { setBCAllPeriodic(); }
 

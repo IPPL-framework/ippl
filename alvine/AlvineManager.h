@@ -29,6 +29,7 @@ public:
 protected:
     unsigned nt_m;
     unsigned it_m;
+    unsigned np_m;
     Vector_t<int, Dim> nr_m;
     std::array<bool, Dim> decomp_m;
     bool isAllPeriodic_m;
@@ -70,6 +71,8 @@ public:
     void post_step() override {
       this->time_m += this->dt_m;
       this->it_m++;
+
+      this->dump();
     }
 
     void grid2par() override { gatherCIC(); }
