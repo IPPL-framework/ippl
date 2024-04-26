@@ -137,9 +137,12 @@ public:
         Inform m("Initialize Particles");
 
         auto* mesh = &this->fcontainer_m->getMesh();
-        auto* FL   = &this->fcontainer_m->getFL();
+        auto* FL   = &this->fcontainer_m->getFL(); // FieldLayout<Dim>*
+        
+        // Sample particle positions from custom distribution
         using DistR_t =
             ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
+        
         double parR[2 * Dim];
         for (unsigned int i = 0; i < Dim; i++) {
             parR[i * 2]     = this->alpha_m;
