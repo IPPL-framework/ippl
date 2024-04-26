@@ -4,7 +4,7 @@ import pandas as pd
 from matplotlib.animation import FuncAnimation
 
 # Change this path to the path of the txt file
-FILE = "../build_serial/alpine/data/particle_positions.txt"
+FILE = "../build_serial/alvine/data/particle_positions.txt"
 
 # Read data from txt file
 with open(FILE, 'r') as file:
