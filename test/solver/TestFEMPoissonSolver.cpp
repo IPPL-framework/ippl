@@ -109,7 +109,11 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     ippl::Vector<T, Dim> origin(domain_start);
     Mesh_t mesh(domain, cellSpacing, origin);
 
-    ippl::FieldLayout<Dim> layout(domain);
+    // specifies decomposition; here all dimensions are parallel
+    std::array<bool, Dim> isParallel;
+    isParallel.fill(true);
+
+    ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, domain, isParallel);
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // exact solution
