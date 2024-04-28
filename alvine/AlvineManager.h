@@ -83,12 +83,7 @@ public:
     void par2grid() override { scatterCIC(); }
 
     void scatterCIC() {
-      auto omega = &this->pcontainer_m->omega_m;
-      auto omega_field = &this->fcontainer_m->getOmega_field();
-      typename Base::particle_position_type *R = &this->pcontainer_m->R;
-
-      scatter(*omega, *omega_field, *R);
-
+      scatter(this->pcontainer_m->omega_m, this->fcontainer_m->getOmega_field(), this->pcontainer_m->R);
     }
 };
 #endif
