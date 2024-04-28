@@ -33,9 +33,11 @@ if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 else ()
     message (STATUS "${Green}Build type is: ${CMAKE_BUILD_TYPE}${ColourReset}")
 endif()
-if(POLICY CMP0135)
-    cmake_policy(SET CMP0135 NEW)
-endif()
+
+
+#if(POLICY CMP0135)
+#    cmake_policy(SET CMP0135 NEW)
+#endif()
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
@@ -43,10 +45,14 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#add_compile_options (-Werror)
+#¼add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options (-Wno-deprecated-copy)
+    add_compile_options (-Wno-sign-compare)
+endif()
 
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
@@ -99,11 +105,11 @@ endif()
 find_package(Kokkos ${KOKKOS_VERSION} QUIET)
 if(NOT Kokkos_FOUND)
     FetchContent_Declare(
-        #DOWNLOAD_EXTRACT_TIMESTAMP
-        kokko
+        kokkos
+        DOWNLOAD_EXTRACT_TIMESTAMP True
         URL https://github.com/kokkos/kokkos/archive/refs/tags/${KOKKOS_VERSION}.tar.gz                
     )
-    FetchContent_MakeAvailable(kokko)
+    FetchContent_MakeAvailable(kokkos)
 endif()
 # Select flags.
 set (CMAKE_CXX_STANDARD 20)
@@ -172,7 +178,7 @@ if (ENABLE_FFT)
         else()
         FetchContent_Declare(
              Heffte
-             #DOWNLOAD_EXTRACT_TIMESTAMP
+             DOWNLOAD_EXTRACT_TIMESTAMP True
              URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${HEFFTE_VERSION}.tar.gz
         )
         endif()
@@ -180,6 +186,7 @@ if (ENABLE_FFT)
         set(Heffte_DIR "${Heffte_SOURCE_DIR}")
         remove_flag_from_target(Heffte "-Werror")
         remove_flag_from_target(Heffte "-Wall")
+        remove_flag_from_target(Heffte "-Wextra")
     endif()
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
