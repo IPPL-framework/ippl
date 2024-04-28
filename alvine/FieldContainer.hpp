@@ -8,6 +8,9 @@
 // Define the FieldsContainer class
 template <typename T, unsigned Dim = 3>
 class FieldContainer{
+  using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
+
+
 public:
     FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin,
                    Vector_t<T, Dim>& rmax, std::array<bool, Dim> decomp,
@@ -27,21 +30,24 @@ private:
     Vector_t<double, Dim> rmin_m;
     Vector_t<double, Dim> rmax_m;
     std::array<bool, Dim> decomp_m;
-    VField_t<T, Dim> E_m;
-    Field_t<Dim> rho_m;
-    Field<T, Dim> phi_m;
+
+    vorticity_field_type A_field_m;
+    vorticity_field_type omega_field_m;
+    VField_t<T, Dim> u_field_m;
+
     Mesh_t<Dim> mesh_m;
     FieldLayout_t<Dim> fl_m;
 
 public:
-    VField_t<T, Dim>& getE() { return E_m; }
-    void setE(VField_t<T, Dim>& E) { E_m = E; }
 
-    Field_t<Dim>& getRho() { return rho_m; }
-    void setRho(Field_t<Dim>& rho) { rho_m = rho; }
+    vorticity_field_type& getA_field() { return A_field_m; }
+    void setA_field(vorticity_field_type& A_field) { A_field_m = A_field; }
 
-    Field<T, Dim>& getPhi() { return phi_m; }
-    void setPhi(Field<T, Dim>& phi) { phi_m = phi; }
+    vorticity_field_type& getOmega_field() { return omega_field_m; }
+    void setOmega_field(vorticity_field_type& omega_field) { omega_field_m = omega_field; }
+
+    VField_t<T, Dim>& getU_field() { return u_field_m; }
+    void setOmega_field(VField_t<T, Dim>& u_field) { u_field_m = u_field; }
 
     Vector_t<double, Dim>& getHr() { return hr_m; }
     void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }
@@ -61,12 +67,10 @@ public:
     FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
-    void initializeFields(std::string stype_m = "") {
-        E_m.initialize(mesh_m, fl_m);
-        rho_m.initialize(mesh_m, fl_m);
-        if (stype_m == "CG") {
-            phi_m.initialize(mesh_m, fl_m);
-        }
+    void initializeFields() {
+        A_field_m.initialize(mesh_m, fl_m);
+        omega_field_m.initialize(mesh_m, fl_m);
+        u_field_m.initialize(mesh_m, fl_m);
     }
 };
 

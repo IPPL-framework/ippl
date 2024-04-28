@@ -8,11 +8,11 @@
 template <typename T, unsigned Dim = 3>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-    using vorticity_type = std::conditional<Dim == 2, ippl::ParticleAttrib<double>, typename Base::particle_position_type>::type;
+    using vorticity_type = std::conditional<Dim == 2, ippl::ParticleAttrib<T>, typename Base::particle_position_type>::type;
 
     public:
         typename Base::particle_position_type P;  
-        vorticity_type vorticity;
+        vorticity_type omega_m;
 
     private:
         PLayout_t<T, Dim> pl_m;
@@ -33,7 +33,7 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 		// register the particle attributes
 
 		this->addAttribute(P);
-    this->addAttribute(vorticity);
+    this->addAttribute(omega_m);
 	}
 	void setupBCs() { setBCAllPeriodic(); }
 

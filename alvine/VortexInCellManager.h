@@ -44,9 +44,9 @@ public:
       csvout.setf(std::ios::scientific, std::ios::floatfield);
 
       if constexpr (Dim == 2) {
-        csvout << "time,index,pos_x,pos_y" << endl;
+          csvout << "time,index,pos_x,pos_y" << endl;
       } else {
-        csvout << "time,index,pos_x,pos_y,pos_z" << endl;
+          csvout << "time,index,pos_x,pos_y,pos_z" << endl;
       }
 
       for (unsigned i = 0; i < Dim; i++) {
@@ -63,9 +63,7 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-
-      this->np_m = this->nr_m[0];
-      std::cout<< this->np_m << std::endl;
+      this->np_m = 1;//this->nr_m[0];
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -77,7 +75,11 @@ public:
       this->setParticleContainer(std::make_shared<ParticleContainer_t>(
             this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
         
+      this->fcontainer_m->initializeFields();
+
       initializeParticles();
+
+
     }
 
     void initializeParticles() {
@@ -86,7 +88,7 @@ public:
 
       this->pcontainer_m->create(this->np_m);
 
-      //TODO: Make proper distribution ideally by templating the class with a distribution struct
+      //BEGIN TODO: Make proper distribution ideally by templating the class with a distribution struct
       std::mt19937_64 eng;
       std::uniform_real_distribution<double> unif(0, 1);
       typename ParticleContainer_t::particle_position_type::HostMirror P_host = pc->P.getHostMirror();
@@ -106,6 +108,10 @@ public:
       }
       Kokkos::deep_copy(pc->P.getView(), P_host);
       Kokkos::deep_copy(pc->R.getView(), R_host);
+      //END TODO
+
+
+    }
   
 
     void advance() override {
