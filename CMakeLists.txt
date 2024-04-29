@@ -35,9 +35,6 @@ else ()
 endif()
 
 
-#if(POLICY CMP0135)
-#    cmake_policy(SET CMP0135 NEW)
-#endif()
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
@@ -166,12 +163,10 @@ if (ENABLE_FFT)
     find_package (Heffte ${HEFFTE_VERSION} QUIET)
     endif()
     if(NOT Heffte_FOUND)
-        message (STATUS "${CMAKE_CXX_COMPILER}")
         message(STATUS "Using FetchContent for Heffte")
         if(HEFFTE_VERSION MATCHES "MASTER")
         FetchContent_Declare(
              Heffte
-             #DOWNLOAD_EXTRACT_TIMESTAMP
              GIT_REPOSITORY https://github.com/icl-utk-edu/heffte
              GIT_TAG 9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda
         )
@@ -183,6 +178,8 @@ if (ENABLE_FFT)
         )
         endif()
         FetchContent_MakeAvailable(Heffte)
+        # Required to suppress warnings related to heffte
+        target_include_directories(Heffte SYSTEM PUBLIC "${Heffte_SOURCE_DIR}/include")
         set(Heffte_DIR "${Heffte_SOURCE_DIR}")
         remove_flag_from_target(Heffte "-Werror")
         remove_flag_from_target(Heffte "-Wall")
