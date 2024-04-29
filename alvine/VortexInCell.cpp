@@ -19,8 +19,8 @@
 //     Example:
 //     makdir build_*/alvine/data
 //     chmod +x data
-//     srun ./VortexInCell 128 128 128 10000 10 0 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
-//     srun ./VortexInCell 128 128 128
+//     srun ./VortexInCell 128 128 100 FFT --overallocate 2.0 --info 10
+//     srun ./VortexInCell 128 128
 //     to build, call 
 //          make VortexInCell 
 //     in the build directory to only build this target

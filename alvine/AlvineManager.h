@@ -98,14 +98,15 @@ public:
       auto view = u_field.getView();
 
       auto omega_view = this->fcontainer_m->getOmegaField().getView();
+      this->fcontainer_m->getOmegaField().fillHalo();
 
       if constexpr (Dim == 2) {
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view, nghost),
             KOKKOS_LAMBDA(const int i, const int j) {
                 view(i, j) = {
-                        (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->hr_m(0)), 
-                        (omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(1))
+                        (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->hr_m(1)), 
+                        (omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(0))
                         };
 
             });
