@@ -132,6 +132,8 @@ public:
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
       this->par2grid();
+      this->fsolver_m->runSolver();
+      this->computeVelocityField();
       this->grid2par();
 
       pc->R = pc->R + pc->P * this->dt_m;

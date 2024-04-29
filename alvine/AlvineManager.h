@@ -85,36 +85,20 @@ public:
     void gatherCIC() {
       this->pcontainer_m->P = 0.0;
       gather(this->pcontainer_m->P, this->fcontainer_m->getUField(), this->pcontainer_m->R);
-      auto view = this->fcontainer_m->getUField().getView();
     }
 
     void par2grid() override { scatterCIC(); }
 
-    void scatterCIC() {
-      this->fcontainer_m->getOmegaField() = 0.0;
+    void computeVelocityField() {
 
-      scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
-
-
-      VField_t<T, Dim>  u_field = this->fcontainer_m->getUField();
+      VField_t<T, Dim> u_field = this->fcontainer_m->getUField();
       u_field = 0.0;
-
-      this->fsolver_m->runSolver();
 
       const int nghost = u_field.getNghost();
       auto view = u_field.getView();
 
       auto omega_view = this->fcontainer_m->getOmegaField().getView();
 
-        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-        bc_type allPeriodic;
-        for (unsigned int i = 0; i < 2 * Dim; ++i) {
-            allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
-        }
-        this->fcontainer_m->getOmegaField().setFieldBC(allPeriodic);
-
-
-      //TODO: Compute velocity field (in the 3d case just call the curl method)
       if constexpr (Dim == 2) {
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view, nghost),
@@ -125,8 +109,14 @@ public:
                         };
 
             });
+      } else if constexpr (Dim == 3) {
+        //TODO Compute velocity field in 3 dimensions
       }
     }
 
+    void scatterCIC() {
+      this->fcontainer_m->getOmegaField() = 0.0;
+      scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
+    }
 };
 #endif
