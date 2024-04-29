@@ -21,6 +21,9 @@ target_link_libraries (PenningTrap ${IPPL_LIBS})
 add_executable (LandauDamping LandauDamping.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
 
+add_executable (FreeElectronLaser FreeElectronLaser.cpp)
+target_link_libraries (FreeElectronLaser ${IPPL_LIBS})
+
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 
