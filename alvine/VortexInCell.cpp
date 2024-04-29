@@ -59,11 +59,15 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-
         int nt  = std::atoi(argv[arg++]);
+
+        std::string solver = argv[arg++];
+
+        double lbt = std::atof(argv[arg++]);
+
         msg << nt << endl;
 
-        VortexInCellManager<T, Dim> manager(nt, nr);
+        VortexInCellManager<T, Dim> manager(nt, nr, solver, lbt);
 
         manager.pre_run();
 

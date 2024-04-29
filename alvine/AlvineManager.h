@@ -26,6 +26,7 @@ public:
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
     using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+
 protected:
     unsigned nt_m;
     unsigned it_m;
@@ -34,12 +35,16 @@ protected:
     std::array<bool, Dim> decomp_m;
     bool isAllPeriodic_m;
     ippl::NDIndex<Dim> domain_m;
+    std::string solver_m;
+    double lbt_m;
 
 public:
-    AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_)
+    AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>() 
         , nt_m(nt_)
-        , nr_m(nr_) {}
+        , nr_m(nr_)
+        , solver_m(solver_)
+        , lbt_m(lbt_) {}
 
     ~AlvineManager(){}
 
@@ -78,12 +83,50 @@ public:
     void grid2par() override { gatherCIC(); }
 
     void gatherCIC() {
+      this->pcontainer_m->P = 0.0;
+      gather(this->pcontainer_m->P, this->fcontainer_m->getUField(), this->pcontainer_m->R);
+      auto view = this->fcontainer_m->getUField().getView();
     }
 
     void par2grid() override { scatterCIC(); }
 
     void scatterCIC() {
-      scatter(this->pcontainer_m->omega_m, this->fcontainer_m->getOmega_field(), this->pcontainer_m->R);
+      this->fcontainer_m->getOmegaField() = 0.0;
+
+      scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
+
+
+      VField_t<T, Dim>  u_field = this->fcontainer_m->getUField();
+      u_field = 0.0;
+
+      this->fsolver_m->runSolver();
+
+      const int nghost = u_field.getNghost();
+      auto view = u_field.getView();
+
+      auto omega_view = this->fcontainer_m->getOmegaField().getView();
+
+        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+        bc_type allPeriodic;
+        for (unsigned int i = 0; i < 2 * Dim; ++i) {
+            allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+        }
+        this->fcontainer_m->getOmegaField().setFieldBC(allPeriodic);
+
+
+      //TODO: Compute velocity field (in the 3d case just call the curl method)
+      if constexpr (Dim == 2) {
+        Kokkos::parallel_for(
+            "Assign rhs", ippl::getRangePolicy(view, nghost),
+            KOKKOS_LAMBDA(const int i, const int j) {
+                view(i, j) = {
+                        (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->hr_m(0)), 
+                        (omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(1))
+                        };
+
+            });
+      }
     }
+
 };
 #endif

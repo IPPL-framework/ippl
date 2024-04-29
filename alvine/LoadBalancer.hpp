@@ -10,30 +10,22 @@ class LoadBalancer{
     using FieldSolver_t= ippl::FieldSolverBase<T, Dim>;
     private:
         double loadbalancethreshold_m;
-        Field_t<Dim>* rho_m;
-        VField_t<T, Dim>* E_m;
-        Field<T, Dim> *phi_m;
+        Field_t<Dim>* omega_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver_t> fs_m;
         unsigned int loadbalancefreq_m;
         ORB<T, Dim> orb;
     public:
         LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T,Dim>> &fc, std::shared_ptr<ParticleContainer<T, Dim>> &pc, std::shared_ptr<FieldSolver_t> &fs)
-           :loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), E_m(&fc->getE()), phi_m(&fc->getPhi()), pc_m(pc), fs_m(fs) {}
+           :loadbalancethreshold_m(lbs), omega_m(&fc->getOmegaField()), pc_m(pc), fs_m(fs) {}
 
         ~LoadBalancer() {  }
 
         double getLoadBalanceThreshold() const { return loadbalancethreshold_m; }
         void setLoadBalanceThreshold(double threshold) { loadbalancethreshold_m = threshold; }
 
-        Field_t<Dim>* getRho() const { return rho_m; }
-        void setRho(Field_t<Dim>* rho) { rho_m = rho; }
-
-        VField_t<T, Dim>* getE() const { return E_m; }
-        void setE(VField_t<T, Dim>* E) { E_m = E; }
-
-        Field<T, Dim>* getPhi() { return phi_m; }
-        void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
+        Field_t<Dim>* getOmega() const { return omega_m; }
+        void setOmega(Field_t<Dim>* omega) { omega_m = omega; }
 
         std::shared_ptr<ParticleContainer<T, Dim>> getParticleContainer() const { return pc_m; }
         void setParticleContainer(std::shared_ptr<ParticleContainer<T, Dim>> pc) { pc_m = pc; }
@@ -46,13 +38,7 @@ class LoadBalancer{
 
             static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
             IpplTimings::startTimer(tupdateLayout);
-            (*E_m).updateLayout(*fl);
-            (*rho_m).updateLayout(*fl);
-
-            if (fs_m->getStype() == "CG") {
-                phi_m->updateLayout(*fl);
-                phi_m->setFieldBC(phi_m->getFieldBC());
-            }
+            (*omega_m).updateLayout(*fl);
 
             // Update layout with new FieldLayout
             PLayout_t<T, Dim>* layout = &pc_m->getLayout();
@@ -67,7 +53,7 @@ class LoadBalancer{
         }
 
         void initializeORB(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh) {
-            orb.initialize(*fl, *mesh, *rho_m);
+            orb.initialize(*fl, *mesh, *omega_m);
         }
 
         void repartition(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
@@ -85,14 +71,7 @@ class LoadBalancer{
             this->updateLayout(fl, mesh, isFirstRepartition);
             if constexpr (Dim == 2 || Dim == 3) {
                 if (fs_m->getStype() == "FFT") {
-                    std::get<FFTSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
-                }
-                if constexpr (Dim == 3) {
-                    if (fs_m->getStype() == "P3M") {
-                        std::get<P3MSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
-                    } else if (fs_m->getStype() == "OPEN") {
-                        std::get<OpenSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
-                    }
+                    std::get<FFTSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*omega_m);
                 }
             }
         }

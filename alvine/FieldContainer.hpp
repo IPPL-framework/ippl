@@ -43,11 +43,11 @@ public:
     vorticity_field_type& getA_field() { return A_field_m; }
     void setA_field(vorticity_field_type& A_field) { A_field_m = A_field; }
 
-    vorticity_field_type& getOmega_field() { return omega_field_m; }
+    vorticity_field_type& getOmegaField() { return omega_field_m; }
     void setOmega_field(vorticity_field_type& omega_field) { omega_field_m = omega_field; }
 
-    VField_t<T, Dim>& getU_field() { return u_field_m; }
-    void setOmega_field(VField_t<T, Dim>& u_field) { u_field_m = u_field; }
+    VField_t<T, Dim>& getUField() { return u_field_m; }
+    void setUField(VField_t<T, Dim>& u_field) { u_field_m = u_field; }
 
     Vector_t<double, Dim>& getHr() { return hr_m; }
     void setHr(const Vector_t<double, Dim>& hr) { hr_m = hr; }

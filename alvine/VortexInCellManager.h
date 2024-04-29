@@ -25,11 +25,11 @@ public:
     using FieldSolver_t       = FieldSolver<T, Dim>; 
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
-    VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, 
+    VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
         Vector_t<double, Dim> origin_ = 0.0)
-        : AlvineManager<T, Dim>(nt_, nr_) {
+        : AlvineManager<T, Dim>(nt_, nr_, solver_, lbt_) {
             this->rmin_m = rmin_;
             this->rmax_m = rmax_;
             this->origin_m = origin_;
@@ -44,7 +44,7 @@ public:
       csvout.setf(std::ios::scientific, std::ios::floatfield);
 
       if constexpr (Dim == 2) {
-          csvout << "time,index,pos_x,pos_y" << endl;
+          csvout << "time,index,pos_x,pos_y,vorticity" << endl;
       } else {
           csvout << "time,index,pos_x,pos_y,pos_z" << endl;
       }
@@ -63,7 +63,7 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-      this->np_m = 1;//this->nr_m[0];
+      this->np_m = 10000;//this->nr_m[0] * this->nr_m[0];
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -77,7 +77,16 @@ public:
         
       this->fcontainer_m->initializeFields();
 
+      this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getOmegaField()) );
+      
+      this->fsolver_m->initSolver();
+
+      this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
+
       initializeParticles();
+
+      this->par2grid();
+      this->grid2par();
 
 
     }
@@ -91,23 +100,28 @@ public:
       //BEGIN TODO: Make proper distribution ideally by templating the class with a distribution struct
       std::mt19937_64 eng;
       std::uniform_real_distribution<double> unif(0, 1);
-      typename ParticleContainer_t::particle_position_type::HostMirror P_host = pc->P.getHostMirror();
       typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
+      typename ippl::ParticleAttrib<T>::HostMirror Omega_host = pc->omega.getHostMirror();
 
       for (unsigned i = 0; i < this->np_m; i++) {
-        ippl::Vector<double, Dim> p; 
         ippl::Vector<double, Dim> r;
 
         for (unsigned d = 0; d < Dim; d++) {
-          p(d) = unif(eng) - 0.5;
           r(d) = unif(eng);
         }
+        
 
-        P_host(i) = p * 3;
         R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
+
+        std::cout << R_host(i)(0) << std::endl;
+        if (R_host(i)(0) > 5) {
+          Omega_host(i) = 1;
+        } else {
+          Omega_host(i) = -1;
+        }
       }
-      Kokkos::deep_copy(pc->P.getView(), P_host);
       Kokkos::deep_copy(pc->R.getView(), R_host);
+      Kokkos::deep_copy(pc->omega.getView(), Omega_host);
       //END TODO
 
 
@@ -115,8 +129,11 @@ public:
   
 
     void advance() override {
-
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+      this->par2grid();
+      this->grid2par();
+
       pc->R = pc->R + pc->P * this->dt_m;
       pc->update();
 
@@ -136,7 +153,7 @@ public:
         for (unsigned d = 0; d < Dim; d++) {
           csvout << "," << pc->R(i)[d];
         }
-        csvout << endl;
+        csvout << "," << pc->omega(i) << endl;
       }
        
     }
