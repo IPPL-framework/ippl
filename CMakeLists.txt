@@ -60,6 +60,9 @@ endif()
 
 
 #message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+if(Ippl_PLATFORMS)
+    set(IPPL_PLATFORMS ${Ippl_PLATFORMS})
+endif()
 string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
 # Perform case distinction
 if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
@@ -95,18 +98,18 @@ else()
     # Handle unknown or unsupported platform
 endif()
 
-if(NOT KOKKOS_VERSION)
-    set(KOKKOS_VERSION "4.1.00")
-    message(STATUS "${Green}Selecting default Kokkos version: ${KOKKOS_VERSION} ${ColourReset}")
+if(NOT Kokkos_VERSION)
+    set(Kokkos_VERSION "4.1.00")
+    message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
 else()
-    message(STATUS "${Green}Selected Kokkos version: ${KOKKOS_VERSION} ${ColourReset}")
+    message(STATUS "${Green}Selected Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
 endif()
-find_package(Kokkos ${KOKKOS_VERSION} QUIET)
+find_package(Kokkos ${Kokkos_VERSION} QUIET)
 if(NOT Kokkos_FOUND)
     FetchContent_Declare(
         kokkos
         DOWNLOAD_EXTRACT_TIMESTAMP True
-        URL https://github.com/kokkos/kokkos/archive/refs/tags/${KOKKOS_VERSION}.tar.gz                
+        URL https://github.com/kokkos/kokkos/archive/refs/tags/${Kokkos_VERSION}.tar.gz                
     )
     FetchContent_MakeAvailable(kokkos)
 endif()
@@ -153,20 +156,20 @@ endif()
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
-    if(NOT HEFFTE_VERSION)
-        set(HEFFTE_VERSION "MASTER")
+    if(NOT Heffte_VERSION)
+        set(Heffte_VERSION "MASTER")
         message(STATUS "${Green}Selecting default Heffte version: MASTER (Master branch on ttps://github.com/icl-utk-edu/heffte) ${ColourReset}")
     else()
-    message(STATUS "${Green}Selected Heffte version: ${HEFFTE_VERSION} ${ColourReset}")
+    message(STATUS "${Green}Selected Heffte version: ${Heffte_VERSION} ${ColourReset}")
     endif()
-    if(HEFFTE_VERSION MATCHES "MASTER")
+    if(Heffte_VERSION MATCHES "MASTER")
     find_package (Heffte 2.2.0 QUIET)
     else()
-    find_package (Heffte ${HEFFTE_VERSION} QUIET)
+    find_package (Heffte ${Heffte_VERSION} QUIET)
     endif()
     if(NOT Heffte_FOUND)
         message(STATUS "Using FetchContent for Heffte")
-        if(HEFFTE_VERSION MATCHES "MASTER")
+        if(Heffte_VERSION MATCHES "MASTER")
         if(NOT HEFFTE_COMMIT_HASH)
             set(HEFFTE_COMMIT_HASH "9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda")
             message(STATUS "${Yellow}Defaulting to Heffte commit: ${HEFFTE_COMMIT_HASH} ${ColourReset}")
@@ -182,7 +185,7 @@ if (ENABLE_FFT)
         FetchContent_Declare(
             Heffte
             DOWNLOAD_EXTRACT_TIMESTAMP True
-            URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${HEFFTE_VERSION}.tar.gz
+            URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${Heffte_VERSION}.tar.gz
         )
         endif()
         FetchContent_MakeAvailable(Heffte)

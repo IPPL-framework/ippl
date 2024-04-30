@@ -30,9 +30,9 @@ cmake <src_dir> -D<option>=<value>
 
 The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
-- `KOKKOS_VERSION`, default `4.1.00`
-- `HEFFTE_VERSION`, default `MASTER`
-  - If set to `MASTER`, an additional flag `HEFFTE_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
+- `Kokkos_VERSION`, default `4.1.00`
+- `Heffte_VERSION`, default `MASTER`
+  - If set to `MASTER`, an additional flag `Heffte_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
   - Currently, this is the only compatible commit of Heffte
 - `ENABLE_SOLVERS`, default `OFF`
 - `ENABLE_FFT`, default `OFF`
@@ -59,7 +59,7 @@ cd build
 ```
 #### Serial debug build with tests and newest Kokkos
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DENABLE_TESTS=True -DKOKKOS_VERSION=4.2.00
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DENABLE_TESTS=True -DKokkos_VERSION=4.2.00
 ```
 #### OpenMP release build with alpine and FFTW
 ```
