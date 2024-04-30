@@ -698,7 +698,7 @@ public:
                                     }
 
                                     double r_ij = Kokkos::sqrt(rsq_ij);
-                                    double r = Kokkos::sqrt(rsq_ij + epsilon*epsilon);
+                                    double r = Kokkos::sqrt(rsq_ij);
                                     // std::cerr << r_ij << std::endl;
 
                                     // only consider particles within cutoff radius
@@ -767,6 +767,24 @@ public:
         std::cerr << "Dumping data, Kinetic Energy: " << E_kin << std::endl;
         std::cerr << "Dumping data, Potential Energy: " << E_pot << std::endl;
         std::cerr << "Dumping data, Gamma eq: " << E_kin/E_pot << std::endl;
+
+        int it = this->it_m;
+
+        // DEBUG output
+        std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
+        if (outputFile.is_open()) {
+            auto R = this->pcontainer_m->R.getView();
+            for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
+                for (unsigned d = 0; d < Dim; ++d) {
+                    outputFile << R(i)[d];
+                    if (d < Dim - 1) outputFile << ",";
+                }
+                outputFile << std::endl;
+            }
+            outputFile.close();
+        } else {
+            std::cerr << "Unable to open file" << std::endl;
+        }
 
     }
 
@@ -894,7 +912,7 @@ public:
 
         rhoNorm_m = norm(*rho);
 
-        // rho = rho_e - rho_i (only if periodic BCs)
+        // rho = rho_e - rho_i;
         double size = 1;
         for (unsigned d = 0; d < Dim; d++) {
             size *= rmax[d] - rmin[d];
