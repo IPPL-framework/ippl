@@ -98,30 +98,34 @@ public:
       this->pcontainer_m->create(this->np_m);
 
       //BEGIN TODO: Make proper distribution ideally by templating the class with a distribution struct
-      std::mt19937_64 eng;
-      std::uniform_real_distribution<double> unif(0, 1);
-      typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
-      typename ippl::ParticleAttrib<T>::HostMirror Omega_host = pc->omega.getHostMirror();
+      if constexpr (Dim == 2) {
+        std::mt19937_64 eng;
+        std::uniform_real_distribution<double> unif(0, 1);
+        typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
+        typename ippl::ParticleAttrib<T>::HostMirror Omega_host = pc->omega.getHostMirror();
 
-      for (unsigned i = 0; i < this->np_m; i++) {
-        ippl::Vector<double, Dim> r;
+        for (unsigned i = 0; i < this->np_m; i++) {
+          ippl::Vector<double, Dim> r;
 
-        for (unsigned d = 0; d < Dim; d++) {
-          r(d) = unif(eng);
+          for (unsigned d = 0; d < Dim; d++) {
+            r(d) = unif(eng);
+          }
+          
+
+          R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
+
+          std::cout << R_host(i)(0) << std::endl;
+          if (R_host(i)(0) > 5) {
+            Omega_host(i) = 1;
+          } else {
+            Omega_host(i) = -1;
+          }
         }
-        
-
-        R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
-
-        std::cout << R_host(i)(0) << std::endl;
-        if (R_host(i)(0) > 5) {
-          Omega_host(i) = 1;
-        } else {
-          Omega_host(i) = -1;
-        }
+        Kokkos::deep_copy(pc->R.getView(), R_host);
+        Kokkos::deep_copy(pc->omega.getView(), Omega_host);
+      } else if constexpr (Dim == 3) {
+        //TODO initialize fields in 3D
       }
-      Kokkos::deep_copy(pc->R.getView(), R_host);
-      Kokkos::deep_copy(pc->omega.getView(), Omega_host);
       //END TODO
 
 
