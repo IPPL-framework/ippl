@@ -100,6 +100,7 @@ public:
         auto view = u_field.getView();
 
         auto omega_view = this->fcontainer_m->getOmegaField().getView();
+        this->fcontainer_m->getOmegaField().fillHalo();
 
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view, nghost),
@@ -118,9 +119,9 @@ public:
     void scatterCIC() {
       this->fcontainer_m->getOmegaField() = 0.0;
       if constexpr (Dim == 2) {
-        scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
+          scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
       } else if constexpr (Dim == 3) {
-        //Not sure why we need that distinction yet, maybe scatter function doesn't work for vectors but that would be weird
+        //TODO: for some reason the scatter method doesn't work in three dimensions but gather does. 
       }
     }
 };
