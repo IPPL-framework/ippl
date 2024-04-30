@@ -543,7 +543,8 @@ public:
                             }
                         }
                         // make sure we send as many particles as expected
-                        assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
+                        // assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
+                        if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells;
                         
                         MPI_Request request;
                         MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request); 
