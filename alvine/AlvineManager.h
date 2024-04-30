@@ -94,7 +94,6 @@ public:
       VField_t<T, Dim> u_field = this->fcontainer_m->getUField();
       u_field = 0.0;
 
-
       if constexpr (Dim == 2) {
         const int nghost = u_field.getNghost();
         auto view = u_field.getView();

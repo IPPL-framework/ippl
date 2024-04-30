@@ -88,8 +88,17 @@ public:
       initializeParticles();
 
       this->par2grid();
+
+      this->fsolver_m->runSolver();
+      this->computeVelocityField();
+
       this->grid2par();
 
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+      pc->R_old = pc->R;
+      pc->R = pc->R_old + pc->P * this->dt_m;
+      pc->update();
 
     }
 
@@ -114,6 +123,7 @@ public:
           rmin[i] = this->rmin_m[i];
           rmax[i] = this->rmax_m[i];
       }
+
       // Sample from uniform distribution
       Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
 
@@ -130,20 +140,47 @@ public:
   
 
     void advance() override {
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-      this->par2grid();
-      this->fsolver_m->runSolver();
-      this->computeVelocityField();
-      this->grid2par();
-
-      pc->R = pc->R + pc->P * this->dt_m;
-      pc->update();
-
-      
+      LeapFrogStep();     
     }
 
     void LeapFrogStep() {
+
+      static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
+      static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
+      static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+      static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
+      
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+      // scatter the vorticity to the underlying grid
+      this->par2grid();
+
+      // claculate stream function
+      IpplTimings::startTimer(SolveTimer);
+      this->fsolver_m->runSolver();
+      IpplTimings::stopTimer(SolveTimer);
+
+      // calculate velocity from stream function
+      IpplTimings::startTimer(PTimer);
+      this->computeVelocityField();
+      IpplTimings::stopTimer(PTimer);
+
+      // gather velocity field
+      this->grid2par();
+
+      //drift
+      IpplTimings::startTimer(RTimer);
+      typename ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>::particle_position_type R_old_temp = pc->R_old;
+
+      pc->R_old = pc->R;
+      pc->R = R_old_temp + 2 * pc->P * this->dt_m;
+      IpplTimings::stopTimer(RTimer);
+
+
+      IpplTimings::startTimer(updateTimer);
+      pc->update();
+      IpplTimings::stopTimer(updateTimer);
+
     }
 
     void dump() override {
