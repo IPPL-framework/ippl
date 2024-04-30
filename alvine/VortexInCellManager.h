@@ -19,7 +19,7 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 using host_type = typename ippl::ParticleAttrib<T>::HostMirror;
 
 
-template <typename T, unsigned Dim>
+template <typename T, unsigned Dim, typename VortexDistribution>
 class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
@@ -60,12 +60,13 @@ public:
 
       this->hr_m = dr / this->nr_m;
 
+      // Courant condition
       this->dt_m = std::min(0.05, 0.5 * ( *std::min_element(this->hr_m.begin(), this->hr_m.end()) ) );
 
       this->it_m = 0;
       this->time_m = 0.0;
 
-      this->np_m = 10000;//this->nr_m[0] * this->nr_m[0];
+      this->np_m = 10000; //this->nr_m[0] * this->nr_m[0];
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -129,7 +130,7 @@ public:
 
       // Assign vorticity based on radius from center
       Kokkos::parallel_for(totalP,
-        UnitDisk<Dim>(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m, 3.0));
+        VortexDistribution(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m));
     
       Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
