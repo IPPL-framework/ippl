@@ -8,11 +8,12 @@
 // Define the FieldSolver class
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
+  using omega_field_type = std::conditional<Dim == 2, Field_t<Dim>, VField_t<T,Dim>>::type;
   private:
-    Field_t<Dim> *omega_m;
+    omega_field_type *omega_m;
 
   public:
-    FieldSolver(std::string solver, Field_t<Dim> *omega)
+    FieldSolver(std::string solver, omega_field_type *omega)
           : ippl::FieldSolverBase<T, Dim>(solver)
           , omega_m(omega) {}
 
@@ -32,12 +33,17 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
     }
 
     void runSolver() override {
-      if (this->getStype() == "FFT") {
-          std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
-      } else {
-        throw std::runtime_error("Unknown solver type");
-      } 
-    }
+      if constexpr (Dim == 2) {
+        if (this->getStype() == "FFT") {
+            std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
+        } else {
+          throw std::runtime_error("Unknown solver type");
+        } 
+      } else if constexpr (Dim == 3) {
+        //TODO: probably need to run solver three times in this case and do ugly conversion.
+
+      }
+    } 
 
     template <typename Solver>
     void initSolverWithParams(const ippl::ParameterList& sp) {
@@ -47,7 +53,11 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
         solver.mergeParameters(sp);
 
-        solver.setRhs(*omega_m);
+        if constexpr (Dim == 2) {
+          solver.setRhs(*omega_m);
+        } else if constexpr (Dim == 3) {
+          //TODO probably need ugly construct for 3D case here.
+        }
     }
 
     void initFFTSolver() {
