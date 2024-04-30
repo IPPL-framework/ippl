@@ -8,11 +8,11 @@ option(DOWNLOAD_EXTRACT_TIMESTAMP ON FORCE)
 set (IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColourReset "${Esc}[m")
-  set(Red         "${Esc}[31m")
-  set(Green       "${Esc}[32m")
-  set(Yellow      "${Esc}[1;33m")
+    string(ASCII 27 Esc)
+    set(ColourReset "${Esc}[m")
+    set(Red         "${Esc}[31m")
+    set(Green       "${Esc}[32m")
+    set(Yellow      "${Esc}[1;33m")
 endif()
 macro(remove_flag_from_target _target _flag)
     get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
@@ -58,41 +58,43 @@ if(NOT IPPL_PLATFORMS)
     set(IPPL_PLATFORMS "SERIAL")
 endif()
 
-if(IPPL_PLATFORMS)
-    #message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
-    string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
-    # Perform case distinction
-    if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
-        message(STATUS "${Green}CUDA backend enabled${ColourReset}")
-        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
-        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
-    elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
-        message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
-        if(NOT Heffte_ENABLE_FFTW)
-            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
-            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
-        else()
-            message(STATUS "${Green}Enabled FFTW${ColourReset}")
-        endif()
-        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
-    elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
 
-        message(STATUS "${Green}Serial backend enabled${ColourReset}")
-        if(NOT Heffte_ENABLE_FFTW)
-            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
-            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
-        endif()
+#message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
+# Perform case distinction
+if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
+    message(STATUS "${Green}CUDA backend enabled${ColourReset}")
+    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
+    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
 
-    elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
-        message(STATUS "${Green}CUDA and OpenMP backend enabled${ColourReset}")
-        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
-        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
-        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend") 
+elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
+    message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
+    if(NOT Heffte_ENABLE_FFTW)
+        message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+        set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
     else()
-        message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
-        # Handle unknown or unsupported platform
+        message(STATUS "${Green}Enabled FFTW${ColourReset}")
     endif()
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+
+elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
+    message(STATUS "${Green}Serial backend enabled${ColourReset}")
+    if(NOT Heffte_ENABLE_FFTW)
+        message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+        set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
+    endif()
+
+elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
+    message(STATUS "${Green}CUDA and OpenMP backend enabled${ColourReset}")
+    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
+
+else()
+    message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
+    # Handle unknown or unsupported platform
 endif()
+
 if(NOT KOKKOS_VERSION)
     set(KOKKOS_VERSION "4.1.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${KOKKOS_VERSION} ${ColourReset}")
@@ -165,16 +167,22 @@ if (ENABLE_FFT)
     if(NOT Heffte_FOUND)
         message(STATUS "Using FetchContent for Heffte")
         if(HEFFTE_VERSION MATCHES "MASTER")
+        if(NOT HEFFTE_COMMIT_HASH)
+            set(HEFFTE_COMMIT_HASH "9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda")
+            message(STATUS "${Yellow}Defaulting to Heffte commit: ${HEFFTE_COMMIT_HASH} ${ColourReset}")
+        else()
+            message(STATUS "${Green}Using Heffte commit: ${HEFFTE_COMMIT_HASH} ${ColourReset}")
+        endif()
         FetchContent_Declare(
-             Heffte
-             GIT_REPOSITORY https://github.com/icl-utk-edu/heffte
-             GIT_TAG 9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda
+            Heffte
+            GIT_REPOSITORY https://github.com/icl-utk-edu/heffte
+            GIT_TAG ${HEFFTE_COMMIT_HASH}
         )
         else()
         FetchContent_Declare(
-             Heffte
-             DOWNLOAD_EXTRACT_TIMESTAMP True
-             URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${HEFFTE_VERSION}.tar.gz
+            Heffte
+            DOWNLOAD_EXTRACT_TIMESTAMP True
+            URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${HEFFTE_VERSION}.tar.gz
         )
         endif()
         FetchContent_MakeAvailable(Heffte)
