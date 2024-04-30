@@ -12,7 +12,7 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
-#include "Random/Randn.h"
+#include "Random/Randu.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -95,32 +95,46 @@ public:
 
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
-      this->pcontainer_m->create(this->np_m);
+      // Create np_m particles in container
+      size_type totalP = this->np_m;
+      pc->create(totalP); // TODO: local number of particles? from kokkos?
+      
+      // Get position vector
+      view_type* R = &(pc->R.getView());
+        
+      // Random number generator
+      int seed         = 42;
+      Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-      //BEGIN TODO: Make proper distribution ideally by templating the class with a distribution struct
-      std::mt19937_64 eng;
-      std::uniform_real_distribution<double> unif(0, 1);
-      typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
+      double rmin[Dim];
+      double rmax[Dim];
+      for(unsigned int i=0; i<Dim; i++){
+          rmin[i] = this->rmin_m[i];
+          rmax[i] = this->rmax_m[i];
+      }
+      // Sample from uniform distribution
+      Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
+      Kokkos::fence();
+      ippl::Comm->barrier();
+
+
+      //BEGIN TODO: Make proper distribution of vortex strength ideally by templating the class with a distribution struct
+      // Get vorticity values
       typename ippl::ParticleAttrib<T>::HostMirror Omega_host = pc->omega.getHostMirror();
 
-      for (unsigned i = 0; i < this->np_m; i++) {
-        ippl::Vector<double, Dim> r;
-
-        for (unsigned d = 0; d < Dim; d++) {
-          r(d) = unif(eng);
-        }
+      double middle_x = rmin[0] + 0.5 * (rmax[0] - rmin[0]);
+      double middle_y = rmin[1] + 0.5 * (rmax[1] - rmin[1]);
         
+      // Assign vorticity based on radius from center
+      for (unsigned i = 0; i < this->np_m; i++) {
+        double radius = std::sqrt(std::pow(pc->R(i)(0)-middle_x, 2) + std::pow(pc->R(i)(1)-middle_y, 2));
 
-        R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
-
-        std::cout << R_host(i)(0) << std::endl;
-        if (R_host(i)(0) > 5) {
+        if (radius > 3) {
           Omega_host(i) = 1;
         } else {
           Omega_host(i) = -1;
         }
       }
-      Kokkos::deep_copy(pc->R.getView(), R_host);
       Kokkos::deep_copy(pc->omega.getView(), Omega_host);
       //END TODO
 
