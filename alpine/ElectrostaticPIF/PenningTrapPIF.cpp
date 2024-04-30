@@ -308,7 +308,7 @@ int main(int argc, char *argv[]){
     P->gather();
 
     IpplTimings::startTimer(dumpDataTimer);
-    P->dumpEnergy();
+    //P->dumpEnergy();
     IpplTimings::stopTimer(dumpDataTimer);
 
     double alpha = -0.5 * dt;
@@ -387,7 +387,7 @@ int main(int argc, char *argv[]){
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpEnergy();
+        //P->dumpEnergy();
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }

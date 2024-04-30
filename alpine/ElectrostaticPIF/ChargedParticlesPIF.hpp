@@ -606,10 +606,10 @@ public:
                 double Sk = 1.0;
                 for(size_t d = 0; d < Dim; ++d) {
                     kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
-                    double kh = kVec[d] * dx[d] / 2;
-                    bool isNotZero = (kh != 0.0);
-                    double factor = (1.0 / (kh + ((!isNotZero) * 1.0)));
-                    double arg = isNotZero * (Kokkos::sin(kh) * factor) + 
+                    double khbytwo = kVec[d] * dx[d] / 2;
+                    bool isNotZero = (khbytwo != 0.0);
+                    double factor = (1.0 / (khbytwo + ((!isNotZero) * 1.0)));
+                    double arg = isNotZero * (Kokkos::sin(khbytwo) * factor) + 
                                  (!isNotZero) * 1.0;
                     //Fourier transform of CIC
                     Sk *= std::pow(arg, order);
