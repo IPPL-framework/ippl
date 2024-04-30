@@ -51,6 +51,11 @@ public:
           csvout << "time,index,pos_x,pos_y,pos_z" << endl;
       }
 
+      Inform energyout(NULL, "energy.csv", Inform::OVERWRITE);
+      energyout.precision(16);
+      energyout.setf(std::ios::scientific, std::ios::floatfield);
+      energyout << "energy" << endl;
+
       for (unsigned i = 0; i < Dim; i++) {
           this->domain_m[i] = ippl::Index(this->nr_m[i]);
       }
@@ -92,6 +97,7 @@ public:
 
       this->fsolver_m->runSolver();
       this->computeVelocityField();
+      // this->computeOmega_dotField();
 
       this->grid2par();
 
@@ -150,6 +156,7 @@ public:
       static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
       static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
       static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
+      static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
       
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
@@ -182,6 +189,10 @@ public:
       pc->update();
       IpplTimings::stopTimer(updateTimer);
 
+      IpplTimings::startTimer(ETimer);
+      this->computeEnergy();
+      IpplTimings::stopTimer(ETimer);
+
     }
 
     void dump() override {
@@ -196,6 +207,9 @@ public:
         }
         csvout << "," << pc->omega(i) << endl;
       }
+
+      Inform energyout(NULL, "energy.csv", Inform::APPEND);
+      energyout << this->energy_m << endl;
        
     }
 

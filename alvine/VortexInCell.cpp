@@ -55,6 +55,9 @@ int main(int argc, char* argv[]) {
     {
         Inform msg(TestName);
 
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        IpplTimings::startTimer(mainTimer);
+
         unsigned arg = 1;    
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
@@ -74,6 +77,10 @@ int main(int argc, char* argv[]) {
         manager.pre_run();
 
         manager.run(manager.getNt());
+
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 
