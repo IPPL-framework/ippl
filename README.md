@@ -32,6 +32,8 @@ The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
 - `KOKKOS_VERSION`, default `4.1.00`
 - `HEFFTE_VERSION`, default `MASTER`
+  - If set to `MASTER`, an additional flag `HEFFTE_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
+  - Currently, this is the only compatible commit of Heffte
 - `ENABLE_SOLVERS`, default `OFF`
 - `ENABLE_FFT`, default `OFF`
   - If `ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
@@ -40,6 +42,7 @@ The relevant options of IPPL are
 - `ENABLE_TESTS`, default `OFF`
 - `ENABLE_UNIT_TESTS`, default `OFF`
 - `ENABLE_ALPINE`, default `OFF`
+- `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can turned on for GPU builds where the use of the system-provided variant doesn't work.  
 
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
 - `Release` for optimized builds
@@ -56,16 +59,24 @@ cd build
 ```
 #### Serial debug build with tests and newest Kokkos
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=True -DKOKKOS_VERSION=4.2.00
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DENABLE_TESTS=True -DKOKKOS_VERSION=4.2.00
 ```
-#### OpenMP release build with tests and FFTW
+#### OpenMP release build with alpine and FFTW
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True -DENABLE_TESTS=True
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DENABLE_TESTS=ON -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True
 ```
-#### Cuda + OpenMP alpine release build 
+#### Cuda alpine release build 
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_ALPINE=True -DIPPL_PLATFORMS="openmp;cuda"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_TESTS=ON -DUSE_ALTERNATIVE_VARIANT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DIPPL_PLATFORMS=cuda
 ```
+`[architecture]` should be the target architecture, e.g.
+- `PASCAL60`
+- `PASCAL61`
+- `VOLTA70`
+- `VOLTA72`
+- `TURING75`
+- `AMPERE80`
+- `AMPERE86`
 
 
 # Contributions
