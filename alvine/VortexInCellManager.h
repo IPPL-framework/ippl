@@ -12,9 +12,11 @@
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
-#include "Random/Randn.h"
+#include "Random/Randu.h"
+#include "VortexDistributions.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+using host_type = typename ippl::ParticleAttrib<T>::HostMirror;
 
 
 template <typename T, unsigned Dim>
@@ -95,39 +97,34 @@ public:
 
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
-      this->pcontainer_m->create(this->np_m);
+      // Create np_m particles in container
+      size_type totalP = this->np_m;
+      pc->create(totalP); // TODO: local number of particles? from kokkos?
+      
+      view_type* R = &(pc->R.getView()); // Position vector
+      host_type omega_host = pc->omega.getHostMirror(); // Vorticity values
+        
+      // Random number generator
+      int seed         = 42;
+      Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-      //BEGIN TODO: Make proper distribution ideally by templating the class with a distribution struct
-      if constexpr (Dim == 2) {
-        std::mt19937_64 eng;
-        std::uniform_real_distribution<double> unif(0, 1);
-        typename ParticleContainer_t::particle_position_type::HostMirror R_host = pc->R.getHostMirror();
-        typename ippl::ParticleAttrib<T>::HostMirror Omega_host = pc->omega.getHostMirror();
-
-        for (unsigned i = 0; i < this->np_m; i++) {
-          ippl::Vector<double, Dim> r;
-
-          for (unsigned d = 0; d < Dim; d++) {
-            r(d) = unif(eng);
-          }
-          
-
-          R_host(i) = r * (this->rmax_m - this->rmin_m) + this->origin_m;
-
-          std::cout << R_host(i)(0) << std::endl;
-          if (R_host(i)(0) > 5) {
-            Omega_host(i) = 1;
-          } else {
-            Omega_host(i) = -1;
-          }
-        }
-        Kokkos::deep_copy(pc->R.getView(), R_host);
-        Kokkos::deep_copy(pc->omega.getView(), Omega_host);
-      } else if constexpr (Dim == 3) {
-        //TODO initialize fields in 3D
+      double rmin[Dim];
+      double rmax[Dim];
+      for(unsigned int i=0; i<Dim; i++){
+          rmin[i] = this->rmin_m[i];
+          rmax[i] = this->rmax_m[i];
       }
-      //END TODO
+      // Sample from uniform distribution
+      Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
 
+      // Assign vorticity based on radius from center
+      Kokkos::parallel_for(totalP,
+        UnitDisk<Dim>(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m, 3.0));
+    
+      Kokkos::deep_copy(pc->omega.getView(), omega_host);
+
+      Kokkos::fence();
+      ippl::Comm->barrier();
 
     }
   
