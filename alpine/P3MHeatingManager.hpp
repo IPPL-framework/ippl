@@ -361,7 +361,8 @@ public:
             	unsigned z_Idx = floor((R(i)[2] - l_extend[2]) / hCM[2]);
 
             	unsigned locCMeshIdx = x_Idx * nCells[1] * nCells[2] + y_Idx * nCells[2] + z_Idx;
-            	assert(locCMeshIdx < totalCells && "Invalid Grid Position");
+            	// assert(locCMeshIdx < totalCells && "Invalid Grid Position");
+                if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells;
 
             	Kokkos::atomic_increment(&cellParticleCount(locCMeshIdx));
             	cellIndex(i) = locCMeshIdx;
@@ -543,8 +544,7 @@ public:
                             }
                         }
                         // make sure we send as many particles as expected
-                        // assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
-                        if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells;
+                        assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
                         
                         MPI_Request request;
                         MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request); 
