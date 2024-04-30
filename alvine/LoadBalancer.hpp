@@ -8,9 +8,11 @@ template <typename T, unsigned Dim>
 class LoadBalancer{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using FieldSolver_t= ippl::FieldSolverBase<T, Dim>;
+    using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
+    
     private:
         double loadbalancethreshold_m;
-        Field_t<Dim>* omega_m;
+        vorticity_field_type* omega_m;
         std::shared_ptr<ParticleContainer<T, Dim>> pc_m;
         std::shared_ptr<FieldSolver_t> fs_m;
         unsigned int loadbalancefreq_m;
