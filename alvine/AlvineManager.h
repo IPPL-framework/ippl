@@ -119,15 +119,18 @@ public:
     }
 
     void computeEnergy() {
-      this->energy_m = 0.0;
-      Kokkos::parallel_reduce(
-          "Compute energy", this->np_m,
-          KOKKOS_LAMBDA(const int i, double& local_sum) {
-            for (unsigned d = 0; d < Dim; d++) {
-              local_sum += this->pcontainer_m->P(i)[d] * this->pcontainer_m->P(i)[d];
-            }
-          },
-          this->energy_m);
+        std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
+
+        this->energy_m = 0.0;
+        Kokkos::parallel_reduce(
+            "Compute energy", this->np_m,
+            KOKKOS_LAMBDA(const int i, double& local_sum) {
+                for (unsigned d = 0; d < Dim; d++) {
+                    local_sum += pc->P(i)[d] * pc->P(i)[d];
+                }
+            },
+            this->energy_m
+        );
     }
 };
 #endif
