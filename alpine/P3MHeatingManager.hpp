@@ -42,7 +42,7 @@ using Device = Kokkos::DefaultExecutionSpace;
 using Host = Kokkos::DefaultHostExecutionSpace;
 
 // physical constants
-const double ke = 2.532638e8;
+// const double ke = 2.532638e8;
 
 /**
  * @class P3M3DHeatingManager
@@ -690,6 +690,7 @@ public:
                                 [&](const size_t j, Vector_t<T, Dim>& sum){
                                     const size_type jj = neighborStart + j;
                                     if (ii == jj) return;
+                                    const double ke = 2.532638e8;
 
                                     double rsq_ij = 0.0;
                                     
