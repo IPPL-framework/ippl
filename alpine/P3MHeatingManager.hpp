@@ -731,10 +731,11 @@ public:
     }
 
     double calcKineticEnergy() {
+        view_type *P = &this->pcontainer_m->P.getView();
         double localEnergy = 0.0;
         Kokkos::parallel_reduce("calc kinetic energy", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const size_type i, double& sum){
-                sum += 0.5 * this->pcontainer_m->P(i).dot(this->pcontainer_m->P(i));
+                sum += 0.5 * (*P)(i).dot((*P)(i));
             }, localEnergy
         );
 
@@ -747,9 +748,10 @@ public:
     double calcPotentialEnergy() {
         auto Q = this->pcontainer_m->Q.getView();
         auto E = this->pcontainer_m->E.getView();
+        auto nLoc = this->pcontainer_m->getLocalNum();
 
         double localPotential = 0.0;
-        Kokkos::parallel_reduce("calc potential energy", this->pcontainer_m->getLocalNum(),
+        Kokkos::parallel_reduce("calc potential energy", nLoc,
             KOKKOS_LAMBDA(const size_type i, double& sum){
                 for (unsigned d = 0; d < Dim; ++d) sum += Q(i)/156055 * E(i)[d];
             }, localPotential
