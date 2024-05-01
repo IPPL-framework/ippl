@@ -9,17 +9,18 @@
 #include "LoadBalancer.hpp"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
+#include "ParticleDistributions.h"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
 #include "VortexDistributions.h"
 
-using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using host_type = typename ippl::ParticleAttrib<T>::HostMirror;
+using view_type     = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+using host_type     = typename ippl::ParticleAttrib<T>::HostMirror;
+using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
-
-template <typename T, unsigned Dim, typename VortexDistribution>
+template <typename T, unsigned Dim, typename ParticleDistribution, typename VortexDistribution>
 class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
@@ -38,6 +39,9 @@ public:
         }
 
     ~VortexInCellManager() {}
+    
+    template<typename P>
+    void set_number_of_particles(){this->np_m = 10000;}
 
     void pre_run() override {
 
@@ -55,7 +59,6 @@ public:
           this->domain_m[i] = ippl::Index(this->nr_m[i]);
       }
 
-
       Vector_t<double, Dim> dr = this->rmax_m - this->rmin_m;
 
       this->hr_m = dr / this->nr_m;
@@ -66,7 +69,7 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-      this->np_m = 10000; //this->nr_m[0] * this->nr_m[0];
+        set_number_of_particles<ParticleDistribution>();
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -100,43 +103,39 @@ public:
       pc->R_old = pc->R;
       pc->R = pc->R_old + pc->P * this->dt_m;
       pc->update();
+    }
 
+
+    template<> void set_number_of_particles<EquidistantDistribution>() {
+        int particles = 1;
+        for (unsigned i = 0; i < Dim; i++) {
+            particles *= this->nr_m[i];
+        }
+        this->np_m = particles;
     }
 
     void initializeParticles() {
 
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
-      // Create np_m particles in container
-      size_type totalP = this->np_m;
-      pc->create(totalP); // TODO: local number of particles? from kokkos?
-      
-      view_type* R = &(pc->R.getView()); // Position vector
-      host_type omega_host = pc->omega.getHostMirror(); // Vorticity values
-        
-      // Random number generator
-      int seed         = 42;
-      Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        // Create np_m particles in container
+        size_type totalP = this->np_m;
+        pc->create(totalP);  // TODO: local number of particles? from kokkos?
 
-      double rmin[Dim];
-      double rmax[Dim];
-      for(unsigned int i=0; i<Dim; i++){
-          rmin[i] = this->rmin_m[i];
-          rmax[i] = this->rmax_m[i];
-      }
+        view_type* R = &(pc->R.getView());  // Position vector
+        ParticleDistribution particle_distribution(*R, this->rmin_m, this->rmax_m, this->np_m);
+        Kokkos::parallel_for(totalP, particle_distribution);
 
-      // Sample from uniform distribution
-      Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
+        // Assign vorticity
+        host_type omega_host = pc->omega.getHostMirror();  // Vorticity values
 
-      // Assign vorticity based on radius from center
-      Kokkos::parallel_for(totalP,
-        VortexDistribution(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m));
-    
-      Kokkos::deep_copy(pc->omega.getView(), omega_host);
+        VortexDistribution vortex_dist(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m);
+        Kokkos::parallel_for(totalP, vortex_dist);
 
-      Kokkos::fence();
-      ippl::Comm->barrier();
+        Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
+        Kokkos::fence();
+        ippl::Comm->barrier();
     }
   
 
