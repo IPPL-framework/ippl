@@ -19,12 +19,12 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
-add_executable (TestTuple TestTuple.cpp)
-target_link_libraries (
-    TestTuple
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
+#add_executable (TestTuple TestTuple.cpp)
+#target_link_libraries (
+#    TestTuple
+#    ${IPPL_LIBS}
+#    ${MPI_CXX_LIBRARIES}
+#)
 add_executable (TestVector2 TestVector2.cpp)
 target_link_libraries (
     TestVector2
