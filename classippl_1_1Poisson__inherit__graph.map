@@ -1,0 +1,8 @@
+<map id="ippl::Poisson&lt; FieldLHS, FieldRHS &gt;" name="ippl::Poisson&lt; FieldLHS, FieldRHS &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="455,5,624,295"/>
+<area shape="rect" id="node2" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="5,343,196,588"/>
+<area shape="rect" id="node3" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="221,401,423,529"/>
+<area shape="rect" id="node4" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="448,409,631,522"/>
+<area shape="rect" id="node5" href="$classippl_1_1P3MSolver.html" title=" " alt="" coords="655,372,842,559"/>
+<area shape="rect" id="node6" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="867,372,1055,559"/>
+</map>

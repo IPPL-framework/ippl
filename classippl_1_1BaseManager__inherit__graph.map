@@ -1,0 +1,9 @@
+<map id="ippl::BaseManager" name="ippl::BaseManager">
+<area shape="rect" id="node1" title="A base class for managing simulations using IPPL." alt="" coords="379,5,511,148"/>
+<area shape="rect" id="node2" href="$classippl_1_1PicManager.html" title=" " alt="" coords="260,196,437,529"/>
+<area shape="rect" id="node7" href="$classippl_1_1PicManager.html" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="461,218,620,507"/>
+<area shape="rect" id="node3" href="$classAlpineManager.html" title=" " alt="" coords="253,577,445,940"/>
+<area shape="rect" id="node4" href="$classBumponTailInstabilityManager.html" title=" " alt="" coords="5,988,228,1160"/>
+<area shape="rect" id="node5" href="$classLandauDampingManager.html" title=" " alt="" coords="253,988,445,1160"/>
+<area shape="rect" id="node6" href="$classPenningTrapManager.html" title=" " alt="" coords="469,988,639,1160"/>
+</map>

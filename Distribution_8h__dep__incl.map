@@ -1,0 +1,13 @@
+<map id="Distribution.h" name="Distribution.h">
+<area shape="rect" id="node1" title=" " alt="" coords="360,5,457,31"/>
+<area shape="rect" id="node2" href="$AlpineManager_8h.html" title=" " alt="" coords="201,152,320,177"/>
+<area shape="rect" id="node3" href="$BumponTailInstabilityManager_8h.html" title=" " alt="" coords="5,225,212,251"/>
+<area shape="rect" id="node5" href="$LandauDampingManager_8h.html" title=" " alt="" coords="237,225,413,251"/>
+<area shape="rect" id="node7" href="$PenningTrapManager_8h.html" title=" " alt="" coords="437,225,591,251"/>
+<area shape="rect" id="node9" href="$NormalDistribution_8h.html" title=" " alt="" coords="339,79,478,104"/>
+<area shape="rect" id="node10" href="$Randn_8h.html" title=" " alt="" coords="195,79,265,104"/>
+<area shape="rect" id="node11" href="$Randu_8h.html" title=" " alt="" coords="649,79,718,104"/>
+<area shape="rect" id="node4" href="$BumponTailInstability_8cpp.html" title=" " alt="" coords="23,299,194,324"/>
+<area shape="rect" id="node6" href="$LandauDamping_8cpp.html" title=" " alt="" coords="255,299,395,324"/>
+<area shape="rect" id="node8" href="$PenningTrap_8cpp.html" title=" " alt="" coords="455,299,573,324"/>
+</map>

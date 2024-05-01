@@ -1,0 +1,6 @@
+<map id="ippl::detail::ParticleBC&lt; T, Dim, ViewType &gt;" name="ippl::detail::ParticleBC&lt; T, Dim, ViewType &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="191,5,342,207"/>
+<area shape="rect" id="node2" href="$structippl_1_1detail_1_1PeriodicBC.html" title=" " alt="" coords="5,255,160,368"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1ReflectiveBC.html" title=" " alt="" coords="185,255,349,368"/>
+<area shape="rect" id="node4" href="$structippl_1_1detail_1_1SinkBC.html" title=" " alt="" coords="373,255,520,368"/>
+</map>
