@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
         const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
         const int nghost               = field.getNghost();
         using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        for(int im = 0;im < 40;im++){
+        for(int im = 00;im < 40;im++){
             Kokkos::parallel_for(
                 "Assign field",
                 mdrange_type({0, 0, 0}, {view.extent(0), view.extent(1), view.extent(2)}),
@@ -64,15 +64,24 @@ int main(int argc, char* argv[]) {
                     scalar z = (kg + 0.5) * hx[2] + origin[2];
 
                     if (gauss_fct) {
-                        view(i, j, k) = 0.1 * gaussian((x - 0.5 + im / 40.0),0.5,0.5, 0.05);
+                        view(i, j, k) = 0.01f * gaussian((x - 0.5 + im / 40.0), 0.5, 0.5, 0.01);
                     } else {
                         view(i, j, k) = x * y * z;
                     }
-                });
+                }
+            );
             using vec3 = rm::Vector<float, 3>;
-            vec3 pos{0.5,0.5,2.0};
+            vec3 pos{0.0,0.0,1.0};
             vec3 target{0.5,0.5,0.5};
-            ippl::Image img = ippl::draw_scalar_field(field, 800, 600, rm::camera(pos, target - pos));
+            (void)pos;
+            (void)target;
+            ippl::Image img = ippl::drawFieldFog(field, 800, 600, rm::camera(pos, target - pos), [](float x){
+                return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
+                //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
+            });
+            //ippl::Image img = ippl::drawFieldCrossSection(field, 2000, 2000, ippl::axis::y, 0.5f, [](float x){
+            //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
+            //});
             char buf[1024] = {0};
             snprintf(buf, 1024, "renderdata/out%05d.bmp", im);
             img.save_to(buf);
