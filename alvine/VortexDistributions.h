@@ -26,7 +26,9 @@ public:
         this->center = rmin + 0.5 * (rmax - rmin);
     }
 
-    KOKKOS_INLINE_FUNCTION virtual void operator()(const size_t i) const = 0;
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const{
+        this->omega(i) = 1;
+    }
 };
 
 class UnitDisk : BaseDistribution {
@@ -100,9 +102,53 @@ public:
             this->omega(i) = 1;
         } else if (this->r(i)(1) < axis_second_band
                    and this->r(i)(1) > axis_second_band - width) {
-            this->omega(i) = 1;
+            this->omega(i) = -1;
         } else {
             // Outside of the bands
+            this->omega(i) = 0;
+        }
+    }
+};
+
+class Ring : BaseDistribution {
+public:
+    Ring(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
+                      vector_type origin)
+        : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        vector_type dist = this->r(i) - this->center;
+        double norm      = 0.0;
+        for (unsigned int d = 0; d < Dim; d++) {
+            norm += std::pow(dist(d), 2);
+        }
+        norm = std::sqrt(norm);
+        if (norm < 2 and norm > 1.5) {
+            this->omega(i) = 1;
+        } else {
+            this->omega(i) = 0;
+        }
+    }
+};
+
+class ConcentricCircles : BaseDistribution {
+public:
+    ConcentricCircles(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
+                      vector_type origin)
+        : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        vector_type dist = this->r(i) - this->center;
+        double norm      = 0.0;
+        for (unsigned int d = 0; d < Dim; d++) {
+            norm += std::pow(dist(d), 2);
+        }
+        norm = std::sqrt(norm);
+        if (norm < 2 and norm > 1.5) {
+            this->omega(i) = 1;
+        } else if(norm < 1 and norm > 0.5){
+            this->omega(i) = 1;
+        } else {
             this->omega(i) = 0;
         }
     }
