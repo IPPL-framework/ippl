@@ -1,5 +1,5 @@
 /**
-@page basic_solver Basics: Solver
+@page basic_solver Basics: Solver {#Solver} 
 
 @section solvers Solvers
 
@@ -89,4 +89,27 @@ Solver_t FFTsolver(fieldE, rho, params);
 FFTsolver.solve();
 @endcode
 The potential is stored in the rho Field. The E-Field is stored in the fieldE Field.
+
+
+## [Optional] Using a Preconditioner 
+
+If you want to precondition the solver you can add following parameters to the parameter list:
+@code
+// Define the preconditioner type (jacobi, newton, chebyshev, richardson or gauss_seidel)
+params.add("preconditioner_type", preconditioner_type);
+// Define the gauss_seidel parameters
+params.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
+params.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
+// Define the newton parameters
+params.add("newton_level", newton_level);
+// Define the chebyshev parameters
+params.add("chebyshev_degree", chebyshev_degree);
+// Define the richardson parameters
+params.add("richardson_iterations", richardson_iterations);
+// Define the communication parameters (needed for richardson and gauss_seidel)
+params.add("communication", communication);
+// Merge the parameters
+solver.mergeParameters(params);
+@endcode
+
 */
