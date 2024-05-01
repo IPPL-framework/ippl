@@ -7,6 +7,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "UpdateStrategy.hpp"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -86,12 +87,18 @@ public:
 
       this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
+      if constexpr (Dim == 2) {
+          this->setUpdateStrategy( std::make_shared<TwoDimUpdateStrategy<T>>() );
+      } else if constexpr (Dim == 3) {
+          this->setUpdateStrategy( std::make_shared<ThreeDimUpdateStrategy<T>>() );
+      }
+
       initializeParticles();
 
       this->par2grid();
 
       this->fsolver_m->runSolver();
-      this->computeVelocityField();
+      this->updateFields();
 
       this->grid2par();
 
@@ -163,7 +170,7 @@ public:
 
       // calculate velocity from stream function
       IpplTimings::startTimer(PTimer);
-      this->computeVelocityField();
+      this->updateFields();
       IpplTimings::stopTimer(PTimer);
 
       // gather velocity field
