@@ -10,8 +10,14 @@
 
 #include "FEM/Elements/Element.h"
 
+// own power function since Kokkos::pow is not constexpr
+template <typename T>
+constexpr T power(T base, unsigned exponent) {
+    return exponent == 0 ? 1 : base * power(base, exponent - 1);
+}
+
 inline constexpr unsigned getNumElementNodes(unsigned NumNodes1D, unsigned Dim) {
-    return static_cast<unsigned>(pow(static_cast<double>(NumNodes1D), static_cast<double>(Dim)));
+    return static_cast<unsigned>(power(static_cast<int>(NumNodes1D), static_cast<int>(Dim)));
 }
 
 namespace ippl {

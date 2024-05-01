@@ -11,7 +11,7 @@
 
 constexpr unsigned getLagrangeNumElementDOFs(unsigned Dim, unsigned Order) {
     // needs to be constexpr pow function to work at compile time. Kokkos::pow doesn't work.
-    return static_cast<unsigned>(pow(static_cast<double>(Order + 1), static_cast<double>(Dim)));
+    return static_cast<unsigned>(power(static_cast<int>(Order + 1), static_cast<int>(Dim)));
 }
 
 namespace ippl {
