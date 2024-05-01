@@ -1,49 +1,38 @@
 """Module to plot the particle positions from a txt file."""
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from matplotlib.animation import FuncAnimation
 
 # Change this path to the path of the txt file
-FILE = "../build_serial/alvine/data/particle_positions.txt"
+PATH = "../build_serial/alvine"
 
-# Read data from txt file
-with open(FILE, 'r') as file:
-    lines = file.readlines()
+# Load data from CSV file
+df = pd.read_csv(f'{PATH}/particles.csv')
 
-# Process data
-data = []
-# Ignore header
-data.append(lines[0].strip().split(','))
-# Extract time and position data
-for line in lines[1:]:
-    parts = line.strip().split(',')
-    time = [float(parts[0])]
-    position = [float(coord.strip('( ) ')) for coord in parts[1:]]
-    data.append(time+position)
+# Find the unique times and indices for particles
+times = df['time'].unique()
+particle_indices = df['index'].unique()
 
-# Turn data into a pandas dataframe
-data = pd.DataFrame(data[1:], columns=data[0])
-time_steps = sorted(data['time'].unique())
+# Create a figure and axis
+fig, ax = plt.subplots()
+ax.set_xlim((0,10))
+ax.set_ylim((0,10))
 
-# Initialize the plot
-fig, ax = plt.subplots(figsize=(8, 6))
-scatter = ax.scatter([], [], c='b', marker='.')
-
-# Set limits and title
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_xlim(data.x.min(), data.x.max())
-ax.set_ylim(data.y.min(), data.y.max())
-ax.set_title('Particles Animation (X vs Y)')
-ax.grid(True)
+# Initialize scatter plot with empty data and color map
+scat = ax.scatter([], [], c=[], s=2, cmap='viridis_r')
 
 def update(frame):
-    """Update function for animation."""
-    df_frame = data[data['time'] == frame]
-    scatter.set_offsets(df_frame[['x', 'y']].values)
-    ax.set_title(f'Particles at Time = {frame:.4f}')
-    return scatter,
+    current_time = times[frame]
+    frame_data = df[df['time'] == current_time]
+    scat.set_offsets(np.c_[frame_data['pos_x'], frame_data['pos_y']])
+    scat.set_array(frame_data['vorticity'])  # Set colors based on vorticity
+    return scat,
 
 # Create animation
-ani = FuncAnimation(fig, update, frames=time_steps, blit=True)
-ani.save('basic_animation.gif', fps=10)
+ani = FuncAnimation(fig, update, frames=len(times), blit=True, interval=50)
+
+# Show animation
+# plt.show()
+ani.save(f'particles.gif', fps=30)
+

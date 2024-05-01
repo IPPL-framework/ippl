@@ -106,7 +106,7 @@ public:
             KOKKOS_LAMBDA(const int i, const int j) {
                 view(i, j) = {
                         (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->hr_m(1)), 
-                        (omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(0))
+                        -(omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(0))
                         };
 
             });
