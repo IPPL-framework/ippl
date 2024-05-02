@@ -43,13 +43,24 @@ int main(int argc, char* argv[]) {
         Field_t field(mesh, layout, 1);
         MField_t result(mesh, layout, 1);
         MField_t exact(mesh, layout, 1);
+        Kokkos::View<ippl::Vector<float, 3>*> position("ppositions", 8);
 
+        Kokkos::parallel_for(position.extent(0), KOKKOS_LAMBDA(size_t i){
+            position(i) = ippl::Vector<float, 3>{float(int(i / 4)), float((i / 2) % 2), float(i % 2) * 1.0f};
+            //position(i) = ippl::Vector<float, 3>{0.0f,0.0f,0.0f};
+        });
+        using vec3 = rm::Vector<float, 3>;
+        vec3 pos{-1.5,-1.0,-1.5};
+        vec3 target{0.5,0.3,0.5};
+        rm::camera cam(pos, target - pos);
+        ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
+        pimg.save_to("particle.png");
         typename Field_t::view_type& view = field.getView();
 
         const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();
         const int nghost               = field.getNghost();
         using mdrange_type             = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        for(int im = 00;im < 40;im++){
+        for(int im = 0;im < 1;im++){
             Kokkos::parallel_for(
                 "Assign field",
                 mdrange_type({0, 0, 0}, {view.extent(0), view.extent(1), view.extent(2)}),
@@ -64,27 +75,30 @@ int main(int argc, char* argv[]) {
                     scalar z = (kg + 0.5) * hx[2] + origin[2];
 
                     if (gauss_fct) {
-                        view(i, j, k) = 0.01f * gaussian((x - 0.5 + im / 40.0), 0.5, 0.5, 0.01);
+                        view(i, j, k) = 0.1f * gaussian((x - 0.5 + im / 40.0), 0.5, 0.5, 0.01);
                     } else {
                         view(i, j, k) = x * y * z;
                     }
                 }
             );
-            using vec3 = rm::Vector<float, 3>;
-            vec3 pos{0.0,0.0,1.0};
-            vec3 target{0.5,0.5,0.5};
+            
             (void)pos;
             (void)target;
-            ippl::Image img = ippl::drawFieldFog(field, 800, 600, rm::camera(pos, target - pos), [](float x){
+            ippl::Image img = ippl::drawFieldFog(field, 1000, 500, rm::camera(pos, target - pos), [](float x){
                 return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
                 //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
-            });
-            //ippl::Image img = ippl::drawFieldCrossSection(field, 2000, 2000, ippl::axis::y, 0.5f, [](float x){
+            }, pimg);
+
+            //ippl::Image img = ippl::drawFieldCrossSection(field, 600, 600, ippl::axis::y, 0.3f, [](float x){
             //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
             //});
-            char buf[1024] = {0};
-            snprintf(buf, 1024, "renderdata/out%05d.bmp", im);
-            img.save_to(buf);
+            img.save_to("field.png");
+            //img.collectOnRank0();
+            //if(ippl::Comm->rank() == 0){
+            //    char buf[1024] = {0};
+            //    snprintf(buf, 1024, "renderdataout%05d.bmp", im);
+            //    img.save_to(buf);
+            //}
         }
     }
     ippl::finalize();

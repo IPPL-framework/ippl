@@ -90,7 +90,6 @@ namespace ippl{
         }
 
         KOKKOS_INLINE_FUNCTION constexpr scalar max_extent()const noexcept{
-            assert(d < Dim);
             using Kokkos::max;
             scalar ext = extent(0);
             for(unsigned d = 1;d < Dim;d++){
@@ -155,6 +154,44 @@ namespace ippl{
         return {tmin, tmax};
     }
     /**
+     * @brief Extends a 3D color to a 4D witha given alpha value
+     * 
+     * @param color Color input
+     * @param alpha alpha input
+     * @return [Red, Green, Blue, Alpha] 
+     */
+    KOKKOS_INLINE_FUNCTION ippl::Vector<float, 4> alpha_extend(ippl::Vector<float, 3> color, float alpha){
+        ippl::Vector<float, 4> ret;
+        ret[0] = color[0];
+        ret[1] = color[1];
+        ret[2] = color[2];
+        ret[3] = alpha;
+        return ret;
+    }
+    KOKKOS_INLINE_FUNCTION ippl::Vector<float, 3> alpha_remove(ippl::Vector<float, 4> color){
+        ippl::Vector<float, 3> ret;
+        ret[0] = color[0];
+        ret[1] = color[1];
+        ret[2] = color[2];
+        return ret;
+    }
+    KOKKOS_INLINE_FUNCTION ippl::Vector<float, 4> porterDuff(const ippl::Vector<float, 4>& A4, const ippl::Vector<float, 4>& B4){
+        float alpha_A = A4[3];
+        float alpha_B = B4[3];
+        float alpha_C;
+
+        ippl::Vector<float, 3> A = alpha_remove(A4);
+        ippl::Vector<float, 3> B = alpha_remove(B4);
+        ippl::Vector<float, 3> C;
+        alpha_C = alpha_A + (1.0f - alpha_A) * alpha_B;
+        if(alpha_C != 0.0f){
+            C[0] = (1.0f / alpha_C) * (A[0] * alpha_A + B[0] * (1.0f - alpha_A) * alpha_B);
+            C[1] = (1.0f / alpha_C) * (A[1] * alpha_A + B[1] * (1.0f - alpha_A) * alpha_B);
+            C[2] = (1.0f / alpha_C) * (A[2] * alpha_A + B[2] * (1.0f - alpha_A) * alpha_B);
+        }
+        return alpha_extend(C, alpha_C);
+    }
+    /**
      * @brief Struct representing an image
      * 
      */
@@ -168,13 +205,13 @@ namespace ippl{
         uint32_t width, height;
 
 
-        using view_type = Kokkos::View<color_type*>;
-        using depth_view_type = Kokkos::View<color_type*>;
+        using color_buffer_type = Kokkos::View<color_type*>;
+        using depth_buffer_type = Kokkos::View<depth_type*>;
 
-        //Color buffer, width * height elements
-        Kokkos::View<color_type*> color_buffer;
-        //Depth buffer, width * height elements
-        Kokkos::View<depth_type*> depth_buffer;
+        //Color buffer (Kokkos::View<color_type*>), width * height elements
+        color_buffer_type color_buffer;
+        //Depth buffer (Kokkos::View<depth_type*>), width * height elements
+        depth_buffer_type depth_buffer;
 
         //Inexpensive default ctor
         Image() : width(0), height(0){}
@@ -197,9 +234,9 @@ namespace ippl{
 
             depth_buffer = Kokkos::View<depth_type*>("Image::depth_buffer", width * height);
             auto dbuf = depth_buffer;
-            depth_type infin = std::numeric_limits<depth_type>::infinity();
+            //depth_type infin = std::numeric_limits<depth_type>::infinity();
             Kokkos::parallel_for(width * height, KOKKOS_LAMBDA(size_t i){
-                dbuf(i) = infin;
+                dbuf(i) = 1e20;
             });
         }
         /**
@@ -209,6 +246,19 @@ namespace ippl{
          */
         void save_to(const char* out_file_name){
             save_to(std::string(out_file_name));
+        }
+        /**
+         * @brief Get the RangePolicy for the image
+         * 
+         * @return RangePolicy<2, typename Image::color_buffer_type::execution_space>::policy_type 
+         */
+        RangePolicy<2, typename Image::color_buffer_type::execution_space>::policy_type getRangePolicy()const noexcept{
+            Kokkos::Array<uint32_t, 2> begin, end;
+            begin[0] = 0;
+            begin[1] = 0;
+            end[0] = height;
+            end[1] = width;
+            return RangePolicy<2, typename Image::color_buffer_type::execution_space>::policy_type(begin, end);
         }
         /**
          * @brief Save the image to a file
@@ -236,7 +286,83 @@ namespace ippl{
                 stbi_write_bmp(out_file_name.c_str(), width, height, 4, hmirror.data());
             }
         }
-        // Setter getter approach due to lambda shenanigans
+        /**
+         * @brief Performs a depth blend with another image
+         * Changes this image! 
+         *
+         * @param o Other image
+         */
+        void depthBlend(const Image& o){
+            if(o.width != width || o.height != height){
+                std::cerr << "Cannot depth blend images of mismatching size\n";
+                std::cerr << width << " x " << height << " vs " << o.width << " x " << o.height << "\n";
+                std::abort();
+            }
+            const uint32_t width  = this->width;
+            //uint32_t height = this->height;
+            auto this_cb = this->color_buffer;
+            auto this_db = this->depth_buffer;
+            auto othr_cb =     o.color_buffer;
+            auto othr_db =     o.depth_buffer;
+            if(true){
+                Kokkos::parallel_for(this->getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+                    float alpha_A;
+                    float alpha_B;
+                    float alpha_C;
+                    ippl::Vector<float, 3> A, B, C{0.0f,0.0f,0.0f};
+                    if(othr_db(i * width + j) < this_db(i * width + j)){
+                        alpha_A = othr_cb(i * width + j)[3];
+                        alpha_B = this_cb(i * width + j)[3];
+                        A = alpha_remove(othr_cb(i * width + j));
+                        B = alpha_remove(this_cb(i * width + j));
+                    }
+                    else{
+                        alpha_B = othr_cb(i * width + j)[3];
+                        alpha_A = this_cb(i * width + j)[3];
+                        B = alpha_remove(othr_cb(i * width + j));
+                        A = alpha_remove(this_cb(i * width + j));
+                    }
+                    alpha_C = alpha_A + (1.0f - alpha_A) * alpha_B;
+                    if(alpha_C != 0.0f){
+
+                        //C[0] = A[0] + B[0] * (1.0f - alpha_A);
+                        //C[1] = A[1] + B[1] * (1.0f - alpha_A);
+                        //C[2] = A[2] + B[2] * (1.0f - alpha_A);
+                        C[0] = (1.0f / alpha_C) * (A[0] * alpha_A + B[0] * (1.0f - alpha_A) * alpha_B);
+                        C[1] = (1.0f / alpha_C) * (A[1] * alpha_A + B[1] * (1.0f - alpha_A) * alpha_B);
+                        C[2] = (1.0f / alpha_C) * (A[2] * alpha_A + B[2] * (1.0f - alpha_A) * alpha_B);
+                    }
+                    this_cb(i * width + j) = alpha_extend(C, alpha_C);
+                });
+            }
+            Kokkos::fence();
+        }
+        void collectOnRank0(){
+            int size = ippl::Comm->size();
+            int rank = ippl::Comm->rank();
+            //Every color element has 4 floats
+            int csendsize = width * height * 4;
+
+            //Every depth element has 1 floats
+            int dsendsize = width * height;
+            for (int mask = 1; mask < size; mask <<= 1) {
+                int partner = rank ^ mask;
+                if ((rank & mask) == 0 && partner < size) {
+                    Image tmp(width, height);
+                    // Receive data from partner
+                    MPI_Recv(tmp.color_buffer.data(), csendsize, MPI_FLOAT, partner, 0, ippl::Comm->getCommunicator(), MPI_STATUS_IGNORE);
+                    MPI_Recv(tmp.depth_buffer.data(), dsendsize, MPI_FLOAT, partner, 1, ippl::Comm->getCommunicator(), MPI_STATUS_IGNORE);
+                    
+                    depthBlend(tmp);
+                    
+                } else if (rank & mask) {
+                    // Send data to partner
+                    MPI_Send(color_buffer.data(), csendsize, MPI_FLOAT, partner, 0, ippl::Comm->getCommunicator());
+                    MPI_Send(depth_buffer.data(), dsendsize, MPI_FLOAT, partner, 1, ippl::Comm->getCommunicator());
+                }
+            }
+        }
+
         /**
          * @brief Gets a pixel color
          * 
@@ -256,6 +382,7 @@ namespace ippl{
          */
         KOKKOS_INLINE_FUNCTION void set(uint32_t i, uint32_t j, color_type c)const{
             color_buffer(i * width + j) = c;
+            depth_buffer(i * width + j) = 0;
         }
         /**
          * @brief Sets a pixel with depth check
@@ -272,6 +399,7 @@ namespace ippl{
             }
         }
     };
+   
     /**
      * @brief Maps a float from [0,1] to an int in [0,255] and accesses the colormap at that position. 
      * Linearly interpolates the two nearest colors.
@@ -297,21 +425,7 @@ namespace ippl{
         };
         return lower;
     }
-    /**
-     * @brief Extends a 3D color to a 4D witha given alpha value
-     * 
-     * @param color Color input
-     * @param alpha alpha input
-     * @return [Red, Green, Blue, Alpha] 
-     */
-    KOKKOS_INLINE_FUNCTION ippl::Vector<float, 4> alpha_extend(ippl::Vector<float, 3> color, float alpha){
-        ippl::Vector<float, 4> ret;
-        ret[0] = color[0];
-        ret[1] = color[1];
-        ret[2] = color[2];
-        ret[3] = alpha;
-        return ret;
-    }
+    
     enum struct axis : unsigned{
         x, y, z
     };
@@ -331,13 +445,7 @@ namespace ippl{
                   std::is_invocable_r_v<ippl::Vector<float, 4>, color_map, field_valuetype>)
     Image drawFieldCrossSection(const Field<field_valuetype, 3, UniformCartesian<T, 3>, typename UniformCartesian<T, 3>::DefaultCentering>& f, const uint32_t width, const uint32_t height, axis perpendicular_to, T offset, color_map cmap){
         Image ret(width, height, Vector<uint8_t, 4>{0,0,0,255});
-        using exec_space       = typename Image::view_type::execution_space;
-        using policy_type      = typename RangePolicy<2, exec_space>::policy_type;
-        Kokkos::Array<uint32_t, 2> begin, end;
-        begin[0] = 0;
-        begin[1] = 0;
-        end[0] = height;
-        end[1] = width;
+        
         auto fview = f.getView();
         ippl::Vector<T, 3> O = f.get_mesh().getOrigin();
         ippl::Vector<T, 3> hr = f.get_mesh().getMeshSpacing();
@@ -367,7 +475,7 @@ namespace ippl{
         
         //i -> y
         //j -> x
-        Kokkos::parallel_for(policy_type(begin, end), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+        Kokkos::parallel_for(ret.getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
             Vector<T, 2> plane_remap{
                 float(j) * transverse_sizes[0] / width,
                 float(i) * transverse_sizes[1] / height,
@@ -383,7 +491,10 @@ namespace ippl{
                 sample_pos = Vector<T, 3>{plane_remap[0], plane_remap[1], offset};
             }
             auto [inside, value] = field_at(fview, sample_pos, O, hr, lDom);
-            if(!inside)return;
+            if(!inside){
+                //ret.set(i, j, Vector<float, 4>{0.2,0.4,0.5,1.0});
+                return;
+            }
             if constexpr(std::is_same_v<ippl::Vector<float, 3>, std::remove_all_extents_t<std::invoke_result_t<color_map, field_valuetype>>>){
                 auto col = alpha_extend(cmap(value), 1.0f);
                 ret.set(i, j, col);
@@ -407,15 +518,12 @@ namespace ippl{
     template<typename T, typename field_valuetype, typename color_map>
         requires (std::is_invocable_r_v<ippl::Vector<float, 3>, color_map, field_valuetype> || 
                   std::is_invocable_r_v<ippl::Vector<float, 4>, color_map, field_valuetype>)
-    Image drawFieldFog(const Field<field_valuetype, 3, UniformCartesian<T, 3>, typename UniformCartesian<T, 3>::DefaultCentering>& f, const uint32_t width, const uint32_t height, rm::camera cam, color_map cmap){
-        Image ret(width, height, Vector<uint8_t, 4>{0,0,0,255});
-        using exec_space       = typename Image::view_type::execution_space;
-        using policy_type      = typename RangePolicy<2, exec_space>::policy_type;
-        Kokkos::Array<uint32_t, 2> begin, end;
-        begin[0] = 0;
-        begin[1] = 0;
-        end[0] = height;
-        end[1] = width;
+    Image drawFieldFog(const Field<field_valuetype, 3, UniformCartesian<T, 3>, typename UniformCartesian<T, 3>::DefaultCentering>& f, const uint32_t width, const uint32_t height, rm::camera cam, color_map cmap, Image already_drawn = Image()){
+        if((already_drawn.width != 0 && already_drawn.height != 0) && (already_drawn.width != width || already_drawn.height != height)){
+            std::cerr << "Framebuffer passed as already_drawn mismathes in size\n";
+            std::abort();
+        }
+        Image ret(width, height, Vector<uint8_t, 4>{0,0,0,0});
         auto fview = f.getView();
         ippl::Vector<T, 3> O = f.get_mesh().getOrigin();
         ippl::Vector<T, 3> hr = f.get_mesh().getMeshSpacing();
@@ -427,6 +535,7 @@ namespace ippl{
         ippl::Vector<T, 3> global_domain_end = O;
         domain_begin += hr * lDom.first();
         domain_end   += hr * lDom.last();
+        domain_end   += hr;
 
         global_domain_begin += hr * gDom.first();
         global_domain_end   += hr * gDom.last();
@@ -443,56 +552,161 @@ namespace ippl{
         const float ymul = tanHalfFovy;
         rm::Vector<T, 3> pos = cam.pos.template cast<T>();
         auto look = cam.look_dir();
-        //std::cout << "Luegin in direction" << look << "\n";
-        auto left = cam.left();
+        std::cout << "Luegin in direction" << look << "\n";
+        auto left = cam.left().normalized();
         //std::cout << "Left" << left << "\n";
+
         rm::Vector<float, 3> up{0,1,0};
+        up = left.cross(look).normalized();
         //auto left = cam.;
-        Kokkos::parallel_for(policy_type(begin, end), KOKKOS_LAMBDA(uint32_t y, uint32_t x){
+        bool check_for_already_existing_depth_buffer = already_drawn.width > 0;
+        auto preexisting_depthbuffer = already_drawn.depth_buffer;
+        Kokkos::parallel_for(ret.getRangePolicy(), KOKKOS_LAMBDA(uint32_t y, uint32_t x){
             int xi = int(x) - int(width / 2);
             int yi = int(y) - int(height / 2);
             rm::Vector<float, 3> tp = (look + (left * 2.0f * float(xi) * (1.0f / float(width)) * xmul) + up * (2.0f * ymul * float(yi) * (1.0f / float(height)))).template cast<T>().normalized();
-            ray<float, 3> lray(pos, tp);
+            ray<float, 3> lray(pos, tp.normalized());
             auto [first_t, second_t] = intersection_ts(lray, domain_box);
-            if(Kokkos::isnan(first_t)){
-                ret.set(y, x, ippl::Vector<uint8_t, 4>{0,0,0,0});
+            if(Kokkos::isnan(first_t)){// || (check_for_already_existing_depth_buffer && (first_t > preexisting_depthbuffer(y * width + x)))){
+                if(check_for_already_existing_depth_buffer){
+                    ret.color_buffer(y * width + x) = already_drawn.color_buffer(y * width + x);
+                    ret.depth_buffer(y * width + x) = already_drawn.depth_buffer(y * width + x);
+
+                }
+                
                 return;
             }
             
             //const float transparency = 1.0f - alfa;
             const float luminance = 0.1f;
             //constexpr float normalization_factor = 0.1f;
-            int stepc = 300;
+            int stepc = 1000;
             float stepmul = 0.01f * distance_normalization;
             ippl::Vector<float, 4> float_color{0,0,0,0};
             {
-                for(int step = stepc - 1;step >= 0;step--){
+                int step = stepc - 1;
+                if(check_for_already_existing_depth_buffer){
+                    if(already_drawn.depth_buffer(y * width + x) < 1e17 && already_drawn.depth_buffer(y * width + x) >= ((step - 1) * stepmul)){
+                        step = Kokkos::min(step, int(already_drawn.depth_buffer(y * width + x) / stepmul));
+                        if(step < stepc){
+                            float_color = already_drawn.color_buffer(y * width + x);
+                        }
+                    }
+                }
+                for(;step >= 0;step--){
                     T t = step * stepmul;
                     auto [inside, value] = field_at(fview, rm_to_ippl(pos + tp * t), O, hr, lDom);
-                    if(!inside)continue;
-                    auto col = cmap(value);
+                    if(inside){
+                        auto col = cmap(value);
 
-                    float alfa = 0;
-                    if constexpr(std::is_same_v<ippl::Vector<float, 3>, std::remove_all_extents_t<std::invoke_result_t<color_map, field_valuetype>>>){
-                        alfa = 0.8f;
-                    }
-                    else if constexpr(std::is_same_v<ippl::Vector<float, 4>, std::remove_all_extents_t<std::invoke_result_t<color_map, field_valuetype>>>){
-                        alfa = col[3];
-                    }
-                    float transparency = 1.0f - alfa;
-                    const float transparency_remaining  = Kokkos::pow(transparency, stepmul / distance_normalization);
-                    const float luminance_gained = 1.0f - Kokkos::pow(luminance,    stepmul / distance_normalization);
+                        float alfa = 0;
+                        if constexpr(std::is_same_v<ippl::Vector<float, 3>, std::remove_all_extents_t<std::invoke_result_t<color_map, field_valuetype>>>){
+                            alfa = 0.8f;
+                        }
+                        else if constexpr(std::is_same_v<ippl::Vector<float, 4>, std::remove_all_extents_t<std::invoke_result_t<color_map, field_valuetype>>>){
+                            alfa = col[3];
+                        }
+                        float transparency = 1.0f - alfa;
+                        const float transparency_remaining  = Kokkos::pow(transparency, stepmul / distance_normalization);
+                        const float luminance_gained = 1.0f - Kokkos::pow(luminance,    stepmul / distance_normalization);
 
-                    float_color[0] = float_color[0] * transparency_remaining + col[0] * luminance_gained;
-                    float_color[1] = float_color[1] * transparency_remaining + col[1] * luminance_gained;
-                    float_color[2] = float_color[2] * transparency_remaining + col[2] * luminance_gained;
-                    float_color[3] = 1.0f - (1.0f - float_color[3]) * transparency_remaining;
+                        float_color[0] = float_color[0] * transparency_remaining + col[0] * luminance_gained;
+                        float_color[1] = float_color[1] * transparency_remaining + col[1] * luminance_gained;
+                        float_color[2] = float_color[2] * transparency_remaining + col[2] * luminance_gained;
+                        float_color[3] = 1.0f - (1.0f - float_color[3]) * transparency_remaining;
+                    }
+                    if(check_for_already_existing_depth_buffer){
+                        if(already_drawn.depth_buffer(y * width + x) > (step * stepmul) && already_drawn.depth_buffer(y * width + x) < ((step+1) * stepmul)){
+                            step = Kokkos::min(step, int(already_drawn.depth_buffer(y * width + x) / stepmul));
+                            if(step < stepc){
+                                float_color = porterDuff(already_drawn.color_buffer(y * width + x), float_color);
+                            }
+                        }
+                    }
                 }
             }
             ret.set(y, x, float_color, first_t);
         });
         Kokkos::fence();
         return ret;
+    }
+    /**
+     * @brief Draw particles as size-corrected circles to the screen
+     * 
+     * @tparam vector_type 
+     * @param position_view Kokkos View containing position vectors
+     * @param count Amount of particles to be visualized, must be <= position_view.extent(0)
+     * @param width Output image width
+     * @param height Output image height
+     * @param radius Visible particle radius
+     * @param particle_color Visible particle color
+     */
+    template<typename vector_type>
+        requires(vector_type::dim == 3)
+    Image drawParticles(Kokkos::View<vector_type*> position_view, size_t count, int width, int height, rm::camera cam, float particle_radius, Vector<float, 4> particle_color){
+        //particle_radius = Kokkos::max(1.0f, particle_radius);
+        (void)particle_color;
+        (void)particle_radius;
+        Image ret(width, height, Vector<float, 4>{0.0f,0.0f,0.0f,0.0f});
+        auto ret_cb = ret.color_buffer;
+        auto ret_db = ret.depth_buffer;
+        using mat4 = rm::Matrix<float, 4, 4>;
+        
+        //mat4 ortho_matrix = rm::ortho<float>(0, width, 0, height, -1, 1);
+        
+        mat4 camera_matrix = cam.matrix(width, height);
+        rm::Vector<float, 3> camera_forward_vector = cam.look_dir().normalized();
+        Kokkos::parallel_for(count, KOKKOS_LAMBDA(size_t particle_idx){
+
+            //Obtain particle position
+            vector_type acc = position_view(particle_idx);
+            rm::Vector<float, 3> ppos3{
+                (float)acc[0],
+                (float)acc[1],
+                (float)acc[2]
+            };
+            const float depth_value = (ppos3 - cam.pos).dot(camera_forward_vector);
+            
+            //Map to clip space ([-1,1] x [-1,1]), mind the division by w() to homogenize
+            rm::Vector<float, 4> in_clipspace = camera_matrix * ppos3.template one_extend<float>();
+            in_clipspace = in_clipspace * (1.0f / in_clipspace.w());
+
+            //Map clip space to pixel space ([0,width] x [0, height]), where i represents height and j width!
+            int j = int(((float)in_clipspace[0] + 1.0f) * (float(width) / 2));
+            int i = int(((float)in_clipspace[1] + 1.0f) * (float(height) / 2));
+            float corrected_radius = particle_radius * height / depth_value;
+            if(Kokkos::isnan(corrected_radius) || Kokkos::isinf(corrected_radius)){
+                corrected_radius = 0.0f;
+            }
+            using Kokkos::ceil;
+            using Kokkos::min;
+            using Kokkos::exp;
+            int ill = i - 2 * Kokkos::ceil(corrected_radius);
+            int iul = i + 2 * Kokkos::ceil(corrected_radius);
+            int jll = j - 2 * Kokkos::ceil(corrected_radius);
+            int jul = j + 2 * Kokkos::ceil(corrected_radius);
+            
+            //Inner loop for filling the circle 
+            for(int _i = ill;_i <= iul;_i++){
+                for(int _j = jll;_j <= jul;_j++){
+                    if(_i >= 0 && _i < height && _j >= 0 && _j < width){
+                        float pdist = Kokkos::hypotf(float(_i - i), float(_j - j));
+                        if(pdist < corrected_radius){
+                            ret_cb(_i * width + _j) = Vector<float, 4>(
+                                particle_color * Kokkos::exp(-pdist * pdist / (corrected_radius * corrected_radius))
+                            );
+                            Kokkos::atomic_min(&ret_db(_i * width + _j), depth_value);
+                        }
+                    }
+                }
+            }
+        });
+        return ret;
+    }
+    template<typename vector_type, class... Properties>
+        requires(vector_type::dim == 3)
+    Image drawParticles(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, rm::camera cam, float particle_radius, Vector<float, 4> particle_color){
+        return drawParticles(position_attrib.getView(), position_attrib.getParticleCount(), width, height, cam, particle_radius, particle_color);
     }
 }
 #endif
