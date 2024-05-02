@@ -25,10 +25,15 @@ public:
         , origin(origin) {
         this->center = rmin + 0.5 * (rmax - rmin);
     }
+    KOKKOS_INLINE_FUNCTION virtual void operator()(const size_t i) const = 0;
+};
 
-    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const{
-        this->omega(i) = 1;
-    }
+class AllOnes : BaseDistribution {
+public:
+    AllOnes(view_type r_, host_type omega_, vector_type r_min, vector_type r_max, vector_type origin)
+        : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const { this->omega(i) = 1; }
 };
 
 class UnitDisk : BaseDistribution {
@@ -92,16 +97,14 @@ public:
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         // On the y axis (index=1)
         float separation = this->center(1) / 2;
-        float width = 1;
+        float width      = 1;
 
         float axis_first_band  = this->center(1) + separation / 2;
         float axis_second_band = this->center(1) - separation / 2;
 
-        if (this->r(i)(1) < axis_first_band + width
-            and this->r(i)(1) > axis_first_band) {
+        if (this->r(i)(1) < axis_first_band + width and this->r(i)(1) > axis_first_band) {
             this->omega(i) = 1;
-        } else if (this->r(i)(1) < axis_second_band
-                   and this->r(i)(1) > axis_second_band - width) {
+        } else if (this->r(i)(1) < axis_second_band and this->r(i)(1) > axis_second_band - width) {
             this->omega(i) = -1;
         } else {
             // Outside of the bands
@@ -112,8 +115,7 @@ public:
 
 class Ring : BaseDistribution {
 public:
-    Ring(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
-                      vector_type origin)
+    Ring(view_type r_, host_type omega_, vector_type r_min, vector_type r_max, vector_type origin)
         : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
@@ -146,7 +148,7 @@ public:
         norm = std::sqrt(norm);
         if (norm < 2 and norm > 1.5) {
             this->omega(i) = 1;
-        } else if(norm < 1 and norm > 0.5){
+        } else if (norm < 1 and norm > 0.5) {
             this->omega(i) = 1;
         } else {
             this->omega(i) = 0;
