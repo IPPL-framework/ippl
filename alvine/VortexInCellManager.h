@@ -7,7 +7,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
-#include "UpdateStrategy.hpp"
+#include "ParticleFieldStrategy.hpp"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -76,8 +76,7 @@ public:
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
             this->isAllPeriodic_m));
 
-      this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
+      this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
         
       this->fcontainer_m->initializeFields();
 
@@ -88,9 +87,9 @@ public:
       this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
       if constexpr (Dim == 2) {
-          this->setUpdateStrategy( std::make_shared<TwoDimUpdateStrategy<T>>() );
+          this->setParticleFieldStrategy( std::make_shared<TwoDimParticleFieldStrategy<T>>() );
       } else if constexpr (Dim == 3) {
-          this->setUpdateStrategy( std::make_shared<ThreeDimUpdateStrategy<T>>() );
+          this->setParticleFieldStrategy( std::make_shared<ThreeDimParticleFieldStrategy<T>>() );
       }
 
       initializeParticles();
@@ -102,7 +101,7 @@ public:
 
       this->grid2par();
 
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
       pc->R_old = pc->R;
       pc->R = pc->R_old + pc->P * this->dt_m;
@@ -112,7 +111,7 @@ public:
 
     void initializeParticles() {
 
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
       // Create np_m particles in container
       size_type totalP = this->np_m;
@@ -158,7 +157,7 @@ public:
       static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
       static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
       
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
       // scatter the vorticity to the underlying grid
       this->par2grid();
@@ -192,7 +191,7 @@ public:
     }
 
     void dump() override {
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
       Inform csvout(NULL, "particles.csv", Inform::APPEND);
 

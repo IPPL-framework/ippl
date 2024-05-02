@@ -5,10 +5,10 @@
 #include "FieldContainer.hpp"
 
 template <class fc, class pc>  
-class UpdateStrategy {
+class ParticleFieldStrategy {
   public:
 
-    virtual ~UpdateStrategy() = default;
+    virtual ~ParticleFieldStrategy() = default;
 
     virtual void par2grid(std::shared_ptr<fc> fcontainer, std::shared_ptr<pc> pcontainer);
 
@@ -18,9 +18,11 @@ class UpdateStrategy {
 };
 
 template<typename T>
-class TwoDimUpdateStrategy : public UpdateStrategy<FieldContainer<T, 2>, ParticleContainer<T, 2>> {
+class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainer<T, 2>, ParticleContainer<T, 2>> {
   public:
-    void par2grid(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pc) override {
+    void par2grid(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+
+        std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
 
         fc->getOmegaField() = 0.0;
         scatter(pc->omega, fc->getOmegaField(), pc->R);
@@ -48,7 +50,8 @@ class TwoDimUpdateStrategy : public UpdateStrategy<FieldContainer<T, 2>, Particl
             });
     }
 
-    void grid2par(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pc) override {
+    void grid2par(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+        std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
         pc->P = 0.0;
         gather(pc->P, fc->getUField(), pc->R);
     }
@@ -56,7 +59,7 @@ class TwoDimUpdateStrategy : public UpdateStrategy<FieldContainer<T, 2>, Particl
 };
 
 template<typename T>
-class ThreeDimUpdateStrategy : public UpdateStrategy<FieldContainer<T, 3>, ParticleContainer<T, 3>> {
+class ThreeDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainer<T, 3>, ParticleContainer<T, 3>> {
   public:
     void par2grid(std::shared_ptr<FieldContainer<T, 3>> fc, std::shared_ptr<ParticleContainer<T, 3>> pc) override { }
 
