@@ -35,7 +35,7 @@ public:
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
         Vector_t<double, Dim> origin_ = 0.0,
-        bool remove_particles = false)
+        bool remove_particles = true)
         : AlvineManager<T, Dim>(nt_, nr_, solver_, lbt_) {
             this->rmin_m = rmin_;
             this->rmax_m = rmax_;
@@ -92,14 +92,14 @@ public:
 
       this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-      size_type removed = initializeParticles();
-      this->np_m -= removed;
-
       if constexpr (Dim == 2) {
           this->setUpdateStrategy( std::make_shared<TwoDimUpdateStrategy<T>>() );
       } else if constexpr (Dim == 3) {
           this->setUpdateStrategy( std::make_shared<ThreeDimUpdateStrategy<T>>() );
       }
+
+      size_type removed = initializeParticles();
+      this->np_m -= removed;
 
       this->par2grid();
 
@@ -167,7 +167,8 @@ public:
             if (sum and (sum < int(totalP))) {
                 std::cout << "Removing " << sum << " particles" << std::endl;
                 const auto invalid_view = invalid.getView();
-                pc->destroy(invalid.getView(), sum);
+                const size_type sum_ = sum;
+                pc->destroy(invalid_view, sum_);
             }
             else{
                 std::cout << "No particles removed" << std::endl;
