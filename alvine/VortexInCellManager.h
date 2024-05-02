@@ -34,7 +34,7 @@ public:
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
         Vector_t<double, Dim> origin_ = 0.0,
-        bool remove_particles = true)
+        bool remove_particles = false)
         : AlvineManager<T, Dim>(nt_, nr_, solver_, lbt_) {
             this->rmin_m = rmin_;
             this->rmax_m = rmax_;
@@ -43,9 +43,6 @@ public:
         }
 
     ~VortexInCellManager() {}
-    
-    template<typename P>
-    void set_number_of_particles(){this->np_m = 10000;}
 
     void pre_run() override {
 
@@ -73,7 +70,8 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-        set_number_of_particles<ParticleDistribution>();
+        int density = 1; // particles per cell
+      set_number_of_particles(density);
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -111,13 +109,13 @@ public:
     }
 
 
-    template<> void set_number_of_particles<EquidistantDistribution>() {
-        int density = 2; // particles per cell
+    void set_number_of_particles(int density) {
         int particles = 1;
         for (unsigned i = 0; i < Dim; i++) {
             particles *= this->nr_m[i];
         }
         this->np_m = particles*density;
+        std::cout << "Number of particles: " << this->np_m << std::endl;
     }
 
     int initializeParticles() {
@@ -158,8 +156,15 @@ public:
             for (unsigned i = 0; i < totalP; i++) {
                 invalid(i) ? sum++: sum;
             }
-            const auto invalid_view = invalid.getView();
-            pc->destroy(invalid_view, sum);
+
+            if (sum and (sum < int(totalP))) {
+                std::cout << "Removing " << sum << " particles" << std::endl;
+                const auto invalid_view = invalid.getView();
+                pc->destroy(invalid.getView(), sum);
+            }
+            else{
+                std::cout << "No particles removed" << std::endl;
+            }
         }
 
         Kokkos::fence();

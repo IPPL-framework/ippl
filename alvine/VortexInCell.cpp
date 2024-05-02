@@ -69,8 +69,9 @@ int main(int argc, char* argv[]) {
         double lbt = std::atof(argv[arg++]);
 
         msg << nt << endl;
-        
-        VortexInCellManager<T, Dim, RandDistribution, TwoBands> manager(nt, nr, solver, lbt);
+
+        std::cout << "If you choose Vortex distribution BaseDistribution, please disable remove particles."
+        VortexInCellManager<T, Dim, CircleDistribution, BaseDistribution> manager(nt, nr, solver, lbt);
 
         manager.pre_run();
 
