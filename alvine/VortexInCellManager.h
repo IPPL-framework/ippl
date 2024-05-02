@@ -8,6 +8,7 @@
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
 #include "Manager/BaseManager.h"
+#include "Particle/ParticleBase.h"
 #include "ParticleContainer.hpp"
 #include "ParticleDistributions.h"
 #include "Random/Distribution.h"
@@ -27,15 +28,18 @@ public:
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>; 
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    bool remove_particles;
 
     VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
-        Vector_t<double, Dim> origin_ = 0.0)
+        Vector_t<double, Dim> origin_ = 0.0,
+        bool remove_particles = true)
         : AlvineManager<T, Dim>(nt_, nr_, solver_, lbt_) {
             this->rmin_m = rmin_;
             this->rmax_m = rmax_;
             this->origin_m = origin_;
+            this->remove_particles = remove_particles;
         }
 
     ~VortexInCellManager() {}
@@ -89,7 +93,8 @@ public:
 
       this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-      initializeParticles();
+      size_type removed = initializeParticles();
+      this->np_m -= removed;
 
       this->par2grid();
 
@@ -107,14 +112,15 @@ public:
 
 
     template<> void set_number_of_particles<EquidistantDistribution>() {
+        int density = 2; // particles per cell
         int particles = 1;
         for (unsigned i = 0; i < Dim; i++) {
             particles *= this->nr_m[i];
         }
-        this->np_m = particles;
+        this->np_m = particles*density;
     }
 
-    void initializeParticles() {
+    int initializeParticles() {
 
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
@@ -134,8 +140,32 @@ public:
 
         Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
+        int sum = 0;
+        if (this->remove_particles) {
+            ippl::ParticleAttrib<bool> invalid;
+            invalid.create(totalP);
+
+            Kokkos::parallel_for(
+                "Assign vorticity null", totalP, KOKKOS_LAMBDA(const size_t i) {
+                    if (pc->omega.getView()(i) == 0) {
+                        invalid(i) = true;
+                    } else {
+                        invalid(i) = false;
+                    }
+                });
+
+
+            for (unsigned i = 0; i < totalP; i++) {
+                invalid(i) ? sum++: sum;
+            }
+            const auto invalid_view = invalid.getView();
+            pc->destroy(invalid_view, sum);
+        }
+
         Kokkos::fence();
         ippl::Comm->barrier();
+
+        return sum;
     }
   
 
@@ -197,6 +227,5 @@ public:
       }
        
     }
-
 };
 #endif
