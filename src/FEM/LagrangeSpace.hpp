@@ -429,7 +429,7 @@ namespace ippl {
         // TODO move eval function outside of evaluateLoadVector
         const auto eval = [this, absDetDPhi, f](const index_t elementIndex, const index_t& i,
                                                 const point_t& q_k,
-                                                const Vector<T, this->numElementDOFs>& basis_q_k) {
+                                                const Vector<T, numElementDOFs>& basis_q_k) {
             const T& f_q_k = f(this->ref_element_m.localToGlobal(
                 this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k));
 
