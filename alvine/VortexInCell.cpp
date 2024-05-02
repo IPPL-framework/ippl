@@ -70,7 +70,6 @@ int main(int argc, char* argv[]) {
 
         msg << nt << endl;
 
-        std::cout << "If you choose Vortex distribution BaseDistribution, please disable remove particles.";
         VortexInCellManager<T, Dim, EquidistantDistribution, ConcentricCircles> manager(nt, nr, solver, lbt);
 
         manager.pre_run();
