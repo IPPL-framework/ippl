@@ -44,10 +44,9 @@ namespace ippl {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
 
         // Get all the global DOFs for the element
-        const Vector<index_t, this->numElementDOFs> global_dofs =
-            this->getGlobalDOFIndices(elementIndex);
+        const Vector<index_t, numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
 
-        ippl::Vector<index_t, this->numElementDOFs> dof_mapping;
+        ippl::Vector<index_t, numElementDOFs> dof_mapping;
         if (Dim == 1) {
             dof_mapping = {0, 1};
         } else if (Dim == 2) {
@@ -104,7 +103,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndices(
         const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
             elementIndex) const {
-        Vector<index_t, this->numElementDOFs> globalDOFs(0);
+        Vector<index_t, numElementDOFs> globalDOFs(0);
 
         // get element pos
         ndindex_t elementPos = this->getElementNDIndex(elementIndex);
@@ -318,7 +317,7 @@ namespace ippl {
         // T bc_const_value        = 1.0;   // TODO get from field (non-homogeneous BCs)
 
         // Allocate memory for the element matrix
-        Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
 
         // local DOF indices
         index_t i, j;
@@ -338,13 +337,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        Vector<index_t, this->numElementDOFs> local_dofs;
-        Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
+        Vector<index_t, numElementDOFs> local_dofs;
+        Vector<ndindex_t, numElementDOFs> global_dof_ndindices;
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
-            grad_b_q;
+        Vector<Vector<gradient_vec_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
@@ -399,10 +397,10 @@ namespace ippl {
 
         index_t k, i, I;
 
-        Vector<T, this->numElementDOFs> b_K;
+        Vector<T, numElementDOFs> b_K;
 
-        Vector<index_t, this->numElementDOFs> global_dofs;
-        Vector<index_t, this->numElementDOFs> local_dofs;
+        Vector<index_t, numElementDOFs> global_dofs;
+        Vector<index_t, numElementDOFs> local_dofs;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -415,7 +413,7 @@ namespace ippl {
         const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (i = 0; i < this->numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
