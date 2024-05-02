@@ -30,7 +30,8 @@ public:
 
 class AllOnes : BaseDistribution {
 public:
-    AllOnes(view_type r_, host_type omega_, vector_type r_min, vector_type r_max, vector_type origin)
+    AllOnes(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
+            vector_type origin)
         : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const { this->omega(i) = 1; }
@@ -51,7 +52,7 @@ public:
         norm         = std::sqrt(norm);
         float radius = 3.0;
         if (norm > radius) {
-            this->omega(i) = 0;  // 15/radius_core seemed to be too strong
+            this->omega(i) = 0;
         } else {
             this->omega(i) = 1;
         }
