@@ -6,8 +6,10 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "UpdateStrategy.hpp"
 #include "Manager/BaseManager.h"
 #include "Manager/PicManager.h"
+#include "Manager/FieldSolverBase.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
@@ -19,13 +21,14 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 template <typename T, unsigned Dim>
 class AlvineManager
     : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                              LoadBalancer<T, Dim>> {
+                              LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
     using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using update_strategy_type = typename std::shared_ptr<UpdateStrategy<FieldContainer_t, ParticleContainer_t>>;
 
 protected:
     unsigned nt_m;
@@ -37,14 +40,16 @@ protected:
     ippl::NDIndex<Dim> domain_m;
     std::string solver_m;
     double lbt_m;
+    update_strategy_type update_strategy_m;
 
 public:
     AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>() 
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>>() 
         , nt_m(nt_)
         , nr_m(nr_)
         , solver_m(solver_)
-        , lbt_m(lbt_) {}
+        , lbt_m(lbt_)
+        , update_strategy_m(nullptr) {}
 
     ~AlvineManager(){}
 
@@ -57,6 +62,8 @@ protected:
     Vector_t<double, Dim> hr_m;
 
 public:
+
+    void setUpdateStrategy(update_strategy_type update_strategy) { update_strategy_m = update_strategy; }
 
     double getTime() { return time_m; }
 
@@ -80,48 +87,31 @@ public:
       this->dump();
     }
 
-    void grid2par() override { gatherCIC(); }
-
-    void gatherCIC() {
-      this->pcontainer_m->P = 0.0;
-      gather(this->pcontainer_m->P, this->fcontainer_m->getUField(), this->pcontainer_m->R);
+    void grid2par() override { 
+        if ( update_strategy_m ) {
+            update_strategy_m->grid2par(this->fcontainer_m, this->pcontainer_m);
+        } else {
+            throw std::runtime_error("Update strategy not defined");
+        }
     }
 
-    void par2grid() override { scatterCIC(); }
+    void par2grid() override { 
+        if ( update_strategy_m ) {
+            update_strategy_m->par2grid(this->fcontainer_m, this->pcontainer_m);
+        } else {
+            throw std::runtime_error("Update strategy not defined");
+        }
 
-    void computeVelocityField() {
-
-      VField_t<T, Dim> u_field = this->fcontainer_m->getUField();
-      u_field = 0.0;
-
-      if constexpr (Dim == 2) {
-        const int nghost = u_field.getNghost();
-        auto view = u_field.getView();
-
-        auto omega_view = this->fcontainer_m->getOmegaField().getView();
-        this->fcontainer_m->getOmegaField().fillHalo();
-
-        Kokkos::parallel_for(
-            "Assign rhs", ippl::getRangePolicy(view, nghost),
-            KOKKOS_LAMBDA(const int i, const int j) {
-                view(i, j) = {
-                        (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->hr_m(1)), 
-                        -(omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->hr_m(0))
-                        };
-
-            });
-      } else if constexpr (Dim == 3) {
-        //TODO compute velocity field in 3D, this should be a simple curl operation (one line)
-      }
     }
 
-    void scatterCIC() {
-      this->fcontainer_m->getOmegaField() = 0.0;
-      if constexpr (Dim == 2) {
-          scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
-      } else if constexpr (Dim == 3) {
-        //TODO: for some reason the scatter method doesn't work in three dimensions but gather does. 
-      }
+    void updateFields() {
+        if ( update_strategy_m ) {
+            update_strategy_m->updateFields(this->fcontainer_m);
+        } else {
+            throw std::runtime_error("Update strategy not defined");
+        }
+
     }
+
 };
 #endif

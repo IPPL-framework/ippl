@@ -7,7 +7,7 @@
 
 // Define the FieldsContainer class
 template <typename T, unsigned Dim = 3>
-class FieldContainer{
+class FieldContainer {
   using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
 
 

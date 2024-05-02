@@ -7,6 +7,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "UpdateStrategy.hpp"
 #include "Manager/BaseManager.h"
 #include "Particle/ParticleBase.h"
 #include "ParticleContainer.hpp"
@@ -94,10 +95,16 @@ public:
       size_type removed = initializeParticles();
       this->np_m -= removed;
 
+      if constexpr (Dim == 2) {
+          this->setUpdateStrategy( std::make_shared<TwoDimUpdateStrategy<T>>() );
+      } else if constexpr (Dim == 3) {
+          this->setUpdateStrategy( std::make_shared<ThreeDimUpdateStrategy<T>>() );
+      }
+
       this->par2grid();
 
       this->fsolver_m->runSolver();
-      this->computeVelocityField();
+      this->updateFields();
 
       this->grid2par();
 
@@ -197,7 +204,7 @@ public:
 
       // calculate velocity from stream function
       IpplTimings::startTimer(PTimer);
-      this->computeVelocityField();
+      this->updateFields();
       IpplTimings::stopTimer(PTimer);
 
       // gather velocity field
