@@ -78,7 +78,7 @@ namespace ippl {
             const Tlhs absDetDPhi = std::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            const int num_element_dofs = this->langrangeSpace_m.numElementDOFs;
+            const int num_element_dofs = this->lagrangeSpace_m.numElementDOFs;
 
             const auto poissonEquationEval =
                 [DPhiInvT, absDetDPhi](
