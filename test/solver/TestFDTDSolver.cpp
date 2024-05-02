@@ -32,7 +32,7 @@ int main(int argc, char* argv[]){
         using vector4_type = ippl::Vector<scalar, 4>;
         using FourField = ippl::Field<vector4_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         using ThreeField = ippl::Field<vector_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
-        constexpr size_t n = 160;
+        constexpr size_t n = 100;
         ippl::Vector<uint32_t, 3> nr{n/2, n/2, 2*n};
         ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);
         ippl::Vector<scalar, 3> extents{scalar(1), scalar(1), scalar(1)};
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
         ThreeField E(mesh, layout);
         ThreeField B(mesh, layout);
         source = vector4_type(0);
-        ippl::NonStandardFDTDSolver<ThreeField, FourField> sfdsolver(source, E, B);
+        ippl::StandardFDTDSolver<ThreeField, FourField, ippl::absorbing> sfdsolver(source, E, B);
         sfdsolver.setPeriodicBoundaryConditions();
         auto aview = sfdsolver.A_n.getView();
         auto am1view = sfdsolver.A_nm1.getView();
@@ -70,16 +70,16 @@ int main(int argc, char* argv[]){
             (void)x;
             (void)y;
             (void)z;
-            const scalar magnitude = gauss(scalar(0.5), scalar(0.01), z);
-            aview  (i,j,k) = vector4_type{scalar(0), x, y, z};
+            const scalar magnitude = gauss(scalar(0.5), scalar(0.05), z);
+            aview  (i,j,k) = vector4_type{scalar(0), scalar(0), magnitude, scalar(0)};
             am1view(i,j,k) = vector4_type{scalar(0), scalar(0), magnitude, scalar(0)};
         });
         Kokkos::fence();
         sfdsolver.A_n.getFieldBC().apply(sfdsolver.A_n);
-        Kokkos::fence();
-        std::cout << sfdsolver.A_n.getView()(0,0,0) << "\n";
-        std::cout << sfdsolver.A_n.getView()(0,5,5) << "\n";
-        goto exit;
+        //Kokkos::fence();
+        //std::cout << sfdsolver.A_n.getView()(0,0,0) << "\n";
+        //std::cout << sfdsolver.A_n.getView()(0,5,5) << "\n";
+        //goto exit;
         sfdsolver.A_np1.getFieldBC().apply(sfdsolver.A_np1);
         sfdsolver.A_nm1.getFieldBC().apply(sfdsolver.A_nm1);
         sfdsolver.A_n.fillHalo();
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
         float* imagedata = new float[img_width * img_height * 3];
         std::fill(imagedata, imagedata + img_width * img_height * 3, 0.0f);
         uint8_t* imagedata_final = new uint8_t[img_width * img_height * 3];
-        for(size_t s = 0;s < 2 * n;s++){
+        for(size_t s = 0;s < 4 * n;s++){
             auto ebh = sfdsolver.A_n.getHostMirror();
             Kokkos::deep_copy(ebh, sfdsolver.A_n.getView());
             for(int i = 1;i < img_width;i++){
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]){
             }
             std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final, [](float x){return (unsigned char)std::min(255.0f, std::max(0.0f,x));});
             char output[1024] = {0};        
-            snprintf(output, 1023, "%soutimage%.05lu.bmp", "data/", s);
+            snprintf(output, 1023, "%soutimage%.05lu.bmp", "renderdata/", s);
             if(s % 4 == 0)
                 stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
             sfdsolver.solve();
@@ -128,10 +128,10 @@ int main(int argc, char* argv[]){
             (void)x;
             (void)y;
             (void)z;
-            ref += Kokkos::abs(gauss(scalar(0.5), scalar(0.01), z) - aview(i,j,k)[2]);
+            ref += Kokkos::abs(gauss(scalar(0.5), scalar(0.05), z) - aview(i,j,k)[2]);
         }, sum_error);
         std::cout << "Sum: " << sum_error / double(n * n * n) << "\n";
     }
-    exit:
+    //exit:
     ippl::finalize();
 }

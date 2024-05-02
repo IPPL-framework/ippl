@@ -4,11 +4,12 @@
 using std::size_t;
 #include "Types/Vector.h"
 
-#include "Field/Field.h"
+
 
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 #include "MaxwellSolvers/Maxwell.h"
+#include "MaxwellSolvers/AbsorbingBC.h"
 constexpr double sqrt_4pi = 3.54490770181103205459;
 constexpr double alpha_scaling_factor = 1e30;
 constexpr double unit_length_in_meters = 1.616255e-35 * alpha_scaling_factor;
@@ -102,6 +103,19 @@ namespace ippl {
             Kokkos::deep_copy(this->A_nm1.getView(), this->A_n.getView());
             Kokkos::deep_copy(this->A_n.getView(), this->A_np1.getView());
         }
+        void applyBCs(){
+            if constexpr(boundary_conditions == periodic){
+                A_n.getFieldBC().apply(A_n);
+                A_nm1.getFieldBC().apply(A_nm1);
+                A_np1.getFieldBC().apply(A_np1);
+            }
+            else{
+                Vector<uint32_t, Dim> true_nr = nr_m;
+                true_nr += (A_n.getNghost() * 2);
+                second_order_mur_boundary_conditions bcs{};
+                bcs.apply(A_n, A_nm1, A_np1, this->dt, true_nr, layout_mp->getLocalNDIndex());
+            }
+        }
 
         void step(){
             const auto& ldom    = layout_mp->getLocalNDIndex();
@@ -118,18 +132,16 @@ namespace ippl {
             const scalar a8 = sq(dt);
             Vector<uint32_t, Dim> true_nr = nr_m;
             true_nr += (nghost * 2);
-            A_n.getFieldBC().apply(A_n);
-            A_np1.getFieldBC().apply(A_np1);
-            A_nm1.getFieldBC().apply(A_nm1);
+            constexpr uint32_t one_if_absorbing_otherwise_0 = boundary_conditions == absorbing ? 1 : 0;
             Kokkos::parallel_for(
-            "Scalar potential update", ippl::getRangePolicy(aview, nghost),
+            "Four potential update", ippl::getRangePolicy(aview, nghost),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                 // global indices
                 const uint32_t ig = i + ldom.first()[0];
                 const uint32_t jg = j + ldom.first()[1];
                 const uint32_t kg = k + ldom.first()[2];
-                uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
-                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+                uint32_t val = uint32_t(ig == one_if_absorbing_otherwise_0) + (uint32_t(jg == one_if_absorbing_otherwise_0) << 1) + (uint32_t(kg == one_if_absorbing_otherwise_0) << 2)
+                             + (uint32_t(ig == true_nr[0] - one_if_absorbing_otherwise_0 - 1) << 3) + (uint32_t(jg == true_nr[1] - one_if_absorbing_otherwise_0 - 1) << 4) + (uint32_t(kg == true_nr[2] - one_if_absorbing_otherwise_0 - 1) << 5);
                 
                 if(val == 0){
                     FourVector_t interior = -anm1view(i, j, k) + a1 * aview(i, j, k)
@@ -144,8 +156,8 @@ namespace ippl {
                 }
             });
             Kokkos::fence();
+            applyBCs();
             A_np1.fillHalo();
-            A_np1.getFieldBC().apply(A_np1);
         }
         void evaluate_EB(){
             ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
@@ -266,6 +278,20 @@ namespace ippl {
             Kokkos::deep_copy(this->A_nm1.getView(), this->A_n.getView());
             Kokkos::deep_copy(this->A_n.getView(), this->A_np1.getView());
         }
+
+        void applyBCs(){
+            if constexpr(boundary_conditions == periodic){
+                A_n.getFieldBC().apply(A_n);
+                A_nm1.getFieldBC().apply(A_nm1);
+                A_np1.getFieldBC().apply(A_np1);
+            }
+            else{
+                Vector<uint32_t, Dim> true_nr = nr_m;
+                true_nr += (A_n.getNghost() * 2);
+                second_order_mur_boundary_conditions bcs{};
+                bcs.apply(A_n, A_nm1, A_np1, this->dt, true_nr, layout_mp->getLocalNDIndex());
+            }
+        }
         template<typename scalar>
         struct nondispersive{
             scalar a1;
@@ -292,17 +318,14 @@ namespace ippl {
             };
             Vector<uint32_t, Dim> true_nr = nr_m;
             true_nr += (nghost * 2);
-            std::cout << hr_m << "\n";
-            std::cout << dt << "\n";
-            A_n.getFieldBC().apply(A_n);
-            A_np1.getFieldBC().apply(A_np1);
-            A_nm1.getFieldBC().apply(A_nm1);
+            constexpr uint32_t one_if_absorbing_otherwise_0 = boundary_conditions == absorbing ? 1 : 0;
             Kokkos::parallel_for(ippl::getRangePolicy(aview, nghost), KOKKOS_LAMBDA(size_t i, size_t j, size_t k){
                 uint32_t ig = i + ldom.first()[0];
                 uint32_t jg = j + ldom.first()[1];
                 uint32_t kg = k + ldom.first()[2];
-                uint32_t val = uint32_t(ig == 0) + (uint32_t(jg == 0) << 1) + (uint32_t(kg == 0) << 2)
-                             + (uint32_t(ig == true_nr[0] - 1) << 3) + (uint32_t(jg == true_nr[1] - 1) << 4) + (uint32_t(kg == true_nr[2] - 1) << 5);
+                uint32_t val = uint32_t(ig == one_if_absorbing_otherwise_0) + (uint32_t(jg == one_if_absorbing_otherwise_0) << 1) + (uint32_t(kg == one_if_absorbing_otherwise_0) << 2)
+                             + (uint32_t(ig == true_nr[0] - one_if_absorbing_otherwise_0 - 1) << 3) + (uint32_t(jg == true_nr[1] - one_if_absorbing_otherwise_0 - 1) << 4) + (uint32_t(kg == true_nr[2] - one_if_absorbing_otherwise_0 - 1) << 5);
+                
                 if(!val){
                     anp1view(i, j, k) = -anm1view(i,j,k)
                             + ndisp.a1 * aview(i,j,k)
@@ -315,7 +338,7 @@ namespace ippl {
             });
             Kokkos::fence();
             A_np1.fillHalo();
-            A_np1.getFieldBC().apply(A_np1);
+            applyBCs();
         }
         void evaluate_EB(){
             ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
