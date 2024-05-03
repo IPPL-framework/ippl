@@ -657,7 +657,7 @@ namespace ippl {
             J.accumulateHalo();
         }
         template<typename callable>
-        void updateBunch(scalar /*time*/){
+        void updateBunch(scalar time, callable external_field){
             
             Kokkos::fence();
             auto gbview = particles.gamma_beta.getView();
@@ -680,10 +680,16 @@ namespace ippl {
                 Kokkos::fence();
                 Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                     const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
-                    ippl::Vector<scalar, 3> E = eview(i);
-                    ippl::Vector<scalar, 3> B = bview(i);
-                    ippl::Vector<scalar, 3> labpos = rview(i);
-                    ippl::Vector<ippl::Vector<scalar, 3>, 2> EB{E, B};
+                    ippl::Vector<scalar, 3> E_grid = eview(i);
+                    ippl::Vector<scalar, 3> B_grid = bview(i);
+                    
+                    ippl::Vector<scalar, 3> bunchpos = rview(i);
+                    Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> external_eb = external_field(bunchpos, time);
+                    
+                    ippl::Vector<ippl::Vector<scalar, 3>, 2> EB{
+                        ippl::Vector<scalar, 3>(E_grid + external_eb.first), 
+                        ippl::Vector<scalar, 3>(B_grid + external_eb.second)
+                    };
 
                     const scalar charge = qview(i);
                     const scalar mass = mview(i);
@@ -725,8 +731,16 @@ namespace ippl {
         void solve(){
             scatterBunch();
             field_solver.solve();
-            updateBunch<float>(field_solver.dt * steps_taken);
-
+            updateBunch(field_solver.dt * steps_taken, /*no external field*/[]KOKKOS_FUNCTION(vector_type /*pos*/, scalar /*time*/){return Kokkos::pair<vector_type, vector_type>{
+                vector_type(0),
+                vector_type(0)
+            };});
+        }
+        template<typename callable>
+        void solve(callable external_field){
+            scatterBunch();
+            field_solver.solve();
+            updateBunch(field_solver.dt * steps_taken, external_field);
         }
     };
 }
