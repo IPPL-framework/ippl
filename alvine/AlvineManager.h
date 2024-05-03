@@ -6,7 +6,7 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
-#include "UpdateStrategy.hpp"
+#include "ParticleFieldStrategy.hpp"
 #include "Manager/BaseManager.h"
 #include "Manager/PicManager.h"
 #include "Manager/FieldSolverBase.h"
@@ -20,15 +20,10 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 
 template <typename T, unsigned Dim>
 class AlvineManager
-    : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                              LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>> {
+    : public ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase,
+                              LoadBalanceStrategy, FieldSolverStrategy<FieldContainerBase>> {
 public:
-    using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t = FieldContainer<T, Dim>;
-    using FieldSolver_t= FieldSolver<T, Dim>;
-    using LoadBalancer_t= LoadBalancer<T, Dim>;
-    using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-    using update_strategy_type = typename std::shared_ptr<UpdateStrategy<FieldContainer_t, ParticleContainer_t>>;
+    using particle_field_strategy_type = typename std::shared_ptr<ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase>>;
 
 protected:
     unsigned nt_m;
@@ -40,16 +35,16 @@ protected:
     ippl::NDIndex<Dim> domain_m;
     std::string solver_m;
     double lbt_m;
-    update_strategy_type update_strategy_m;
+    particle_field_strategy_type particle_field_strategy_m;
 
 public:
     AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>>() 
+        : ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase, LoadBalanceStrategy, FieldSolverStrategy<FieldContainerBase> >() 
         , nt_m(nt_)
         , nr_m(nr_)
         , solver_m(solver_)
         , lbt_m(lbt_)
-        , update_strategy_m(nullptr) {}
+        , particle_field_strategy_m(nullptr) {}
 
     ~AlvineManager(){}
 
@@ -63,7 +58,7 @@ protected:
 
 public:
 
-    void setUpdateStrategy(update_strategy_type update_strategy) { update_strategy_m = update_strategy; }
+    void setParticleFieldStrategy(particle_field_strategy_type particle_field_strategy) { particle_field_strategy_m = particle_field_strategy; }
 
     double getTime() { return time_m; }
 
@@ -88,27 +83,27 @@ public:
     }
 
     void grid2par() override { 
-        if ( update_strategy_m ) {
-            update_strategy_m->grid2par(this->fcontainer_m, this->pcontainer_m);
+        if ( particle_field_strategy_m ) {
+            particle_field_strategy_m->grid2par(this->fcontainer_m, this->pcontainer_m);
         } else {
-            throw std::runtime_error("Update strategy not defined");
+            throw std::runtime_error("Particle-Field strategy not defined");
         }
     }
 
     void par2grid() override { 
-        if ( update_strategy_m ) {
-            update_strategy_m->par2grid(this->fcontainer_m, this->pcontainer_m);
+        if ( particle_field_strategy_m ) {
+            particle_field_strategy_m->par2grid(this->fcontainer_m, this->pcontainer_m);
         } else {
-            throw std::runtime_error("Update strategy not defined");
+            throw std::runtime_error("Particle-Field strategy not defined");
         }
 
     }
 
     void updateFields() {
-        if ( update_strategy_m ) {
-            update_strategy_m->updateFields(this->fcontainer_m);
+        if ( particle_field_strategy_m ) {
+            particle_field_strategy_m->updateFields(this->fcontainer_m);
         } else {
-            throw std::runtime_error("Update strategy not defined");
+            throw std::runtime_error("Particle-Field strategy not defined");
         }
 
     }
