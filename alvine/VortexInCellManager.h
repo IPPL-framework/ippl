@@ -71,7 +71,7 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-        int density = 1; // particles per cell
+      int density = 2; // particles per cell
       set_number_of_particles(density);
 
       this->decomp_m.fill(true);
@@ -133,25 +133,24 @@ public:
         size_type totalP = this->np_m;
         pc->create(totalP);  // TODO: local number of particles? from kokkos?
 
+        // Assign positions
         view_type* R = &(pc->R.getView());  // Position vector
         ParticleDistribution particle_distribution(*R, this->rmin_m, this->rmax_m, this->np_m);
         Kokkos::parallel_for(totalP, particle_distribution);
 
         // Assign vorticity
         host_type omega_host = pc->omega.getHostMirror();  // Vorticity values
-
         VortexDistribution vortex_dist(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m);
         Kokkos::parallel_for(totalP, vortex_dist);
-
         Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
-        int sum = 0;
+        int total_invalid = 0;
         if (this->remove_particles) {
             ippl::ParticleAttrib<bool> invalid;
             invalid.create(totalP);
 
             Kokkos::parallel_for(
-                "Assign vorticity null", totalP, KOKKOS_LAMBDA(const size_t i) {
+                "Mark vorticity null as invalid", totalP, KOKKOS_LAMBDA(const size_t i) {
                     if (pc->omega.getView()(i) == 0) {
                         invalid(i) = true;
                     } else {
@@ -161,13 +160,13 @@ public:
 
 
             for (unsigned i = 0; i < totalP; i++) {
-                invalid(i) ? sum++: sum;
+                invalid(i) ? total_invalid++: total_invalid;
             }
 
-            if (sum and (sum < int(totalP))) {
-                std::cout << "Removing " << sum << " particles" << std::endl;
+            if (total_invalid and (total_invalid < int(totalP))) {
+                std::cout << "Removing " << total_invalid << " particles" << std::endl;
                 const auto invalid_view = invalid.getView();
-                const size_type sum_ = sum;
+                const size_type sum_ = total_invalid;
                 pc->destroy(invalid_view, sum_);
             }
             else{
@@ -178,7 +177,7 @@ public:
         Kokkos::fence();
         ippl::Comm->barrier();
 
-        return sum;
+        return total_invalid;
     }
   
 
