@@ -21,11 +21,10 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 template <typename T, unsigned Dim>
 class AlvineManager
     : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                              LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>> {
+                              LoadBalancer<T, Dim>, FieldSolverStrategy<FieldContainer<T, 2>>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
-    using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
     using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using particle_field_strategy_type = typename std::shared_ptr<ParticleFieldStrategy<FieldContainer_t, ParticleContainer_t>>;
@@ -44,7 +43,7 @@ protected:
 
 public:
     AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>>() 
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>, FieldSolverStrategy<FieldContainer<T, 2>> >() 
         , nt_m(nt_)
         , nr_m(nr_)
         , solver_m(solver_)

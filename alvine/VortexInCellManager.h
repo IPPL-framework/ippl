@@ -25,7 +25,6 @@ class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>; 
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
     VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
@@ -80,9 +79,9 @@ public:
         
       this->fcontainer_m->initializeFields();
 
-      this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getOmegaField()) );
+      this->setFieldSolver( std::make_shared<TwoDimFFTSolver<T>>() );
       
-      this->fsolver_m->initSolver();
+      this->fsolver_m->initSolver(this->fcontainer_m);
 
       this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
@@ -96,7 +95,7 @@ public:
 
       this->par2grid();
 
-      this->fsolver_m->runSolver();
+      this->fsolver_m->solve(this->fcontainer_m);
       this->updateFields();
 
       this->grid2par();
@@ -164,7 +163,7 @@ public:
 
       // claculate stream function
       IpplTimings::startTimer(SolveTimer);
-      this->fsolver_m->runSolver();
+      this->fsolver_m->solve(this->fcontainer_m);
       IpplTimings::stopTimer(SolveTimer);
 
       // calculate velocity from stream function

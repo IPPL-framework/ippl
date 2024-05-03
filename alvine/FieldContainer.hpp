@@ -6,7 +6,7 @@
 #include "Manager/BaseManager.h"
 
 // Define the FieldsContainer class
-template <typename T, unsigned Dim = 3>
+template <typename T, unsigned Dim>
 class FieldContainer {
   using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
 

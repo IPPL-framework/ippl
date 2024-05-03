@@ -7,7 +7,7 @@
 template <typename T, unsigned Dim>
 class LoadBalancer{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
-    using FieldSolver_t= ippl::FieldSolverBase<T, Dim>;
+    using FieldSolver_t = FieldSolverStrategy<FieldContainer<T, 2>>;
     using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
     
     private:
