@@ -71,7 +71,7 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-      int density = 2; // particles per cell
+      int density = 1; // particles per cell
       set_number_of_particles(density);
 
       this->decomp_m.fill(true);
