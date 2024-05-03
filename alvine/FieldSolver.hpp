@@ -18,10 +18,10 @@ class FieldSolverStrategy {
 };
 
 template <typename T>
-class TwoDimFFTSolver : public FieldSolverStrategy<FieldContainerBase> {
+class TwoDimFFTSolverStrategy : public FieldSolverStrategy<FieldContainerBase> {
     
   public:
-    TwoDimFFTSolver() {}
+    TwoDimFFTSolverStrategy() {}
     
     void initSolver(std::shared_ptr<FieldContainerBase> fcontainer) override {
 

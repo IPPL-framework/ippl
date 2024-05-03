@@ -76,21 +76,20 @@ public:
             this->isAllPeriodic_m));
 
       
-      std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(this->fcontainer_m);
+      if constexpr (Dim == 2) {
+          std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(this->fcontainer_m);
+          this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(fc->getMesh(), fc->getFL()));
+          this->setFieldSolver( std::make_shared<TwoDimFFTSolverStrategy<T>>() );
+          this->setParticleFieldStrategy( std::make_shared<TwoDimParticleFieldStrategy<T>>() );
 
-      this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(fc->getMesh(), fc->getFL()));
-        
-      this->setFieldSolver( std::make_shared<TwoDimFFTSolver<T>>() );
+      } else if constexpr (Dim == 3) {
+          this->setParticleFieldStrategy( std::make_shared<ThreeDimParticleFieldStrategy<T>>() );
+      }
+
       
       this->fsolver_m->initSolver(this->fcontainer_m);
 
       //this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
-
-      if constexpr (Dim == 2) {
-          this->setParticleFieldStrategy( std::make_shared<TwoDimParticleFieldStrategy<T>>() );
-      } else if constexpr (Dim == 3) {
-          this->setParticleFieldStrategy( std::make_shared<ThreeDimParticleFieldStrategy<T>>() );
-      }
 
       initializeParticles();
 
@@ -101,17 +100,16 @@ public:
 
       this->grid2par();
 
-      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
       pc->R_old = pc->R;
       pc->R = pc->R_old + pc->P * this->dt_m;
       pc->update();
-
     }
 
     void initializeParticles() {
 
-      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
       // Create np_m particles in container
       size_type totalP = this->np_m;
@@ -157,7 +155,7 @@ public:
       static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
       static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
       
-      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
       // scatter the vorticity to the underlying grid
       this->par2grid();

@@ -18,9 +18,9 @@ class ParticleFieldStrategy {
 };
 
 template<typename T>
-class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerBase, ParticleContainer<T, 2>> {
+class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase> {
   public:
-    void par2grid(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+    void par2grid(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainerBase> pcontainer) override {
 
         std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
         std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
@@ -53,7 +53,7 @@ class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerB
             });
     }
 
-    void grid2par(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+    void grid2par(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainerBase> pcontainer) override {
 
         std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
         std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
@@ -65,13 +65,13 @@ class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerB
 };
 
 template<typename T>
-class ThreeDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainer<T, 3>, ParticleContainer<T, 3>> {
+class ThreeDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase> {
   public:
-    void par2grid(std::shared_ptr<FieldContainer<T, 3>> fc, std::shared_ptr<ParticleContainer<T, 3>> pc) override { }
+    void par2grid([[maybe_unused]] std::shared_ptr<FieldContainerBase> fc, [[maybe_unused]] std::shared_ptr<ParticleContainerBase> pc) override { }
 
-    void updateFields(std::shared_ptr<FieldContainer<T, 3>> fc) override { }
+    void updateFields([[maybe_unused]] std::shared_ptr<FieldContainerBase> fc) override { }
 
-    void grid2par(std::shared_ptr<FieldContainer<T, 3>> fc, std::shared_ptr<ParticleContainer<T, 3>> pc) override { }
+    void grid2par([[maybe_unused]] std::shared_ptr<FieldContainerBase> fc,[[maybe_unused]] std::shared_ptr<ParticleContainerBase> pc) override { }
 
 };
 

@@ -4,14 +4,22 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 
+class ParticleContainerBase {
+  public:
+
+    virtual ~ParticleContainerBase() = default;
+};
+
 // Define the ParticlesContainer class
 template <typename T, unsigned Dim>
-class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>{
+class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>, public ParticleContainerBase {
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using omega_type = std::conditional<Dim == 2, ippl::ParticleAttrib<T>, typename Base::particle_position_type>::type;
 
     public:
         typename Base::particle_position_type R_old;
         typename Base::particle_position_type P;  
+        omega_type omega;
 
     private:
         PLayout_t<T, Dim> pl_m;
@@ -36,17 +44,16 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
         void registerAttributes() {
             this->addAttribute(P);
             this->addAttribute(R_old);
+            this->addAttribute(omega);
         }
 };
 
 template <typename T>
 class TwoDimParticleContainer : public ParticleContainer<T, 2> {
     public:
-        ippl::ParticleAttrib<T> omega;
 
         TwoDimParticleContainer(Mesh_t<2>& mesh, FieldLayout_t<2>& FL)
             : ParticleContainer<T, 2>(mesh, FL) {
-            this->addAttribute(omega); 
         }
 
         ~TwoDimParticleContainer() {}

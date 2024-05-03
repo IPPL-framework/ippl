@@ -29,7 +29,6 @@ public:
         , mesh_m(domain, hr, origin)
         , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {
 
-          A_field_m.initialize(mesh_m, fl_m);
           omega_field_m.initialize(mesh_m, fl_m);
           u_field_m.initialize(mesh_m, fl_m);
         }
@@ -42,7 +41,6 @@ private:
     Vector_t<double, Dim> rmax_m;
     std::array<bool, Dim> decomp_m;
 
-    vorticity_field_type A_field_m;
     vorticity_field_type omega_field_m;
     VField_t<T, Dim> u_field_m;
 
@@ -50,9 +48,6 @@ private:
     FieldLayout_t<Dim> fl_m;
 
 public:
-
-    vorticity_field_type& getA_field() { return A_field_m; }
-    void setA_field(vorticity_field_type& A_field) { A_field_m = A_field; }
 
     vorticity_field_type& getOmegaField() { return omega_field_m; }
     void setOmega_field(vorticity_field_type& omega_field) { omega_field_m = omega_field; }
