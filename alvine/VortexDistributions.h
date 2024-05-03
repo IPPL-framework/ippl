@@ -267,4 +267,33 @@ public:
     }
 };
 
+class JetPenetration : BaseDistribution {
+public:
+    JetPenetration(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
+                   vector_type origin)
+        : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        double width = 0.1;
+        this->omega(i) = 0;
+
+        double y = this->r(i)(1);
+        double x = this->r(i)(0);
+        double center_y = this->center(1);
+        double center_x = this->center(0);
+
+        if (y < center_y + width && y > center_y - width) {
+            // Center line
+            this->omega(i) = 0.0001;
+        } else if (r1 > center_y && r1 < this->rmax(1) - 1) {
+            // Spikes
+            if ((x < center_x + 0.5 + width && x > center_x + 0.5 - width)) {
+                this->omega(i) = 1;
+            } else if ((x < center_x - 0.5 + width && x > center_x - 0.5 - width)) {
+                this->omega(i) = -1;
+            }
+        }
+    }
+};
+
 #endif
