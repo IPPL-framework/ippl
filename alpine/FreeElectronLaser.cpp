@@ -1774,7 +1774,7 @@ int main(int argc, char* argv[]) {
         
         test_gauss_law<scalar>(64);
         test_amperes_law<scalar>(64);
-        goto exit;
+        //goto exit;
         config cfg = read_config("../config.json");
         const scalar frame_gamma = std::max(decltype(cfg)::scalar(1), cfg.bunch_gamma / std::sqrt(1.0 + cfg.undulator_K * cfg.undulator_K * config::scalar(0.5)));
         cfg.extents[2] *= frame_gamma;
@@ -1873,7 +1873,7 @@ int main(int argc, char* argv[]) {
             fdtd_state.J = scalar(0.0);
             fdtd_state.playout.update(fdtd_state.particles);
             fdtd_state.scatterBunch();
-            //std::cout << fdtd_state.J.getVolumeIntegral() << "\n";
+            std::cout << i << "\n";
             fdtd_state.fieldStep();
             fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
             auto ldom = layout.getLocalNDIndex();

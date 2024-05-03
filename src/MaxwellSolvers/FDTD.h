@@ -682,7 +682,8 @@ namespace ippl {
                     const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
                     ippl::Vector<scalar, 3> E_grid = eview(i);
                     ippl::Vector<scalar, 3> B_grid = bview(i);
-                    
+                    //std::cout << "E_grid: " << E_grid << "\n";
+                    //std::cout << "B_grid: " << B_grid << "\n";
                     ippl::Vector<scalar, 3> bunchpos = rview(i);
                     Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> external_eb = external_field(bunchpos, time);
                     

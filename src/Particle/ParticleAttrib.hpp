@@ -194,6 +194,7 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // gather
+                //std::cout << index << std::endl;
                 dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
                                                        view, wlo, whi, args);
             });

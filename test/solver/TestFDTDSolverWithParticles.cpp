@@ -7,6 +7,8 @@ using std::size_t;
 #include "MaxwellSolvers/FDTD.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+
+#include <Kokkos_Random.hpp>
 template<typename scalar1, typename... scalar>
     requires((std::is_floating_point_v<scalar1>))
 KOKKOS_INLINE_FUNCTION float gauss(scalar1 mean, scalar1 stddev, scalar... x){
@@ -35,7 +37,9 @@ int main(int argc, char* argv[]){
         constexpr size_t n = 100;
         ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
         ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);
-        ippl::Vector<scalar, 3> extents{scalar(1), scalar(1), scalar(1)};
+        ippl::Vector<scalar, 3> extents{meter_in_unit_lengths,
+                                        meter_in_unit_lengths,
+                                        meter_in_unit_lengths};
         std::array<bool, 3> isParallel;
         isParallel.fill(false);
         isParallel[2] = true;
@@ -50,7 +54,25 @@ int main(int argc, char* argv[]){
         ippl::Vector<scalar, 3> origin = {0,0,0};
         ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
         
-        ippl::NSFDSolverWithParticles<scalar, ippl::absorbing> solver(layout, mesh, 1 << 17);
+        ippl::NSFDSolverWithParticles<scalar, ippl::absorbing> solver(layout, mesh, 1);
+        
+        auto pview = solver.particles.R.getView();
+        auto p1view = solver.particles.R_nm1.getView();
+        auto gbview = solver.particles.gamma_beta.getView();
+
+        Kokkos::Random_XorShift64_Pool<> random_pool(12345);
+        Kokkos::parallel_for(solver.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
+            auto state = random_pool.get_state();
+            pview(i)[0] = state.normal(origin[0] + extents[0] * 0.5, 0.01 * extents[0]);
+            pview(i)[1] = state.normal(origin[1] + extents[1] * 0.5, 0.01 * extents[1]);
+            pview(i)[2] = state.normal(origin[2] + extents[2] * 0.5, 0.01 * extents[2]);
+            p1view(i) = pview(i);
+            gbview(i) = 0;
+            random_pool.free_state(state);
+        });
+        solver.playout.update(solver.particles);
+        solver.particles.Q = electron_charge_in_unit_charges;
+        solver.particles.mass = electron_mass_in_unit_masses;
         for(int i = 0;i < 10;i++)
             solver.solve();
     }
