@@ -33,7 +33,7 @@ int main(int argc, char* argv[]){
         using FourField = ippl::Field<vector4_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         using ThreeField = ippl::Field<vector_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         constexpr size_t n = 100;
-        ippl::Vector<uint32_t, 3> nr{n/2, n/2, 2*n};
+        ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
         ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);
         ippl::Vector<scalar, 3> extents{scalar(1), scalar(1), scalar(1)};
         std::array<bool, 3> isParallel;
@@ -131,6 +131,8 @@ int main(int argc, char* argv[]){
             ref += Kokkos::abs(gauss(scalar(0.5), scalar(0.05), z) - aview(i,j,k)[2]);
         }, sum_error);
         std::cout << "Sum: " << sum_error / double(n * n * n) << "\n";
+
+        
     }
     //exit:
     ippl::finalize();

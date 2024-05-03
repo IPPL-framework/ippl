@@ -276,6 +276,9 @@ namespace ippl {
                 }
                 return res;
             }
+            KOKKOS_INLINE_FUNCTION operator typename E1::value_type() const{
+                return apply();
+            }
 
             /*
              * This is required for BareField::dot
