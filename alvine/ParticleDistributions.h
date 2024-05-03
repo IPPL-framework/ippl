@@ -51,10 +51,8 @@ public:
     CircleDistribution(view_type r_, vector_type r_min, vector_type r_max,
                        size_type np_m)
         : BaseParticleDistribution(r_, r_min, r_max, np_m) {
+
         // Number of particles in the circle
-
-        // int r_core_m = 3;
-
         int M = int(2 * (np_m - 1) / ((n_circles_m - 1) * (n_circles_m - 1)));
         // int M = int(2 * (np_m - 1) / (10 * r_core_m * (10 * r_core_m + 1)));
         std::cout << "M: " << M << std::endl;
@@ -78,18 +76,9 @@ public:
             }
         }
 
-        std::cout << "circle: " << circle << std::endl;
-        std::cout << "end of circle: " << particles_in_circle[circle] << std::endl;
-        std::cout << "particle: " << p << std::endl;
-        std::cout << "p in circle: "
-                  << particles_in_circle[circle] - particles_in_circle[circle - 1] << std::endl;
-        std::cout << "remainder: " << particles_in_circle[circle] - p << std::endl;
-
-        double r_    = double(circle) / n_circles_m * (this->rmax(0) - this->rmin(0)) / 4;
+        double r_    = double(circle) / n_circles_m * (this->rmax(0) - this->rmin(0)) / 2;
         double theta = double(particles_in_circle[circle] - p) * 360
                        / (particles_in_circle[circle] - particles_in_circle[circle - 1]);
-
-        std::cout << "r: " << r_ << " theta: " << theta << std::endl;
 
         this->r(p)(0) = std::cos(theta * pi / 180) * r_ + this->center(0);
         this->r(p)(1) = std::sin(theta * pi / 180) * r_ + this->center(1);
