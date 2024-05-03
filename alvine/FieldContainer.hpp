@@ -5,9 +5,15 @@
 
 #include "Manager/BaseManager.h"
 
+class FieldContainerBase {
+  public:
+
+    virtual ~FieldContainerBase() = default;
+};
+
 // Define the FieldsContainer class
-template <typename T, unsigned Dim = 3>
-class FieldContainer {
+template <typename T, unsigned Dim>
+class FieldContainer : public FieldContainerBase {
   using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
 
 
@@ -21,7 +27,11 @@ public:
         , rmax_m(rmax)
         , decomp_m(decomp)
         , mesh_m(domain, hr, origin)
-        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {}
+        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {
+
+          omega_field_m.initialize(mesh_m, fl_m);
+          u_field_m.initialize(mesh_m, fl_m);
+        }
 
     ~FieldContainer(){}
 
@@ -31,7 +41,6 @@ private:
     Vector_t<double, Dim> rmax_m;
     std::array<bool, Dim> decomp_m;
 
-    vorticity_field_type A_field_m;
     vorticity_field_type omega_field_m;
     VField_t<T, Dim> u_field_m;
 
@@ -39,9 +48,6 @@ private:
     FieldLayout_t<Dim> fl_m;
 
 public:
-
-    vorticity_field_type& getA_field() { return A_field_m; }
-    void setA_field(vorticity_field_type& A_field) { A_field_m = A_field; }
 
     vorticity_field_type& getOmegaField() { return omega_field_m; }
     void setOmega_field(vorticity_field_type& omega_field) { omega_field_m = omega_field; }
@@ -67,11 +73,6 @@ public:
     FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
-    void initializeFields() {
-        A_field_m.initialize(mesh_m, fl_m);
-        omega_field_m.initialize(mesh_m, fl_m);
-        u_field_m.initialize(mesh_m, fl_m);
-    }
 };
 
 #endif
