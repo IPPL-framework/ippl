@@ -25,7 +25,7 @@ class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    //using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
     VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
         Vector_t<double, Dim> rmin_ = 0.0,
@@ -75,15 +75,16 @@ public:
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
             this->isAllPeriodic_m));
 
-      this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
-        
-      this->fcontainer_m->initializeFields();
+      
+      std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(this->fcontainer_m);
 
+      this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(fc->getMesh(), fc->getFL()));
+        
       this->setFieldSolver( std::make_shared<TwoDimFFTSolver<T>>() );
       
       this->fsolver_m->initSolver(this->fcontainer_m);
 
-      this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
+      //this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
       if constexpr (Dim == 2) {
           this->setParticleFieldStrategy( std::make_shared<TwoDimParticleFieldStrategy<T>>() );

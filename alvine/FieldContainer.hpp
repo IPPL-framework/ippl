@@ -5,9 +5,15 @@
 
 #include "Manager/BaseManager.h"
 
+class FieldContainerBase {
+  public:
+
+    virtual ~FieldContainerBase() = default;
+};
+
 // Define the FieldsContainer class
 template <typename T, unsigned Dim>
-class FieldContainer {
+class FieldContainer : public FieldContainerBase {
   using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
 
 
@@ -21,7 +27,12 @@ public:
         , rmax_m(rmax)
         , decomp_m(decomp)
         , mesh_m(domain, hr, origin)
-        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {}
+        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {
+
+          A_field_m.initialize(mesh_m, fl_m);
+          omega_field_m.initialize(mesh_m, fl_m);
+          u_field_m.initialize(mesh_m, fl_m);
+        }
 
     ~FieldContainer(){}
 
@@ -67,11 +78,6 @@ public:
     FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
-    void initializeFields() {
-        A_field_m.initialize(mesh_m, fl_m);
-        omega_field_m.initialize(mesh_m, fl_m);
-        u_field_m.initialize(mesh_m, fl_m);
-    }
 };
 
 #endif

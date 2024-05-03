@@ -18,12 +18,17 @@ class FieldSolverStrategy {
 };
 
 template <typename T>
-class TwoDimFFTSolver : public FieldSolverStrategy<FieldContainer<T, 2>> {
+class TwoDimFFTSolver : public FieldSolverStrategy<FieldContainerBase> {
     
   public:
     TwoDimFFTSolver() {}
     
-    void initSolver(std::shared_ptr<FieldContainer<T, 2>> fcontainer) override {
+    void initSolver(std::shared_ptr<FieldContainerBase> fcontainer) override {
+
+
+        std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
+
+
         ippl::ParameterList sp;
         sp.add("output_type", FFTSolver_t<T, Dim>::SOL);
         sp.add("use_heffte_defaults", false);
@@ -35,10 +40,10 @@ class TwoDimFFTSolver : public FieldSolverStrategy<FieldContainer<T, 2>> {
 
         solver.mergeParameters(sp);
 
-        solver.setRhs(fcontainer->getOmegaField());
+        solver.setRhs(fc->getOmegaField());
     }
 
-    void solve([[maybe_unused]]std::shared_ptr<FieldContainer<T, 2>> fcontainer) override {
+    void solve([[maybe_unused]]std::shared_ptr<FieldContainerBase> fcontainer) override {
       solver.solve();
     }
 

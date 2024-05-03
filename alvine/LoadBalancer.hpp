@@ -4,6 +4,11 @@
 #include "ParticleContainer.hpp"
 #include <memory>
 
+class LoadBalanceStrategy {
+
+    virtual ~LoadBalanceStrategy() = default;
+};
+
 template <typename T, unsigned Dim>
 class LoadBalancer{
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;

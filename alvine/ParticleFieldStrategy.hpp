@@ -18,17 +18,20 @@ class ParticleFieldStrategy {
 };
 
 template<typename T>
-class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainer<T, 2>, ParticleContainer<T, 2>> {
+class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainerBase, ParticleContainer<T, 2>> {
   public:
-    void par2grid(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+    void par2grid(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
 
         std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
+        std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
 
         fc->getOmegaField() = 0.0;
         scatter(pc->omega, fc->getOmegaField(), pc->R);
     }
 
-    void updateFields(std::shared_ptr<FieldContainer<T, 2>> fc) override {
+    void updateFields(std::shared_ptr<FieldContainerBase> fcontainer) override {
+
+        std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
 
         VField_t<T, 2> u_field = fc->getUField();
         u_field = 0.0;
@@ -50,8 +53,11 @@ class TwoDimParticleFieldStrategy : public ParticleFieldStrategy<FieldContainer<
             });
     }
 
-    void grid2par(std::shared_ptr<FieldContainer<T, 2>> fc, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+    void grid2par(std::shared_ptr<FieldContainerBase> fcontainer, std::shared_ptr<ParticleContainer<T, 2>> pcontainer) override {
+
         std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(pcontainer);
+        std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
+
         pc->P = 0.0;
         gather(pc->P, fc->getUField(), pc->R);
     }
