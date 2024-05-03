@@ -37,9 +37,9 @@ public:
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const { this->omega(i) = 1; }
 };
 
-class UnitDisk : BaseDistribution {
+class Disk : BaseDistribution {
 public:
-    UnitDisk(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
+    Disk(view_type r_, host_type omega_, vector_type r_min, vector_type r_max,
              vector_type origin)
         : BaseDistribution(r_, omega_, r_min, r_max, origin) {}
 
@@ -50,7 +50,7 @@ public:
             norm += std::pow(dist(d), 2);
         }
         norm         = std::sqrt(norm);
-        float radius = 3.0;
+        float radius = 2.2;
         if (norm > radius) {
             this->omega(i) = 0;
         } else {
