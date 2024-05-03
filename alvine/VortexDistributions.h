@@ -285,7 +285,7 @@ public:
         if (y < center_y + width && y > center_y - width) {
             // Center line
             this->omega(i) = 0.0001;
-        } else if (r1 > center_y && r1 < this->rmax(1) - 1) {
+        } else if (y > center_y && y < this->rmax(1) - 1) {
             // Spikes
             if ((x < center_x + 0.5 + width && x > center_x + 0.5 - width)) {
                 this->omega(i) = 1;

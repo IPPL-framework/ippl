@@ -15,11 +15,13 @@ template <typename T, unsigned Dim>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>, public ParticleContainerBase {
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using omega_type = std::conditional<Dim == 2, ippl::ParticleAttrib<T>, typename Base::particle_position_type>::type;
+    using valid_type = ippl::ParticleAttrib<bool>;
 
     public:
         typename Base::particle_position_type R_old;
         typename Base::particle_position_type P;  
         omega_type omega;
+        valid_type invalid;
 
     private:
         PLayout_t<T, Dim> pl_m;
@@ -45,6 +47,7 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
             this->addAttribute(P);
             this->addAttribute(R_old);
             this->addAttribute(omega);
+            this->addAttribute(invalid);
         }
 };
 

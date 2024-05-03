@@ -143,28 +143,23 @@ public:
 
         int total_invalid = 0;
         if (this->remove_particles) {
-            ippl::ParticleAttrib<bool> invalid;
-            invalid.create(totalP);
-
+            
             Kokkos::parallel_for(
                 "Mark vorticity null as invalid", totalP, KOKKOS_LAMBDA(const size_t i) {
+                    pc->invalid.getView()(i) = false;
                     if (pc->omega.getView()(i) == 0) {
-                        invalid(i) = true;
-                    } else {
-                        invalid(i) = false;
+                        pc->invalid.getView()(i) = true;
                     }
                 });
 
 
             for (unsigned i = 0; i < totalP; i++) {
-                invalid(i) ? total_invalid++: total_invalid;
+                pc->invalid.getView()(i) ? total_invalid++: total_invalid;
             }
-
+            
             if (total_invalid and (total_invalid < int(totalP))) {
                 std::cout << "Removing " << total_invalid << " particles" << std::endl;
-                const auto invalid_view = invalid.getView();
-                const size_type sum_ = total_invalid;
-                pc->destroy(invalid_view, sum_);
+                pc->destroy(pc->invalid.getView(), total_invalid);
             }
             else{
                 std::cout << "No particles removed" << std::endl;
