@@ -69,8 +69,8 @@ int main(int argc, char* argv[]) {
         double lbt = std::atof(argv[arg++]);
 
         msg << nt << endl;
-        
-        VortexInCellManager<T, Dim, RandDistribution, TwoBands> manager(nt, nr, solver, lbt);
+
+        VortexInCellManager<T, Dim, EquidistantDistribution, ConcentricCircles> manager(nt, nr, solver, lbt);
 
         manager.pre_run();
 
