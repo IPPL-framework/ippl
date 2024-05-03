@@ -66,15 +66,28 @@ int main(int argc, char* argv[]) {
 
         std::string solver = argv[arg++];
 
-        double lbt = std::atof(argv[arg++]);
+        //double lbt = std::atof(argv[arg++]);
 
         msg << nt << endl;
 
+        ippl::Vector<T, Dim> rmin = 0;
+        ippl::Vector<T, Dim> rmax = 1;
+
+
+        ConcreteParticleDistribution<T, Dim> db1(rmin, rmax, 1);
+        ConcreteParticleDistribution<T, Dim> db2(rmin, rmax, 2);
+        db1 += db2;
+        db1.print();
+
+
+
+        /*
         VortexInCellManager<T, Dim, EquidistantDistribution, ConcentricCircles> manager(nt, nr, solver, lbt);
 
         manager.pre_run();
 
         manager.run(manager.getNt());
+        */
     }
     ippl::finalize();
 

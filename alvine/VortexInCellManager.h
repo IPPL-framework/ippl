@@ -12,6 +12,7 @@
 #include "Particle/ParticleBase.h"
 #include "ParticleContainer.hpp"
 #include "ParticleDistributions.h"
+#include "myBaseParticleDistribution.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
@@ -30,6 +31,7 @@ public:
     //using LoadBalancer_t      = LoadBalancer<T, Dim>;
     bool remove_particles;
 
+
     VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
@@ -45,6 +47,10 @@ public:
     ~VortexInCellManager() {}
 
     void pre_run() override {
+
+
+
+
 
       Inform csvout(NULL, "particles.csv", Inform::OVERWRITE);
       csvout.precision(16);
