@@ -54,7 +54,7 @@ int main(int argc, char* argv[]){
         ippl::Vector<scalar, 3> origin = {0,0,0};
         ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
         
-        ippl::NSFDSolverWithParticles<scalar, ippl::absorbing> solver(layout, mesh, 1);
+        ippl::NSFDSolverWithParticles<scalar, ippl::absorbing> solver(layout, mesh, 1 << 15);
         
         auto pview = solver.particles.R.getView();
         auto p1view = solver.particles.R_nm1.getView();
@@ -63,18 +63,36 @@ int main(int argc, char* argv[]){
         Kokkos::Random_XorShift64_Pool<> random_pool(12345);
         Kokkos::parallel_for(solver.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
             auto state = random_pool.get_state();
-            pview(i)[0] = state.normal(origin[0] + extents[0] * 0.5, 0.01 * extents[0]);
-            pview(i)[1] = state.normal(origin[1] + extents[1] * 0.5, 0.01 * extents[1]);
-            pview(i)[2] = state.normal(origin[2] + extents[2] * 0.5, 0.01 * extents[2]);
+            pview(i)[0] = state.normal(origin[0] + extents[0] * 0.5, 0.04 * extents[0]);
+            pview(i)[1] = state.normal(origin[1] + extents[1] * 0.5, 0.04 * extents[1]);
+            pview(i)[2] = state.normal(origin[2] + extents[2] * 0.5, 0.04 * extents[2]);
             p1view(i) = pview(i);
             gbview(i) = 0;
             random_pool.free_state(state);
         });
+        {
+            double var = 0;
+            Kokkos::parallel_reduce(solver.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i, double& ref){
+                ippl::Vector<scalar, 3> pd(pview(i) - (origin + extents * 0.5));
+                ref += pd.dot(pd);
+            }, var);
+            std::cout << ippl::Vector<double, 3>(var * (1.0 / solver.particles.getLocalNum())) << "\n";
+        }
         solver.playout.update(solver.particles);
         solver.particles.Q = electron_charge_in_unit_charges;
         solver.particles.mass = electron_mass_in_unit_masses;
-        for(int i = 0;i < 10;i++)
+        for(int i = 0;i < 200;i++){
             solver.solve();
+        }
+        {
+            double var = 0;
+            Kokkos::parallel_reduce(solver.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i, double& ref){
+                ippl::Vector<scalar, 3> pd(pview(i) - (origin + extents * 0.5));
+                ref += pd.dot(pd);
+            }, var);
+            std::cout << ippl::Vector<double, 3>(var * (1.0 / solver.particles.getLocalNum())) << "\n";
+        }
+        
     }
     //exit:
     ippl::finalize();

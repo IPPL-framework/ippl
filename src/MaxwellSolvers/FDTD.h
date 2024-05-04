@@ -727,6 +727,7 @@ namespace ippl {
                 invalid_count);
             particles.destroy(invalid, invalid_count);
             Kokkos::fence();
+            playout.update(particles);
             
         }
         void solve(){
