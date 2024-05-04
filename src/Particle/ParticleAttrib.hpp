@@ -186,7 +186,7 @@ namespace ippl {
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                vector_type l                        = (pp(idx) - origin) * invdx + 1.0;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;

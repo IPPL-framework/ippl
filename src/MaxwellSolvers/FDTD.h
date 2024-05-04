@@ -345,6 +345,8 @@ namespace ippl {
             applyBCs();
         }
         void evaluate_EB(){
+            *(Maxwell<EMField, FourField>::En_mp) = typename EMField::value_type(0);
+            *(Maxwell<EMField, FourField>::Bn_mp) = typename EMField::value_type(0);
             ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
             const scalar idt = scalar(1.0) / dt;
             auto A_np1 = this->A_np1.getView(), A_n = this->A_n.getView(), A_nm1 = this->A_nm1.getView();
@@ -611,7 +613,7 @@ namespace ippl {
         FourField J;
         ThreeField E;
         ThreeField B;
-        NonStandardFDTDSolver<ThreeField, FourField> field_solver;
+        NonStandardFDTDSolver<ThreeField, FourField, absorbing> field_solver;
 
         ippl::Vector<uint32_t, 3> nr_global;
         ippl::Vector<scalar, 3> hr_m;
