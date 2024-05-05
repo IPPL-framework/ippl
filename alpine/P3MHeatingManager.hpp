@@ -155,10 +155,12 @@ public:
     
         this->fcontainer_m->initializeFields("P3M");
 
-        int offset_arr[14][3] = {
-            {0,0,0}, {0,0,1}, {0,1,-1}, {0,1,0}, {0,1,1}, {1,-1,-1}, {1,-1,0}, {1,-1,1},
-            {1,0,-1}, {1,0,0}, {1,0,1}, {1,1,-1}, {1,1,0}, {1,1,1}
-        };
+        int offset_arr[14][3] = {{ 1, 1, 1}, { 0, 1, 1}, {-1, 1, 1},
+            { 1, 0, 1}, { 0, 0, 1}, {-1, 0, 1},
+            { 1,-1, 1}, { 0,-1, 1}, {-1,-1, 1},
+            { 1, 1, 0}, { 0, 1, 0}, {-1, 1, 0},
+            { 1, 0, 0}, { 0, 0, 0}};
+
         Kokkos::View<int[14][3], Device> offset("offset");
 
         Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Device>(0, 14),
@@ -335,7 +337,7 @@ public:
             double length = hLocalRegions(rank)[d].length();
 
             // should be floor?
-            nCells[d] = ceil(length / this->rcut_m);
+            nCells[d] = floor(length / this->rcut_m);
             this->nCells_m[d] = nCells[d];
             totalCells *= nCells[d];
             hCM[d] = length / nCells[d];
@@ -360,8 +362,8 @@ public:
             	unsigned z_Idx = floor((R(i)[2] - l_extend[2]) / hCM[2]);
 
             	unsigned locCMeshIdx = x_Idx * nCells[1] * nCells[2] + y_Idx * nCells[2] + z_Idx;
-            	// assert(locCMeshIdx < totalCells && "Invalid Grid Position");
-                if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells-1;
+            	assert(locCMeshIdx < totalCells && "Invalid Grid Position");
+                // if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells-1;
 
             	Kokkos::atomic_increment(&cellParticleCount(locCMeshIdx));
             	cellIndex(i) = locCMeshIdx;
@@ -401,9 +403,9 @@ public:
         Kokkos::parallel_for("Build view", Kokkos::RangePolicy<Device>(0, nLoc), 
             KOKKOS_LAMBDA(const size_type& i){
                 unsigned cellNumber = cellIndex(i);
-                // assert(cellNumber < totalCells && "Invalid Cell Number");
+                assert(cellNumber < totalCells && "Invalid Cell Number");
                 size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
-                // assert(newIdx < nLoc && "Invalid Index");
+                assert(newIdx < nLoc && "Invalid Index");
                 tempR(newIdx) = R(i);
                 tempP(newIdx) = P(i);
                 tempE(newIdx) = E(i);
@@ -831,6 +833,9 @@ public:
 
     void dump() override {
         Inform m("Dump");
+
+        std::cerr << "Dumping data" << std::endl;
+
         double E_kin = calcKineticEnergy();
         // double E_pot = calcPotentialEnergy();
         // std::cerr << "Dumping data, Energy: " << E_kin + E_pot << std::endl;
