@@ -661,10 +661,30 @@ struct UniaxialLorentzframe{
     scalar beta_m;
     scalar gammaBeta_m;
     scalar gamma_m;
+    KOKKOS_INLINE_FUNCTION static UniaxialLorentzframe from_gamma(const scalar gamma){
+
+        UniaxialLorentzframe ret;
+        ret.gamma_m = gamma;
+        scalar beta = Kokkos::sqrt(1 - double(1) / (gamma * gamma));
+        scalar gammabeta = gamma * beta;
+        ret.beta_m = beta;
+        ret.gammaBeta_m = gammabeta;
+        return ret;
+    }
+    KOKKOS_INLINE_FUNCTION UniaxialLorentzframe<T, axis> negative()const noexcept{
+        UniaxialLorentzframe ret;
+        ret.beta_m = -beta_m;
+        ret.gammaBeta_m = -gammaBeta_m;
+        ret.gamma_m = gamma_m;
+        return ret;
+    }
+
+    KOKKOS_INLINE_FUNCTION UniaxialLorentzframe() = default;
     KOKKOS_INLINE_FUNCTION UniaxialLorentzframe(const scalar gammaBeta){
+        using Kokkos::sqrt;
         gammaBeta_m = gammaBeta;
-        beta_m = gammaBeta / sqrt(1 + gammaBeta * (gammaBeta));
-        gamma_m = sqrt(1 + gammaBeta * (gammaBeta));
+        beta_m = gammaBeta / sqrt(1 + gammaBeta * gammaBeta);
+        gamma_m = sqrt(1 + gammaBeta * gammaBeta);
     }
     KOKKOS_INLINE_FUNCTION void primedToUnprimed(Vector3& arg, scalar time)const noexcept{
         arg[axis] = gamma_m * (arg[axis] + beta_m * time); 
@@ -680,7 +700,7 @@ struct UniaxialLorentzframe{
         return ret;
     }
     KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>> inverse_transform_EB(const Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>>& primedEB)const noexcept{
-        return UniaxialLorentzframe<T, 2>(-gammaBeta_m).transform_EB(primedEB);
+        return negative().transform_EB(primedEB);
     }
 };
 template<typename scalar>
@@ -748,7 +768,7 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
     FieldVector<Double> gb = bunchInit.initialGamma_ * bunchInit.betaVector_;
     FieldVector<Double> r  (0.0);
     FieldVector<Double> t  (0.0);
-    Double            	t0, g;
+    Double            	t0;//, g;
     Double		zmin = 1e100;
     Double		Ne, bF, bFi;
     unsigned int	bmi;
@@ -1297,11 +1317,40 @@ namespace ippl {
         ippl::ParticleAttrib<ippl::Vector<ippl::Vector<scalar, 3>, 2>> EB_gather;   // Electric field container for particle gathering
 
     };
+    template<typename scalar>
+    struct Undulator{
+        undulator_parameters<scalar> uparams;
+        scalar distance_to_entry;
+        scalar k_u;
+        KOKKOS_FUNCTION Undulator(const undulator_parameters<scalar>& p, scalar dte) : uparams(p), distance_to_entry(dte), k_u(2 * M_PI / p.lambda){}
+        KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> operator()(const ippl::Vector<scalar, 3>& position_in_lab_frame)const noexcept{
+            Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret;
+            ret.first.fill(0);
+            ret.second.fill(0);
+            if(position_in_lab_frame[2] < distance_to_entry){
+                scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
+                assert(z_in_undulator < 0);
+                scalar scal = exp(-((k_u * z_in_undulator) * (k_u * z_in_undulator) * 0.5));
+                ret.second[0] = 0;
+                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * z_in_undulator * k_u * scal;
+                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * scal;
+            }
+            else if(position_in_lab_frame[2] > distance_to_entry && position_in_lab_frame[2] < distance_to_entry + uparams.length){
+                scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
+                assert(z_in_undulator >= 0);
+                ret.second[0] = 0;
+                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * sin(k_u * z_in_undulator);
+                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * cos(k_u * z_in_undulator);
+            }
+            return ret;
+        };
+    };
+    
 
 
     template <typename scalar>
     // clang-format off
-    struct FDTDFieldState{
+    struct FELSimulationState{
         
         //Sorry, can't do more than 3d
 
@@ -1337,16 +1386,18 @@ namespace ippl {
         Bunch_eb<scalar, ParticleSpatialLayout<scalar, 3>> particles;
         using bunch_type =  Bunch_eb<scalar, ParticleSpatialLayout<scalar, 3>>;
         config m_config;
-
+        UniaxialLorentzframe<scalar, 2 /*along z*/> ulb;
+        undulator_parameters<scalar> uparams;
+        Undulator<scalar> undulator;
         /**
          * @brief Construct a new FDTDFieldState object
          * Mesh and resolution parameter are technically redundant
-         * 
+         * @details ulb.gamma_m = cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5) is the frame's gamma factor
          * @param resolution 
          * @param layout 
          * @param mesch 
          */
-        FDTDFieldState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout), m_config(cfg){
+        FELSimulationState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout), m_config(cfg), ulb(UniaxialLorentzframe<scalar, 2>::from_gamma(cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5))), uparams(cfg), undulator(uparams, 2.0 * cfg.sigma_position[2] * ulb.gamma_m * ulb.gamma_m){
             FA_np1.initialize(mesch, layout, 1);
             FA_n.initialize(mesch, layout, 1);
             FA_nm1.initialize(mesch, layout, 1);
@@ -1658,7 +1709,7 @@ scalar test_gauss_law(uint32_t n){
     uint32_t pcount = 1 << 20;
     config cfg{};
     cfg.space_charge = true;
-    ippl::FDTDFieldState<scalar> field_state(layout, mesh, pcount, cfg);
+    ippl::FELSimulationState<scalar> field_state(layout, mesh, pcount, cfg);
     field_state.particles.Q = scalar(coulomb_in_unit_charges) / pcount;
     field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
     auto pview = field_state.particles.R.getView();
@@ -1688,7 +1739,7 @@ scalar test_gauss_law(uint32_t n){
     auto lDom = field_state.EB.getLayout().getLocalNDIndex();
     
     std::ofstream line("gauss_line.txt");
-    typename ippl::FDTDFieldState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    typename ippl::FELSimulationState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
     //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
     for(unsigned i = 1;i < nr[2];i++){
         vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
@@ -1723,7 +1774,7 @@ scalar test_amperes_law(uint32_t n){
 
     uint32_t pcount = 1 << 20;
     config cfg{};cfg.space_charge = true;
-    ippl::FDTDFieldState<scalar> field_state(layout, mesh, pcount, cfg);
+    ippl::FELSimulationState<scalar> field_state(layout, mesh, pcount, cfg);
     field_state.particles.Q = scalar(4.0 * coulomb_in_unit_charges) / pcount;
     field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
     auto pview = field_state.particles.R.getView();
@@ -1756,7 +1807,7 @@ scalar test_amperes_law(uint32_t n){
     
     std::ofstream line("ampere_line.txt");
     
-    typename ippl::FDTDFieldState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    typename ippl::FELSimulationState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
     //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
     for(unsigned i = 1;i < nr[2];i++){
         vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
@@ -1831,7 +1882,7 @@ int main(int argc, char* argv[]) {
             abort();
         }
 
-        ippl::FDTDFieldState<scalar> fdtd_state(layout, mesh, 0 /*no resize function exists wtf cfg.num_particles*/, cfg);
+        ippl::FELSimulationState<scalar> fdtd_state(layout, mesh, 0 /*no resize function exists wtf cfg.num_particles*/, cfg);
         
         if(ippl::Comm->rank() == 0){
             std::cout << "Init particles: " << std::endl;
@@ -2001,6 +2052,6 @@ int main(int argc, char* argv[]) {
         uint64_t endtime = nanoTime();
         std::cout << ippl::Comm->size() << " " << double(endtime - starttime) / 1e9 << std::endl;
     }
-    exit:
+    //exit:
     ippl::finalize();
 }
