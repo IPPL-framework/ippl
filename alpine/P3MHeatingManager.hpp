@@ -112,8 +112,6 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
-    // virtual void dump() {} // not defined in P3M3DManager, do later
-
     void pre_run() override {
         Inform m("Pre Run");
 
@@ -132,8 +130,7 @@ public:
 
         std::cerr << "hr: " << this->hr_m << std::endl;
         
-        // time stuff
-        //this->dt_m = 2.15623e-13;
+        // initialize time stuff
         this->it_m = 0;
         this->time_m = 0.;
 
@@ -161,9 +158,9 @@ public:
             { 1, 1, 0}, { 0, 1, 0}, {-1, 1, 0},
             { 1, 0, 0}, { 0, 0, 0}};
 
-        Kokkos::View<int[14][3], Device> offset("offset");
+        Kokkos::View<int[14][3], Host> offset("offset");
 
-        Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Device>(0, 14),
+        Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Host>(0, 14),
 
             KOKKOS_LAMBDA(const int i){
                 for(int j = 0; j < 3; ++j){
@@ -172,9 +169,9 @@ public:
             }
         );
 
-        // Kokkos::View<int[14][3], Device> offset_device("offset_device");
-        // Kokkos::deep_copy(offset_device, offset_host);
-        this->pcontainer_m->setOffset(offset);
+        Kokkos::View<int[14][3], Device> offset_device("offset_device");
+        Kokkos::deep_copy(offset_device, offset);
+        this->pcontainer_m->setOffset(offset_device);
 
         // initialize solver
         ippl::ParameterList sp;
@@ -237,30 +234,25 @@ public:
         
         this->Q_m = np;
         
-	// make sure all particles are accounted for
+	    // make sure all particles are accounted for
         if(rank == commSize-1){
             nloc = np - (commSize-1)*nloc;
         }
 
-	// std::cout << nloc << std::endl;
-	
         IpplTimings::startTimer(CTimer);
         this->pcontainer_m->create(nloc);
         IpplTimings::stopTimer(CTimer);
         
-	// get HostMirror of particle view
-	//view_type::HostMirror P = Kokkos::create_mirror_view(this->pcontainer_m->P.getView());
-        //view_type::HostMirror R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+	
+        auto P = this->pcontainer_m->P.getView();
+        auto R = this->pcontainer_m->R.getView();
+        auto Q = this->pcontainer_m->Q.getView();
 
-	auto P = this->pcontainer_m->P.getView();
-	auto R = this->pcontainer_m->R.getView();
-    auto Q = this->pcontainer_m->Q.getView();
-
-	double beamRad = this->beamRad_m;
+        double beamRad = this->beamRad_m;
 
         Kokkos::fence();
 	
-	// make sure this runs on the host, device does not work yet
+	    // make sure this runs on the host, device does not work yet
         Kokkos::Random_XorShift64_Pool<Device> rand_pool((size_type)(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
@@ -336,7 +328,6 @@ public:
             r_extend[d] = hLocalRegions(rank)[d].max();
             double length = hLocalRegions(rank)[d].length();
 
-            // should be floor?
             nCells[d] = floor(length / this->rcut_m);
             this->nCells_m[d] = nCells[d];
             totalCells *= nCells[d];
@@ -351,8 +342,6 @@ public:
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempP("tempMom", nLoc);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
         Kokkos::View<ippl::Vector<double, 3> *, Device> tempE("tempEn", nLoc);
-        // Kokkos::View<double *, Device> tempPhi("tempPhi", nLoc);
-        
 	
         // calculate cell index for each particle
         Kokkos::parallel_for("CalcCellIndices", Kokkos::RangePolicy<Device>(0, nLoc), 
@@ -369,8 +358,6 @@ public:
             	cellIndex(i) = locCMeshIdx;
         });
 
-        // std::cerr << "Rank " << rank << " has finished calculating cell indices" << std::endl;
-
         Kokkos::fence();
  	
         // compute starting indices for each cell
@@ -381,8 +368,6 @@ public:
 	        }
 	    );
 
-        // std::cerr << "Rank " << rank << " has finished calculating starting indices" << std::endl;
-
         Kokkos::fence();
 	
         Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
@@ -391,8 +376,6 @@ public:
             }
         );
 
-        // std::cerr << "Rank " << rank << " has finished setting last position" << std::endl;
-        
         Kokkos::fence();
 
         Kokkos::deep_copy(cellCurrentIdx, cellStartingIdx);
@@ -409,24 +392,18 @@ public:
                 tempR(newIdx) = R(i);
                 tempP(newIdx) = P(i);
                 tempE(newIdx) = E(i);
-                // tempPhi(newIdx) = phi(i);
         });
-
-        // std::cerr << "Rank " << rank << " has finished building the temp view" << std::endl;
 
         Kokkos::fence();
 	
-        // move data from Temp view into main view
+        // move data from Temp view into main view, there should be a better way to do this
         Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
             KOKKOS_LAMBDA(const size_type i){
                 R(i) = tempR(i);
                 P(i) = tempP(i);
                 E(i) = tempE(i);
-                // phi(i) = tempPhi(i);
             }
         );
-
-        // std::cerr << "Rank " << rank << " has finished building the neighbor list" << std::endl;
 
         if(commSize == 1){
             this->pcontainer_m->setNL(cellStartingIdx);
@@ -597,23 +574,16 @@ public:
     void pre_step() override {
         Inform m("pre step");
         /* TODO */
-        // initialize neighborlist?
-
-        // auto P = this->pcontainer_m->P;
-        // auto R = this->pcontainer_m->R;
-
-        // R = R + this->dt_m * P;
-
-        // this->pcontainer_m->update();
     }
 
     void post_step() override {
         Inform m("post step");
-        /* TODO */
+
         this->time_m += this->dt_m;
         this->it_m++;
 
-        // print_every + dump?
+        // add print every later
+        this->dump();
  }
 
     void grid2par() override {
@@ -628,19 +598,17 @@ public:
 
         // get particle data
         auto R = this->pcontainer_m->R.getView();
-        // auto F_sr = this->pcontainer_m->F_sr.getView();
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
-        auto offset = this->pcontainer_m->getOffset();
+        Kokkos::View<int[14][3], Device> offset = this->pcontainer_m->getOffset();
         auto Q = this->pcontainer_m->Q.getView();
-        // auto Phi = this->pcontainer_m->phi.getView();
 
         // get simulation specific data
         auto rcut = this->rcut_m;
         auto alpha = this->alpha_m;
         auto epsilon = this->epsilon_m;
 
-        // get neighbor list
+        // get neighbor mesh data
         auto cellStartingIdx = this->pcontainer_m->getNL();
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
@@ -648,9 +616,9 @@ public:
         int yCells = nCells[1];
         int zCells = nCells[2];
 
-        Kokkos::View<unsigned[1], Device> counter("counter");
-        
+        assert(totalCells == xCells * yCells * zCells && "Invalid number of cells");
 
+        Kokkos::View<unsigned[1], Device> counter("counter");
         using team_t = typename Kokkos::TeamPolicy<>::member_type;
         
         // calculate interaction force
@@ -658,117 +626,76 @@ public:
             KOKKOS_LAMBDA(const team_t& team){
                 const size_type cellIdx = team.league_rank();
 
-                // Calculate cellIdx in each dimension
+                // calculate cellIdx in each dimension
                 int xIdx = cellIdx / (yCells * zCells);
                 int yIdx = (cellIdx % (yCells * zCells)) / zCells;
                 int zIdx = cellIdx % zCells;
 
+                // get number of particles in current cell
                 const size_type start = cellStartingIdx(cellIdx);
                 const size_type end = cellStartingIdx(cellIdx+1);
                 const size_type nParticles = end - start;
 
-                //unsigned nNeighbors = 14;
-
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 14),
                     [&](const int& neighborIdx){
-                    const int offsetX = offset(neighborIdx, 0);
-                    const int offsetY = offset(neighborIdx, 1);
-                    const int offsetZ = offset(neighborIdx, 2);
+
+                        // get offset for neighbor cell
+                        const int offsetX = offset(neighborIdx, 0);
+                        const int offsetY = offset(neighborIdx, 1);
+                        const int offsetZ = offset(neighborIdx, 2);
                     
-                    if ((xIdx + offsetX < 0) || (xIdx + offsetX >= xCells) ||
-                        (yIdx + offsetY < 0) || (yIdx + offsetY >= yCells) ||
-                        (zIdx + offsetZ < 0) || (zIdx + offsetZ >= zCells)) {
-                        return;
-                    }
-
-                    const size_type neighborCellIdx = (xIdx + offsetX) * yCells * zCells + (yIdx + offsetY) * zCells + (zIdx + offsetZ);
-                    const size_type neighborStart = cellStartingIdx(neighborCellIdx);
-                    const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
-                    const size_type nNeighborParticles = neighborEnd - neighborStart;
-
-                    // if (cellIdx != 0 && start == cellStartingIdx(cellIdx-1)) return;
-                    // if (neighborCellIdx != 0 && neighborStart == cellStartingIdx(neighborCellIdx-1)) return;
-                    // if (nParticles == 0 || nNeighborParticles == 0) return;
-
-                    auto threadVectorMDRange = 
-                        Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
-
-                    Kokkos::parallel_for(threadVectorMDRange, 
-                        [&](const int& i, const int& j){
-                            const size_type ii = start + i;
-                            const size_type jj = neighborStart + j;
-                            // if (ii == jj) return;
-                            const double ke = 2.532638e8;
-
-                            double rsq_ij = 0.0;
-                            Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                            for (int d = 0; d < Dim; ++d) {
-                                rsq_ij += dist_ij[d] * dist_ij[d];
-                            }
-
-                            double r_ij = Kokkos::sqrt(rsq_ij);
-                            double r = Kokkos::sqrt(rsq_ij);
-                            // std::cerr << r_ij << std::endl;
-
-                            // only consider particles within cutoff radius
-                            if (r_ij < rcut && (ii != jj)) {
-                                Kokkos::atomic_increment(&counter(0));
-                                // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
-                                Vector_t<T, Dim> F_ij = 0.5 * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
-                                Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
-                            }
+                        // check if neighbor is within domain
+                        if ((xIdx + offsetX < 0) || (xIdx + offsetX >= xCells) ||
+                            (yIdx + offsetY < 0) || (yIdx + offsetY >= yCells) ||
+                            (zIdx + offsetZ < 0) || (zIdx + offsetZ >= zCells)) {
+                            return;
                         }
-                    );
-                    
-                //     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nParticles),
-                //         [&](const int& i){
-                //             // const size_type ii = start + team.team_rank();
-                //             const size_type ii = start + i;
-                //             double force = 0.0;
-			    // //double result = 0.;
 
-                //             Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nNeighborParticles),
-                //                 [=](const int& j){
-                //                     const size_type jj = neighborStart + j;
-                //                     if (ii == jj) return;
-                //                     const double ke = 2.532638e8;
+                        // get number of particles in neighbor cell
+                        const size_type neighborCellIdx = (xIdx + offsetX) * yCells * zCells + (yIdx + offsetY) * zCells + (zIdx + offsetZ);
+                        const size_type neighborStart = cellStartingIdx(neighborCellIdx);
+                        const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
+                        const size_type nNeighborParticles = neighborEnd - neighborStart;
 
-                //                     double rsq_ij = 0.0;
-                                    
-                //                     Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                //                     for (int d = 0; d < Dim; ++d) {
-                //                         rsq_ij += dist_ij[d] * dist_ij[d];
-                //                     }
+                        auto threadVectorMDRange = 
+                            Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
 
-                //                     double r_ij = Kokkos::sqrt(rsq_ij);
-                //                     double r = Kokkos::sqrt(rsq_ij);
-                //                     // std::cerr << r_ij << std::endl;
+                        Kokkos::parallel_for(threadVectorMDRange, 
+                            [&](const int& i, const int& j){
+                                const size_type ii = start + i;
+                                const size_type jj = neighborStart + j;
+                                // if (ii == jj) return;
+                                const double ke = 2.532638e8;
 
-                //                     // only consider particles within cutoff radius
-                //                     if (r_ij > rcut) return;
-                //                     else {
-                //                         Kokkos::atomic_increment(&counter(0));
-                //                         // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
-                //                         Vector_t<T, Dim> F_ij = ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                //                         Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
-                //                         Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
-                //                         // double phi = ke * ((1. - Kokkos::erf(alpha * r_ij)) / r_ij);
-                //                         // phi = Kokkos::abs(phi);
-                //                         // Kokkos::atomic_add(&Phi(ii), phi);
-                //                         // Kokkos::atomic_add(&Phi(jj), phi);
-                //                     }
-                //                 }
-                //             );
-                //         }
-                    
-                //     );
-                    
-                });
+                                double rsq_ij = 0.0;
+                                Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
+                                for (int d = 0; d < Dim; ++d) {
+                                    rsq_ij += dist_ij[d] * dist_ij[d];
+                                }
+
+                                double r_ij = Kokkos::sqrt(rsq_ij);
+
+                                // only consider particles within cutoff radius
+                                // for some reason, this does not work on gpus yet
+                                if (r_ij < rcut && (ii != jj)) {
+                                    // count number of particles that interacted
+                                    Kokkos::atomic_increment(&counter(0));
+
+                                    // calculate and apply force
+                                    Vector_t<T, Dim> F_ij = 0.5 * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                                    Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
+                                    Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
+                                }
+                            }
+                        );
+                    }
+                );
             });
+
             Kokkos::fence();
             ippl::Comm->barrier();
-	    auto host_counter = Kokkos::create_mirror_view(counter);
+
+	        auto host_counter = Kokkos::create_mirror_view(counter);
 
             std::cerr << "Number PP interactions: " << host_counter(0) << std::endl;
 
@@ -782,30 +709,33 @@ public:
 
     double calcKineticEnergy() {
         view_type P = this->pcontainer_m->P.getView();
-        // Kokkos::View<double[1], Device> localEnergy("local E_kin");
+        auto nLoc = this->pcontainer_m->getLocalNum();
+
         double localEnergy = 0.0;
-	Kokkos::parallel_reduce("calc kinetic energy", this->pcontainer_m->getLocalNum(),
+        double globalEnergy = 0.0;
+        
+	    Kokkos::parallel_reduce("calc kinetic energy", nLoc,
             KOKKOS_LAMBDA(const size_type& i, double& sum){
                 sum += 0.5 * (P)(i).dot((P)(i));
             }, localEnergy
         );
         Kokkos::fence();
 
-	// Kokkos::View<double[1], Host> host_localEnergy = Kokkos::create_mirror_view(localEnergy);
-	// double localEKin = host_localEnergy(0);
-        double globalEnergy = 0.0;
+        // gather local kinetic energy from other ranks
         ippl::Comm->reduce(localEnergy, globalEnergy, 1, std::plus<double>());
         ippl::Comm->barrier();
+
         return globalEnergy;
     }
 
     void computeBeamStatistics() {
+        std::cerr << "Start Computing Beam Statistics" << std::endl;
+
         auto R = this->pcontainer_m->R.getView();
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
-        
         double beamRad = this->beamRad_m;
- 	std::cerr << "Start Computing Beam Statistics" << std::endl;
+
         Kokkos::View<ippl::Vector<double, 3>[1], Device> stats("stats");
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
@@ -819,6 +749,8 @@ public:
         double global_xsq = 0.0;
         double global_psq = 0.0;
         double global_xpsq = 0.0;
+
+        // there must be a better way to do this
         ippl::Comm->reduce(stats(0)[0], global_xsq, 1, std::plus<double>());
         ippl::Comm->reduce(stats(0)[1], global_psq, 1, std::plus<double>());
         ippl::Comm->reduce(stats(0)[2], global_xpsq, 1, std::plus<double>());
@@ -849,7 +781,7 @@ public:
         // std::cerr << "Dumping data, Gamma eq: " << E_kin/E_pot << std::endl;
 
         int it = this->it_m;
-	auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+	    auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
         // DEBUG output
         std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
         if (outputFile.is_open()) {
@@ -895,8 +827,6 @@ public:
         // auto focusingf = computeAvgSpaceChargeForces();
 
         this->applyConstantFocusing();
-
-        this->dump();
 
         pc->P = pc->P + dt * pc->E;
 
