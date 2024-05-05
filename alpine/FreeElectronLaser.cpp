@@ -1324,6 +1324,11 @@ namespace ippl {
         scalar k_u;
         KOKKOS_FUNCTION Undulator(const undulator_parameters<scalar>& p, scalar dte) : uparams(p), distance_to_entry(dte), k_u(2 * M_PI / p.lambda){}
         KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> operator()(const ippl::Vector<scalar, 3>& position_in_lab_frame)const noexcept{
+            using Kokkos::sin;
+            using Kokkos::sinh;
+            using Kokkos::cos;
+            using Kokkos::cosh;
+            using Kokkos::exp;
             Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret;
             ret.first.fill(0);
             ret.second.fill(0);
@@ -1365,26 +1370,18 @@ namespace ippl {
         using ThreeField = ippl::Field<Vector_t, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         using VField_t = ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         using EBField_t = ippl::Field<EB_type   , dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
-        using view_type = VField_t::view_type;
-        using ev_view_type = EBField_t::view_type;
+        using view_type = typename VField_t::view_type;
+        using ev_view_type = typename EBField_t::view_type;
+        using e_view_type = typename ThreeField::view_type;
+        using b_view_type = typename ThreeField::view_type;
         //Fields
-        ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_np1;
-        ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_n;
-        ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> FA_nm1;
-        ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> J;
-        ippl::Field<EB_type   , dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering> EB;
+        ippl::NSFDSolverWithParticles<scalar, absorbing> fieldsAndParticles;
         
         //Discretization options
         Vector_t hr_m;
         ippl::Vector<uint32_t, 3> nr_global;
         ippl::Vector<uint32_t, 3> nr_local;
-        scalar dt;
-        Mesh_t* mesh_mp;
-        FieldLayout<dim>* layout_mp;
-        using playout_type = ParticleSpatialLayout<scalar, 3>;
-        playout_type playout;
-        Bunch_eb<scalar, ParticleSpatialLayout<scalar, 3>> particles;
-        using bunch_type =  Bunch_eb<scalar, ParticleSpatialLayout<scalar, 3>>;
+        //scalar dt;
         config m_config;
         UniaxialLorentzframe<scalar, 2 /*along z*/> ulb;
         undulator_parameters<scalar> uparams;
@@ -1397,18 +1394,8 @@ namespace ippl {
          * @param layout 
          * @param mesch 
          */
-        FELSimulationState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : mesh_mp(&mesch), layout_mp(&layout), playout(layout, mesch), particles(playout), m_config(cfg), ulb(UniaxialLorentzframe<scalar, 2>::from_gamma(cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5))), uparams(cfg), undulator(uparams, 2.0 * cfg.sigma_position[2] * ulb.gamma_m * ulb.gamma_m){
-            FA_np1.initialize(mesch, layout, 1);
-            FA_n.initialize(mesch, layout, 1);
-            FA_nm1.initialize(mesch, layout, 1);
-            J.initialize(mesch, layout, 1);
-            EB.initialize(mesch, layout, 1);
-            ThreeField Edummy;
-            Edummy.initialize(mesch, layout, 1);
-            FA_n   = value_type(0);
-            FA_np1 = value_type(0);
-            FA_nm1 = value_type(0);
-            ippl::StandardFDTDSolver<ThreeField, FourField> solver(J, Edummy, Edummy);
+        FELSimulationState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : fieldsAndParticles(layout, mesch, nparticles), m_config(cfg), ulb(UniaxialLorentzframe<scalar, 2>::from_gamma(cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5))), uparams(cfg), undulator(uparams, 2.0 * cfg.sigma_position[2] * ulb.gamma_m * ulb.gamma_m){
+
             hr_m = mesch.getMeshSpacing();
             nr_global = ippl::Vector<uint32_t, 3>{
                 uint32_t(layout.getDomain()[0].last() - layout.getDomain()[0].first() + 1),
@@ -1422,223 +1409,22 @@ namespace ippl {
             };
             //std::cout << "NR_M_g: " << nr_global << "\n";
             //std::cout << "NR_M_l: " << nr_local << "\n";
-            dt = hr_m[2];//0.5 * std::min(hr_m[0], std::min(hr_m[1], hr_m[2]));
-            particles.create(nparticles);
-            setNoBoundaryConditions();
-            
         }
-        void setNoBoundaryConditions() {
-            periodic_bc = false;
-            typename VField_t::BConds_t vector_bcs;
-            auto bcsetter_single = [&vector_bcs]<size_t Idx>(const std::index_sequence<Idx>&) {
-                vector_bcs[Idx] = std::make_shared<ippl::NoBcFace<VField_t>>(Idx);
-                return 0;
-            };
-            auto bcsetter = [bcsetter_single]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-                int x = (bcsetter_single(std::index_sequence<Idx>{}) ^ ...);
-                (void)x;
-            };
-            bcsetter(std::make_index_sequence<dim * 2>{});
-            FA_n  .setFieldBC(vector_bcs);
-            FA_np1.setFieldBC(vector_bcs);
-            FA_nm1.setFieldBC(vector_bcs);
+        scalar dt()const noexcept{
+            return fieldsAndParticles.field_solver.dt;
         }
-        void setPeriodicBoundaryConditions() {
-            periodic_bc = true;
-            typename VField_t::BConds_t vector_bcs;
-            auto bcsetter_single = [&vector_bcs]<size_t Idx>(const std::index_sequence<Idx>&) {
-                vector_bcs[Idx] = std::make_shared<ippl::PeriodicFace<VField_t>>(Idx);
-                return 0;
-            };
-            auto bcsetter = [bcsetter_single]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-                int x = (bcsetter_single(std::index_sequence<Idx>{}) ^ ...);
-                (void)x;
-            };
-            bcsetter(std::make_index_sequence<dim * 2>{});
-            FA_n  .setFieldBC(vector_bcs);
-            FA_np1.setFieldBC(vector_bcs);
-            FA_nm1.setFieldBC(vector_bcs);
-        }
-        
-        void scatterBunch(){
-            //ippl::Vector<scalar, 3>* gammaBeta = this->gammaBeta;
-            const scalar volume = hr_m[0] * hr_m[1] * hr_m[2];
-            assert_isreal(volume);
-            assert_isreal((scalar(1) / volume));
-            auto Jview = J.getView();
-            auto qview = particles.Q.getView();
-            auto rview = particles.R.getView();
-            auto rm1view = particles.R_nm1.getView();
-            auto orig = mesh_mp->getOrigin();
-            auto hr = mesh_mp->getMeshSpacing();
-            auto dt = this->dt;
-            bool space_charge = m_config.space_charge;
-            ippl::NDIndex<dim> lDom = layout_mp->getLocalNDIndex();
-            Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
-                Vector_t pos = rview(i);
-                Vector_t to = rview(i);
-                Vector_t from = rm1view(i);
-                if(space_charge){
-                    scatterToGrid(lDom, Jview, hr, orig, pos, qview(i) / volume);
-                }
-                scatterLineToGrid(lDom, Jview, hr, orig, from, to , scalar(qview(i)) / (volume * dt));
+        void step(){
+            //scalar time = fieldsAndParticles.steps_taken * fieldsAndParticles.field_solver.dt;
+            auto und = this->undulator;
+            auto lb = this->ulb;
+            fieldsAndParticles.solve(KOKKOS_LAMBDA(ippl::Vector<scalar, 3> pos, scalar time){
+                lb.primedToUnprimed(pos, time);
+                auto eb = und(pos);
+                return lb.transform_EB(eb);
             });
-            Kokkos::fence();
-            J.accumulateHalo();
         }
+        void computeRadiation(){
 
-        void fieldStep(){
-            const scalar calA = 0.25 * (1 + 0.02 / (sq(hr_m[2] / hr_m[0]) + sq(hr_m[2] / hr_m[1])));
-            nondispersive<scalar> ndisp{
-                .a1 = 2 * (1 - (1 - 2 * calA) * sq(dt / hr_m[0]) - (1 - 2*calA) * sq(dt / hr_m[1]) - sq(dt / hr_m[2])),
-                .a2 = sq(dt / hr_m[0]),
-                .a4 = sq(dt / hr_m[1]),
-                .a6 = sq(dt / hr_m[2]) - 2 * calA * sq(dt / hr_m[0])  - 2 * calA * sq(dt / hr_m[1]),
-                .a8 = sq(dt)
-            };
-            //if(periodic_bc){
-            //    FA_n.getFieldBC().apply(FA_n);
-            //}
-            auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
-            auto source = this->J.getView();
-            //FA_nm1.fillHalo();
-            FA_n.fillHalo();
-            ippl::Vector<uint32_t, 3> true_nr{this->nr_global[0] + 2, this->nr_global[1] + 2, this->nr_global[2] + 2};
-            const auto& ldom = layout_mp->getLocalNDIndex();
-            Kokkos::parallel_for(ippl::getRangePolicy(A_n, 1), KOKKOS_LAMBDA(size_t i, size_t j, size_t k){
-                uint32_t ig = i + ldom.first()[0];
-                uint32_t jg = j + ldom.first()[1];
-                uint32_t kg = k + ldom.first()[2];
-                uint32_t val = uint32_t(ig == 1) + (uint32_t(jg == 1) << 1) + (uint32_t(kg == 1) << 2)
-                             + (uint32_t(ig == true_nr[0] - 2) << 3) + (uint32_t(jg == true_nr[1] - 2) << 4) + (uint32_t(kg == true_nr[2] - 2) << 5);
-                if(!val){
-                    A_np1(i, j, k) =    -A_nm1(i,j,k)
-                            + ndisp.a1 * A_n  (i,j,k)
-                            + ndisp.a2 * (calA * A_n(i + 1, j, k - 1) + (1 - 2 * calA) * A_n(i + 1, j, k) + calA * A_n(i + 1, j, k + 1))
-                            + ndisp.a2 * (calA * A_n(i - 1, j, k - 1) + (1 - 2 * calA) * A_n(i - 1, j, k) + calA * A_n(i - 1, j, k + 1))
-                            + ndisp.a4 * (calA * A_n(i, j + 1, k - 1) + (1 - 2 * calA) * A_n(i, j + 1, k) + calA * A_n(i, j + 1, k + 1))
-                            + ndisp.a4 * (calA * A_n(i, j - 1, k - 1) + (1 - 2 * calA) * A_n(i, j - 1, k) + calA * A_n(i, j - 1, k + 1))
-                            + ndisp.a6 * A_n(i, j, k + 1) + ndisp.a6 * A_n(i, j, k - 1) + ndisp.a8 * source(i, j, k);
-                }
-            });
-            Kokkos::fence();
-            
-            if(!periodic_bc){
-                FA_np1.fillHalo();
-                second_order_mur_boundary_conditions bc;
-                
-                
-                bc.apply(this->FA_n, this->FA_nm1, this->FA_np1, dt, true_nr, ldom);
-            }
-            Kokkos::deep_copy(this->FA_nm1.getView(), this->FA_n.getView());
-            Kokkos::deep_copy(this->FA_n.getView(), this->FA_np1.getView());
-            //std::swap(this->A_n, this->A_nm1);
-            //std::swap(this->A_np1, this->A_n);
-            
-            evaluate_EB();
-        }
-        void evaluate_EB(){
-            FA_n.fillHalo();//FA_nm1.fillHalo();
-            ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
-            const scalar idt = scalar(1.0) / dt;
-            auto A_np1 = this->FA_np1.getView(), A_n = this->FA_n.getView(), A_nm1 = this->FA_nm1.getView();
-            auto source = this->J.getView();
-            auto EBv = this->EB.getView();
-            Kokkos::parallel_for(this->FA_n.getFieldRangePolicy(), KOKKOS_LAMBDA(size_t i, size_t j, size_t k){
-                ippl::Vector<scalar, 3> dAdt = (A_n(i, j, k).template tail<3>() - A_nm1(i, j, k).template tail<3>()) * idt;
-                ippl::Vector<scalar, 4> dAdx = (A_n(i + 1, j, k) - A_n(i - 1, j, k)) * inverse_2_spacing[0];
-                ippl::Vector<scalar, 4> dAdy = (A_n(i, j + 1, k) - A_n(i, j - 1, k)) * inverse_2_spacing[1];
-                ippl::Vector<scalar, 4> dAdz = (A_n(i, j, k + 1) - A_n(i, j, k - 1)) * inverse_2_spacing[2];
-
-                ippl::Vector<scalar, 3> grad_phi{
-                    dAdx[0], dAdy[0], dAdz[0]
-                };
-                ippl::Vector<scalar, 3> curlA{
-                    dAdy[3] - dAdz[2],
-                    dAdz[1] - dAdx[3],
-                    dAdx[2] - dAdy[1],
-                };
-                EBv(i,j,k)[0] = -dAdt - grad_phi;
-                EBv(i,j,k)[1] = curlA;
-            });
-            Kokkos::fence();
-        }
-        template<typename callable>
-        void updateBunch(scalar time, UniaxialLorentzframe<scalar> ulb, callable undulator_field){
-            
-            Kokkos::fence();
-            auto gbview = particles.gamma_beta.getView();
-            auto ebview = particles.EB_gather.getView();
-            auto qview = particles.Q.getView();
-            auto mview = particles.mass.getView();
-            auto rview = particles.R.getView();
-            auto rm1view = particles.R_nm1.getView();
-            auto rp1view = particles.R_np1.getView();
-            scalar bunch_dt = dt / 3;
-            Kokkos::deep_copy(particles.R_nm1.getView(), particles.R.getView());
-            EB.fillHalo();
-            Kokkos::fence();
-            for(int bts = 0;bts < 3;bts++){
-                
-                particles.EB_gather.gather(EB, particles.R);
-                Kokkos::fence();
-                Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
-                    const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
-                    ippl::Vector<ippl::Vector<scalar, 3>, 2> EB = ebview(i);
-                    ippl::Vector<scalar, 3> labpos = rview(i);
-
-                    ulb.primedToUnprimed(labpos, time);
-
-                    Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> EB_undulator_frame = undulator_field(labpos);
-                    Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> EB_undulator_bunch = ulb.transform_EB(EB_undulator_frame);
-                    assert_isreal((EB_undulator_bunch.first[0]));
-                    assert_isreal((EB_undulator_bunch.first[1]));
-                    assert_isreal((EB_undulator_bunch.first[2]));
-                    assert_isreal((EB_undulator_bunch.second[0]));
-                    assert_isreal((EB_undulator_bunch.second[1]));
-                    assert_isreal((EB_undulator_bunch.second[2]));
-                    EB[0] += EB_undulator_bunch.first;
-                    EB[1] += EB_undulator_bunch.second;
-
-                    const scalar charge = qview(i);
-                    const scalar mass = mview(i);
-                    const ippl::Vector<scalar, 3> t1 = pgammabeta + charge * bunch_dt * EB[0] / (scalar(2) * mass);
-                    const scalar alpha = charge * bunch_dt / (scalar(2) * mass * Kokkos::sqrt(1 + t1.dot(t1)));
-                    const ippl::Vector<scalar, 3> t2 = t1 + alpha * t1.cross(EB[1]);
-                    const ippl::Vector<scalar, 3> t3 = t1 + t2.cross(scalar(2) * alpha * (EB[1] / (1.0  + alpha * alpha * (EB[1].dot(EB[1])))));
-                    const ippl::Vector<scalar, 3> ngammabeta = t3 + charge * bunch_dt * EB[0] / (scalar(2) * mass);
-
-                    assert_isreal((ngammabeta[0]));
-                    assert_isreal((ngammabeta[1]));
-                    assert_isreal((ngammabeta[2]));
-                    rview(i) = rview(i) + bunch_dt * ngammabeta / (Kokkos::sqrt(scalar(1.0) + (ngammabeta.dot(ngammabeta))));
-                    gbview(i) = ngammabeta;
-                });
-                Kokkos::fence();
-            }
-            Kokkos::View<bool*> invalid("OOB Particcel", particles.getLocalNum());
-            size_t invalid_count = 0;
-            auto origo = mesh_mp->getOrigin();
-            ippl::Vector<scalar, 3> extenz;//
-            extenz[0] = nr_global[0] * hr_m[0];
-            extenz[1] = nr_global[1] * hr_m[1];
-            extenz[2] = nr_global[2] * hr_m[2];
-            Kokkos::parallel_reduce(
-                Kokkos::RangePolicy<typename playout_type::RegionLayout_t::view_type::execution_space>(0, particles.getLocalNum()),
-                KOKKOS_LAMBDA(size_t i, size_t& ref){
-                    bool out_of_bounds = false;
-                    ippl::Vector<scalar, dim> ppos = rview(i);
-                    for(size_t d = 0;d < dim;d++){
-                        out_of_bounds |= (ppos[d] <= origo[d]);
-                        out_of_bounds |= (ppos[d] >= origo[d] + extenz[d]); //Check against simulation domain
-                    }
-                    invalid(i) = out_of_bounds;
-                    ref += out_of_bounds;
-                }, 
-                invalid_count);
-            particles.destroy(invalid, invalid_count);
-            Kokkos::fence();
-            
         }
     };
     // clang-format on
@@ -1707,9 +1493,9 @@ scalar test_gauss_law(uint32_t n){
     ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
 
     uint32_t pcount = 1 << 20;
-    config cfg{};
-    cfg.space_charge = true;
-    ippl::FELSimulationState<scalar> field_state(layout, mesh, pcount, cfg);
+    //config cfg{};
+    //cfg.space_charge = true;
+    ippl::NSFDSolverWithParticles<scalar, ippl::fdtd_bc::absorbing> field_state(layout, mesh, pcount);
     field_state.particles.Q = scalar(coulomb_in_unit_charges) / pcount;
     field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
     auto pview = field_state.particles.R.getView();
@@ -1732,21 +1518,21 @@ scalar test_gauss_law(uint32_t n){
     field_state.J = scalar(0.0);
     field_state.scatterBunch();
     for(size_t i = 0;i < 8*n;i++){
-        field_state.fieldStep();
+        field_state.field_solver.solve();
     }
-    field_state.evaluate_EB();
+
     Kokkos::fence();
-    auto lDom = field_state.EB.getLayout().getLocalNDIndex();
+    auto lDom = field_state.E.getLayout().getLocalNDIndex();
     
     std::ofstream line("gauss_line.txt");
-    typename ippl::FELSimulationState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    typename ippl::FELSimulationState<scalar>::e_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.E.getView());
     //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
     for(unsigned i = 1;i < nr[2];i++){
         vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
         pos[2] += hx[2] * scalar(i);
-        ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, pos, origin, hx, lDom);
+        ippl::Vector<scalar, 3> ebg = gather_helper(view, pos, origin, hx, lDom);
         //line << pos.norm() * unit_length_in_meters << " " << (view(n / 4, n / 4, i)[0].norm()) * unit_electric_fieldstrength_in_voltpermeters << "\n";
-        line << pos.norm() * unit_length_in_meters << " " << ebg[0].norm() * unit_electric_fieldstrength_in_voltpermeters << "\n";
+        line << pos.norm() * unit_length_in_meters << " " << ebg.norm() * unit_electric_fieldstrength_in_voltpermeters << "\n";
     }
     return 0.0f;
 }
@@ -1773,14 +1559,13 @@ scalar test_amperes_law(uint32_t n){
     ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
 
     uint32_t pcount = 1 << 20;
-    config cfg{};cfg.space_charge = true;
-    ippl::FELSimulationState<scalar> field_state(layout, mesh, pcount, cfg);
+    ippl::NSFDSolverWithParticles<scalar, ippl::fdtd_bc::absorbing> field_state(layout, mesh, pcount);
     field_state.particles.Q = scalar(4.0 * coulomb_in_unit_charges) / pcount;
     field_state.particles.mass = scalar(1.0) / pcount; //Irrelefant
     auto pview = field_state.particles.R.getView();
     auto p1view = field_state.particles.R_nm1.getView();
     constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
-    scalar timestep = field_state.dt;
+    scalar timestep = field_state.field_solver.dt;
     //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
     Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
     //scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
@@ -1799,22 +1584,22 @@ scalar test_amperes_law(uint32_t n){
     field_state.J = scalar(0.0);
     field_state.scatterBunch();
     for(size_t i = 0;i < 8*n;i++){
-        field_state.fieldStep();
+        field_state.field_solver.solve();
     }
-    field_state.evaluate_EB();
+    field_state.field_solver.evaluate_EB();
     Kokkos::fence();
-    auto lDom = field_state.EB.getLayout().getLocalNDIndex();
+    auto lDom = field_state.B.getLayout().getLocalNDIndex();
     
     std::ofstream line("ampere_line.txt");
     
-    typename ippl::FELSimulationState<scalar>::ev_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.EB.getView());
+    typename ippl::FELSimulationState<scalar>::b_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.B.getView());
     //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
     for(unsigned i = 1;i < nr[2];i++){
         vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
         pos[2] += hx[2] * scalar(i);
-        ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, pos, origin, hx, lDom);
+        ippl::Vector<scalar, 3> ebg = gather_helper(view, pos, origin, hx, lDom);
         //line << pos.norm() * unit_length_in_meters << " " << (view(n / 4, n / 4, i)[0].norm()) * unit_electric_fieldstrength_in_voltpermeters << "\n";
-        line << pos.norm() * unit_length_in_meters << " " << ebg[1][0] * unit_magnetic_fluxdensity_in_tesla << "\n";
+        line << pos.norm() * unit_length_in_meters << " " << ebg[0] * unit_magnetic_fluxdensity_in_tesla << "\n";
     }
     return 0.0f;
 }
@@ -1835,7 +1620,7 @@ int main(int argc, char* argv[]) {
         const scalar frame_gammabeta = frame_gamma * frame_beta;
         UniaxialLorentzframe<scalar, 2> frame_boost(frame_gammabeta);
         ippl::undulator_parameters<scalar> uparams(cfg);
-        const scalar k_u  = scalar(2.0 * M_PI) / uparams.lambda;
+        /*const scalar k_u  = scalar(2.0 * M_PI) / uparams.lambda;
         const scalar distance_to_entry  = std::max(0.0 * uparams.lambda, 2.0 * cfg.sigma_position[2] * frame_gamma * frame_gamma);
         auto undulator_field = KOKKOS_LAMBDA(const ippl::Vector<scalar, 3>& position_in_lab_frame){
             Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret;
@@ -1859,7 +1644,7 @@ int main(int argc, char* argv[]) {
             }
             return ret;
 
-        };
+        };*/
         BunchInitialize<scalar> mithra_config = generate_mithra_config(cfg, frame_boost);
         ippl::NDIndex<3> owned(cfg.resolution[0], cfg.resolution[1], cfg.resolution[2]);
 
@@ -1886,28 +1671,28 @@ int main(int argc, char* argv[]) {
         
         if(ippl::Comm->rank() == 0){
             std::cout << "Init particles: " << std::endl;
-            size_t actual_pc = initialize_bunch_mithra(fdtd_state.particles, mithra_config, frame_gamma);
-            fdtd_state.particles.Q = cfg.charge / actual_pc;
-            fdtd_state.particles.mass = cfg.mass / actual_pc;
+            size_t actual_pc = initialize_bunch_mithra(fdtd_state.fieldsAndParticles.particles, mithra_config, frame_gamma);
+            fdtd_state.fieldsAndParticles.particles.Q = cfg.charge / actual_pc;
+            fdtd_state.fieldsAndParticles.particles.mass = cfg.mass / actual_pc;
         }
         else{
-            fdtd_state.particles.create(0);
+            fdtd_state.fieldsAndParticles.particles.create(0);
         }
         {
-            auto rview = fdtd_state.particles.R.getView();
-            auto rm1view = fdtd_state.particles.R_nm1.getView();
-            ippl::Vector<scalar, 3> meanpos = fdtd_state.particles.R.sum() * (1.0 / fdtd_state.particles.getTotalNum());
+            auto rview = fdtd_state.fieldsAndParticles.particles.R.getView();
+            auto rm1view = fdtd_state.fieldsAndParticles.particles.R_nm1.getView();
+            ippl::Vector<scalar, 3> meanpos = fdtd_state.fieldsAndParticles.particles.R.sum() * (1.0 / fdtd_state.fieldsAndParticles.particles.getTotalNum());
     
-            Kokkos::parallel_for(fdtd_state.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
+            Kokkos::parallel_for(fdtd_state.fieldsAndParticles.particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                 rview(i) -= meanpos;
                 rm1view(i) -= meanpos;
             });
         }
-        fdtd_state.particles.setParticleBC(ippl::NO);
+        fdtd_state.fieldsAndParticles.particles.setParticleBC(ippl::NO);
         //fdtd_state.scatterBunch();
         //std::cout << cfg.charge << "\n";
         
-        size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt);
+        size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt());
         uint64_t starttime =  nanoTime();
         std::ofstream rad;
         FILE* ffmpeg_file = nullptr;
@@ -1921,20 +1706,24 @@ int main(int argc, char* argv[]) {
 
 
         for(size_t i = 0;i < timesteps_required;i++){
-            fdtd_state.J = scalar(0.0);
-            fdtd_state.playout.update(fdtd_state.particles);
-            fdtd_state.scatterBunch();
+
+            //fdtd_state.J = scalar(0.0);
+            //fdtd_state.playout.update(fdtd_state.particles);
+            //fdtd_state.scatterBunch();
             std::cout << i << "\n";
-            fdtd_state.fieldStep();
-            fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
+            fdtd_state.step();
+            //fdtd_state.fieldStep();
+            //fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
             auto ldom = layout.getLocalNDIndex();
             auto nrg = fdtd_state.nr_global;
-            auto ebv = fdtd_state.EB.getView();
+            auto eview = fdtd_state.fieldsAndParticles.E.getView();
+            auto bview = fdtd_state.fieldsAndParticles.B.getView();
+            //auto ebv = fdtd_state.EB.getView();
             double radiation = 0.0;
-            Kokkos::parallel_reduce(ippl::getRangePolicy(fdtd_state.EB.getView(), 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k, double& ref){
+            Kokkos::parallel_reduce(ippl::getRangePolicy(eview, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k, double& ref){
                 //uint32_t ig = i + ldom.first()[0];
                 //uint32_t jg = j + ldom.first()[1];
-                Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> buncheb{ebv(i,j,k)[0], ebv(i,j,k)[1]};
+                Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> buncheb{eview(i,j,k), bview(i,j,k)};
                 ippl::Vector<scalar, 3> Elab = frame_boost.inverse_transform_EB(buncheb).first;
                 ippl::Vector<scalar, 3> Blab = frame_boost.inverse_transform_EB(buncheb).second;
                 uint32_t kg = k + ldom.first()[2];
@@ -1950,7 +1739,7 @@ int main(int argc, char* argv[]) {
             MPI_Reduce(&radiation_in_watt_on_this_rank, &radiation_in_watt_global, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
             if(ippl::Comm->rank() == 0){
                 ippl::Vector<scalar, 3> pos{0,0,0};
-                frame_boost.primedToUnprimed(pos, fdtd_state.dt * i);
+                frame_boost.primedToUnprimed(pos, fdtd_state.dt() * i);
                 rad << pos[2] * unit_length_in_meters << " " << radiation_in_watt_global << "\n";
             }
             //std::cout << "A: " << fdtd_state.FA_n.getVolumeIntegral() << "\n";
@@ -1968,9 +1757,9 @@ int main(int argc, char* argv[]) {
                 int floatcount = img_width * img_height * 3;
                 uint8_t* imagedata_final = new uint8_t[img_width * img_height * 3];
                 std::memset(imagedata, 0, img_width * img_height * 3 * sizeof(float));
-                auto phmirror = fdtd_state.particles.R.getHostMirror();
-                Kokkos::deep_copy(phmirror, fdtd_state.particles.R.getView());
-                for(size_t hi = 0;hi < fdtd_state.particles.getLocalNum();hi++){
+                auto phmirror = fdtd_state.fieldsAndParticles.particles.R.getHostMirror();
+                Kokkos::deep_copy(phmirror, fdtd_state.fieldsAndParticles.particles.R.getView());
+                for(size_t hi = 0;hi < fdtd_state.fieldsAndParticles.particles.getLocalNum();hi++){
                     ippl::Vector<scalar, 3> ppos = phmirror(hi);
                     ppos -= mesh.getOrigin();
                     ppos /= cfg.extents.cast<scalar>();
@@ -1984,8 +1773,11 @@ int main(int argc, char* argv[]) {
                         std::min(255.f, imagedata[(y_imgcoord * img_width + x_imgcoord) * 3 + 1] + intensity);
                     }
                 };
-                auto ebh = fdtd_state.EB.getHostMirror();
-                Kokkos::deep_copy(ebh, fdtd_state.EB.getView());
+
+                auto eh = fdtd_state.fieldsAndParticles.E.getHostMirror();
+                auto bh = fdtd_state.fieldsAndParticles.B.getHostMirror();
+                Kokkos::deep_copy(eh, fdtd_state.fieldsAndParticles.E.getView());
+                Kokkos::deep_copy(bh, fdtd_state.fieldsAndParticles.B.getView());
 
                 //double exp_avg = double(exp_sum) / double(acount);
                 {
@@ -1995,11 +1787,12 @@ int main(int argc, char* argv[]) {
                             int j_remap = (double(j) / (img_height - 1)) * (fdtd_state.nr_global[0] - 4) + 2;
                             if(i_remap >= ldom.first()[2] && i_remap <= ldom.last()[2]){
                                 if(j_remap >= ldom.first()[0] && j_remap <= ldom.last()[0]){
-                                    ippl::Vector<ippl::Vector<scalar, 3>, 2> acc = ebh(j_remap + 1 - ldom.first()[0], fdtd_state.nr_global[1] / 2, i_remap + 1 - ldom.first()[2]);
+                                    ippl::Vector<scalar, 3> E = eh(j_remap + 1 - ldom.first()[0], fdtd_state.nr_global[1] / 2, i_remap + 1 - ldom.first()[2]);
+                                    ippl::Vector<scalar, 3> B = bh(j_remap + 1 - ldom.first()[0], fdtd_state.nr_global[1] / 2, i_remap + 1 - ldom.first()[2]);
                                     
-                                    ippl::Vector<scalar, 3> poynting = acc[0].cross(acc[1]);
+                                    ippl::Vector<scalar, 3> poynting = E.cross(B);
                                     Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> eblab =  frame_boost.inverse_transform_EB(
-                                        Kokkos::make_pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>>(acc[0], acc[1])
+                                        Kokkos::make_pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>>(E, B)
                                     );
                                     ippl::Vector<scalar, 3> poyntinglab = eblab.first.cross(eblab.second);
                                     poynting = poyntinglab;

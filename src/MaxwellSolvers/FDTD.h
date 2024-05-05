@@ -687,7 +687,7 @@ namespace ippl {
                     //std::cout << "E_grid: " << E_grid << "\n";
                     //std::cout << "B_grid: " << B_grid << "\n";
                     ippl::Vector<scalar, 3> bunchpos = rview(i);
-                    Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> external_eb = external_field(bunchpos, time);
+                    Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> external_eb = external_field(bunchpos, time + bunch_dt * bts);
                     
                     ippl::Vector<ippl::Vector<scalar, 3>, 2> EB{
                         ippl::Vector<scalar, 3>(E_grid + external_eb.first), 
@@ -739,12 +739,15 @@ namespace ippl {
                 vector_type(0),
                 vector_type(0)
             };});
+            ++steps_taken;
         }
         template<typename callable>
         void solve(callable external_field){
             scatterBunch();
             field_solver.solve();
+            //std::cout << field_solver.dt * steps_taken << "\n";
             updateBunch(field_solver.dt * steps_taken, external_field);
+            ++steps_taken;
         }
     };
 }

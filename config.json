@@ -4,7 +4,7 @@
       "length-scale" : "micrometers",
       "time-scale"   : "picoseconds",
       "extents": [3400.0, 3400.0, 280.0],
-      "resolution": [32, 32, 800],
+      "resolution": [64, 64, 2800],
       "mesh-center": [0.0, 0.0, 0.0],
       "total-time": 30000.0,
       "bunch-time-step": 1.6,
@@ -19,7 +19,7 @@
       "_mass": 1,
       "charge": 1.846e8,
       "mass": 1.846e8,
-      "number-of-particles": 50000,
+      "number-of-particles": 1000000,
       "gamma": 100.41,
       "_gamma": 1.0,
       "direction (ignored)": [0.0, 0.0, 1.0],
@@ -61,6 +61,7 @@
     "output":{
       "rhythm" : 30,
       "count" : 20,
+      "path": "../renderdata",
       "type" : "E",
       "track" : {
         "radiation" : "boundary_radiation.txt",
