@@ -686,7 +686,7 @@ public:
 
                     // if (cellIdx != 0 && start == cellStartingIdx(cellIdx-1)) return;
                     // if (neighborCellIdx != 0 && neighborStart == cellStartingIdx(neighborCellIdx-1)) return;
-                    if (nParticles == 0 || nNeighborParticles == 0) return;
+                    // if (nParticles == 0 || nNeighborParticles == 0) return;
 
                     auto threadVectorMDRange = 
                         Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
@@ -695,7 +695,7 @@ public:
                         [&](const int& i, const int& j){
                             const size_type ii = start + i;
                             const size_type jj = neighborStart + j;
-                            if (ii == jj) return;
+                            // if (ii == jj) return;
                             const double ke = 2.532638e8;
 
                             double rsq_ij = 0.0;
@@ -709,7 +709,7 @@ public:
                             // std::cerr << r_ij << std::endl;
 
                             // only consider particles within cutoff radius
-                            if (r_ij < rcut) {
+                            if (r_ij < rcut && (ii != jj)) {
                                 Kokkos::atomic_increment(&counter(0));
                                 // Vector_t Fij = ke*C*(diff/std::sqrt(sqr))*((2.*a*std::exp(-a*a*sqr))/(std::sqrt(M_PI)*r)+(1.-std::erf(a*std::sqrt(sqr)))/(r*r));
                                 Vector_t<T, Dim> F_ij = 0.5 * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
@@ -766,8 +766,9 @@ public:
             });
             Kokkos::fence();
             ippl::Comm->barrier();
+	    auto host_counter = Kokkos::create_mirror_view(counter);
 
-            std::cout << "Number PP interactions: " << counter(0) << std::endl;
+            std::cerr << "Number PP interactions: " << host_counter(0) << std::endl;
 
             std::cerr << "Particle-Particle Interaction finished" << std::endl;
     }
@@ -778,14 +779,18 @@ public:
     }
 
     double calcKineticEnergy() {
-        view_type *P = &this->pcontainer_m->P.getView();
+        view_type P = this->pcontainer_m->P.getView();
+        // Kokkos::View<double[1], Device> localEnergy("local E_kin");
         double localEnergy = 0.0;
-        Kokkos::parallel_reduce("calc kinetic energy", this->pcontainer_m->getLocalNum(),
-            KOKKOS_LAMBDA(const size_type i, double& sum){
-                sum += 0.5 * (*P)(i).dot((*P)(i));
+	Kokkos::parallel_reduce("calc kinetic energy", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const size_type& i, double& sum){
+                sum += 0.5 * (P)(i).dot((P)(i));
             }, localEnergy
         );
         Kokkos::fence();
+
+	// Kokkos::View<double[1], Host> host_localEnergy = Kokkos::create_mirror_view(localEnergy);
+	// double localEKin = host_localEnergy(0);
         double globalEnergy = 0.0;
         ippl::Comm->reduce(localEnergy, globalEnergy, 1, std::plus<double>());
         ippl::Comm->barrier();
@@ -798,7 +803,7 @@ public:
         auto P = this->pcontainer_m->P.getView();
         
         double beamRad = this->beamRad_m;
-
+ 	std::cerr << "Start Computing Beam Statistics" << std::endl;
         Kokkos::View<ippl::Vector<double, 3>[1], Device> stats("stats");
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
@@ -839,14 +844,14 @@ public:
         // std::cerr << "Dumping data, Gamma eq: " << E_kin/E_pot << std::endl;
 
         int it = this->it_m;
-
+	auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
         // DEBUG output
         std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
         if (outputFile.is_open()) {
-            auto R = this->pcontainer_m->R.getView();
+            // auto R = this->pcontainer_m->R.getView();
             for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
                 for (unsigned d = 0; d < Dim; ++d) {
-                    outputFile << R(i)[d];
+                    outputFile << host_R(i)[d];
                     if (d < Dim - 1) outputFile << ",";
                 }
                 outputFile << std::endl;
