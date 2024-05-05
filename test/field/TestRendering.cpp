@@ -47,14 +47,17 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_for(position.extent(0), KOKKOS_LAMBDA(size_t i){
             position(i) = ippl::Vector<float, 3>{float(int(i / 4)), float((i / 2) % 2), float(i % 2) * 1.0f};
-            //position(i) = ippl::Vector<float, 3>{0.0f,0.0f,0.0f};
+            position(i) *= 0.6f;
+            position(i) += 0.2f;
         });
         using vec3 = rm::Vector<float, 3>;
         vec3 pos{-1.5,-1.0,-1.5};
         vec3 target{0.5,0.3,0.5};
         rm::camera cam(pos, target - pos);
         ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
+        ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, ippl::Vector<float, 4>{0,1,0,1});
         pimg.save_to("particle.png");
+        primg.save_to("rojection.png");
         typename Field_t::view_type& view = field.getView();
 
         const ippl::NDIndex<dim>& lDom = layout.getLocalNDIndex();

@@ -289,6 +289,7 @@ namespace ippl{
         /**
          * @brief Performs a depth blend with another image
          * Changes this image! 
+         * @details The method used to blend two colors is 
          *
          * @param o Other image
          */
@@ -336,6 +337,22 @@ namespace ippl{
                 });
             }
             Kokkos::fence();
+        }
+        Image& operator+=(const Image& o){
+            if(o.width != width || o.height != height){
+                std::cerr << "Cannot depth blend images of mismatching size\n";
+                std::cerr << width << " x " << height << " vs " << o.width << " x " << o.height << "\n";
+                std::abort();
+            }
+            const uint32_t width  = this->width;
+            auto this_cb = this->color_buffer;
+            auto othr_cb =     o.color_buffer;
+
+            Kokkos::parallel_for(this->getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+                
+                this_cb(i * width + j) += othr_cb(i * width + j);
+            });
+            return *this;
         }
         void collectOnRank0(){
             int size = ippl::Comm->size();
@@ -425,10 +442,137 @@ namespace ippl{
         };
         return lower;
     }
+    template<typename field_type>
+    KOKKOS_INLINE_FUNCTION aabb<float, 3> getLocalDomainBox(field_type f){
+        auto fview = f.getView();
+        ippl::Vector<field_type, 3> O = f.get_mesh().getOrigin();
+        ippl::Vector<field_type, 3> hr = f.get_mesh().getMeshSpacing();
+        NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
+        NDIndex<3> gDom = f.getLayout().getDomain();
+        ippl::Vector<field_type, 3> domain_begin = O;
+        ippl::Vector<field_type, 3> global_domain_begin = O;
+        ippl::Vector<field_type, 3> domain_end = O;
+        ippl::Vector<field_type, 3> global_domain_end = O;
+        domain_begin += hr * lDom.first();
+        domain_end   += hr * lDom.last();
+        domain_end   += hr;
+
+        global_domain_begin += hr * gDom.first();
+        global_domain_end   += hr * gDom.last();
+        aabb<float, 3> domain_box(domain_begin, domain_end);
+        aabb<float, 3> global_domain_box(global_domain_begin, global_domain_end);
+        return domain_box;
+    }
+    template<typename field_type>
+    KOKKOS_INLINE_FUNCTION aabb<float, 3> getGlobalDomainBox(field_type f){
+        auto fview = f.getView();
+        auto c_c = f.get_mesh().getOrigin();
+        using scalar_type = typename decltype(c_c)::value_type;
+        ippl::Vector<scalar_type, 3> O = f.get_mesh().getOrigin();
+        ippl::Vector<scalar_type, 3> hr = f.get_mesh().getMeshSpacing();
+        NDIndex<3> lDom = f.getLayout().getLocalNDIndex();
+        NDIndex<3> gDom = f.getLayout().getDomain();
+        ippl::Vector<scalar_type, 3> domain_begin = O;
+        ippl::Vector<scalar_type, 3> global_domain_begin = O;
+        ippl::Vector<scalar_type, 3> domain_end = O;
+        ippl::Vector<scalar_type, 3> global_domain_end = O;
+        domain_begin += hr * lDom.first();
+        domain_end   += hr * lDom.last();
+        domain_end   += hr;
+
+        global_domain_begin += hr * gDom.first();
+        global_domain_end   += hr * gDom.last();
+        aabb<float, 3> domain_box(domain_begin, domain_end);
+        aabb<float, 3> global_domain_box(global_domain_begin, global_domain_end);
+        return global_domain_box;
+    }
+    
     
     enum struct axis : unsigned{
         x, y, z
     };
+    /**
+     * @brief Project particles onto a plane and draw them. Requires a domain for scaling
+     * 
+     * @param position_attrib View containing the particles
+     * @param count Amount of particles to be drawn, must be < position_attrib.extent(0)
+     * @param width Image width
+     * @param height Image height
+     * @param axis Projection plane axis, either ippl::axis::x, ippl::axis::y or ippl::axis::z
+     * @param domain the domain to fit onto the screen
+     * @param particle_radius On-Screen radii of drawn particles
+     * @param particle_color On-Screen fill color of particles
+     * 
+     * 
+     * @tparam vector_type Position vector type
+     */
+    template<typename vector_type>
+        requires(vector_type::dim == 3)
+    Image drawParticlesProjection(Kokkos::View<vector_type*> position_attrib, size_t count, int width, int height, const axis orthogonal_to, const aabb<typename vector_type::value_type, 3> dom, float particle_radius, Vector<float, 4> particle_color){
+        Image ret(width, height, ippl::Vector<float, 4>{0,0,0,0});
+        auto cbuffer = ret.color_buffer;
+        ippl::Vector<float, 2> img_extents{(float)width, (float)height};
+        
+        Kokkos::parallel_for(count, KOKKOS_LAMBDA(size_t idx){
+            vector_type pos = position_attrib(idx);
+            unsigned k = 0;
+            ippl::Vector<float, 2> pos_remap;
+            for(unsigned d = 0;d < 3;d++){
+                if(d == (unsigned)orthogonal_to)continue;
+                pos_remap[k] = (pos[d] - dom.start[d]) / (dom.end[d] - dom.start[d]) * img_extents[k];
+                ++k;
+            }
+            int j = int(pos_remap[0]);
+            int i = int(pos_remap[1]);
+            std::cout << i << ", " << j << "\n";
+            float corrected_radius = particle_radius;
+            using Kokkos::ceil;
+            using Kokkos::min;
+            using Kokkos::exp;
+            int ill = i - 2 * Kokkos::ceil(corrected_radius);
+            int iul = i + 2 * Kokkos::ceil(corrected_radius);
+            int jll = j - 2 * Kokkos::ceil(corrected_radius);
+            int jul = j + 2 * Kokkos::ceil(corrected_radius);
+            
+            //Inner loop for filling the circle 
+            for(int _i = ill;_i <= iul;_i++){
+                for(int _j = jll;_j <= jul;_j++){
+                    if(_i >= 0 && _i < height && _j >= 0 && _j < width){
+                        float pdist = float(_i - i) * float(_i - i) + float(_j - j) * float(_j - j);
+                        if(pdist < corrected_radius * corrected_radius){
+                            float inten = Kokkos::exp(-pdist * pdist / (corrected_radius * corrected_radius));
+                            cbuffer(_i * width + _j)[0] = particle_color[0];
+                            cbuffer(_i * width + _j)[1] = particle_color[1];
+                            cbuffer(_i * width + _j)[2] = particle_color[2];
+                            Kokkos::atomic_add(&(cbuffer(_i * width + _j)[3]), inten);
+                            //std::cout << i << ", " << j << "\n";
+                        }
+                    }
+                }
+            }
+        });
+        return ret;
+    }
+    /**
+     * @brief Project particles onto a plane and draw them. Requires a domain for scaling
+     * 
+     * @param position_attrib ParticleAttribute describing the particles' positions
+     * @param count Amount of particles to be drawn, must be < position_attrib.extent(0)
+     * @param width Image width
+     * @param height Image height
+     * @param axis Projection plane axis, either ippl::axis::x, ippl::axis::y or ippl::axis::z
+     * @param domain the domain to fit onto the screen
+     * @param particle_radius On-Screen radii of drawn particles
+     * @param particle_color On-Screen fill color of particles
+     * 
+     * 
+     * @tparam vector_type Position vector type
+     */
+    template<typename vector_type, class... Properties>
+        requires(vector_type::dim == 3)
+    Image drawBunchProjection(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, const axis orthogonal_to, aabb<typename vector_type::value_type, 3> dom, float particle_radius, Vector<float, 4> particle_color){
+        return drawParticlesProjection(position_attrib.getView(), position_attrib.getParticleCount(), width, height, orthogonal_to, dom, particle_radius, particle_color);
+    }
     /**
      * @brief Draws an axis-aligned cross section of a field
      * 
@@ -631,13 +775,14 @@ namespace ippl{
         return ret;
     }
     /**
-     * @brief Draw particles as size-corrected circles to the screen
+     * @brief Draw particles as size-corrected circles to the screen as seen from a certain point
      * 
      * @tparam vector_type 
      * @param position_view Kokkos View containing position vectors
      * @param count Amount of particles to be visualized, must be <= position_view.extent(0)
      * @param width Output image width
      * @param height Output image height
+     * @param cam Point of view camera
      * @param radius Visible particle radius
      * @param particle_color Visible particle color
      */
