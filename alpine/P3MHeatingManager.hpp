@@ -152,24 +152,22 @@ public:
     
         this->fcontainer_m->initializeFields("P3M");
 
+        Kokkos::View<int[14][3], Device> offset_device("offset_device");
+        Kokkos::View<int[14][3], Host> offset = Kokkos::create_mirror_view(offset_device);
+
         int offset_arr[14][3] = {{ 1, 1, 1}, { 0, 1, 1}, {-1, 1, 1},
             { 1, 0, 1}, { 0, 0, 1}, {-1, 0, 1},
             { 1,-1, 1}, { 0,-1, 1}, {-1,-1, 1},
             { 1, 1, 0}, { 0, 1, 0}, {-1, 1, 0},
             { 1, 0, 0}, { 0, 0, 0}};
 
-        Kokkos::View<int[14][3], Host> offset("offset");
+        Kokkos::parallel_for("Fill offset array", Kokkos::MDRangePolicy<Kokkos::Rank<2>, Host>({0, 0}, {14, 3}),
 
-        Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Host>(0, 14),
-
-            KOKKOS_LAMBDA(const int i){
-                for(int j = 0; j < 3; ++j){
-                    offset(i, j) = offset_arr[i][j];
-                }
+            KOKKOS_LAMBDA(const int& i, const int& j){
+                offset(i, j) = offset_arr[i][j];
             }
         );
 
-        Kokkos::View<int[14][3], Device> offset_device("offset_device");
         Kokkos::deep_copy(offset_device, offset);
         this->pcontainer_m->setOffset(offset_device);
 
