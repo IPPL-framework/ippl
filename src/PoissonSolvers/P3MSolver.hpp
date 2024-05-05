@@ -316,6 +316,7 @@ namespace ippl {
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
         Trhs alpha = 6400;
+        // Trhs alpha = 1e6;
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
@@ -328,6 +329,7 @@ namespace ippl {
         typename Field_t::view_type view = grn_m.getView();
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
+        const double ke = 2.532638e8;
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
@@ -341,7 +343,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * pi)) * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution

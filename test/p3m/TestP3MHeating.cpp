@@ -44,7 +44,8 @@ int main(int argc, char* argv[]) {
         const double beam_rad       = 0.001774;
         const double boxlen         = 0.01;
         const unsigned int np       = 156055;
-        const double rcut           = 0.0003125; 
+        const double rcut           = 0.0003125;
+        // const double rcut           = 0.01; 
         const double alpha          = 6400;
         const double dt             = 2.15623e-13;
         const double eps            = 0;
