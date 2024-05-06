@@ -20,15 +20,9 @@ namespace ippl {
     public:
         // typedefs for the different fields and vector fields
         using typeR = typename SourceField::value_type;
+        using typeL = typename EMField::value_type;
 
         constexpr static unsigned Dim = EMField::dim;
-        typedef typename EMField::Mesh_t Mesh_t;
-        typedef typename EMField::Centering_t Centering_t;
-        typedef Vector<typeR, Dim> Vector_t;
-        typedef Field<Vector_t, Dim, Mesh_t, Centering_t> VectorSourceField_t;
-
-        // define type for field layout
-        typedef FieldLayout<Dim> FieldLayout_t;
 
         // type for communication buffers
         using memory_space = typename SourceField::memory_space;
@@ -39,20 +33,16 @@ namespace ippl {
          */
         Maxwell() {}
 
-        Maxwell(SourceField& charge, VectorSourceField_t& current, EMField& E, EMField& B) {
-            setSources(charge, current);
+        Maxwell(SourceField& four_current, EMField& E, EMField& B) {
+            setSources(four_current);
             setEMFields(E, B);
         }
 
         /*!
          * Set the problem RHS (charge & current densities)
-         * @param charge Reference to rho field
-         * @param current Reference to J field
+         * @param four_current Reference to the four current field (rho, J)
          */
-        virtual void setSources(SourceField& charge, VectorSourceField_t& current) {
-            rhoN_mp = &charge;
-            JN_mp   = &current;
-        }
+        virtual void setSources(SourceField& four_current) { JN_mp = &four_current; }
 
         /*!
          * Set the problem LHS (electromagnetic fields)
@@ -72,9 +62,8 @@ namespace ippl {
         virtual ~Maxwell() {}
 
     protected:
-        // fields containing reference to charge and current
-        SourceField* rhoN_mp       = nullptr;
-        VectorSourceField_t* JN_mp = nullptr;
+        // fields containing reference to four-current (rho, J)
+        SourceField* JN_mp = nullptr;
 
         // E and B fields
         EMField* En_mp = nullptr;
