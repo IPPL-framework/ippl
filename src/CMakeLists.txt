@@ -106,7 +106,9 @@ endif()
 message("Timer fences for this build: ${TimerFences}")
 target_compile_definitions(ippl PUBLIC IPPL_ENABLE_TIMER_FENCES=${TimerFences})
 target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
-
+if(ENABLE_RENDERING)
+    target_link_libraries(ippl PUBLIC eglutils)
+endif()
 install (TARGETS ippl DESTINATION lib)
 install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
 

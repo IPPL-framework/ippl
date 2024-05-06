@@ -320,12 +320,12 @@ namespace ippl{
                 file, width, height, 4, hmirror.data());
             }
             if(format[1] == 'p'){ //png
-                return stbi_write_bmp_to_func(
+                return stbi_write_png_to_func(
                 [](void* context, void* data, int size) {
                     FILE* fdr = reinterpret_cast<FILE*>(context);
                     std::fwrite(data, 1, size, fdr);
                 },
-                file, width, height, 4, hmirror.data());
+                file, width, height, 4, hmirror.data(), width * 4);
             }
             std::cerr << "Unsupported format: " + std::string(format) + "\n";
             return 1;
@@ -627,11 +627,13 @@ namespace ippl{
      * @param height Image height
      * @param axis_index 0 for yz plane, 1 for xz plane, 2 for xy plane
      * @param offset Offset along cross section plane normal
+     * @param swap_axis_order Whether the axis order should be swapped from x->y->z to its reverse. 
+     * Will cause cross section drawings to be mirrored along the diagonal.
      */
     template<typename T, typename field_valuetype, typename color_map>
         requires (std::is_invocable_r_v<ippl::Vector<float, 3>, color_map, field_valuetype> || 
                   std::is_invocable_r_v<ippl::Vector<float, 4>, color_map, field_valuetype>)
-    Image drawFieldCrossSection(const Field<field_valuetype, 3, UniformCartesian<T, 3>, typename UniformCartesian<T, 3>::DefaultCentering>& f, const uint32_t width, const uint32_t height, axis perpendicular_to, T offset, color_map cmap){
+    Image drawFieldCrossSection(const Field<field_valuetype, 3, UniformCartesian<T, 3>, typename UniformCartesian<T, 3>::DefaultCentering>& f, const uint32_t width, const uint32_t height, axis perpendicular_to, T offset, color_map cmap, bool swap_axis_order = false){
         Image ret(width, height, Vector<uint8_t, 4>{0,0,0,255});
         
         auto fview = f.getView();
@@ -651,24 +653,37 @@ namespace ippl{
         aabb<float, 3> global_domain_box(global_domain_begin, global_domain_end);
 
         ippl::Vector<T, 2> transverse_sizes;
+        ippl::Vector<T, 2> transverse_origins;
         if(perpendicular_to == axis::x){
-            transverse_sizes = Vector<T, 2>{global_domain_box.extent(1), global_domain_box.extent(2)};
+            transverse_sizes = Vector<T, 2>  {global_domain_box.extent(1), global_domain_box.extent(2)};
+            transverse_origins = Vector<T, 2>{global_domain_box.start [1],  global_domain_box.start[2]};
         }
         if(perpendicular_to == axis::y){
-            transverse_sizes = Vector<T, 2>{global_domain_box.extent(0), global_domain_box.extent(2)};
+            transverse_sizes = Vector<T, 2>{global_domain_box.extent (0), global_domain_box.extent(2)};
+            transverse_origins = Vector<T, 2>{global_domain_box.start[0], global_domain_box.start [2]};
         }
         if(perpendicular_to == axis::z){
-            transverse_sizes = Vector<T, 2>{global_domain_box.extent(0), global_domain_box.extent(1)};
+            transverse_sizes = Vector<T, 2>{global_domain_box.extent (0), global_domain_box.extent(1)};
+            transverse_origins = Vector<T, 2>{global_domain_box.start[0], global_domain_box.start [1]};
+        }
+        if(swap_axis_order){
+            std::swap(transverse_origins[0], transverse_origins[1]);
+            std::swap(transverse_sizes[0], transverse_sizes[1]);
         }
         
         //i -> y
         //j -> x
         Kokkos::parallel_for(ret.getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
             Vector<T, 2> plane_remap{
-                float(j) * transverse_sizes[0] / width,
-                float(i) * transverse_sizes[1] / height,
+                (float(j) / width ) * transverse_sizes[0] + transverse_origins[0],
+                (float(i) / height) * transverse_sizes[1] + transverse_origins[1],
             };
             Vector<T, 3> sample_pos;
+            if(swap_axis_order){
+                T tmp = plane_remap[0];
+                plane_remap[0] = plane_remap[1];
+                plane_remap[1] = tmp;
+            }
             if(perpendicular_to == axis::x){
                 sample_pos = Vector<T, 3>{offset, plane_remap[0], plane_remap[1]};
             }
