@@ -9,6 +9,7 @@
 notes/
 build_serial/
 build/
+build_openmp/
 
 # ignore *.exe, *.gif and *.out files
 *.exe

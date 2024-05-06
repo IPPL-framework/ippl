@@ -51,6 +51,7 @@ public:
 protected:
     double time_m;
     double dt_m;
+    double energy_m;
     Vector_t<double, Dim> rmin_m;
     Vector_t<double, Dim> rmax_m;
     Vector_t<double, Dim> origin_m;
@@ -107,6 +108,26 @@ public:
         }
 
     }
+                                
+    void scatterCIC() {
+      this->fcontainer_m->getOmegaField() = 0.0;
+      if constexpr (Dim == 2) {
+          scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
+      } else if constexpr (Dim == 3) {
+        //TODO: for some reason the scatter method doesn't work in three dimensions but gather does. 
+      }
+    }
 
+    void computeEnergy() {
+      this->energy_m = 0.0;
+      Kokkos::parallel_reduce(
+          "Compute energy", this->np_m,
+          KOKKOS_LAMBDA(const int i, double& local_sum) {
+            for (unsigned d = 0; d < Dim; d++) {
+              local_sum += this->pcontainer_m->P(i)[d] * this->pcontainer_m->P(i)[d];
+            }
+          },
+          this->energy_m);
+    }
 };
 #endif
