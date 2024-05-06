@@ -8,12 +8,21 @@ option(DOWNLOAD_EXTRACT_TIMESTAMP ON FORCE)
 set (IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColourReset "${Esc}[m")
-  set(Red         "${Esc}[31m")
-  set(Green       "${Esc}[32m")
-  set(Yellow      "${Esc}[1;33m")
+    string(ASCII 27 Esc)
+    set(ColourReset "${Esc}[m")
+    set(Red         "${Esc}[31m")
+    set(Green       "${Esc}[32m")
+    set(Yellow      "${Esc}[1;33m")
 endif()
+macro(remove_flag_from_target _target _flag)
+    get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
+    if(_target_cxx_flags)
+        list(REMOVE_ITEM _target_cxx_flags ${_flag})
+        set_target_properties(${_target} PROPERTIES COMPILE_OPTIONS "${_target_cxx_flags}")
+    endif()
+endmacro()
+
+
 
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 
@@ -25,9 +34,7 @@ if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 else ()
     message (STATUS "${Green}Build type is: ${CMAKE_BUILD_TYPE}${ColourReset}")
 endif()
-if(POLICY CMP0135)
-    cmake_policy(SET CMP0135 NEW)
-endif()
+
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
@@ -35,7 +42,7 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#add_compile_options (-Werror)
+
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
@@ -50,6 +57,16 @@ file(
     "${CMAKE_BINARY_DIR}/downloaded_headers/stb_image_write.hpp"
 )
 include_directories("${CMAKE_BINARY_DIR}/downloaded_headers/")
+
+#add_compile_options (-Werror)
+
+# allow deprecated functions
+add_compile_options (-Wno-deprecated-declarations)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options (-Wno-deprecated-copy)
+    add_compile_options (-Wno-sign-compare)
+endif()
+
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 
 if(NOT IPPL_PLATFORMS)
@@ -57,57 +74,67 @@ if(NOT IPPL_PLATFORMS)
     set(IPPL_PLATFORMS "SERIAL")
 endif()
 
-if(IPPL_PLATFORMS)
-    #message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
-    string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
-    # Perform case distinction
-    if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
-        message(STATUS "${Green}CUDA backend enabled${ColourReset}")
-        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
-        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
-    elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
-        message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
-        if(NOT Heffte_ENABLE_FFTW)
-            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
-            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
-        else()
-            message(STATUS "${Green}Enabled FFTW${ColourReset}")
-        endif()
-        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
-    elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
 
-        message(STATUS "${Green}Serial backend enabled${ColourReset}")
-        if(NOT Heffte_ENABLE_FFTW)
-            message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
-            set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
-        endif()
+#message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+if(Ippl_PLATFORMS)
+    set(IPPL_PLATFORMS ${Ippl_PLATFORMS})
+endif()
+string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
+# Perform case distinction
+if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
+    message(STATUS "${Green}CUDA backend enabled${ColourReset}")
+    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
+    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
 
-    elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
-        message(STATUS "${Green}CUDA and OpenMP backend enabled${ColourReset}")
-        set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
-        set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
-        set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend") 
+elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
+    message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
+    if(NOT Heffte_ENABLE_FFTW)
+        message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+        set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
     else()
-        message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
-        # Handle unknown or unsupported platform
+        message(STATUS "${Green}Enabled FFTW${ColourReset}")
     endif()
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+
+elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
+    message(STATUS "${Green}Serial backend enabled${ColourReset}")
+    if(NOT Heffte_ENABLE_FFTW)
+        message(STATUS "${Yellow}Because Heffte_ENABLE_FFTW is not set defaulting to Stock with AVX${ColourReset}")
+        set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable Heffte Stock backend lol")
+    endif()
+
+elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
+    message(STATUS "${Green}CUDA and OpenMP backend enabled${ColourReset}")
+    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
+
+else()
+    message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
+    # Handle unknown or unsupported platform
 endif()
 
-find_package(Kokkos 4.0.0 QUIET)
+if(NOT Kokkos_VERSION)
+    set(Kokkos_VERSION "4.1.00")
+    message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
+else()
+    message(STATUS "${Green}Selected Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
+endif()
+find_package(Kokkos ${Kokkos_VERSION} QUIET)
 if(NOT Kokkos_FOUND)
     FetchContent_Declare(
-        #DOWNLOAD_EXTRACT_TIMESTAMP
-        kokko
-        URL https://github.com/kokkos/kokkos/archive/refs/tags/4.1.00.tar.gz                
+        kokkos
+        DOWNLOAD_EXTRACT_TIMESTAMP True
+        URL https://github.com/kokkos/kokkos/archive/refs/tags/${Kokkos_VERSION}.tar.gz                
     )
-    FetchContent_MakeAvailable(kokko)
+    FetchContent_MakeAvailable(kokkos)
 endif()
 # Select flags.
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CUDA_EXTENSIONS OFF)
 set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 #set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
@@ -145,15 +172,45 @@ endif()
 option (ENABLE_FFT "Enable FFT transform" OFF)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
+    if(NOT Heffte_VERSION)
+        set(Heffte_VERSION "MASTER")
+        message(STATUS "${Green}Selecting default Heffte version: MASTER (Master branch on ttps://github.com/icl-utk-edu/heffte) ${ColourReset}")
+    else()
+    message(STATUS "${Green}Selected Heffte version: ${Heffte_VERSION} ${ColourReset}")
+    endif()
+    if(Heffte_VERSION MATCHES "MASTER")
     find_package (Heffte 2.2.0 QUIET)
+    else()
+    find_package (Heffte ${Heffte_VERSION} QUIET)
+    endif()
     if(NOT Heffte_FOUND)
         message(STATUS "Using FetchContent for Heffte")
+        if(Heffte_VERSION MATCHES "MASTER")
+        if(NOT HEFFTE_COMMIT_HASH)
+            set(HEFFTE_COMMIT_HASH "9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda")
+            message(STATUS "${Yellow}Defaulting to Heffte commit: ${HEFFTE_COMMIT_HASH} ${ColourReset}")
+        else()
+            message(STATUS "${Green}Using Heffte commit: ${HEFFTE_COMMIT_HASH} ${ColourReset}")
+        endif()
         FetchContent_Declare(
-             Heffte
-             #DOWNLOAD_EXTRACT_TIMESTAMP
-             GIT_REPOSITORY https://github.com/icl-utk-edu/heffte 
+            Heffte
+            GIT_REPOSITORY https://github.com/icl-utk-edu/heffte
+            GIT_TAG ${HEFFTE_COMMIT_HASH}
         )
+        else()
+        FetchContent_Declare(
+            Heffte
+            DOWNLOAD_EXTRACT_TIMESTAMP True
+            URL https://github.com/icl-utk-edu/heffte/archive/refs/tags/v${Heffte_VERSION}.tar.gz
+        )
+        endif()
         FetchContent_MakeAvailable(Heffte)
+        # Required to suppress warnings related to heffte
+        target_include_directories(Heffte SYSTEM PUBLIC "${Heffte_SOURCE_DIR}/include")
+        set(Heffte_DIR "${Heffte_SOURCE_DIR}")
+        remove_flag_from_target(Heffte "-Werror")
+        remove_flag_from_target(Heffte "-Wall")
+        remove_flag_from_target(Heffte "-Wextra")
     endif()
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
