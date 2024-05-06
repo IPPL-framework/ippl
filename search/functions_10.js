@@ -50,7 +50,7 @@ var searchData=
   ['setrmin_47',['setRMin',['../classFieldContainer.html#a9e01876f45d0457f6c034a09366cfc85',1,'FieldContainer']]],
   ['setsignalhandler_48',['setSignalHandler',['../ChargedParticles_8hpp.html#aea96d4cec23e6d5d1cc41ad49bfdfbe4',1,'ChargedParticles.hpp']]],
   ['setsolver_49',['setSolver',['../classippl_1_1FieldSolverBase.html#a0c40d34b36de7ce9137a186a6ce6659f',1,'ippl::FieldSolverBase::setSolver()'],['../classippl_1_1PoissonCG.html#ab96f03abd903f480cc8c21ed29812b88',1,'ippl::PoissonCG::setSolver()'],['../classAlpineManager.html#a964e8b24e0592eaf61682930897ab06b',1,'AlpineManager::setSolver()']]],
-  ['setsources_50',['setSources',['../classippl_1_1Maxwell.html#aef027b39eee456520026fec84ece02e4',1,'ippl::Maxwell']]],
+  ['setsources_50',['setSources',['../classippl_1_1Maxwell.html#ae270751d7d32dad570040c5b2ba780a0',1,'ippl::Maxwell']]],
   ['setstepmethod_51',['setStepMethod',['../classAlpineManager.html#a00b448951fdbd27720d4067659b8619c',1,'AlpineManager']]],
   ['setstype_52',['setStype',['../classippl_1_1FieldSolverBase.html#ad6660d434cd79e72271d2bae2523cad2',1,'ippl::FieldSolverBase']]],
   ['settime_53',['setTime',['../classAlpineManager.html#a6e928c739f2938144a0ca0aaaa9e5e5f',1,'AlpineManager']]],
