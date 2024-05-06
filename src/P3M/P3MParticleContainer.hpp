@@ -6,7 +6,7 @@
 
 using Device = Kokkos::DefaultExecutionSpace;
 using NList_t = Kokkos::View<unsigned int *, Device>;
-using Offset_t = Kokkos::View<int [14][3], Device>;
+using Offset_t = Kokkos::View<int [14*3], Device>;
 
 /**
  * @class P3MParticleContainer
