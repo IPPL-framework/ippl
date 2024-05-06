@@ -19,7 +19,7 @@ namespace ippl {
     Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
         Vector<T, NumNodes1D> w = this->getWeights1D(0.0, 1.0);
 
-        Vector<T, numElementNodes> tensor_prod_w;
+        Vector<T, this->numElementNodes> tensor_prod_w;
 
         Vector<unsigned, ElementType::dim> nd_index(0);
         for (unsigned i = 0; i < this->numElementNodes; ++i) {
@@ -47,7 +47,7 @@ namespace ippl {
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
         Vector<T, NumNodes1D> q = this->getIntegrationNodes1D(0.0, 1.0);
 
-        Vector<Vector<T, ElementType::dim>, numElementNodes> tensor_prod_q;
+        Vector<Vector<T, ElementType::dim>, this->numElementNodes> tensor_prod_q;
 
         Vector<unsigned, ElementType::dim> nd_index(0);
         for (unsigned i = 0; i < this->numElementNodes; ++i) {
