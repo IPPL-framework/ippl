@@ -243,9 +243,10 @@ namespace ippl{
          * @brief Save the image to a file
          * 
          * @param out_file_name filename **including ending** !
+         * @return 0 on failure, not 0 otherwise
          */
-        void save_to(const char* out_file_name){
-            save_to(std::string(out_file_name));
+        bool save_to(const char* out_file_name)const noexcept{
+            return save_to(std::string(out_file_name));
         }
         /**
          * @brief Get the RangePolicy for the image
@@ -264,8 +265,9 @@ namespace ippl{
          * @brief Save the image to a file
          * 
          * @param out_file_name filename **including ending** !
+         * @return 0 on failure, not 0 otherwise
          */
-        void save_to(const std::string& out_file_name){
+        bool save_to(const std::string& out_file_name)const noexcept{
             using output_color = ippl::Vector<uint8_t, 4>;
             Kokkos::View<color_type*> cbview = color_buffer;
             Kokkos::View<output_color*> oview("output_view", color_buffer.extent(0));
@@ -280,11 +282,53 @@ namespace ippl{
             Kokkos::deep_copy(hmirror, oview);
             Kokkos::fence();
             if(out_file_name.ends_with("png")){
-                stbi_write_png(out_file_name.c_str(), width, height, 4, hmirror.data(), width * 4);
+                return stbi_write_png(out_file_name.c_str(), width, height, 4, hmirror.data(), width * 4);
             }
             else if(out_file_name.ends_with("bmp")){
-                stbi_write_bmp(out_file_name.c_str(), width, height, 4, hmirror.data());
+                return stbi_write_bmp(out_file_name.c_str(), width, height, 4, hmirror.data());
             }
+            std::cerr << "Unsupported format: " + out_file_name + "\n";
+            return 1;
+        }
+        /**
+         * @brief Writes the image to a FILE, useful for pipes to ffmpeg
+         * 
+         * @param file File descriptor
+         * @param format Output format, supported values are "bmp" and "png"
+         * @return 0 on failure, not 0 otherwise
+         */
+        bool save_to(FILE* file, const char (&format)[4] = "bmp")const noexcept{
+            using output_color = ippl::Vector<uint8_t, 4>;
+            Kokkos::View<color_type*> cbview = color_buffer;
+            Kokkos::View<output_color*> oview("output_view", color_buffer.extent(0));
+            Kokkos::parallel_for(width * height, KOKKOS_LAMBDA(size_t i){
+                oview(i)[0] = uint8_t(Kokkos::min(255u, uint32_t(clamp(cbview(i)[0], 0.0f, 1.0f) * 256.0f)));
+                oview(i)[1] = uint8_t(Kokkos::min(255u, uint32_t(clamp(cbview(i)[1], 0.0f, 1.0f) * 256.0f)));
+                oview(i)[2] = uint8_t(Kokkos::min(255u, uint32_t(clamp(cbview(i)[2], 0.0f, 1.0f) * 256.0f)));
+                oview(i)[3] = uint8_t(Kokkos::min(255u, uint32_t(clamp(cbview(i)[3], 0.0f, 1.0f) * 256.0f)));
+            });
+            Kokkos::fence();
+            Kokkos::View<output_color*>::host_mirror_type hmirror = Kokkos::create_mirror_view(oview);
+            Kokkos::deep_copy(hmirror, oview);
+            Kokkos::fence();
+            if(format[0] == 'b'){ //bmp
+                return stbi_write_bmp_to_func(
+                [](void* context, void* data, int size) {
+                    FILE* fdr = reinterpret_cast<FILE*>(context);
+                    std::fwrite(data, 1, size, fdr);
+                },
+                file, width, height, 4, hmirror.data());
+            }
+            if(format[1] == 'p'){ //png
+                return stbi_write_bmp_to_func(
+                [](void* context, void* data, int size) {
+                    FILE* fdr = reinterpret_cast<FILE*>(context);
+                    std::fwrite(data, 1, size, fdr);
+                },
+                file, width, height, 4, hmirror.data());
+            }
+            std::cerr << "Unsupported format: " + std::string(format) + "\n";
+            return 1;
         }
         /**
          * @brief Performs a depth blend with another image
