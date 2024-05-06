@@ -7,34 +7,39 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "ParticleFieldStrategy.hpp"
 #include "Manager/BaseManager.h"
+#include "Particle/ParticleBase.h"
 #include "ParticleContainer.hpp"
+#include "ParticleDistributions.h"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
 #include "VortexDistributions.h"
 
-using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using host_type = typename ippl::ParticleAttrib<T>::HostMirror;
+using view_type     = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+using host_type     = typename ippl::ParticleAttrib<T>::HostMirror;
+using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
 
-
-template <typename T, unsigned Dim, typename VortexDistribution>
+template <typename T, unsigned Dim, typename ParticleDistribution, typename VortexDistribution>
 class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>; 
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    //using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    bool remove_particles;
 
     VortexInCellManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_,
         Vector_t<double, Dim> rmin_ = 0.0,
         Vector_t<double, Dim> rmax_ = 10.0,
-        Vector_t<double, Dim> origin_ = 0.0)
+        Vector_t<double, Dim> origin_ = 0.0,
+        bool remove_particles = true)
         : AlvineManager<T, Dim>(nt_, nr_, solver_, lbt_) {
             this->rmin_m = rmin_;
             this->rmax_m = rmax_;
             this->origin_m = origin_;
+            this->remove_particles = remove_particles;
         }
 
     ~VortexInCellManager() {}
@@ -60,7 +65,6 @@ public:
           this->domain_m[i] = ippl::Index(this->nr_m[i]);
       }
 
-
       Vector_t<double, Dim> dr = this->rmax_m - this->rmin_m;
 
       this->hr_m = dr / this->nr_m;
@@ -71,7 +75,8 @@ public:
       this->it_m = 0;
       this->time_m = 0.0;
 
-      this->np_m = 10000; //this->nr_m[0] * this->nr_m[0];
+      int density = 1; // particles per cell
+      set_number_of_particles(density);
 
       this->decomp_m.fill(true);
       this->isAllPeriodic_m = true;
@@ -80,69 +85,98 @@ public:
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
             this->isAllPeriodic_m));
 
-      this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
-        
-      this->fcontainer_m->initializeFields();
-
-      this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getOmegaField()) );
       
-      this->fsolver_m->initSolver();
+      if constexpr (Dim == 2) {
+          std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(this->fcontainer_m);
+          this->setParticleContainer(std::make_shared<TwoDimParticleContainer<T>>(fc->getMesh(), fc->getFL()));
+          this->setFieldSolver( std::make_shared<TwoDimFFTSolverStrategy<T>>() );
+          this->setParticleFieldStrategy( std::make_shared<TwoDimParticleFieldStrategy<T>>() );
 
-      this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
+      } else if constexpr (Dim == 3) {
+          this->setParticleFieldStrategy( std::make_shared<ThreeDimParticleFieldStrategy<T>>() );
+      }
 
-      initializeParticles();
+      this->fsolver_m->initSolver(this->fcontainer_m);
+
+      //this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
+
+      size_type removed = initializeParticles();
+      this->np_m -= removed;
 
       this->par2grid();
 
-      this->fsolver_m->runSolver();
-      this->computeVelocityField();
-      // this->computeOmega_dotField();
+      this->fsolver_m->solve(this->fcontainer_m);
+      this->updateFields();
 
       this->grid2par();
 
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
       pc->R_old = pc->R;
       pc->R = pc->R_old + pc->P * this->dt_m;
       pc->update();
-
+      
+      this->computeEnergy();
     }
 
-    void initializeParticles() {
 
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+    void set_number_of_particles(int density) {
+        int particles = 1;
+        for (unsigned i = 0; i < Dim; i++) {
+            particles *= this->nr_m[i];
+        }
+        this->np_m = particles*density;
+        std::cout << "Number of particles: " << this->np_m << std::endl;
+    }
 
-      // Create np_m particles in container
-      size_type totalP = this->np_m;
-      pc->create(totalP); // TODO: local number of particles? from kokkos?
-      
-      view_type* R = &(pc->R.getView()); // Position vector
-      host_type omega_host = pc->omega.getHostMirror(); // Vorticity values
-        
-      // Random number generator
-      int seed         = 42;
-      Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+    int initializeParticles() {
 
-      double rmin[Dim];
-      double rmax[Dim];
-      for(unsigned int i=0; i<Dim; i++){
-          rmin[i] = this->rmin_m[i];
-          rmax[i] = this->rmax_m[i];
-      }
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
-      // Sample from uniform distribution
-      Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
+        // Create np_m particles in container
+        size_type totalP = this->np_m;
+        pc->create(totalP);  // TODO: local number of particles? from kokkos?
 
-      // Assign vorticity based on radius from center
-      Kokkos::parallel_for(totalP,
-        VortexDistribution(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m));
-    
-      Kokkos::deep_copy(pc->omega.getView(), omega_host);
+        // Assign positions
+        view_type* R = &(pc->R.getView());  // Position vector
+        ParticleDistribution particle_distribution(*R, this->rmin_m, this->rmax_m, this->np_m);
+        Kokkos::parallel_for(totalP, particle_distribution);
 
-      Kokkos::fence();
-      ippl::Comm->barrier();
+        // Assign vorticity
+        host_type omega_host = pc->omega.getHostMirror();  // Vorticity values
+        VortexDistribution vortex_dist(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m);
+        Kokkos::parallel_for(totalP, vortex_dist);
+        Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
+        int total_invalid = 0;
+        if (this->remove_particles) {
+            
+            Kokkos::parallel_for(
+                "Mark vorticity null as invalid", totalP, KOKKOS_LAMBDA(const size_t i) {
+                    pc->invalid.getView()(i) = false;
+                    if (pc->omega.getView()(i) == 0) {
+                        pc->invalid.getView()(i) = true;
+                    }
+                });
+
+
+            for (unsigned i = 0; i < totalP; i++) {
+                pc->invalid.getView()(i) ? total_invalid++: total_invalid;
+            }
+            
+            if (total_invalid and (total_invalid < int(totalP))) {
+                std::cout << "Removing " << total_invalid << " particles" << std::endl;
+                pc->destroy(pc->invalid.getView(), total_invalid);
+            }
+            else{
+                std::cout << "No particles removed" << std::endl;
+            }
+        }
+
+        Kokkos::fence();
+        ippl::Comm->barrier();
+
+        return total_invalid;
     }
   
 
@@ -158,19 +192,19 @@ public:
       static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
       static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
       
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
       // scatter the vorticity to the underlying grid
       this->par2grid();
 
       // claculate stream function
       IpplTimings::startTimer(SolveTimer);
-      this->fsolver_m->runSolver();
+      this->fsolver_m->solve(this->fcontainer_m);
       IpplTimings::stopTimer(SolveTimer);
 
       // calculate velocity from stream function
       IpplTimings::startTimer(PTimer);
-      this->computeVelocityField();
+      this->updateFields();
       IpplTimings::stopTimer(PTimer);
 
       // gather velocity field
@@ -196,7 +230,7 @@ public:
     }
 
     void dump() override {
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
       Inform csvout(NULL, "particles.csv", Inform::APPEND);
 
@@ -212,6 +246,5 @@ public:
       energyout << this->energy_m << endl;
        
     }
-
 };
 #endif

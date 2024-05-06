@@ -15,7 +15,7 @@ times = df['time'].unique()
 particle_indices = df['index'].unique()
 
 # Create a figure and axis
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 10))
 ax.set_xlim((0,10))
 ax.set_ylim((0,10))
 
@@ -34,5 +34,6 @@ ani = FuncAnimation(fig, update, frames=len(times), blit=True, interval=50)
 
 # Show animation
 # plt.show()
+print("Saving animation to particles.gif")
 ani.save(f'particles.gif', fps=30)
 
