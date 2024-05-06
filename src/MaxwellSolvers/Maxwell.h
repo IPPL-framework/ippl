@@ -18,21 +18,20 @@ namespace ippl {
     template <typename EMField, typename SourceField>
     class Maxwell {
     public:
-        // typedefs for the different fields and vector fields
-        using typeR = typename SourceField::value_type;
-        using typeL = typename EMField::value_type;
-
         constexpr static unsigned Dim = EMField::dim;
-
-        // type for communication buffers
-        using memory_space = typename SourceField::memory_space;
-        using buffer_type  = Communicate::buffer_type<memory_space>;
 
         /*!
          * Default constructor for Maxwell solvers;
          */
         Maxwell() {}
 
+        /*!
+         * Constructor which allows to initialize the field pointers
+         * (J, E, B) in the Maxwell solvers class
+         * @param four_current The four current field (rho, J)
+         * @param E The electric field
+         * @param B The magnetic field
+         */
         Maxwell(SourceField& four_current, EMField& E, EMField& B) {
             setSources(four_current);
             setEMFields(E, B);
@@ -40,14 +39,14 @@ namespace ippl {
 
         /*!
          * Set the problem RHS (charge & current densities)
-         * @param four_current Reference to the four current field (rho, J)
+         * @param four_current The four current field (rho, J)
          */
         virtual void setSources(SourceField& four_current) { JN_mp = &four_current; }
 
         /*!
          * Set the problem LHS (electromagnetic fields)
-         * @param E Reference to electric field
-         * @param B Reference to magnetic field
+         * @param E The electric field
+         * @param B The magnetic field
          */
         void setEMFields(EMField& E, EMField& B) {
             En_mp = &E;
@@ -62,7 +61,7 @@ namespace ippl {
         virtual ~Maxwell() {}
 
     protected:
-        // fields containing reference to four-current (rho, J)
+        // Field for four-current (rho, J)
         SourceField* JN_mp = nullptr;
 
         // E and B fields
