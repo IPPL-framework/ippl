@@ -1604,12 +1604,12 @@ scalar test_amperes_law(uint32_t n){
     return 0.0f;
 }
 int main(int argc, char* argv[]) {
-    using scalar = double;
+    using scalar = float;
     ippl::initialize(argc, argv);
     {
         
-        test_gauss_law<scalar>(64);
-        test_amperes_law<scalar>(64);
+        //test_gauss_law<scalar>(64);
+        //test_amperes_law<scalar>(64);
         //goto exit;
         config cfg = read_config("../config.json");
         const scalar frame_gamma = std::max(decltype(cfg)::scalar(1), cfg.bunch_gamma / std::sqrt(1.0 + cfg.undulator_K * cfg.undulator_K * config::scalar(0.5)));
@@ -1738,7 +1738,7 @@ int main(int argc, char* argv[]) {
             double radiation_in_watt_global = 0.0;
             MPI_Reduce(&radiation_in_watt_on_this_rank, &radiation_in_watt_global, 1, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
             if(ippl::Comm->rank() == 0){
-                ippl::Vector<scalar, 3> pos{0,0,0};
+                ippl::Vector<scalar, 3> pos{0,0,(float)cfg.extents[2]};
                 frame_boost.primedToUnprimed(pos, fdtd_state.dt() * i);
                 rad << pos[2] * unit_length_in_meters << " " << radiation_in_watt_global << "\n";
             }
@@ -1843,7 +1843,8 @@ int main(int argc, char* argv[]) {
             }    
         }
         uint64_t endtime = nanoTime();
-        std::cout << ippl::Comm->size() << " " << double(endtime - starttime) / 1e9 << std::endl;
+        if(ippl::Comm->rank() == 0)
+            std::cout << ippl::Comm->size() << " " << double(endtime - starttime) / 1e9 << std::endl;
     }
     //exit:
     ippl::finalize();

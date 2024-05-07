@@ -630,7 +630,7 @@ namespace ippl {
             steps_taken = 0;
             //field_solver.setEMFields(E, B);
         }
-        template<bool space_charge = true>
+        template<bool space_charge = false>
         void scatterBunch(){
             //ippl::Vector<scalar, 3>* gammaBeta = this->gammaBeta;
             auto hr_m = mesh_mp->getMeshSpacing();
