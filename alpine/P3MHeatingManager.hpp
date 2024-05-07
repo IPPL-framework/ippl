@@ -598,7 +598,7 @@ public:
         auto R = this->pcontainer_m->R.getView();
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
-        Kokkos::View<int[14][3], Device> offset = this->pcontainer_m->getOffset();
+        auto offset = this->pcontainer_m->getOffset();
         auto Q = this->pcontainer_m->Q.getView();
 
         // get simulation specific data
