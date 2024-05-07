@@ -73,6 +73,10 @@ int main(int argc, char* argv[]) {
 
         msg << nt << endl;
 
+
+
+
+
         VortexInCellManager<T, Dim, EquidistantDistribution, ConcentricCircles> manager(nt, nr, solver, lbt);
 
         manager.pre_run();

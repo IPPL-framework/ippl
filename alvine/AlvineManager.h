@@ -6,11 +6,11 @@
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
-#include "ParticleFieldStrategy.hpp"
 #include "Manager/BaseManager.h"
-#include "Manager/PicManager.h"
 #include "Manager/FieldSolverBase.h"
+#include "Manager/PicManager.h"
 #include "ParticleContainer.hpp"
+#include "ParticleFieldStrategy.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
@@ -23,7 +23,8 @@ class AlvineManager
     : public ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase,
                               LoadBalanceStrategy, FieldSolverStrategy<FieldContainerBase>> {
 public:
-    using particle_field_strategy_type = typename std::shared_ptr<ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase>>;
+    using particle_field_strategy_type =
+        typename std::shared_ptr<ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase>>;
 
 protected:
     unsigned nt_m;
@@ -39,14 +40,15 @@ protected:
 
 public:
     AlvineManager(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_)
-        : ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase, LoadBalanceStrategy, FieldSolverStrategy<FieldContainerBase> >() 
+        : ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase, LoadBalanceStrategy,
+                           FieldSolverStrategy<FieldContainerBase>>()
         , nt_m(nt_)
         , nr_m(nr_)
         , solver_m(solver_)
         , lbt_m(lbt_)
         , particle_field_strategy_m(nullptr) {}
 
-    ~AlvineManager(){}
+    ~AlvineManager() {}
 
 protected:
     double time_m;
@@ -58,8 +60,9 @@ protected:
     Vector_t<double, Dim> hr_m;
 
 public:
-
-    void setParticleFieldStrategy(particle_field_strategy_type particle_field_strategy) { particle_field_strategy_m = particle_field_strategy; }
+    void setParticleFieldStrategy(particle_field_strategy_type particle_field_strategy) {
+        particle_field_strategy_m = particle_field_strategy;
+    }
 
     double getTime() { return time_m; }
 
@@ -69,7 +72,7 @@ public:
 
     void setNt(int nt_) { nt_m = nt_; }
 
-    virtual void dump() { /* default does nothing */ };
+    virtual void dump(){/* default does nothing */};
 
     void pre_step() override {
         Inform m("Pre-step");
@@ -77,36 +80,34 @@ public:
     }
 
     void post_step() override {
-      this->time_m += this->dt_m;
-      this->it_m++;
+        this->time_m += this->dt_m;
+        this->it_m++;
 
-      this->dump();
+        this->dump();
     }
 
-    void grid2par() override { 
-        if ( particle_field_strategy_m ) {
+    void grid2par() override {
+        if (particle_field_strategy_m) {
             particle_field_strategy_m->grid2par(this->fcontainer_m, this->pcontainer_m);
         } else {
             throw std::runtime_error("Particle-Field strategy not defined");
         }
     }
 
-    void par2grid() override { 
-        if ( particle_field_strategy_m ) {
+    void par2grid() override {
+        if (particle_field_strategy_m) {
             particle_field_strategy_m->par2grid(this->fcontainer_m, this->pcontainer_m);
         } else {
             throw std::runtime_error("Particle-Field strategy not defined");
         }
-
     }
 
     void updateFields() {
-        if ( particle_field_strategy_m ) {
+        if (particle_field_strategy_m) {
             particle_field_strategy_m->updateFields(this->fcontainer_m);
         } else {
             throw std::runtime_error("Particle-Field strategy not defined");
         }
-
     }
                                 
     void scatterCIC() {

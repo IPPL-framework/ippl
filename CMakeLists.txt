@@ -110,7 +110,7 @@ if (ENABLE_ALVINE)
     add_subdirectory (alvine)
 endif ()
 
-option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
+option (ENABLE_UNIT_TESTS "Enable unit tests" ON)
 if (ENABLE_UNIT_TESTS)
     include(FetchContent)
     include(GoogleTest)
