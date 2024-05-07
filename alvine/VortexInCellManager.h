@@ -121,20 +121,29 @@ public:
         std::cout << "syn" << std::endl;
         GridDistribution<T, Dim> grid(this->nr_m, this->rmin_m, this->rmax_m);
 
-        std::cout << grid.getNumParticles() << std::endl;
 
-        this->np_m = grid.getNumParticles();
 
-        pc->create(this->np_m);
 
-        view_type particle_view = grid.getParticles();
+
+
 
         Circle<T, Dim> circ(1.0);
 
         Vector_t<T, Dim> center = 0.5 * (this->rmax_m - this->rmin_m);
         ShiftTransformation<T, Dim> shift_to_center(-center);
-
+    
         circ.applyTransformation(shift_to_center);
+        FilteredDistribution<T, Dim> filteredDist(circ, this->rmin_m, this->rmax_m, new GridPlacement<T, Dim>(this->nr_m));
+        
+        this->np_m = filteredDist.getNumParticles();
+        
+        std::cout << filteredDist.getNumParticles() << std::endl;
+        this->np_m = filteredDist.getNumParticles();
+        
+        view_type particle_view = filteredDist.getParticles();
+
+        pc->create(this->np_m);
+
 
         for (int i = 0; i < 5; i++) {
             Circle<T, Dim> added_circle((i + 1) * 0.5);
@@ -142,7 +151,7 @@ public:
             circ += added_circle;
         }
       
-        Kokkos::parallel_for("AddParticles", grid.getNumParticles(), KOKKOS_LAMBDA(const int& i) {
+        Kokkos::parallel_for("AddParticles", filteredDist.getNumParticles(), KOKKOS_LAMBDA(const int& i) {
             pc->R(i) =  particle_view(i);
             pc->omega(i) = circ.evaluate(pc->R(i)); 
         });

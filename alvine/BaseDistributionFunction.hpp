@@ -1,3 +1,6 @@
+#ifndef IPPL_DISTRIBUTION_FUNCTION_H
+#define IPPL_DISTRIBUTION_FUNCTION_H
+
 template<typename Domain, typename Range>
 class DistributionTransformationStrategy {
 public:
@@ -78,3 +81,4 @@ public:
         };
     }
 };
+#endif
