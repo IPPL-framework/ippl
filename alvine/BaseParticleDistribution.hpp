@@ -86,8 +86,8 @@ class GridPlacement : public PlacementStrategy<T, Dim> {
     ippl::Vector<T, Dim> rmax;
 
 public:
-    GridPlacement(ippl::Vector<int, Dim> num_points_, ippl::Vector<T, Dim> rmin_, ippl::Vector<T, Dim> rmax_)
-        : num_points(num_points_), rmin(rmin_), rmax(rmax_) {}
+    GridPlacement(ippl::Vector<int, Dim> num_points_)
+        : num_points(num_points_) {}
 
     void placeParticles(
         typename ippl::detail::ViewType<ippl::Vector<T, Dim>, 1>::view_type& container,
@@ -103,13 +103,7 @@ public:
             Kokkos::parallel_for(
                 "2DGridInit", policy, KOKKOS_LAMBDA(const int i, const int j) {
                     ippl::Vector<T, 2> loc(i, j);
-            std::cout << "ack" << std::endl;
-            std::cout << num_points << std::endl;
-            std::cout << rmin << std::endl;
-            std::cout << dr << std::endl;
-            std::cout << loc << std::endl;
                     container(i * num_points(0) + j) = rmin + dr * loc;
-            std::cout << "ack" << std::endl;
                 });
         }
         Kokkos::fence();
@@ -121,7 +115,7 @@ template <typename T, unsigned Dim>
 class GridDistribution : public ParticleDistributionBase<T, Dim> {
 public:
     GridDistribution(ippl::Vector<int, Dim> num_points, ippl::Vector<T, Dim> rmin_, ippl::Vector<T, Dim> rmax_)
-        : ParticleDistributionBase<T, Dim>(rmin_, rmax_, new GridPlacement<T, Dim>(num_points, rmin_, rmax_)) {
+        : ParticleDistributionBase<T, Dim>(rmin_, rmax_, new GridPlacement<T, Dim>(num_points)) {
         this->generateDistribution();
     }
 };
