@@ -295,6 +295,8 @@ namespace ippl {
                 bcs.apply(A_n, A_nm1, A_np1, this->dt, true_nr, layout_mp->getLocalNDIndex());
             }
         }
+        
+        public:
         template<typename scalar>
         struct nondispersive{
             scalar a1;
@@ -303,7 +305,6 @@ namespace ippl {
             scalar a6;
             scalar a8;
         };
-        public:
         void step(){
             const auto& ldom    = layout_mp->getLocalNDIndex();
             const int nghost    = A_n.getNghost();
