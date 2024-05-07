@@ -1,4 +1,5 @@
 #include "Utility/Rendering.hpp"
+
 using scalar = float;
 KOKKOS_INLINE_FUNCTION scalar gaussian(scalar x, scalar y, scalar z, scalar sigma = 1.0,
                                        scalar mu = 0.5) {
@@ -54,8 +55,11 @@ int main(int argc, char* argv[]) {
         vec3 pos{-1.5,-1.0,-1.5};
         vec3 target{0.5,0.3,0.5};
         rm::camera cam(pos, target - pos);
+        Font f("/home/manuel/ebg450.ttf", 64);
+        //draw_text(std::format("Hello{}", pos.norm()), f);
         ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
         ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, ippl::Vector<float, 4>{0,1,0,1});
+        ippl::drawTextOnto(pimg, "Partikles", 100, 100, f); 
         pimg.save_to("particle.png");
         primg.save_to("rojection.png");
         typename Field_t::view_type& view = field.getView();

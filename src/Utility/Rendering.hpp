@@ -7,7 +7,7 @@
 #include "Utility/Colormaps.hpp"
 #define RM_INLINE KOKKOS_INLINE_FUNCTION
 #include <rastmath.hpp>
-
+#include <flaschentype.hpp>
 #include <Field/Field.h>
 template<typename T, unsigned N>
 KOKKOS_INLINE_FUNCTION ippl::Vector<T, N> rm_to_ippl(const rm::Vector<T, N>& rmvec){
@@ -329,6 +329,9 @@ namespace ippl{
             }
             std::cerr << "Unsupported format: " + std::string(format) + "\n";
             return 1;
+        }
+        KOKKOS_INLINE_FUNCTION bool isInRange(int _i, int _j)const noexcept{
+            return _i >= 0 && _i < int(height) && _j >= 0 && _j < int(width);
         }
         /**
          * @brief Performs a depth blend with another image
@@ -911,6 +914,40 @@ namespace ippl{
         requires(vector_type::dim == 3)
     Image drawParticles(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, rm::camera cam, float particle_radius, Vector<float, 4> particle_color){
         return drawParticles(position_attrib.getView(), position_attrib.getParticleCount(), width, height, cam, particle_radius, particle_color);
+    }
+    /**
+     * @brief Draw Text onto an image without checking depth data
+     * Only advisable to do on rank one
+     * 
+     * @param img Target image
+     * @param text The text
+     * @param x Distance in pixels from the left image border
+     * @param y Distance in pixels from the top image border
+     * @param f 
+     */
+    inline void drawTextOnto(Image& img, std::string text, int x, int y, const Font& f){
+        text_image timg = draw_text(text, f);
+        Kokkos::View<Image::color_type*> colorb("text", timg.w * timg.h);
+        typename Kokkos::View<Image::color_type*>::host_mirror_type colobhm = Kokkos::create_mirror_view(colorb);
+        for(size_t i = 0;i < size_t(timg.w) * timg.h;i++){
+            colobhm(i) = ippl::Vector<float, 4>{1, 1, 1, float(uint8_t(timg.buffer[i])) / 255.0f};
+        }
+        Kokkos::deep_copy(colorb, colobhm);
+        Kokkos::Array<uint32_t, 2> begin, end;
+        begin[0] = 0;
+        begin[1] = 0;
+        end[0] = timg.h;
+        end[1] = timg.w;
+        uint32_t wif = timg.w;
+        //uint32_t heit = timg.h;
+        RangePolicy<2, typename Image::color_buffer_type::execution_space>::policy_type pol(begin, end);
+        Kokkos::parallel_for(pol, KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+            
+            if(img.isInRange(i + y, j + x)){
+                img.set(i + y, j + x, porterDuff(colorb(i * wif + j), img.get(i + y, j + x)));
+            }
+        });
+        Kokkos::fence();
     }
 }
 #endif

@@ -60,11 +60,9 @@ if(ENABLE_RENDERING)
     add_executable (TestRendering TestRendering.cpp)
     target_link_libraries (
         TestRendering
-        eglutils
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
-    target_include_directories(TestRendering PUBLIC "${eglutils_SOURCE_DIR}")
 endif()
 
 # vi: set et ts=4 sw=4 sts=4:
