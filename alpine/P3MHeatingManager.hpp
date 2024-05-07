@@ -617,10 +617,10 @@ public:
         assert(totalCells == xCells * yCells * zCells && "Invalid number of cells");
 
         Kokkos::View<unsigned[1], Device> counter("counter");
-        using team_t = typename Kokkos::TeamPolicy<>::member_type;
+        using team_t = typename Kokkos::TeamPolicy<Device>::member_type;
         
         // calculate interaction force
-        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<>(totalCells, Kokkos::AUTO),
+        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<Device>(totalCells, Kokkos::AUTO()),
             KOKKOS_LAMBDA(const team_t& team){
                 const size_type cellIdx = team.league_rank();
 
@@ -672,6 +672,7 @@ public:
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
+                                Kokkos::atomic_increment(&counter(0));
 
                                 // only consider particles within cutoff radius
                                 // for some reason, this does not work on gpus yet
