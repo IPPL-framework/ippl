@@ -462,6 +462,23 @@ namespace ippl{
                 color_buffer(i * width + j) = c;
             }
         }
+        /**
+         * @brief Converts a transparent image to a nontransparent one, filling in a background
+         * 
+         * @param backgroundColor Background fill color 
+         */
+        KOKKOS_INLINE_FUNCTION void removeAlpha(ippl::Vector<float, 3> backgroundColor){
+            auto cbuf = this->color_buffer;
+            auto w = this->width;
+            Kokkos::parallel_for(getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+                auto c = cbuf(i * w + j);
+                c[0] = c[0] * c[3] + backgroundColor[0] * (1.0f - c[3]);
+                c[1] = c[1] * c[3] + backgroundColor[1] * (1.0f - c[3]);
+                c[2] = c[2] * c[3] + backgroundColor[2] * (1.0f - c[3]);
+                c[3] = 1.0f;
+                cbuf(i * w + j) = c;
+            });
+        }
     };
    
     /**

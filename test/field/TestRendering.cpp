@@ -55,11 +55,11 @@ int main(int argc, char* argv[]) {
         vec3 pos{-1.5,-1.0,-1.5};
         vec3 target{0.5,0.3,0.5};
         rm::camera cam(pos, target - pos);
-        Font f(300);
-        ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 2000, 2000, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
+        Font f(100);
+        ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
         ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, ippl::Vector<float, 4>{0,1,0,1});
-        ippl::drawTextOnto(pimg, "LTAVAäöüñÿ{}", 200, 200, f, ippl::Vector<float, 4>{0,1,1,1});
-        pimg.save_to("particle.png");
+        ippl::drawTextOnto(pimg, "Z: 0.9", 10, 10, f, ippl::Vector<float, 4>{0,1,1,1});
+        
         primg.save_to("rojection.png");
         typename Field_t::view_type& view = field.getView();
 
@@ -90,15 +90,18 @@ int main(int argc, char* argv[]) {
             
             (void)pos;
             (void)target;
-            //ippl::Image img = ippl::drawFieldFog(field, 1000, 500, rm::camera(pos, target - pos), [](float x){
-            //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
-            //    //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
-            //}, pimg);
+            ippl::Image img = ippl::drawFieldFog(field, 1000, 500, rm::camera(pos, target - pos), [](float x){
+                return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
+                //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
+            }, pimg);
+            pimg.removeAlpha(ippl::Vector<float, 3>{0,0,0});
+            pimg.save_to("particle.png");
 
             //ippl::Image img = ippl::drawFieldCrossSection(field, 600, 600, ippl::axis::y, 0.3f, [](float x){
             //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
             //});
-            //img.save_to("field.png");
+            img.removeAlpha(ippl::Vector<float, 3>{0,0,0});
+            img.save_to("field.png");
             //img.collectOnRank0();
             //if(ippl::Comm->rank() == 0){
             //    char buf[1024] = {0};
