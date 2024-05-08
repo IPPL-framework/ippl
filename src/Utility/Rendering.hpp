@@ -4,7 +4,6 @@
 
 #include <Ippl.h>
 #include <stb_image_write.hpp>
-#include "Utility/Colormaps.hpp"
 #define RM_INLINE KOKKOS_INLINE_FUNCTION
 #include <rastmath.hpp>
 #include <flaschentype.hpp>
@@ -287,6 +286,36 @@ namespace ippl{
             end[0] = height;
             end[1] = width;
             return RangePolicy<2, typename Image::color_buffer_type::execution_space>::policy_type(begin, end);
+        }
+        /**
+         * @brief Clone an image
+         * @details A function like this is required because copy ctor and assignment behave in a Kokkos way
+         * 
+         * @return Cloned image
+         */
+        Image clone(){
+            Image ret(width, height);
+            Kokkos::deep_copy(ret.color_buffer, color_buffer);
+            Kokkos::deep_copy(ret.depth_buffer, depth_buffer);
+            return ret;
+        }
+        void transpose(){
+            uint32_t w = width;
+            uint32_t h = height;
+            Image tmp(height, width);
+            auto thcbuf = this->color_buffer;
+            auto thdbuf = this->depth_buffer;
+            auto tmcbuf =   tmp.color_buffer;
+            auto tmdbuf =   tmp.depth_buffer;
+            Kokkos::parallel_for(getRangePolicy(), KOKKOS_LAMBDA(uint32_t i, uint32_t j){
+                tmcbuf(j * h + i) = thcbuf(i * w + j);
+                tmdbuf(j * h + i) = thdbuf(i * w + j);
+            });
+            Kokkos::fence();
+            color_buffer = tmcbuf;
+            depth_buffer = tmdbuf;
+            width = h;
+            height = w;
         }
         /**
          * @brief Save the image to a file
@@ -597,9 +626,9 @@ namespace ippl{
      * 
      * @tparam vector_type Position vector type
      */
-    template<typename vector_type>
+    template<typename vector_type, typename colormapFunction = constant_color<>, typename... colorInputAttribViews>
         requires(vector_type::dim == 3)
-    Image drawParticlesProjection(Kokkos::View<vector_type*> position_attrib, size_t count, int width, int height, const axis orthogonal_to, const aabb<typename vector_type::value_type, 3> dom, float particle_radius, Vector<float, 4> particle_color){
+    Image drawParticlesProjection(Kokkos::View<vector_type*> position_attrib, size_t count, int width, int height, const axis orthogonal_to, const aabb<typename vector_type::value_type, 3> dom, float particle_radius, colormapFunction cmap = constant_color<>{ippl::Vector<float, 3>{0,1,0}}, colorInputAttribViews... cAttribViews){
         Image ret(width, height, ippl::Vector<float, 4>{0,0,0,0});
         auto cbuffer = ret.color_buffer;
         ippl::Vector<float, 2> img_extents{(float)width, (float)height};
@@ -632,11 +661,11 @@ namespace ippl{
                         float pdist = float(_i - i) * float(_i - i) + float(_j - j) * float(_j - j);
                         if(pdist < corrected_radius * corrected_radius){
                             float inten = Kokkos::exp(-pdist * pdist / (corrected_radius * corrected_radius));
+                            ippl::Vector<float, 3> particle_color = cmap(cAttribViews(idx)...);
                             cbuffer(_i * width + _j)[0] = particle_color[0];
                             cbuffer(_i * width + _j)[1] = particle_color[1];
                             cbuffer(_i * width + _j)[2] = particle_color[2];
                             Kokkos::atomic_add(&(cbuffer(_i * width + _j)[3]), inten);
-                            //std::cout << i << ", " << j << "\n";
                         }
                     }
                 }
@@ -659,10 +688,10 @@ namespace ippl{
      * 
      * @tparam vector_type Position vector type
      */
-    template<typename vector_type, class... Properties>
+    template<typename vector_type, class... Properties, typename colormapFunction = constant_color<>, typename... colorInputAttrib>
         requires(vector_type::dim == 3)
-    Image drawBunchProjection(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, const axis orthogonal_to, aabb<typename vector_type::value_type, 3> dom, float particle_radius, Vector<float, 4> particle_color){
-        return drawParticlesProjection(position_attrib.getView(), position_attrib.getParticleCount(), width, height, orthogonal_to, dom, particle_radius, particle_color);
+    Image drawParticlesProjection(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, const axis orthogonal_to, aabb<typename vector_type::value_type, 3> dom, float particle_radius, colormapFunction cmap = constant_color<>{ippl::Vector<float, 3>{0,1,0}}, colorInputAttrib... cAttribs){
+        return drawParticlesProjection(position_attrib.getView(), position_attrib.getParticleCount(), width, height, orthogonal_to, dom, particle_radius, cmap, cAttribs.getView()...);
     }
     /**
      * @brief Draws an axis-aligned cross section of a field
@@ -792,9 +821,6 @@ namespace ippl{
         aabb<float, 3> domain_box(domain_begin, domain_end);
         aabb<float, 3> global_domain_box(global_domain_begin, global_domain_end);
         const float distance_normalization = global_domain_box.max_extent();
-        //f.getLayout().getDomain().first()[0];
-        //NDRegion<T, 1> lKlonk = f.getLayout().getDomain();
-        //std::cout << lKlonk[0] << "\n";
         const float fovy = 1.0f;
         const float tanHalfFovy = std::tan(fovy / 2.0f);
         const float aspect = float(width) / float(height);
@@ -804,11 +830,10 @@ namespace ippl{
         auto look = cam.look_dir();
         std::cout << "Luegin in direction" << look << "\n";
         auto left = cam.left().normalized();
-        //std::cout << "Left" << left << "\n";
 
         rm::Vector<float, 3> up{0,1,0};
         up = left.cross(look).normalized();
-        //auto left = cam.;
+        
         bool check_for_already_existing_depth_buffer = already_drawn.width > 0;
         auto preexisting_depthbuffer = already_drawn.depth_buffer;
         Kokkos::parallel_for(ret.getRangePolicy(), KOKKOS_LAMBDA(uint32_t y, uint32_t x){
@@ -823,7 +848,6 @@ namespace ippl{
                     ret.depth_buffer(y * width + x) = already_drawn.depth_buffer(y * width + x);
 
                 }
-                
                 return;
             }
             

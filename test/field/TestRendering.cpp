@@ -1,5 +1,5 @@
 #include "Utility/Rendering.hpp"
-
+#include "Utility/Colormaps.hpp"
 using scalar = float;
 KOKKOS_INLINE_FUNCTION scalar gaussian(scalar x, scalar y, scalar z, scalar sigma = 1.0,
                                        scalar mu = 0.5) {
@@ -59,9 +59,11 @@ int main(int argc, char* argv[]) {
         ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, KOKKOS_LAMBDA(ippl::Vector<float, 3> p){
             return p;
         }, position);
-        ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, ippl::Vector<float, 4>{0,1,0,1});
+        ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, KOKKOS_LAMBDA(){
+            return ippl::Vector<float, 3>{0,1,0};
+        });
+        pimg.transpose();
         ippl::drawTextOnto(pimg, "Z: 0.9 AV", 10, 10, f, ippl::Vector<float, 4>{1,1,1,1});
-        
         primg.save_to("rojection.png");
         typename Field_t::view_type& view = field.getView();
 
@@ -92,18 +94,18 @@ int main(int argc, char* argv[]) {
             
             (void)pos;
             (void)target;
-            ippl::Image img = ippl::drawFieldFog(field, 1000, 500, rm::camera(pos, target - pos), [](float x){
-                return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
-                //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
-            }, pimg);
+            //ippl::Image img = ippl::drawFieldFog(field, 1000, 500, rm::camera(pos, target - pos), [](float x){
+            //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
+            //    //return ippl::alpha_extend(ippl::normalized_colormap(turbo_cm, Kokkos::abs(x) / 50.0f), clamp(Kokkos::abs(x) / 50.0f, 0.5f, 0.99f));
+            //}, pimg);
             pimg.removeAlpha(ippl::Vector<float, 3>{0,0,0});
             pimg.save_to("particle.png");
 
             //ippl::Image img = ippl::drawFieldCrossSection(field, 600, 600, ippl::axis::y, 0.3f, [](float x){
             //    return ippl::normalized_colormap(turbo_cm, Kokkos::sqrt(Kokkos::abs(x)) / 50.0f);
             //});
-            img.removeAlpha(ippl::Vector<float, 3>{0,0,0});
-            img.save_to("field.png");
+            //img.removeAlpha(ippl::Vector<float, 3>{0,0,0});
+            //img.save_to("field.png");
             //img.collectOnRank0();
             //if(ippl::Comm->rank() == 0){
             //    char buf[1024] = {0};
