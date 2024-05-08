@@ -65,6 +65,33 @@ KOKKOS_INLINE_FUNCTION float clamp(float x, float lower = 0.0f, float upper = 1.
 }
 namespace ippl{
     /**
+     * @brief Dummy struct to allow empty functions to be defaulted
+     * 
+     */
+    struct no_function{
+        /**
+         * @brief Implement call operator to detect erroneous uses
+         * 
+         * @param x Needs to be a template to not generate a static_assert fail
+         */
+        KOKKOS_INLINE_FUNCTION constexpr void operator()(auto... x)const noexcept{
+            static_assert(sizeof...(x) == size_t(-1), "You probably shouldn't call this."); //Always fail
+        }
+    };
+    template<typename color_type = ippl::Vector<float, 3>>
+    struct constant_color{
+        color_type m_value;
+        KOKKOS_INLINE_FUNCTION constant_color(color_type v) : m_value(v){}
+        /**
+         * @brief Implement call operator to detect erroneous uses
+         * 
+         * @param x Needs to be a template to not generate a static_assert fail
+         */
+        KOKKOS_INLINE_FUNCTION constexpr color_type operator()([[maybe_unused]]auto... x)const noexcept{
+            return m_value;
+        }
+    };
+    /**
      * @brief Struct describing an axis-aligned hypercube
      * 
      * @details Holds two N-Dimensional Vectors start and end to denote the intervals 
@@ -865,12 +892,12 @@ namespace ippl{
      * @param radius Visible particle radius
      * @param particle_color Visible particle color
      */
-    template<typename vector_type>
+    template<typename vector_type, typename colormapFunction = constant_color<>, typename... colorInputAttribViews>
         requires(vector_type::dim == 3)
-    Image drawParticles(Kokkos::View<vector_type*> position_view, size_t count, int width, int height, rm::camera cam, float particle_radius, Vector<float, 4> particle_color){
+    Image drawParticles(Kokkos::View<vector_type*> position_view, size_t count, int width, int height, rm::camera cam, float particle_radius, colormapFunction cmap = constant_color<>{ippl::Vector<float, 3>{0,1,0}}, colorInputAttribViews... cattribViews){
         //particle_radius = Kokkos::max(1.0f, particle_radius);
-        (void)particle_color;
         (void)particle_radius;
+        (void)cmap;
         Image ret(width, height, Vector<float, 4>{0.0f,0.0f,0.0f,0.0f});
         auto ret_cb = ret.color_buffer;
         auto ret_db = ret.depth_buffer;
@@ -916,10 +943,8 @@ namespace ippl{
                     if(_i >= 0 && _i < height && _j >= 0 && _j < width){
                         float pdistsq = (float(_i - i) * float(_i - i) + float(_j - j) * float(_j - j));
                         if(pdistsq < corrected_radius * corrected_radius * 4){
-                            Vector<float, 4> fc(
-                                particle_color
-                            );
-                            fc[3] *= Kokkos::exp(-pdistsq / (corrected_radius * corrected_radius));
+                            Vector<float, 4> fc = alpha_extend(cmap(cattribViews(particle_idx)...), Kokkos::exp(-pdistsq / (corrected_radius * corrected_radius)));
+                            
                             ret_cb(_i * width + _j) = porterDuff(fc, ret_cb(_i * width + _j));
 
                             Kokkos::atomic_min(&ret_db(_i * width + _j), depth_value);
@@ -930,10 +955,10 @@ namespace ippl{
         });
         return ret;
     }
-    template<typename vector_type, class... Properties>
+    template<typename vector_type, class... Properties, typename colormapFunction = no_function, typename... colorInputAttribs>
         requires(vector_type::dim == 3)
-    Image drawParticles(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, rm::camera cam, float particle_radius, Vector<float, 4> particle_color){
-        return drawParticles(position_attrib.getView(), position_attrib.getParticleCount(), width, height, cam, particle_radius, particle_color);
+    Image drawParticles(ippl::ParticleAttrib<vector_type, Properties...> position_attrib, int width, int height, rm::camera cam, float particle_radius, colormapFunction cmap = constant_color<>{ippl::Vector<float, 3>{0,1,0}}, colorInputAttribs... cattribs){
+        return drawParticles(position_attrib.getView(), position_attrib.getParticleCount(), width, height, cam, particle_radius, cmap, cattribs.getView()...);
     }
     /**
      * @brief Draw Text onto an image without checking depth data

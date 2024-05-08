@@ -56,9 +56,11 @@ int main(int argc, char* argv[]) {
         vec3 target{0.5,0.3,0.5};
         rm::camera cam(pos, target - pos);
         Font f(100);
-        ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, ippl::Vector<float, 4>{0,1,0,1});
+        ippl::Image pimg = ippl::drawParticles(position, position.extent(0), 1000, 500, cam, 0.03f, KOKKOS_LAMBDA(ippl::Vector<float, 3> p){
+            return p;
+        }, position);
         ippl::Image primg = ippl::drawParticlesProjection(position, position.extent(0), 1000, 500, ippl::axis::x, ippl::getGlobalDomainBox(field), 5.0f, ippl::Vector<float, 4>{0,1,0,1});
-        ippl::drawTextOnto(pimg, "Z: 0.9", 10, 10, f, ippl::Vector<float, 4>{0,1,1,1});
+        ippl::drawTextOnto(pimg, "Z: 0.9 AV", 10, 10, f, ippl::Vector<float, 4>{1,1,1,1});
         
         primg.save_to("rojection.png");
         typename Field_t::view_type& view = field.getView();
