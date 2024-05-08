@@ -76,7 +76,7 @@ namespace ippl {
         RegionLayout_t rlayout_m;
 
         //! The FieldLayout containing information on nearest neighbors
-        FieldLayout_t flayout_m;
+        FieldLayout_t& flayout_m;
 
         //! Type of the Kokkos view containing the local regions.
         using region_view_type = typename RegionLayout_t::view_type;

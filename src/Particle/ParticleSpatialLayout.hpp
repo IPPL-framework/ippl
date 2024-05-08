@@ -27,6 +27,7 @@
 
 #include "Communicate/Window.h"
 
+
 namespace ippl {
 
     /*!
@@ -37,7 +38,7 @@ namespace ippl {
      */
     struct increment_type {
         size_t count[2];
-
+        
         KOKKOS_FUNCTION void init() {
             count[0] = 0;
             count[1] = 0;
@@ -56,7 +57,6 @@ namespace ippl {
         }
     };
 
-
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
                                                                               Mesh& mesh)
@@ -66,7 +66,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::updateLayout(FieldLayout<Dim>& fl,
                                                                           Mesh& mesh) {
-        flayout_m = fl;
+        //flayout_m = fl;
         rlayout_m.changeDomain(fl, mesh);
     }
 
@@ -252,6 +252,7 @@ namespace ippl {
         for (const auto& componentNeighbors : neighbors) {
             for (size_t j = 0; j < componentNeighbors.size(); ++j) {
                 neighbors_mirror(k) = componentNeighbors[j];
+                //std::cout << "Neighbor: " << neighbors_mirror(k) << std::endl;
                 k++;
             }
         }
@@ -301,9 +302,10 @@ namespace ippl {
                  * either in the current rank or in a neighboring one.
                  * Used to avoid race conditions when updating outsideIds.
                  */
-                bool isOut = (final && !found);
-
-                outsideIds(val.count[1]) = i * isOut;
+                if(final && !found) {
+                    outsideIds(val.count[1]) = i;
+                }
+                //outsideIds(val.count[1]) = i * isOut;
                 increment[0] = invalid(i);
                 increment[1] = !found;
                 val += increment;
@@ -331,7 +333,6 @@ namespace ippl {
                     /// inRegion: Checks whether particle pID is inside region j.
                     bool inRegion = positionInRegion(is, positions(pId), Regions(j));
                     ranks(pId) = inRegion * j + !(inRegion) * ranks(pId);
-            
                 });
             Kokkos::fence();
 
