@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (FFT FFT.cpp)
-gtest_discover_tests(FFT)
+gtest_discover_tests(FFT PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     FFT

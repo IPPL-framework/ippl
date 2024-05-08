@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (PIC PIC.cpp)
-gtest_discover_tests(PIC)
+gtest_discover_tests(PIC PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     PIC
@@ -22,7 +22,7 @@ target_link_libraries (
 )
 
 add_executable (ORB ORB.cpp)
-gtest_discover_tests(ORB)
+gtest_discover_tests(ORB PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     ORB
