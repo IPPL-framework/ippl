@@ -729,6 +729,51 @@ public:
         return globalEnergy;
     }
 
+    void compute_temperature() {
+        Kokkos::View<ippl::Vector<double, 3>[1], Device> locAvgVel("local average velocity");
+        Kokkos::View<ippl::Vector<double, 3>[1], Device> globAvgVel("global average velocity");
+
+        auto nLoc = this->pcontainer_m->getLocalNum();
+        auto P = this->pcontainer_m->P.getView();
+
+        Kokkos::parallel_reduce("compute average velocity", nLoc,
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
+                sum += P(i);
+            }, locAvgVel(0)
+        );
+
+        ippl::Comm->reduce(locAvgVel(0)[0], globAvgVel(0)[0], 1, std::plus<double>());
+        ippl::Comm->reduce(locAvgVel(0)[1], globAvgVel(0)[1], 1, std::plus<double>());
+        ippl::Comm->reduce(locAvgVel(0)[2], globAvgVel(0)[2], 1, std::plus<double>());
+
+        ippl::Comm->barrier();
+
+        auto totalP = this->totalP_m;
+
+        globAvgVel(0) /= totalP;
+        std::cerr << "Average Velocity: " << globAvgVel(0) << std::endl;
+
+        ippl::Vector<double, 3> localTemperature = 0.0;
+        ippl::Vector<double, 3> globalTemperature = 0.0;
+
+        Kokkos::parallel_reduce("compute temperature", nLoc,
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
+                sum += (P(i)-globAvgVel(0)) * (P(i)-globAvgVel(0));
+            }, localTemperature
+        );
+
+        ippl::Comm->reduce(localTemperature[0], globalTemperature[0], 1, std::plus<double>());
+        ippl::Comm->reduce(localTemperature[1], globalTemperature[1], 1, std::plus<double>());
+        ippl::Comm->reduce(localTemperature[2], globalTemperature[2], 1, std::plus<double>());
+
+        ippl::Comm->barrier();
+
+        globalTemperature /= totalP;
+
+        std::cerr << "Temperature: " << globalTemperature << std::endl;
+
+    }
+
     void computeBeamStatistics() {
         std::cerr << "Start Computing Beam Statistics" << std::endl;
 
@@ -799,6 +844,7 @@ public:
             std::cerr << "Unable to open file" << std::endl;
         }
         // computeBeamStatistics();
+        compute_temperature();
     }
 
     void LeapFrogStep() {
