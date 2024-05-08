@@ -571,7 +571,7 @@ namespace ippl{
             }
             int j = int(pos_remap[0]);
             int i = int(pos_remap[1]);
-            std::cout << i << ", " << j << "\n";
+            //std::cout << i << ", " << j << "\n";
             float corrected_radius = particle_radius;
             using Kokkos::ceil;
             using Kokkos::min;
@@ -897,11 +897,14 @@ namespace ippl{
             for(int _i = ill;_i <= iul;_i++){
                 for(int _j = jll;_j <= jul;_j++){
                     if(_i >= 0 && _i < height && _j >= 0 && _j < width){
-                        float pdist = Kokkos::hypotf(float(_i - i), float(_j - j));
-                        if(pdist < corrected_radius){
-                            ret_cb(_i * width + _j) = Vector<float, 4>(
-                                particle_color * Kokkos::exp(-pdist * pdist / (corrected_radius * corrected_radius))
+                        float pdistsq = (float(_i - i) * float(_i - i) + float(_j - j) * float(_j - j));
+                        if(pdistsq < corrected_radius * corrected_radius * 4){
+                            Vector<float, 4> fc(
+                                particle_color
                             );
+                            fc[3] *= Kokkos::exp(-pdistsq / (corrected_radius * corrected_radius));
+                            ret_cb(_i * width + _j) = porterDuff(fc, ret_cb(_i * width + _j));
+
                             Kokkos::atomic_min(&ret_db(_i * width + _j), depth_value);
                         }
                     }
@@ -923,14 +926,16 @@ namespace ippl{
      * @param text The text
      * @param x Distance in pixels from the left image border
      * @param y Distance in pixels from the top image border
-     * @param f 
+     * @param f flaschentype Font
      */
-    inline void drawTextOnto(Image& img, std::string text, int x, int y, const Font& f){
+    inline void drawTextOnto(Image& img, std::string text, int x, int y, const Font& f, const ippl::Vector<float, 4>& fillColor = ippl::Vector<float, 1>{1,1,1,1}){
         text_image timg = draw_text(text, f);
         Kokkos::View<Image::color_type*> colorb("text", timg.w * timg.h);
         typename Kokkos::View<Image::color_type*>::host_mirror_type colobhm = Kokkos::create_mirror_view(colorb);
         for(size_t i = 0;i < size_t(timg.w) * timg.h;i++){
-            colobhm(i) = ippl::Vector<float, 4>{1, 1, 1, float(uint8_t(timg.buffer[i])) / 255.0f};
+            ippl::Vector<float, 4> fc = fillColor;
+            fc[3] *= float(uint8_t(timg.buffer[i])) / 255.0f;
+            colobhm(i) = fc;
         }
         Kokkos::deep_copy(colorb, colobhm);
         Kokkos::Array<uint32_t, 2> begin, end;
