@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (Field Field.cpp)
-gtest_discover_tests(Field)
+gtest_discover_tests(Field PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     Field
@@ -23,7 +23,7 @@ target_link_libraries (
 )
 
 add_executable (FieldBC FieldBC.cpp)
-gtest_discover_tests(FieldBC)
+gtest_discover_tests(FieldBC PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     FieldBC
@@ -34,7 +34,7 @@ target_link_libraries (
 )
 
 add_executable (Halo Halo.cpp)
-gtest_discover_tests(Halo)
+gtest_discover_tests(Halo PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     Halo
