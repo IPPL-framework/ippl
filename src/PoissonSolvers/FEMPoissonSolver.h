@@ -28,7 +28,7 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using PCGSolverAlgorithm_t = PCG<lhs_type, lhs_type, lhs_type, lhs_type,
+        using PCGSolverAlgorithm_t = CG<lhs_type, lhs_type, lhs_type, lhs_type,
                                          lhs_type, FieldLHS, FieldRHS>;
 
         // FEM Space types
