@@ -544,12 +544,16 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     const std::size_t& order         = lagrangeSpace.order;
     const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
+    // specifies decomposition; here all dimensions are parallel
+    std::array<bool, dim> isParallel;
+    isParallel.fill(true);
+
     if (order == 1) {
         if (dim == 1) {
             // create layout
             ippl::NDIndex<lagrangeSpace.dim> domain(
                 ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
-            ippl::FieldLayout<lagrangeSpace.dim> layout(domain);
+            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
             FieldType x(mesh, layout, 0);
             FieldType z(mesh, layout, 0);
@@ -671,12 +675,16 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
     const double pi = Kokkos::numbers::pi_v<double>;
 
+    // specifies decomposition; here all dimensions are parallel
+    std::array<bool, dim> isParallel;
+    isParallel.fill(true);
+
     if (order == 1) {
         if (dim == 1) {
             // initialize the RHS field
             ippl::NDIndex<lagrangeSpace.dim> domain(
                 ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
-            ippl::FieldLayout<lagrangeSpace.dim> layout(domain);
+            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
             FieldType rhs_field(mesh, layout, 0);
 
@@ -712,7 +720,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);
