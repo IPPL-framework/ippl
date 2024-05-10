@@ -75,7 +75,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_
 - `VOLTA70`
 - `VOLTA72`
 - `TURING75`
-- `AMPERE80`
+- `AMPERE80` (PSI GWENDOLEN machine)
 - `AMPERE86`
 
 

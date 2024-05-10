@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (BareField BareField.cpp)
-gtest_discover_tests (BareField)
+gtest_discover_tests (BareField PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     BareField
