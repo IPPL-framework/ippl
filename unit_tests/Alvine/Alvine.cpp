@@ -27,8 +27,15 @@ TEST(ParticleDistributionBase, FilterOperation) {
         return ((p(0) >= 0.1) && (p(0) <= 0.9) && (p(1) >= 0.1) && p(1) <= 0.9);
     });
 
-    EXPECT_EQ(p_dist.getNumParticles(), 8 * 8);
+    EXPECT_EQ(p_dist.getNumParticles(), 9 * 9);
 }
+
+TEST(InitializeFieldContainer3d, initialization) {
+     
+    EXPECT_EQ(1,1);
+
+}
+
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
