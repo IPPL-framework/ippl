@@ -71,11 +71,12 @@ int main(int argc, char* argv[]) {
 
         msg << nt << endl;
 
-        VortexInCellManager<T, Dim> manager(nt, nr, solver, lbt);
+        SimulationParameters<T, Dim> params(nt, nr, solver, lbt);
+        VortexInCellManager<T, Dim> manager(params);
 
         manager.pre_run();
-
-        manager.run(manager.getNt());
+        manager.par2grid();
+        manager.run(nt);
 
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
