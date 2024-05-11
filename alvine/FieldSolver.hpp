@@ -26,7 +26,7 @@ class TwoDimFFTSolverStrategy : public FieldSolverStrategy<FieldContainerBase> {
     void initSolver(std::shared_ptr<FieldContainerBase> fcontainer) override {
 
 
-        std::shared_ptr<FieldContainer<T, 2>> fc = std::dynamic_pointer_cast<FieldContainer<T, 2>>(fcontainer);
+        std::shared_ptr<TwoDimFieldContainer<T>> fc = std::dynamic_pointer_cast<TwoDimFieldContainer<T>>(fcontainer);
 
 
         ippl::ParameterList sp;

@@ -6,21 +6,17 @@
 #include "Manager/BaseManager.h"
 
 class FieldContainerBase {
-  public:
-
+public:
     virtual ~FieldContainerBase() = default;
 };
 
-// Define the FieldsContainer class
 template <typename T, unsigned Dim>
 class FieldContainer : public FieldContainerBase {
-  using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
-
+    using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
 
 public:
-    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin,
-                   Vector_t<T, Dim>& rmax, std::array<bool, Dim> decomp,
-                   ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
+    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin, Vector_t<T, Dim>& rmax,
+                   std::array<bool, Dim> decomp, ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
                    bool isAllPeriodic)
         : hr_m(hr)
         , rmin_m(rmin)
@@ -28,12 +24,10 @@ public:
         , decomp_m(decomp)
         , mesh_m(domain, hr, origin)
         , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {
+        u_field_m.initialize(mesh_m, fl_m);
+    }
 
-          omega_field_m.initialize(mesh_m, fl_m);
-          u_field_m.initialize(mesh_m, fl_m);
-        }
-
-    ~FieldContainer(){}
+    virtual ~FieldContainer() = default;
 
 private:
     Vector_t<double, Dim> hr_m;
@@ -41,16 +35,12 @@ private:
     Vector_t<double, Dim> rmax_m;
     std::array<bool, Dim> decomp_m;
 
-    vorticity_field_type omega_field_m;
     VField_t<T, Dim> u_field_m;
 
     Mesh_t<Dim> mesh_m;
     FieldLayout_t<Dim> fl_m;
 
 public:
-
-    vorticity_field_type& getOmegaField() { return omega_field_m; }
-    void setOmega_field(vorticity_field_type& omega_field) { omega_field_m = omega_field; }
 
     VField_t<T, Dim>& getUField() { return u_field_m; }
     void setUField(VField_t<T, Dim>& u_field) { u_field_m = u_field; }
@@ -68,10 +58,32 @@ public:
     void setDecomp(std::array<bool, Dim> decomp) { decomp_m = decomp; }
 
     Mesh_t<Dim>& getMesh() { return mesh_m; }
-    void setMesh(Mesh_t<Dim> & mesh) { mesh_m = mesh; }
+    void setMesh(Mesh_t<Dim>& mesh) { mesh_m = mesh; }
 
     FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
+};
+
+template <typename T>
+class TwoDimFieldContainer : public FieldContainer<T, 2> {
+    
+  private:
+    Field<T, Dim> omega_field;
+    
+    
+  public:
+    TwoDimFieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin, Vector_t<T, Dim>& rmax,
+                         std::array<bool, Dim> decomp, ippl::NDIndex<Dim> domain,
+                         Vector_t<T, Dim> origin, bool isAllPeriodic)
+        : FieldContainer<T, 2>(hr, rmin, rmax, decomp, domain, origin, isAllPeriodic) {
+        omega_field.initialize(this->mesh_m, this->fl_m);
+    }
+      
+    //using vorticity_field_type = std::conditional<Dim == 2, Field<T, Dim>, VField_t<T, Dim>>::type;
+    
+    Field<T, Dim>& getOmegaField() { return omega_field; }
+    void setOmega_field(Field<T, Dim>& omega_field) { this->omega_field = omega_field; }
+
 
 };
 

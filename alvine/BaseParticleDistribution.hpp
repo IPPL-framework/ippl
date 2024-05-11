@@ -128,7 +128,7 @@ public:
     void placeParticles(
         typename ippl::detail::ViewType<ippl::Vector<T, Dim>, 1>::view_type& container,
         ippl::Vector<T, Dim> rmin, ippl::Vector<T, Dim> rmax) const override {
-        ippl::Vector<T, Dim> dr = (rmax - rmin) / (num_points - 1);
+        ippl::Vector<T, Dim> dr = (rmax - rmin) / (num_points);
 
         size_t total_num =
             std::reduce(num_points.begin(), num_points.end(), 1, std::multiplies<int>());
@@ -149,8 +149,7 @@ public:
             Kokkos::parallel_for(
                 "3DLoopInit", policy, KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     ippl::Vector<int, 3> loc(i, j, k);
-                    this->particle_container(i * num_points(0) + j * num_points(1) * num_points(0)
-                                             + k) = dr * loc;
+                    container(i * num_points(0) + j * num_points(1) * num_points(0) + k) = dr * loc;
                 });
         }
         Kokkos::fence();
@@ -181,7 +180,7 @@ public:
         this->generateDistribution();
 
         this->applyFilter([this, threshold](const ippl::Vector<T, Dim>& point) -> bool {
-            return (this->distFunction.evaluate(point) < threshold);
+            return (this->distFunction.evaluate(point) > threshold);
         });
     }
 };

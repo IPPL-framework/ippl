@@ -55,7 +55,7 @@ class Circle : public CompositeDistributionFunction<ippl::Vector<T, Dim>, T> {
 
 public:
     Circle(T r) : CompositeDistributionFunction<ippl::Vector<T, Dim>, T>(
-        [this, r](ippl::Vector<T, Dim> x) -> T {
+        [r](ippl::Vector<T, Dim> x) -> T {
             T norm = 0;
             for (size_t d = 0; d < Dim; d++) {
                 norm += std::pow(x[d], 2);

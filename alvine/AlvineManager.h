@@ -23,8 +23,7 @@ class AlvineManager
     : public ippl::PicManager<T, Dim, ParticleContainerBase, FieldContainerBase,
                               LoadBalanceStrategy, FieldSolverStrategy<FieldContainerBase>> {
 public:
-    using particle_field_strategy_type =
-        typename std::shared_ptr<ParticleFieldStrategy<FieldContainerBase, ParticleContainerBase>>;
+    using particle_field_strategy_type = typename std::shared_ptr<ParticleFieldStrategy>;
 
 protected:
     unsigned nt_m;
@@ -109,18 +108,21 @@ public:
             throw std::runtime_error("Particle-Field strategy not defined");
         }
     }
-                                
+
     void scatterCIC() {
-      this->fcontainer_m->getOmegaField() = 0.0;
-      if constexpr (Dim == 2) {
-          scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
-      } else if constexpr (Dim == 3) {
-        //TODO: for some reason the scatter method doesn't work in three dimensions but gather does. 
-      }
+        this->fcontainer_m->getOmegaField() = 0.0;
+        if constexpr (Dim == 2) {
+            scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(),
+                    this->pcontainer_m->R);
+        } else if constexpr (Dim == 3) {
+            // TODO: for some reason the scatter method doesn't work in three dimensions but gather
+            // does.
+        }
     }
 
     void computeEnergy() {
-        std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
+        std::shared_ptr<ParticleContainer<T, Dim>> pc =
+            std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
 
         this->energy_m = 0.0;
         Kokkos::parallel_reduce(
@@ -130,8 +132,7 @@ public:
                     local_sum += pc->P(i)[d] * pc->P(i)[d];
                 }
             },
-            this->energy_m
-        );
+            this->energy_m);
     }
 };
 #endif

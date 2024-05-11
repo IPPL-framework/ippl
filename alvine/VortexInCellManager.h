@@ -11,20 +11,14 @@
 #include "Manager/BaseManager.h"
 #include "Particle/ParticleBase.h"
 #include "ParticleContainer.hpp"
-#include "ParticleDistributions.h"
 #include "BaseParticleDistribution.hpp"
 #include "BaseDistributionFunction.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
-#include "VortexDistributions.h"
 
-using view_type     = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using host_type     = typename ippl::ParticleAttrib<T>::HostMirror;
-using GeneratorPool = typename Kokkos::Random_XorShift64_Pool<>;
-
-template <typename T, unsigned Dim, typename ParticleDistribution, typename VortexDistribution>
+template <typename T, unsigned Dim>
 class VortexInCellManager : public AlvineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
@@ -51,15 +45,6 @@ public:
 
     void pre_run() override {
 
-      Inform csvout(NULL, "particles.csv", Inform::OVERWRITE);
-      csvout.precision(16);
-      csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-      if constexpr (Dim == 2) {
-          csvout << "time,index,pos_x,pos_y,vorticity" << endl;
-      } else {
-          csvout << "time,index,pos_x,pos_y,pos_z" << endl;
-      }
 
       Inform energyout(NULL, "energy.csv", Inform::OVERWRITE);
       energyout.precision(16);
@@ -98,6 +83,8 @@ public:
           this->setParticleFieldStrategy( std::make_shared<ThreeDimParticleFieldStrategy<T>>() );
       }
 
+      this->getParticleContainer()->initDump();
+
       this->fsolver_m->initSolver(this->fcontainer_m);
 
       //this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
@@ -123,16 +110,9 @@ public:
 
     void initalizeParticles() {
         // This needs a wrapper but is just to illustrate how to combine and add the distributions
-        std::shared_ptr<ParticleContainer<T, Dim>> pc = std::dynamic_pointer_cast<ParticleContainer<T, Dim>>(this->pcontainer_m);
+        std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
 
-        std::cout << "syn" << std::endl;
         GridDistribution<T, Dim> grid(this->nr_m, this->rmin_m, this->rmax_m);
-
-
-
-
-
-
 
         Circle<T, Dim> circ(1.0);
 
@@ -216,17 +196,8 @@ public:
     }
 
     void dump() override {
-      std::shared_ptr<TwoDimParticleContainer<T>> pc = std::dynamic_pointer_cast<TwoDimParticleContainer<T>>(this->pcontainer_m);
+        this->getParticleContainer()->dump(this->it_m);
 
-      Inform csvout(NULL, "particles.csv", Inform::APPEND);
-
-      for (unsigned i = 0; i < this->np_m; i++) {
-        csvout << this->it_m << "," << i; 
-        for (unsigned d = 0; d < Dim; d++) {
-          csvout << "," << pc->R(i)[d];
-        }
-        csvout << "," << pc->omega(i) << endl;
-      }
 
       Inform energyout(NULL, "energy.csv", Inform::APPEND);
       energyout << this->energy_m << endl;
