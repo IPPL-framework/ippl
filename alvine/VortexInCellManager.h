@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "BaseDistributionFunction.hpp"
+#include "BaseParticleDistribution.hpp"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
@@ -31,12 +33,18 @@ public:
     ~VortexInCellManagerBase() {}
 
 public:
+
     void pre_step() override {
         Inform m("Pre-step");
         m << "Done" << endl;
     }
 
-    void post_step() override {}
+    void post_step() override { 
+      this->params.it += 1;
+      dump(); 
+    }
+
+    virtual void dump() = 0;
 };
 
 template <typename T, unsigned Dim>
@@ -51,19 +59,149 @@ public:
 template <typename T>
 class VortexInCellManager<T, 2> : public VortexInCellManagerBase<T, 2> {
 public:
-    VortexInCellManager(SimulationParameters<T, 2> params_)
+    VortexInCellManager(SimulationParameters<T, Dim> params_)
         : VortexInCellManagerBase<T, 2>(params_) {
-        this->setFieldContainer(
-            std::make_shared<FieldContainer<T, 2>>(this->params.mesh, this->params.fl));
+        this->setFieldContainer(std::make_shared<FieldContainer<T, 2>>(this->params));
+        this->setParticleContainer(std::make_shared<ParticleContainer<T, 2>>(
+            this->getFieldContainer()->getMesh(), this->getFieldContainer()->getFL()));
+
+        this->setFieldSolver(std::make_shared<FieldSolver<T, 2, FieldContainer<T, 2>>>());
+        this->fsolver_m->initSolver(this->fcontainer_m);
+
+        initParticles();
+        
+        this->pcontainer_m->initDump();
+
+        par2grid();
+        this->fsolver_m->solve(this->fcontainer_m);
+        updateFields();
+        grid2par();
+
+        std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
+
+        pc->R_old = pc->R;
+        pc->R     = pc->R_old + pc->P * this->params.dt;
+        pc->update();
+    }
+
+    void initParticles() {
+        std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
+
+        Circle<T, Dim> circ(10.0);
+
+        Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
+        ShiftTransformation<T, Dim> shift_to_center(-center);
+
+        circ.applyTransformation(shift_to_center);
+        FilteredDistribution<T, Dim> filteredDist(circ, this->params.rmin, this->params.rmax,
+                                                  new GridPlacement<T, Dim>(this->params.nr));
+
+        this->params.np = filteredDist.getNumParticles();
+
+        view_type particle_view = filteredDist.getParticles();
+
+        pc->create(this->params.np);
+
+        std::cout << this->params.np << std::endl;
+
+        for (int i = 0; i < 5; i++) {
+            Circle<T, Dim> added_circle((i + 1) * 0.5);
+            added_circle.applyTransformation(shift_to_center);
+            circ += added_circle;
+        }
+
+        Kokkos::parallel_for(
+            "AddParticles", filteredDist.getNumParticles(), KOKKOS_LAMBDA(const int& i) {
+                pc->R(i)     = particle_view(i);
+                pc->omega(i) = circ.evaluate(pc->R(i));
+            });
+
+        Kokkos::fence();
     }
 
     ~VortexInCellManager() {}
 
-    void par2grid() override { std::cout << "2dim par to grid" << std::endl; }
+    void par2grid() override {
+        std::shared_ptr<FieldContainer<T, 2>> fc    = this->getFieldContainer();
+        std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
 
-    void grid2par() override {}
+        fc->getOmegaField() = 0.0;
+        scatter(pc->omega, fc->getOmegaField(), pc->R);
+    }
 
-    void advance() override {}
+    void grid2par() override {
+        std::shared_ptr<FieldContainer<T, 2>> fc    = this->getFieldContainer();
+        std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
+
+        pc->P = 0.0;
+        gather(pc->P, fc->getUField(), pc->R);
+    }
+
+    void updateFields() {
+        std::shared_ptr<FieldContainer<T, 2>> fc = this->getFieldContainer();
+
+        VField_t<T, 2> u_field = fc->getUField();
+        u_field                = 0.0;
+
+        const int nghost = u_field.getNghost();
+        auto view        = u_field.getView();
+
+        auto omega_view = fc->getOmegaField().getView();
+        fc->getOmegaField().fillHalo();
+
+        Kokkos::parallel_for(
+            "Assign rhs", ippl::getRangePolicy(view, nghost),
+            KOKKOS_LAMBDA(const int i, const int j) {
+                view(i, j) = {
+                    (omega_view(i, j + 1) - omega_view(i, j - 1)) / (2 * this->params.hr(1)),
+                    -(omega_view(i + 1, j) - omega_view(i - 1, j)) / (2 * this->params.hr(0))};
+            });
+    }
+
+    void advance() override { LeapFrogStep(); }
+
+    void LeapFrogStep() {
+        static IpplTimings::TimerRef PTimer      = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer      = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef SolveTimer  = IpplTimings::getTimer("solve");
+        // static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
+
+        std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
+
+        par2grid();
+
+        IpplTimings::startTimer(SolveTimer);
+        this->fsolver_m->solve(this->fcontainer_m);
+        IpplTimings::stopTimer(SolveTimer);
+
+        IpplTimings::startTimer(PTimer);
+        this->updateFields();
+        IpplTimings::stopTimer(PTimer);
+
+        grid2par();
+
+        // drift
+        IpplTimings::startTimer(RTimer);
+        typename ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>::particle_position_type
+            R_old_temp = pc->R_old;
+
+        pc->R_old = pc->R;
+        pc->R     = R_old_temp + 2 * pc->P * this->params.dt;
+        IpplTimings::stopTimer(RTimer);
+
+        IpplTimings::startTimer(updateTimer);
+        pc->update();
+        IpplTimings::stopTimer(updateTimer);
+
+        /*
+        IpplTimings::startTimer(ETimer);
+        this->computeEnergy();
+        IpplTimings::stopTimer(ETimer);
+      */
+    }
+
+    void dump() override { this->pcontainer_m->dump(this->params.it); }
 };
 
 template <typename T>

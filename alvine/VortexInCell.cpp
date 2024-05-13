@@ -75,7 +75,6 @@ int main(int argc, char* argv[]) {
         VortexInCellManager<T, Dim> manager(params);
 
         manager.pre_run();
-        manager.par2grid();
         manager.run(nt);
 
         IpplTimings::stopTimer(mainTimer);
