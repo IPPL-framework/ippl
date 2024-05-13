@@ -8,6 +8,7 @@
 #include "LoadBalancer.hpp"
 #include "Manager/BaseManager.h"
 #include "Manager/PicManager.h"
+#include "Manager/FieldSolverBase.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
 #include "Random/InverseTransformSampling.h"
@@ -19,7 +20,7 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 template <typename T, unsigned Dim>
 class AlpineManager
     : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                              LoadBalancer<T, Dim>> {
+                              LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -35,7 +36,7 @@ protected:
     std::string stepMethod_m;
 public:
     AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>, ippl::FieldSolverBase<T, Dim>>()
         , totalP_m(totalP_)
         , nt_m(nt_)
         , nr_m(nr_)
