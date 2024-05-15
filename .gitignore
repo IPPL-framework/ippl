@@ -25,6 +25,4 @@ compile_commands.json
 *.dat
 __pycache__
 
-
-*~
 *.~

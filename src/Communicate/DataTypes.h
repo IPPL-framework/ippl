@@ -17,7 +17,7 @@
 namespace ippl {
     namespace mpi {
         namespace core {
-            const std::unordered_map<std::type_index, MPI_Datatype> type_names = {
+            static std::unordered_map<std::type_index, MPI_Datatype> type_names = {
                 {std::type_index(typeid(std::int8_t)), MPI_INT8_T},
                 {std::type_index(typeid(std::int16_t)), MPI_INT16_T},
                 {std::type_index(typeid(std::int32_t)), MPI_INT32_T},
@@ -53,10 +53,25 @@ namespace ippl {
                 {std::type_index(typeid(Kokkos::complex<double>)), MPI_CXX_FLOAT_COMPLEX},
                 {std::type_index(typeid(Kokkos::complex<float>)), MPI_CXX_FLOAT_COMPLEX}};
         }
-
+        template <typename T>
+        struct vector_dim_type {
+            constexpr static unsigned Dim = 0;
+        };
+        template <typename T, unsigned Dim_>
+        struct vector_dim_type<ippl::Vector<T, Dim_>> {
+            constexpr static unsigned Dim = Dim_;
+        };
         template <typename T>
         MPI_Datatype get_mpi_datatype(const T& /*x*/) {
             MPI_Datatype type = MPI_BYTE;
+            if (core::type_names.find(std::type_index(typeid(T))) == core::type_names.end()) {
+                if constexpr(vector_dim_type<T>::Dim > 0) {
+                    MPI_Datatype tp;
+                    MPI_Type_contiguous(vector_dim_type<T>::Dim, get_mpi_datatype<typename T::value_type>(typename T::value_type{}), &tp);
+                    MPI_Type_commit(&tp);
+                    core::type_names[std::type_index(typeid(T))] = tp;
+                }
+            }
             try {
                 type = core::type_names.at(std::type_index(typeid(T)));
             } catch (...) {

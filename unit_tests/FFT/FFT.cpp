@@ -16,9 +16,6 @@ class FFTTest;
 // Restrict testing to 2 and 3 dimensions since this is what heFFTe supports
 template <typename T, typename ExecSpace, unsigned Dim>
 class FFTTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
-protected:
-    void SetUp() override { CHECK_SKIP_SERIAL; }
-
 public:
     using value_type              = T;
     using exec_space              = ExecSpace;
@@ -38,7 +35,6 @@ public:
 
     FFTTest()
         : pt(getGridSizes<Dim>()) {
-        CHECK_SKIP_SERIAL_CONSTRUCTOR;
         const T pi = Kokkos::numbers::pi_v<T>;
         for (unsigned d = 0; d < Dim; d++) {
             len[d] = pt[d] * pi / 16;
@@ -294,7 +290,6 @@ TYPED_TEST(FFTTest, CC) {
 
 int main(int argc, char* argv[]) {
     int success = 1;
-    TestParams::checkArgs(argc, argv);
     ippl::initialize(argc, argv);
     {
         ::testing::InitGoogleTest(&argc, argv);

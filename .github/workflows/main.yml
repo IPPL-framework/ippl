@@ -1,0 +1,31 @@
+name: Doxygen Action
+
+# Trigger the workflow on push to the master branch
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+
+    # Checks-out your repository under $GITHUB_WORKSPACE
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Create a Doxygen documentation
+    - name: Doxygen Action
+      uses: mattnotmitt/doxygen-action@v1.9.5
+      with:
+        working-directory: "./doc/"
+        doxyfile-path: "./Doxyfile"
+    
+    # Deploy the documentation to GitHub Pages
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./doc/html

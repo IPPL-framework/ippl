@@ -2,9 +2,11 @@ set (_SRCS
     )
 
 set (_HDRS
+    Variant.h
     Vector.h
     Vector.hpp
     ViewTypes.h
+    IpplTypes.h
     )
 
 include_DIRECTORIES (

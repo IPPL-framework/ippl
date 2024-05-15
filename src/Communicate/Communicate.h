@@ -10,7 +10,8 @@
 // For message size check; see below
 #include <climits>
 #include <cstdlib>
-#include <variant>
+
+#include "Types/Variant.h"
 
 #include "Utility/TypeUtils.h"
 
