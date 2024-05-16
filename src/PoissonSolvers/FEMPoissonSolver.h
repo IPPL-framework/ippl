@@ -48,7 +48,13 @@ namespace ippl {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
+            // start a timer
+            static IpplTimings::TimerRef load = IpplTimings::getTimer("evaluateLoadVector");
+            IpplTimings::startTimer(load);
+
             lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
+
+            IpplTimings::stopTimer(load);
         }
 
         /**
@@ -56,6 +62,11 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
+
+            // start a timer
+            static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
+            IpplTimings::startTimer(solve);
+
             const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
 
             // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
@@ -87,12 +98,15 @@ namespace ippl {
             };
 
             pcg_algo_m.setOperator(algoOperator);
+
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
                 *(this->grad_mp) = -grad(*(this->lhs_mp));
             }
+
+            IpplTimings::stopTimer(solve);
         }
 
         /**

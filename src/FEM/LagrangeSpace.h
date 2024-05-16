@@ -286,6 +286,8 @@ namespace ippl {
             }
             return false;
         }
+
+        Kokkos::View<size_t*> elementIndices;
     };
 
 }  // namespace ippl

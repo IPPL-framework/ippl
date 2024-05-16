@@ -185,6 +185,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        Inform msg(argv[0]);
+        Inform msg2all(argv[0], INFORM_ALL_NODES);
+
         using T = double;
 
         unsigned dim = 3;
@@ -197,12 +200,9 @@ int main(int argc, char* argv[]) {
 
         // const std::string filename = "sinus" + std::to_string(dim) + "d.dat";
 
-        Inform msg("");
-        msg.setOutputLevel(5);
-
         // start the timer
-        static IpplTimings::TimerRef timer = IpplTimings::getTimer("timer");
-        IpplTimings::startTimer(timer);
+        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
+        IpplTimings::startTimer(allTimer);
 
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
@@ -250,10 +250,12 @@ int main(int argc, char* argv[]) {
         }
 
         // stop the timer
-        IpplTimings::stopTimer(timer);
+        IpplTimings::stopTimer(allTimer);
 
-        // print
-        // IpplTimings::print();
+        // stop the timers
+        IpplTimings::stopTimer(allTimer);
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 
