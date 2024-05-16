@@ -50,6 +50,18 @@ Choose from the following options based on your needs. If necessary, you can bui
         
         cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=OPENMP -DENABLE_SOLVERS=ON -DENABLE_FFT=ON -DENABLE_ALPINE=ON
 
+**Cuda Version** (for multi-threaded computing):
+        
+        cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=CUDA -DENABLE_SOLVERS=ON -DENABLE_FFT=ON -DENABLE_ALPINE=ON -DUSE_ALTERNATIVE_VARIANT=OFF -DKokkos_ARCH_[architecture]=ON
+
+[architecture] should be the target architecture, e.g.
+
+- PASCAL60
+- VOLTA70
+- TURING75
+- AMPERE80
+
+
 #### Compile
         
         make
