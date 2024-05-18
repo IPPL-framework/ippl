@@ -155,7 +155,8 @@ namespace ippl {
     template <typename T, class... Properties>
     template <typename Field, typename P2>
     void ParticleAttrib<T, Properties...>::gather(
-        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) {
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+        const typename Field::Mesh_t::vector_type::value_type offset) {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
 
@@ -186,7 +187,7 @@ namespace ippl {
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 1.0;
+                vector_type l                        = (pp(idx) - origin) * invdx + (1.0 - offset);
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
@@ -194,7 +195,7 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // gather
-                //std::cout << index << std::endl;
+                // std::cout << index << std::endl;
                 dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
                                                        view, wlo, whi, args);
             });

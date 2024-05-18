@@ -124,7 +124,7 @@ namespace ippl {
                      const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
 
         template <typename Field, typename P2>
-        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp, const typename Field::Mesh_t::vector_type::value_type offset = 0.5);
 
         T sum();
         T max();

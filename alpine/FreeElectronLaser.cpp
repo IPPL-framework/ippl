@@ -329,39 +329,39 @@ KOKKOS_INLINE_FUNCTION void serial_for(callable c, ippl::Vector<uint32_t, Dim> f
 
 struct config {
     using scalar = double;
-
-    //using length_unit = funits::length<scalar, funits::planck_base>;
-    //using duration_unit = funits::time<scalar, funits::planck_base>;
+    
     // GRID PARAMETERS
-    ippl::Vector<uint32_t, 3> resolution;
+    ippl::Vector<uint32_t, 3> resolution;               // Grid resolution in 3D
+    ippl::Vector<scalar, 3> extents;                    // Physical extents of the grid in each dimension
+    scalar total_time;                                  // Total simulation time
+    scalar timestep_ratio;                              // Ratio of timestep to some reference value
 
-    ippl::Vector<scalar, 3> extents;
-    scalar total_time;
-    scalar timestep_ratio;
+    scalar length_scale_in_jobfile;                     // Length scale defined in the jobfile
+    scalar temporal_scale_in_jobfile;                   // Temporal scale defined in the jobfile
 
-    scalar length_scale_in_jobfile, temporal_scale_in_jobfile;
+    // PARTICLE PARAMETERS
+    scalar charge;                                      // Particle charge in unit_charge
+    scalar mass;                                        // Particle mass in unit_mass
+    uint64_t num_particles;                             // Number of particles in the simulation
+    bool space_charge;                                  // Flag for considering space charge effects
 
-        // All in unit_charge, or unit_mass
-    scalar charge, mass;
+    // BUNCH PARAMETERS
+    ippl::Vector<scalar, 3> mean_position;              // Mean initial position of the particle bunch
+    ippl::Vector<scalar, 3> sigma_position;             // Standard deviation of the initial position distribution
+    ippl::Vector<scalar, 3> position_truncations;       // Truncations of the position distribution
+    ippl::Vector<scalar, 3> sigma_momentum;             // Standard deviation of the initial momentum distribution
+    scalar bunch_gamma;                                 // Relativistic gamma factor of the bunch
 
-    uint64_t num_particles;
-    bool space_charge;
+    // UNDULATOR PARAMETERS
+    scalar undulator_K;                                 // Undulator parameter K
+    scalar undulator_period;                            // Period of the undulator
+    scalar undulator_length;                            // Length of the undulator
 
-        // BUNCH PARAMETERS
-    ippl::Vector<scalar, 3> mean_position;
-    ippl::Vector<scalar, 3> sigma_position;
-    ippl::Vector<scalar, 3> position_truncations;
-    ippl::Vector<scalar, 3> sigma_momentum;
-    scalar bunch_gamma;
-
-    scalar undulator_K;
-    scalar undulator_period;
-    scalar undulator_length;
-
-    uint32_t output_rhythm;
-    std::string output_path;
-    std::unordered_map<std::string, double> experiment_options;
+    uint32_t output_rhythm;                             // Frequency of output in timesteps
+    std::string output_path;                            // Path to output files
+    std::unordered_map<std::string, double> experiment_options; // Additional experimental options
 };
+
 template<typename scalar, unsigned Dim>
 ippl::Vector<scalar, Dim> getVector(const nlohmann::json& j){
     if(j.is_array()){
@@ -646,12 +646,6 @@ struct BunchInitialize {
     // BunchInitialize ();
 };
 
-
-
-
-
-//END CONFIG
-
 //LORENTZ FRAME AND UNDULATOR
 template<typename T, unsigned axis = 2>
 struct UniaxialLorentzframe{
@@ -849,7 +843,7 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
               zmin = std::min(  (Double) (bunchInit.sigmaPosition_[2] * sqrt( - 2.0 * log( generate(2, i + Np0) ) ) * sin( 2.0 * M_PI * generate(3, i + Np0) ) ), zmin );
             else
               {
-                //printmessage(std::string(__FILE__), __LINE__, std::string("The longitudinal type is not correctly given to the code !!!") );
+                std::cout << std::string("The longitudinal type is not correctly given to the code !!!\n");
                 exit(1);
               }
           }
@@ -863,7 +857,6 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
               zmin = std::min(   t0 , zmin );
             }
 
-        //zmin = zmin + bunchInit.position_[ia][2];
         zmin = zmin + bunchInit.position_[2];
 
         /* Obtain the average number of electrons per FEL beamlet.					*/
@@ -872,7 +865,6 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
         /* Set the bunching factor level for the shot noise depending on the given values.		*/
         bF = ( bunchInit.bF_ == 0.0 ) ? 1.0 / sqrt(Ne) : bunchInit.bF_;
 
-        //printmessage(std::string(__FILE__), __LINE__, std::string("The standard deviation of the bunching factor for the shot noise implementation is set to ") + stringify(bF) );
       }
 
     /* Determine the properties of each charge point and add them to the charge vector.               	*/
@@ -889,7 +881,6 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
           r[2] = bunchInit.sigmaPosition_[2] * sqrt( - 2.0 * log( generate(2, i + Np0) ) ) * sin( 2.0 * M_PI * generate(3, i + Np0) );
         else
           {
-            //printmessage(std::string(__FILE__), __LINE__, std::string("The longitudinal type is not correctly given to the code !!!") );
             exit(1);
           }
 
@@ -901,15 +892,13 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
         if ( fabs(r[0]) < bunchInit.tranTrun_ && fabs(r[1]) < bunchInit.tranTrun_ && fabs(r[2]) < bunchInit.longTrun_)
           {
             /* Shift the generated charge to the center position and momentum space.			*/
-            //charge.rnp    = bunchInit.position_[ia];
             charge.rnp    = bunchInit.position_;
             charge.rnp   += r;
 
             charge.gb   = gb;
             charge.gb  += t;
-            //std::cout << gb << "\n";
             if(std::isinf(gb[2])){
-                std::cerr << "it klonked here\n";
+                std::cerr << "[Warning] Gammabeta obtained an klonked here\n";
             }
 
             /* Insert this charge and the mirrored ones into the charge vector.				*/
@@ -934,10 +923,8 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
           t[0] = bunchInit.sigmaGammaBeta_[0] * sqrt( - 2.0 * log( generate(4, i + Np0) ) ) * cos( 2.0 * M_PI * generate(5, i + Np0) );
           t[1] = bunchInit.sigmaGammaBeta_[1] * sqrt( - 2.0 * log( generate(4, i + Np0) ) ) * sin( 2.0 * M_PI * generate(5, i + Np0) );
           t[2] = bunchInit.sigmaGammaBeta_[2] * sqrt( - 2.0 * log( generate(6, i + Np0) ) ) * cos( 2.0 * M_PI * generate(7, i + Np0) );
-          //std::cerr << "DOING UNIFORM tapering!!!\n";
           if ( fabs(r[0]) < bunchInit.tranTrun_ && fabs(r[1]) < bunchInit.tranTrun_ && fabs(r[2]) < bunchInit.longTrun_)
             {
-                //std::cerr << "ACTUALLY DOING UNIFORM tapering!!!\n";
               /* Shift the generated charge to the center position and momentum space.			*/
               charge.rnp   = bunchInit.position_[ia];
               charge.rnp  += r;
@@ -945,10 +932,6 @@ void initializeBunchEllipsoid (BunchInitialize<Double> bunchInit, ChargeVector<D
               charge.gb  = gb;
               
               charge.gb += t;
-              //std::cout << gb[0] << "\n";
-              //if(std::isinf(gb.squaredNorm())){
-              //    std::cerr << "it klonked here\n";
-              //}
               /* Insert this charge and the mirrored ones into the charge vector.			*/
               insertCharge(charge);
             }
@@ -1103,11 +1086,8 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<T, 3> cross_prod(const ippl::Vector<T, 3>& a
     return ret;
 }
 template<typename T>
-KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gridCoordinatesOf(const ippl::Vector<T, 3> hr, const ippl::Vector<T, 3> origin, ippl::Vector<T, 3> pos){
-    //return pear<ippl::Vector<int, 3>, ippl::Vector<T, 3>>{ippl::Vector<int, 3>{5,5,5}, ippl::Vector<T, 3>{0,0,0}};
-    //printf("%.10e, %.10e, %.10e\n", (inverse_spacing * spacing)[0], (inverse_spacing * spacing)[1], (inverse_spacing * spacing)[2]);
+KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gridCoordinatesOf(const ippl::Vector<T, 3> hr, const ippl::Vector<T, 3> origin, ippl::Vector<T, 3> pos, int nghost = 1){
     Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> ret;
-    //pos -= spacing * T(0.5);
     ippl::Vector<T, 3> relpos = pos - origin;
     ippl::Vector<T, 3> gridpos = relpos / hr;
     ippl::Vector<int, 3> ipos;
@@ -1116,17 +1096,15 @@ KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gr
     for(unsigned k = 0;k < 3;k++){
         fracpos[k] = gridpos[k] - (int)ipos[k];
     }
-    //TODO: NGHOST!!!!!!!
-    ipos += ippl::Vector<int, 3>(1);
+    ipos += ippl::Vector<int, 3>(nghost);
     ret.first = ipos;
     ret.second = fracpos;
     return ret;
 }
 template<typename view_type, typename scalar>
-KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value){
-    auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
+KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const scalar value, int nghost = 1){
+    auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos, nghost);
     ipos -= ldom.first();
-    //std::cout << pos << " 's scatter args (will have 1 added): " << ipos << "\n";
     if(
         ipos[0] < 0
         ||ipos[1] < 0
@@ -1170,9 +1148,9 @@ KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view
     assert(abs(accum - 1.0f) < 1e-6f);
 }
 template<typename view_type, typename scalar>
-KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const ippl::Vector<scalar, 3>& value){
+KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig, const ippl::Vector<scalar, 3>& pos, const ippl::Vector<scalar, 3>& value, int nghost = 1){
     //std::cout << "Value: " << value << "\n";
-    auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
+    auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos, nghost);
     ipos -= ldom.first();
     if(
         ipos[0] < 0
@@ -1220,21 +1198,11 @@ KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view
 }
 
 template<typename view_type, typename scalar>
-KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view_type& Jview, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> origin, const ippl::Vector<scalar, 3>& from, const ippl::Vector<scalar, 3>& to, const scalar factor){ 
+KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view_type& Jview, ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> origin, const ippl::Vector<scalar, 3>& from, const ippl::Vector<scalar, 3>& to, const scalar factor, int nghost = 1){ 
 
     
     Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<scalar, 3>> from_grid = gridCoordinatesOf(hr, origin, from);
     Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<scalar, 3>> to_grid   = gridCoordinatesOf(hr, origin, to  );
-    //printf("Scatterdest: %.4e, %.4e, %.4e\n", from_grid.second[0], from_grid.second[1], from_grid.second[2]);
-    for(int d = 0;d < 3;d++){
-        //if(abs(from_grid.first[d] - to_grid.first[d]) > 1){
-        //    std::cout <<abs(from_grid.first[d] - to_grid.first[d]) << " violation " << from_grid.first << " " << to_grid.first << std::endl;
-        //}
-        //assert(abs(from_grid.first[d] - to_grid.first[d]) <= 1);
-    }
-    //const uint32_t nghost = g.nghost();
-    //from_ipos += ippl::Vector<int, 3>(nghost);
-    //to_ipos += ippl::Vector<int, 3>(nghost);
     
     if(from_grid.first[0] == to_grid.first[0] && from_grid.first[1] == to_grid.first[1] && from_grid.first[2] == to_grid.first[2]){
         scatterToGrid(ldom, Jview, hr, origin, ippl::Vector<scalar, 3>((from + to) * scalar(0.5)), ippl::Vector<scalar, 3>((to - from) * factor));
@@ -1242,7 +1210,6 @@ KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view
         return;
     }
     ippl::Vector<scalar, 3> relay;
-    const int nghost = 1;
     const ippl::Vector<scalar, 3> orig = origin;
     using Kokkos::max;
     using Kokkos::min;
@@ -1255,23 +1222,21 @@ KOKKOS_INLINE_FUNCTION void scatterLineToGrid(const ippl::NDIndex<3>& ldom, view
     scatterToGrid(ldom, Jview, hr, origin, ippl::Vector<scalar, 3>((relay + to) * scalar(0.5))  , ippl::Vector<scalar, 3>((to - relay) * factor));
 }
 
-// END PREAMBLE
 
 
 namespace ippl {
     
     template<typename scalar>
     struct undulator_parameters{
-        scalar lambda; //MITHRA: lambda_u
+        scalar lambda_u; //MITHRA: lambda_u
         scalar K; //Undulator parameter
         scalar length;
         scalar B_magnitude;
-        undulator_parameters(scalar K_undulator_parameter, scalar lambda_u, scalar _length) : lambda(lambda_u), K(K_undulator_parameter), length(_length){
+        undulator_parameters(scalar K_undulator_parameter, scalar lambda_u, scalar _length) : lambda_u(lambda_u), K(K_undulator_parameter), length(_length){
             B_magnitude = (2 * M_PI * electron_mass_in_unit_masses * K) / (electron_charge_in_unit_charges * lambda_u);
-            //std::cout << "Setting bmag: " << B_magnitude << "\n";
         }
-        undulator_parameters(const config& cfg): lambda(cfg.undulator_period), K(cfg.undulator_K), length(cfg.undulator_length){
-            B_magnitude = (2 * M_PI * electron_mass_in_unit_masses * K) / (electron_charge_in_unit_charges * lambda);
+        undulator_parameters(const config& cfg): lambda_u(cfg.undulator_period), K(cfg.undulator_K), length(cfg.undulator_length){
+            B_magnitude = (2 * M_PI * electron_mass_in_unit_masses * K) / (electron_charge_in_unit_charges * lambda_u);
         }
     };
 
@@ -1317,114 +1282,178 @@ namespace ippl {
         ippl::ParticleAttrib<ippl::Vector<ippl::Vector<scalar, 3>, 2>> EB_gather;   // Electric field container for particle gathering
 
     };
+
+
+    /**
+     * @brief Struct representing an undulator.
+     * 
+     * @tparam scalar Type of the scalar values (e.g., float, double).
+     */
     template<typename scalar>
-    struct Undulator{
-        undulator_parameters<scalar> uparams;
-        scalar distance_to_entry;
-        scalar k_u;
-        KOKKOS_FUNCTION Undulator(const undulator_parameters<scalar>& p, scalar dte) : uparams(p), distance_to_entry(dte), k_u(2 * M_PI / p.lambda){}
-        KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> operator()(const ippl::Vector<scalar, 3>& position_in_lab_frame)const noexcept{
+    struct Undulator {
+        undulator_parameters<scalar> uparams; ///< Parameters of the undulator.
+        scalar distance_to_entry;             ///< Distance to the entry of the undulator.
+        scalar k_u;                           ///< Wavenumber of the undulator.
+
+        /**
+         * @brief Constructor to initialize undulator parameters and calculate k_u.
+         * 
+         * @param p Parameters of the undulator.
+         * @param dte Distance to the entry of the undulator.
+         */
+        KOKKOS_FUNCTION Undulator(const undulator_parameters<scalar>& p, scalar dte) 
+            : uparams(p), distance_to_entry(dte), k_u(2 * M_PI / p.lambda_u) {}
+
+        /**
+         * @brief Overloaded operator() to compute magnetic field components.
+         * 
+         * @param position_in_lab_frame Position vector in the lab frame.
+         * @return Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> 
+         *         Pair containing magnetic field and its derivative.
+         */
+        KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> 
+        operator()(const ippl::Vector<scalar, 3>& position_in_lab_frame) const noexcept {
             using Kokkos::sin;
             using Kokkos::sinh;
             using Kokkos::cos;
             using Kokkos::cosh;
             using Kokkos::exp;
-            Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret;
-            ret.first.fill(0);
-            ret.second.fill(0);
-            if(position_in_lab_frame[2] < distance_to_entry){
+
+            Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret; // Return pair containing magnetic field and its derivative.
+            ret.first.fill(0);  // Initialize magnetic field vector.
+            ret.second.fill(0); // Initialize derivative vector.
+
+            // If the position is before the undulator entry.
+            if (position_in_lab_frame[2] < distance_to_entry) {
                 scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
-                assert(z_in_undulator < 0);
-                scalar scal = exp(-((k_u * z_in_undulator) * (k_u * z_in_undulator) * 0.5));
-                ret.second[0] = 0;
-                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * z_in_undulator * k_u * scal;
-                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * scal;
+                assert(z_in_undulator < 0); // Ensure we are in the correct region.
+                scalar scal = exp(-((k_u * z_in_undulator) * (k_u * z_in_undulator) * 0.5)); // Gaussian decay factor.
+
+                ret.second[0] = 0; // No x-component.
+                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * z_in_undulator * k_u * scal; // y-component.
+                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * scal; // z-component.
             }
-            else if(position_in_lab_frame[2] > distance_to_entry && position_in_lab_frame[2] < distance_to_entry + uparams.length){
+            // If the position is within the undulator.
+            else if (position_in_lab_frame[2] > distance_to_entry && position_in_lab_frame[2] < distance_to_entry + uparams.length) {
                 scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
-                assert(z_in_undulator >= 0);
-                ret.second[0] = 0;
-                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * sin(k_u * z_in_undulator);
-                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * cos(k_u * z_in_undulator);
+                assert(z_in_undulator >= 0); // Ensure we are in the correct region.
+
+                ret.second[0] = 0; // No x-component.
+                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * sin(k_u * z_in_undulator); // y-component.
+                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * cos(k_u * z_in_undulator); // z-component.
             }
             return ret;
-        };
+        }
     };
-    
 
 
+    /**
+     * @brief Struct representing the state of an FEL (Free Electron Laser) simulation.
+     * 
+     * @tparam scalar Type of the scalar values (e.g., float, double).
+     */
     template <typename scalar>
-    // clang-format off
-    struct FELSimulationState{
-        
-        //Sorry, can't do more than 3d
+    struct FELSimulationState {
+        // clang-format off
 
-        constexpr static unsigned int dim = 3;
-        using Vector_t = ippl::Vector<scalar, 3>;
-        using value_type = ippl::Vector<scalar, 4>;
-        using EB_type = ippl::Vector<ippl::Vector<scalar, 3>, 2>;
-        using Mesh_t               = ippl::UniformCartesian<scalar, dim>;
+        constexpr static unsigned int dim = 3; ///< Dimensionality of the simulation (3D).
+        using Vector_t = ippl::Vector<scalar, dim>; ///< Type alias for a 3D vector.
+        using value_type = ippl::Vector<scalar, 4>; ///< Type alias for a 4D vector.
+        using EB_type = ippl::Vector<ippl::Vector<scalar, 3>, 2>; ///< Type alias for an electric and magnetic field vector pair.
+        using Mesh_t = ippl::UniformCartesian<scalar, dim>; ///< Type alias for a uniform Cartesian mesh.
 
-        bool periodic_bc;
+        bool periodic_bc; ///< Flag indicating if periodic boundary conditions are used.
+
+        /// Type alias for a field with 4D vector values.
         using FourField = ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+
+        /// Type alias for a field with 3D vector values.
         using ThreeField = ippl::Field<Vector_t, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+
+        /// Type alias for a field with 4D vector values (repeated for consistency).
         using VField_t = ippl::Field<value_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
-        using EBField_t = ippl::Field<EB_type   , dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+
+        /// Type alias for a field with electric and magnetic field vector pairs.
+        using EBField_t = ippl::Field<EB_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
+
+        /// Type alias for the view type of a field with 4D vector values.
         using view_type = typename VField_t::view_type;
+
+        /// Type alias for the view type of a field with electric and magnetic field vector pairs.
         using ev_view_type = typename EBField_t::view_type;
+
+        /// Type alias for the view type of a field with 3D vector values (electric field).
         using e_view_type = typename ThreeField::view_type;
+
+        /// Type alias for the view type of a field with 3D vector values (magnetic field).
         using b_view_type = typename ThreeField::view_type;
-        //Fields
+
+        /// Solver and particle handler.
         ippl::NSFDSolverWithParticles<scalar, absorbing> fieldsAndParticles;
-        
-        //Discretization options
-        Vector_t hr_m;
-        ippl::Vector<uint32_t, 3> nr_global;
-        ippl::Vector<uint32_t, 3> nr_local;
-        //scalar dt;
-        config m_config;
-        UniaxialLorentzframe<scalar, 2 /*along z*/> ulb;
-        undulator_parameters<scalar> uparams;
-        Undulator<scalar> undulator;
+
+        Vector_t hr_m; ///< Mesh spacing vector.
+        ippl::Vector<uint32_t, dim> nr_global; ///< Global number of cells in each dimension.
+        ippl::Vector<uint32_t, dim> nr_local; ///< Local number of cells in each dimension.
+        config m_config; ///< Configuration object.
+        UniaxialLorentzframe<scalar, 2> ulb; ///< Uniaxial Lorentz frame transformation along z-axis.
+        undulator_parameters<scalar> uparams; ///< Undulator parameters.
+        Undulator<scalar> undulator; ///< Undulator object.
+
         /**
-         * @brief Construct a new FDTDFieldState object
-         * Mesh and resolution parameter are technically redundant
-         * @details ulb.gamma_m = cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5) is the frame's gamma factor
-         * @param resolution 
-         * @param layout 
-         * @param mesch 
+         * @brief Construct a new FELSimulationState object.
+         * 
+         * Initializes the simulation state with the given field layout, mesh, number of particles, and configuration.
+         * 
+         * @details 
+         * - `ulb.gamma_m = cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5)` is the frame's gamma factor.
+         * 
+         * @param layout Field layout.
+         * @param mesch Mesh object.
+         * @param nparticles Number of particles.
+         * @param cfg Configuration object.
          */
-        FELSimulationState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) : fieldsAndParticles(layout, mesch, nparticles), m_config(cfg), ulb(UniaxialLorentzframe<scalar, 2>::from_gamma(cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5))), uparams(cfg), undulator(uparams, 2.0 * cfg.sigma_position[2] * ulb.gamma_m * ulb.gamma_m){
+        FELSimulationState(FieldLayout<dim>& layout, Mesh_t& mesch, size_t nparticles, config cfg) 
+            : fieldsAndParticles(layout, mesch, nparticles), 
+              m_config(cfg), 
+              ulb(UniaxialLorentzframe<scalar, 2>::from_gamma(cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * 0.5))), 
+              uparams(cfg), 
+              undulator(uparams, 2.0 * cfg.sigma_position[2] * ulb.gamma_m * ulb.gamma_m) {
 
             hr_m = mesch.getMeshSpacing();
-            nr_global = ippl::Vector<uint32_t, 3>{
+            nr_global = ippl::Vector<uint32_t, dim>{
                 uint32_t(layout.getDomain()[0].last() - layout.getDomain()[0].first() + 1),
                 uint32_t(layout.getDomain()[1].last() - layout.getDomain()[1].first() + 1),
                 uint32_t(layout.getDomain()[2].last() - layout.getDomain()[2].first() + 1)
             };
-            nr_local = ippl::Vector<uint32_t, 3>{
+            nr_local = ippl::Vector<uint32_t, dim>{
                 uint32_t(layout.getLocalNDIndex()[0].last() - layout.getLocalNDIndex()[0].first() + 1),
                 uint32_t(layout.getLocalNDIndex()[1].last() - layout.getLocalNDIndex()[1].first() + 1),
                 uint32_t(layout.getLocalNDIndex()[2].last() - layout.getLocalNDIndex()[2].first() + 1)
             };
-            //std::cout << "NR_M_g: " << nr_global << "\n";
-            //std::cout << "NR_M_l: " << nr_local << "\n";
         }
-        scalar dt()const noexcept{
+
+        /**
+         * @brief Get the time step size.
+         * 
+         * @return scalar Time step size.
+         */
+        scalar dt() const noexcept {
             return fieldsAndParticles.field_solver.dt;
         }
-        void step(){
-            //scalar time = fieldsAndParticles.steps_taken * fieldsAndParticles.field_solver.dt;
+
+        /**
+         * @brief Perform a simulation step.
+         * 
+         * Solves the fields and updates the state using the undulator and Lorentz frame transformations.
+         */
+        void step() {
             auto und = this->undulator;
             auto lb = this->ulb;
-            fieldsAndParticles.solve(KOKKOS_LAMBDA(ippl::Vector<scalar, 3> pos, scalar time){
+            fieldsAndParticles.solve(KOKKOS_LAMBDA(ippl::Vector<scalar, 3> pos, scalar time) {
                 lb.primedToUnprimed(pos, time);
                 auto eb = und(pos);
                 return lb.transform_EB(eb);
             });
-        }
-        void computeRadiation(){
-
         }
     };
     // clang-format on
@@ -1446,22 +1475,41 @@ bool writeBMPToFD(FILE* fd, int width, int height, const unsigned char* data) {
 
     return true;
 }
+/**
+ * @brief Helper function to gather data from a field using interpolation.
+ * 
+ * This function computes the value at a given position by interpolating the values in the field.
+ * The position is transformed from physical coordinates to grid coordinates and then used to 
+ * gather data from the field. The interpolation weights are computed based on the relative 
+ * positions within the grid cells.
+ * 
+ * @tparam View Type of the field view.
+ * @tparam T Scalar type for coordinates and grid spacing.
+ * @tparam Dim Dimensionality of the position vector.
+ * 
+ * @param v The field view from which data is to be gathered.
+ * @param pos The position vector in physical coordinates where the data is to be gathered.
+ * @param origin The origin of the grid in physical coordinates.
+ * @param hr The grid spacing vector.
+ * @param lDom The local domain indices of the grid.
+ * 
+ * @return typename View::value_type The interpolated value at the specified position.
+ */
 template<typename View, typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION typename View::value_type gather_helper(const View& v, const ippl::Vector<T, Dim>& pos, const ippl::Vector<T, 3>& origin, const ippl::Vector<T, 3>& hr, const ippl::NDIndex<3>& lDom){
     using vector_type = ippl::Vector<T, 3>;
 
     vector_type l;
-    //vector_type origin = v.get_mesh().getOrigin();
-    //auto lDom = v.getLayout().getLocalNDIndex();
-    //vector_type hr = v.get_mesh().getMeshSpacing();
+
     for(unsigned k = 0;k < 3;k++){
-        l[k] = (pos[k] - origin[k]) / hr[k] + 1.0; //gather is implemented wrong
+        l[k] = (pos[k] - origin[k]) / hr[k] + 1.0; //gather is implemented in a way such that this 1 is necessary here
     }                     
 
     ippl::Vector<int, 3> index{int(l[0]), int(l[1]), int(l[2])};
     ippl::Vector<T, 3> whi = l - index;
     ippl::Vector<T, 3> wlo(1.0);
     wlo -= whi;
+
     //TODO: nghost
     ippl::Vector<size_t, 3> args = index - lDom.first() + 1;
     for(unsigned k = 0;k < 3;k++){
@@ -1469,7 +1517,6 @@ KOKKOS_INLINE_FUNCTION typename View::value_type gather_helper(const View& v, co
             return typename View::value_type(0);
         }
     }
-    //std::cout << pos << " 's Gather args (will have 1 subtracted): " << args << "\n";
     return /*{true,*/ ippl::detail::gatherFromField(std::make_index_sequence<(1u << Dim)>{}, v, wlo, whi, args)/*}*/;
 
 }
@@ -1501,12 +1548,9 @@ scalar test_gauss_law(uint32_t n){
     auto pview = field_state.particles.R.getView();
     auto p1view = field_state.particles.R_nm1.getView();
 
-    //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
     Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
-    //scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
     
     Kokkos::parallel_for(pcount, KOKKOS_LAMBDA(size_t i){
-        //bunch.gammaBeta[i].fill(scalar(0));
         auto state = random_pool.get_state();
         pview(i)[0] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
         pview(i)[1] = state.normal(0.0, 0.01 * meter_in_unit_lengths);
@@ -1526,12 +1570,10 @@ scalar test_gauss_law(uint32_t n){
     
     std::ofstream line("gauss_line.txt");
     typename ippl::FELSimulationState<scalar>::e_view_type::host_mirror_type view = Kokkos::create_mirror_view(field_state.E.getView());
-    //ippl::Vector<ippl::Vector<scalar, 3>, 2> ebg = gather_helper(view, ippl::Vector<scalar, 3>{0,0,0}, origin, hx, lDom);
     for(unsigned i = 1;i < nr[2];i++){
         vector_type pos = {scalar(0), scalar(0), (scalar)origin[2]};
         pos[2] += hx[2] * scalar(i);
         ippl::Vector<scalar, 3> ebg = gather_helper(view, pos, origin, hx, lDom);
-        //line << pos.norm() * unit_length_in_meters << " " << (view(n / 4, n / 4, i)[0].norm()) * unit_electric_fieldstrength_in_voltpermeters << "\n";
         line << pos.norm() * unit_length_in_meters << " " << ebg.norm() * unit_electric_fieldstrength_in_voltpermeters << "\n";
     }
     return 0.0f;
@@ -1546,10 +1588,10 @@ scalar test_amperes_law(uint32_t n){
     isParallel.fill(false);
     isParallel[2] = true;
         
-        // all parallel layout, standard domain, normal axis order
+    // all parallel layout, standard domain, normal axis order
     ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
 
-        //[-1, 1] box
+    //[-1, 1] box
     ippl::Vector<scalar, 3> hx;
     for(unsigned d = 0;d < 3;d++){
         hx[d] = extents[d] / (scalar)nr[d];
@@ -1566,9 +1608,7 @@ scalar test_amperes_law(uint32_t n){
     auto p1view = field_state.particles.R_nm1.getView();
     constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
     scalar timestep = field_state.field_solver.dt;
-    //constexpr scalar vy = meter_in_unit_lengths / second_in_unit_times;
     Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
-    //scalar dt = 0.5 ** std::min_element(hx.begin(), hx.end());
     
     Kokkos::parallel_for(pcount, KOKKOS_LAMBDA(size_t i){
         //bunch.gammaBeta[i].fill(scalar(0));
@@ -1620,31 +1660,7 @@ int main(int argc, char* argv[]) {
         const scalar frame_gammabeta = frame_gamma * frame_beta;
         UniaxialLorentzframe<scalar, 2> frame_boost(frame_gammabeta);
         ippl::undulator_parameters<scalar> uparams(cfg);
-        /*const scalar k_u  = scalar(2.0 * M_PI) / uparams.lambda;
-        const scalar distance_to_entry  = std::max(0.0 * uparams.lambda, 2.0 * cfg.sigma_position[2] * frame_gamma * frame_gamma);
-        auto undulator_field = KOKKOS_LAMBDA(const ippl::Vector<scalar, 3>& position_in_lab_frame){
-            Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> ret;
-            ret.first.fill(0);
-            ret.second.fill(0);
 
-            if(position_in_lab_frame[2] < distance_to_entry){
-                scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
-                assert(z_in_undulator < 0);
-                scalar scal = exp(-((k_u * z_in_undulator) * (k_u * z_in_undulator) * 0.5));
-                ret.second[0] = 0;
-                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * z_in_undulator * k_u * scal;
-                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * scal;
-            }
-            else if(position_in_lab_frame[2] > distance_to_entry && position_in_lab_frame[2] < distance_to_entry + uparams.length){
-                scalar z_in_undulator = position_in_lab_frame[2] - distance_to_entry;
-                assert(z_in_undulator >= 0);
-                ret.second[0] = 0;
-                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1]) * sin(k_u * z_in_undulator);
-                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1]) * cos(k_u * z_in_undulator);
-            }
-            return ret;
-
-        };*/
         BunchInitialize<scalar> mithra_config = generate_mithra_config(cfg, frame_boost);
         ippl::NDIndex<3> owned(cfg.resolution[0], cfg.resolution[1], cfg.resolution[2]);
 
@@ -1689,8 +1705,6 @@ int main(int argc, char* argv[]) {
             });
         }
         fdtd_state.fieldsAndParticles.particles.setParticleBC(ippl::NO);
-        //fdtd_state.scatterBunch();
-        //std::cout << cfg.charge << "\n";
         
         size_t timesteps_required = std::ceil(cfg.total_time / fdtd_state.dt());
         uint64_t starttime =  nanoTime();
@@ -1706,23 +1720,16 @@ int main(int argc, char* argv[]) {
 
 
         for(size_t i = 0;i < timesteps_required;i++){
-
-            //fdtd_state.J = scalar(0.0);
-            //fdtd_state.playout.update(fdtd_state.particles);
-            //fdtd_state.scatterBunch();
-            std::cout << i << "\n";
+            if(ippl::Comm->rank() == 0){
+                std::cout << "Doing step: " << i << std::endl;
+            }
             fdtd_state.step();
-            //fdtd_state.fieldStep();
-            //fdtd_state.updateBunch(i * fdtd_state.dt, frame_boost, undulator_field);
             auto ldom = layout.getLocalNDIndex();
             auto nrg = fdtd_state.nr_global;
             auto eview = fdtd_state.fieldsAndParticles.E.getView();
             auto bview = fdtd_state.fieldsAndParticles.B.getView();
-            //auto ebv = fdtd_state.EB.getView();
             double radiation = 0.0;
             Kokkos::parallel_reduce(ippl::getRangePolicy(eview, 1), KOKKOS_LAMBDA(uint32_t i, uint32_t j, uint32_t k, double& ref){
-                //uint32_t ig = i + ldom.first()[0];
-                //uint32_t jg = j + ldom.first()[1];
                 Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> buncheb{eview(i,j,k), bview(i,j,k)};
                 ippl::Vector<scalar, 3> Elab = frame_boost.inverse_transform_EB(buncheb).first;
                 ippl::Vector<scalar, 3> Blab = frame_boost.inverse_transform_EB(buncheb).second;
@@ -1742,8 +1749,7 @@ int main(int argc, char* argv[]) {
                 frame_boost.primedToUnprimed(pos, fdtd_state.dt() * i);
                 rad << pos[2] * unit_length_in_meters << " " << radiation_in_watt_global << "\n";
             }
-            //std::cout << "A: " << fdtd_state.FA_n.getVolumeIntegral() << "\n";
-            //std::cout << "J: " << fdtd_state.J.getVolumeIntegral() << "\n";
+            
             int rank = ippl::Comm->rank();
             int size = ippl::Comm->size();
             if((cfg.output_rhythm != 0) && (i % cfg.output_rhythm == 0)){
@@ -1779,7 +1785,6 @@ int main(int argc, char* argv[]) {
                 Kokkos::deep_copy(eh, fdtd_state.fieldsAndParticles.E.getView());
                 Kokkos::deep_copy(bh, fdtd_state.fieldsAndParticles.B.getView());
 
-                //double exp_avg = double(exp_sum) / double(acount);
                 {
                     for(int i = 1;i < img_width;i++){
                         for(int j = 1;j < img_height;j++){
@@ -1809,10 +1814,12 @@ int main(int argc, char* argv[]) {
                         }
                     }
                 }
+                /*
+                 * This code should be replaced by the Image Gathering anyway, but that's a different PR 
+                 */
                 int mask = 1;
                 while (mask < size) {
                     int partner = rank ^ mask;
-                    //if((rank & (mask - 1)) == 0)
                     {
                         if ((rank & mask) == 0) {
                             // Send data to partner

@@ -57,7 +57,7 @@ namespace ippl {
     enum fdtd_bc{
         periodic, absorbing
     };
-
+    
     template <typename EMField, typename FourField, fdtd_bc boundary_conditions = periodic>
     class StandardFDTDSolver : Maxwell<EMField, FourField> {
         public:
@@ -678,8 +678,8 @@ namespace ippl {
             Kokkos::fence();
             for(int bts = 0;bts < 3;bts++){
                 
-                particles.E_gather.gather(E, particles.R);
-                particles.B_gather.gather(B, particles.R);
+                particles.E_gather.gather(E, particles.R, /*offset = */0.0);
+                particles.B_gather.gather(B, particles.R, /*offset = */0.0);
                 Kokkos::fence();
                 Kokkos::parallel_for(particles.getLocalNum(), KOKKOS_LAMBDA(size_t i){
                     const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
