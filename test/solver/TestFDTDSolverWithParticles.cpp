@@ -7,7 +7,7 @@ using std::size_t;
 #include "MaxwellSolvers/FDTD.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-
+#include "../alpine/units.h"
 #include <Kokkos_Random.hpp>
 template<typename scalar1, typename... scalar>
     requires((std::is_floating_point_v<scalar1>))
