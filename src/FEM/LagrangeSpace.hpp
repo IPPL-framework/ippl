@@ -15,6 +15,13 @@ namespace ippl {
                       "Finite Element space only supports 1D, 2D and 3D meshes");
 
         // Initialize the elementIndices view
+        initializeElementIndices();
+    }
+
+    // Initialize element indices Kokkos View
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::initializeElementIndices() {
         const std::size_t numElements = this->numElements();
         elementIndices = Kokkos::View<size_t*>("i", numElements);
 

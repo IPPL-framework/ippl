@@ -92,6 +92,11 @@ namespace ippl {
                       const QuadratureType& quadrature);
 
         ///////////////////////////////////////////////////////////////////////
+        /**
+         * @brief Initialize a Kokkos view containing the element indices
+         */
+        void initializeElementIndices();
+
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
