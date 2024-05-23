@@ -239,10 +239,10 @@ namespace CatalystAdaptor {
         fields["charge/topology"].set_string("mesh");
         fields["charge/volume_dependent"].set_string("false");
 
-        fields["charge/values"].set_external(particleContainer->getQ().getView().data(), particleContainer->getLocalNum());
+        fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
 
         // add values for vector velocity field
-        auto velocity_view = particleContainer->getP().getView();
+        auto velocity_view = particleContainer->P.getView();
         fields["velocity/association"].set_string("vertex");
         fields["velocity/topology"].set_string("mesh");
         fields["velocity/volume_dependent"].set_string("false");
