@@ -89,6 +89,13 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable(TestFEMPoisson_scaling TestFEMPoisson_scaling.cpp)
+    target_link_libraries(
+        TestFEMPoisson_scaling
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:
