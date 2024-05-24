@@ -234,6 +234,7 @@ if (ENABLE_ALPINE)
     endif ()
     message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
+    add_subdirectory(fel)
 endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
