@@ -236,8 +236,8 @@ public:
         // this->fsolver_m->initSolver();
 
         // initialize particle positions and momenta
-        // initializeParticles();
-        initializeFromCSV("/home/timo/ETH/Thesis/ippl-build-scripts/ippl/build_openmp/test/p3m/particle_positions.csv");
+        initializeParticles();
+        // initializeFromCSV("/home/timo/ETH/Thesis/ippl-build-scripts/ippl/build_openmp/test/p3m/particle_positions.csv");
 
         computeRMSBeamSize();
 
@@ -246,35 +246,18 @@ public:
 
         this->fcontainer_m->getRho() = 0.0;
 
-<<<<<<< HEAD
-        this->fsolver_m->solve();
-
-        // calculate par2par interaction dummy run
-
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
 
-        // this->par2par();
-
-        this->focusingF_m *= this->computeAvgSpaceChargeForces();
-
-        // this->pcontainer_m->P = 0.0;
-
-=======
-        this->par2grid();
-
-        this->fsolver_m->solve();
-
-        this->grid2par();
+	pc->E = -1.0 * pc->E;
 
 	this->par2par();
 
 	this->focusingF_m *= this->computeAvgSpaceChargeForces();
-
->>>>>>> b0402d8ac884c70392dcf9dbb62ccbed665d1fa1
+	    
         this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << endl;
@@ -753,10 +736,6 @@ public:
                         const size_type neighborStart = cellStartingIdx(neighborCellIdx);
                         const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
                         const size_type nNeighborParticles = neighborEnd - neighborStart;
-<<<<<<< HEAD
-=======
-			
->>>>>>> b0402d8ac884c70392dcf9dbb62ccbed665d1fa1
 
                         auto threadVectorMDRange = 
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
@@ -965,11 +944,7 @@ public:
 
         this->grid2par();
 
-<<<<<<< HEAD
-        // pc->E = ke * pc->E;
-=======
         pc->E = -1.0 * pc->E;
->>>>>>> b0402d8ac884c70392dcf9dbb62ccbed665d1fa1
 
         this->par2par();
 
@@ -1025,13 +1000,6 @@ public:
     }
 
     void applyConstantFocusing() {
-        // double focusingf = computeAvgSpaceChargeForces();
-<<<<<<< HEAD
-
-        // std::cerr << "Focusing Force " << focusingf << std::endl;
-=======
->>>>>>> b0402d8ac884c70392dcf9dbb62ccbed665d1fa1
-
         view_type E = this->pcontainer_m->E.getView();
         view_type R = this->pcontainer_m->R.getView();
 
@@ -1043,13 +1011,8 @@ public:
         
 	Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
-<<<<<<< HEAD
-                Vector_t<T, Dim> F = focusStrength /** focusingf*/ * (R(i) / beamRad);
-                Kokkos::atomic_add(&E(i), F);
-=======
                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
                 Kokkos::atomic_sub(&E(i), F);
->>>>>>> b0402d8ac884c70392dcf9dbb62ccbed665d1fa1
             }
         );
     }
