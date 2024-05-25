@@ -198,6 +198,8 @@ public:
         // initialize particle positions and momenta
         initializeParticles();
 
+        computeRMSBeamSize();
+
         // intialize Neighbor List
         // initializeNeighborList();
 
@@ -301,7 +303,39 @@ public:
 	
 	// debug output, can be ignored
         std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
-     }
+    }
+
+    void computeRMSBeamSize(){
+        auto R = this->pcontainer_m->R.getView();
+        auto nLoc = this->pcontainer_m->getLocalNum();
+
+
+        ippl::Vector<double, 6> averages(0.0);
+        Kokkos::parallel_reduce("compute RMS beam size", nLoc,
+            KOKKOS_LAMBDA(const size_type& i, ippl::Vector<double, 6>& sum){
+                sum[0] += R(i)[0];
+                sum[1] += R(i)[1];
+                sum[2] += R(i)[2];
+                sum[3] += R(i)[0] * R(i)[0];
+                sum[4] += R(i)[1] * R(i)[1];
+                sum[5] += R(i)[2] * R(i)[2];
+            }, averages
+        );
+        ippl::Vector<double, 6> glob(0.0);
+        ippl::Comm->reduce(&averages[0], &glob[0], 6, std::plus<double>(), 0);
+
+        auto totalP = this->totalP_m;
+
+        glob /= totalP;
+
+        double rms_x = sqrt(glob[3] - glob[0] * glob[0]);
+        double rms_y = sqrt(glob[4] - glob[1] * glob[1]);
+        double rms_z = sqrt(glob[5] - glob[2] * glob[2]);
+
+
+        std::cerr << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << std::endl;
+        std::cerr << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << std::endl;
+    }
 
     void computeRMSBeamSize(){
         auto R = this->pcontainer_m->R.getView();
@@ -881,7 +915,7 @@ public:
         }
         // computeBeamStatistics();
         compute_temperature();
-	computeRMSBeamSize();
+        computeRMSBeamSize();
     }
 
     void LeapFrogStep() {
@@ -896,7 +930,7 @@ public:
 
         pc->update();
 
-        this->initializeNeighborList();
+        // this->initializeNeighborList();
 
         this->par2grid();
 
@@ -904,9 +938,9 @@ public:
 
         this->grid2par();
 
-        pc->E = -1.0 * pc->E;
+        // pc->E = -1.0 * pc->E;
 
-        this->par2par();
+        // this->par2par();
 
         // auto focusingf = computeAvgSpaceChargeForces();
 
