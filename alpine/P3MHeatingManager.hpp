@@ -252,7 +252,7 @@ public:
 
         this->grid2par();
 
-	pc->E = -1.0 * pc->E;
+	this->pcontainer_m->E = -1.0 * this->pcontainer_m->E;
 
 	this->par2par();
 
@@ -754,16 +754,16 @@ public:
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-				                double isWithinCutoff = (r_ij < rcut) && (ii != jj) && (r_ij != 0) && !((cellIdx == neighborCellIdx) && ii >= jj);
-				                r_ij += !isWithinCutoff; // prevent didvide by zero
-				                rsq_ij += !isWithinCutoff;
+				double isWithinCutoff = (r_ij < rcut) && (ii != jj) && (r_ij != 0) && !((cellIdx == neighborCellIdx) && ii >= jj);
+		                r_ij += !isWithinCutoff; // prevent didvide by zero
+				rsq_ij += !isWithinCutoff;
                                 Kokkos::atomic_add(&counter(0), isWithinCutoff);
 
 
                                 // calculate and apply force
                                 Vector_t<T, Dim> F_ij = isWithinCutoff * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 // Vector_t<T, Dim> F_ij = 0;
-				                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
+				Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
                                 Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
                             }
                         );
@@ -950,7 +950,7 @@ public:
 
         this->applyConstantFocusing();
 
-        pc->P = pc->P + dt * -1.0 * pc->E;
+        pc->P = pc->P + dt * pc->E;
 
         std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
 
