@@ -167,7 +167,29 @@ Contributions</h1>
 <div class="line">take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).</div>
 <div class="line"> </div>
 <div class="line">## Citing IPPL</div>
-</div><!-- fragment --><p> @inproceedings{muralikrishnan2024scaling, title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications through mini-apps targeting exascale architectures}, author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael and Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas}, booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)}, pages={26&ndash;38}, year={2024}, organization={SIAM} } ``` </p>
+</div><!-- fragment --><p> @inproceedings{muralikrishnan2024scaling, title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications through mini-apps targeting exascale architectures}, author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael and Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas}, booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)}, pages={26&ndash;38}, year={2024}, organization={SIAM} } </p><div class="fragment"><div class="line"># Job scripts for running on Merlin and Gwendolen (at PSI)</div>
+<div class="line">You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm.</div>
+<div class="line">More documentation on the local cluster can be found [here](https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html) (need to be in the PSI network to access).</div>
+<div class="line"> </div>
+<div class="line">## Merlin CPU (MPI + OpenMP)</div>
+<div class="line">For example, to run a job on 1 MPI node, with 44 OpenMP threads:</div>
+</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;partition=hourly # Using 'hourly' will grant higher priority #SBATCH &ndash;nodes=1 # No. of nodes #SBATCH &ndash;ntasks-per-node=1 # No. of MPI ranks per node. Merlin CPU nodes have 44 cores #SBATCH &ndash;cpus-per-task=44 # No. of OMP threads #SBATCH &ndash;time=00:05:00 # Define max time job will run (e.g. here 5 mins) #SBATCH &ndash;hint=nomultithread # Without hyperthreading </p>
+<h2><a class="anchor" id="autotoc_md11"></a>
+SBATCH –exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</h2>
+<p >#SBATCH &ndash;output=&lt;output_file_name&gt;.out # Name of output file #SBATCH &ndash;error=&lt;error_file_name&gt;.err # Name of error file</p>
+<p >export OMP_NUM_THREADS=44 export OMP_PROC_BIND=spread export OMP_PLACES=threads</p>
+<h1><a class="anchor" id="autotoc_md12"></a>
+need to pass the –cpus-per-task option to srun otherwise will not use more than 1 core per task</h1>
+<h1><a class="anchor" id="autotoc_md13"></a>
+(see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting–ccpus-per-task)</h1>
+<p >srun &ndash;cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt; </p><div class="fragment"><div class="line">## Gwendolen GPU</div>
+<div class="line">For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node):</div>
+</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;time=00:05:00 # Define max time job will run (e.g. here 5 mins) #SBATCH &ndash;nodes=1 # No. of nodes (there is only 1 node on Gwendolen) #SBATCH &ndash;ntasks=4 # No. of tasks (max. 8) #SBATCH &ndash;clusters=gmerlin6 # Specify that we are running on the GPU cluster #SBATCH &ndash;partition=gwendolen # Running on the Gwendolen partition of the GPU cluster #SBATCH &ndash;account=gwendolen </p>
+<h2><a class="anchor" id="autotoc_md14"></a>
+SBATCH –exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</h2>
+<p >#SBATCH &ndash;gpus=4 # No. of GPUs (max. 8)</p>
+<p >#SBATCH &ndash;output=&lt;output_file_name&gt;.out # Name of output file #SBATCH &ndash;error=&lt;error_file_name&gt;.err # Name of error file</p>
+<p >srun ./&lt;your_executable&gt; &lt;args&gt; &ndash;kokkos-map-device-id-by=mpi_rank ``` </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
