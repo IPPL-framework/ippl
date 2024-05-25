@@ -201,22 +201,21 @@ public:
         computeRMSBeamSize();
 
         // intialize Neighbor List
-        // initializeNeighborList();
+        initializeNeighborList();
 
         this->fcontainer_m->getRho() = 0.0;
 
-        // this->fsolver_m->solve();
+        this->par2grid();
 
-        // calculate par2par interaction dummy run
-        // this->par2par();
+        this->fsolver_m->solve();
 
-        // this->par2grid();
+        this->grid2par();
 
-        // this->fsolver_m->solve();
+	this->par2par();
 
-        // this->grid2par();
+	this->focusingF_m *= this->computeAvgSpaceChargeForces();
 
-        // this->pcontainer_m->update();
+        this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << endl;
     }
@@ -303,38 +302,6 @@ public:
 	
 	// debug output, can be ignored
         std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
-    }
-
-    void computeRMSBeamSize(){
-        auto R = this->pcontainer_m->R.getView();
-        auto nLoc = this->pcontainer_m->getLocalNum();
-
-
-        ippl::Vector<double, 6> averages(0.0);
-        Kokkos::parallel_reduce("compute RMS beam size", nLoc,
-            KOKKOS_LAMBDA(const size_type& i, ippl::Vector<double, 6>& sum){
-                sum[0] += R(i)[0];
-                sum[1] += R(i)[1];
-                sum[2] += R(i)[2];
-                sum[3] += R(i)[0] * R(i)[0];
-                sum[4] += R(i)[1] * R(i)[1];
-                sum[5] += R(i)[2] * R(i)[2];
-            }, averages
-        );
-        ippl::Vector<double, 6> glob(0.0);
-        ippl::Comm->reduce(&averages[0], &glob[0], 6, std::plus<double>(), 0);
-
-        auto totalP = this->totalP_m;
-
-        glob /= totalP;
-
-        double rms_x = sqrt(glob[3] - glob[0] * glob[0]);
-        double rms_y = sqrt(glob[4] - glob[1] * glob[1]);
-        double rms_z = sqrt(glob[5] - glob[2] * glob[2]);
-
-
-        std::cerr << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << std::endl;
-        std::cerr << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << std::endl;
     }
 
     void computeRMSBeamSize(){
@@ -726,7 +693,6 @@ public:
                         const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
                         const size_type nNeighborParticles = neighborEnd - neighborStart;
 			
-			Kokkos::atomic_increment(&counter(0));
 
                         auto threadVectorMDRange = 
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
@@ -930,7 +896,7 @@ public:
 
         pc->update();
 
-        // this->initializeNeighborList();
+        this->initializeNeighborList();
 
         this->par2grid();
 
@@ -938,9 +904,9 @@ public:
 
         this->grid2par();
 
-        // pc->E = -1.0 * pc->E;
+        pc->E = -1.0 * pc->E;
 
-        // this->par2par();
+        this->par2par();
 
         // auto focusingf = computeAvgSpaceChargeForces();
 
@@ -989,9 +955,7 @@ public:
     }
 
     void applyConstantFocusing() {
-        double focusingf = computeAvgSpaceChargeForces();
-
-        std::cerr << "Focusing Force " << focusingf << std::endl;
+        // double focusingf = computeAvgSpaceChargeForces();
 
         view_type E = this->pcontainer_m->E.getView();
         view_type R = this->pcontainer_m->R.getView();
@@ -1000,9 +964,11 @@ public:
         double focusStrength = this->focusingF_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
 
-        Kokkos::parallel_for("apply constant focusing", nLoc,
+        std::cerr << "Focusing Force " << focusStrength << std::endl;
+        
+	Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
-                Vector_t<T, Dim> F = focusStrength * focusingf * (R(i) / beamRad);
+                Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
                 Kokkos::atomic_sub(&E(i), F);
             }
         );
