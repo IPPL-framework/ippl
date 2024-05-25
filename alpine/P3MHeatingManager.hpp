@@ -189,6 +189,9 @@ public:
             )
         );
 
+	std::cerr << "Device Space: " << Device::name() << std::endl;
+	std::cerr << "Host Space: " << Host::name() << std::endl;
+
     
         this->fcontainer_m->initializeFields("P3M");
 
@@ -348,6 +351,38 @@ public:
         std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
     }
 
+
+    void computeRMSBeamSize(){
+        auto R = this->pcontainer_m->R.getView();
+        auto nLoc = this->pcontainer_m->getLocalNum();
+
+
+        ippl::Vector<double, 6> averages(0.0);
+        Kokkos::parallel_reduce("compute RMS beam size", nLoc,
+            KOKKOS_LAMBDA(const size_type& i, ippl::Vector<double, 6>& sum){
+                sum[0] += R(i)[0];
+                sum[1] += R(i)[1];
+                sum[2] += R(i)[2];
+                sum[3] += R(i)[0] * R(i)[0];
+                sum[4] += R(i)[1] * R(i)[1];
+                sum[5] += R(i)[2] * R(i)[2];
+            }, averages
+        );
+        ippl::Vector<double, 6> glob(0.0);
+        ippl::Comm->reduce(&averages[0], &glob[0], 6, std::plus<double>(), 0);
+
+        auto totalP = this->totalP_m;
+
+        glob /= totalP;
+
+        double rms_x = sqrt(glob[3] - glob[0] * glob[0]);
+        double rms_y = sqrt(glob[4] - glob[1] * glob[1]);
+        double rms_z = sqrt(glob[5] - glob[2] * glob[2]);
+
+
+        std::cerr << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << std::endl;
+        std::cerr << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << std::endl;
+    }
 
     void computeRMSBeamSize(){
         auto R = this->pcontainer_m->R.getView();
@@ -740,7 +775,7 @@ public:
 
                         auto threadVectorMDRange = 
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
-
+	 			
                         Kokkos::parallel_for(threadVectorMDRange, 
                             [=](const int& i, const int& j){
                                 const size_type ii = start + i;
@@ -755,13 +790,16 @@ public:
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-                                // Kokkos::atomic_increment(&counter(0));
-                                bool isWithinCutoff = (r_ij < rcut) && (ii != jj);
+				                double isWithinCutoff = (r_ij < rcut) && (ii != jj) && (r_ij != 0) && !((cellIdx == neighborCellIdx) && ii >= jj);
+				                r_ij += !isWithinCutoff; // prevent didvide by zero
+				                rsq_ij += !isWithinCutoff;
                                 Kokkos::atomic_add(&counter(0), isWithinCutoff);
+
 
                                 // calculate and apply force
                                 Vector_t<T, Dim> F_ij = isWithinCutoff * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
+                                // Vector_t<T, Dim> F_ij = 0;
+				                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
                                 Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
                             }
                         );
@@ -806,29 +844,25 @@ public:
     }
 
     void compute_temperature() {
-        Kokkos::View<ippl::Vector<double, 3>[1], Device> locAvgVel("local average velocity");
-        Kokkos::View<ippl::Vector<double, 3>[1], Host> globAvgVel("global average velocity");
-
+        Vector_t<double, 3> locAvgVel = 0.0;
+        Vector_t<double, 3> globAvgVel = 0.0;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
 
-        // std::cerr << "Average Velocity: " << globAvgVel(0) << std::endl;
-        
         Kokkos::parallel_reduce("compute average velocity", Kokkos::RangePolicy<Device>(0, nLoc),
             KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
-                for(int d = 0; d < Dim; ++d) sum[d] += std::fabs(P(i)[d]);
-            }, &locAvgVel(0)[0]
+                sum += P(i);
+            }, locAvgVel
         );
-        auto host_locAvgVel = Kokkos::create_mirror_view(locAvgVel);
-        ippl::Comm->reduce(&host_locAvgVel(0)[0], &globAvgVel(0)[0], 3, std::plus<double>(), 0);
+        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<double>(), 0);
 
-        // ippl::Comm->barrier();
+        ippl::Comm->barrier();
 
         auto totalP = this->totalP_m;
 
-        globAvgVel(0) /= (double)totalP;
-        std::cerr << "Average Velocity: " << globAvgVel(0) << std::endl;
-
+        globAvgVel /= totalP;
+        std::cerr << "Average Velocity: " << globAvgVel << std::endl;
+	
         ippl::Vector<double, 3> localTemperature = 0.0;
         ippl::Vector<double, 3> globalTemperature = 0.0;
 
@@ -839,15 +873,11 @@ public:
         );
 
         ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<double>(), 0);
-        // ippl::Comm->reduce(localTemperature[1], globalTemperature[1], 1, std::plus<double>());
-        // ippl::Comm->reduce(localTemperature[2], globalTemperature[2], 1, std::plus<double>());
-
-        ippl::Comm->barrier();
 
         globalTemperature /= totalP;
 
         std::cerr << "Temperature: " << globalTemperature << std::endl;
-
+	
     }
 
     void computeBeamStatistics() {
