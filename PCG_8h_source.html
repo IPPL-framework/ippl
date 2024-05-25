@@ -296,90 +296,94 @@ $(function() {
 <div class="line"><a id="l00223" name="l00223"></a><span class="lineno"><a class="line" href="classippl_1_1PCG.html#a9c9d318e0895324b4dfc617ec303fb8b">  223</a></span>        <span class="keywordtype">void</span> <a class="code hl_function" href="classippl_1_1PCG.html#a9c9d318e0895324b4dfc617ec303fb8b">operator()</a>(<a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp; lhs, <a class="code hl_typedef" href="classippl_1_1PCG.html#ac028d323dc2a9e7f1be744e6abd67d98">rhs_type</a>&amp; rhs, <span class="keyword">const</span> <a class="code hl_class" href="classippl_1_1ParameterList.html">ParameterList</a>&amp; params)<span class="keyword"> override </span>{</div>
 <div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            <span class="keyword">constexpr</span> <span class="keywordtype">unsigned</span> <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> = lhs_type::dim;</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            <span class="keyword">typename</span> lhs_type::Mesh_t mesh     = lhs.get_mesh();</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            <span class="keyword">typename</span> lhs_type::Layout_t layout = lhs.getLayout();</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a1283c40674b028f96ae7679e30604064">iterations_m</a>      = 0;</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            <span class="keyword">const</span> <span class="keywordtype">int</span> maxIterations = params.<a class="code hl_function" href="classippl_1_1ParameterList.html#a6e880ee49a119e6366ee0a1d20307423">get</a>&lt;<span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;max_iterations&quot;</span>);</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>            <span class="comment">// Variable names mostly based on description in</span></div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            <span class="comment">// https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf</span></div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> r(mesh, layout);</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> d(mesh, layout);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> s(mesh, layout);</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> q(mesh, layout);</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            <span class="keyword">using </span>bc_type  = <a class="code hl_class" href="classippl_1_1BConds.html">BConds&lt;lhs_type, Dim&gt;</a>;</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            bc_type lhsBCs = lhs.getFieldBC();</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            bc_type bc;</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            <span class="keywordflow">if</span> (<a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a> == <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                <span class="keywordflow">throw</span> <a class="code hl_class" href="classIpplException.html">IpplException</a>(<span class="stringliteral">&quot;PCG::operator()&quot;</span>, <span class="stringliteral">&quot;Preconditioner has not been set for PCG solver&quot;</span>);</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            }</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span> </div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            <span class="keyword">typename</span> lhs_type::Mesh_t mesh     = lhs.get_mesh();</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            <span class="keyword">typename</span> lhs_type::Layout_t layout = lhs.getLayout();</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span> </div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a1283c40674b028f96ae7679e30604064">iterations_m</a>      = 0;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            <span class="keyword">const</span> <span class="keywordtype">int</span> maxIterations = params.<a class="code hl_function" href="classippl_1_1ParameterList.html#a6e880ee49a119e6366ee0a1d20307423">get</a>&lt;<span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;max_iterations&quot;</span>);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span> </div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            <span class="comment">// Variable names mostly based on description in</span></div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            <span class="comment">// https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf</span></div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> r(mesh, layout);</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> d(mesh, layout);</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> s(mesh, layout);</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            <a class="code hl_typedef" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> q(mesh, layout);</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            <span class="keywordtype">bool</span> allFacesPeriodic = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; 2 * <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; ++i) {</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                <a class="code hl_enumeration" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42">FieldBC</a> bcType = lhsBCs[i]-&gt;getBCType();</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                <span class="keywordflow">if</span> (bcType == <a class="code hl_enumvalue" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42a3cb1f288488324d3fcedbae62989b7e3">PERIODIC_FACE</a>) {</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                    <span class="comment">// If the LHS has periodic BCs, so does the residue</span></div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                    bc[i] = std::make_shared&lt;PeriodicFace&lt;lhs_type&gt;&gt;(i);</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (bcType &amp; <a class="code hl_enumvalue" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42a8fdb510164ab4f942dc4125894854179">CONSTANT_FACE</a>) {</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                    <span class="comment">// If the LHS has constant BCs, the residue is zero on the BCs</span></div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                    <span class="comment">// Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                    bc[i]            = std::make_shared&lt;ZeroFace&lt;lhs_type&gt;&gt;(i);</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                    allFacesPeriodic = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                    <span class="keywordflow">throw</span> <a class="code hl_class" href="classIpplException.html">IpplException</a>(<span class="stringliteral">&quot;PCG::operator()&quot;</span>,</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>                                        <span class="stringliteral">&quot;Only periodic or constant BCs for LHS supported.&quot;</span>);</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                    <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                }</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>            }</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>            r = rhs - this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a308fceaf6e668fbba8fa922fe8434c76">op_m</a>(lhs);</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>            d = <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>-&gt;operator()(r);</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>            d.setFieldBC(bc);</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            <span class="keyword">using </span>bc_type  = <a class="code hl_class" href="classippl_1_1BConds.html">BConds&lt;lhs_type, Dim&gt;</a>;</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            bc_type lhsBCs = lhs.getFieldBC();</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            bc_type bc;</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>            <span class="keywordtype">bool</span> allFacesPeriodic = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; 2 * <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; ++i) {</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                <a class="code hl_enumeration" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42">FieldBC</a> bcType = lhsBCs[i]-&gt;getBCType();</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                <span class="keywordflow">if</span> (bcType == <a class="code hl_enumvalue" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42a3cb1f288488324d3fcedbae62989b7e3">PERIODIC_FACE</a>) {</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                    <span class="comment">// If the LHS has periodic BCs, so does the residue</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                    bc[i] = std::make_shared&lt;PeriodicFace&lt;lhs_type&gt;&gt;(i);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (bcType &amp; <a class="code hl_enumvalue" href="namespaceippl.html#abb55e9cae54ba42c7332594098b30e42a8fdb510164ab4f942dc4125894854179">CONSTANT_FACE</a>) {</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                    <span class="comment">// If the LHS has constant BCs, the residue is zero on the BCs</span></div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                    <span class="comment">// Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace</span></div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>                    bc[i]            = std::make_shared&lt;ZeroFace&lt;lhs_type&gt;&gt;(i);</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                    allFacesPeriodic = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                    <span class="keywordflow">throw</span> <a class="code hl_class" href="classIpplException.html">IpplException</a>(<span class="stringliteral">&quot;PCG::operator()&quot;</span>,</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                                        <span class="stringliteral">&quot;Only periodic or constant BCs for LHS supported.&quot;</span>);</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                }</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>            }</div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>            T delta1          = <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(r, d);</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>            T delta0          = delta1;</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>            this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a> = std::sqrt(std::abs(delta1));</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>            <span class="keyword">const</span> T tolerance = params.<a class="code hl_function" href="classippl_1_1ParameterList.html#a6e880ee49a119e6366ee0a1d20307423">get</a>&lt;T&gt;(<span class="stringliteral">&quot;tolerance&quot;</span>) * delta1;</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span> </div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            <span class="keywordflow">while</span> (this-&gt;iterations_m&lt;maxIterations&amp;&amp; this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a>&gt; tolerance) {</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                q       = this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a308fceaf6e668fbba8fa922fe8434c76">op_m</a>(d);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                T alpha = delta1 / <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(d, q);</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                lhs     = lhs + alpha * d;</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>                <span class="comment">// The exact residue is given by</span></div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>                <span class="comment">// r = rhs - BaseCG::op_m(lhs);</span></div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                <span class="comment">// This correction is generally not used in practice because</span></div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                <span class="comment">// applying the Laplacian is computationally expensive and</span></div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                <span class="comment">// the correction does not have a significant effect on accuracy;</span></div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>                <span class="comment">// in some implementations, the correction may be applied every few</span></div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>                <span class="comment">// iterations to offset accumulated floating point errors</span></div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                r = r - alpha * q;</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>                s = <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>-&gt;operator()(r);</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                delta0 = delta1;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                delta1 = <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(r, s);</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span> </div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                T beta            = delta1 / delta0;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>                this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a> = std::sqrt(std::abs(delta1));</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>                d = s + beta * d;</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                ++this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a1283c40674b028f96ae7679e30604064">iterations_m</a>;</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>            }</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>            r = rhs - this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a308fceaf6e668fbba8fa922fe8434c76">op_m</a>(lhs);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>            d = <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>-&gt;operator()(r);</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>            d.setFieldBC(bc);</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>            T delta1          = <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(r, d);</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            T delta0          = delta1;</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>            this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a> = std::sqrt(std::abs(delta1));</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            <span class="keyword">const</span> T tolerance = params.<a class="code hl_function" href="classippl_1_1ParameterList.html#a6e880ee49a119e6366ee0a1d20307423">get</a>&lt;T&gt;(<span class="stringliteral">&quot;tolerance&quot;</span>) * delta1;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span> </div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            <span class="keywordflow">while</span> (this-&gt;iterations_m&lt;maxIterations&amp;&amp; this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a>&gt; tolerance) {</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>                q       = this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a308fceaf6e668fbba8fa922fe8434c76">op_m</a>(d);</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>                T alpha = delta1 / <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(d, q);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                lhs     = lhs + alpha * d;</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                <span class="comment">// The exact residue is given by</span></div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>                <span class="comment">// r = rhs - BaseCG::op_m(lhs);</span></div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>                <span class="comment">// This correction is generally not used in practice because</span></div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                <span class="comment">// applying the Laplacian is computationally expensive and</span></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>                <span class="comment">// the correction does not have a significant effect on accuracy;</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>                <span class="comment">// in some implementations, the correction may be applied every few</span></div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                <span class="comment">// iterations to offset accumulated floating point errors</span></div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                r = r - alpha * q;</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                s = <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>-&gt;operator()(r);</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>                delta0 = delta1;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>                delta1 = <a class="code hl_function" href="namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8">innerProduct</a>(r, s);</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                T beta            = delta1 / delta0;</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a16642c77a5bdeda19470614c522cf691">residueNorm</a> = std::sqrt(std::abs(delta1));</div>
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span> </div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>            <span class="keywordflow">if</span> (allFacesPeriodic) {</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                T avg = lhs.getVolumeAverage();</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                lhs   = lhs - avg;</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>            }</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>        }</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span> </div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno"><a class="line" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">  302</a></span>        std::unique_ptr&lt;preconditioner&lt;FieldLHS&gt;&gt; <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>;</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>    };</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>                d = s + beta * d;</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                ++this-&gt;<a class="code hl_variable" href="classippl_1_1CG.html#a1283c40674b028f96ae7679e30604064">iterations_m</a>;</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>            }</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            <span class="keywordflow">if</span> (allFacesPeriodic) {</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                T avg = lhs.getVolumeAverage();</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>                lhs   = lhs - avg;</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>            }</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>        }</div>
 <div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span> </div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>};  <span class="comment">// namespace ippl</span></div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span> </div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>    <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno"><a class="line" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">  306</a></span>        std::unique_ptr&lt;preconditioner&lt;FieldLHS&gt;&gt; <a class="code hl_variable" href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">preconditioner_m</a>;</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    };</div>
 <div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span> </div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span> </div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>};  <span class="comment">// namespace ippl</span></div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span> </div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span> </div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
 <div class="ttc" id="aPreconditioner_8h_html"><div class="ttname"><a href="Preconditioner_8h.html">Preconditioner.h</a></div></div>
 <div class="ttc" id="aSolverAlgorithm_8h_html"><div class="ttname"><a href="SolverAlgorithm_8h.html">SolverAlgorithm.h</a></div></div>
@@ -405,7 +409,7 @@ $(function() {
 <div class="ttc" id="aclassippl_1_1PCG_html"><div class="ttname"><a href="classippl_1_1PCG.html">ippl::PCG</a></div><div class="ttdef"><b>Definition:</b> PCG.h:148</div></div>
 <div class="ttc" id="aclassippl_1_1PCG_html_a11f6ac2354c4906a7854f54ca9cf3b24"><div class="ttname"><a href="classippl_1_1PCG.html#a11f6ac2354c4906a7854f54ca9cf3b24">ippl::PCG::UpperLowerF</a></div><div class="ttdeci">std::function&lt; UpperLowerRet(lhs_type)&gt; UpperLowerF</div><div class="ttdef"><b>Definition:</b> PCG.h:157</div></div>
 <div class="ttc" id="aclassippl_1_1PCG_html_a26e22495fc2f9d0a3e50879d5a00e28c"><div class="ttname"><a href="classippl_1_1PCG.html#a26e22495fc2f9d0a3e50879d5a00e28c">ippl::PCG::setPreconditioner</a></div><div class="ttdeci">void setPreconditioner(OperatorF &amp;&amp;op, LowerF &amp;&amp;lower, UpperF &amp;&amp;upper, UpperLowerF &amp;&amp;upper_and_lower, InverseDiagF &amp;&amp;inverse_diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=5, int degree=31, int richardson_iterations=1, int inner=5, int outer=1) override</div><div class="ttdef"><b>Definition:</b> PCG.h:169</div></div>
-<div class="ttc" id="aclassippl_1_1PCG_html_a4c4f64a255e77c9d5ea8dded61fce53e"><div class="ttname"><a href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">ippl::PCG::preconditioner_m</a></div><div class="ttdeci">std::unique_ptr&lt; preconditioner&lt; FieldLHS &gt; &gt; preconditioner_m</div><div class="ttdef"><b>Definition:</b> PCG.h:302</div></div>
+<div class="ttc" id="aclassippl_1_1PCG_html_a4c4f64a255e77c9d5ea8dded61fce53e"><div class="ttname"><a href="classippl_1_1PCG.html#a4c4f64a255e77c9d5ea8dded61fce53e">ippl::PCG::preconditioner_m</a></div><div class="ttdeci">std::unique_ptr&lt; preconditioner&lt; FieldLHS &gt; &gt; preconditioner_m</div><div class="ttdef"><b>Definition:</b> PCG.h:306</div></div>
 <div class="ttc" id="aclassippl_1_1PCG_html_a9c9d318e0895324b4dfc617ec303fb8b"><div class="ttname"><a href="classippl_1_1PCG.html#a9c9d318e0895324b4dfc617ec303fb8b">ippl::PCG::operator()</a></div><div class="ttdeci">void operator()(lhs_type &amp;lhs, rhs_type &amp;rhs, const ParameterList &amp;params) override</div><div class="ttdef"><b>Definition:</b> PCG.h:223</div></div>
 <div class="ttc" id="aclassippl_1_1PCG_html_ab10cd6508d1d42ce1578d503de47f5b6"><div class="ttname"><a href="classippl_1_1PCG.html#ab10cd6508d1d42ce1578d503de47f5b6">ippl::PCG::PCG</a></div><div class="ttdeci">PCG()</div><div class="ttdef"><b>Definition:</b> PCG.h:160</div></div>
 <div class="ttc" id="aclassippl_1_1PCG_html_ac028d323dc2a9e7f1be744e6abd67d98"><div class="ttname"><a href="classippl_1_1PCG.html#ac028d323dc2a9e7f1be744e6abd67d98">ippl::PCG::rhs_type</a></div><div class="ttdeci">FieldRHS rhs_type</div><div class="ttdef"><b>Definition:</b> SolverAlgorithm.h:19</div></div>
