@@ -913,7 +913,7 @@ public:
         } else {
             std::cerr << "Unable to open file" << std::endl;
         }
-        computeBeamStatistics();
+        // computeBeamStatistics();
         compute_temperature();
         computeRMSBeamSize();
     }
