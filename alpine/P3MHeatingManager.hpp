@@ -42,7 +42,7 @@ using Device = Kokkos::DefaultExecutionSpace;
 using Host = Kokkos::DefaultHostExecutionSpace;
 
 // physical constants
-// const double ke = 2.532638e8;
+const double ke = 2.532638e8;
 
 /**
  * @class P3M3DHeatingManager
@@ -112,6 +112,46 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
+    void initializeFromCSV(std::string filename){
+
+        std::ifstream file(filename);
+
+        double q = -1;
+
+        if(!file.is_open()){
+            std::cerr << "Could not open file" << std::endl;
+            return;
+        }
+
+        auto np = this->totalP_m;
+        std::string line;
+        this->pcontainer_m->create(np);
+
+        // auto P = this->pcontainer_m->P.getView();
+        auto R = this->pcontainer_m->R.getView();
+        auto Q = this->pcontainer_m->Q.getView();
+        auto P = this->pcontainer_m->P.getView();
+
+        for(size_type i = 0; i < np+1; ++i){
+            // if (i == 0) continue;
+            std::getline(file, line);
+            std::stringstream ss(line);
+            std::string token;
+            for(int d = 0; d < Dim; ++d){
+                std::getline(ss, token, ',');
+                if (i == 0) continue;
+                R(i-1)[d] = std::stod(token);
+                P(i-1)[d] = 0.0;
+                // std::cout << token << std::endl;
+                
+            }
+            Q(i-1) = q;
+        }
+        this->Q_m = np * q;
+        this->pcontainer_m->update();
+
+    }
+
     void pre_run() override {
         Inform m("Pre Run");
 
@@ -175,7 +215,7 @@ public:
 
         // initialize solver
         ippl::ParameterList sp;
-        sp.add("output_type", P3MSolver_t<T, Dim>::SOL_AND_GRAD);
+        sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
         sp.add("use_heffte_defaults", false);
         sp.add("use_pencils", true);
         sp.add("use_reorder", false);
@@ -193,7 +233,8 @@ public:
         // this->fsolver_m->initSolver();
 
         // initialize particle positions and momenta
-        initializeParticles();
+        // initializeParticles();
+        initializeFromCSV("/home/timo/ETH/Thesis/ippl-build-scripts/ippl/build_openmp/test/p3m/particle_positions.csv");
 
         computeRMSBeamSize();
 
@@ -202,18 +243,23 @@ public:
 
         this->fcontainer_m->getRho() = 0.0;
 
-        // this->fsolver_m->solve();
+        this->fsolver_m->solve();
 
         // calculate par2par interaction dummy run
+
+        this->par2grid();
+
+        this->fsolver_m->solve();
+
+        this->grid2par();
+
         // this->par2par();
 
-        // this->par2grid();
+        this->focusingF_m *= this->computeAvgSpaceChargeForces();
 
-        // this->fsolver_m->solve();
+        // this->pcontainer_m->P = 0.0;
 
-        // this->grid2par();
-
-        // this->pcontainer_m->update();
+        this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << endl;
     }
@@ -301,6 +347,7 @@ public:
 	// debug output, can be ignored
         std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
     }
+
 
     void computeRMSBeamSize(){
         auto R = this->pcontainer_m->R.getView();
@@ -671,7 +718,7 @@ public:
                 const size_type nParticles = end - start;
 
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 14),
-                    [&](const int& neighborIdx){
+                    [=](const int& neighborIdx){
 
                         // get offset for neighbor cell
                         const int offsetX = offset(neighborIdx * 3 + 0);
@@ -695,7 +742,7 @@ public:
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
 
                         Kokkos::parallel_for(threadVectorMDRange, 
-                            [&](const int& i, const int& j){
+                            [=](const int& i, const int& j){
                                 const size_type ii = start + i;
                                 const size_type jj = neighborStart + j;
                                 // if (ii == jj) return;
@@ -709,18 +756,13 @@ public:
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
                                 // Kokkos::atomic_increment(&counter(0));
+                                bool isWithinCutoff = (r_ij < rcut) && (ii != jj);
+                                Kokkos::atomic_add(&counter(0), isWithinCutoff);
 
-                                // only consider particles within cutoff radius
-                                // for some reason, this does not work on gpus yet
-                                if (r_ij < rcut && (ii != jj)) {
-                                    // count number of particles that interacted
-                                    Kokkos::atomic_increment(&counter(0));
-
-                                    // calculate and apply force
-                                    Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                    Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
-                                    Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
-                                }
+                                // calculate and apply force
+                                Vector_t<T, Dim> F_ij = isWithinCutoff * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
+                                Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
                             }
                         );
                     }
@@ -747,7 +789,7 @@ public:
         auto nLoc = this->pcontainer_m->getLocalNum();
 
         double localEnergy = 0.0;
-        double globalEnergy = 0.0;
+        double globalEnergy = 0.0;  
         
 	    Kokkos::parallel_reduce("calc kinetic energy", nLoc,
             KOKKOS_LAMBDA(const size_type& i, double& sum){
@@ -765,26 +807,26 @@ public:
 
     void compute_temperature() {
         Kokkos::View<ippl::Vector<double, 3>[1], Device> locAvgVel("local average velocity");
-        Kokkos::View<ippl::Vector<double, 3>[1], Device> globAvgVel("global average velocity");
+        Kokkos::View<ippl::Vector<double, 3>[1], Host> globAvgVel("global average velocity");
 
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
 
-        Kokkos::parallel_reduce("compute average velocity", nLoc,
+        // std::cerr << "Average Velocity: " << globAvgVel(0) << std::endl;
+        
+        Kokkos::parallel_reduce("compute average velocity", Kokkos::RangePolicy<Device>(0, nLoc),
             KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
-                sum += P(i);
-            }, locAvgVel(0)
+                for(int d = 0; d < Dim; ++d) sum[d] += std::fabs(P(i)[d]);
+            }, &locAvgVel(0)[0]
         );
+        auto host_locAvgVel = Kokkos::create_mirror_view(locAvgVel);
+        ippl::Comm->reduce(&host_locAvgVel(0)[0], &globAvgVel(0)[0], 3, std::plus<double>(), 0);
 
-        ippl::Comm->reduce(locAvgVel(0)[0], globAvgVel(0)[0], 1, std::plus<double>());
-        ippl::Comm->reduce(locAvgVel(0)[1], globAvgVel(0)[1], 1, std::plus<double>());
-        ippl::Comm->reduce(locAvgVel(0)[2], globAvgVel(0)[2], 1, std::plus<double>());
-
-        ippl::Comm->barrier();
+        // ippl::Comm->barrier();
 
         auto totalP = this->totalP_m;
 
-        globAvgVel(0) /= totalP;
+        globAvgVel(0) /= (double)totalP;
         std::cerr << "Average Velocity: " << globAvgVel(0) << std::endl;
 
         ippl::Vector<double, 3> localTemperature = 0.0;
@@ -796,9 +838,9 @@ public:
             }, localTemperature
         );
 
-        ippl::Comm->reduce(localTemperature[0], globalTemperature[0], 1, std::plus<double>());
-        ippl::Comm->reduce(localTemperature[1], globalTemperature[1], 1, std::plus<double>());
-        ippl::Comm->reduce(localTemperature[2], globalTemperature[2], 1, std::plus<double>());
+        ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<double>(), 0);
+        // ippl::Comm->reduce(localTemperature[1], globalTemperature[1], 1, std::plus<double>());
+        // ippl::Comm->reduce(localTemperature[2], globalTemperature[2], 1, std::plus<double>());
 
         ippl::Comm->barrier();
 
@@ -896,22 +938,25 @@ public:
 
         // this->initializeNeighborList();
 
+        // pc->E = 0.0;
+
+        // this->fcontainer_m->getRho() = 0.0;
+
+        // this->fcontainer_m->getE() = 0.0;
+
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
 
-        // pc->E = -1.0 * pc->E;
+        // pc->E = ke * pc->E;
 
         // this->par2par();
 
-        // auto focusingf = computeAvgSpaceChargeForces();
-
         this->applyConstantFocusing();
 
-        pc->P = pc->P + dt * pc->E;
-
+        pc->P = pc->P + dt * -1.0 * pc->E;
 
         std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
 
@@ -932,30 +977,38 @@ public:
             }, avgE
         );
 
-        std::cerr << "Total Local Space Charge Forces: " << avgE << std::endl;
+        // std::cerr << "Total Local Space Charge Forces: " << avgE << std::endl;
 
-        avgE /= totalP;
+        // avgE /= totalP;
 
         std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
 
+        // double focusingf = 0.0;
+        // for (unsigned d = 0; d < Dim; ++d) {
+        //     focusingf += avgE[d] * avgE[d];
+        // }
+
+        // std::cerr << "Focusing Force: " << focusingf << std::endl;
+
+        Vector_t<double, Dim> globE = 0.0;
+
+        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<double>(), 0);
+        
+        globE /= totalP;
+
         double focusingf = 0.0;
         for (unsigned d = 0; d < Dim; ++d) {
-            focusingf += avgE[d] * avgE[d];
+            focusingf += globE[d] * globE[d];
         }
-
-        // std::cerr << "Focusing Force: " << focusingf << std::endl;
-
-        double globFocus = 0.0;
-        ippl::Comm->reduce(focusingf, globFocus, 1, std::plus<double>());
         // std::cerr << "Focusing Force: " << focusingf << std::endl;
         // ippl::Comm->barrier();
-        return std::sqrt(globFocus);
+        return std::sqrt(focusingf);
     }
 
     void applyConstantFocusing() {
-        double focusingf = computeAvgSpaceChargeForces();
+        // double focusingf = computeAvgSpaceChargeForces();
 
-        std::cerr << "Focusing Force " << focusingf << std::endl;
+        // std::cerr << "Focusing Force " << focusingf << std::endl;
 
         view_type E = this->pcontainer_m->E.getView();
         view_type R = this->pcontainer_m->R.getView();
@@ -966,8 +1019,8 @@ public:
 
         Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
-                Vector_t<T, Dim> F = focusStrength * focusingf * (R(i) / beamRad);
-                Kokkos::atomic_sub(&E(i), F);
+                Vector_t<T, Dim> F = focusStrength /** focusingf*/ * (R(i) / beamRad);
+                Kokkos::atomic_add(&E(i), F);
             }
         );
     }
