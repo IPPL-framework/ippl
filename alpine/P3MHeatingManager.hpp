@@ -899,7 +899,7 @@ public:
 
         double emit_x = Kokkos::sqrt(avg_xsq * avg_psq - avg_xpsq * avg_xpsq);
         // double beta = avg_xsq / emit_x;
-        double sigma_x = Kokkos::sqrt(avg_xsq) * 1e3; // convert to mm
+        double sigma_x = Kokkos::sqrt(avg_xsq);
         std::cerr << "Beam Statistics: " << std::endl;
         std::cerr << "Sigma x: " << sigma_x << std::endl;
         std::cerr << "Emittance x: " << emit_x << std::endl;
@@ -934,7 +934,7 @@ public:
         } else {
             std::cerr << "Unable to open file" << std::endl;
         }
-        // computeBeamStatistics();
+        computeBeamStatistics();
         compute_temperature();
         computeRMSBeamSize();
     }
