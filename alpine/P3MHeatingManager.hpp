@@ -755,30 +755,22 @@ public:
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
 				                if  (r_ij >= rcut) return;
-		                        // r_ij += !isWithinCutoff; // prevent didvide by zero
-				                // rsq_ij += !isWithinCutoff;
-                                // Kokkos::atomic_add(&counter(0), isWithinCutoff);
-
 
                                 // calculate and apply force
                                 Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                // Vector_t<T, Dim> F_ij = 0;
 				                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
                                 Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
                     }
                 );
-            });
+            }
+        );
 
-            Kokkos::fence();
-            ippl::Comm->barrier();
+        // Kokkos::fence();
+        // ippl::Comm->barrier();
 
-	        // auto host_counter = Kokkos::create_mirror_view(counter);
-
-            // std::cerr << "Number PP interactions: " << host_counter(0) << std::endl;
-
-            std::cerr << "Particle-Particle Interaction finished" << std::endl;
+        std::cerr << "Particle-Particle Interaction finished" << std::endl;
     }
 
 
@@ -890,29 +882,27 @@ public:
         std::cerr << "Dumping data" << std::endl;
 
         double E_kin = calcKineticEnergy();
-        // double E_pot = calcPotentialEnergy();
-        // std::cerr << "Dumping data, Energy: " << E_kin + E_pot << std::endl;
         std::cerr << "Dumping data, Kinetic Energy: " << E_kin << std::endl;
-        // std::cerr << "Dumping data, Potential Energy: " << E_pot << std::endl;
-        // std::cerr << "Dumping data, Gamma eq: " << E_kin/E_pot << std::endl;
 
-        int it = this->it_m;
-	    auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
         // DEBUG output
-        std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
-        if (outputFile.is_open()) {
-            // auto R = this->pcontainer_m->R.getView();
-            for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
-                for (unsigned d = 0; d < Dim; ++d) {
-                    outputFile << host_R(i)[d];
-                    if (d < Dim - 1) outputFile << ",";
-                }
-                outputFile << std::endl;
-            }
-            outputFile.close();
-        } else {
-            std::cerr << "Unable to open file" << std::endl;
-        }
+        // int it = this->it_m;
+	    // auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+        // // DEBUG output
+        // std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
+        // if (outputFile.is_open()) {
+        //     // auto R = this->pcontainer_m->R.getView();
+        //     for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
+        //         for (unsigned d = 0; d < Dim; ++d) {
+        //             outputFile << host_R(i)[d];
+        //             if (d < Dim - 1) outputFile << ",";
+        //         }
+        //         outputFile << std::endl;
+        //     }
+        //     outputFile.close();
+        // } else {
+        //     std::cerr << "Unable to open file" << std::endl;
+        // }
+
         // computeBeamStatistics();
         compute_temperature();
         computeRMSBeamSize();
@@ -923,8 +913,6 @@ public:
         double dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
-
-        // pc->P = pc->P - 0.5 * dt * pc->E;
 
         pc->R = pc->R + dt * pc->P;
 
@@ -937,8 +925,6 @@ public:
         this->fsolver_m->solve();
 
         this->grid2par();
-
-        // pc->E = -1.0 * pc->E;
 
         this->par2par();
 
@@ -954,7 +940,6 @@ public:
         auto totalP = this->totalP_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto E = this->pcontainer_m->E.getView();
-        // Vector_t<T, Dim> locAvgE = 0.0;
         Vector_t<T, Dim> avgE = 0.0;
 
         Kokkos::parallel_reduce("compute average space charge forces", nLoc, 
@@ -965,18 +950,7 @@ public:
             }, avgE
         );
 
-        // std::cerr << "Total Local Space Charge Forces: " << avgE << std::endl;
-
-        // avgE /= totalP;
-
         std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
-
-        // double focusingf = 0.0;
-        // for (unsigned d = 0; d < Dim; ++d) {
-        //     focusingf += avgE[d] * avgE[d];
-        // }
-
-        // std::cerr << "Focusing Force: " << focusingf << std::endl;
 
         Vector_t<double, Dim> globE = 0.0;
 
@@ -988,8 +962,7 @@ public:
         for (unsigned d = 0; d < Dim; ++d) {
             focusingf += globE[d] * globE[d];
         }
-        // std::cerr << "Focusing Force: " << focusingf << std::endl;
-        // ippl::Comm->barrier();
+
         return std::sqrt(focusingf);
     }
 
