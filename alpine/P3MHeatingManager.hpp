@@ -252,7 +252,7 @@ public:
 
         this->grid2par();
 
-	    this->pcontainer_m->E = -1.0 * this->pcontainer_m->E;
+	    // this->pcontainer_m->E = -1.0 * this->pcontainer_m->E;
 
 	    this->par2par();
 
@@ -744,7 +744,7 @@ public:
                             [=](const int& i, const int& j){
                                 const size_type ii = start + i;
                                 const size_type jj = neighborStart + j;
-                                // if (ii == jj) return;
+                                if (((cellIdx == neighborCellIdx) && ii >= jj)) return;
                                 const double ke = 2.532638e8;
 
                                 double rsq_ij = 0.0;
@@ -754,17 +754,17 @@ public:
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-				                double isWithinCutoff = (r_ij < rcut) && (ii != jj) && (r_ij != 0) && !((cellIdx == neighborCellIdx) && ii >= jj);
-		                        r_ij += !isWithinCutoff; // prevent didvide by zero
-				                rsq_ij += !isWithinCutoff;
+				                if  (r_ij >= rcut) return;
+		                        // r_ij += !isWithinCutoff; // prevent didvide by zero
+				                // rsq_ij += !isWithinCutoff;
                                 // Kokkos::atomic_add(&counter(0), isWithinCutoff);
 
 
                                 // calculate and apply force
-                                Vector_t<T, Dim> F_ij = isWithinCutoff * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                                Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 // Vector_t<T, Dim> F_ij = 0;
-				                Kokkos::atomic_add(&E(ii), F_ij * Q(jj));
-                                Kokkos::atomic_sub(&E(jj), F_ij * Q(ii));
+				                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
+                                Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
                     }
@@ -938,13 +938,13 @@ public:
 
         this->grid2par();
 
-        pc->E = -1.0 * pc->E;
+        // pc->E = -1.0 * pc->E;
 
         this->par2par();
 
         this->applyConstantFocusing();
 
-        pc->P = pc->P + dt * pc->E;
+        pc->P = pc->P - dt * pc->E;
 
         std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
 
@@ -1006,7 +1006,7 @@ public:
 	Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
-                Kokkos::atomic_sub(&E(i), F);
+                Kokkos::atomic_add(&E(i), F);
             }
         );
     }
