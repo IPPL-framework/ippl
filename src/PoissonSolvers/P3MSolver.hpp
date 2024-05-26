@@ -32,13 +32,13 @@ namespace ippl {
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
+        this->setAlpha(1e6);
         setDefaultParameters();
 
         this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
         this->setRhs(rhs);
-        this->setAlpha(1e6);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -47,28 +47,30 @@ namespace ippl {
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
+
+        this->setAlpha(1e6);
         setDefaultParameters();
 
         this->params_m.merge(params);
 
         this->setLhs(lhs);
         this->setRhs(rhs);
-        this->setAlpha(1e6);
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double alpha)
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
+            
+        this->setAlpha(alpha);
         setDefaultParameters();
 
         this->params_m.merge(params);
 
         this->setLhs(lhs);
         this->setRhs(rhs);
-        this->setAlpha(alpha);
     }
 
     template <typename FieldLHS, typename FieldRHS>

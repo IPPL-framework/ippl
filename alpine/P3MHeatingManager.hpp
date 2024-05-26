@@ -885,23 +885,23 @@ public:
         std::cerr << "Dumping data, Kinetic Energy: " << E_kin << std::endl;
 
         // DEBUG output
-        // int it = this->it_m;
-	    // auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-        // // DEBUG output
-        // std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
-        // if (outputFile.is_open()) {
-        //     // auto R = this->pcontainer_m->R.getView();
-        //     for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
-        //         for (unsigned d = 0; d < Dim; ++d) {
-        //             outputFile << host_R(i)[d];
-        //             if (d < Dim - 1) outputFile << ",";
-        //         }
-        //         outputFile << std::endl;
-        //     }
-        //     outputFile.close();
-        // } else {
-        //     std::cerr << "Unable to open file" << std::endl;
-        // }
+        int it = this->it_m;
+	    auto host_R = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+        // DEBUG output
+        std::ofstream outputFile("out/particle_positions_" + std::to_string(it) + ".csv");
+        if (outputFile.is_open()) {
+            // auto R = this->pcontainer_m->R.getView();
+            for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); ++i) {
+                for (unsigned d = 0; d < Dim; ++d) {
+                    outputFile << host_R(i)[d];
+                    if (d < Dim - 1) outputFile << ",";
+                }
+                outputFile << std::endl;
+            }
+            outputFile.close();
+        } else {
+            std::cerr << "Unable to open file" << std::endl;
+        }
 
         // computeBeamStatistics();
         compute_temperature();
