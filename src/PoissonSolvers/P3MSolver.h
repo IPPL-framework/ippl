@@ -54,6 +54,7 @@ namespace ippl {
         P3MSolver();
         P3MSolver(rhs_type& rhs, ParameterList& params);
         P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double alpha);
         ~P3MSolver() = default;
 
         // override the setRhs function of the Solver class
@@ -69,6 +70,8 @@ namespace ippl {
 
         // compute standard Green's function
         void greensFunction();
+
+        void setAlpha(double alpha) { alpha_m = alpha; }
 
     private:
         Field_t grn_m;  // the Green's function
@@ -98,6 +101,8 @@ namespace ippl {
         // mesh spacing and mesh size
         Vector_t hr_m;
         Vector<int, Dim> nr_m;
+
+        double alpha_m;  // controls long-range interaction
 
     protected:
         virtual void setDefaultParameters() override {

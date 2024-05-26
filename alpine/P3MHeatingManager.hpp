@@ -72,9 +72,9 @@ protected:
     double focusingF_m;         // constant focusing force
     
 public:
-    P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double beamRad_, double focusingF_) 
+    P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
         {}
 
     ~P3M3DHeatingManager(){}
@@ -160,7 +160,7 @@ public:
         }
 
         this->decomp_m.fill(true);
-        this->alpha_m = 2./this->rcut_m;
+        // this->alpha_m = 2./this->rcut_m;
         double box_length = 0.01;
         this->rmin_m = -box_length/2.;
         this->rmax_m = box_length/2.;
@@ -228,7 +228,7 @@ public:
 
         this->setFieldSolver(
             std::make_shared<P3MSolver_t<T, Dim>>(
-                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp
+                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp, this->alpha_m
             )
         );
 
@@ -538,8 +538,8 @@ public:
                     // 0: when there is no overlap
                     // 1: for an overlap at the lower domain extend
                     // 2: for an overlap at the upper domain extend
-                    overlapInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].max())
-                            + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].min());
+                    overlapInDim[d] = (l_extend[d] < hLocalRegions(recvRank)[d].max() && l_extend[d] > hLocalRegions(recvRank)[d].min())
+                            + 2 * (r_extend[d] > hLocalRegions(recvRank)[d].min() && r_extend[d] < hLocalRegions(recvRank)[d].max());
 
                     equalInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].min())
                         + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].max()); 
@@ -555,11 +555,11 @@ public:
                     // this is either 1 or nCells per Dimension
                     numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
                 }
-                overlapType = (overlapType + equalType == 3);
+                overlapType = (overlapType + equalType == Dim);
                 
                 int nParticlesToSend = 0;
 
-                if(overlapType + equalType == 3) {
+                if(overlapType + equalType == Dim) {
                     neighbors[recvRank] = true;
                     totalNeighbors++;
                 } else {

@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        P3M3DHeatingManager<T, Dim> manager(np, nt, dt, nr, rcut, beam_rad, focus_strength);
+        P3M3DHeatingManager<T, Dim> manager(np, nt, dt, nr, rcut, alpha, beam_rad, focus_strength);
         IpplTimings::startTimer(preTimer);
         manager.pre_run();
         IpplTimings::stopTimer(preTimer);

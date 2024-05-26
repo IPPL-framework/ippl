@@ -23,6 +23,7 @@ namespace ippl {
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
         setDefaultParameters();
+        this->setAlpha(1e6);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -37,6 +38,7 @@ namespace ippl {
         this->params_m.update("output_type", Base::SOL);
 
         this->setRhs(rhs);
+        this->setAlpha(1e6);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -51,6 +53,22 @@ namespace ippl {
 
         this->setLhs(lhs);
         this->setRhs(rhs);
+        this->setAlpha(1e6);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double alpha)
+        : mesh_mp(nullptr)
+        , layout_mp(nullptr)
+        , meshComplex_m(nullptr)
+        , layoutComplex_m(nullptr) {
+        setDefaultParameters();
+
+        this->params_m.merge(params);
+
+        this->setLhs(lhs);
+        this->setRhs(rhs);
+        this->setAlpha(alpha);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -315,8 +333,7 @@ namespace ippl {
         // for the P3M collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        Trhs alpha = 6400;
-        // Trhs alpha = 1e6;
+        Trhs alpha = alpha_m;
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
