@@ -348,7 +348,7 @@ public:
     }
 
 
-    void computeRMSBeamSize(){
+    double computeRMSBeamSize(){
         auto R = this->pcontainer_m->R.getView();
         auto nLoc = this->pcontainer_m->getLocalNum();
 
@@ -378,6 +378,8 @@ public:
 
         std::cerr << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << std::endl;
         std::cerr << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << std::endl;
+
+        return rms_x;
     }
 
     /**
@@ -833,6 +835,24 @@ public:
         globalTemperature /= totalP;
 
         std::cerr << "Temperature: " << globalTemperature << std::endl;
+
+        // l2 norm
+        double temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0] 
+                            + globalTemperature[1] * globalTemperature[1] 
+                            + globalTemperature[2] * globalTemperature[2]);
+
+        // normalized x-emittance
+        const double c = 2.998e+8;
+        const double m = 1.0;
+        const double kb = 1.380649e-23;
+        double sigma_x = computeRMSBeamSize();
+
+        double emit_x = sigma_x * Kokkos::sqrt(kb * temperature / (m * c * c));
+
+        // convert to nm
+        emit_x *= 1e9;
+
+        std::cout << "Emittance x: " << emit_x << std::endl;
 	
     }
 

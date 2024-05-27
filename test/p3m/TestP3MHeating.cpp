@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
         const double beam_rad       = 0.001774;
         const double boxlen         = 0.01;
         const unsigned int np       = 156055;
-        const double rcut           = 0.0003125;
-        const double alpha          = 6400;
+        const double rcut           = 0.0003125;    // 8 * PM grid spacing
+        const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const double dt             = 2.15623e-13;
         const double eps            = 0;
         const unsigned int nt       = 100;
@@ -68,12 +68,14 @@ int main(int argc, char* argv[]) {
         manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;
-	double start = MPI_Wtime();
+
+	    double start = MPI_Wtime();
         manager.run(manager.getNt());
-	double end = MPI_Wtime();
+	    double end = MPI_Wtime();
+        std::cout << "Total Simulation time: " << end-start << " seconds." << std::endl;
+
         msg << "End." << endl;
-	std::cout << "Total Simulation time: " << end-start << " seconds." << std::endl;
-        IpplTimings::stopTimer(mainTimer);
+	    IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
 
