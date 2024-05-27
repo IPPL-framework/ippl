@@ -841,18 +841,8 @@ public:
                             + globalTemperature[1] * globalTemperature[1] 
                             + globalTemperature[2] * globalTemperature[2]);
 
-        // normalized x-emittance
-        const double c = 2.998e+8;
-        const double m = 1.0;
-        const double kb = 1.380649e-23;
-        double sigma_x = computeRMSBeamSize();
-
-        double emit_x = sigma_x * Kokkos::sqrt(kb * temperature / (m * c * c));
-
-        // convert to nm
-        emit_x *= 1e9;
-
-        std::cout << "Emittance x: " << emit_x << std::endl;
+        std::cout << "L2-Norm of Temperature: " << temperature << std::endl;
+        // return temperature[0];
 	
     }
 
@@ -864,36 +854,44 @@ public:
         auto P = this->pcontainer_m->P.getView();
         double beamRad = this->beamRad_m;
 
-        Kokkos::View<ippl::Vector<double, 3>[1], Device> stats("stats");
+        Vector_t<double, 9> stats = 0.0;
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
-            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 9>& sum){
                 sum[0] += R(i)[0] * R(i)[0];
                 sum[1] += P(i)[0] * P(i)[0];
                 sum[2] += R(i)[0] * P(i)[0];
-            }, stats(0)
+                sum[3] += R(i)[1] * R(i)[1];
+                sum[4] += P(i)[1] * P(i)[1];
+                sum[5] += R(i)[1] * P(i)[1];
+                sum[6] += R(i)[2] * R(i)[2];
+                sum[7] += P(i)[2] * P(i)[2];
+                sum[8] += R(i)[2] * P(i)[2];
+            }, stats
         );
 
-        double global_xsq = 0.0;
-        double global_psq = 0.0;
-        double global_xpsq = 0.0;
+        // double global_xsq = 0.0;
+        // double global_psq = 0.0;
+        // double global_xpsq = 0.0;
+        ippl::Vector<double, 9> global_stats = 0.0;
 
         // there must be a better way to do this
-        ippl::Comm->reduce(stats(0)[0], global_xsq, 1, std::plus<double>());
-        ippl::Comm->reduce(stats(0)[1], global_psq, 1, std::plus<double>());
-        ippl::Comm->reduce(stats(0)[2], global_xpsq, 1, std::plus<double>());
-        ippl::Comm->barrier();
+        ippl::Comm->reduce(&stats[0], &global_stats[0], 9, std::plus<double>(), 0);
+    
 
-        double avg_xsq = global_xsq / this->totalP_m;
-        double avg_psq = global_psq / this->totalP_m;
-        double avg_xpsq = global_xpsq / this->totalP_m;
+        // double avg_xsq = global_xsq / this->totalP_m;
+        // double avg_psq = global_psq / this->totalP_m;
+        // double avg_xpsq = global_xpsq / this->totalP_m;
+        global_stats /= this->totalP_m;
 
-        double emit_x = Kokkos::sqrt(avg_xsq * avg_psq - avg_xpsq * avg_xpsq);
+        double emit_x = Kokkos::sqrt(global_stats[0] * global_stats[1] - global_stats[2] * global_stats[2]);
+        double emit_y = Kokkos::sqrt(global_stats[3] * global_stats[4] - global_stats[5] * global_stats[5]);
+        double emit_z = Kokkos::sqrt(global_stats[6] * global_stats[7] - global_stats[8] * global_stats[8]);
         // double beta = avg_xsq / emit_x;
-        double sigma_x = Kokkos::sqrt(avg_xsq);
-        std::cerr << "Beam Statistics: " << std::endl;
-        std::cerr << "Sigma x: " << sigma_x << std::endl;
-        std::cerr << "Emittance x: " << emit_x << std::endl;
+        // double sigma_x = Kokkos::sqrt(avg_xsq);
+        // std::cerr << "Beam Statistics: " << std::endl;
+        // std::cerr << "Sigma x: " << sigma_x << std::endl;
+        std::cerr << "(Normalized) RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << std::endl;
     }
 
     void dump() override {
@@ -923,7 +921,7 @@ public:
             std::cerr << "Unable to open file" << std::endl;
         }
 
-        // computeBeamStatistics();
+        computeBeamStatistics();
         compute_temperature();
         computeRMSBeamSize();
     }
@@ -996,7 +994,7 @@ public:
 
         std::cerr << "Focusing Force " << focusStrength << std::endl;
         
-	Kokkos::parallel_for("apply constant focusing", nLoc,
+	    Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
                 Kokkos::atomic_add(&E(i), F);
