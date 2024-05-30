@@ -44,11 +44,11 @@ int main(int argc, char* argv[]) {
         const double beam_rad       = 0.001774;
         const double boxlen         = 0.01;
         const unsigned int np       = 156055;
-        const double rcut           = 0.0003125;    // 8 * PM grid spacing
-        const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
+        // const double rcut           = 0.0003125;    // 8 * PM grid spacing
+        // const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const double dt             = 2.15623e-13;
         const double eps            = 0;
-        const unsigned int nt       = 100;
+        const unsigned int nt       = 1000;
         const double m_e            = 1;
         const double q_e            = 1;
         const double focus_strength = 1.5;
@@ -58,6 +58,9 @@ int main(int argc, char* argv[]) {
         for (unsigned d = 0; d < Dim; d++) {
             nr[d] = std::atoi(argv[arg++]);
         }
+
+        const double rcut = 4.0 * (boxlen/(double)nr[0]);
+        const double alpha = 2./rcut;
 
         P3M3DHeatingManager<T, Dim> manager(np, nt, dt, nr, rcut, alpha, beam_rad, focus_strength);
         IpplTimings::startTimer(preTimer);
