@@ -841,7 +841,7 @@ public:
                             + globalTemperature[1] * globalTemperature[1] 
                             + globalTemperature[2] * globalTemperature[2]);
 
-        std::cout << "L2-Norm of Temperature: " << temperature << std::endl;
+        std::cerr << "L2-Norm of Temperature: " << temperature << std::endl;
         // return temperature[0];
 	
     }
