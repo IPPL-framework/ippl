@@ -135,7 +135,7 @@ void get_moments_from_samples(view_type position, int d, int ntotal, const int P
         moms_p[p] = temp / ntotal;
     }
 
-    double gtemp[P];
+    double* gtemp = new double[P];
     MPI_Allreduce(moms_p, gtemp, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
 
     for (int p = 1; p < P; p++) {
@@ -145,6 +145,7 @@ void get_moments_from_samples(view_type position, int d, int ntotal, const int P
     for (int p = 1; p < P; p++) {
         moms_p[p] = gtemp[p];
     }
+    delete[] gtemp;
 }
 
 void write_error_in_moments(double *moms_p, double *moms_ref_p, int P){

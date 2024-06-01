@@ -11,7 +11,7 @@ link_directories (
 )
 
 add_executable (ParameterList ParameterList.cpp)
-gtest_discover_tests (ParameterList)
+gtest_discover_tests (ParameterList PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     ParameterList

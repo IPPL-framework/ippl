@@ -18,46 +18,35 @@ namespace ippl {
     template <typename EMField, typename SourceField>
     class Maxwell {
     public:
-        // typedefs for the different fields and vector fields
-        using typeR = typename SourceField::value_type;
-
         constexpr static unsigned Dim = EMField::dim;
-        typedef typename EMField::Mesh_t Mesh_t;
-        typedef typename EMField::Centering_t Centering_t;
-        typedef Vector<typeR, Dim> Vector_t;
-        typedef Field<Vector_t, Dim, Mesh_t, Centering_t> VectorSourceField_t;
-
-        // define type for field layout
-        typedef FieldLayout<Dim> FieldLayout_t;
-
-        // type for communication buffers
-        using memory_space = typename SourceField::memory_space;
-        using buffer_type  = Communicate::buffer_type<memory_space>;
 
         /*!
          * Default constructor for Maxwell solvers;
          */
         Maxwell() {}
 
-        Maxwell(SourceField& charge, VectorSourceField_t& current, EMField& E, EMField& B) {
-            setSources(charge, current);
+        /*!
+         * Constructor which allows to initialize the field pointers
+         * (J, E, B) in the Maxwell solvers class
+         * @param four_current The four current field (rho, J)
+         * @param E The electric field
+         * @param B The magnetic field
+         */
+        Maxwell(SourceField& four_current, EMField& E, EMField& B) {
+            setSources(four_current);
             setEMFields(E, B);
         }
 
         /*!
          * Set the problem RHS (charge & current densities)
-         * @param charge Reference to rho field
-         * @param current Reference to J field
+         * @param four_current The four current field (rho, J)
          */
-        virtual void setSources(SourceField& charge, VectorSourceField_t& current) {
-            rhoN_mp = &charge;
-            JN_mp   = &current;
-        }
+        virtual void setSources(SourceField& four_current) { JN_mp = &four_current; }
 
         /*!
          * Set the problem LHS (electromagnetic fields)
-         * @param E Reference to electric field
-         * @param B Reference to magnetic field
+         * @param E The electric field
+         * @param B The magnetic field
          */
         void setEMFields(EMField& E, EMField& B) {
             En_mp = &E;
@@ -72,9 +61,8 @@ namespace ippl {
         virtual ~Maxwell() {}
 
     protected:
-        // fields containing reference to charge and current
-        SourceField* rhoN_mp       = nullptr;
-        VectorSourceField_t* JN_mp = nullptr;
+        // Field for four-current (rho, J)
+        SourceField* JN_mp = nullptr;
 
         // E and B fields
         EMField* En_mp = nullptr;
