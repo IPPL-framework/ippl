@@ -21,7 +21,7 @@ target_link_libraries (
 
 add_executable(BenchP3M BenchP3M.cpp)
 target_link_libraries (
-    TestP3MHeating
+    BenchP3M
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )

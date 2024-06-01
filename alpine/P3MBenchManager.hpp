@@ -1,5 +1,5 @@
-#ifndef IPPL_P3M_HEATING_MANAGER_HPP
-#define IPPL_P3M_HEATING_MANAGER_HPP
+#ifndef IPPL_P3M_BENCH_MANAGER_HPP
+#define IPPL_P3M_BENCH_MANAGER_HPP
 
 // includes
 #include <memory>
@@ -45,14 +45,14 @@ using Host = Kokkos::DefaultHostExecutionSpace;
 const double ke = 2.532638e8;
 
 /**
- * @class P3M3DHeatingManager
- * @brief A class that runs P3M simulation for Disorder induced Heating processes
+ * @class P3M3DBenchManager
+ * @brief A class that benchmarks the P3M Method
  * 
  * @tparam T the data dype for simulation variables
  * @tparam Dim the dimensionality of the simulation
 */
 template <typename T, unsigned Dim>
-class P3M3DHeatingManager 
+class P3M3DBenchManager 
     : public ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
 
@@ -72,12 +72,12 @@ protected:
     double focusingF_m;         // constant focusing force
     
 public:
-    P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
+    P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
         , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
         {}
 
-    ~P3M3DHeatingManager(){}
+    ~P3M3DBenchManager(){}
 
 protected:
     double time_m;                  // Simulation time
@@ -199,17 +199,23 @@ public:
 
         this->par2grid();
 
-        this->fsolver_m->solve();
+        // this->fsolver_m->solve();
 
-        this->grid2par();
+        // this->grid2par();
+        
+        std::cerr << "Field Solver Finished" << endl;
 
 	    this->par2par();
 
 	    this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
-        this->pcontainer_m->update();
+        // this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << endl;
+    }
+        
+    void dump() {
+        // return 0;
     }
 
     void initializeParticles() {
@@ -243,8 +249,14 @@ public:
         auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
         auto Q = this->pcontainer_m->Q.getView();
-
-        double beamRad = this->beamRad_m;
+        
+        auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
+        Vector_t<T, Dim> domainCentre, domainRadius;
+        
+        for(int d = 0; d < Dim; ++d){
+            domainCentre[d] = (hLocalRegions(rank)[d].max() + hLocalRegions(rank)[d].min()) / 2;
+            domainRadius[d] = (hLocalRegions(rank)[d].max() - hLocalRegions(rank)[d].min()) / 2;
+        }
 
         Kokkos::fence();
 	
@@ -268,7 +280,7 @@ public:
 
                 // calculate position
                 T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
-                Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1./3.) / Kokkos::sqrt(normsq)) * x;
+                Vector_t<T, Dim> pos = domainCentre +  domainRadius * (Kokkos::pow(u, 1./3.) / Kokkos::sqrt(normsq)) * x;
 
                 for(int d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
@@ -365,7 +377,7 @@ public:
 	    );
 
         Kokkos::fence();
-	
+    
         Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
             KOKKOS_LAMBDA(const int i){
                 cellStartingIdx(i) = nLoc;
@@ -400,11 +412,15 @@ public:
                 E(i) = tempE(i);
             }
         );
+        
+        this->pcontainer_m->setNL(cellStartingIdx);
+        // TODO
 
+        /*
         if(commSize == 1){
             this->pcontainer_m->setNL(cellStartingIdx);
             return;
-        }
+        }*/
 
         /* Ghost NL Build - Halo exchange
          * 1. Figure out where neighbors are located relative to rank
@@ -564,7 +580,7 @@ public:
         //         }
         //     }
         // }
-        // std::cerr << "Rank " << rank << " is done :) " << std::endl;
+        std::cerr << "Rank " << rank << " is done :) " << std::endl;
     }
 
     void pre_step() override {
@@ -707,9 +723,9 @@ public:
 
         this->grid2par();
 
-        this->par2par();
+        // this->par2par();
 
-        this->applyConstantFocusing();
+        // this->applyConstantFocusing();
 
         pc->P = pc->P - dt * pc->E;
 
