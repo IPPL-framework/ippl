@@ -21,6 +21,9 @@ target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
 
 add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
 target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
+find_package(Threads REQUIRED)
+target_link_libraries(LandauDampingMixedExec Threads::Threads)
+
 
 add_executable (LandauDampingParameterList LandauDampingParameterList.cpp)
 target_link_libraries (LandauDampingParameterList ${IPPL_LIBS})

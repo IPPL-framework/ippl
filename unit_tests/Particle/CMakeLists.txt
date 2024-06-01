@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (ParticleBase ParticleBase.cpp)
-gtest_discover_tests(ParticleBase)
+gtest_discover_tests(ParticleBase PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     ParticleBase
@@ -22,7 +22,7 @@ target_link_libraries (
 )
 
 add_executable (ParticleBC ParticleBC.cpp)
-gtest_discover_tests(ParticleBC)
+gtest_discover_tests(ParticleBC PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     ParticleBC
@@ -32,7 +32,7 @@ target_link_libraries (
 )
 
 add_executable (ParticleSendRecv ParticleSendRecv.cpp)
-gtest_discover_tests(ParticleSendRecv)
+gtest_discover_tests(ParticleSendRecv PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     ParticleSendRecv

@@ -1,3 +1,4 @@
+build/
 doc/html
 doc/latex
 manual/*.aux
@@ -9,3 +10,4 @@ manual/*.lot
 manual/ippl_user_guide.pdf
 *~
 *.~
+
