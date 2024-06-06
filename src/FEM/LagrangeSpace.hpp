@@ -371,6 +371,14 @@ namespace ippl {
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
                 const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
 
+                // print debugging
+                {
+                int tid = omp_get_thread_num();
+                static std::mutex lock;
+                std::lock_guard guard{ lock };
+                std::cout << "Ax: I am thread " << tid << " and I have element " << elementIndex << std::endl;
+                } 
+
                 // local DOF indices
                 index_t i, j;
 
@@ -468,6 +476,14 @@ namespace ippl {
                 const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
 
+                // print debugging
+                {
+                int tid = omp_get_thread_num();
+                static std::mutex lock;
+                std::lock_guard guard{ lock };
+                std::cout << "LoadVec: I am thread " << tid << " and I have element " << elementIndex << std::endl;
+                } 
+
                 index_t i, I;
 
                 // 1. Compute b_K
@@ -487,6 +503,7 @@ namespace ippl {
                     }
             }
         });
+        Kokkos::fence();
     }
 
 }  // namespace ippl

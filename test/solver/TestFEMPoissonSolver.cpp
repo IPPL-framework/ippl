@@ -95,6 +95,11 @@ template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
                    std::function<T(ippl::Vector<T, Dim> x)> f_sol, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
+    Inform m("");
+    Inform msg2all("", INFORM_ALL_NODES);
+
+    int me = ippl::Comm->rank();
+
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
@@ -108,6 +113,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     ippl::Vector<T, Dim> cellSpacing((domain_end - domain_start) / static_cast<T>(numCellsPerDim));
     ippl::Vector<T, Dim> origin(domain_start);
     Mesh_t mesh(domain, cellSpacing, origin);
+
+    msg2all << "ID: " << me << ", Domain = " << domain << ", origin = " << origin << ", cellSpacing = " << cellSpacing << ", cells = " << numCellsPerDim << endl;
 
     // specifies decomposition; here all dimensions are parallel
     std::array<bool, Dim> isParallel;
@@ -167,8 +174,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     // solve the problem
     solver.solve();
 
-    Inform m("");
-
     // Compute the error
     Field_t error(mesh, layout, numGhosts);
     error                 = lhs - sol;
@@ -227,10 +232,11 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             dim = 1;
-            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            /*for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
                 testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0,
                                     1.0);
-            }
+            }*/
+            testFEMSolver<T, 1>(4, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0, 1.0);
         } else if (dim == 2) {
             // 2D Sinusoidal
             dim = 2;

@@ -96,6 +96,20 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable(kokkos_example kokkos_example.cpp)
+    target_link_libraries(
+        kokkos_example
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
+    add_executable(openmp_example openmp_example.cpp)
+    target_link_libraries(
+        openmp_example
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:

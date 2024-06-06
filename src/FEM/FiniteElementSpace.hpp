@@ -16,6 +16,12 @@ namespace ippl {
         for (std::size_t d = 0; d < Dim; ++d) {
             assert(mesh.getGridsize(d) > 1 && "Mesh has no cells in at least one dimension");
         }
+
+        Inform msg2all("", INFORM_ALL_NODES);
+        int me = Comm->rank();
+
+        msg2all << "ID: " << me << ", There are " << numElements() << " elements" << endl;
+
     }
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
