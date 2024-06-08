@@ -75,7 +75,12 @@ public:
     P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
         , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
-        {}
+        {
+            this->preallocatedSendBuffer_m = 1000;
+            this->sendBuffer_m = new T[preallocatedSendBuffer_m];
+            this->preallocatedRecvBuffer_m = 1000;
+            this->recvBuffer_m = new T[preallocatedRecvBuffer_m];
+        }
 
     ~P3M3DBenchManager(){}
 
@@ -94,6 +99,11 @@ protected:
     ippl::NDIndex<Dim> domain_m;    // Domain as index range
     std::array<bool, Dim> decomp_m; // Domain Decomposition
     double rhoNorm_m;               // Rho norm, required for scatterCIC
+    MPI_Comm graph_comm_m;          // MPI Graph communicator
+    unsigned preallocatedSendBuffer_m;  // Preallocated buffer size
+    T* sendBuffer_m;                // Send buffer
+    unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
+    T* recvBuffer_m;                // Recieve buffer
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -112,6 +122,224 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
+    void setupMPI() {
+        auto neighbors = this->fcontainer_m->getFL().getNeighbors();
+        int sources[26];
+        int it = 0;
+
+        unsigned nx = nCells_m[0];
+        unsigned ny = nCells_m[1];
+        unsigned nz = nCells_m[2];
+
+        for (const auto& componentNeighbors : neighbors) {
+            for(const auto& neighbor : componentNeighbors){
+                // std::cerr << "Rank " << ippl::Comm->rank() << " has neighbor " << neighbor << std::endl;
+                sources[it++] = neighbor;
+            }
+        }
+
+        assert(it == 26 && "Invalid mesh topology");
+
+        int weights[26] = {1, 1, nx, 1, 1, nx, ny, ny, ny*nx, 1, 1, nx, 1, 1, nx, ny, ny, ny*nx, nz, nz, nx*nz, nz, nz, nx*nz, ny*nz, ny*nz};
+
+        MPI_Comm dist_graph_comm;
+        MPI_Dist_graph_create_adjacent(MPI_COMM_WORLD, 26, sources, weights, 26, sources, weights, MPI_INFO_NULL, 0, &dist_graph_comm);
+        this->graph_comm_m = dist_graph_comm;
+
+    }
+
+    void particleExchange() {
+        Inform m("Setup MPI");
+
+        // get communicator size and rank
+        int commSize = ippl::Comm->size();
+        int rank = ippl::Comm->rank();
+
+        // get domain decomposition
+        // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
+        auto neighbors = this->fcontainer_m->getFL().getNeighbors();
+        auto cellStartingIdx = this->pcontainer_m->getNL();
+
+        unsigned nx = nCells_m[0];
+        unsigned ny = nCells_m[1];
+        unsigned nz = nCells_m[2];
+        unsigned nzm1 = nz - 1;
+
+        // particle exchange facilitated in 3 steps
+        // 1. Compute number of particles to be sent to each neighbor
+        // 2. Build send buffer
+        // 3. Send and Recieve Particles
+
+        unsigned neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx;
+        unsigned nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13;
+
+        // all 8 corners only require a single gridCell in the PP grid
+        neighbor00_Idx = 0; nParticles00 = cellStartingIdx(1);
+        neighbor01_Idx = (nx - 1) * ny * nz; nParticles01 = cellStartingIdx(neighbor01_Idx + 1) - cellStartingIdx(neighbor01_Idx);
+        neighbor03_Idx = (ny - 1) * nz; nParticles03 = cellStartingIdx(neighbor03_Idx + 1) - cellStartingIdx(neighbor03_Idx);
+        neighbor04_Idx = neighbor01_Idx + neighbor03_Idx; nParticles04 = cellStartingIdx(neighbor04_Idx + 1) - cellStartingIdx(neighbor04_Idx);
+        neighbor09_Idx = neighbor00_Idx + nzm1; nParticles09 = cellStartingIdx(neighbor09_Idx + 1) - cellStartingIdx(neighbor09_Idx);
+        neighbor10_Idx = neighbor01_Idx + nzm1; nParticles10 = cellStartingIdx(neighbor10_Idx + 1) - cellStartingIdx(neighbor10_Idx);
+        neighbor12_Idx = neighbor03_Idx + nzm1; nParticles12 = cellStartingIdx(neighbor12_Idx + 1) - cellStartingIdx(neighbor12_Idx);
+        neighbor13_Idx = neighbor04_Idx + nzm1; nParticles13 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor13_Idx);
+
+        unsigned cornerIdx[8] = {neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx};
+        unsigned cornerCounts[8] = {nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13};
+        unsigned cornerIdentifiers[8] = {0, 1, 3, 4, 9, 10, 12, 13};
+
+        std::cerr << "Checkpoint 1" << std::endl;
+
+        unsigned nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25;
+
+        // cellStartingIdx is consecutive in z direction, thus simplifying the computation for 4 of the edges
+        nParticles18 = cellStartingIdx(neighbor09_Idx + 1); // cellStartingIdx(0) = 0
+        nParticles19 = cellStartingIdx(neighbor10_Idx + 1) - cellStartingIdx(neighbor01_Idx);
+        nParticles21 = cellStartingIdx(neighbor12_Idx + 1) - cellStartingIdx(neighbor03_Idx);
+        nParticles22 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor04_Idx);
+
+        // 2 of the faces are also straightforward
+        nParticles24 = cellStartingIdx(neighbor12_Idx + 1);
+        nParticles25 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor01_Idx + 1);
+
+        std::cerr << "Checkpoint 2" << std::endl;
+
+        unsigned nParticles02 = 0, nParticles11 = 0, nParticles05 = 0, nParticles14 = 0, nParticles20 = 0, nParticles23 = 0;
+
+
+        // replace with Kokkos parallel_for or reduce : TODO
+        for(int x_Idx = 0; x_Idx < nx; ++x_Idx){
+            // edges in x direction (xx2, x <2)
+            nParticles02 += cellStartingIdx(x_Idx * ny * nz + 1) - cellStartingIdx(x_Idx * ny * nz);
+            nParticles11 += cellStartingIdx(x_Idx * ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz + nzm1);
+            nParticles05 += cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + 1) - cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz);
+            nParticles14 += cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz) - cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nzm1);
+
+            // faces in x-z plane
+            nParticles20 += cellStartingIdx(x_Idx * ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz);
+            nParticles23 += cellStartingIdx(x_Idx * ny * nz + ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz + ny * nz);
+        }
+
+        std::cerr << "Checkpoint 3" << std::endl;
+
+        unsigned nParticles06 = 0, nParticles15 = 0, nParticles07 = 0, nParticles16 = 0, nParticles08 = 0, nParticles17 = 0;
+
+        // rest of the topology requires a bit more work
+        for(int y_Idx = 0; y_Idx < ny; ++y_Idx){
+            // edges in y direction (x2x, x < 2)
+            nParticles06 += cellStartingIdx(y_Idx * nz + 1) - cellStartingIdx(y_Idx * nz);
+            nParticles15 += cellStartingIdx(y_Idx * nz + nz) - cellStartingIdx(y_Idx * nz + nzm1);
+            nParticles07 += cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + 1) - cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz);
+            nParticles16 += cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + nz) - cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + nzm1);
+            
+            for(int x_Idx = 0; x_Idx < nx; ++x_Idx){
+                // faces in x-y plane
+                nParticles08 += cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + 1) - cellStartingIdx(x_Idx * ny * nz + y_Idx * nz);
+                nParticles17 += cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + nz) - cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + nzm1);
+            }
+        }
+
+        std::cerr << "Checkpoint 4" << std::endl;
+
+        // TODO: Build buffers
+        unsigned nTotal = nParticles00 + nParticles01 + nParticles02 + nParticles03 + nParticles04 + nParticles05 + nParticles06 
+                + nParticles07 + nParticles08 + nParticles09 + nParticles10 + nParticles11 + nParticles12 + nParticles13 
+                + nParticles14 + nParticles15 + nParticles16 + nParticles17 + nParticles18 + nParticles19 + nParticles20 
+                + nParticles21 + nParticles22 + nParticles23 + nParticles24 + nParticles25;
+
+        int sendCounts[26] = {nParticles00, nParticles01, nParticles02, nParticles03, nParticles04, nParticles05, nParticles06, 
+                                nParticles07, nParticles08, nParticles09, nParticles10, nParticles11, nParticles12, nParticles13, 
+                                nParticles14, nParticles15, nParticles16, nParticles17, nParticles18, nParticles19, nParticles20, 
+                                nParticles21, nParticles22, nParticles23, nParticles24, nParticles25};
+
+        
+        
+        // if nTotal larger than preallocated buffer, reallocate
+        if(nTotal*4 > this->preallocatedSendBuffer_m){
+            // reallocate buffer
+            this->preallocatedSendBuffer_m = 4*nTotal + 1000; // overallocate
+            delete[] this->sendBuffer_m;
+            this->sendBuffer_m = new T[preallocatedSendBuffer_m];
+        }
+
+        
+
+        // compute displacements
+        int displacements[26];
+        displacements[0] = 0;
+        for (int i = 1; i < 26; ++i) {
+            displacements[i] = displacements[i-1] + 4 * sendCounts[i-1];
+        }
+
+
+        // BUILD SEND BUFFER
+        // 1. Corners
+        // 2. 4 Edges in z direction, 2 faces in y-z plane
+        // 3. 4 Edges in x direction, 2 faces in x-z plane
+        // 4. 4 Edges in y direction, 2 faces in x-y plane
+        // SEND
+
+        
+
+        auto R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
+        auto P_host = Kokkos::create_mirror_view(this->pcontainer_m->P.getView());
+
+        // 1. Corners
+        // TODO
+
+
+        // 2. 4 Edges in z direction, 2 faces in y-z plane
+        // TODO
+
+        // 3. 4 Edges in x direction, 2 faces in x-z plane
+        // TODO
+
+        // 4. 4 Edges in y direction, 2 faces in x-y plane
+        // TODO
+
+        
+
+        // Send and Recieve Particles
+        // 1.   MPI_Neighbor_alltoall for size information
+        // 2.   Compute displacements
+        // (3.) MPI_Neighbor_alltoallw when using type indexed
+        // (3.) MPI_Neighbor_alltoallv when using buffers
+
+        // 1. MPI_Neighbor_alltoall for size information
+        int recvCounts[26];
+        MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
+
+        // required buffer size
+        unsigned nTotalRecv = 0;
+
+        // 2. Compute displacements
+        int recvDisplacements[26];
+        recvDisplacements[0] = 0;
+        for (int i = 1; i < 26; ++i) {
+            nTotalRecv += recvCounts[i-1];
+            recvDisplacements[i] = recvDisplacements[i-1] + 4 * recvCounts[i-1];
+        }
+        nTotalRecv += recvCounts[25];
+
+        // if nTotalRecv larger than preallocated buffer, reallocate
+        if(nTotalRecv*4 > preallocatedRecvBuffer_m){
+            // reallocate buffer
+            preallocatedRecvBuffer_m = 4*nTotalRecv + 1000; // overallocate
+            delete[] recvBuffer_m;
+            recvBuffer_m = new T[preallocatedRecvBuffer_m];
+        }
+
+        // 3. MPI_Neighbor_alltoallv to facilitate particle exchange
+        // MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
+
+        
+        // TODO: Compute Interactions
+
+    
+       std::cerr << "Particle Exchange Finished" << std::endl;
+
+    }
+
+
     void pre_run() override {
         Inform m("Pre Run");
 
@@ -125,6 +353,7 @@ public:
         this->rmin_m = -box_length/2.;
         this->rmax_m = box_length/2.;
         this->origin_m = rmin_m;
+        this->isAllPeriodic_m = true;
 
         this->hr_m = box_length/(double)(this->nr_m[0]);
 
@@ -191,27 +420,33 @@ public:
             )
         );
 
+        // setupMPI();
+
         initializeParticles();
 
         initializeNeighborList();
+
+        setupMPI();
+
+        particleExchange();
 
         this->fcontainer_m->getRho() = 0.0;
 
         this->par2grid();
 
-        // this->fsolver_m->solve();
+        this->fsolver_m->solve();
 
-        // this->grid2par();
+        this->grid2par();
         
-        std::cerr << "Field Solver Finished" << endl;
+        std::cerr << "Field Solver Finished" << std::endl;
 
 	    this->par2par();
 
-	    this->focusingF_m *= this->computeAvgSpaceChargeForces();
+	    // this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
         // this->pcontainer_m->update();
 
-        std::cerr << "Pre Run finished" << endl;
+        std::cerr << "Pre Run finished" << std::endl;
     }
         
     void dump() {
@@ -414,173 +649,6 @@ public:
         );
         
         this->pcontainer_m->setNL(cellStartingIdx);
-        // TODO
-
-        /*
-        if(commSize == 1){
-            this->pcontainer_m->setNL(cellStartingIdx);
-            return;
-        }*/
-
-        /* Ghost NL Build - Halo exchange
-         * 1. Figure out where neighbors are located relative to rank
-         * 2. Build Send Buffer
-         * 3. Send / Recieve Particles
-         */
-	
-	    // get FieldLayout and list of neighboring domains
-        auto FL = this->fcontainer_m->getFL();
-	
-        // get host mirror of particle view
-        view_type::HostMirror R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-            
-        auto comm = FL.comm; 
-        
-        Kokkos::View<unsigned *, Host> host_cellStartingIdx("host_cellStartingIdx", totalCells+1);
-        Kokkos::deep_copy(host_cellStartingIdx, cellStartingIdx);
-
-        // Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
-        // Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
-        
-        // bool neighbors[commSize];	
-
-        // unsigned totalNeighbors = 0;
-        // // unsigned neighborcubes = 0;
-        // for (int recvRank = 0; recvRank < commSize; ++recvRank) {
-        //     if (recvRank != rank) {
-        //         // 0: no overlap; 1: left from domain; 2: right from domain
-        //         int overlapInDim[3];
-        //         int equalInDim[3];
-
-        //         // these are the starting and end indices of the cell range in each dim
-        //         // Note that currently, the cellRange is flattened
-        //         int cellStartIdx[3];
-        //         int cellEndIdx[3];
-                
-        //         // this tells us over how many surface cells we need to iterate
-        //         int numSurfaceCells = 1;
-
-        //         // 0: no overlap; 1: face; 2: edge; 3: corner
-        //         int overlapType = 0;
-        //         int equalType = 0;
-                
-        //         for(unsigned d = 0; d < Dim; ++d){
-
-        //             // checks for overlap in Dimension d and assigns
-        //             // 0: when there is no overlap
-        //             // 1: for an overlap at the lower domain extend
-        //             // 2: for an overlap at the upper domain extend
-        //             overlapInDim[d] = (l_extend[d] < hLocalRegions(recvRank)[d].max() && l_extend[d] > hLocalRegions(recvRank)[d].min())
-        //                     + 2 * (r_extend[d] > hLocalRegions(recvRank)[d].min() && r_extend[d] < hLocalRegions(recvRank)[d].max());
-
-        //             equalInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].min())
-        //                 + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].max()); 
-                    
-        //             overlapType += (overlapInDim[d] > 0);
-        //             equalType += equalInDim[d] > 0;
-                    
-        //             // if there is no overlap in a certain dimension, we want to iterate from 0 to nCells
-        //             // if there is an overlap, its index is fixed at either 0 or nCells[d]-1
-        //             cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * (nCells[d]-1);
-        //             cellEndIdx[d] = (overlapInDim[d] ? (cellStartIdx[d]+1) : nCells[d]);
-                    
-        //             // this is either 1 or nCells per Dimension
-        //             numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
-        //         }
-        //         overlapType = (overlapType + equalType == Dim);
-                
-        //         int nParticlesToSend = 0;
-
-        //         if(overlapType + equalType == Dim) {
-        //             neighbors[recvRank] = true;
-        //             totalNeighbors++;
-        //         } else {
-        //             neighbors[recvRank] = false;
-        //             continue;
-        //         }
-
-        //         if(overlapType+equalType == 3 && nLoc > 0) {
-                    
-        //             // find out how many particles to send
-        //             // (we may merge with create sendbuf, by using a vector instead of an array)
-        //             for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-        //                 for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-        //                     for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-        //                         unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-        //                         nParticlesToSend += host_cellParticleCount(CellIdx);
-        //                     }
-        //                 }
-        //             }
-            
-        //             if (nParticlesToSend > 0){
-        //                 double sendBuf[nParticlesToSend * 3];
-
-        //                 // build send buffer
-        //                 size_type sendBufIdx = 0;
-        //                 for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-        //                     for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-        //                         for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-        //                             unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-        //                             size_type start = host_cellStartingIdx(CellIdx);
-        //                             size_type end = host_cellStartingIdx(CellIdx+1);
-                        
-        //                             // loop over all particles in a cell
-        //                             for(size_type i = start; i < end; ++i){
-        //                                 for(int d = 0; d < Dim; ++d){
-        //                                     // assert(sendBufIdx < nParticlesToSend && "too many particles");
-        //                                     sendBuf[3*sendBufIdx + d] = R_host(i)[d];
-        //                                 }
-        //                                 ++sendBufIdx;
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //                 // make sure we send as many particles as expected
-        //                 assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
-                        
-        //                 MPI_Request request;
-        //                 MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request); 
-                    
-        //                 //std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
-        //             } else {
-        //                 // send dummy message, remove later
-        //                 double dummy = 0;
-        //                 MPI_Request request;
-        //                 MPI_Isend(&dummy, 1, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);
-        //             }
-        //         }
-        //     }
-        // }   
-        // neighbors[rank] = false;
-        
-        // // set neighbor list after initialization
-        // this->pcontainer_m->setNL(cellStartingIdx);
-        // this->pcontainer_m->setNeighbors(neighbors);
-        
-        // if(totalNeighbors > 0){
-        //     double *recvBuffers[totalNeighbors];
-        //     int senderCount = 0;	
-        //     // recieve Messages
-        //     for(int sender = 0; sender < commSize; ++sender){
-        //         if (neighbors[sender]){
-        //             // MPI stuff to facilitate exchange
-        //             MPI_Status status;
-        //             int count;
-
-        //             // Probe for message and get number of doubles
-        //             MPI_Probe(sender, /*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        //             MPI_Get_count(&status, MPI_DOUBLE, &count);
-
-        //             // allocate buffer and recieve
-        //             double recvBuf[count];
-        //             recvBuffers[senderCount] = recvBuf;
-        //             ++senderCount;
-        //             MPI_Recv(recvBuf, count, MPI_DOUBLE, sender,/*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        //             //std::cerr << "Rank " << rank << " recieved " << count/3 << " paricles from " << sender << std::endl;
-        //         }
-        //     }
-        // }
-        std::cerr << "Rank " << rank << " is done :) " << std::endl;
     }
 
     void pre_step() override {
@@ -717,13 +785,15 @@ public:
 
         this->initializeNeighborList();
 
+        particleExchange();
+
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
 
-        // this->par2par();
+        this->par2par();
 
         // this->applyConstantFocusing();
 
