@@ -183,6 +183,7 @@ public:
         neighbor12_Idx = neighbor03_Idx + nzm1; nParticles12 = cellStartingIdx(neighbor12_Idx + 1) - cellStartingIdx(neighbor12_Idx);
         neighbor13_Idx = neighbor04_Idx + nzm1; nParticles13 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor13_Idx);
 
+        // required to build buffer
         unsigned cornerIdx[8] = {neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx};
         unsigned cornerCounts[8] = {nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13};
         unsigned cornerIdentifiers[8] = {0, 1, 3, 4, 9, 10, 12, 13};
@@ -201,10 +202,14 @@ public:
         nParticles24 = cellStartingIdx(neighbor12_Idx + 1);
         nParticles25 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor01_Idx + 1);
 
+        // required to build buffer
+        unsigned zTopologyIdx[6] = {0, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, 0, neighbor01_Idx};
+        unsigned zTopologyCounts[6] = {nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25};
+        unsigned zTopologyIdentifiers[6] = {18, 19, 21, 22, 24, 25};
+
         std::cerr << "Checkpoint 2" << std::endl;
 
         unsigned nParticles02 = 0, nParticles11 = 0, nParticles05 = 0, nParticles14 = 0, nParticles20 = 0, nParticles23 = 0;
-
 
         // replace with Kokkos parallel_for or reduce : TODO
         for(int x_Idx = 0; x_Idx < nx; ++x_Idx){
@@ -240,7 +245,7 @@ public:
 
         std::cerr << "Checkpoint 4" << std::endl;
 
-        // TODO: Build buffers
+        // required to facilitate exchange
         unsigned nTotal = nParticles00 + nParticles01 + nParticles02 + nParticles03 + nParticles04 + nParticles05 + nParticles06 
                 + nParticles07 + nParticles08 + nParticles09 + nParticles10 + nParticles11 + nParticles12 + nParticles13 
                 + nParticles14 + nParticles15 + nParticles16 + nParticles17 + nParticles18 + nParticles19 + nParticles20 
@@ -281,14 +286,31 @@ public:
         
 
         auto R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-        auto P_host = Kokkos::create_mirror_view(this->pcontainer_m->P.getView());
+        auto Q_host = Kokkos::create_mirror_view(this->pcontainer_m->Q.getView());
 
         // 1. Corners
-        // TODO
-
+        for(int i = 0; i < 8; ++i){
+            unsigned cornerIdx = cornerIdx[i];
+            unsigned cornerCount = cornerCounts[i];
+            for(int j = 0; j < cornerCount; ++j){
+                for(int d = 0; d < Dim; ++d){
+                    sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + d] = R_host(cornerIdx + j)[d];
+                }
+                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 3] = Q_host(cornerIdx + j);
+            }
+        }
 
         // 2. 4 Edges in z direction, 2 faces in y-z plane
-        // TODO
+        for(int i = 0; i < 6; ++i){
+            unsigned zIdx = zTopologyIdx[i];
+            unsigned zCount = zTopologyCounts[i];
+            for(int j = 0; j < zCount; ++j){
+                for(int d = 0; d < Dim; ++d){
+                    sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = R_host(zIdx + j)[d];
+                }
+                sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = Q_host(zIdx + j);
+            }
+        }
 
         // 3. 4 Edges in x direction, 2 faces in x-z plane
         // TODO
@@ -329,7 +351,7 @@ public:
         }
 
         // 3. MPI_Neighbor_alltoallv to facilitate particle exchange
-        // MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
+        MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
 
         
         // TODO: Compute Interactions
