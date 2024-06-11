@@ -410,7 +410,6 @@ public:
         // );
 
         // recompute displacements, changed during building buffer
-        int displacements[26];
         displacements[0] = 0;
         for (int i = 1; i < 26; ++i) {
             displacements[i] = displacements[i-1] + sendCounts[i-1];
