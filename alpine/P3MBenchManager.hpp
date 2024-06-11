@@ -158,7 +158,7 @@ public:
         // get domain decomposition
         // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        auto cellStartingIdx = this->pcontainer_m->getNL();
+        auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
 
         unsigned nx = nCells_m[0];
         unsigned ny = nCells_m[1];
@@ -251,10 +251,10 @@ public:
                 + nParticles14 + nParticles15 + nParticles16 + nParticles17 + nParticles18 + nParticles19 + nParticles20 
                 + nParticles21 + nParticles22 + nParticles23 + nParticles24 + nParticles25;
 
-        int sendCounts[26] = {nParticles00, nParticles01, nParticles02, nParticles03, nParticles04, nParticles05, nParticles06, 
-                                nParticles07, nParticles08, nParticles09, nParticles10, nParticles11, nParticles12, nParticles13, 
-                                nParticles14, nParticles15, nParticles16, nParticles17, nParticles18, nParticles19, nParticles20, 
-                                nParticles21, nParticles22, nParticles23, nParticles24, nParticles25};
+        int sendCounts[26] = {4*nParticles00, 4*nParticles01, 4*nParticles02, 4*nParticles03, 4*nParticles04, 4*nParticles05, 4*nParticles06, 
+                                4*nParticles07, 4*nParticles08, 4*nParticles09, 4*nParticles10, 4*nParticles11, 4*nParticles12, 4*nParticles13, 
+                                4*nParticles14, 4*nParticles15, 4*nParticles16, 4*nParticles17, 4*nParticles18, 4*nParticles19, 4*nParticles20, 
+                                4*nParticles21, 4*nParticles22, 4*nParticles23, 4*nParticles24, 4*nParticles25};
 
         
         
@@ -266,13 +266,11 @@ public:
             this->sendBuffer_m = new T[preallocatedSendBuffer_m];
         }
 
-        
-
         // compute displacements
         int displacements[26];
         displacements[0] = 0;
         for (int i = 1; i < 26; ++i) {
-            displacements[i] = displacements[i-1] + 4 * sendCounts[i-1];
+            displacements[i] = displacements[i-1] + sendCounts[i-1];
         }
 
 
@@ -281,22 +279,21 @@ public:
         // 2. 4 Edges in z direction, 2 faces in y-z plane
         // 3. 4 Edges in x direction, 2 faces in x-z plane
         // 4. 4 Edges in y direction, 2 faces in x-y plane
-        // SEND
+        // SEND BUFFER LAYOUT: [x, y, z, Q]        
 
-        
-
+        // required particle data
         auto R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
         auto Q_host = Kokkos::create_mirror_view(this->pcontainer_m->Q.getView());
 
         // 1. Corners
         for(int i = 0; i < 8; ++i){
-            unsigned cornerIdx = cornerIdx[i];
+            unsigned cornerIndex = cornerIdx[i];
             unsigned cornerCount = cornerCounts[i];
-            for(int j = 0; j < cornerCount; ++j){
-                for(int d = 0; d < Dim; ++d){
-                    sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + d] = R_host(cornerIdx + j)[d];
-                }
-                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 3] = Q_host(cornerIdx + j);
+            for(unsigned j = 0; j < cornerCount; ++j){
+                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 0] = R_host(cornerIndex + j)[0];
+                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 1] = R_host(cornerIndex + j)[1];
+                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 2] = R_host(cornerIndex + j)[2];
+                sendBuffer_m[displacements[cornerIdentifiers[i]] + 4*j + 3] = Q_host(cornerIndex + j);
             }
         }
 
@@ -304,7 +301,7 @@ public:
         for(int i = 0; i < 6; ++i){
             unsigned zIdx = zTopologyIdx[i];
             unsigned zCount = zTopologyCounts[i];
-            for(int j = 0; j < zCount; ++j){
+            for(unsigned j = 0; j < zCount; ++j){
                 for(int d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = R_host(zIdx + j)[d];
                 }
@@ -313,11 +310,86 @@ public:
         }
 
         // 3. 4 Edges in x direction, 2 faces in x-z plane
-        // TODO
+        Kokkos::parallel_for("Build Send Buffer", Kokkos::RangePolicy<Host>(0, nx),
+            KOKKOS_LAMBDA(const int& x_Idx){
+
+                // begin with the edges in x direction
+                unsigned lowerEdgeStarts[4] = {cellStartingIdx(x_Idx * ny * nz), cellStartingIdx(x_Idx * ny * nz + nzm1), 
+                                                cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz), cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nzm1)};
+                unsigned lowerEdgeEnds[4] = {cellStartingIdx(x_Idx * ny * nz + 1), cellStartingIdx(x_Idx * ny * nz + nz),
+                                                cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + 1), cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz)};
+                unsigned lowerEdgeIdentifiers[4] = {2, 11, 5, 14};
+
+                for(int i = 0; i < 4; ++i){
+                    for(unsigned j = lowerEdgeStarts[i]; j < lowerEdgeEnds[i]; ++j){
+                        for(int d = 0; d < Dim; ++d){
+                            sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + d] = R_host(j)[d];
+                        }
+                        sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + 3] = Q_host(j);
+                    }
+                }
+
+                // lower face in x-z plane
+                unsigned lowerFaceStart = cellStartingIdx(x_Idx * ny * nz);
+                unsigned lowerFaceEnd = cellStartingIdx(x_Idx * ny * nz + nz);
+                for(unsigned i = lowerFaceStart; i < lowerFaceEnd; ++i) {
+                    for(int d = 0; d < Dim; ++d){
+                        sendBuffer_m[displacements[20] + 4*(i - lowerFaceStart) + d] = R_host(i)[d];
+                    }
+                    sendBuffer_m[displacements[20] + 4*(i - lowerFaceStart) + 3] = Q_host(i);
+                }
+
+                // upper face in x-z plane
+                unsigned upperFaceStart = cellStartingIdx(x_Idx * ny * nz + ny * nz);
+                unsigned upperFaceEnd = cellStartingIdx(x_Idx * ny * nz + ny * nz + nz);
+                for(unsigned i = upperFaceStart; i < upperFaceEnd; ++i) {
+                    for(int d = 0; d < Dim; ++d){
+                        sendBuffer_m[displacements[23] + 4*(i - upperFaceStart) + d] = R_host(i)[d];
+                    }
+                    sendBuffer_m[displacements[23] + 4*(i - upperFaceStart) + 3] = Q_host(i);
+                }
+            }
+        
+        );
+        
 
         // 4. 4 Edges in y direction, 2 faces in x-y plane
-        // TODO
+        Kokkos::parallel_for("Build Send Buffer", Kokkos::RangePolicy<Host>(0, ny),
+            KOKKOS_LAMBDA(const int& y_Idx){
 
+                // edges in y direction
+                unsigned lowerEdgeStarts[4] = {cellStartingIdx(y_Idx * nz), cellStartingIdx(y_Idx * nz + nzm1), 
+                                                cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz), cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + nzm1)};
+                unsigned lowerEdgeEnds[4] = {cellStartingIdx(y_Idx * nz + 1), cellStartingIdx(y_Idx * nz + nz),
+                                                cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + 1), cellStartingIdx(y_Idx * nz + (nx-1) * ny * nz + nz)};
+                unsigned lowerEdgeIdentifiers[4] = {6, 15, 7, 16};
+
+                for(int i = 0; i < 4; ++i){
+                    for(unsigned j = lowerEdgeStarts[i]; j < lowerEdgeEnds[i]; ++j){
+                        for(int d = 0; d < Dim; ++d){
+                            sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + d] = R_host(j)[d];
+                        }
+                        sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + 3] = Q_host(j);
+                    }
+                }
+                
+                for(int x_Idx = 0; x_Idx < nx; ++x_Idx){
+                    // faces in x-y plane
+                    unsigned lowerFaceStarts[2] = {cellStartingIdx(x_Idx * ny * nz + y_Idx * nz), cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + nzm1)};
+                    unsigned lowerFaceEnds[2] = {cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + 1), cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + nz)};
+                    unsigned lowerFaceIdentifiers[2] = {8, 17};
+
+                    for(int i = 0; i < 2; ++i){
+                        for(int j = lowerFaceStarts[i]; j < lowerFaceEnds[i]; ++j){
+                            for(int d = 0; d < Dim; ++d){
+                                sendBuffer_m[displacements[lowerFaceIdentifiers[i]] + 4*(j - lowerFaceStarts[i]) + d] = R_host(j)[d];
+                            }
+                            sendBuffer_m[displacements[lowerFaceIdentifiers[i]] + 4*(j - lowerFaceStarts[i]) + 3] = Q_host(j);
+                        }
+                    }
+                }
+            }
+        );
         
 
         // Send and Recieve Particles
@@ -450,7 +522,12 @@ public:
 
         setupMPI();
 
+        double start = MPI_Wtime();
         particleExchange();
+        particleExchange();
+        particleExchange();
+        double end = MPI_Wtime();
+        std::cout << "Particle Exchange Time: " << (end - start)/3.0 << std::endl;
 
         this->fcontainer_m->getRho() = 0.0;
 
