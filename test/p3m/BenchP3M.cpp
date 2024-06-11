@@ -14,9 +14,9 @@ int main(int argc, char* argv[]){
         Inform msg(argv[0]);
         Inform msg2all(argv[0], INFORM_ALL_NODES);
         
-        const double boxlen         = 0.1;
-        const double beam_rad       = 0.025;
-        const unsigned int np       = 2e5;             
+        const double boxlen         = 0.01;
+        const double beam_rad       = 0.005;
+        const unsigned int np       = 1e7;             
         // const double rcut           = 0.0003125;    // 8 * PM grid spacing
         // const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const double dt             = 2.15623e-13;
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
         const double rcut = 3.0 * (boxlen/(double)nr[0]);
         const double alpha = 2./rcut;
         
-        P3M3DBenchManager<T, Dim> manager(np, nt, dt, nr, rcut, alpha, beam_rad, focus_strength);
+        P3M3DBenchManager<T, Dim> manager(np, nt, dt, nr, rcut, alpha, beam_rad, focus_strength, boxlen);
         manager.pre_run();
     }
     ippl::finalize();

@@ -70,11 +70,12 @@ protected:
     std::string solver_m;       // solver is P3MSolver
     double beamRad_m;           // beam radius
     double focusingF_m;         // constant focusing force
+    double boxlen_m;            // box length
     
 public:
-    P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
+    P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_, double boxlen_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_)
         {
             this->preallocatedSendBuffer_m = 1000;
             this->sendBuffer_m = new T[preallocatedSendBuffer_m];
@@ -146,6 +147,8 @@ public:
         MPI_Dist_graph_create_adjacent(MPI_COMM_WORLD, 26, sources, weights, 26, sources, weights, MPI_INFO_NULL, 0, &dist_graph_comm);
         this->graph_comm_m = dist_graph_comm;
 
+        std::cerr << "MPI Graph Communicator Setup Done" << std::endl;
+
     }
 
     void particleExchange() {
@@ -158,8 +161,8 @@ public:
         // get domain decomposition
         // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
-
+        // auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
+        auto cellStartingIdx = this->pcontainer_m->getNL();
         unsigned nx = nCells_m[0];
         unsigned ny = nCells_m[1];
         unsigned nz = nCells_m[2];
@@ -320,7 +323,7 @@ public:
         for(int i = 0; i < 6; ++i){
             unsigned zIdx = zTopologyIdx[i];
             unsigned zCount = zTopologyCounts[i];
-            std::cerr << "zIdx: " << zIdx << " zCount: " << zCount << std::endl;
+            // std::cerr << "zIdx: " << zIdx << " zCount: " << zCount << std::endl;
             for(unsigned j = 0; j < zCount; ++j){
                 for(int d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = 0; // R_host(zIdx + j)[d];
@@ -420,7 +423,7 @@ public:
             }
         }
 
-        Kokkos::fence();
+        // Kokkos::fence();
 
         // std::cerr << "Checkpoint 8" << std::endl;
         // return;
@@ -441,7 +444,11 @@ public:
 
         // 1. MPI_Neighbor_alltoall for size information
         int recvCounts[26];
+
+        double commStart = MPI_Wtime();
         MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
+        double commEnd = MPI_Wtime();
+        std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
 
         // ippl::Comm->barrier();
 
@@ -466,15 +473,15 @@ public:
         }
 
         // 3. MPI_Neighbor_alltoallv to facilitate particle exchange
+        double commStart2 = MPI_Wtime();
         MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
-        ippl::Comm->barrier();
+        double commEnd2 = MPI_Wtime();
+        std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
+        // ippl::Comm->barrier();
         
         // TODO: Compute Interactions
-
-
-
     
-       std::cerr << "Particle Exchange Finished" << std::endl;
+        std::cerr << "Particle Exchange Finished" << std::endl;
 
     }
 
@@ -488,7 +495,7 @@ public:
 
         this->decomp_m.fill(true);
         // this->alpha_m = 2./this->rcut_m;
-        double box_length = 0.01;
+        double box_length = this->boxlen_m;
         this->rmin_m = -box_length/2.;
         this->rmax_m = box_length/2.;
         this->origin_m = rmin_m;
@@ -628,11 +635,11 @@ public:
         auto Q = this->pcontainer_m->Q.getView();
         
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
-        Vector_t<T, Dim> domainCentre, domainRadius;
+        Vector_t<T, Dim> domainMin, domainLength;
         
         for(int d = 0; d < Dim; ++d){
-            domainCentre[d] = (hLocalRegions(rank)[d].max() + hLocalRegions(rank)[d].min()) / 2;
-            domainRadius[d] = (hLocalRegions(rank)[d].max() - hLocalRegions(rank)[d].min()) / 2;
+            domainMin[d] = hLocalRegions(rank)[d].min();
+            domainLength[d] = hLocalRegions(rank)[d].length();
         }
 
         Kokkos::fence();
@@ -648,16 +655,21 @@ public:
                 auto generator = rand_pool.get_state();
                 
                 // obtain random numbers
-                double u = generator.drand();
-                for(int i = 0; i < Dim; ++i){
-                    x[i] = generator.normal(0.0, 1.0);
+                Vector_t<T, Dim> u;
+                for(int d = 0; d < Dim; ++d){
+                    u[d] = generator.drand();
                 }
+
+                // for(int i = 0; i < Dim; ++i){
+                //     x[i] = generator.normal(0.0, 1.0);
+                // }
 
                 rand_pool.free_state(generator);
 
                 // calculate position
-                T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
-                Vector_t<T, Dim> pos = domainCentre +  domainRadius * (Kokkos::pow(u, 1./3.) / Kokkos::sqrt(normsq)) * x;
+                // T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
+                // if (sign < 0.5) u = -u;
+                Vector_t<T, Dim> pos = domainMin + domainLength * u;
 
                 for(int d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
@@ -754,6 +766,9 @@ public:
 	    );
 
         Kokkos::fence();
+
+        // std::cerr << "last cell: " << cellStartingIdx(totalCells-1) << std::endl;
+        // std::cerr << "nLoc: " << nLoc << std::endl;
     
         Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
             KOKKOS_LAMBDA(const int i){
