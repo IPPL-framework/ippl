@@ -210,7 +210,7 @@ public:
 
         // 2 of the faces are also straightforward
         nParticles24 = cellStartingIdx(neighbor12_Idx + 1);
-        nParticles25 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor01_Idx + 1);
+        nParticles25 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor01_Idx);
 
         // required to build buffer
         unsigned zTopologyIdx[6] = {0, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, 0, neighbor01_Idx};
@@ -232,7 +232,7 @@ public:
 
             // faces in x-z plane
             nParticles20 += cellStartingIdx(x_Idx * ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz);
-            nParticles23 += cellStartingIdx(x_Idx * ny * nz + ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz + ny * nz);
+            nParticles23 += cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz) - cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz);
         }
 
         // std::cerr << "Checkpoint 3" << std::endl;
@@ -255,20 +255,22 @@ public:
             }
         }
 
-        std::cerr << "Checkpoint 4" << std::endl;
+        // std::cerr << "Checkpoint 4" << std::endl;
 
         // required to facilitate exchange
-        unsigned nTotal = nParticles00 + nParticles01 + nParticles02 + nParticles03 + nParticles04 + nParticles05 + nParticles06 
-                + nParticles07 + nParticles08 + nParticles09 + nParticles10 + nParticles11 + nParticles12 + nParticles13 
-                + nParticles14 + nParticles15 + nParticles16 + nParticles17 + nParticles18 + nParticles19 + nParticles20 
-                + nParticles21 + nParticles22 + nParticles23 + nParticles24 + nParticles25;
+        unsigned nTotal = nParticles00 + nParticles01 + nParticles02 + nParticles03 + nParticles04 + nParticles05 + nParticles06 + nParticles07 + nParticles08 + nParticles09 + nParticles10 + nParticles11 + nParticles12 + nParticles13 
+                        + nParticles14 + nParticles15 + nParticles16 + nParticles17 + nParticles18 + nParticles19 + nParticles20 
+                        + nParticles21 + nParticles22 + nParticles23 + nParticles24 + nParticles25;
 
         int sendCounts[26] = {4*nParticles00, 4*nParticles01, 4*nParticles02, 4*nParticles03, 4*nParticles04, 4*nParticles05, 4*nParticles06, 
                                 4*nParticles07, 4*nParticles08, 4*nParticles09, 4*nParticles10, 4*nParticles11, 4*nParticles12, 4*nParticles13, 
                                 4*nParticles14, 4*nParticles15, 4*nParticles16, 4*nParticles17, 4*nParticles18, 4*nParticles19, 4*nParticles20, 
                                 4*nParticles21, 4*nParticles22, 4*nParticles23, 4*nParticles24, 4*nParticles25};
 
-        
+        // DEBUG OUTPUT
+        // for(int i = 0; i < 26; ++i){
+        //     std::cerr << "sendCounts[" << i << "]: " << sendCounts[i] << std::endl;
+        // }
         
         // if nTotal larger than preallocated buffer, reallocate
         if(nTotal*4 > this->preallocatedSendBuffer_m){
@@ -277,6 +279,9 @@ public:
             delete[] this->sendBuffer_m;
             this->sendBuffer_m = new T[preallocatedSendBuffer_m];
         }
+
+        // DEBUG OUTPUT
+        // std::cout << "nTotal: " << nTotal << std::endl;
 
         // compute displacements
         int displacements[26];
@@ -309,17 +314,22 @@ public:
             }
         }
 
+        // std::cerr << "Checkpoint 5" << std::endl;
+
         // 2. 4 Edges in z direction, 2 faces in y-z plane
         for(int i = 0; i < 6; ++i){
             unsigned zIdx = zTopologyIdx[i];
             unsigned zCount = zTopologyCounts[i];
+            std::cerr << "zIdx: " << zIdx << " zCount: " << zCount << std::endl;
             for(unsigned j = 0; j < zCount; ++j){
                 for(int d = 0; d < Dim; ++d){
-                    sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = R_host(zIdx + j)[d];
+                    sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = 0; // R_host(zIdx + j)[d];
                 }
-                sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = Q_host(zIdx + j);
+                sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = 0; // Q_host(zIdx + j);
             }
         }
+
+        // std::cerr << "Checkpoint 6" << std::endl;
 
         // 3. 4 Edges in x direction, 2 faces in x-z plane
         // Kokkos::parallel_for("Build Send Buffer", Kokkos::RangePolicy<Host>(0, nx),
@@ -355,8 +365,8 @@ public:
             displacements[20] += 4*(lowerFaceEnd - lowerFaceStart);
 
             // upper face in x-z plane
-            unsigned upperFaceStart = cellStartingIdx(x_Idx * ny * nz + ny * nz);
-            unsigned upperFaceEnd = cellStartingIdx(x_Idx * ny * nz + ny * nz + nz);
+            unsigned upperFaceStart = cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz);
+            unsigned upperFaceEnd = cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz);
             for(unsigned i = upperFaceStart; i < upperFaceEnd; ++i) {
                 for(int d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[23] + 4*(i - upperFaceStart) + d] = R_host(i)[d];
@@ -365,6 +375,8 @@ public:
             }
             displacements[23] += 4*(upperFaceEnd - upperFaceStart);
         }
+
+        // std::cerr << "Checkpoint 7" << std::endl;
     
         // );
         
@@ -407,6 +419,11 @@ public:
                 }
             }
         }
+
+        Kokkos::fence();
+
+        // std::cerr << "Checkpoint 8" << std::endl;
+        // return;
         // );
 
         // recompute displacements, changed during building buffer
@@ -425,6 +442,8 @@ public:
         // 1. MPI_Neighbor_alltoall for size information
         int recvCounts[26];
         MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
+
+        // ippl::Comm->barrier();
 
         // required buffer size
         unsigned nTotalRecv = 0;
@@ -448,9 +467,11 @@ public:
 
         // 3. MPI_Neighbor_alltoallv to facilitate particle exchange
         MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
-
+        ippl::Comm->barrier();
         
         // TODO: Compute Interactions
+
+
 
     
        std::cerr << "Particle Exchange Finished" << std::endl;
@@ -548,10 +569,8 @@ public:
 
         double start = MPI_Wtime();
         particleExchange();
-        particleExchange();
-        particleExchange();
         double end = MPI_Wtime();
-        std::cout << "Particle Exchange Time: " << (end - start)/3.0 << std::endl;
+        std::cout << "Particle Exchange Time: " << (end - start) << std::endl;
 
         this->fcontainer_m->getRho() = 0.0;
 
