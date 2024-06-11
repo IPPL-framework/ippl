@@ -170,6 +170,15 @@ public:
         // 2. Build send buffer
         // 3. Send and Recieve Particles
 
+        // 1. Compute number of particles to be sent to each neighbor
+        // This is split up into 4 parts
+        // I.   We compute the number of particles to be sent to each corner
+        // II.  We compute the number of particles to be sent to each edge in z direction and faces in y-z plane
+        // III. We compute the number of particles to be sent to each edge in x direction and faces in x-z plane
+        // IV.  We compute the number of particles to be sent to each edge in y direction and faces in x-y plane
+        // We do this to make use of the fact that particles are stored in an ordered manner in the particle container
+
+        // I. Compute the number of particles to be sent to each corner
         unsigned neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx;
         unsigned nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13;
 
@@ -188,8 +197,9 @@ public:
         unsigned cornerCounts[8] = {nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13};
         unsigned cornerIdentifiers[8] = {0, 1, 3, 4, 9, 10, 12, 13};
 
-        std::cerr << "Checkpoint 1" << std::endl;
+        // std::cerr << "Checkpoint 1" << std::endl;
 
+        // II. Compute the number of particles to be sent to each edge in z direction and faces in y-z plane
         unsigned nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25;
 
         // cellStartingIdx is consecutive in z direction, thus simplifying the computation for 4 of the edges
@@ -207,8 +217,9 @@ public:
         unsigned zTopologyCounts[6] = {nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25};
         unsigned zTopologyIdentifiers[6] = {18, 19, 21, 22, 24, 25};
 
-        std::cerr << "Checkpoint 2" << std::endl;
+        // std::cerr << "Checkpoint 2" << std::endl;
 
+        // III. Compute the number of particles to be sent to each edge in x direction and faces in x-z plane
         unsigned nParticles02 = 0, nParticles11 = 0, nParticles05 = 0, nParticles14 = 0, nParticles20 = 0, nParticles23 = 0;
 
         // replace with Kokkos parallel_for or reduce : TODO
@@ -224,8 +235,9 @@ public:
             nParticles23 += cellStartingIdx(x_Idx * ny * nz + ny * nz + nz) - cellStartingIdx(x_Idx * ny * nz + ny * nz);
         }
 
-        std::cerr << "Checkpoint 3" << std::endl;
+        // std::cerr << "Checkpoint 3" << std::endl;
 
+        // IV. Compute the number of particles to be sent to each edge in y direction and faces in x-y plane
         unsigned nParticles06 = 0, nParticles15 = 0, nParticles07 = 0, nParticles16 = 0, nParticles08 = 0, nParticles17 = 0;
 
         // rest of the topology requires a bit more work
