@@ -478,11 +478,67 @@ public:
         double commEnd2 = MPI_Wtime();
         std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
         // ippl::Comm->barrier();
-        
-        // TODO: Compute Interactions
     
         std::cerr << "Particle Exchange Finished" << std::endl;
 
+        // Compute Interactions - 4 Steps
+        // I.   Compute interactions on the corners
+        // II.  Compute interactions on the edges in z direction and faces in y-z plane
+        // III. Compute interactions on the edges in x direction and faces in x-z plane
+        // IV.  Compute interactions on the edges in y direction and faces in x-y plane
+
+        // needed for all steps
+        unsigned nCells = nCells_m[0] * nCells_m[1] * nCells_m[2];
+        unsigned nLoc = cellStartingIdx(nCells);
+        Kokkos::View<ippl::Vector<double, 3> *, Host> F_sr("PP-Halo Force", nLoc);
+        double rcut = rcut_m;
+        double alpha = alpha_m;
+        
+        // I. Compute interactions on the corners
+        using team_t = Kokkos::TeamPolicy<Host>::member_type;
+        parallel_for("PP on Corners", Kokkos::TeamPolicy<Host>(8, Kokkos::AUTO),
+            KOKKOS_LAMBDA(const team_t& team){
+                const int i = team.league_rank();
+
+                const int displacement = recvDisplacements[cornerIdentifiers[i]];
+                const int haloCornerCount = recvCounts[cornerIdentifiers[i]];
+
+                const int internalCornerIndex = cornerIdx[i];       // starting index in particle view
+                const int internalCornerCount = cornerCounts[i];    // number of particles in corner (local)
+                const int internalCornerDisplacement = cellStartingIdx(internalCornerIndex); // starting index in particle view
+
+                auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, internalCornerCount, haloCornerCount);
+                Kokkos::parallel_for(p, [=](const int& i, const int& j){
+                    const int internalIdx = internalCornerDisplacement + i;
+                    const int haloIdx = displacement + 4*j;
+
+                    double rsq_ij = 0;
+                    Vector_t<T, Dim> dist_ij;
+                    for(int d = 0; d < Dim; ++d){
+                        dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
+                        rsq_ij += dist_ij[d] * dist_ij[d];
+                    }
+
+                    double r_ij = Kokkos::sqrt(rsq_ij);
+				    if (r_ij >= rcut) return;
+
+                    Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                    Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
+                });
+                
+            }
+        );
+
+        // II. Compute interactions on the edges in z direction and faces in y-z plane
+        // a. generate mini neighborlist
+        // b. compute interactions
+        // TODO
+
+        // III. Compute interactions on the edges in x direction and faces in x-z plane
+        // TODO
+
+        // IV. Compute interactions on the edges in y direction and faces in x-y plane
+        // TODO
     }
 
 

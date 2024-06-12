@@ -16,7 +16,7 @@ int main(int argc, char* argv[]){
         
         const double boxlen         = 0.01;
         const double beam_rad       = 0.005;
-        const unsigned int np       = 1e7;             
+        const unsigned int np       = 1e7;             // 10 million particles             
         // const double rcut           = 0.0003125;    // 8 * PM grid spacing
         // const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const double dt             = 2.15623e-13;
