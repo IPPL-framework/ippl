@@ -326,9 +326,9 @@ public:
             // std::cerr << "zIdx: " << zIdx << " zCount: " << zCount << std::endl;
             for(unsigned j = 0; j < zCount; ++j){
                 for(int d = 0; d < Dim; ++d){
-                    sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = 0; // R_host(zIdx + j)[d];
+                    sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = R_host(zIdx + j)[d];
                 }
-                sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = 0; // Q_host(zIdx + j);
+                sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = Q_host(zIdx + j);
             }
         }
 
@@ -488,6 +488,7 @@ public:
         // IV.  Compute interactions on the edges in y direction and faces in x-y plane
 
         // needed for all steps
+        auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         unsigned nCells = nCells_m[0] * nCells_m[1] * nCells_m[2];
         unsigned nLoc = cellStartingIdx(nCells);
         Kokkos::View<ippl::Vector<double, 3> *, Host> F_sr("PP-Halo Force", nLoc);
@@ -496,7 +497,7 @@ public:
         
         // I. Compute interactions on the corners
         using team_t = Kokkos::TeamPolicy<Host>::member_type;
-        parallel_for("PP on Corners", Kokkos::TeamPolicy<Host>(8, Kokkos::AUTO),
+        Kokkos::parallel_for("PP on Corners", Kokkos::TeamPolicy<Host>(8, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
@@ -508,9 +509,9 @@ public:
                 const int internalCornerDisplacement = cellStartingIdx(internalCornerIndex); // starting index in particle view
 
                 auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, internalCornerCount, haloCornerCount);
-                Kokkos::parallel_for(p, [=](const int& i, const int& j){
-                    const int internalIdx = internalCornerDisplacement + i;
-                    const int haloIdx = displacement + 4*j;
+                Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                    const int internalIdx = internalCornerDisplacement + ii;
+                    const int haloIdx = displacement + 4*jj;
 
                     double rsq_ij = 0;
                     Vector_t<T, Dim> dist_ij;
@@ -532,6 +533,76 @@ public:
         // II. Compute interactions on the edges in z direction and faces in y-z plane
         // a. generate mini neighborlist
         // b. compute interactions
+        
+        // neighborlist for edges in z direction
+        Kokkos::parallel_for("PP interaction for z edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
+            KOKKOS_LAMBDA(const team_t& team){
+                const int i = team.league_rank();
+
+                const int displacement = recvDisplacements[zTopologyIdentifiers[i]];
+                const int haloEdgeCount = recvCounts[zTopologyIdentifiers[i]];
+
+                // number of cells in z direction
+                unsigned edgeLength = nCells_m[2];
+                const double edgeStart = hLocalRegions(rank)[2].min();
+
+                int zEdgeNeighborList[edgeLength+1];
+
+                zEdgeNeighborList[0] = 0;
+                int currentCell = 1;
+                for(int jj = 0; jj < haloEdgeCount; ++jj){
+                    if (recvBuffer_m[displacement + jj * 4 + 2] > (currentCell * rcut + edgeStart)){
+                        zEdgeNeighborList[currentCell] = jj; // first particle outside cell
+                        ++currentCell;                       // search for next cell
+                    }
+                }
+                zEdgeNeighborList[edgeLength] = haloEdgeCount;
+                
+                // int neighbors[3][3] = {{0, 0, -1}, {0, 0, 0}, {0, 0, 1}};
+
+                // particle particle interaction
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nz),
+                    [&](const int& zCellNumber){
+                        int localCellIdx = zTopologyIdx[i] + zCellNumber;
+
+                        // starting index and count of local particles
+                        unsigned localStartingIdx = cellStartingIdx(localCellIdx);
+                        unsigned localCount = cellStartingIdx(localCellIdx+1) - localStartingIdx;
+
+                        // declare starting index and count of halo particles
+                        unsigned haloStartingIdx;
+
+                        // handle first cell in Edge
+                        if(zCellNumber == 0) {
+                            haloStartingIdx = 0;
+                        } else {
+                            haloStartingIdx = zEdgeNeighborList[zCellNumber-1];
+                        }
+
+                        unsigned haloCount = zEdgeNeighborList[zCellNumber+1] - haloStartingIdx;
+                        
+                        auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
+                        Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                            const int internalIdx = localStartingIdx + ii;
+                            const int haloIdx = displacement + 4 * (jj + haloStartingIdx);
+
+                            double rsq_ij = 0;
+                            Vector_t<T, Dim> dist_ij;
+                            for(int d = 0; d < Dim; ++d){
+                                dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
+                                rsq_ij += dist_ij[d] * dist_ij[d];
+                            }
+
+                            double r_ij = Kokkos::sqrt(rsq_ij);
+                            if (r_ij >= rcut) return;
+
+                            Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                            Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
+                        });
+                    }
+                );
+            }
+        );
         // TODO
 
         // III. Compute interactions on the edges in x direction and faces in x-z plane
