@@ -1,5 +1,6 @@
 
 namespace ippl {
+
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
@@ -7,7 +8,8 @@ namespace ippl {
         const Mesh<T, Dim>& mesh,
         const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::ElementType&
             ref_element,
-        const QuadratureType& quadrature)
+        const QuadratureType& quadrature,
+        const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), QuadratureType,
                              FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
@@ -15,22 +17,40 @@ namespace ippl {
                       "Finite Element space only supports 1D, 2D and 3D meshes");
 
         // Initialize the elementIndices view
-        initializeElementIndices();
+        initializeElementIndices(layout);
     }
 
     // Initialize element indices Kokkos View
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
-    void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::initializeElementIndices() {
+    void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::initializeElementIndices(const Layout_t& layout) {
+        // TODO: element partitioning among ranks should depend on the layout
         const std::size_t numElements = this->numElements();
-        elementIndices = Kokkos::View<size_t*>("i", numElements);
+        const unsigned int numRanks   = Comm->size();
+        const unsigned int myRank     = Comm->rank();
+        std::size_t elementsPerRank   = numElements/numRanks;
+        unsigned int remainder        = numElements - (elementsPerRank * numRanks);
+        // if elements are remaining to be assigned to a rank, assign them
+        if (myRank < remainder) {
+            elementsPerRank++;
+        }
+
+        elementIndices = Kokkos::View<size_t*>("i", elementsPerRank);
 
         using exec_space  = typename Kokkos::View<size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-        
-        Kokkos::parallel_for("Element index view", policy_type(0, numElements),
+
+        const auto& ldom = layout.getLocalNDIndex(); 
+
+        for (size_t i = 0; i < elementsPerRank; ++i) {
+            size_t global = i + ldom[0].first();
+            myelements.push_back(global);
+        }
+
+        Kokkos::parallel_for("Element index view", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t i) {
-                elementIndices(i) = i;
+                size_t global = i + ldom[0].first();
+                elementIndices(i) = global;
             });
         Kokkos::fence();
     }
@@ -330,10 +350,12 @@ namespace ippl {
                                                        FieldRHS>::numElementDOFs>&)>& evalFunction)
         const {
 
-        const std::size_t numGhosts = field.getNghost();
+        // get number of ghost cells in field 
+        const int nghost = field.getNghost();
+
         // create a new field for result with view initialized to zero (views are initialized to
         // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), numGhosts);
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
 
         bool checkEssentialBDCs = true;  // TODO get from field in the future
         // T bc_const_value        = 1.0;   // TODO get from field (non-homogeneous BCs)
@@ -356,7 +378,7 @@ namespace ippl {
             }
         }
 
-        const std::size_t numElements = this->numElements();
+        //const std::size_t numElements = this->numElements();
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -364,20 +386,11 @@ namespace ippl {
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
         IpplTimings::startTimer(outer_loop);
 
-
-        Kokkos::parallel_for("Outer loop over elements", policy_type(0, numElements),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {  //(index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
+        Kokkos::parallel_for("Outer loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
                 const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
-
-                // print debugging
-                {
-                int tid = omp_get_thread_num();
-                static std::mutex lock;
-                std::lock_guard guard{ lock };
-                std::cout << "Ax: I am thread " << tid << " and I have element " << elementIndex << std::endl;
-                } 
 
                 // local DOF indices
                 index_t i, j;
@@ -431,12 +444,6 @@ namespace ippl {
               typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateLoadVector(
         FieldRHS& field, const std::function<T(const point_t&)>& f) const {
-        
-        const std::size_t numElements = this->numElements();
-        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        //Vector<T, this->numElementDOFs> b_K;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -470,19 +477,48 @@ namespace ippl {
             return f_q_k * basis_q_k[i] * absDetDPhi;
         };
 
-        Kokkos::parallel_for("Outer loop over elements", policy_type(0, numElements),
-            KOKKOS_CLASS_LAMBDA(size_t index) {  //(index_t elementIndex = 0; elementIndex < numElements; ++elementIndex) {
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start of debug output
+        /*
+        FieldRHS dummy_field;
+        dummy_field.initialize(field.get_mesh(), field.getLayout());
+        auto view = dummy_field.getView();
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for("assign field", dummy_field.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(view, args) = 4.0 * args[0] + ldom[0].first();
+            });
+        Kokkos::fence();
+        dummy_field.fillHalo();
+        Comm->barrier();
+
+        dummy_field.write();
+        Comm->barrier();
+
+        Inform msg2all("", INFORM_ALL_NODES);
+        int me = Comm->rank();
+        msg2all << "ldom.first() = " << ldom[0].first() << "ldom.length() = " << ldom[0].length() << endl;
+        msg2all << "I am rank " << me << " and my elements are " << endl;
+        for (unsigned int i = 0; i < myelements.size(); i++) {
+           msg2all << myelements[i] << ": ";
+           msg2all << this->getGlobalDOFIndices(myelements[i]) << ": ";
+           msg2all << this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[0]) << ", ";
+           msg2all << this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[1]) << ": ";
+           msg2all << getFieldEntry(dummy_field, this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[0])) << "," ;
+           msg2all << getFieldEntry(dummy_field, this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[1])) << "." ;
+           msg2all << endl;
+        }
+        msg2all << endl;
+        */
+        // end of debug output
+
+        Kokkos::parallel_for("Outer loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
                 const index_t elementIndex                              = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-
-                // print debugging
-                {
-                int tid = omp_get_thread_num();
-                static std::mutex lock;
-                std::lock_guard guard{ lock };
-                std::cout << "LoadVec: I am thread " << tid << " and I have element " << elementIndex << std::endl;
-                } 
 
                 index_t i, I;
 
@@ -501,7 +537,8 @@ namespace ippl {
                     for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         b_I += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
                     }
-            }
+                }
+
         });
         Kokkos::fence();
     }

@@ -77,6 +77,8 @@ namespace ippl {
                                             FieldRHS>::mesh_element_vertex_point_vec_t
             mesh_element_vertex_point_vec_t;
 
+        typedef FieldLayout<Dim> Layout_t;
+
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -89,13 +91,13 @@ namespace ippl {
          * @param quadrature Reference to the quadrature rule
          */
         LagrangeSpace(const Mesh<T, Dim>& mesh, const ElementType& ref_element,
-                      const QuadratureType& quadrature);
+                      const QuadratureType& quadrature, const Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**
          * @brief Initialize a Kokkos view containing the element indices
          */
-        void initializeElementIndices();
+        void initializeElementIndices(const Layout_t& layout);
 
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -254,19 +256,22 @@ namespace ippl {
             static_assert(sizeof...(Is) == FieldType::view_type::rank,
                           "Number of indices must match the field view rank");
 
-            const unsigned num_ghosts = field.getNghost();
+            const unsigned nghost = field.getNghost();
+            auto ldom = (field.getLayout()).getLocalNDIndex();
 
-            // offset the NDIndex for the ghost cells
-            ndindex += num_ghosts;
+            // offset the NDIndex for the ghost cells and local domain
+            for (unsigned d = 0; d < Dim; ++d) {
+                ndindex[d] = ndindex[d] - ldom[d].first() + nghost;
+            }
 
             // make sure that the index is within the field (without the ghost cells)
             for (std::size_t i = 0; i < Dim; ++i) {
-                if (ndindex[i] < num_ghosts
+                if (ndindex[i] < nghost
                     || ndindex[i] > field.getLayout().getDomain()[i].length()) {
-                    // throw std::out_of_range("Index out of range");
+                    throw std::out_of_range("Index out of range");
                     std::cerr << "Index out of range" << std::endl;
                     std::cerr << "Index: " << ndindex[i] << std::endl;
-                    std::cerr << "Domain: " << num_ghosts << " - "
+                    std::cerr << "Domain: " << nghost << " - "
                               << field.getLayout().getDomain()[i].length() << std::endl;
                 }
             }
@@ -278,14 +283,13 @@ namespace ippl {
          * @brief Check if a DOF is on the boundary of the mesh
          *
          * @param ndindex The NDIndex of the DOF
-         * @param numGhosts The number of ghost cells
          *
          * @return true - If the DOF is on the boundary
          * @return false - If the DOF is not on the boundary
          */
         bool isDOFOnBoundary(const ndindex_t& ndindex) const {
-            for (index_t k = 0; k < Dim; ++k) {
-                if (ndindex[k] <= 0 || ndindex[k] >= this->mesh_m.getGridsize(k) - 1) {
+            for (index_t d = 0; d < Dim; ++d) {
+                if (ndindex[d] <= 0 || ndindex[d] >= this->mesh_m.getGridsize(d) - 1) {
                     return true;
                 }
             }
@@ -293,6 +297,7 @@ namespace ippl {
         }
 
         Kokkos::View<size_t*> elementIndices;
+        std::vector<size_t> myelements;
     };
 
 }  // namespace ippl

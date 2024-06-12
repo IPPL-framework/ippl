@@ -44,7 +44,7 @@ namespace ippl {
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m) {
+            , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
@@ -52,8 +52,13 @@ namespace ippl {
             static IpplTimings::TimerRef load = IpplTimings::getTimer("evaluateLoadVector");
             IpplTimings::startTimer(load);
 
+            rhs.fillHalo();
+
             lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
 
+            rhs.accumulateHalo();
+            rhs.fillHalo();
+            
             IpplTimings::stopTimer(load);
         }
 
@@ -93,8 +98,15 @@ namespace ippl {
                 };
 
             const auto algoOperator = [poissonEquationEval,
-                                       this](const lhs_type& field) -> lhs_type {
-                return lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+                                       this](lhs_type field) -> lhs_type {
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+            
+                return_field.accumulateHalo();
+                return_field.fillHalo();
+            
+                return return_field;
             };
 
             pcg_algo_m.setOperator(algoOperator);

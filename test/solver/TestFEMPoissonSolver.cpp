@@ -125,6 +125,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // exact solution
 
+    msg2all << "ID: " << me << ", layout = " << layout << endl;
+
     // Define boundary conditions
     BConds_t bcField;
     for (unsigned int i = 0; i < 2 * Dim; ++i) {
@@ -134,33 +136,20 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     rhs.setFieldBC(bcField);
 
     // set solution
-    if constexpr (Dim == 1) {
-        Kokkos::parallel_for(
-            "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const unsigned i) {
-                const ippl::Vector<unsigned, Dim> indices{i};
-                const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
+    auto view = sol.getView();
+    auto ldom = layout.getLocalNDIndex();
 
-                sol.getView()(i) = f_sol(x);
-            });
-    } else if constexpr (Dim == 2) {
-        Kokkos::parallel_for(
-            "Assign solution", sol.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const unsigned i, const unsigned j) {
-                const ippl::Vector<unsigned, Dim> indices{i, j};
-                const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
-
-                sol.getView()(i, j) = f_sol(x);
-            });
-    } else if constexpr (Dim == 3) {
-        Kokkos::parallel_for(
-            "Assign solution", sol.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const unsigned i, const unsigned j, const unsigned k) {
-                const ippl::Vector<unsigned, Dim> indices{i, j, k};
-                const ippl::Vector<T, Dim> x = (indices - numGhosts) * cellSpacing + origin;
-
-                sol.getView()(i, j, k) = f_sol(x);
-            });
-    }
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for("Assign solution", sol.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const index_array_type& args) {
+            ippl::Vector<int, Dim> iVec = args - numGhosts;
+            for (unsigned d = 0; d < Dim; ++d) {
+                iVec[d] += ldom[d].first();
+            }
+            const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
+            
+            apply(view, args) = f_sol(x);
+        });
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
@@ -232,11 +221,11 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             dim = 1;
-            /*for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
                 testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0,
                                     1.0);
-            }*/
-            testFEMSolver<T, 1>(4, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0, 1.0);
+            }
+            //testFEMSolver<T, 1>(4, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0, 1.0);
         } else if (dim == 2) {
             // 2D Sinusoidal
             dim = 2;
