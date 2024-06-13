@@ -42,7 +42,7 @@ using Device = Kokkos::DefaultExecutionSpace;
 using Host = Kokkos::DefaultHostExecutionSpace;
 
 // physical constants
-const double ke = 2.532638e8;
+// const double ke = 2.532638e8;
 
 /**
  * @class P3M3DBenchManager
@@ -158,15 +158,16 @@ public:
         int commSize = ippl::Comm->size();
         int rank = ippl::Comm->rank();
 
+        const double ke = 2.532638e8;
         // get domain decomposition
         // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        // auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
-        auto cellStartingIdx = this->pcontainer_m->getNL();
-        unsigned nx = nCells_m[0];
-        unsigned ny = nCells_m[1];
-        unsigned nz = nCells_m[2];
-        unsigned nzm1 = nz - 1;
+        auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
+        // auto cellStartingIdx = this->pcontainer_m->getNL();
+        const unsigned nx = nCells_m[0];
+        const unsigned ny = nCells_m[1];
+        const unsigned nz = nCells_m[2];
+        const unsigned nzm1 = nz - 1;
 
         // particle exchange facilitated in 3 steps
         // 1. Compute number of particles to be sent to each neighbor
@@ -534,7 +535,9 @@ public:
         // a. generate mini neighborlist
         // b. compute interactions
         
-        // neighborlist for edges in z direction
+        
+        // int zEdgeNeighborList[4][nz+1];
+        // interaction on edges in z direction
         Kokkos::parallel_for("PP interaction for z edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
@@ -542,21 +545,18 @@ public:
                 const int displacement = recvDisplacements[zTopologyIdentifiers[i]];
                 const int haloEdgeCount = recvCounts[zTopologyIdentifiers[i]];
 
-                // number of cells in z direction
-                unsigned edgeLength = nCells_m[2];
                 const double edgeStart = hLocalRegions(rank)[2].min();
+                Kokkos::View<unsigned*, Host> zEdgeNeighborList("NL for Halo interaction on z edges", nz+1);
 
-                int zEdgeNeighborList[edgeLength+1];
-
-                zEdgeNeighborList[0] = 0;
+                zEdgeNeighborList(0) = 0;
                 int currentCell = 1;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
                     if (recvBuffer_m[displacement + jj * 4 + 2] > (currentCell * rcut + edgeStart)){
-                        zEdgeNeighborList[currentCell] = jj; // first particle outside cell
+                        zEdgeNeighborList(currentCell) = jj; // first particle outside cell
                         ++currentCell;                       // search for next cell
                     }
                 }
-                zEdgeNeighborList[edgeLength] = haloEdgeCount;
+                zEdgeNeighborList(nz) = haloEdgeCount;
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nz),
@@ -574,10 +574,10 @@ public:
                         if(zCellNumber == 0) {
                             haloStartingIdx = 0;
                         } else {
-                            haloStartingIdx = zEdgeNeighborList[zCellNumber-1];
+                            haloStartingIdx = zEdgeNeighborList(zCellNumber-1);
                         }
 
-                        unsigned haloCount = zEdgeNeighborList[zCellNumber+1] - haloStartingIdx;
+                        unsigned haloCount = zEdgeNeighborList(zCellNumber+1) - haloStartingIdx;
                         
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
@@ -613,20 +613,20 @@ public:
                 const int displacement = recvDisplacements[xEdgeIdentifiers[i]];
                 const int haloEdgeCount = recvCounts[xEdgeIdentifiers[i]];
 
-                // number of cells in z direction
+                // lower bound of domain in x direction
                 const double edgeStart = hLocalRegions(rank)[0].min();
 
-                int xEdgeNeighborList[nx+1];
+                Kokkos::View<unsigned*, Host> xEdgeNeighborList("NL for Halo edges in x direction", nx+1);
 
-                xEdgeNeighborList[0] = 0;
+                xEdgeNeighborList(0) = 0;
                 int currentCell = 1;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
                     if (recvBuffer_m[displacement + jj * 4 + 0] > (currentCell * rcut + edgeStart)){
-                        xEdgeNeighborList[currentCell] = jj; // first particle outside cell
+                        xEdgeNeighborList(currentCell) = jj; // first particle outside cell
                         ++currentCell;                       // search for next cell
                     }
                 }
-                xEdgeNeighborList[nx] = haloEdgeCount;
+                xEdgeNeighborList(nx) = haloEdgeCount;
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nx),
@@ -644,10 +644,10 @@ public:
                         if(xCellNumber == 0) {
                             haloStartingIdx = 0;
                         } else {
-                            haloStartingIdx = xEdgeNeighborList[xCellNumber-1];
+                            haloStartingIdx = xEdgeNeighborList(xCellNumber-1);
                         }
 
-                        unsigned haloCount = xEdgeNeighborList[xCellNumber+1] - haloStartingIdx;
+                        unsigned haloCount = xEdgeNeighborList(xCellNumber+1) - haloStartingIdx;
                         
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
@@ -684,20 +684,19 @@ public:
                 const int displacement = recvDisplacements[yEdgeIdentifiers[i]];
                 const int haloEdgeCount = recvCounts[yEdgeIdentifiers[i]];
 
-                // number of cells in z direction
                 const double edgeStart = hLocalRegions(rank)[1].min();
 
-                int yEdgeNeighborList[ny+1];
+                Kokkos::View<unsigned*, Host>  yEdgeNeighborList("NL for edges in y direction", ny+1);
 
-                yEdgeNeighborList[0] = 0;
+                yEdgeNeighborList(0) = 0;
                 int currentCell = 1;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
                     if (recvBuffer_m[displacement + jj * 4 + 1] > (currentCell * rcut + edgeStart)){
-                        yEdgeNeighborList[currentCell] = jj; // first particle outside cell
+                        yEdgeNeighborList(currentCell) = jj; // first particle outside cell
                         ++currentCell;                       // search for next cell
                     }
                 }
-                yEdgeNeighborList[ny] = haloEdgeCount;
+                yEdgeNeighborList(ny) = haloEdgeCount;
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ny),
@@ -715,10 +714,10 @@ public:
                         if(yCellNumber == 0) {
                             haloStartingIdx = 0;
                         } else {
-                            haloStartingIdx = yEdgeNeighborList[yCellNumber-1];
+                            haloStartingIdx = yEdgeNeighborList(yCellNumber-1);
                         }
 
-                        unsigned haloCount = yEdgeNeighborList[yCellNumber+1] - haloStartingIdx;
+                        unsigned haloCount = yEdgeNeighborList(yCellNumber+1) - haloStartingIdx;
                         
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
@@ -1099,6 +1098,7 @@ public:
         auto rcut = this->rcut_m;
         auto alpha = this->alpha_m;
         auto epsilon = this->epsilon_m;
+        const double ke = 2.532638e8;
 
         // get neighbor mesh data
         auto cellStartingIdx = this->pcontainer_m->getNL();
