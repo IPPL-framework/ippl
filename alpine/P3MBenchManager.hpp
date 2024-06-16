@@ -605,8 +605,6 @@ public:
             }
         );
 
-        std::cerr << "Checkpoint 10" << std::endl;
-
         // Interaction on faces in y-z plane
         Kokkos::parallel_for("PP interaction for y-z faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
             KOKKOS_LAMBDA(const team_t& team){
@@ -805,7 +803,7 @@ public:
                         }
                         xzFaceNeighborList(currentCell) = jj;
                     } else if (newCell < currentCell) {
-                        std::cerr << "wrong particle order assumed or sent" << std::endl;
+                        // std::cerr << "wrong particle order assumed or sent" << std::endl;
                     }
                         
                 }
@@ -970,7 +968,7 @@ public:
                         }
                         xyFaceNeighborList(currentCell) = jj;
                     } else if (newCell < currentCell) {
-                        std::cerr << "wrong particle order assumed or sent" << std::endl;
+                        // std::cerr << "wrong particle order assumed or sent" << std::endl;
                     }
                         
                 }
@@ -1119,11 +1117,21 @@ public:
 
         // setupMPI();
 
+        double initTimerStart = MPI_Wtime();
         initializeParticles();
+        double initTimerEnd = MPI_Wtime();
+        std::cout << "Particle Initialization Time: " << initTimerEnd - initTimerStart << std::endl;
 
+        double nlSetupStart = MPI_Wtime();
         initializeNeighborList();
+        Kokkos::fence();
+        double nlSetupEnd = MPI_Wtime();
+        std::cout << "NL Build Time: "<< nlSetupEnd - nlSetupStart << std::endl;
 
+        double MPITimerStart = MPI_Wtime();
         setupMPI();
+        double MPITimerEnd = MPI_Wtime();
+        std::cout << "MPI Setup Time: " << MPITimerEnd - MPITimerStart << std::endl;
 
         double start = MPI_Wtime();
         particleExchange();
@@ -1132,15 +1140,20 @@ public:
 
         this->fcontainer_m->getRho() = 0.0;
 
+        double PMTimerStart = MPI_Wtime();
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
+        double PMTimerEnd = MPI_Wtime();
         
-        std::cerr << "Field Solver Finished" << std::endl;
+        std::cout << "Field Solver Time: " << PMTimerEnd - PMTimerStart << std::endl;
 
+        double PPTimerStart = MPI_Wtime();
 	    this->par2par();
+        double PPTimerEnd = MPI_Wtime();
+        std::cout << "PP Interaction Time: " << PPTimerEnd - PPTimerStart << std::endl;
 
 	    // this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
@@ -1442,6 +1455,7 @@ public:
                         const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
                         const size_type nNeighborParticles = neighborEnd - neighborStart;
 
+                        
                         auto threadVectorMDRange = 
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
 	 			
@@ -1466,7 +1480,35 @@ public:
                                 Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
-                    }
+
+/*
+                        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nParticles),
+                            [=](const int& i) {
+                                const size_type ii = start + i;
+                                Vector_t<T, Dim> E_ii;
+                                
+                                for(size_type j = 0; j < nNeighborParticles; ++j){
+                                    const size_type jj = neighborStart + j;
+                                    if (((cellIdx == neighborCellIdx) && ii >= jj)) return;
+
+                                    double rsq_ij = 0.0;
+                                    Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
+                                    for (int d = 0; d < Dim; ++d) {
+                                        rsq_ij += dist_ij[d] * dist_ij[d];
+                                    }
+
+                                    double r_ij = Kokkos::sqrt(rsq_ij);
+                                    if  (r_ij >= rcut) continue;
+
+                                    // calculate and apply force
+                                    Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                                    E_ii += F_ij * Q(jj);
+                                    Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
+                                }
+                                Kokkos::atomic_sub(&E(ii), E_ii);
+                            }
+                        );
+ */                  }
                 );
             }
         );
