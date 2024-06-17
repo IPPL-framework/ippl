@@ -105,6 +105,7 @@ protected:
     T* sendBuffer_m;                // Send buffer
     unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
     T* recvBuffer_m;                // Recieve buffer
+    Kokkos::View<ippl::Vector<double, 3> *, Host> haloE_m;
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -1032,6 +1033,7 @@ public:
                 );
             }
         );
+        haloE_m = F_sr;
     }
 
 
@@ -1524,6 +1526,20 @@ public:
         LeapFrogStep();
     }
 
+    void haloEnergyUpdate(){
+        
+        auto nLoc = this->pcontainer_m->getLocalNum();
+        Kokkos::View<ippl::Vector<double, 3> *, Device> E_halo("Halo Energy Device View", nLoc);
+        Kokkos::deep_copy(E_halo, haloE_m);
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+        Kokkos::parallel_for("update Energy by halo interaction values", nLoc,
+            KOKKOS_LAMBDA(const size_type& i){
+                pc->E(i) += E_halo(i);
+            }
+        );
+    }
+
     void LeapFrogStep() {
         
         double dt                               = this->dt_m;
@@ -1545,6 +1561,8 @@ public:
         this->grid2par();
 
         this->par2par();
+
+        haloEnergyUpdate();
 
         // this->applyConstantFocusing();
 
