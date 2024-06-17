@@ -453,7 +453,7 @@ public:
         double commStart = MPI_Wtime();
         MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
         double commEnd = MPI_Wtime();
-        std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
+        // std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
 
         // ippl::Comm->barrier();
 
@@ -481,10 +481,10 @@ public:
         double commStart2 = MPI_Wtime();
         MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
         double commEnd2 = MPI_Wtime();
-        std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
+        // std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
         // ippl::Comm->barrier();
     
-        std::cerr << "Particle Exchange Finished" << std::endl;
+        // std::cerr << "Particle Exchange Finished" << std::endl;
 
         // Compute Interactions - 4 Steps
         // I.   Compute interactions on the corners
@@ -689,6 +689,8 @@ public:
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
                                 if (r_ij >= rcut) continue;
+				
+				std::cerr << "particles interacted" << std::endl;
 
                                 tempFsr +=  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 
@@ -701,7 +703,7 @@ public:
             }
         );
 
-        std::cerr << "Checkpoint 11" << std::endl;
+        // std::cerr << "Checkpoint 11" << std::endl;
 
         // III. Compute interactions on the edges in x direction and faces in x-z plane
         unsigned xEdgeIdentifiers[4] = {2, 11, 5, 14};
@@ -857,7 +859,7 @@ public:
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
                                 if (r_ij >= rcut) continue;
-
+				std::cerr << "particles interacted" << std::endl;
                                 tempFsr +=  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 
                             }
@@ -1157,15 +1159,71 @@ public:
         double PPTimerEnd = MPI_Wtime();
         std::cout << "PP Interaction Time: " << PPTimerEnd - PPTimerStart << std::endl;
 
-	    // this->focusingF_m *= this->computeAvgSpaceChargeForces();
+	haloEnergyUpdate();
+
+	this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
         // this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << std::endl;
     }
-        
+
+    void computeBeamStatistics() {
+        // std::cerr << "Start Computing Beam Statistics" << std::endl;
+
+        auto R = this->pcontainer_m->R.getView();
+        auto nLoc = this->pcontainer_m->getLocalNum();
+        auto P = this->pcontainer_m->P.getView();
+        double beamRad = this->beamRad_m;
+
+        Vector_t<double, 12> stats = 0.0;
+
+        Kokkos::parallel_reduce("compute sigma x", nLoc,
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 12>& sum){
+                sum[0] += R(i)[0] * R(i)[0];
+                sum[1] += P(i)[0] * P(i)[0];
+                sum[2] += R(i)[0] * P(i)[0];
+                sum[3] += R(i)[1] * R(i)[1];
+                sum[4] += P(i)[1] * P(i)[1];
+                sum[5] += R(i)[1] * P(i)[1];
+                sum[6] += R(i)[2] * R(i)[2];
+                sum[7] += P(i)[2] * P(i)[2];
+                sum[8] += R(i)[2] * P(i)[2];
+		sum[9] += R(i)[0];
+		sum[10] += R(i)[1];
+		sum[11] += R(i)[2];
+            }, stats
+        );
+
+        // double global_xsq = 0.0;
+        // double global_psq = 0.0;
+        // double global_xpsq = 0.0;
+        ippl::Vector<double, 12> global_stats = 0.0;
+
+        ippl::Comm->reduce(&stats[0], &global_stats[0], 12, std::plus<double>(), 0);
+    
+        global_stats /= this->totalP_m;
+
+	double sigma_x = Kokkos::sqrt(global_stats[0] - global_stats[9] * global_stats[9]);
+	double sigma_y = Kokkos::sqrt(global_stats[3] - global_stats[10] * global_stats[10]);
+	double sigma_z = Kokkos::sqrt(global_stats[6] - global_stats[11] * global_stats[11]);
+        double emit_x = Kokkos::sqrt(global_stats[0] * global_stats[1] - global_stats[2] * global_stats[2]);
+        double emit_y = Kokkos::sqrt(global_stats[3] * global_stats[4] - global_stats[5] * global_stats[5]);
+        double emit_z = Kokkos::sqrt(global_stats[6] * global_stats[7] - global_stats[8] * global_stats[8]);
+        // double beta = avg_xsq / emit_x;
+        // double sigma_x = Kokkos::sqrt(avg_xsq);
+
+	auto rank = ippl::Comm->rank();	
+	if (rank == 0) {
+            std::cerr << "Beam Statistics: " << std::endl;
+            std::cerr << "RMS Beam Size: " << sigma_x <<  " , " << sigma_y << " , " << sigma_z << std::endl;
+            std::cerr << "RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << std::endl;
+	}
+    }
+
     void dump() {
-        // return 0;
+        computeBeamStatistics();
+	
     }
 
     void initializeParticles() {
@@ -1249,7 +1307,7 @@ public:
         IpplTimings::stopTimer(ITimer);
 	
 	// debug output, can be ignored
-        std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
+        // std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
     }
 
     /**
@@ -1370,6 +1428,8 @@ public:
     void post_step() override {
         Inform m("post step");
 
+	dump();
+
         this->time_m += this->dt_m;
         this->it_m++;
  }
@@ -1479,7 +1539,7 @@ public:
         // Kokkos::fence();
         // ippl::Comm->barrier();
 
-        std::cerr << "Particle-Particle Interaction finished" << std::endl;
+        // std::cerr << "Particle-Particle Interaction finished" << std::endl;
     }
 
 
@@ -1507,6 +1567,8 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
+	auto rank = ippl::Comm->rank();
+
         pc->R = pc->R + dt * pc->P;
 
         pc->update();
@@ -1529,11 +1591,14 @@ public:
 
         pc->P = pc->P - dt * pc->E;
 
-        std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
+        if(rank== 0) std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
 
     }
 
     double computeAvgSpaceChargeForces() {
+	
+	auto rank = ippl::Comm->rank();
+
         auto totalP = this->totalP_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto E = this->pcontainer_m->E.getView();
@@ -1547,12 +1612,12 @@ public:
             }, avgE
         );
 
-        std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
+        // std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
 
         Vector_t<double, Dim> globE = 0.0;
 
         ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<double>(), 0);
-        
+        if (rank == 0) std::cerr << "Average Space Charge Forces: " << avgE << std::endl; 
         globE /= totalP;
 
         double focusingf = 0.0;
@@ -1561,7 +1626,7 @@ public:
         }
 
         MPI_Bcast(&focusingf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        return std::sqrt(focusingf);
+	return std::sqrt(focusingf);
     }
 
     void applyConstantFocusing() {
@@ -1572,7 +1637,9 @@ public:
         double focusStrength = this->focusingF_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
 
-        std::cerr << "Focusing Force " << focusStrength << std::endl;
+	auto rank = ippl::Comm->rank();
+
+        if (rank == 0) std::cerr << "Focusing Force " << focusStrength << std::endl;
         
 	    Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
@@ -1604,7 +1671,7 @@ public:
         scatter(*q, *rho, *R);
         double relError = std::fabs((Q-(*rho).sum())/Q);
 
-        std::cerr << "Relative Error: " << relError << std::endl;
+        // std::cerr << "Relative Error: " << relError << std::endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
