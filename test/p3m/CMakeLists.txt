@@ -25,3 +25,10 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+
+add_executable(DistHeating DistHeating.cpp)
+target_link_libraries (
+    DistHeating
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
