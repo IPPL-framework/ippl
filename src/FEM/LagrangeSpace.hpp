@@ -24,10 +24,75 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::initializeElementIndices(const Layout_t& layout) {
-        // TODO: element partitioning among ranks should depend on the layout
+        const auto& ldom = layout.getLocalNDIndex(); 
+        int npoints = ldom.size();
+        auto first  = ldom.first();
+        auto last   = ldom.last();
+        ippl::Vector<double, Dim> bounds;
+
+        for (size_t d = 0; d < Dim; ++d) {
+            bounds[d] = this->mesh_m.getGridsize(d) - 1;
+        }
+
+        //const unsigned int myRank = Comm->rank();
+        //std::cout << "bounds = " << bounds << ", npoints = " << npoints << std::endl;
+
+        int upperBoundaryPoints = -1;
+
+        Kokkos::View<size_t*> points("ComputeMapping", npoints);
+        Kokkos::parallel_reduce("ComputePoints", npoints,
+            KOKKOS_CLASS_LAMBDA(const int i, int& local) {
+                int idx = i;
+                ndindex_t val;
+                bool isBoundary = false;
+                for (unsigned int d = 0; d < Dim; ++d) {
+                    int range = last[d] - first[d] + 1;
+                    val[d] = first[d] + (idx % range);
+                    idx /= range;
+                    if (val[d] == bounds[d]) {
+                        isBoundary = true;
+                    }
+                }
+                if (isBoundary) {
+                    points(i) = 0;
+                    local += 1;
+                } else {
+                    points(i) = this->getElementIndex(val);
+                }
+            }, Kokkos::Sum<int>(upperBoundaryPoints));
+
+        /*Kokkos::parallel_for("PrintPoints", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+            printf("Me %d, Element %ld\n", myRank, points(i));
+        });*/
+        
+        Kokkos::fence();
+
+        //std::cout << "upperBoundaryPoints = " << upperBoundaryPoints << std::endl;
+
+        int elementsPerRank = npoints - upperBoundaryPoints;
+        elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
+        Kokkos::View<size_t> index("index");
+
+        Kokkos::parallel_for("RemoveNaNs", npoints,
+            KOKKOS_CLASS_LAMBDA(const int i) {
+                if ((points(i) != 0) || (i == 0)) {
+                    const size_t idx = Kokkos::atomic_fetch_add(&index(), 1);
+                    elementIndices(idx) = points(i);
+                }
+            });
+
+        /*Kokkos::parallel_for("PrintPoints", elementsPerRank, KOKKOS_CLASS_LAMBDA(const int i) {
+            printf("Me %d, Point %d: %ld\n", myRank, i, elementIndices(i));
+        });*/
+        Kokkos::fence();
+        Comm->barrier();
+
+        // naive implementation below
+        /*
+        
         const std::size_t numElements = this->numElements();
         const unsigned int numRanks   = Comm->size();
-        const unsigned int myRank     = Comm->rank();
+        //const unsigned int myRank     = Comm->rank();
         std::size_t elementsPerRank   = numElements/numRanks;
         unsigned int remainder        = numElements - (elementsPerRank * numRanks);
         // if elements are remaining to be assigned to a rank, assign them
@@ -37,22 +102,21 @@ namespace ippl {
 
         elementIndices = Kokkos::View<size_t*>("i", elementsPerRank);
 
-        using exec_space  = typename Kokkos::View<size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        const auto& ldom = layout.getLocalNDIndex(); 
-
         for (size_t i = 0; i < elementsPerRank; ++i) {
             size_t global = i + ldom[0].first();
             myelements.push_back(global);
         }
 
+        using exec_space  = typename Kokkos::View<size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        
         Kokkos::parallel_for("Element index view", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t i) {
                 size_t global = i + ldom[0].first();
                 elementIndices(i) = global;
             });
         Kokkos::fence();
+        */
     }
 
     ///////////////////////////////////////////////////////////////////////
