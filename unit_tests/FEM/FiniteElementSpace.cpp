@@ -49,7 +49,7 @@ public:
     const ippl::LagrangeSpace<T, Dim, 1, QuadratureType, FieldType, FieldType> fem_space;
 };
 
-using Tests = TestParams::tests<1, 2, 3>;
+using Tests = TestParams::tests<2, 3>;
 TYPED_TEST_CASE(FiniteElementSpaceTest, Tests);
 
 TYPED_TEST(FiniteElementSpaceTest, numElements) {
@@ -198,6 +198,34 @@ TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
         for (std::size_t d = 0; d < dim; ++d) {
             EXPECT_EQ(element_nd_index[d], element_nd_indices.at(i).at(d));
         }
+    }
+}
+
+TYPED_TEST(FiniteElementSpaceTest, getElementIndex) {
+    const auto& fem_space          = this->fem_space;
+    constexpr size_t dim           = fem_space.dim;
+    const std::size_t& numElements = fem_space.numElements();
+
+    std::vector<ippl::Vector<size_t, dim>> element_nd_indices(numElements);
+
+    if (dim == 1) {
+        element_nd_indices = {{0}, {1}, {2}};
+    } else if (dim == 2) {
+        element_nd_indices = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1},
+                              {2, 1}, {0, 2}, {1, 2}, {2, 2}};
+    } else if (dim == 3) {
+        element_nd_indices = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {0, 1, 0}, {1, 1, 0}, {2, 1, 0},
+                              {0, 2, 0}, {1, 2, 0}, {2, 2, 0}, {0, 0, 1}, {1, 0, 1}, {2, 0, 1},
+                              {0, 1, 1}, {1, 1, 1}, {2, 1, 1}, {0, 2, 1}, {1, 2, 1}, {2, 2, 1},
+                              {0, 0, 2}, {1, 0, 2}, {2, 0, 2}, {0, 1, 2}, {1, 1, 2}, {2, 1, 2},
+                              {0, 2, 2}, {1, 2, 2}, {2, 2, 2}};
+    } else {
+        FAIL();
+    }
+
+    for (std::size_t i = 0; i < numElements; ++i) {
+        int index = fem_space.getElementIndex(element_nd_indices[i]);
+        EXPECT_EQ(i, index);
     }
 }
 
