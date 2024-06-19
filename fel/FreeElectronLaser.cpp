@@ -7,7 +7,7 @@
 
 #include "Field/Field.h"
 
-#include "MaxwellSolvers/FDTD.h"
+#include "NSFDSolverWithParticles.h"
 #define JSON_HAS_RANGES 0  // Merlin compilation
 #include <Kokkos_Random.hpp>
 #include <fstream>
