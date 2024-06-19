@@ -22,6 +22,10 @@ int main(int argc, char* argv[]) {
         const unsigned number_of_elements = number_of_vertices - 1;
         const T interval_size             = 2.0;
         const MeshType mesh(number_of_vertices, {interval_size / number_of_elements}, {-1.0});
+        // specifies decomposition; here all dimensions are parallel
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, number_of_vertices, isParallel);
 
         // Refernce element
         const ElementType ref_element;
@@ -33,7 +37,7 @@ int main(int argc, char* argv[]) {
         const unsigned number_of_local_vertices = 2;
 
         const ippl::LagrangeSpace<T, 1, 1, QuadratureType, FieldType, FieldType> lagrange_space(
-            mesh, ref_element, midpoint_quadrature);
+            mesh, ref_element, midpoint_quadrature, layout);
 
         // Print the local basis values for plotting
         const unsigned number_of_points = 200;

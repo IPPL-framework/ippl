@@ -28,6 +28,10 @@ int main(int argc, char* argv[]) {
 
         const ippl::NDIndex<2> meshIndex(number_of_vertices_per_dim, number_of_vertices_per_dim);
         const ippl::UniformCartesian<double, 2> mesh(meshIndex, {h, h}, {-1.0, -1.0});
+        // specifies decomposition; here all dimensions are parallel
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, meshIndex, isParallel);
 
         std::cout << "mesh spacing = " << mesh.getMeshSpacing() << "\n";
 
@@ -39,7 +43,7 @@ int main(int argc, char* argv[]) {
 
         // Create LagrangeSpace
         const ippl::LagrangeSpace<T, 2, 1, QuadratureType, FieldType, FieldType> lagrange_space(
-            mesh, quad_element, midpoint_quadrature);
+            mesh, quad_element, midpoint_quadrature, layout);
 
         // Print the values for the local basis functions
         const std::string local_basis_filename = "~2D_lagrange_local_basis.csv";
