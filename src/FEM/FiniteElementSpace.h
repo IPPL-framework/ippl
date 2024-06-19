@@ -131,6 +131,15 @@ namespace ippl {
         ndindex_t getElementNDIndex(const index_t& elementIndex) const;
 
         /**
+         * @brief Get the global index of a mesh element given the NDIndex.
+         *
+         * @param ndindex ndindex_t (Vector<std::size_t, Dim>) - vector of indices for each direction
+         *
+         * @return index_t - the index of the element
+         */
+        index_t getElementIndex(const ndindex_t& ndindex) const;
+
+        /**
          * @brief Get all the global vertex indices of an element (given by its NDIndex).
          *
          * @param elementNDIndex The NDIndex of the element

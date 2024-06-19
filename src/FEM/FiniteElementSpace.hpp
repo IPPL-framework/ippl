@@ -132,6 +132,31 @@ namespace ippl {
         return element_nd_index;
     }
 
+    // implementation of function to retrieve the global index of an element given the ndindex
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
+              typename FieldLHS, typename FieldRHS>
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                FieldRHS>::index_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+        getElementIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+                                                   FieldRHS>::ndindex_t& ndindex) const {
+
+        index_t element_index = 0;
+
+        // This is the number of cells in each dimension. It is one less than the number of
+        // vertices in each dimension, which is returned by Mesh::getGridsize().
+        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1;
+
+        std::size_t remaining_number_of_cells = 1;
+
+        for (unsigned int d = 0; d < Dim; ++d) {
+            element_index += ndindex[d] * remaining_number_of_cells;
+            remaining_number_of_cells *= cells_per_dim[d];
+        }
+
+        return element_index;
+    }
+
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
