@@ -37,7 +37,8 @@ public:
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
-        , fem_space(mesh, ref_element, quadrature) {}
+        , fem_space(mesh, ref_element, quadrature, ippl::FieldLayout<Dim>(MPI_COMM_WORLD, 
+                    ippl::NDIndex<Dim>(meshSizes), std::array<bool, Dim>{true})) {}
 
     std::mt19937 rng;
 
@@ -464,4 +465,15 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
     } else {
         FAIL();
     }
+}
+
+int main(int argc, char* argv[]) {
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
 }

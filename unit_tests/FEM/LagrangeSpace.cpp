@@ -39,9 +39,13 @@ public:
                         ippl::Vector<T, Dim>(0.5), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
         , betterQuadrature(ref_element)
-        , lagrangeSpace(mesh, ref_element, quadrature)
-        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature)
-        , symmetricLagrangeSpace(symmetricMesh, ref_element, betterQuadrature) {
+        , lagrangeSpace(mesh, ref_element, quadrature, ippl::FieldLayout<Dim>(MPI_COMM_WORLD, 
+                        ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)), std::array<bool, Dim>{true}))
+        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature, ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
+                              ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), std::array<bool, Dim>{true}))
+        , symmetricLagrangeSpace(symmetricMesh, ref_element, betterQuadrature, ippl::FieldLayout<Dim>(
+                                 MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), 
+                                 std::array<bool, Dim>{true})) {
         // fill the global reference DOFs
     }
 
