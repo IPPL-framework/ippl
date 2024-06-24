@@ -484,8 +484,6 @@ public:
         double commEnd2 = MPI_Wtime();
         // std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
         // ippl::Comm->barrier();
-    
-        // std::cerr << "Particle Exchange Finished" << std::endl;
 
         // Compute Interactions - 4 Steps
         // I.   Compute interactions on the corners
@@ -494,11 +492,9 @@ public:
         // IV.  Compute interactions on the edges in y direction and faces in x-y plane
 
         // needed for all steps
-        // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         unsigned nCells = nCells_m[0] * nCells_m[1] * nCells_m[2];
         unsigned nLoc = cellStartingIdx(nCells);
         Kokkos::View<ippl::Vector<double, 3> *, Host> F_sr("PP-Halo Force", nLoc);
-        // double rcut = rcut_m;
         double alpha = alpha_m;
         
 	    // I. Compute interactions on the corners
@@ -514,26 +510,28 @@ public:
                 const int internalCornerCount = cornerCounts[i];    // number of particles in corner (local)
                 const int internalCornerDisplacement = cellStartingIdx(internalCornerIndex); // starting index in particle view
 
-		        // if (haloCornerCount == 0 || internalCornerCount == 0) return;
+                // if a buffer has no particles, we have nothing to calculate
+		        if (haloCornerCount == 0 || internalCornerCount == 0) return;
+            
                 auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, internalCornerCount, haloCornerCount);
                 Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
                     const int internalIdx = internalCornerDisplacement + ii;
                     const int haloIdx = displacement + 4*jj;
 
+                    // compute distance
                     double rsq_ij = 0;
                     Vector_t<T, Dim> dist_ij;
                     for(int d = 0; d < Dim; ++d){
                         dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                         rsq_ij += dist_ij[d] * dist_ij[d];
-                    }
-
-		    
+                    }		    
                     double r_ij = Kokkos::sqrt(rsq_ij);
+
+                    // if within cutoff
                     if(r_ij >= rcut_m) return;
                     Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                     Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
-                });
-                
+                }); 
             }
         );
 
@@ -554,10 +552,10 @@ public:
                 int localEdgeCount = sendCounts[zTopologyIdentifiers[i]] / 4;
 		        if(haloEdgeCount == 0 || localEdgeCount == 0) return;
 
-
                 const double edgeStart = hLocalRegions(rank)[2].min();
                 Kokkos::View<unsigned*, Host> zEdgeNeighborList("NL for Halo interaction on z edges", nz+1);
 
+                // build neighborlist for the buffer we received
                 zEdgeNeighborList(0) = 0;
                 int currentCell = 0;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
@@ -570,9 +568,7 @@ public:
                             ++currentCell;                       // search for next cell
                         }
                         zEdgeNeighborList(currentCell) = jj;
-                    } /*else if (newCell < currentCell) {
-                        std::cerr << "wrong particle order assumed or sent" << std::endl;
-                    }*/
+                    }
                 }
             	while (currentCell < nz){
                     currentCell++;   
@@ -598,7 +594,15 @@ public:
                             haloStartingIdx = zEdgeNeighborList(zCellNumber-1);
                         }
 
-                        unsigned haloCount = zEdgeNeighborList(zCellNumber+1) - haloStartingIdx;
+                        unsigned haloEndingIdx;
+
+                        if(zCellNumber == nz-1) {
+                            haloEndingIdx = zEdgeNeighborList(nz);
+                        } else {
+                            haloEndingIdx = zEdgeNeighborList(zCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
                         if(localCount == 0 || haloCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
@@ -611,8 +615,8 @@ public:
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
-
                             double r_ij = Kokkos::sqrt(rsq_ij);
+                            
                             if (r_ij >= rcut_m) return;
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
@@ -657,9 +661,7 @@ public:
                             currentCell++;
                         }
                         yzFaceNeighborList(currentCell) = jj;
-                    } /*else if (newCell < currentCell) {
-                        // std::cerr << "wrong particle order assumed or sent" << std::endl;
-                    }*/
+                    }
                         
                 }
         		while(currentCell < ny*nz){
@@ -692,9 +694,6 @@ public:
                             int haloCellIdx = haloYCellIdx * nz + haloZCellIdx;
                             int haloStartingIdx = yzFaceNeighborList(haloCellIdx);
                             int haloCount = yzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
-			
-                            // DEBUG output
-                            // if (rank == 0) std::cerr << haloCount << std::endl;
 
                             Vector_t<T, Dim> tempFsr = 0.0;
                             const int internalIdx = localStartingIdx + ii;
@@ -735,7 +734,9 @@ public:
 
                 const int displacement = recvDisplacements[xEdgeIdentifiers[3-i]];
                 const int haloEdgeCount = recvCounts[xEdgeIdentifiers[3-i]] / 4;
-        		if (haloEdgeCount == 0) return;
+                const int localEdgeCount = sendCounts[xEdgeIdentifiers[i]] /4;
+
+                if(localEdgeCount == 0 || haloEdgeCount == 0) return;
 
                 // lower bound of domain in x direction
                 const double edgeStart = hLocalRegions(rank)[0].min();
@@ -782,7 +783,15 @@ public:
                             haloStartingIdx = xEdgeNeighborList(xCellNumber-1);
                         }
 
-                        unsigned haloCount = xEdgeNeighborList(xCellNumber+1) - haloStartingIdx;
+                        unsigned haloEndingIdx;
+
+                        if(xCellNumber == nx-1) {
+                            haloEndingIdx = xEdgeNeighborList(nx);
+                        } else {
+                            haloEndingIdx = xEdgeNeighborList(xCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
                         if (localCount == 0 || haloCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
@@ -795,8 +804,8 @@ public:
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
-
                             double r_ij = Kokkos::sqrt(rsq_ij);
+                            
 			                if (r_ij >= rcut_m) return;
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
@@ -817,8 +826,9 @@ public:
 
                 const int displacement = recvDisplacements[xzTopologyIdentifiers[1-i]];
                 const int haloFaceCount = recvCounts[xzTopologyIdentifiers[1-i]] / 4;
+                const int localFaceCount = sendCounts[xzTopologyIdentifiers[i]] / 4;
 
-                if (haloFaceCount == 0) return;
+                if (haloFaceCount == 0 || localFaceCount == 0) return;
 
                 const double faceStart[2] = {hLocalRegions(rank)[0].min(), hLocalRegions(rank)[2].min()};
                 Kokkos::View<unsigned*, Host> xzFaceNeighborList("NL for Halo interaction on xz face", nx*nz+1);
@@ -917,7 +927,9 @@ public:
 
                 const int displacement = recvDisplacements[yEdgeIdentifiers[3-i]];
                 const int haloEdgeCount = recvCounts[yEdgeIdentifiers[3-i]] / 4;
+                const int localEdgeCount = sendCounts[yEdgeIdentifiers[i]] /4;
 
+                if(localEdgeCount == 0 || haloEdgeCount == 0) return;
                 const double edgeStart = hLocalRegions(rank)[1].min();
 
                 Kokkos::View<unsigned*, Host>  yEdgeNeighborList("NL for edges in y direction", ny+1);
@@ -962,7 +974,15 @@ public:
                             haloStartingIdx = yEdgeNeighborList(yCellNumber-1);
                         }
 
-                        unsigned haloCount = yEdgeNeighborList(yCellNumber+1) - haloStartingIdx;
+                        unsigned haloEndingIdx;
+
+                        if(yCellNumber == ny-1) {
+                            haloEndingIdx = yEdgeNeighborList(ny);
+                        } else {
+                            haloEndingIdx = yEdgeNeighborList(yCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
                         if (haloCount == 0 || localCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
                         Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
@@ -978,7 +998,6 @@ public:
 
                             double r_ij = Kokkos::sqrt(rsq_ij);
                             if (r_ij >= rcut_m) return;
-
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
                         });
