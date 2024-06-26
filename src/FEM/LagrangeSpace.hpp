@@ -442,7 +442,14 @@ namespace ippl {
             }
         }
 
-        //const std::size_t numElements = this->numElements();
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view                    = field.getView();
+        AtomicViewType atomic_resultView = resultField.getView();
+
+        // Get domain information
+        auto ldom          = (field.getLayout()).getLocalNDIndex();
+
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -450,7 +457,8 @@ namespace ippl {
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
         IpplTimings::startTimer(outer_loop);
 
-        Kokkos::parallel_for("Outer loop over elements", policy_type(0, elementIndices.extent(0)),
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
@@ -485,6 +493,11 @@ namespace ippl {
                         continue;
                     }
 
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         J_nd = global_dof_ndindices[j];
 
@@ -493,7 +506,12 @@ namespace ippl {
                             continue;
                         }
 
-                        getFieldEntry(resultField, I_nd) += A_K[i][j] * getFieldEntry(field, J_nd);
+                        // get the appropriate index for the Kokkos view of the field
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                        }
+
+                        apply(atomic_resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
                 }
         });
@@ -541,70 +559,58 @@ namespace ippl {
             return f_q_k * basis_q_k[i] * absDetDPhi;
         };
 
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        AtomicViewType atomic_view = field.getView();
+
+        // Get domain information and ghost cells
+        auto ldom          = (field.getLayout()).getLocalNDIndex();
+        const int nghost   = field.getNghost();
+
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
-        // start of debug output
-        /*
-        FieldRHS dummy_field;
-        dummy_field.initialize(field.get_mesh(), field.getLayout());
-        auto view = dummy_field.getView();
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;
-        ippl::parallel_for("assign field", dummy_field.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const index_array_type& args) {
-                apply(view, args) = 4.0 * args[0] + ldom[0].first();
-            });
-        Kokkos::fence();
-        dummy_field.fillHalo();
-        Comm->barrier();
-
-        dummy_field.write();
-        Comm->barrier();
-
-        Inform msg2all("", INFORM_ALL_NODES);
-        int me = Comm->rank();
-        msg2all << "ldom.first() = " << ldom[0].first() << "ldom.length() = " << ldom[0].length() << endl;
-        msg2all << "I am rank " << me << " and my elements are " << endl;
-        for (unsigned int i = 0; i < myelements.size(); i++) {
-           msg2all << myelements[i] << ": ";
-           msg2all << this->getGlobalDOFIndices(myelements[i]) << ": ";
-           msg2all << this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[0]) << ", ";
-           msg2all << this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[1]) << ": ";
-           msg2all << getFieldEntry(dummy_field, this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[0])) << "," ;
-           msg2all << getFieldEntry(dummy_field, this->getMeshVertexNDIndex(this->getGlobalDOFIndices(myelements[i])[1])) << "." ;
-           msg2all << endl;
-        }
-        msg2all << endl;
-        */
-        // end of debug output
-
-        Kokkos::parallel_for("Outer loop over elements", policy_type(0, elementIndices.extent(0)),
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const index_t elementIndex                              = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+
+                //std::cout << "in loop, element " << elementIndex << ", local=" << local_dofs << ", global=" << global_dofs << std::endl;
 
                 index_t i, I;
 
                 // 1. Compute b_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I = global_dofs[i];
-                    // TODO fix for higher order
-                    const auto& dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
+                    // TODO fix for higher order
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                    // homogeneous Dirichlet boundary conditions
                     if (this->isDOFOnBoundary(dof_ndindex_I)) {
                         continue;
                     }
 
-                    T& b_I = getFieldEntry(field, dof_ndindex_I);
-
+                    // calculate the contribution of this element
+                    T contrib = 0;
                     for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        b_I += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
+                        contrib += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
                     }
+                    
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
+
+                    // add the contribution of the element to the field
+                    apply(atomic_view, dof_ndindex_I) += contrib;
                 }
 
         });
         Kokkos::fence();
+        Comm->barrier();
     }
 
 }  // namespace ippl

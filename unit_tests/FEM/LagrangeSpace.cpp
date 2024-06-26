@@ -563,6 +563,9 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             FieldType x(mesh, layout, 0);
             FieldType z(mesh, layout, 0);
 
+            auto view_x = x.getView();
+            auto view_z = z.getView();
+
             // 1. Define the eval function for the evaluateAx function
 
             const ippl::Vector<std::size_t, lagrangeSpace.dim> zeroNdIndex =
@@ -614,18 +617,17 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             Kokkos::View<T**> A("A", numGlobalDOFs, numGlobalDOFs);
 
             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                if (i > 0)
-                    lagrangeSpace.getFieldEntry(x, lagrangeSpace.getMeshVertexNDIndex(i - 1)) = 0.0;
+                if (i > 0) {
+                    apply(view_x, lagrangeSpace.getMeshVertexNDIndex(i - 1)) = 0.0;
+                }
 
-                lagrangeSpace.getFieldEntry(x, lagrangeSpace.getMeshVertexNDIndex(i)) = 1.0;
+                apply(view_x, lagrangeSpace.getMeshVertexNDIndex(i)) = 1.0;
 
                 z = lagrangeSpace.evaluateAx(x, eval);
 
                 // Set the the i-th row-vector of A to z
                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    // TODO check if there is a different way in Kokkos to do this
-                    A(j, i) +=
-                        lagrangeSpace.getFieldEntry(z, lagrangeSpace.getMeshVertexNDIndex(j));
+                    A(j, i) += apply(view_z, lagrangeSpace.getMeshVertexNDIndex(j));
                 }
             }
 
@@ -702,19 +704,26 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             // call evaluateLoadVector
             lagrangeSpace.evaluateLoadVector(rhs_field, f);
 
-            std::cout << "RHS" << std::endl;
-            for (std::size_t i = 0; i < 5; ++i) {
-                std::cout << lagrangeSpace.getFieldEntry(rhs_field, i) << std::endl;
+            auto view = rhs_field.getView();
+
+            ippl::Vector<ippl::Vector<int, lagrangeSpace.dim>, 5> idx;
+
+            if (ippl::Comm->size() == 1) {
+                std::cout << "RHS" << std::endl;
+                for (int i = 0; i < 5; ++i) {
+                    idx[i] = {i};
+                    std::cout << ippl::apply(view, idx[i]) << std::endl;
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
 
             // compare to analytical solution
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 0), 0.0,
+            ASSERT_NEAR(ippl::apply(view, idx[0]), 0.0,
                         1e-7);  // 2.0 - pi (without bounadry conditions)
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 1), -4.0, 1e-7);
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 2), 0.0, 1e-7);
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 3), 4.0, 1e-7);
-            ASSERT_NEAR(lagrangeSpace.getFieldEntry(rhs_field, 4), 0.0,
+            ASSERT_NEAR(ippl::apply(view, idx[1]), -4.0, 1e-7);
+            ASSERT_NEAR(ippl::apply(view, idx[2]), 0.0, 1e-7);
+            ASSERT_NEAR(ippl::apply(view, idx[3]), 4.0, 1e-7);
+            ASSERT_NEAR(ippl::apply(view, idx[4]), 0.0,
                         1e-7);  // pi - 2.0 (without boundary conditions)
         } else {
             GTEST_SKIP();
