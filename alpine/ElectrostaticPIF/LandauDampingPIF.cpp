@@ -307,8 +307,8 @@ int main(int argc, char *argv[]){
     P->gather();
 
     IpplTimings::startTimer(dumpDataTimer);
-    //P->dumpLandau();
-    //P->dumpEnergy();
+    P->dumpBumponTail();
+    P->dumpEnergy();
     IpplTimings::stopTimer(dumpDataTimer);
 
     // begin main timestep loop
@@ -348,8 +348,8 @@ int main(int argc, char *argv[]){
 
         P->time_m += dt;
         IpplTimings::startTimer(dumpDataTimer);
-        //P->dumpLandau();
-        //P->dumpEnergy();
+        P->dumpBumponTail();
+        P->dumpEnergy();
         IpplTimings::stopTimer(dumpDataTimer);
         msg << "Finished time step: " << it+1 << " time: " << P->time_m << endl;
     }

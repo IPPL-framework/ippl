@@ -303,7 +303,7 @@ public:
        
        
        double fieldEnergy = 0.0; 
-       double ExAmp = 0.0;
+       double EzAmp = 0.0;
 
        auto rhoview = rho_m.getView();
        const int nghost = rho_m.getNghost();
@@ -324,7 +324,7 @@ public:
 
        Kokkos::complex<double> imag = {0.0, 1.0};
        double pi = std::acos(-1.0);
-       Kokkos::parallel_reduce("Ex energy and Max",
+       Kokkos::parallel_reduce("Ez energy and Max",
                              mdrange_type({0, 0, 0},
                                           {N[0],
                                            N[1],
@@ -340,15 +340,15 @@ public:
            Vector<double, 3> kVec;
            double Dr = 0.0;
            for(size_t d = 0; d < Dim; ++d) {
-               bool shift = (iVec[d] > (N[d]/2));
-               kVec[d] = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+               kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                Dr += kVec[d] * kVec[d];
            }
 
            Kokkos::complex<double> Ek = {0.0, 0.0}; 
-           if(Dr != 0.0) {
-               Ek = -(imag * kVec[2] * rhoview(i+nghost,j+nghost,k+nghost) / Dr);
-           }
+           auto rho = rhoview(i+nghost,j+nghost,k+nghost);
+           bool isNotZero = (Dr != 0.0);
+           double factor = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0))); 
+           Ek = -(imag * kVec[2] * rho * factor);
            double myVal = Ek.real() * Ek.real() + Ek.imag() * Ek.imag();
 
            tlSum += myVal;
@@ -357,7 +357,7 @@ public:
 
            if(myValMax > tlMax) tlMax = myValMax;
 
-       }, Kokkos::Sum<double>(fieldEnergy), Kokkos::Max<double>(ExAmp));
+       }, Kokkos::Sum<double>(fieldEnergy), Kokkos::Max<double>(EzAmp));
        
 
        Kokkos::fence();
@@ -381,7 +381,7 @@ public:
 
            csvout << time_m << " "
                   << fieldEnergy << " "
-                  << ExAmp << endl;
+                  << EzAmp << endl;
 
        }
        
