@@ -444,11 +444,11 @@ namespace ippl {
 
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
-        ViewType view                    = field.getView();
-        AtomicViewType atomic_resultView = resultField.getView();
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
 
         // Get domain information
-        auto ldom          = (field.getLayout()).getLocalNDIndex();
+        auto ldom = (field.getLayout()).getLocalNDIndex();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -511,7 +511,7 @@ namespace ippl {
                             J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
                         }
 
-                        apply(atomic_resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                        apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
                 }
         });

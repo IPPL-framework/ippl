@@ -223,70 +223,9 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         void evaluateLoadVector(FieldRHS& rhs_field,
-                                const std::function<T(const point_t&)>& f) const override;
+                                const std::function<T(const point_t&)>& f) const override;        
 
-        ///////////////////////////////////////////////////////////////////////
-        /// Helper functions //////////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Get the field entry at a given NDIndex
-         *
-         * @tparam FieldType The type of the field
-         * @param field Reference to field to get the entry from
-         * @param ndindex The NDIndex of the entry
-         *
-         * @return T& - Returns a reference to the field entry
-         */
-        /*
-        template <std::size_t... Is>
-        static T& getFieldEntry(ViewType& view, const unsigned nghost, Layout_t layout,
-                                const ndindex_t& ndindex) {
-            return getFieldEntry(view, nghost, layout, ndindex, std::make_index_sequence<Dim>());
-        }*/
-
-    private:
-        /**
-         * @brief Get the field entry at a given NDIndex
-         *
-         * @tparam FieldType The type of the field
-         * @param field Reference to field to get the entry from
-         * @param ndindex The NDIndex of the entry
-         * @param seq The index sequence to unpack the NDIndex {0, 1, ..., Dim-1}
-         *
-         * @return T& - Returns a reference to the field entry
-         */
-        /*
-        template <std::size_t... Is>
-        static T& getFieldEntry(AtomicViewType& view, const unsigned nghost, Layout_t layout,
-                                ndindex_t ndindex, const std::index_sequence<Is...>) {
-            static_assert(sizeof...(Is) == Dim, "Number of indices must match the dimension");
-            static_assert(sizeof...(Is) == ViewType::rank,
-                          "Number of indices must match the field view rank");
-
-            auto ldom = layout.getLocalNDIndex();
-
-            // offset the NDIndex for the ghost cells and local domain
-            for (unsigned d = 0; d < Dim; ++d) {
-                ndindex[d] = ndindex[d] - ldom[d].first() + nghost;
-            }
-
-            // make sure that the index is within the field (without the ghost cells)
-            for (std::size_t i = 0; i < Dim; ++i) {
-                if (ndindex[i] < nghost
-                    || ndindex[i] > layout.getDomain()[i].length()) {
-                    throw std::out_of_range("Index out of range");
-                    std::cerr << "Index out of range" << std::endl;
-                    std::cerr << "Index: " << ndindex[i] << std::endl;
-                    std::cerr << "Domain: " << nghost << " - "
-                              << layout.getDomain()[i].length() << std::endl;
-                }
-            }
-
-            return view(ndindex[Is]...);
-        };
-        */
-
+    private:        
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *

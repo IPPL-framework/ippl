@@ -563,8 +563,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             FieldType x(mesh, layout, 0);
             FieldType z(mesh, layout, 0);
 
+            int nghost  = x.getNghost();
             auto view_x = x.getView();
-            auto view_z = z.getView();
 
             // 1. Define the eval function for the evaluateAx function
 
@@ -618,16 +618,26 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
                 if (i > 0) {
-                    apply(view_x, lagrangeSpace.getMeshVertexNDIndex(i - 1)) = 0.0;
+                    ippl::Vector<int, lagrangeSpace.dim> idx = lagrangeSpace.getMeshVertexNDIndex(i - 1);
+                    idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
+
+                    ippl::apply(view_x, idx) = 0.0;
                 }
 
-                apply(view_x, lagrangeSpace.getMeshVertexNDIndex(i)) = 1.0;
+                ippl::Vector<int, lagrangeSpace.dim> idx = lagrangeSpace.getMeshVertexNDIndex(i);
+                idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
+
+                ippl::apply(view_x, idx) = 1.0;
 
                 z = lagrangeSpace.evaluateAx(x, eval);
+                auto view_z = z.getView();
 
                 // Set the the i-th row-vector of A to z
                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    A(j, i) += apply(view_z, lagrangeSpace.getMeshVertexNDIndex(j));
+                    ippl::Vector<int, lagrangeSpace.dim> idx_z = lagrangeSpace.getMeshVertexNDIndex(j);
+                    idx_z[0] += nghost - (z.getLayout()).getLocalNDIndex()[0].first();
+
+                    A(j, i) += ippl::apply(view_z, idx_z);
                 }
             }
 
@@ -704,14 +714,16 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             // call evaluateLoadVector
             lagrangeSpace.evaluateLoadVector(rhs_field, f);
 
-            auto view = rhs_field.getView();
+            auto view  = rhs_field.getView();
+            auto ldom  = (rhs_field.getLayout()).getLocalNDIndex();
+            int nghost = rhs_field.getNghost();
 
             ippl::Vector<ippl::Vector<int, lagrangeSpace.dim>, 5> idx;
 
             if (ippl::Comm->size() == 1) {
                 std::cout << "RHS" << std::endl;
                 for (int i = 0; i < 5; ++i) {
-                    idx[i] = {i};
+                    idx[i] = {i - ldom[0].first() + nghost};
                     std::cout << ippl::apply(view, idx[i]) << std::endl;
                 }
                 std::cout << std::endl;
