@@ -105,7 +105,7 @@ protected:
     T* sendBuffer_m;                // Send buffer
     unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
     T* recvBuffer_m;                // Recieve buffer
-    Kokkos::View<ippl::Vector<double, 3> *, Host> haloE_m;
+    Kokkos::View<ippl::Vector<double, 3> *, Host>* haloE_m;
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -152,8 +152,8 @@ public:
 
     }
 
-    void particleExchange() {
-        Inform m("Setup MPI");
+ 
+    void particleExchange() {      
 
         // get communicator size and rank
         int commSize = ippl::Comm->size();
@@ -163,7 +163,8 @@ public:
         // get domain decomposition
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
+        auto cellStartingIdx = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->getNL());
+        // Kokkos::deep_copy(cellStartingIdx, this->pcontainer_m->getNL());
         // auto cellStartingIdx = this->pcontainer_m->getNL();
         const unsigned nx = nCells_m[0];
         const unsigned ny = nCells_m[1];
@@ -305,8 +306,8 @@ public:
         // SEND BUFFER LAYOUT: [x, y, z, Q]        
 
         // required particle data
-        auto R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-        auto Q_host = Kokkos::create_mirror_view(this->pcontainer_m->Q.getView());
+        auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->R.getView());
+        auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->Q.getView());
 
         // 1. Corners
         for(int i = 0; i < 8; ++i){
@@ -500,7 +501,7 @@ public:
 	    // I. Compute interactions on the corners
         using team_t = Kokkos::TeamPolicy<Host>::member_type;
         Kokkos::parallel_for("PP on Corners", Kokkos::TeamPolicy<Host>(8, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
                 const int displacement = recvDisplacements[cornerIdentifiers[7-i]];
@@ -544,7 +545,7 @@ public:
         // int zEdgeNeighborList[4][nz+1];
         // interaction on edges in z direction
         Kokkos::parallel_for("PP interaction for z edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
         
                 const int displacement = recvDisplacements[zTopologyIdentifiers[3-i]];
@@ -552,7 +553,7 @@ public:
                 int localEdgeCount = sendCounts[zTopologyIdentifiers[i]] / 4;
 		        if(haloEdgeCount == 0 || localEdgeCount == 0) return;
 
-                const double edgeStart = hLocalRegions(rank)[2].min();
+                const double edgeStart = hLocalRegions(rank)[2].min();               
                 Kokkos::View<unsigned*, Host> zEdgeNeighborList("NL for Halo interaction on z edges", nz+1);
 
                 // build neighborlist for the buffer we received
@@ -630,7 +631,7 @@ public:
 
         // Interaction on faces in y-z plane
         Kokkos::parallel_for("PP interaction for y-z faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
             
                 // upper or lower face
                 const int i = team.league_rank();
@@ -729,7 +730,7 @@ public:
         unsigned xEdgeIdentifiers[4] = {2, 11, 5, 14};
         unsigned xEdgeStartingIndices[4] = {0, nzm1, (ny-1) * nz, (ny-1) * nz + nzm1};
         Kokkos::parallel_for("PP interaction for x edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
                 const int displacement = recvDisplacements[xEdgeIdentifiers[3-i]];
@@ -821,7 +822,7 @@ public:
         int xzTopologyIdentifiers[2] = {20, 23};
         int xzTopologyIndex[2] = {0, (ny-1) * nz};
         Kokkos::parallel_for("PP interaction for x-z faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
                 const int displacement = recvDisplacements[xzTopologyIdentifiers[1-i]];
@@ -922,7 +923,7 @@ public:
         unsigned yEdgeIdentifiers[4] = {6, 15, 7, 16};
         unsigned yEdgeStartingIndices[4] = {0, nzm1, (nx-1) * ny * nz, (nx-1) * ny * nz + nzm1};
         Kokkos::parallel_for("PP interaction for y edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
                 const int displacement = recvDisplacements[yEdgeIdentifiers[3-i]];
@@ -1012,7 +1013,7 @@ public:
         int xyTopologyIdentifiers[2] = {8, 17};
         int xyTopologyIndex[2] = {0, nzm1};
         Kokkos::parallel_for("PP interaction for x-y faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
                 const int displacement = recvDisplacements[xyTopologyIdentifiers[1-i]];
@@ -1106,10 +1107,17 @@ public:
                 );
             }
         );
-	Kokkos::fence();
+	    Kokkos::fence();
         
-	this->haloE_m = F_sr;
+        auto deviceE = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), F_sr);
+        auto E = this->pcontainer_m->E.getView();
+        Kokkos::parallel_for("Update halo energies", nLoc,
+            KOKKOS_LAMBDA(const int& i){
+                Kokkos::atomic_add(&E(i), deviceE(i));
+            }
+        );
     }
+
 
 
     void pre_run() override {
@@ -1211,7 +1219,7 @@ public:
         std::cout << "MPI Setup Time: " << MPITimerEnd - MPITimerStart << std::endl;
 
         double start = MPI_Wtime();
-        particleExchange();
+        // particleExchange();
         double end = MPI_Wtime();
         std::cout << "Particle Exchange Time: " << (end - start) << std::endl;
 
@@ -1232,7 +1240,8 @@ public:
         double PPTimerEnd = MPI_Wtime();
         std::cout << "PP Interaction Time: " << PPTimerEnd - PPTimerStart << std::endl;
 
-    	haloEnergyUpdate();
+        particleExchange();
+    	// haloEnergyUpdate();
 
     	this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
@@ -1633,7 +1642,15 @@ public:
         
         auto nLoc = this->pcontainer_m->getLocalNum();
         Kokkos::View<ippl::Vector<double, 3> *, Device> E_halo("Halo Energy Device View", nLoc);
-        Kokkos::deep_copy(E_halo, haloE_m);
+        Kokkos::View<ippl::Vector<double, 3> *, Host> haloE("Halo Energy Host View", nLoc);
+
+        Kokkos::parallel_for("Write in local view", Kokkos::RangePolicy<Host>(0, nLoc),
+            KOKKOS_CLASS_LAMBDA(const size_type &i){
+                haloE(i) = (*haloE_m)(i);
+            }
+        );
+
+        Kokkos::deep_copy(E_halo, haloE);
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
         Kokkos::parallel_for("update Energy by halo interaction values", nLoc,
@@ -1659,7 +1676,7 @@ public:
 
     	Kokkos::fence();
 
-        particleExchange();
+        // particleExchange();
 
         this->par2grid();
 
@@ -1669,7 +1686,9 @@ public:
 
         this->par2par();
 
-        haloEnergyUpdate();
+        particleExchange();
+
+        // haloEnergyUpdate();
 
         this->applyConstantFocusing();
 
