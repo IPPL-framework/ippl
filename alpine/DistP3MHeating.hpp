@@ -1303,9 +1303,52 @@ public:
     	}
     }
 
+    void compute_temperature() {
+        Vector_t<double, 3> locAvgVel = 0.0;
+        Vector_t<double, 3> globAvgVel = 0.0;
+        auto nLoc = this->pcontainer_m->getLocalNum();
+        auto P = this->pcontainer_m->P.getView();
+
+        auto rank = ippl::Comm->rank();
+        Kokkos::parallel_reduce("compute average velocity", Kokkos::RangePolicy<Device>(0, nLoc),
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
+                sum += P(i);
+            }, locAvgVel
+        );
+        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<double>(), 0);
+
+        ippl::Comm->barrier();
+
+        auto totalP = this->totalP_m;
+
+        globAvgVel /= totalP;
+        if(rank == 0) std::cerr << "Average Velocity: " << globAvgVel << std::endl;
+        MPI_Bcast(&globAvgVel[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);     
+
+        ippl::Vector<double, 3> localTemperature = 0.0;
+        ippl::Vector<double, 3> globalTemperature = 0.0;
+
+        Kokkos::parallel_reduce("compute temperature", nLoc,
+            KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3>& sum){
+                sum += (P(i)-globAvgVel(0)) * (P(i)-globAvgVel(0));
+            }, localTemperature
+        );
+
+        ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<double>(), 0);
+
+        globalTemperature /= totalP;
+
+        if ( rank== 0) std::cerr << "Temperature: " << globalTemperature << std::endl;
+        // l2 norm
+        double temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0] 
+                                         + globalTemperature[1] * globalTemperature[1] 
+                                         + globalTemperature[2] * globalTemperature[2]);
+        if(rank == 0) std::cerr << "L2-Norm of Temperature: " << temperature << std::endl;
+    }
+
     void dump() {
         computeBeamStatistics();
-	
+        compute_temperature();	
     }
 
     void initializeParticles() {
