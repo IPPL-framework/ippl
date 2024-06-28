@@ -105,7 +105,6 @@ protected:
     T* sendBuffer_m;                // Send buffer
     unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
     T* recvBuffer_m;                // Recieve buffer
-    Kokkos::View<ippl::Vector<double, 3> *, Host> haloE_m;
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -152,8 +151,7 @@ public:
 
     }
 
-    void particleExchange() {
-        Inform m("Setup MPI");
+    void particleExchange() {      
 
         // get communicator size and rank
         int commSize = ippl::Comm->size();
@@ -163,7 +161,8 @@ public:
         // get domain decomposition
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        auto cellStartingIdx = Kokkos::create_mirror_view(this->pcontainer_m->getNL());
+        auto cellStartingIdx = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->getNL());
+        // Kokkos::deep_copy(cellStartingIdx, this->pcontainer_m->getNL());
         // auto cellStartingIdx = this->pcontainer_m->getNL();
         const unsigned nx = nCells_m[0];
         const unsigned ny = nCells_m[1];
@@ -305,8 +304,8 @@ public:
         // SEND BUFFER LAYOUT: [x, y, z, Q]        
 
         // required particle data
-        auto R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-        auto Q_host = Kokkos::create_mirror_view(this->pcontainer_m->Q.getView());
+        auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->R.getView());
+        auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->Q.getView());
 
         // 1. Corners
         for(int i = 0; i < 8; ++i){
@@ -453,7 +452,7 @@ public:
         double commStart = MPI_Wtime();
         MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
         double commEnd = MPI_Wtime();
-        std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
+        // std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
 
         // ippl::Comm->barrier();
 
@@ -464,10 +463,11 @@ public:
         int recvDisplacements[26];
         recvDisplacements[0] = 0;
         for (int i = 1; i < 26; ++i) {
-            nTotalRecv += recvCounts[i-1];
+            nTotalRecv += recvCounts[i-1] / 4;
             recvDisplacements[i] = recvDisplacements[i-1] + recvCounts[i-1];
         }
         nTotalRecv += recvCounts[25] / 4;
+
 
         // if nTotalRecv larger than preallocated buffer, reallocate
         if(nTotalRecv*4 > preallocatedRecvBuffer_m){
@@ -481,10 +481,8 @@ public:
         double commStart2 = MPI_Wtime();
         MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
         double commEnd2 = MPI_Wtime();
-        std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
+        // std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
         // ippl::Comm->barrier();
-    
-        std::cerr << "Particle Exchange Finished" << std::endl;
 
         // Compute Interactions - 4 Steps
         // I.   Compute interactions on the corners
@@ -493,74 +491,88 @@ public:
         // IV.  Compute interactions on the edges in y direction and faces in x-y plane
 
         // needed for all steps
-        // auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         unsigned nCells = nCells_m[0] * nCells_m[1] * nCells_m[2];
         unsigned nLoc = cellStartingIdx(nCells);
         Kokkos::View<ippl::Vector<double, 3> *, Host> F_sr("PP-Halo Force", nLoc);
-        // double rcut = rcut_m;
         double alpha = alpha_m;
         
-        // I. Compute interactions on the corners
+	    // I. Compute interactions on the corners
         using team_t = Kokkos::TeamPolicy<Host>::member_type;
         Kokkos::parallel_for("PP on Corners", Kokkos::TeamPolicy<Host>(8, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[cornerIdentifiers[i]];
-                const int haloCornerCount = recvCounts[cornerIdentifiers[i]] / 4;
+                const int displacement = recvDisplacements[cornerIdentifiers[7-i]];
+                const int haloCornerCount = recvCounts[cornerIdentifiers[7-i]] / 4;
 
                 const int internalCornerIndex = cornerIdx[i];       // starting index in particle view
                 const int internalCornerCount = cornerCounts[i];    // number of particles in corner (local)
                 const int internalCornerDisplacement = cellStartingIdx(internalCornerIndex); // starting index in particle view
 
+                // if a buffer has no particles, we have nothing to calculate
+		        if (haloCornerCount == 0 || internalCornerCount == 0) return;
+            
                 auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, internalCornerCount, haloCornerCount);
-                Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
                     const int internalIdx = internalCornerDisplacement + ii;
                     const int haloIdx = displacement + 4*jj;
 
+                    // compute distance
                     double rsq_ij = 0;
                     Vector_t<T, Dim> dist_ij;
                     for(int d = 0; d < Dim; ++d){
                         dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                         rsq_ij += dist_ij[d] * dist_ij[d];
-                    }
-
+                    }		    
                     double r_ij = Kokkos::sqrt(rsq_ij);
-				    if (r_ij >= rcut) return;
 
+                    // if within cutoff
+                    if(r_ij >= rcut_m) return;
                     Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                     Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
-                });
-                
+                }); 
             }
         );
 
         // II. Compute interactions on the edges in z direction and faces in y-z plane
         // a. generate mini neighborlist
         // b. compute interactions
-        
+	
+    	// std::cerr << "Checkpoint 9" << std::endl;       
         
         // int zEdgeNeighborList[4][nz+1];
         // interaction on edges in z direction
         Kokkos::parallel_for("PP interaction for z edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
+        
+                const int displacement = recvDisplacements[zTopologyIdentifiers[3-i]];
+                const int haloEdgeCount = recvCounts[zTopologyIdentifiers[3-i]] / 4;
+                int localEdgeCount = sendCounts[zTopologyIdentifiers[i]] / 4;
+		        if(haloEdgeCount == 0 || localEdgeCount == 0) return;
 
-                const int displacement = recvDisplacements[zTopologyIdentifiers[i]];
-                const int haloEdgeCount = recvCounts[zTopologyIdentifiers[i]] / 4;
-
-                const double edgeStart = hLocalRegions(rank)[2].min();
+                const double edgeStart = hLocalRegions(rank)[2].min();               
                 Kokkos::View<unsigned*, Host> zEdgeNeighborList("NL for Halo interaction on z edges", nz+1);
 
+                // build neighborlist for the buffer we received
                 zEdgeNeighborList(0) = 0;
-                int currentCell = 1;
+                int currentCell = 0;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
-                    if (recvBuffer_m[displacement + jj * 4 + 2] > (currentCell * rcut + edgeStart)){
-                        zEdgeNeighborList(currentCell) = jj; // first particle outside cell
-                        ++currentCell;                       // search for next cell
+        		    double zPosition = recvBuffer_m[displacement + jj * 4 + 2];
+        		    int newCell = floor((zPosition - edgeStart)/ rcut);
+                    if (newCell > currentCell){
+                        ++currentCell;
+                        while (currentCell < newCell){
+                            zEdgeNeighborList(currentCell) = jj; // first particle outside cell
+                            ++currentCell;                       // search for next cell
+                        }
+                        zEdgeNeighborList(currentCell) = jj;
                     }
                 }
-                zEdgeNeighborList(nz) = haloEdgeCount;
+            	while (currentCell < nz){
+                    currentCell++;   
+                	zEdgeNeighborList(currentCell) = haloEdgeCount;
+        		}
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nz),
@@ -581,10 +593,18 @@ public:
                             haloStartingIdx = zEdgeNeighborList(zCellNumber-1);
                         }
 
-                        unsigned haloCount = zEdgeNeighborList(zCellNumber+1) - haloStartingIdx;
-                        
+                        unsigned haloEndingIdx;
+
+                        if(zCellNumber == nz-1) {
+                            haloEndingIdx = zEdgeNeighborList(nz);
+                        } else {
+                            haloEndingIdx = zEdgeNeighborList(zCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
+                        if(localCount == 0 || haloCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
-                        Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                        Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
                             const int internalIdx = localStartingIdx + ii;
                             const int haloIdx = displacement + 4 * (jj + haloStartingIdx);
 
@@ -594,10 +614,9 @@ public:
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
-
                             double r_ij = Kokkos::sqrt(rsq_ij);
-                            if (r_ij >= rcut) return;
-
+                            
+                            if (r_ij >= rcut_m) return;
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
                         });
@@ -606,15 +625,21 @@ public:
             }
         );
 
+    	// std::cerr << "Checkpoint 10" << std::endl;
+
         // Interaction on faces in y-z plane
         Kokkos::parallel_for("PP interaction for y-z faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
+            
+                // upper or lower face
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[zTopologyIdentifiers[4+i]];
-                const int haloFaceCount = recvCounts[zTopologyIdentifiers[4+i]] / 4;
+                // get displacement and recieve counts to index buffer
+                const int displacement = recvDisplacements[zTopologyIdentifiers[5-i]];
+                const int haloFaceCount = recvCounts[zTopologyIdentifiers[5-i]] / 4;
+        		int localFaceCount = sendCounts[zTopologyIdentifiers[4+i]] / 4;
 
-                if (haloFaceCount == 0) return;
+                if (haloFaceCount == 0 || localFaceCount == 0) return;
 
                 const double faceStart[2] = {hLocalRegions(rank)[1].min(), hLocalRegions(rank)[2].min()};
                 Kokkos::View<unsigned*, Host> yzFaceNeighborList("NL for Halo interaction on yz face", ny*nz+1);
@@ -635,21 +660,20 @@ public:
                             currentCell++;
                         }
                         yzFaceNeighborList(currentCell) = jj;
-                    } else if (newCell < currentCell) {
-                        // std::cerr << "wrong particle order assumed or sent" << std::endl;
                     }
                         
                 }
-                yzFaceNeighborList(ny*nz) = haloFaceCount;
-
-                
-                
+        		while(currentCell < ny*nz){
+                    currentCell++;
+        		    yzFaceNeighborList(currentCell) = haloFaceCount;
+        		}
+        
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ny*nz),
                     [&](const int& cellNumber){
                         int zCellNumber = cellNumber % nz;
                         int yCellNumber = cellNumber / nz;
-                        int localCellIdx = zTopologyIdx[4+i] + yCellNumber * nz + zCellNumber;
+                        int localCellIdx = zTopologyIdx[4+i] + cellNumber;
 
                         // starting index and count of local particles
                         unsigned localStartingIdx = cellStartingIdx(localCellIdx);
@@ -667,30 +691,27 @@ public:
                             if(haloYCellIdx < 0 || haloYCellIdx >= ny || haloZCellIdx < 0 || haloZCellIdx >= nz) return;
 
                             int haloCellIdx = haloYCellIdx * nz + haloZCellIdx;
-                            unsigned haloStartingIdx = yzFaceNeighborList(haloCellIdx);
-                            unsigned haloCount = yzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
+                            int haloStartingIdx = yzFaceNeighborList(haloCellIdx);
+                            int haloCount = yzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
 
-                            // DEBUG output
-                            // if (rank == 0) std::cerr << haloCount << std::endl;
-
-                            Vector_t<T, Dim> tempFsr;
+                            Vector_t<T, Dim> tempFsr = 0.0;
                             const int internalIdx = localStartingIdx + ii;
 
                             
                             for(unsigned jj = 0; jj < haloCount; ++jj){
-                                const int haloIdx = displacement + 4 * (jj + haloStartingIdx);
+                                const size_type haloIdx = displacement + 4 * (jj + haloStartingIdx);
 
-                                double rsq_ij = 0;
+				                double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
                                 for(int d = 0; d < Dim; ++d){
-                                    dist_ij[d] = R_host(internalIdx)[d]; //- recvBuffer_m[haloIdx + d];
+                                    dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-                                if (r_ij >= rcut) continue;
-
-                                tempFsr +=  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+				                if (r_ij >= rcut_m) continue;
+	
+                                tempFsr += recvBuffer_m[haloIdx + 3] *  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 
                             }
                             Kokkos::atomic_sub(&F_sr(internalIdx), tempFsr);
@@ -701,17 +722,20 @@ public:
             }
         );
 
-        std::cerr << "Checkpoint 11" << std::endl;
+        // std::cerr << "Checkpoint 11" << std::endl;
 
         // III. Compute interactions on the edges in x direction and faces in x-z plane
         unsigned xEdgeIdentifiers[4] = {2, 11, 5, 14};
         unsigned xEdgeStartingIndices[4] = {0, nzm1, (ny-1) * nz, (ny-1) * nz + nzm1};
         Kokkos::parallel_for("PP interaction for x edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[xEdgeIdentifiers[i]];
-                const int haloEdgeCount = recvCounts[xEdgeIdentifiers[i]] / 4;
+                const int displacement = recvDisplacements[xEdgeIdentifiers[3-i]];
+                const int haloEdgeCount = recvCounts[xEdgeIdentifiers[3-i]] / 4;
+                const int localEdgeCount = sendCounts[xEdgeIdentifiers[i]] /4;
+
+                if(localEdgeCount == 0 || haloEdgeCount == 0) return;
 
                 // lower bound of domain in x direction
                 const double edgeStart = hLocalRegions(rank)[0].min();
@@ -719,23 +743,34 @@ public:
                 Kokkos::View<unsigned*, Host> xEdgeNeighborList("NL for Halo edges in x direction", nx+1);
 
                 xEdgeNeighborList(0) = 0;
-                int currentCell = 1;
+                int currentCell = 0;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
-                    if (recvBuffer_m[displacement + jj * 4 + 0] > (currentCell * rcut + edgeStart)){
-                        xEdgeNeighborList(currentCell) = jj; // first particle outside cell
-                        ++currentCell;                       // search for next cell
-                    }
+        		    double xPosition = recvBuffer_m[displacement + jj * 4 + 0];
+        		    int newCell = floor((xPosition - edgeStart)/ rcut);
+                    if (newCell > currentCell){
+                        ++currentCell;
+                        while (currentCell < newCell){
+                            xEdgeNeighborList(currentCell) = jj; // first particle outside cell
+                            ++currentCell;                       // search for next cell
+                        }
+                        xEdgeNeighborList(currentCell) = jj;
+                    } /*else if (newCell < currentCell) {
+                        std::cerr << "wrong particle order assumed or sent" << std::endl;
+                    }*/
                 }
-                xEdgeNeighborList(nx) = haloEdgeCount;
+            	while (currentCell < nx){
+                    currentCell++;
+                	xEdgeNeighborList(currentCell) = haloEdgeCount;
+                }
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nx),
                     [&](const int& xCellNumber){
-                        int localCellIdx = xEdgeStartingIndices[i] + xCellNumber * ny * nz;
+                        size_type localCellIdx = xEdgeStartingIndices[i] + xCellNumber * ny * nz;
 
                         // starting index and count of local particles
-                        unsigned localStartingIdx = cellStartingIdx(localCellIdx);
-                        unsigned localCount = cellStartingIdx(localCellIdx+1) - localStartingIdx;
+                        size_type localStartingIdx = cellStartingIdx(localCellIdx);
+                        size_type localCount = cellStartingIdx(localCellIdx+1) - localStartingIdx;
 
                         // declare starting index and count of halo particles
                         unsigned haloStartingIdx;
@@ -747,10 +782,18 @@ public:
                             haloStartingIdx = xEdgeNeighborList(xCellNumber-1);
                         }
 
-                        unsigned haloCount = xEdgeNeighborList(xCellNumber+1) - haloStartingIdx;
-                        
+                        unsigned haloEndingIdx;
+
+                        if(xCellNumber == nx-1) {
+                            haloEndingIdx = xEdgeNeighborList(nx);
+                        } else {
+                            haloEndingIdx = xEdgeNeighborList(xCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
+                        if (localCount == 0 || haloCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
-                        Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                        Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
                             const int internalIdx = localStartingIdx + ii;
                             const int haloIdx = displacement + 4 * (jj + haloStartingIdx);
 
@@ -760,10 +803,9 @@ public:
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
-
                             double r_ij = Kokkos::sqrt(rsq_ij);
-                            if (r_ij >= rcut) return;
-
+                            
+			                if (r_ij >= rcut_m) return;
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
                         });
@@ -772,17 +814,20 @@ public:
             }
         );
 
+        // std::cerr << "Checkpoint 13 " << std::endl;
+
         // Interaction on faces in x-z plane
         int xzTopologyIdentifiers[2] = {20, 23};
         int xzTopologyIndex[2] = {0, (ny-1) * nz};
         Kokkos::parallel_for("PP interaction for x-z faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[xzTopologyIdentifiers[i]];
-                const int haloFaceCount = recvCounts[xzTopologyIdentifiers[i]] / 4;
+                const int displacement = recvDisplacements[xzTopologyIdentifiers[1-i]];
+                const int haloFaceCount = recvCounts[xzTopologyIdentifiers[1-i]] / 4;
+                const int localFaceCount = sendCounts[xzTopologyIdentifiers[i]] / 4;
 
-                if (haloFaceCount == 0) return;
+                if (haloFaceCount == 0 || localFaceCount == 0) return;
 
                 const double faceStart[2] = {hLocalRegions(rank)[0].min(), hLocalRegions(rank)[2].min()};
                 Kokkos::View<unsigned*, Host> xzFaceNeighborList("NL for Halo interaction on xz face", nx*nz+1);
@@ -803,12 +848,13 @@ public:
                             currentCell++;
                         }
                         xzFaceNeighborList(currentCell) = jj;
-                    } else if (newCell < currentCell) {
-                        // std::cerr << "wrong particle order assumed or sent" << std::endl;
                     }
                         
                 }
-                xzFaceNeighborList(nx*nz) = haloFaceCount;
+                while (currentCell < nx*nz){
+                    ++currentCell;
+                    xzFaceNeighborList(currentCell) = haloFaceCount;
+                }
 
                 
                 
@@ -837,11 +883,13 @@ public:
                             int haloCellIdx = haloXCellIdx * nz + haloZCellIdx;
                             unsigned haloStartingIdx = xzFaceNeighborList(haloCellIdx);
                             unsigned haloCount = xzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
+            			    if (haloCount == 0) return;
+
 
                             // DEBUG output
                             // if (rank == 0) std::cerr << haloCount << std::endl;
 
-                            Vector_t<T, Dim> tempFsr;
+                            Vector_t<T, Dim> tempFsr = 0.0;
                             const int internalIdx = localStartingIdx + ii;
 
                             
@@ -851,15 +899,13 @@ public:
                                 double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
                                 for(int d = 0; d < Dim; ++d){
-                                    dist_ij[d] = R_host(internalIdx)[d]; //- recvBuffer_m[haloIdx + d];
+                                    dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-                                if (r_ij >= rcut) continue;
-
-                                tempFsr +=  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                
+                				if (r_ij >= rcut_m) continue; 
+                                tempFsr += recvBuffer_m[haloIdx + 3] *  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             }
                             Kokkos::atomic_sub(&F_sr(internalIdx), tempFsr);
                             
@@ -869,29 +915,44 @@ public:
             }
         );
 
+        // std::cerr << "Checkpoint 14 " << std::endl;
+
         // IV. Compute interactions on the edges in y direction and faces in x-y plane
         unsigned yEdgeIdentifiers[4] = {6, 15, 7, 16};
         unsigned yEdgeStartingIndices[4] = {0, nzm1, (nx-1) * ny * nz, (nx-1) * ny * nz + nzm1};
         Kokkos::parallel_for("PP interaction for y edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[yEdgeIdentifiers[i]];
-                const int haloEdgeCount = recvCounts[yEdgeIdentifiers[i]] / 4;
+                const int displacement = recvDisplacements[yEdgeIdentifiers[3-i]];
+                const int haloEdgeCount = recvCounts[yEdgeIdentifiers[3-i]] / 4;
+                const int localEdgeCount = sendCounts[yEdgeIdentifiers[i]] /4;
 
+                if(localEdgeCount == 0 || haloEdgeCount == 0) return;
                 const double edgeStart = hLocalRegions(rank)[1].min();
 
                 Kokkos::View<unsigned*, Host>  yEdgeNeighborList("NL for edges in y direction", ny+1);
 
                 yEdgeNeighborList(0) = 0;
-                int currentCell = 1;
+                int currentCell = 0;
                 for(int jj = 0; jj < haloEdgeCount; ++jj){
-                    if (recvBuffer_m[displacement + jj * 4 + 1] > (currentCell * rcut + edgeStart)){
-                        yEdgeNeighborList(currentCell) = jj; // first particle outside cell
-                        ++currentCell;                       // search for next cell
-                    }
+        		    double yPosition = recvBuffer_m[displacement + jj * 4 + 1];
+        		    int newCell = floor((yPosition - edgeStart)/ rcut);
+                    if (newCell > currentCell){
+                        ++currentCell;
+                        while (currentCell < newCell){
+                            yEdgeNeighborList(currentCell) = jj; // first particle outside cell
+                            ++currentCell;                       // search for next cell
+                        }
+                        yEdgeNeighborList(currentCell) = jj;
+                    } /*else if (newCell < currentCell) {
+                        std::cerr << "wrong particle order assumed or sent" << std::endl;
+                    }*/
                 }
-                yEdgeNeighborList(ny) = haloEdgeCount;
+            	while (currentCell < ny){
+                    currentCell++;
+                	yEdgeNeighborList(currentCell) = haloEdgeCount;
+                }
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ny),
@@ -912,10 +973,18 @@ public:
                             haloStartingIdx = yEdgeNeighborList(yCellNumber-1);
                         }
 
-                        unsigned haloCount = yEdgeNeighborList(yCellNumber+1) - haloStartingIdx;
-                        
+                        unsigned haloEndingIdx;
+
+                        if(yCellNumber == ny-1) {
+                            haloEndingIdx = yEdgeNeighborList(ny);
+                        } else {
+                            haloEndingIdx = yEdgeNeighborList(yCellNumber+2);
+                        }
+
+                        unsigned haloCount = haloEndingIdx - haloStartingIdx;
+                        if (haloCount == 0 || localCount == 0) return;
                         auto p = Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, localCount, haloCount);
-                        Kokkos::parallel_for(p, [=](const int& ii, const int& jj){
+                        Kokkos::parallel_for(p, [&](const int& ii, const int& jj){
                             const int internalIdx = localStartingIdx + ii;
                             const int haloIdx = displacement + 4 * (jj + haloStartingIdx);
 
@@ -927,8 +996,7 @@ public:
                             }
 
                             double r_ij = Kokkos::sqrt(rsq_ij);
-                            if (r_ij >= rcut) return;
-
+                            if (r_ij >= rcut_m) return;
                             Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                             Kokkos::atomic_sub(&F_sr(internalIdx), F_ij * recvBuffer_m[haloIdx + 3]);
                         });
@@ -937,15 +1005,17 @@ public:
             }
         );
 
+        // std::cerr << "Checkpoint 15 " << std::endl;
+
         // interaction on faces in xy plane
         int xyTopologyIdentifiers[2] = {8, 17};
         int xyTopologyIndex[2] = {0, nzm1};
         Kokkos::parallel_for("PP interaction for x-y faces", Kokkos::TeamPolicy<Host>(2, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const team_t& team){
+            KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
 
-                const int displacement = recvDisplacements[xyTopologyIdentifiers[i]];
-                const int haloFaceCount = recvCounts[xyTopologyIdentifiers[i]] / 4;
+                const int displacement = recvDisplacements[xyTopologyIdentifiers[1-i]];
+                const int haloFaceCount = recvCounts[xyTopologyIdentifiers[1-i]] / 4;
 
                 if (haloFaceCount == 0) return;
 
@@ -968,14 +1038,15 @@ public:
                             currentCell++;
                         }
                         xyFaceNeighborList(currentCell) = jj;
-                    } else if (newCell < currentCell) {
+                    }/* else if (newCell < currentCell) {
                         // std::cerr << "wrong particle order assumed or sent" << std::endl;
-                    }
+                    }*/
                         
                 }
-                xyFaceNeighborList(nx*ny) = haloFaceCount;
-
-                
+                while (currentCell < nx*ny){
+                    currentCell++;
+                    xyFaceNeighborList(currentCell) = haloFaceCount;
+                }
                 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nx*ny),
@@ -1003,10 +1074,11 @@ public:
                             unsigned haloStartingIdx = xyFaceNeighborList(haloCellIdx);
                             unsigned haloCount = xyFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
 
+            			    if (haloCount==0) return;
                             // DEBUG output
                             // if (rank == 0) std::cerr << haloCount << std::endl;
 
-                            Vector_t<T, Dim> tempFsr;
+                            Vector_t<T, Dim> tempFsr = 0.0;
                             const int internalIdx = localStartingIdx + ii;
 
                             
@@ -1016,14 +1088,14 @@ public:
                                 double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
                                 for(int d = 0; d < Dim; ++d){
-                                    dist_ij[d] = R_host(internalIdx)[d]; //- recvBuffer_m[haloIdx + d];
+                                    dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-                                if (r_ij >= rcut) continue;
+                                if (r_ij >= rcut_m) continue;
 
-                                tempFsr +=  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
+                                tempFsr += recvBuffer_m[haloIdx + 3] * ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
                                 
                             }
                             Kokkos::atomic_sub(&F_sr(internalIdx), tempFsr);
@@ -1033,7 +1105,15 @@ public:
                 );
             }
         );
-        haloE_m = F_sr;
+	    Kokkos::fence();
+        
+        auto deviceE = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), F_sr);
+        auto E = this->pcontainer_m->E.getView();
+        Kokkos::parallel_for("Update halo energies", nLoc,
+            KOKKOS_LAMBDA(const int& i){
+                Kokkos::atomic_add(&E(i), deviceE(i));
+            }
+        );
     }
 
 
@@ -1135,11 +1215,6 @@ public:
         double MPITimerEnd = MPI_Wtime();
         std::cout << "MPI Setup Time: " << MPITimerEnd - MPITimerStart << std::endl;
 
-        double start = MPI_Wtime();
-        particleExchange();
-        double end = MPI_Wtime();
-        std::cout << "Particle Exchange Time: " << (end - start) << std::endl;
-
         this->fcontainer_m->getRho() = 0.0;
 
         double PMTimerStart = MPI_Wtime();
@@ -1152,6 +1227,11 @@ public:
         
         std::cout << "Field Solver Time: " << PMTimerEnd - PMTimerStart << std::endl;
 
+        double start = MPI_Wtime();
+        particleExchange();
+        double end = MPI_Wtime();
+        std::cout << "Particle Exchange Time: " << (end - start) << std::endl;
+        
         double PPTimerStart = MPI_Wtime();
 	    this->par2par();
         double PPTimerEnd = MPI_Wtime();
@@ -1482,35 +1562,7 @@ public:
                                 Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
-
-/*
-                        Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nParticles),
-                            [=](const int& i) {
-                                const size_type ii = start + i;
-                                Vector_t<T, Dim> E_ii;
-                                
-                                for(size_type j = 0; j < nNeighborParticles; ++j){
-                                    const size_type jj = neighborStart + j;
-                                    if (((cellIdx == neighborCellIdx) && ii >= jj)) return;
-
-                                    double rsq_ij = 0.0;
-                                    Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                                    for (int d = 0; d < Dim; ++d) {
-                                        rsq_ij += dist_ij[d] * dist_ij[d];
-                                    }
-
-                                    double r_ij = Kokkos::sqrt(rsq_ij);
-                                    if  (r_ij >= rcut) continue;
-
-                                    // calculate and apply force
-                                    Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                    E_ii += F_ij * Q(jj);
-                                    Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
-                                }
-                                Kokkos::atomic_sub(&E(ii), E_ii);
-                            }
-                        );
- */                  }
+                     }
                 );
             }
         );
@@ -1526,20 +1578,6 @@ public:
         LeapFrogStep();
     }
 
-    void haloEnergyUpdate(){
-        
-        auto nLoc = this->pcontainer_m->getLocalNum();
-        Kokkos::View<ippl::Vector<double, 3> *, Device> E_halo("Halo Energy Device View", nLoc);
-        Kokkos::deep_copy(E_halo, haloE_m);
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-        Kokkos::parallel_for("update Energy by halo interaction values", nLoc,
-            KOKKOS_LAMBDA(const size_type& i){
-                pc->E(i) += E_halo(i);
-            }
-        );
-    }
-
     void LeapFrogStep() {
         
         double dt                               = this->dt_m;
@@ -1552,17 +1590,15 @@ public:
 
         this->initializeNeighborList();
 
-        particleExchange();
-
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
 
-        this->par2par();
+        particleExchange();
 
-        haloEnergyUpdate();
+        this->par2par();
 
         // this->applyConstantFocusing();
 
