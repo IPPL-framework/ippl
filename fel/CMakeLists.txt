@@ -11,3 +11,6 @@ set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (FreeElectronLaser FreeElectronLaser.cpp)
 target_link_libraries (FreeElectronLaser ${IPPL_LIBS})
+
+add_executable (TestFDTDSolverWithParticles TestFDTDSolverWithParticles.cpp)
+target_link_libraries (TestFDTDSolverWithParticles ${IPPL_LIBS})

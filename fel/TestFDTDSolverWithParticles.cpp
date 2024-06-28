@@ -4,10 +4,10 @@ using std::size_t;
 #include "Ippl.h"
 #include "Types/Vector.h"
 #include "Field/Field.h"
-#include "MaxwellSolvers/FDTD.h"
+#include "NSFDSolverWithParticles.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
-#include "../alpine/units.h"
+#include "units.h"
 #include <Kokkos_Random.hpp>
 template<typename scalar1, typename... scalar>
     requires((std::is_floating_point_v<scalar1>))
@@ -29,11 +29,6 @@ int main(int argc, char* argv[]){
     ippl::initialize(argc, argv);
     {
         using scalar = float;
-        //const unsigned dim = 3;
-        //using vector_type = ippl::Vector<scalar, 3>;
-        //using vector4_type = ippl::Vector<scalar, 4>;
-        //using FourField = ippl::Field<vector4_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
-        //using ThreeField = ippl::Field<vector_type, dim, ippl::UniformCartesian<scalar, dim>, typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
         constexpr size_t n = 100;
         ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
         ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);

@@ -44,33 +44,51 @@ namespace ippl{
     };
     template <typename T>
     KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> gridCoordinatesOf(
-        const ippl::Vector<T, 3> hr, const ippl::Vector<T, 3> origin, ippl::Vector<T, 3> pos) {
-        // return pear<ippl::Vector<int, 3>, ippl::Vector<T, 3>>{ippl::Vector<int, 3>{5,5,5},
-        // ippl::Vector<T, 3>{0,0,0}}; printf("%.10e, %.10e, %.10e\n", (inverse_spacing *
-        // spacing)[0], (inverse_spacing * spacing)[1], (inverse_spacing * spacing)[2]);
+        const ippl::Vector<T, 3> hr, const ippl::Vector<T, 3> origin, ippl::Vector<T, 3> pos, int nghost = 1) {
+
+        // Declare a pair to hold the resulting grid coordinates (integer part) and fractional part
         Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<T, 3>> ret;
-        // pos -= spacing * T(0.5);
-        ippl::Vector<T, 3> relpos  = pos - origin;
+
+        // Calculate the relative position of pos with respect to the origin
+        ippl::Vector<T, 3> relpos = pos - origin;
+
+        // Convert the relative position to grid coordinates by dividing by the grid spacing (hr)
         ippl::Vector<T, 3> gridpos = relpos / hr;
+
+        // Declare an integer vector to hold the integer part of the grid coordinates
         ippl::Vector<int, 3> ipos;
+
+        // Cast the grid position to an integer vector, which gives us the integer part of the coordinates
         ipos = gridpos.template cast<int>();
+
+        // Declare a vector to hold the fractional part of the grid coordinates
         ippl::Vector<T, 3> fracpos;
+
+        // Calculate the fractional part of the grid coordinates
         for (unsigned k = 0; k < 3; k++) {
-            fracpos[k] = gridpos[k] - (int)ipos[k];
+            fracpos[k] = gridpos[k] - static_cast<int>(ipos[k]);
         }
-        // TODO: NGHOST!!!!!!!
-        ipos += ippl::Vector<int, 3>(1);
-        ret.first  = ipos;
+
+        // Add the number of ghost cells to the integer part of the coordinates
+        ipos += ippl::Vector<int, 3>(nghost);
+
+        // Set the integer part of the coordinates in the return pair
+        ret.first = ipos;
+
+        // Set the fractional part of the coordinates in the return pair
         ret.second = fracpos;
+
+        // Return the pair containing both the integer and fractional parts of the grid coordinates
         return ret;
     }
+
     template <typename view_type, typename scalar>
     KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view,
                                        ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig,
                                        const ippl::Vector<scalar, 3>& pos, const scalar value) {
         auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
         ipos -= ldom.first();
-        // std::cout << pos << " 's scatter args (will have 1 added): " << ipos << "\n";
+        // std::cout << pos << " 's scatter args (will have 1, or nghost in general added): " << ipos << "\n";
         if (ipos[0] < 0 || ipos[1] < 0 || ipos[2] < 0 || size_t(ipos[0]) >= view.extent(0) - 1
             || size_t(ipos[1]) >= view.extent(1) - 1 || size_t(ipos[2]) >= view.extent(2) - 1
             || fracpos[0] < 0 || fracpos[1] < 0 || fracpos[2] < 0) {
@@ -110,13 +128,12 @@ namespace ippl{
                                        ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig,
                                        const ippl::Vector<scalar, 3>& pos,
                                        const ippl::Vector<scalar, 3>& value) {
-        // std::cout << "Value: " << value << "\n";
         auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos);
         ipos -= ldom.first();
         if (ipos[0] < 0 || ipos[1] < 0 || ipos[2] < 0 || size_t(ipos[0]) >= view.extent(0) - 1
             || size_t(ipos[1]) >= view.extent(1) - 1 || size_t(ipos[2]) >= view.extent(2) - 1
             || fracpos[0] < 0 || fracpos[1] < 0 || fracpos[2] < 0) {
-            // std::cout << "out of bounds\n";
+            // Out of bounds case (you'll do nothing)
             return;
         }
         assert(fracpos[0] >= 0.0f);
@@ -160,24 +177,12 @@ namespace ippl{
             gridCoordinatesOf(hr, origin, from);
         Kokkos::pair<ippl::Vector<int, 3>, ippl::Vector<scalar, 3>> to_grid =
             gridCoordinatesOf(hr, origin, to);
-        // printf("Scatterdest: %.4e, %.4e, %.4e\n", from_grid.second[0], from_grid.second[1],
-        // from_grid.second[2]);
-        for (int d = 0; d < 3; d++) {
-            // if(abs(from_grid.first[d] - to_grid.first[d]) > 1){
-            //     std::cout <<abs(from_grid.first[d] - to_grid.first[d]) << " violation " <<
-            //     from_grid.first << " " << to_grid.first << std::endl;
-            // }
-            // assert(abs(from_grid.first[d] - to_grid.first[d]) <= 1);
-        }
-        // const uint32_t nghost = g.nghost();
-        // from_ipos += ippl::Vector<int, 3>(nghost);
-        // to_ipos += ippl::Vector<int, 3>(nghost);
 
         if (from_grid.first[0] == to_grid.first[0] && from_grid.first[1] == to_grid.first[1]
             && from_grid.first[2] == to_grid.first[2]) {
             scatterToGrid(ldom, Jview, hr, origin,
-                          ippl::Vector<scalar, 3>((from + to) * scalar(0.5)),
-                          ippl::Vector<scalar, 3>((to - from) * factor));
+                          /*Scatter point, geometric average */         ippl::Vector<scalar, 3>((from + to) * scalar(0.5)),
+                          /*Scatter value, factor=charge / timestep */ ippl::Vector<scalar, 3>((to - from) * factor));
 
             return;
         }
@@ -242,11 +247,9 @@ namespace ippl{
                 uint32_t(layout.getDomain()[2].last() - layout.getDomain()[2].first() + 1)};
             hr_m        = mesh_mp->getMeshSpacing();
             steps_taken = 0;
-            // field_solver.setEMFields(E, B);
         }
         template <bool space_charge = false>
         void scatterBunch() {
-            // ippl::Vector<scalar, 3>* gammaBeta = this->gammaBeta;
             auto hr_m           = mesh_mp->getMeshSpacing();
             const scalar volume = hr_m[0] * hr_m[1] * hr_m[2];
             assert_isreal(volume);
@@ -300,8 +303,6 @@ namespace ippl{
                         const ippl::Vector<scalar, 3> pgammabeta = gbview(i);
                         ippl::Vector<scalar, 3> E_grid           = eview(i);
                         ippl::Vector<scalar, 3> B_grid           = bview(i);
-                        // std::cout << "E_grid: " << E_grid << "\n";
-                        // std::cout << "B_grid: " << B_grid << "\n";
                         ippl::Vector<scalar, 3> bunchpos = rview(i);
                         Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>> external_eb =
                             external_field(bunchpos, time + bunch_dt * bts);

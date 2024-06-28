@@ -813,7 +813,7 @@ void boost_bunch(ChargeVector<Double>& chargeVectorn_, Double frame_gamma) {
         if (std::isnan(iterQ->rnp[2])) {
             std::cerr << iterQ->gb[2] << ", " << g << ", " << iterQ->rnp[2] << ", " << bunch_.zu_
                       << ", " << frame_beta << "\n";
-            std::cerr << __FILE__ << ": " << __LINE__ << "   OOOOOF\n";
+            std::cerr << __FILE__ << ": " << __LINE__ << " Particle has NaN velocity or position\n";
             abort();
         }
     }
@@ -822,25 +822,25 @@ void boost_bunch(ChargeVector<Double>& chargeVectorn_, Double frame_gamma) {
 template <typename bunch_type, typename scalar>
 size_t initialize_bunch_mithra(bunch_type& bunch, const BunchInitialize<scalar>& bunchInit,
                                scalar frame_gamma) {
-    ChargeVector<scalar> oof;
-    initializeBunchEllipsoid(bunchInit, oof, 0, 1, 0);
-    for (auto& c : oof) {
+    ChargeVector<scalar> temporary_charge_list;
+    initializeBunchEllipsoid(bunchInit, temporary_charge_list, 0, 1, 0);
+    for (auto& c : temporary_charge_list) {
         if (std::isnan(c.rnp[0]) || std::isnan(c.rnp[1]) || std::isnan(c.rnp[2]))
             std::cout << "Pos before boost: " << c.rnp << "\n";
         if (std::isinf(c.rnp[0]) || std::isinf(c.rnp[1]) || std::isinf(c.rnp[2]))
             std::cout << "Pos before boost: " << c.rnp << "\n";
     }
-    boost_bunch(oof, frame_gamma);
-    for (auto& c : oof) {
+    boost_bunch(temporary_charge_list, frame_gamma);
+    for (auto& c : temporary_charge_list) {
         if (std::isnan(c.rnp[0]) || std::isnan(c.rnp[1]) || std::isnan(c.rnp[2])) {
             std::cout << "Pos after boost: " << c.rnp << "\n";
             break;
         }
     }
-    Kokkos::View<ippl::Vector<scalar, 3>*, Kokkos::HostSpace> positions("", oof.size());
-    Kokkos::View<ippl::Vector<scalar, 3>*, Kokkos::HostSpace> gammabetas("", oof.size());
-    auto iterQ = oof.begin();
-    for (size_t i = 0; i < oof.size(); i++) {
+    Kokkos::View<ippl::Vector<scalar, 3>*, Kokkos::HostSpace> positions("", temporary_charge_list.size());
+    Kokkos::View<ippl::Vector<scalar, 3>*, Kokkos::HostSpace> gammabetas("", temporary_charge_list.size());
+    auto iterQ = temporary_charge_list.begin();
+    for (size_t i = 0; i < temporary_charge_list.size(); i++) {
         assert_isreal(iterQ->gb[0]);
         assert_isreal(iterQ->gb[1]);
         assert_isreal(iterQ->gb[2]);
@@ -854,11 +854,11 @@ size_t initialize_bunch_mithra(bunch_type& bunch, const BunchInitialize<scalar>&
         gammabetas(i) = iterQ->gb;
         ++iterQ;
     }
-    if (oof.size() > bunch.getLocalNum()) {
-        bunch.create(oof.size() - bunch.getLocalNum());
+    if (temporary_charge_list.size() > bunch.getLocalNum()) {
+        bunch.create(temporary_charge_list.size() - bunch.getLocalNum());
     }
-    Kokkos::View<ippl::Vector<scalar, 3>*> dpositions("", oof.size());
-    Kokkos::View<ippl::Vector<scalar, 3>*> dgammabetas("", oof.size());
+    Kokkos::View<ippl::Vector<scalar, 3>*> dpositions("", temporary_charge_list.size());
+    Kokkos::View<ippl::Vector<scalar, 3>*> dgammabetas("", temporary_charge_list.size());
 
     Kokkos::deep_copy(dpositions, positions);
     Kokkos::deep_copy(dgammabetas, gammabetas);
@@ -868,14 +868,14 @@ size_t initialize_bunch_mithra(bunch_type& bunch, const BunchInitialize<scalar>&
          gbview = bunch.gamma_beta.getView();
     ;
     Kokkos::parallel_for(
-        oof.size(), KOKKOS_LAMBDA(size_t i) {
+        temporary_charge_list.size(), KOKKOS_LAMBDA(size_t i) {
             rview(i)   = dpositions(i);
             rm1view(i) = dpositions(i);
             gbview(i)  = dgammabetas(i);
         });
     Kokkos::fence();
 
-    return oof.size();
+    return temporary_charge_list.size();
 }
 
 // END LORENTZ FRAME AND UNDULATOR AND BUNCH
@@ -969,14 +969,13 @@ KOKKOS_FUNCTION void scatterToGrid(const ippl::NDIndex<3>& ldom, view_type& view
                                    ippl::Vector<scalar, 3> hr, ippl::Vector<scalar, 3> orig,
                                    const ippl::Vector<scalar, 3>& pos,
                                    const ippl::Vector<scalar, 3>& value, int nghost = 1) {
-    // std::cout << "Value: " << value << "\n";
     auto [ipos, fracpos] = gridCoordinatesOf(hr, orig, pos, nghost);
     ipos -= ldom.first();
     if (ipos[0] < 0 || ipos[1] < 0 || ipos[2] < 0 || size_t(ipos[0]) >= view.extent(0) - 1
         || size_t(ipos[1]) >= view.extent(1) - 1 || size_t(ipos[2]) >= view.extent(2) - 1
         || fracpos[0] < 0 || fracpos[1] < 0 || fracpos[2] < 0) {
-        // std::cout << "out of bounds\n";
-        return;
+        
+        return; // Return in case of out of bounds
     }
     assert(fracpos[0] >= 0.0f);
     assert(fracpos[0] <= 1.0f);
@@ -1246,14 +1245,16 @@ KOKKOS_INLINE_FUNCTION typename View::value_type gather_helper(const View& v,
                                                                const ippl::Vector<T, Dim>& pos,
                                                                const ippl::Vector<T, 3>& origin,
                                                                const ippl::Vector<T, 3>& hr,
-                                                               const ippl::NDIndex<3>& lDom) {
+                                                               const ippl::NDIndex<3>& lDom,
+                                                               int nghost = 1) {
     using vector_type = ippl::Vector<T, 3>;
 
     vector_type l;
 
     for (unsigned k = 0; k < 3; k++) {
         l[k] = (pos[k] - origin[k]) / hr[k]
-               + 1.0;  // gather is implemented in a way such that this 1 is necessary here
+               + 1.0;  // gather is implemented in a way such that this 1 is necessary here. 
+                       // This is NOT the nghost, this needs to be a hardcoded 1.0
     }
 
     ippl::Vector<int, 3> index{int(l[0]), int(l[1]), int(l[2])};
@@ -1261,15 +1262,14 @@ KOKKOS_INLINE_FUNCTION typename View::value_type gather_helper(const View& v,
     ippl::Vector<T, 3> wlo(1.0);
     wlo -= whi;
 
-    // TODO: nghost
-    ippl::Vector<size_t, 3> args = index - lDom.first() + 1;
+    ippl::Vector<size_t, 3> args = index - lDom.first() + nghost;
     for (unsigned k = 0; k < 3; k++) {
         if (args[k] >= v.extent(k) || args[k] == 0) {
             return typename View::value_type(0);
         }
     }
-    return /*{true,*/ ippl::detail::gatherFromField(std::make_index_sequence<(1u << Dim)>{}, v, wlo,
-                                                    whi, args) /*}*/;
+    return ippl::detail::gatherFromField(std::make_index_sequence<(1u << Dim)>{}, v, wlo,
+                                                    whi, args);
 }
 template <typename scalar>
 scalar test_gauss_law(uint32_t n) {
