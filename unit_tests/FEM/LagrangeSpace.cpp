@@ -560,8 +560,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
-            FieldType x(mesh, layout, 0);
-            FieldType z(mesh, layout, 0);
+            FieldType x(mesh, layout, 1);
+            FieldType z(mesh, layout, 1);
 
             int nghost  = x.getNghost();
             auto view_x = x.getView();
@@ -629,7 +629,12 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                 ippl::apply(view_x, idx) = 1.0;
 
+                x.fillHalo();
+
                 z = lagrangeSpace.evaluateAx(x, eval);
+
+                z.accumulateHalo();
+
                 auto view_z = z.getView();
 
                 // Set the the i-th row-vector of A to z
@@ -662,13 +667,16 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             // Test for equivalence of A and A_ref
 
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
+            if (ippl::Comm->size() == 1) {
+                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
+                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
+                        ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
+                    }
+                    std::cout << std::endl;
                 }
-                std::cout << std::endl;
+            } else {
+                GTEST_SKIP();
             }
-
         } else {
             // FAIL();
             GTEST_SKIP();
@@ -680,15 +688,12 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 }
 
 TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
-    // using T         = typename TestFixture::value_t;
     using FieldType = typename TestFixture::FieldType;
 
-    // const auto& refElement = this->ref_element;
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
     const std::size_t& dim    = lagrangeSpace.dim;
     const std::size_t& order  = lagrangeSpace.order;
-    // const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
     const double pi = Kokkos::numbers::pi_v<double>;
 
@@ -704,7 +709,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
             ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
-            FieldType rhs_field(mesh, layout, 0);
+            FieldType rhs_field(mesh, layout, 1);
+            FieldType ref_field(mesh, layout, 1);
 
             // define the RHS function f
             auto f = [&pi](ippl::Vector<double, 1> x) {
@@ -712,31 +718,56 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             };
 
             // call evaluateLoadVector
+            rhs_field.fillHalo();
             lagrangeSpace.evaluateLoadVector(rhs_field, f);
+            rhs_field.accumulateHalo();
 
-            auto view  = rhs_field.getView();
-            auto ldom  = (rhs_field.getLayout()).getLocalNDIndex();
-            int nghost = rhs_field.getNghost();
+            // set up for comparison
+            int nghost    = rhs_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            ippl::Vector<ippl::Vector<int, lagrangeSpace.dim>, 5> idx;
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
 
-            if (ippl::Comm->size() == 1) {
-                std::cout << "RHS" << std::endl;
-                for (int i = 0; i < 5; ++i) {
-                    idx[i] = {i - ldom[0].first() + nghost};
-                    std::cout << ippl::apply(view, idx[i]) << std::endl;
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first() - nghost;
                 }
-                std::cout << std::endl;
-            }
 
-            // compare to analytical solution
-            ASSERT_NEAR(ippl::apply(view, idx[0]), 0.0,
-                        1e-7);  // 2.0 - pi (without bounadry conditions)
-            ASSERT_NEAR(ippl::apply(view, idx[1]), -4.0, 1e-7);
-            ASSERT_NEAR(ippl::apply(view, idx[2]), 0.0, 1e-7);
-            ASSERT_NEAR(ippl::apply(view, idx[3]), 4.0, 1e-7);
-            ASSERT_NEAR(ippl::apply(view, idx[4]), 0.0,
-                        1e-7);  // pi - 2.0 (without boundary conditions)
+                // reference field
+                switch (coords[0]) {
+                    case 0:
+                        mirror(args...) = 0.0;
+                        break;
+                    case 1:
+                        mirror(args...) = -4.0;
+                        break;
+                    case 2:
+                        mirror(args...) = 0.0;
+                        break;
+                    case 3:
+                        mirror(args...) = 4.0;
+                        break;
+                    case 4:
+                        mirror(args...) = 0.0;
+                        break;
+                    default:
+                        mirror(args...) = 0.0;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            rhs_field = rhs_field - ref_field;
+            double err = ippl::norm(rhs_field);
+
+            ASSERT_NEAR(err, 0.0, 1e-7);
+
         } else {
             GTEST_SKIP();
         }
