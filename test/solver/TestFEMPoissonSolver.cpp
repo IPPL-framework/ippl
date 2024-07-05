@@ -114,8 +114,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     ippl::Vector<T, Dim> origin(domain_start);
     Mesh_t mesh(domain, cellSpacing, origin);
 
-    //msg2all << "ID: " << me << ", Domain = " << domain << ", origin = " << origin << ", cellSpacing = " << cellSpacing << ", cells = " << numCellsPerDim << endl;
-
     // specifies decomposition; here all dimensions are parallel
     std::array<bool, Dim> isParallel;
     isParallel.fill(true);
@@ -125,7 +123,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // exact solution
 
-    //msg2all << "ID: " << me << ", layout = " << layout << endl;
+    msg2all << "ID: " << me << ", layout = " << layout << endl;
 
     // Define boundary conditions
     BConds_t bcField;
@@ -221,11 +219,10 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             dim = 1;
-            for (unsigned n = 2 << 2; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
                 testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0,
                                     1.0);
             }
-            //testFEMSolver<T, 1>(4, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0, 1.0);
         } else if (dim == 2) {
             // 2D Sinusoidal
             dim = 2;
@@ -233,13 +230,14 @@ int main(int argc, char* argv[]) {
                 testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0,
                                     1.0);
             }
-            //testFEMSolver<T, 2>(4, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0, 1.0);
         } else {
             // 3D Sinusoidal
             const int n_arg = std::atoi(argv[1]);
             std::cout << "size = " << (1 << n_arg) << std::endl;
 
-            for (int n = 1 << n_arg; n <= 1 << n_arg; n = n << 1) {
+            // repeat 5 times with given problem size (for scaling studies)
+            for (int i = 0; i < 5; ++i) {
+                int n = 1 << n_arg;
                 testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
                                     1.0);
             }
