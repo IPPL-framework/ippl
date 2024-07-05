@@ -98,8 +98,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     Inform m("");
     Inform msg2all("", INFORM_ALL_NODES);
 
-    int me = ippl::Comm->rank();
-
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
@@ -122,8 +120,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // exact solution
-
-    msg2all << "ID: " << me << ", layout = " << layout << endl;
 
     // Define boundary conditions
     BConds_t bcField;
@@ -226,7 +222,7 @@ int main(int argc, char* argv[]) {
         } else if (dim == 2) {
             // 2D Sinusoidal
             dim = 2;
-            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
                 testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0,
                                     1.0);
             }
