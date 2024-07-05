@@ -34,9 +34,6 @@ namespace ippl {
             bounds[d] = this->mesh_m.getGridsize(d) - 1;
         }
 
-        //const unsigned int myRank = Comm->rank();
-        //std::cout << "bounds = " << bounds << ", npoints = " << npoints << std::endl;
-
         int upperBoundaryPoints = -1;
 
         Kokkos::View<size_t*> points("ComputeMapping", npoints);
@@ -60,14 +57,7 @@ namespace ippl {
                     points(i) = this->getElementIndex(val);
                 }
             }, Kokkos::Sum<int>(upperBoundaryPoints));
-
-        /*Kokkos::parallel_for("PrintPoints", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
-            printf("Me %d, Element %ld\n", myRank, points(i));
-        });*/
-        
         Kokkos::fence();
-
-        //std::cout << "upperBoundaryPoints = " << upperBoundaryPoints << std::endl;
 
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
@@ -80,12 +70,6 @@ namespace ippl {
                     elementIndices(idx) = points(i);
                 }
             });
-
-        /*Kokkos::parallel_for("PrintPoints", elementsPerRank, KOKKOS_CLASS_LAMBDA(const int i) {
-            printf("Me %d, Point %d: %ld\n", myRank, i, elementIndices(i));
-        });*/
-        Kokkos::fence();
-        Comm->barrier();
 
         // naive implementation below
         /*
@@ -576,8 +560,6 @@ namespace ippl {
                 const index_t elementIndex                              = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-
-                //std::cout << "in loop, element " << elementIndex << ", local=" << local_dofs << ", global=" << global_dofs << std::endl;
 
                 index_t i, I;
 
