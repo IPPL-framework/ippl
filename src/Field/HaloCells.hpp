@@ -40,7 +40,7 @@ namespace ippl {
 
             auto ldom = layout->getLocalNDIndex();
             for (const auto& axis : ldom) {
-                if (axis.length() == 1) {
+                if ((axis.length() == 1) && (Dim != 1)) {
                     throw std::runtime_error("HaloCells: Cannot do neighbour exchange when domain decomposition contains planes!");
                 }
             } 
