@@ -398,6 +398,10 @@ namespace ippl {
                                                        FieldRHS>::numElementDOFs>&)>& evalFunction)
         const {
 
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
         // get number of ghost cells in field 
         const int nghost = field.getNghost();
 
@@ -444,6 +448,10 @@ namespace ippl {
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
+                // start a timer
+                static IpplTimings::TimerRef local = IpplTimings::getTimer("evaluateAx: localAk");
+                IpplTimings::startTimer(local);
+
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
                 const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
@@ -464,9 +472,15 @@ namespace ippl {
                     }
                 }
 
+                IpplTimings::stopTimer(local);
+
                 // global DOF n-dimensional indices (Vector of N indices representing indices in each
                 // dimension)
                 ndindex_t I_nd, J_nd;
+
+                // start a timer
+                static IpplTimings::TimerRef contrib = IpplTimings::getTimer("evaluateAx: contribution");
+                IpplTimings::startTimer(contrib);
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
@@ -498,10 +512,10 @@ namespace ippl {
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
                 }
+                IpplTimings::stopTimer(contrib);
         });
-        Kokkos::fence();
-
         IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalAx);
 
         return resultField;
     }
@@ -510,6 +524,10 @@ namespace ippl {
               typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evaluateLoadVector(
         FieldRHS& field, const std::function<T(const point_t&)>& f) const {
+
+        // start a timer
+        static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
+        IpplTimings::startTimer(evalLoadV);
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -554,6 +572,10 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateLoadVec: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
@@ -591,8 +613,8 @@ namespace ippl {
                 }
 
         });
-        Kokkos::fence();
-        Comm->barrier();
+        IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalLoadV);
     }
 
 }  // namespace ippl

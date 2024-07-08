@@ -95,6 +95,10 @@ template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
                    std::function<T(ippl::Vector<T, Dim> x)> f_sol, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
+    // start the timer
+    static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
+    IpplTimings::startTimer(initTimer);
+
     Inform m("");
     Inform msg2all("", INFORM_ALL_NODES);
 
@@ -145,6 +149,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
             apply(view, args) = f_sol(x);
         });
 
+    IpplTimings::stopTimer(initTimer);
+
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
 
@@ -157,6 +163,10 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     // solve the problem
     solver.solve();
 
+    // start the timer
+    static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
+    IpplTimings::startTimer(errorTimer);
+
     // Compute the error
     Field_t error(mesh, layout, numGhosts);
     error                 = lhs - sol;
@@ -168,6 +178,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     m << std::setw(25) << std::setprecision(16) << solver.getResidue();
     m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
     m << endl;
+
+    IpplTimings::stopTimer(errorTimer);
 }
 
 int main(int argc, char* argv[]) {
@@ -227,9 +239,8 @@ int main(int argc, char* argv[]) {
                                     1.0);
             }
         } else {
-            // 3D Sinusoidal
+            // 3D Sinusoidal; problem size given by user
             const int n_arg = std::atoi(argv[1]);
-            std::cout << "size = " << (1 << n_arg) << std::endl;
 
             // repeat 5 times with given problem size (for scaling studies)
             for (int i = 0; i < 5; ++i) {

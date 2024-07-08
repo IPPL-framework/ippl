@@ -49,8 +49,8 @@ namespace ippl {
             setDefaultParameters();
 
             // start a timer
-            static IpplTimings::TimerRef load = IpplTimings::getTimer("evaluateLoadVector");
-            IpplTimings::startTimer(load);
+            static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
+            IpplTimings::startTimer(init);
 
             rhs.fillHalo();
 
@@ -59,7 +59,7 @@ namespace ippl {
             rhs.accumulateHalo();
             rhs.fillHalo();
             
-            IpplTimings::stopTimer(load);
+            IpplTimings::stopTimer(init);
         }
 
         /**
@@ -99,6 +99,11 @@ namespace ippl {
 
             const auto algoOperator = [poissonEquationEval,
                                        this](lhs_type field) -> lhs_type {
+
+                // start a timer
+                static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
+                IpplTimings::startTimer(opTimer);
+
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
@@ -106,12 +111,20 @@ namespace ippl {
                 return_field.accumulateHalo();
                 return_field.fillHalo();
             
+                IpplTimings::stopTimer(opTimer);
+
                 return return_field;
             };
 
             pcg_algo_m.setOperator(algoOperator);
 
+            // start a timer
+            static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
+            IpplTimings::startTimer(pcgTimer);
+
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
+
+            IpplTimings::stopTimer(pcgTimer);
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
