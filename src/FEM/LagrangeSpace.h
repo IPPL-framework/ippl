@@ -214,6 +214,10 @@ namespace ippl {
                                                            FieldRHS>::numElementDOFs>&)>&
                 evalFunction) const override;
 
+        T evalFunc(const std::function<T(const point_t&)>& f, const T absDetDPhi,
+                   const index_t elementIndex, const index_t& i, const point_t& q_k,
+                   const Vector<T, numElementDOFs>& basis_q) const;
+
         /**
          * @brief Assemble the load vector b of the system Ax = b
          *

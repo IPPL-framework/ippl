@@ -448,10 +448,6 @@ namespace ippl {
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                // start a timer
-                static IpplTimings::TimerRef local = IpplTimings::getTimer("evaluateAx: localAk");
-                IpplTimings::startTimer(local);
-
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
                 const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
@@ -472,15 +468,9 @@ namespace ippl {
                     }
                 }
 
-                IpplTimings::stopTimer(local);
-
                 // global DOF n-dimensional indices (Vector of N indices representing indices in each
                 // dimension)
                 ndindex_t I_nd, J_nd;
-
-                // start a timer
-                static IpplTimings::TimerRef contrib = IpplTimings::getTimer("evaluateAx: contribution");
-                IpplTimings::startTimer(contrib);
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
@@ -512,12 +502,24 @@ namespace ippl {
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
                 }
-                IpplTimings::stopTimer(contrib);
         });
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
+              typename FieldRHS>
+    T LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::evalFunc(
+        const std::function<T(const point_t&)>& f, const T absDetDPhi,
+        const index_t elementIndex, const index_t& i, const point_t& q_k,
+        const Vector<T, numElementDOFs>& basis_q_k) const {
+
+        const T& f_q_k = f(this->ref_element_m.localToGlobal(
+                           this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k));
+        
+        return f_q_k * basis_q_k[i] * absDetDPhi;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
@@ -550,16 +552,6 @@ namespace ippl {
         // Absolute value of det Phi_K
         const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
-
-        // TODO move eval function outside of evaluateLoadVector
-        const auto eval = [this, absDetDPhi, f](const index_t elementIndex, const index_t& i,
-                                                const point_t& q_k,
-                                                const Vector<T, this->numElementDOFs>& basis_q_k) {
-            const T& f_q_k = f(this->ref_element_m.localToGlobal(
-                this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k));
-
-            return f_q_k * basis_q_k[i] * absDetDPhi;
-        };
 
         // Get field data and make it atomic,
         // since it will be added to during the kokkos loop
@@ -600,7 +592,7 @@ namespace ippl {
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        contrib += w[k] * eval(elementIndex, i, q[k], basis_q[k]);
+                        contrib += w[k] * evalFunc(f, absDetDPhi, elementIndex, i, q[k], basis_q[k]);
                     }
                     
                     // get the appropriate index for the Kokkos view of the field
@@ -611,7 +603,6 @@ namespace ippl {
                     // add the contribution of the element to the field
                     apply(atomic_view, dof_ndindex_I) += contrib;
                 }
-
         });
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalLoadV);
