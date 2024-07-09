@@ -241,13 +241,9 @@ int main(int argc, char* argv[]) {
         } else {
             // 3D Sinusoidal; problem size given by user
             const int n_arg = std::atoi(argv[1]);
-
-            // repeat 5 times with given problem size (for scaling studies)
-            for (int i = 0; i < 5; ++i) {
-                int n = 1 << n_arg;
-                testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
-                                    1.0);
-            }
+            int n = 1 << n_arg;
+            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
+                                1.0);
         }
 
         // stop the timer
