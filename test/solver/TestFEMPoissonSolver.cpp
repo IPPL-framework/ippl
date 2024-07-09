@@ -93,7 +93,7 @@ KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const 
 
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
-                   std::function<T(ippl::Vector<T, Dim> x)> f_sol, const T& domain_start = 0.0,
+                   const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
@@ -146,7 +146,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
             }
             const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
             
-            apply(view, args) = f_sol(x);
+            apply(view, args) = sinusoidalSolution<T, Dim>(x);
         });
 
     IpplTimings::stopTimer(initTimer);
@@ -198,8 +198,6 @@ int main(int argc, char* argv[]) {
             dim = 2;
         }
 
-        // const std::string filename = "sinus" + std::to_string(dim) + "d.dat";
-
         // start the timer
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
@@ -211,38 +209,23 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        // // 1D Gaussian
-        // for (unsigned n = 1 << 2; n <= 1 << 11; n = n << 1) {
-        //     testFEMSolver<T, 1>(
-        //         n,
-        //         [](ippl::Vector<T, 1> x) {
-        //             return gaussian1D<T>(x[0], 0.05, 0.5);
-        //         },
-        //         [](ippl::Vector<T, 1> x) {
-        //             return gaussianSol1D<T>(x[0], 0.05, 0.5);
-        //         },
-        //         0.0, 1.0);
-        // }
-
         if (dim == 1) {
             // 1D Sinusoidal
-            dim = 1;
             for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>, -1.0,
+                testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, -1.0,
                                     1.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
-            dim = 2;
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0,
+                testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, -1.0,
                                     1.0);
             }
         } else {
             // 3D Sinusoidal; problem size given by user
             const int n_arg = std::atoi(argv[1]);
             int n = 1 << n_arg;
-            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>, -1.0,
+            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, -1.0,
                                 1.0);
         }
 

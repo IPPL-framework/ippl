@@ -140,6 +140,8 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
+        msg << "Dim = " << dim << endl;
+
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
