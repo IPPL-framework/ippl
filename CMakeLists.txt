@@ -1,5 +1,6 @@
-cmake_minimum_required (VERSION 3.20.3)
-project (IPPL CXX)
+cmake_minimum_required (VERSION 3.24)
+project (IPPL LANGUAGES C CXX)
+
 set (IPPL_VERSION_MAJOR 3)
 set (IPPL_VERSION_MINOR 0.2)
 include(FetchContent)
@@ -142,8 +143,10 @@ endif()
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 find_package (MPI REQUIRED)
+message (STATUS "The C compiler identification is: ${CMAKE_C_COMPILER_ID}")
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
+message (STATUS "The MPI C compiler is: ${MPI_C_COMPILER}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
@@ -154,6 +157,7 @@ endif()
 
 
 option (ENABLE_FFT "Enable FFT transform" OFF)
+
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
     if(NOT Heffte_VERSION)
@@ -200,6 +204,7 @@ if (ENABLE_FFT)
 endif ()
 
 option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
+option (ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
 
 add_subdirectory (src)
 
@@ -219,6 +224,7 @@ if (ENABLE_ALPINE)
     message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
 endif ()
+
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 if (ENABLE_UNIT_TESTS)
@@ -252,7 +258,7 @@ install (
     RENAME ${PROJECT_NAME}Config.cmake
     )
 
-# vi: set et ts=4 sw=4 sts=4:
+# vim: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
 # mode: cmake

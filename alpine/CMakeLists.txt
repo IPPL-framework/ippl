@@ -16,7 +16,7 @@ set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (PenningTrap PenningTrap.cpp)
-target_link_libraries (PenningTrap ${IPPL_LIBS})
+target_link_libraries (PenningTrap PUBLIC ${IPPL_LIBS})
 
 add_executable (LandauDamping LandauDamping.cpp)
 target_link_libraries (LandauDamping ${IPPL_LIBS})
