@@ -147,9 +147,10 @@ public:
                 {0, 0, 0}, {num_points(0), num_points(1), num_points(2)});
 
             Kokkos::parallel_for(
-                "3DLoopInit", policy, KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    ippl::Vector<int, 3> loc(i, j, k);
-                    container(i * num_points(0) + j * num_points(1) * num_points(0) + k) = dr * loc;
+                "3DGridInit", policy, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    ippl::Vector<T, 3> loc(i, j, k);
+                    int linear_index = i * num_points(1) * num_points(2) + j * num_points(2) + k;
+                    container(linear_index) = rmin + dr * loc;
                 });
         }
         Kokkos::fence();
