@@ -33,15 +33,14 @@ public:
     ~VortexInCellManagerBase() {}
 
 public:
-
     void pre_step() override {
         Inform m("Pre-step");
         m << "Done" << endl;
     }
 
-    void post_step() override { 
-      this->params.it += 1;
-      dump(); 
+    void post_step() override {
+        this->params.it += 1;
+        dump();
     }
 
     virtual void dump() = 0;
@@ -59,17 +58,19 @@ public:
 template <typename T>
 class VortexInCellManager<T, 2> : public VortexInCellManagerBase<T, 2> {
 public:
-    VortexInCellManager(SimulationParameters<T, Dim> params_)
+    VortexInCellManager(SimulationParameters<T, 2> params_)
         : VortexInCellManagerBase<T, 2>(params_) {
         this->setFieldContainer(std::make_shared<FieldContainer<T, 2>>(this->params));
+
         this->setParticleContainer(std::make_shared<ParticleContainer<T, 2>>(
             this->getFieldContainer()->getMesh(), this->getFieldContainer()->getFL()));
 
         this->setFieldSolver(std::make_shared<FieldSolver<T, 2, FieldContainer<T, 2>>>());
+
         this->fsolver_m->initSolver(this->fcontainer_m);
 
         initParticles();
-        
+
         this->pcontainer_m->initDump();
 
         par2grid();
@@ -209,17 +210,75 @@ class VortexInCellManager<T, 3> : public VortexInCellManagerBase<T, 3> {
 public:
     VortexInCellManager(SimulationParameters<T, 3> params_)
         : VortexInCellManagerBase<T, 3>(params_) {
-        this->setFieldContainer(
-            std::make_shared<FieldContainer<T, 3>>(this->params.mesh, this->params.fl));
+        this->setFieldContainer(std::make_shared<FieldContainer<T, 3>>(this->params));
+
+        this->setParticleContainer(std::make_shared<ParticleContainer<T, 3>>(
+            this->getFieldContainer()->getMesh(), this->getFieldContainer()->getFL()));
+
+        initParticles();
+        this->pcontainer_m->initDump();
+        par2grid();
+
+        // this->setFieldSolver(std::make_shared<FieldSolver<T, 3, FieldContainer<T, 3>>>());
+        // this->fsolver_m->initSolver(this->fcontainer_m);
+
+        // this->fsolver_m->solve(this->fcontainer_m);
+    }
+
+    void initParticles() {
+        std::cout << "initialize particles 3d" << std::endl;
+
+        std::shared_ptr<ParticleContainer<T, Dim>> pc = this->getParticleContainer();
+        Circle<T, Dim> circ(10.0);
+        FilteredDistribution<T, Dim> filteredDist(circ, this->params.rmin, this->params.rmax,
+                                                  new GridPlacement<T, Dim>(this->params.nr));
+        this->params.np = filteredDist.getNumParticles();
+
+        view_type particle_view = filteredDist.getParticles();
+
+        pc->create(this->params.np);
+
+        std::cout << this->params.np << std::endl;
+
+        Kokkos::parallel_for(
+            "AddParticles", this->params.np, KOKKOS_LAMBDA(const int& i) {
+                pc->R(i)       = particle_view(i);
+                pc->omega_x(i) = 0;
+                pc->omega_y(i) = 0;
+                pc->omega_z(i) = circ.evaluate(pc->R(i));
+            });
+
+        Kokkos::fence();
     }
 
     ~VortexInCellManager() {}
 
-    void par2grid() override { std::cout << "3dim par to grid" << std::endl; }
+    void par2grid() override {
+        std::cout << "3dim par to grid" << std::endl;
+        std::shared_ptr<FieldContainer<T, 3>> fc    = this->getFieldContainer();
+        std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
+
+        fc->getOmegaFieldx() = 0.0;
+        fc->getOmegaFieldy() = 0.0;
+        fc->getOmegaFieldz() = 0.0;
+
+        auto r0 = pc->get_R(0);
+        std::cout << "random value: " << r0(4) << std::endl;
+
+        auto mesh = fc->getOmegaFieldx().get_mesh();
+        std::cout << "dx    " << mesh.getMeshSpacing() << std::endl;
+        std::cout << "origin" << mesh.getOrigin() << std::endl;
+
+        scatter(pc->omega_x, fc->getOmegaFieldx(), pc->get_R(0));
+        scatter(pc->omega_y, fc->getOmegaFieldy(), pc->get_R(1));
+        scatter(pc->omega_z, fc->getOmegaFieldz(), pc->get_R(2));
+    }
 
     void grid2par() override {}
 
     void advance() override {}
+
+    void dump() override { this->pcontainer_m->dump(this->params.it); }
 };
 
 #endif
