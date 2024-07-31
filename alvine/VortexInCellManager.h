@@ -215,13 +215,13 @@ public:
         this->setParticleContainer(std::make_shared<ParticleContainer<T, 3>>(
             this->getFieldContainer()->getMesh(), this->getFieldContainer()->getFL()));
 
+        this->setFieldSolver(std::make_shared<FieldSolver<T, 3, FieldContainer<T, 3>>>());
+        this->fsolver_m->initSolver(this->fcontainer_m);
+
         initParticles();
         this->pcontainer_m->initDump();
+        
         par2grid();
-
-        // this->setFieldSolver(std::make_shared<FieldSolver<T, 3, FieldContainer<T, 3>>>());
-        // this->fsolver_m->initSolver(this->fcontainer_m);
-
         // this->fsolver_m->solve(this->fcontainer_m);
     }
 
@@ -261,13 +261,6 @@ public:
         fc->getOmegaFieldx() = 0.0;
         fc->getOmegaFieldy() = 0.0;
         fc->getOmegaFieldz() = 0.0;
-
-        auto r0 = pc->get_R(0);
-        std::cout << "random value: " << r0(4) << std::endl;
-
-        auto mesh = fc->getOmegaFieldx().get_mesh();
-        std::cout << "dx    " << mesh.getMeshSpacing() << std::endl;
-        std::cout << "origin" << mesh.getOrigin() << std::endl;
 
         scatter(pc->omega_x, fc->getOmegaFieldx(), pc->get_R(0));
         scatter(pc->omega_y, fc->getOmegaFieldy(), pc->get_R(1));
