@@ -89,7 +89,7 @@ public:
     void initParticles() {
         std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
 
-        Circle<T, Dim> circ(10.0);
+        Circle<T, Dim> circ(2.5);
 
         Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
         ShiftTransformation<T, Dim> shift_to_center(-center);
@@ -227,6 +227,11 @@ public:
         this->fsolver_m->solve(this->fcontainer_m);
         updateFields();
         grid2par();
+
+        std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
+        pc->R_old = pc->R;
+        pc->R     = pc->R_old + pc->P * this->params.dt;
+        pc->update();
     }
 
     ~VortexInCellManager() {}
