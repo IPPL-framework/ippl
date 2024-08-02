@@ -221,9 +221,11 @@ public:
 
         initParticles();
         this->pcontainer_m->initDump();
-        
+
         par2grid();
         this->fsolver_m->solve(this->fcontainer_m);
+        updateFields();
+        grid2par();
     }
 
     void initParticles() {
@@ -268,9 +270,95 @@ public:
         scatter(pc->omega_z, fc->getOmegaFieldz(), pc->R);
     }
 
-    void grid2par() override {}
+    void grid2par() override {
+        std::shared_ptr<FieldContainer<T, 3>> fc    = this->getFieldContainer();
+        std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
-    void advance() override {}
+        pc->P = 0.0;
+        gather(pc->P, fc->getUField(), pc->R);
+    }
+
+    void updateFields() {
+        std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
+
+        VField_t<T, 3> u_field = fc->getUField();
+        u_field                = 0.0;
+
+        const int nghost = u_field.getNghost();
+        auto view        = u_field.getView();
+
+        auto omega_view_x = fc->getOmegaFieldx().getView();
+        fc->getOmegaFieldx().fillHalo();
+
+        auto omega_view_y = fc->getOmegaFieldy().getView();
+        fc->getOmegaFieldy().fillHalo();
+
+        auto omega_view_z = fc->getOmegaFieldz().getView();
+        fc->getOmegaFieldz().fillHalo();
+
+        Kokkos::parallel_for(
+            "Assign rhs", ippl::getRangePolicy(view, nghost),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                view(i, j, k) = {// ux
+                                 (omega_view_z(i, j + 1, k) - omega_view_z(i, j - 1, k))
+                                         / (2 * this->params.hr(1))
+                                     - (omega_view_y(i, j, k + 1) - omega_view_y(i, j, k - 1))
+                                           / (2 * this->params.hr(2)),
+                                 // uy
+                                 (omega_view_x(i, j, k + 1) - omega_view_x(i, j, k - 1))
+                                         / (2 * this->params.hr(2))
+                                     - (omega_view_z(i + 1, j, k) - omega_view_z(i - 1, j, k))
+                                           / (2 * this->params.hr(0)),
+                                 // uz
+                                 (omega_view_y(i + 1, j, k) - omega_view_y(i - 1, j, k))
+                                     / (2 * this->params.hr(0)),
+                                 -(omega_view_z(i, j + 1, k) - omega_view_z(i, j - 1, k))
+                                     / (2 * this->params.hr(1))};
+            });
+    }
+
+    void advance() override { LeapFrogStep(); }
+
+    void LeapFrogStep() {
+        static IpplTimings::TimerRef PTimer      = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer      = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef SolveTimer  = IpplTimings::getTimer("solve");
+        // static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
+
+        std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
+
+        par2grid();
+
+        IpplTimings::startTimer(SolveTimer);
+        this->fsolver_m->solve(this->fcontainer_m);
+        IpplTimings::stopTimer(SolveTimer);
+
+        IpplTimings::startTimer(PTimer);
+        this->updateFields();
+        IpplTimings::stopTimer(PTimer);
+
+        grid2par();
+
+        // drift
+        IpplTimings::startTimer(RTimer);
+        typename ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>::particle_position_type
+            R_old_temp = pc->R_old;
+
+        pc->R_old = pc->R;
+        pc->R     = R_old_temp + 2 * pc->P * this->params.dt;
+        IpplTimings::stopTimer(RTimer);
+
+        IpplTimings::startTimer(updateTimer);
+        pc->update();
+        IpplTimings::stopTimer(updateTimer);
+
+        /*
+        IpplTimings::startTimer(ETimer);
+        this->computeEnergy();
+        IpplTimings::stopTimer(ETimer);
+      */
+    }
 
     void dump() override { this->pcontainer_m->dump(this->params.it); }
 };
