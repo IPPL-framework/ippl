@@ -47,17 +47,11 @@ public:
 
 template <typename T>
 class FieldContainer<T, 3> {
-    Field<T, 3> omega_field;
-
     Field<T, 3> omega_field_x;
     Field<T, 3> omega_field_y;
     Field<T, 3> omega_field_z;
 
     VField_t<T, 3> u_field;
-
-    VField_t<T, 3> u_field_x;
-    VField_t<T, 3> u_field_y;
-    VField_t<T, 3> u_field_z;
 
     Mesh_t<3> mesh_m;
 
@@ -67,26 +61,23 @@ public:
     FieldContainer(SimulationParameters<T, 3> params)
         : mesh_m(params.domain, params.hr, params.origin)
         , fl_m(MPI_COMM_WORLD, params.domain, params.decomp, true) {
-
-        omega_field.initialize(mesh_m, fl_m);
+        // omega_field.initialize(mesh_m, fl_m);
 
         omega_field_x.initialize(mesh_m, fl_m);
         omega_field_y.initialize(mesh_m, fl_m);
         omega_field_z.initialize(mesh_m, fl_m);
 
         u_field.initialize(mesh_m, fl_m);
-
-        u_field_x.initialize(mesh_m, fl_m);
-        u_field_y.initialize(mesh_m, fl_m);
-        u_field_z.initialize(mesh_m, fl_m);
     }
 
-    Field<T, 3>& getOmegaField() { return omega_field; }
-    void setOmegaField(Field<T, 3>& omega_field_) { this->omega_field = omega_field_; }
-
     Field<T, 3>& getOmegaFieldx() { return omega_field_x; }
+    void setOmegaFieldx(Field<T, 3>& omega_field_x_) { this->omega_field_x = omega_field_x_; }
+
     Field<T, 3>& getOmegaFieldy() { return omega_field_y; }
+    void setOmegaFieldy(Field<T, 3>& omega_field_y_) { this->omega_field_y = omega_field_y_; }
+
     Field<T, 3>& getOmegaFieldz() { return omega_field_z; }
+    void setOmegaFieldz(Field<T, 3>& omega_field_z_) { this->omega_field_z = omega_field_z_; }
 
     VField_t<T, 3>& getUField() { return u_field; }
     void setUField(VField_t<T, 3>& u_field_) { this->u_field = u_field_; }
