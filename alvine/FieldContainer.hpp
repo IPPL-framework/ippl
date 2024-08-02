@@ -47,11 +47,16 @@ public:
 
 template <typename T>
 class FieldContainer<T, 3> {
-    Field<T, 3> omega_field_x;
-    Field<T, 3> omega_field_y;
-    Field<T, 3> omega_field_z;
+    
+    VField_t<T, 3> omega_field;
+
+    Field<T, 3> stream_field_x;
+    Field<T, 3> stream_field_y;
+    Field<T, 3> stream_field_z;
 
     VField_t<T, 3> u_field;
+
+    VField_t<T, 3> vortex_stretching_field;
 
     Mesh_t<3> mesh_m;
 
@@ -61,31 +66,43 @@ public:
     FieldContainer(SimulationParameters<T, 3> params)
         : mesh_m(params.domain, params.hr, params.origin)
         , fl_m(MPI_COMM_WORLD, params.domain, params.decomp, true) {
-        // omega_field.initialize(mesh_m, fl_m);
+        
+        omega_field.initialize(mesh_m, fl_m);
 
-        omega_field_x.initialize(mesh_m, fl_m);
-        omega_field_y.initialize(mesh_m, fl_m);
-        omega_field_z.initialize(mesh_m, fl_m);
+        stream_field_x.initialize(mesh_m, fl_m);
+        stream_field_y.initialize(mesh_m, fl_m);
+        stream_field_z.initialize(mesh_m, fl_m);
 
         u_field.initialize(mesh_m, fl_m);
+
+        vortex_stretching_field.initialize(mesh_m, fl_m);
     }
 
-    Field<T, 3>& getOmegaFieldx() { return omega_field_x; }
-    void setOmegaFieldx(Field<T, 3>& omega_field_x_) { this->omega_field_x = omega_field_x_; }
+    VField_t<T, 3>& getOmegaField() { return omega_field; }
+    void setOmegaField(Field<T, 3>& omega_field_) { this->omega_field = omega_field_; }
 
-    Field<T, 3>& getOmegaFieldy() { return omega_field_y; }
-    void setOmegaFieldy(Field<T, 3>& omega_field_y_) { this->omega_field_y = omega_field_y_; }
+    Field<T, 3>& getStreamFieldx() { return stream_field_x; }
+    void setStreamFieldx(Field<T, 3>& stream_field_x_) { this->stream_field_x = stream_field_x_; }
 
-    Field<T, 3>& getOmegaFieldz() { return omega_field_z; }
-    void setOmegaFieldz(Field<T, 3>& omega_field_z_) { this->omega_field_z = omega_field_z_; }
+    Field<T, 3>& getStreamFieldy() { return stream_field_y; }
+    void setStreamFieldy(Field<T, 3>& stream_field_y_) { this->stream_field_y = stream_field_y_; }
+
+    Field<T, 3>& getStreamFieldz() { return stream_field_z; }
+    void setStreamFieldz(Field<T, 3>& stream_field_z_) { this->stream_field_z = stream_field_z_; }
+
 
     VField_t<T, 3>& getUField() { return u_field; }
     void setUField(VField_t<T, 3>& u_field_) { this->u_field = u_field_; }
 
-    Mesh_t<Dim>& getMesh() { return mesh_m; }
+    VField_t<T, 3>& getVortexStretchingField() { return vortex_stretching_field; }
+    void setVortexStretchingField(VField_t<T, 3>& vortex_stretching_field_) {
+        this->vortex_stretching_field = vortex_stretching_field_;
+    }
+
+    Mesh_t<3>& getMesh() { return mesh_m; }
     void setMesh(Mesh_t<Dim>& mesh) { mesh_m = mesh; }
 
-    FieldLayout_t<Dim>& getFL() { return fl_m; }
+    FieldLayout_t<3>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
     ~FieldContainer() = default;
@@ -93,14 +110,12 @@ public:
     void setPotentialBCs() {
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
-        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+        typedef ippl::BConds<Field<T, 3>, 3> bc_type;
         bc_type allPeriodic;
-        for (unsigned int i = 0; i < 2 * Dim; ++i) {
+        for (unsigned int i = 0; i < 2 * 3; ++i) {
             allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
         }
-        omega_field_x->setFieldBC(allPeriodic);
-        omega_field_y->setFieldBC(allPeriodic);
-        omega_field_z->setFieldBC(allPeriodic);
+        omega_field->setFieldBC(allPeriodic);
     }
 };
 #endif

@@ -223,16 +223,24 @@ public:
         this->pcontainer_m->initDump();
 
         par2grid();
+        createStream();
         this->fsolver_m->solve(this->fcontainer_m);
         updateFields();
         grid2par();
     }
 
+    ~VortexInCellManager() {}
+
     void initParticles() {
         std::cout << "initialize particles 3d" << std::endl;
 
         std::shared_ptr<ParticleContainer<T, Dim>> pc = this->getParticleContainer();
-        Circle<T, Dim> circ(10.0);
+
+        Circle<T, Dim> circ(2.5);
+        Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
+        ShiftTransformation<T, Dim> shift_to_center(-center);
+        circ.applyTransformation(shift_to_center);
+
         FilteredDistribution<T, Dim> filteredDist(circ, this->params.rmin, this->params.rmax,
                                                   new GridPlacement<T, Dim>(this->params.nr));
         this->params.np = filteredDist.getNumParticles();
@@ -243,77 +251,127 @@ public:
 
         std::cout << this->params.np << std::endl;
 
+        for (int i = 0; i < 5; i++) {
+            Circle<T, Dim> added_circle((i + 1) * 0.5);
+            added_circle.applyTransformation(shift_to_center);
+            circ += added_circle;
+        }
+
         Kokkos::parallel_for(
             "AddParticles", this->params.np, KOKKOS_LAMBDA(const int& i) {
-                pc->R(i)       = particle_view(i);
-                pc->omega_x(i) = 0;
-                pc->omega_y(i) = 0;
-                pc->omega_z(i) = circ.evaluate(pc->R(i));
+                pc->R(i) = particle_view(i);
+                pc->omega(i)[0] = 0;
+                pc->omega(i)[1] = 0;
+                pc->omega(i)[2] = circ.evaluate(pc->R(i));
             });
 
         Kokkos::fence();
     }
 
-    ~VortexInCellManager() {}
-
     void par2grid() override {
         std::cout << "3dim par to grid" << std::endl;
+
         std::shared_ptr<FieldContainer<T, 3>> fc    = this->getFieldContainer();
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
-        fc->getOmegaFieldx() = 0.0;
-        fc->getOmegaFieldy() = 0.0;
-        fc->getOmegaFieldz() = 0.0;
+        fc->getOmegaField() = 0.0;
 
-        scatter(pc->omega_x, fc->getOmegaFieldx(), pc->R);
-        scatter(pc->omega_y, fc->getOmegaFieldy(), pc->R);
-        scatter(pc->omega_z, fc->getOmegaFieldz(), pc->R);
+        scatter(pc->omega, fc->getOmegaField(), pc->R);
     }
 
     void grid2par() override {
         std::shared_ptr<FieldContainer<T, 3>> fc    = this->getFieldContainer();
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
-        pc->P = 0.0;
+        pc->P                 = 0.0;
+        pc->vortex_stretching = 0.0;
+
         gather(pc->P, fc->getUField(), pc->R);
+        gather(pc->vortex_stretching, fc->getVortexStretchingField(), pc->R);
+    }
+
+    void createStream() {
+        std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
+
+        Field<T, 3> stream_field_x = fc->getStreamFieldx();
+        Field<T, 3> stream_field_y = fc->getStreamFieldy();
+        Field<T, 3> stream_field_z = fc->getStreamFieldz();
+
+        stream_field_x = 0.0;
+        stream_field_y = 0.0;
+        stream_field_z = 0.0;
+
+        auto view_stream_field_x = stream_field_x.getView();
+        auto view_stream_field_y = stream_field_y.getView();
+        auto view_stream_field_z = stream_field_z.getView();
+
+        auto view_omega = fc->getOmegaField().getView();
+        fc->getOmegaField().fillHalo();
+
+        Kokkos::parallel_for(
+            "CopytoStreamField", ippl::getRangePolicy(view_omega),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                view_stream_field_x(i, j, k) = view_omega(i, j, k)[0];
+                view_stream_field_y(i, j, k) = view_omega(i, j, k)[1];
+                view_stream_field_z(i, j, k) = view_omega(i, j, k)[2];
+            });
     }
 
     void updateFields() {
+        // TODO: check fillHalo stuff
+
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
 
-        VField_t<T, 3> u_field = fc->getUField();
-        u_field                = 0.0;
+        VField_t<T, 3> u_field                 = fc->getUField();
+        VField_t<T, 3> vortex_stretching_field = fc->getVortexStretchingField();
 
-        const int nghost = u_field.getNghost();
-        auto view        = u_field.getView();
+        u_field                 = 0.0;
+        vortex_stretching_field = 0.0;
 
-        auto omega_view_x = fc->getOmegaFieldx().getView();
-        fc->getOmegaFieldx().fillHalo();
+        const int nghost_u                       = u_field.getNghost();
+        const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
 
-        auto omega_view_y = fc->getOmegaFieldy().getView();
-        fc->getOmegaFieldy().fillHalo();
+        auto view_u                 = u_field.getView();
+        auto view_vortex_stretching = vortex_stretching_field.getView();
 
-        auto omega_view_z = fc->getOmegaFieldz().getView();
-        fc->getOmegaFieldz().fillHalo();
+        auto omega_view = fc->getOmegaField().getView();
+        fc->getOmegaField().fillHalo();
 
         Kokkos::parallel_for(
-            "Assign rhs", ippl::getRangePolicy(view, nghost),
+            "Assign rhs", ippl::getRangePolicy(view_u, nghost_u),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                view(i, j, k) = {// ux
-                                 (omega_view_z(i, j + 1, k) - omega_view_z(i, j - 1, k))
-                                         / (2 * this->params.hr(1))
-                                     - (omega_view_y(i, j, k + 1) - omega_view_y(i, j, k - 1))
-                                           / (2 * this->params.hr(2)),
-                                 // uy
-                                 (omega_view_x(i, j, k + 1) - omega_view_x(i, j, k - 1))
-                                         / (2 * this->params.hr(2))
-                                     - (omega_view_z(i + 1, j, k) - omega_view_z(i - 1, j, k))
-                                           / (2 * this->params.hr(0)),
-                                 // uz
-                                 (omega_view_y(i + 1, j, k) - omega_view_y(i - 1, j, k))
-                                     / (2 * this->params.hr(0)),
-                                 -(omega_view_z(i, j + 1, k) - omega_view_z(i, j - 1, k))
-                                     / (2 * this->params.hr(1))};
+                view_u(i, j, k) = {// ux
+                                   (omega_view(i, j + 1, k)[2] - omega_view(i, j - 1, k)[2])
+                                           / (2 * this->params.hr(1))
+                                       - (omega_view(i, j, k + 1)[1] - omega_view(i, j, k - 1)[1])
+                                             / (2 * this->params.hr(2)),
+                                   // uy
+                                   (omega_view(i, j, k + 1)[0] - omega_view(i, j, k - 1)[0])
+                                           / (2 * this->params.hr(2))
+                                       - (omega_view(i + 1, j, k)[2] - omega_view(i - 1, j, k)[0])
+                                             / (2 * this->params.hr(0)),
+                                   // uz
+                                   (omega_view(i + 1, j, k)[1] - omega_view(i - 1, j, k)[1])
+                                       / (2 * this->params.hr(0)),
+                                   -(omega_view(i, j + 1, k)[2] - omega_view(i, j - 1, k)[2])
+                                       / (2 * this->params.hr(1))};
+            });
+
+        // TODO: check this with sri
+        fc->getUField().fillHalo();
+
+        Kokkos::parallel_for(
+            "Assign rhs",
+            ippl::getRangePolicy(view_vortex_stretching, nghost_vortex_stretching_field),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                view_vortex_stretching(i, j, k) =
+                    0.5
+                    * (omega_view(i, j, k)[0] * (view_u(i + 1, j, k) - view_u(i - 1, j, k))
+                           / this->params.hr(0)
+                       + omega_view(i, j, k)[1] * (view_u(i, j + 1, k) - view_u(i, j - 1, k))
+                             / this->params.hr(1)
+                       + omega_view(i, j, k)[2] * (view_u(i, j, k + 1) - view_u(i, j, k - 1))
+                             / this->params.hr(2));
             });
     }
 
@@ -322,6 +380,7 @@ public:
     void LeapFrogStep() {
         static IpplTimings::TimerRef PTimer      = IpplTimings::getTimer("pushVelocity");
         static IpplTimings::TimerRef RTimer      = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef VTimer      = IpplTimings::getTimer("pushVorticity");
         static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef SolveTimer  = IpplTimings::getTimer("solve");
         // static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
@@ -329,6 +388,8 @@ public:
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
         par2grid();
+
+        createStream();
 
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->solve(this->fcontainer_m);
@@ -348,6 +409,10 @@ public:
         pc->R_old = pc->R;
         pc->R     = R_old_temp + 2 * pc->P * this->params.dt;
         IpplTimings::stopTimer(RTimer);
+
+        IpplTimings::startTimer(VTimer);
+        pc->omega = pc->omega + this->params.dt * pc->vortex_stretching;
+        IpplTimings::stopTimer(VTimer);
 
         IpplTimings::startTimer(updateTimer);
         pc->update();

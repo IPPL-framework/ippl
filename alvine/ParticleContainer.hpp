@@ -92,10 +92,11 @@ private:
 
 template <typename T>
 class ParticleContainer<T, 3> : public ParticleContainerBase<T, 3> {
+    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, 3>>;
+
 public:
-    ippl::ParticleAttrib<T> omega_x;
-    ippl::ParticleAttrib<T> omega_y;
-    ippl::ParticleAttrib<T> omega_z;
+    typename Base::particle_position_type omega;
+    typename Base::particle_position_type vortex_stretching;
 
     ~ParticleContainer() {};
 
@@ -111,17 +112,6 @@ public:
         csvout << "time,index,pos_x,pos_y,pos_z,vor_x,vor_y,vor_z" << endl;
     }
 
-    ippl::ParticleAttrib<Vector<T, 1>> get_R(int d) {
-        ippl::ParticleAttrib<Vector<T, 1>> R_k;
-        const auto pcount = this->getTotalNum();
-        R_k.realloc(pcount);
-
-        Kokkos::parallel_for(
-            "Copy phase space", pcount,
-            KOKKOS_CLASS_LAMBDA(const size_t i) { R_k(i) = this->R(i)[d]; });
-        return R_k;
-    }
-
     void dump(double it) override {
         Inform csvout(NULL, "particles.csv", Inform::APPEND);
 
@@ -130,17 +120,17 @@ public:
             for (unsigned d = 0; d < Dim; d++) {
                 csvout << "," << this->R(i)[d];
             }
-            csvout << "," << this->omega_x(i);
-            csvout << "," << this->omega_y(i);
-            csvout << "," << this->omega_z(i) << endl;
+            for (unsigned d = 0; d < Dim; d++) {
+                csvout << "," << this->omega(i)[d];
+            }
+            csvout << endl;
         }
     }
 
 private:
     void registerAttributes() {
-        this->addAttribute(omega_x);
-        this->addAttribute(omega_y);
-        this->addAttribute(omega_z);
+        this->addAttribute(omega);
+        this->addAttribute(vortex_stretching);
         std::cout << "three dim register attributes" << std::endl;
     }
 };

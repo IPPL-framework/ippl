@@ -61,9 +61,9 @@ public:
         solver_y.mergeParameters(sp);
         solver_z.mergeParameters(sp);
 
-        solver_x.setRhs(fc->getOmegaFieldx());
-        solver_y.setRhs(fc->getOmegaFieldy());
-        solver_z.setRhs(fc->getOmegaFieldz());
+        solver_x.setRhs(fc->getStreamFieldx());
+        solver_y.setRhs(fc->getStreamFieldy());
+        solver_z.setRhs(fc->getStreamFieldz());
     }
 
     void solve([[maybe_unused]] std::shared_ptr<FieldContainer<T, 3>> fc) {
