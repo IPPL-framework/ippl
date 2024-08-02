@@ -73,6 +73,7 @@ public:
 
         this->pcontainer_m->initDump();
 
+        // First step of the Euler time integration
         par2grid();
         this->fsolver_m->solve(this->fcontainer_m);
         updateFields();
@@ -222,7 +223,7 @@ public:
         this->pcontainer_m->initDump();
         
         par2grid();
-        // this->fsolver_m->solve(this->fcontainer_m);
+        this->fsolver_m->solve(this->fcontainer_m);
     }
 
     void initParticles() {
@@ -262,9 +263,9 @@ public:
         fc->getOmegaFieldy() = 0.0;
         fc->getOmegaFieldz() = 0.0;
 
-        scatter(pc->omega_x, fc->getOmegaFieldx(), pc->get_R(0));
-        scatter(pc->omega_y, fc->getOmegaFieldy(), pc->get_R(1));
-        scatter(pc->omega_z, fc->getOmegaFieldz(), pc->get_R(2));
+        scatter(pc->omega_x, fc->getOmegaFieldx(), pc->R);
+        scatter(pc->omega_y, fc->getOmegaFieldy(), pc->R);
+        scatter(pc->omega_z, fc->getOmegaFieldz(), pc->R);
     }
 
     void grid2par() override {}
