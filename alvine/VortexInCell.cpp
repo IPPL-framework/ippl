@@ -16,14 +16,20 @@
 //     t_method = Time-stepping method used e.g. Leapfrog
 //     ovfactor = Over-allocation factor for the buffers used in the communication. Typical
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
-//     Example:
-//     makdir build_*/alvine/data
+//     Example 2D:
+//     mkdir build_*/alvine/data
 //     chmod +x data
 //     srun ./VortexInCell 128 128 100 FFT --overallocate 2.0 --info 10
 //     srun ./VortexInCell 128 128
+//
 //     to build, call 
 //          make VortexInCell 
 //     in the build directory to only build this target
+//     
+//     Example 3D:
+//     mkdir build_*/alvine/data
+//     chmod +x data
+//     srun ./VortexInCell 128 128 128 100 FFT 0.01 0.1 --overallocate 2.0 --info 10
 
 constexpr unsigned Dim = 2;
 using T                = double;
@@ -69,9 +75,14 @@ int main(int argc, char* argv[]) {
 
         double lbt = std::atof(argv[arg++]);
 
+        double visc = 0.0;
+        if (arg < argc) {
+            visc = std::atof(argv[arg++]);
+        }
+
         msg << nt << endl;
 
-        SimulationParameters<T, Dim> params(nt, nr, solver, lbt);
+        SimulationParameters<T, Dim> params(nt, nr, solver, lbt, visc);
         VortexInCellManager<T, Dim> manager(params);
 
         manager.pre_run();

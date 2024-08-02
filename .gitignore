@@ -11,6 +11,8 @@ build_serial/
 build/
 build_openmp/
 
+doc/
+
 # ignore *.exe, *.gif and *.out files
 *.exe
 *.out

@@ -298,16 +298,19 @@ public:
     void createStream() {
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
 
-        fc->getStreamFieldx() = 0.0;
-        fc->getStreamFieldy() = 0.0;
-        fc->getStreamFieldz() = 0.0;
+        Field<T, 3> stream_field_x = fc->getStreamFieldx();
+        Field<T, 3> stream_field_y = fc->getStreamFieldy();
+        Field<T, 3> stream_field_z = fc->getStreamFieldz();
 
-        auto view_stream_field_x = fc->getStreamFieldx().getView();
-        auto view_stream_field_y = fc->getStreamFieldy().getView();
-        auto view_stream_field_z = fc->getStreamFieldz().getView();
+        stream_field_x = 0.0;
+        stream_field_y = 0.0;
+        stream_field_z = 0.0;
+
+        auto view_stream_field_x = stream_field_x.getView();
+        auto view_stream_field_y = stream_field_y.getView();
+        auto view_stream_field_z = stream_field_z.getView();
 
         auto view_omega = fc->getOmegaField().getView();
-        fc->getOmegaField().fillHalo();
 
         Kokkos::parallel_for(
             "CopytoStreamField", ippl::getRangePolicy(view_omega),
@@ -334,7 +337,6 @@ public:
         auto Ay = fc->getStreamFieldy().getView();
         auto Az = fc->getStreamFieldz().getView();
 
-
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view_u, nghost_u),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -354,7 +356,7 @@ public:
         VField_t<T, 3> vortex_stretching_field   = fc->getVortexStretchingField();
         const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
         auto view_vortex_stretching              = vortex_stretching_field.getView();
-        vortex_stretching_field = 0.0;
+        vortex_stretching_field                  = 0.0;
 
         auto omega_view = fc->getOmegaField().getView();
         fc->getOmegaField().fillHalo();
@@ -367,12 +369,22 @@ public:
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 view_vortex_stretching(i, j, k) =
                     0.5
-                    * (omega_view(i, j, k)[0] * (view_u(i + 1, j, k) - view_u(i - 1, j, k))
-                           / this->params.hr(0)
-                       + omega_view(i, j, k)[1] * (view_u(i, j + 1, k) - view_u(i, j - 1, k))
-                             / this->params.hr(1)
-                       + omega_view(i, j, k)[2] * (view_u(i, j, k + 1) - view_u(i, j, k - 1))
-                             / this->params.hr(2));
+                        * (omega_view(i, j, k)[0] * (view_u(i + 1, j, k) - view_u(i - 1, j, k))
+                               / this->params.hr(0)
+                           + omega_view(i, j, k)[1] * (view_u(i, j + 1, k) - view_u(i, j - 1, k))
+                                 / this->params.hr(1)
+                           + omega_view(i, j, k)[2] * (view_u(i, j, k + 1) - view_u(i, j, k - 1))
+                                 / this->params.hr(2))
+                    + this->params.visc
+                          * ((omega_view(i + 1, j, k) - 2 * omega_view(i, j, k)
+                              + omega_view(i - 1, j, k))
+                                 / (this->params.hr(0) * this->params.hr(0))
+                             + (omega_view(i, j + 1, k) - 2 * omega_view(i, j, k)
+                                + omega_view(i, j - 1, k))
+                                   / (this->params.hr(1) * this->params.hr(1))
+                             + (omega_view(i, j, k + 1) - 2 * omega_view(i, j, k)
+                                + omega_view(i, j, k - 1))
+                                   / (this->params.hr(2) * this->params.hr(2)));
             });
     }
 
