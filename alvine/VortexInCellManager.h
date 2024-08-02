@@ -89,7 +89,7 @@ public:
     void initParticles() {
         std::shared_ptr<ParticleContainer<T, 2>> pc = this->getParticleContainer();
 
-        Circle<T, Dim> circ(10.0);
+        Circle<T, Dim> circ(2.5);
 
         Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
         ShiftTransformation<T, Dim> shift_to_center(-center);
@@ -226,13 +226,23 @@ public:
         this->fsolver_m->solve(this->fcontainer_m);
         updateFields();
         grid2par();
+
+        std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
+        pc->R_old = pc->R;
+        pc->R     = pc->R_old + pc->P * this->params.dt;
+        pc->update();
     }
 
     void initParticles() {
         std::cout << "initialize particles 3d" << std::endl;
 
         std::shared_ptr<ParticleContainer<T, Dim>> pc = this->getParticleContainer();
-        Circle<T, Dim> circ(10.0);
+
+        Circle<T, Dim> circ(2.5);
+        Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
+        ShiftTransformation<T, Dim> shift_to_center(-center);
+        circ.applyTransformation(shift_to_center);
+
         FilteredDistribution<T, Dim> filteredDist(circ, this->params.rmin, this->params.rmax,
                                                   new GridPlacement<T, Dim>(this->params.nr));
         this->params.np = filteredDist.getNumParticles();
@@ -243,9 +253,16 @@ public:
 
         std::cout << this->params.np << std::endl;
 
+        for (int i = 0; i < 5; i++) {
+            Circle<T, Dim> added_circle((i + 1) * 0.5);
+            added_circle.applyTransformation(shift_to_center);
+            circ += added_circle;
+        }
+
         Kokkos::parallel_for(
             "AddParticles", this->params.np, KOKKOS_LAMBDA(const int& i) {
                 pc->R(i)       = particle_view(i);
+                std::cout << "i: " << i<<", pos" << particle_view(i) << std::endl;
                 pc->omega_x(i) = 0;
                 pc->omega_y(i) = 0;
                 pc->omega_z(i) = circ.evaluate(pc->R(i));
