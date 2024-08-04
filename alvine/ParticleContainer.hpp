@@ -49,7 +49,7 @@ private:
 template <typename T, unsigned Dim>
 class ParticleContainer : public ParticleContainerBase<T, Dim> {
 public:
-    ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL) {}
+    ParticleContainer(Mesh_t<Dim>&, FieldLayout_t<Dim>&) {}
 };
 
 template <typename T>

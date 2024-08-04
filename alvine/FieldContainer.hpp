@@ -9,7 +9,7 @@
 template <typename T, unsigned Dim>
 class FieldContainer {
 public:
-    FieldContainer(Mesh_t<Dim>, FieldLayout_t<Dim> fl) {}
+    FieldContainer(Mesh_t<Dim>, FieldLayout_t<Dim>) {}
 
     virtual ~FieldContainer() = default;
 };
