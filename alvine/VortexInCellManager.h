@@ -229,8 +229,8 @@ public:
         grid2par();
 
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
-        pc->R_old = pc->R;
-        pc->R     = pc->R_old + pc->P * this->params.dt;
+        pc->R_old                                   = pc->R;
+        pc->R                                       = pc->R_old + pc->P * this->params.dt;
         pc->update();
     }
 
@@ -264,7 +264,7 @@ public:
 
         Kokkos::parallel_for(
             "AddParticles", this->params.np, KOKKOS_LAMBDA(const int& i) {
-                pc->R(i) = particle_view(i);
+                pc->R(i)        = particle_view(i);
                 pc->omega(i)[0] = 0;
                 pc->omega(i)[1] = 0;
                 pc->omega(i)[2] = circ.evaluate(pc->R(i));
@@ -298,17 +298,13 @@ public:
     void createStream() {
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
 
-        Field<T, 3> stream_field_x = fc->getStreamFieldx();
-        Field<T, 3> stream_field_y = fc->getStreamFieldy();
-        Field<T, 3> stream_field_z = fc->getStreamFieldz();
+        fc->getStreamFieldx() = 0.0;
+        fc->getStreamFieldy() = 0.0;
+        fc->getStreamFieldz() = 0.0;
 
-        stream_field_x = 0.0;
-        stream_field_y = 0.0;
-        stream_field_z = 0.0;
-
-        auto view_stream_field_x = stream_field_x.getView();
-        auto view_stream_field_y = stream_field_y.getView();
-        auto view_stream_field_z = stream_field_z.getView();
+        auto view_stream_field_x = fc->getStreamFieldx().getView();
+        auto view_stream_field_y = fc->getStreamFieldy().getView();
+        auto view_stream_field_z = fc->getStreamFieldz().getView();
 
         auto view_omega = fc->getOmegaField().getView();
         fc->getOmegaField().fillHalo();
@@ -327,42 +323,43 @@ public:
 
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
 
-        VField_t<T, 3> u_field                 = fc->getUField();
-        VField_t<T, 3> vortex_stretching_field = fc->getVortexStretchingField();
+        // Velocity update
+        VField_t<T, 3> u_field = fc->getUField();
+        u_field                = 0.0;
 
-        u_field                 = 0.0;
-        vortex_stretching_field = 0.0;
+        const int nghost_u = u_field.getNghost();
+        auto view_u        = u_field.getView();
 
-        const int nghost_u                       = u_field.getNghost();
-        const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
+        auto Ax = fc->getStreamFieldx().getView();
+        auto Ay = fc->getStreamFieldy().getView();
+        auto Az = fc->getStreamFieldz().getView();
 
-        auto view_u                 = u_field.getView();
-        auto view_vortex_stretching = vortex_stretching_field.getView();
-
-        auto omega_view = fc->getOmegaField().getView();
-        fc->getOmegaField().fillHalo();
 
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view_u, nghost_u),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                view_u(i, j, k) = {// ux
-                                   (omega_view(i, j + 1, k)[2] - omega_view(i, j - 1, k)[2])
-                                           / (2 * this->params.hr(1))
-                                       - (omega_view(i, j, k + 1)[1] - omega_view(i, j, k - 1)[1])
-                                             / (2 * this->params.hr(2)),
-                                   // uy
-                                   (omega_view(i, j, k + 1)[0] - omega_view(i, j, k - 1)[0])
-                                           / (2 * this->params.hr(2))
-                                       - (omega_view(i + 1, j, k)[2] - omega_view(i - 1, j, k)[0])
-                                             / (2 * this->params.hr(0)),
-                                   // uz
-                                   (omega_view(i + 1, j, k)[1] - omega_view(i - 1, j, k)[1])
-                                       / (2 * this->params.hr(0)),
-                                   -(omega_view(i, j + 1, k)[2] - omega_view(i, j - 1, k)[2])
-                                       / (2 * this->params.hr(1))};
+                view_u(i, j, k) = {
+                    // ux
+                    (Az(i, j + 1, k) - Az(i, j - 1, k)) / (2 * this->params.hr(1))
+                        - (Ay(i, j, k + 1) - Ay(i, j, k - 1)) / (2 * this->params.hr(2)),
+                    // uy
+                    (Ax(i, j, k + 1) - Ax(i, j, k - 1)) / (2 * this->params.hr(2))
+                        - (Az(i + 1, j, k) - Az(i - 1, j, k)) / (2 * this->params.hr(0)),
+                    // uz
+                    (Ay(i + 1, j, k) - Ay(i - 1, j, k)) / (2 * this->params.hr(0)),
+                    -(Az(i, j + 1, k) - Az(i, j - 1, k)) / (2 * this->params.hr(1))};
             });
 
+        // Vorticity update
         // TODO: check this with sri
+        VField_t<T, 3> vortex_stretching_field   = fc->getVortexStretchingField();
+        const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
+        auto view_vortex_stretching              = vortex_stretching_field.getView();
+        vortex_stretching_field = 0.0;
+
+        auto omega_view = fc->getOmegaField().getView();
+        fc->getOmegaField().fillHalo();
+
         fc->getUField().fillHalo();
 
         Kokkos::parallel_for(
@@ -388,7 +385,7 @@ public:
         static IpplTimings::TimerRef VTimer      = IpplTimings::getTimer("pushVorticity");
         static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef SolveTimer  = IpplTimings::getTimer("solve");
-        // static IpplTimings::TimerRef ETimer           = IpplTimings::getTimer("energy");
+        // static IpplTimings::TimerRef ETimer   = IpplTimings::getTimer("energy");
 
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
