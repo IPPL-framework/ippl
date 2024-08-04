@@ -323,7 +323,7 @@ public:
 
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
 
-        // Velocity update
+        // Velocity calculation
         VField_t<T, 3> u_field = fc->getUField();
         u_field                = 0.0;
 
@@ -350,8 +350,7 @@ public:
                     -(Az(i, j + 1, k) - Az(i, j - 1, k)) / (2 * this->params.hr(1))};
             });
 
-        // Vorticity update
-        // TODO: check this with sri
+        // Vortex stretching calculation
         VField_t<T, 3> vortex_stretching_field   = fc->getVortexStretchingField();
         const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
         auto view_vortex_stretching              = vortex_stretching_field.getView();

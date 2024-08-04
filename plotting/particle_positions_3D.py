@@ -18,7 +18,7 @@ grouped = df.groupby('time')
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-sc = ax.scatter([], [], [], c=[], cmap='viridis')
+sc = ax.scatter([], [], [], c=[], s=2, cmap='viridis')
 
 
 def init():
