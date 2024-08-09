@@ -19,7 +19,7 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
  * @brief Manages the gravity simulation, including particles, fields, and load balancing.
  * 
  * @tparam T Type of the particle attribute.
- * @tparam Dim Dimensionality of the particle space.
+ * @tparam Dim Dimensionality of the configuration space.
  */
 template <typename T, unsigned Dim>
 class GravityManager
@@ -41,7 +41,7 @@ public:
      * @param nr_ Number of grid points in each dimension.
      * @param lbt_ Load balance threshold.
      * @param solver_ Solver type.
-     * @param stepMethod_ Step method type.
+     * @param stepMethod_ Time stepping method type.
      */
     GravityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
@@ -138,14 +138,14 @@ public:
     /**
      * @brief Get the number of grid points in each dimension.
      * 
-     * @return Number of grid points in each dimension.
+     * @return Vector type of size Dim with the number of grid points in each dimension
      */
     const Vector_t<int, Dim>& getNr() const { return nr_m; }
 
     /**
      * @brief Set the number of grid points in each dimension.
      * 
-     * @param nr_ Number of grid points in each dimension.
+     * @param nr_ Vector type of size Dim with the number of grid points in each dimension
      */
     void setNr(const Vector_t<int, Dim>& nr_) { nr_m = nr_; }
 
@@ -166,7 +166,7 @@ public:
     /**
      * @brief Set the initial conditions folder.
      * 
-     * @param ic_folder Initial conditions folder.
+     * @param ic_folder Initial conditions folder, where the ICs that will be used for the simulation are stored.
      */
     void setIC(std::string ic_folder) {folder = ic_folder;}
 
@@ -233,7 +233,7 @@ public:
     // Step methods
 
     /**
-     * @brief Pre-step method called before each simulation step.
+     * @brief Pre-step method called before each simulation step. 
      */
     void pre_step() override {
         Inform mes("Pre-step");
@@ -331,37 +331,37 @@ public:
 
 
 protected:
-    size_type totalP_m;
-    int nt_m;
-    Vector_t<int, Dim> nr_m;
-    double lbt_m;
-    std::string solver_m;
-    std::string stepMethod_m;
+    size_type totalP_m; ///< Total number of particles.
+    int nt_m; ///< Number of time steps.
+    Vector_t<int, Dim> nr_m; ///< Number of grid points in each dimension.
+    double lbt_m; ///< Load balance threshold.
+    std::string solver_m; ///< Solver type.
+    std::string stepMethod_m; ///< Time stepping method type.
     
-    double time_m;
-    double dt_m;
-    double a_m; // scaling factor
-    double Dloga;
-    double Hubble_m; // Hubble constant [s^-1]
-    double Hubble0; // 73.8 km/sec/Mpc
-    double G; // Gravity constant
-    double rho_crit0;
-    double O_m;
-    double O_L;
-    double t_L;
-    double z_m; // intial z
-    double z_f; // final z
-    int it_m;
-    Vector_t<double, Dim> rmin_m; // comoving coord. [kpc/h]
-    Vector_t<double, Dim> rmax_m; // comoving coord. [kpc/h]
-    Vector_t<double, Dim> hr_m;
-    double M_m;
-    Vector_t<double, Dim> origin_m;
-    bool isAllPeriodic_m;
-    bool isFirstRepartition_m;
-    ippl::NDIndex<Dim> domain_m;
-    std::array<bool, Dim> decomp_m;
-    double rhoNorm_m;
+    double time_m; ///< Current simulation time.
+    double dt_m; ///< Time step size.
+    double a_m; ///< Scaling factor.
+    double Dloga; ///< Logarithmic increment of the scaling factor.
+    double Hubble_m; ///< Hubble constant at the current time [s^-1].
+    double Hubble0; ///< Hubble constant today (73.8 km/sec/Mpc).
+    double G; ///< Gravitational constant.
+    double rho_crit0; ///< Critical density today.
+    double O_m; ///< Matter density parameter.
+    double O_L; ///< Dark energy density parameter.
+    double t_L; ///< Characteristic time scale.
+    double z_m; ///< Initial redshift.
+    double z_f; ///< Final redshift.
+    int it_m; ///< Current iteration number.
+    Vector_t<double, Dim> rmin_m; ///< Minimum comoving coordinates [kpc/h].
+    Vector_t<double, Dim> rmax_m; ///< Maximum comoving coordinates [kpc/h].
+    Vector_t<double, Dim> hr_m; ///< Grid spacing in each dimension.
+    double M_m; ///< Total mass.
+    Vector_t<double, Dim> origin_m; ///< Origin of the coordinate system.
+    bool isAllPeriodic_m; ///< Flag indicating if all boundaries are periodic.
+    bool isFirstRepartition_m; ///< Flag indicating if this is the first repartition.
+    ippl::NDIndex<Dim> domain_m; ///< Domain index.
+    std::array<bool, Dim> decomp_m; ///< Decomposition flags for each dimension.
+    double rhoNorm_m; ///< Normalized density.
 
 };
 #endif

@@ -8,7 +8,7 @@
  * @brief Class representing a container for particles.
  * 
  * @tparam T Type of the particle attribute.
- * @tparam Dim Dimensionality of the particle space (default is 3).
+ * @tparam Dim Dimensionality of the configuration space (default is 3).
  */
 template <typename T, unsigned Dim = 3>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>> {

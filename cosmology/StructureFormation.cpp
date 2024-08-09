@@ -1,4 +1,12 @@
 // StructureFormation Test
+//
+// The StructureFormation simulation is designed to model the formation and evolution of cosmic structures, 
+// such as galaxies and clusters of galaxies, in the universe. 
+// It uses initial conditions, including particle positions and velocities, 
+// to simulate the gravitational interactions and dynamics of a large number of particles over time.
+// The goal is to understand how initial density fluctuations grow and evolve under the influence of gravity, 
+// leading to the large-scale structure observed in the universe today.
+//
 //   Usage:
 //     srun ./StructureFormation
 //                  <path> <nx> [<ny>...] <Np> <Nt> <stype>
@@ -17,6 +25,8 @@
 //                values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
 //     srun ./StructureFormation data/lsf_32/ 32 32 32 32768 10 FFT 1.0 LeapFrog --overallocate 1.0 --info 5 
+
+
 
 
 constexpr unsigned Dim = 3;
@@ -57,11 +67,11 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
-        // Read input parameters, assign them to the corresponding memebers of manager
+        // Read input parameters, assign them to the corresponding members of manager
         int arg = 1;
         // initial conditions folder 
         std::string ic_folder = argv[arg++];
-        // Number of particles in each dimension
+        // Number of gridpoints in each dimension
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
             nr[d] = std::atoi(argv[arg++]);
@@ -70,14 +80,19 @@ int main(int argc, char* argv[]) {
         size_type totalP = std::atoll(argv[arg++]);
         // Number of time steps
         int nt  = std::atoi(argv[arg++]);
+        
         // Solver method
         std::string solver = argv[arg++];
+        // Check if the solver type is valid
+        if (solver != "CG" && solver != "FFT") {
+            throw std::invalid_argument("Invalid solver type. Supported types are 'CG' and 'FFT'.");
+        }
         // Load Balance Threshold
         double lbt = std::atof(argv[arg++]);
-        // step method
+        // Time stepping method
         std::string step_method = argv[arg++];
 
-        // Create an instance of a manger for the considered application
+        // Create an instance of a manager for the considered application
         StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
         
         // set initial conditions folder
@@ -85,8 +100,6 @@ int main(int argc, char* argv[]) {
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
-
-        //manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;
 

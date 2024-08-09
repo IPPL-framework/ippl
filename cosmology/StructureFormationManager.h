@@ -29,10 +29,10 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
  * 
  * @param totalP_ Total number of particles.
  * @param nt_ Number of time steps.
- * @param nr_ Number of particles in each dimension.
+ * @param nr_ Number of gridpoints in each dimension
  * @param lbt_ Lookback time.
  * @param solver_ Solver method.
- * @param stepMethod_ Step method.
+ * @param stepMethod_ Time stepping method.
  */
 template <typename T, unsigned Dim>
 class StructureFormationManager : public GravityManager<T, Dim> {
@@ -216,6 +216,8 @@ public:
             std::cerr << "Input N = " << ParticlePositions.size() << ", Local N = " << nloc << std::endl;
         }    
         else 
+            // Particle positions and velocities, which are read in above from the initial conditions file,
+            // are assigned to the particle attributes R and V in the particle container.
             mes << "successfully done." << endl;
 
 
@@ -290,7 +292,7 @@ public:
         std::vector<std::vector<double>> ParticleVelocities;
 
         // Boundaries of Particle Positions
-        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex(); // local domain in coordinates [256:511:1] [0:511:1] [0:511:1]
+        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex(); // local processor domain coordinates
         Vector_t<double, Dim> Min;
         Vector_t<double, Dim> Max;
         for(unsigned int i = 0; i<Dim; ++i){

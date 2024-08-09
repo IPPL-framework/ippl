@@ -9,7 +9,7 @@
  * @brief A solver class for various field types
  *
  * @tparam T Data type used for the fields (e.g., double)
- * @tparam Dim Dimensionality of the solver
+ * @tparam Dim Dimensionality of the fields
  */
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
@@ -23,9 +23,9 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
      * @brief Constructor for the FieldSolver class
      * 
      * @param solver Solver type as a string
-     * @param rho Pointer to the rho field
-     * @param F Pointer to the vector field F
-     * @param phi Pointer to the scalar field phi
+     * @param rho Pointer to the mass density
+     * @param F Pointer to the gravitational force field F
+     * @param phi Pointer to the potential phi
      */
     FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *F, Field<T, Dim> *phi)
           : ippl::FieldSolverBase<T, Dim>(solver)
@@ -150,12 +150,12 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
         if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
-            // uses this to get the electric field
+            // uses this to get the gravitational force field
             solver.setLhs(*phi_m);
             solver.setGradient(*F_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
-            // and the P3M solver compute the electric field directly
+            // and the P3M solver compute the gravitational force field directly
             solver.setLhs(*F_m);
         }
     }
