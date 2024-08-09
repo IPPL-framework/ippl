@@ -222,19 +222,26 @@ public:
         initParticles();
         this->pcontainer_m->initDump();
 
+        // First convection step of the Euler time integration
+        this->convection = true;
+
         par2grid();
-        createStream();
+        createStream();  // TODO, option to delete this and have different part2grid versions (save
+                         // one copy per convection step)
         this->fsolver_m->solve(this->fcontainer_m);
-        updateFields();
+        ConvectionStepFields();
         grid2par();
 
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
         pc->R_old                                   = pc->R;
-        pc->R                                       = pc->R_old + pc->P * this->params.dt;
+        pc->R                                       = pc->R_old + this->params.dt * pc->P;
+        pc->omega = pc->omega + this->params.dt * pc->vortex_update;
         pc->update();
     }
 
     ~VortexInCellManager() {}
+
+    bool convection;        //TODO solve this better
 
     void initParticles() {
         std::cout << "initialize particles 3d" << std::endl;
@@ -288,11 +295,13 @@ public:
         std::shared_ptr<FieldContainer<T, 3>> fc    = this->getFieldContainer();
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
-        pc->P                 = 0.0;
-        pc->vortex_stretching = 0.0;
+        if (this->convection) {
+            pc->P = 0.0;
+            gather(pc->P, fc->getUField(), pc->R);
+        }
 
-        gather(pc->P, fc->getUField(), pc->R);
-        gather(pc->vortex_stretching, fc->getVortexStretchingField(), pc->R);
+        pc->vortex_update = 0.0;
+        gather(pc->vortex_update, fc->getVortexStretchingField(), pc->R);
     }
 
     void createStream() {
@@ -321,7 +330,7 @@ public:
             });
     }
 
-    void updateFields() {
+    void ConvectionStepFields() {
         // TODO: check fillHalo stuff
 
         std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
@@ -353,10 +362,10 @@ public:
             });
 
         // Vortex stretching calculation
-        VField_t<T, 3> vortex_stretching_field   = fc->getVortexStretchingField();
-        const int nghost_vortex_stretching_field = vortex_stretching_field.getNghost();
-        auto view_vortex_stretching              = vortex_stretching_field.getView();
-        vortex_stretching_field                  = 0.0;
+        VField_t<T, 3> vortex_update_field   = fc->getVortexStretchingField();
+        const int nghost_vortex_update_field = vortex_update_field.getNghost();
+        auto view_vortex_update              = vortex_update_field.getView();
+        vortex_update_field                  = 0.0;
 
         auto omega_view = fc->getOmegaField().getView();
         fc->getOmegaField().fillHalo();
@@ -364,27 +373,43 @@ public:
         fc->getUField().fillHalo();
 
         Kokkos::parallel_for(
-            "Assign rhs",
-            ippl::getRangePolicy(view_vortex_stretching, nghost_vortex_stretching_field),
+            "Assign rhs", ippl::getRangePolicy(view_vortex_update, nghost_vortex_update_field),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                view_vortex_stretching(i, j, k) =
+                view_vortex_update(i, j, k) =
                     0.5
-                        * (omega_view(i, j, k)[0] * (view_u(i + 1, j, k) - view_u(i - 1, j, k))
-                               / this->params.hr(0)
-                           + omega_view(i, j, k)[1] * (view_u(i, j + 1, k) - view_u(i, j - 1, k))
-                                 / this->params.hr(1)
-                           + omega_view(i, j, k)[2] * (view_u(i, j, k + 1) - view_u(i, j, k - 1))
-                                 / this->params.hr(2))
-                    + this->params.visc
-                          * ((omega_view(i + 1, j, k) - 2 * omega_view(i, j, k)
-                              + omega_view(i - 1, j, k))
-                                 / (this->params.hr(0) * this->params.hr(0))
-                             + (omega_view(i, j + 1, k) - 2 * omega_view(i, j, k)
-                                + omega_view(i, j - 1, k))
-                                   / (this->params.hr(1) * this->params.hr(1))
-                             + (omega_view(i, j, k + 1) - 2 * omega_view(i, j, k)
-                                + omega_view(i, j, k - 1))
-                                   / (this->params.hr(2) * this->params.hr(2)));
+                    * (omega_view(i, j, k)[0] * (view_u(i + 1, j, k) - view_u(i - 1, j, k))
+                           / this->params.hr(0)
+                       + omega_view(i, j, k)[1] * (view_u(i, j + 1, k) - view_u(i, j - 1, k))
+                             / this->params.hr(1)
+                       + omega_view(i, j, k)[2] * (view_u(i, j, k + 1) - view_u(i, j, k - 1))
+                             / this->params.hr(2));
+            });
+    }
+
+    void DiffusionStepFields() {
+        // TODO: check fillHalo stuff and ghostcell stuff
+
+        std::shared_ptr<FieldContainer<T, 3>> fc = this->getFieldContainer();
+
+        // viscosity update
+        VField_t<T, 3> vortex_update_field   = fc->getVortexStretchingField();
+        const int nghost_vortex_update_field = vortex_update_field.getNghost();
+        auto view_vortex_update              = vortex_update_field.getView();
+        vortex_update_field                  = 0.0;
+
+        auto omega_view = fc->getOmegaField().getView();
+        fc->getOmegaField().fillHalo();
+
+        Kokkos::parallel_for(
+            "Assign rhs", ippl::getRangePolicy(view_vortex_update, nghost_vortex_update_field),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                view_vortex_update(i, j, k) =
+                    (omega_view(i + 1, j, k) - 2 * omega_view(i, j, k) + omega_view(i - 1, j, k))
+                        / (this->params.hr(0) * this->params.hr(0))
+                    + (omega_view(i, j + 1, k) - 2 * omega_view(i, j, k) + omega_view(i, j - 1, k))
+                          / (this->params.hr(1) * this->params.hr(1))
+                    + (omega_view(i, j, k + 1) - 2 * omega_view(i, j, k) + omega_view(i, j, k - 1))
+                          / (this->params.hr(2) * this->params.hr(2));
             });
     }
 
@@ -400,6 +425,9 @@ public:
 
         std::shared_ptr<ParticleContainer<T, 3>> pc = this->getParticleContainer();
 
+        // Convection step
+        convection = true;
+
         par2grid();
 
         createStream();
@@ -409,7 +437,7 @@ public:
         IpplTimings::stopTimer(SolveTimer);
 
         IpplTimings::startTimer(PTimer);
-        this->updateFields();
+        this->ConvectionStepFields();
         IpplTimings::stopTimer(PTimer);
 
         grid2par();
@@ -420,16 +448,37 @@ public:
             R_old_temp = pc->R_old;
 
         pc->R_old = pc->R;
-        pc->R     = R_old_temp + 2 * pc->P * this->params.dt;
+        pc->R     = R_old_temp + 2 * this->params.dt * pc->P;
         IpplTimings::stopTimer(RTimer);
 
         IpplTimings::startTimer(VTimer);
-        pc->omega = pc->omega + this->params.dt * pc->vortex_stretching;
+        pc->omega = pc->omega + 2 * this->params.dt * pc->vortex_update;
         IpplTimings::stopTimer(VTimer);
 
         IpplTimings::startTimer(updateTimer);
         pc->update();
         IpplTimings::stopTimer(updateTimer);
+
+        // Diffusion 
+        convection = false;
+
+        if (this->params.visc != 0) {
+            par2grid();
+
+            IpplTimings::startTimer(PTimer);
+            this->DiffusionStepFields();
+            IpplTimings::stopTimer(PTimer);
+
+            grid2par();
+
+            IpplTimings::startTimer(VTimer);
+            pc->omega = pc->omega + this->params.visc * 2 * this->params.dt * pc->vortex_update;
+            IpplTimings::stopTimer(VTimer);
+
+            IpplTimings::startTimer(updateTimer);
+            pc->update();
+            IpplTimings::stopTimer(updateTimer);
+        }
 
         /*
         IpplTimings::startTimer(ETimer);

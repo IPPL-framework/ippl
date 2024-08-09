@@ -56,7 +56,7 @@ class FieldContainer<T, 3> {
 
     VField_t<T, 3> u_field;
 
-    VField_t<T, 3> vortex_stretching_field;
+    VField_t<T, 3> vortex_update_field;
 
     Mesh_t<3> mesh_m;
 
@@ -75,7 +75,7 @@ public:
 
         u_field.initialize(mesh_m, fl_m);
 
-        vortex_stretching_field.initialize(mesh_m, fl_m);
+        vortex_update_field.initialize(mesh_m, fl_m);
     }
 
     VField_t<T, 3>& getOmegaField() { return omega_field; }
@@ -94,9 +94,9 @@ public:
     VField_t<T, 3>& getUField() { return u_field; }
     void setUField(VField_t<T, 3>& u_field_) { this->u_field = u_field_; }
 
-    VField_t<T, 3>& getVortexStretchingField() { return vortex_stretching_field; }
-    void setVortexStretchingField(VField_t<T, 3>& vortex_stretching_field_) {
-        this->vortex_stretching_field = vortex_stretching_field_;
+    VField_t<T, 3>& getVortexStretchingField() { return vortex_update_field; }
+    void setVortexStretchingField(VField_t<T, 3>& vortex_update_field_) {
+        this->vortex_update_field = vortex_update_field_;
     }
 
     Mesh_t<3>& getMesh() { return mesh_m; }

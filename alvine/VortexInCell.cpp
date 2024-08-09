@@ -31,7 +31,7 @@
 //     chmod +x data
 //     srun ./VortexInCell 128 128 128 100 FFT 0.01 0.1 --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 2;
+constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "VortexInCell";
 

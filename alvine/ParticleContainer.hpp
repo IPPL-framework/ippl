@@ -96,7 +96,7 @@ class ParticleContainer<T, 3> : public ParticleContainerBase<T, 3> {
 
 public:
     typename Base::particle_position_type omega;
-    typename Base::particle_position_type vortex_stretching;
+    typename Base::particle_position_type vortex_update;
 
     ~ParticleContainer() {};
 
@@ -130,7 +130,7 @@ public:
 private:
     void registerAttributes() {
         this->addAttribute(omega);
-        this->addAttribute(vortex_stretching);
+        this->addAttribute(vortex_update);
         std::cout << "three dim register attributes" << std::endl;
     }
 };
