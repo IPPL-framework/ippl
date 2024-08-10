@@ -316,6 +316,9 @@ public:
                 if (j < 3){
                     double Pos = std::stod(cell);
                     // Special case where particle lies on the edge
+                    // To prevent instability in the sending process when a particle is exactly at the boundary,
+                    // a small perturbation (0.01%) is applied to the particle positions.
+                    // This avoids double-counting of particles and ensures the total number of particles is conserved.
                     if (Pos == Max[j]){ 
                         mes << "Particle was on edge. Shift position from " << Pos << " to " << Pos*0.9999 << endl; 
                         Pos = 0.9999*Pos;
@@ -403,14 +406,15 @@ public:
      */
     void LeapFrogStep(){
         // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-
         static IpplTimings::TimerRef VTimer           = IpplTimings::getTimer("pushVelocity");
         static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
         static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
 
-        //double dt                               = this->dt_m;
+        // Time step size is calculated according to Blanca's thesis:
+        // "For the cosmological simulations, it was decided to adjust the timestep to the expansion of the universe.
+        // Instead of using a fixed ∆t, a fixed ∆ log a was implemented."
         double a                               = this->a_m;
         double a_i = this->a_m;
         double a_half = a*exp(0.5*this->Dloga);
@@ -475,7 +479,7 @@ public:
     /**
      * @brief Save the positions of particles to a file.
      * 
-     * @param index Index of the current time step.
+     * @param index Current time step number
      */
     void savePositions(unsigned int index) {
         Inform mes("Saving Particles");
@@ -545,8 +549,18 @@ public:
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
+
+
     /**
-     * @brief Dumps the structure of the given view.
+     * @brief Analyzes and logs the structure of the given field view.
+     * 
+     * This method calculates and logs the energy and maximum norm of the field values
+     * in the given view. It performs parallel reduction to compute the sum of squares
+     * and maximum norm of the field values, and then reduces these values across all
+     * processes. The results are written to a CSV file by the root process.
+     * 
+     * @tparam View The type of the view to be dumped.
+     * @param Fview The view whose structure is to be dumped.
      */
     template <typename View>
     void dumpStructure(const View& Fview) {
