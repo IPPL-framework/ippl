@@ -21,10 +21,10 @@ using size_type = ippl::detail::size_type;
 template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
-template <typename T, unsigned Dim= 3, class... ViewArgs>
+template <typename T, unsigned Dim = 3, class... ViewArgs>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
 
-template <typename T = double, unsigned Dim=3>
+template <typename T = double, unsigned Dim = 3>
 using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
 
 template <typename T>
@@ -36,7 +36,7 @@ using Vector_t = ippl::Vector<T, Dim>;
 template <unsigned Dim, class... ViewArgs>
 using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T = double, unsigned Dim=3, class... ViewArgs>
+template <typename T = double, unsigned Dim = 3, class... ViewArgs>
 using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 template <typename T = double, unsigned Dim = 3>
