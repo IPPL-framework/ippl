@@ -459,10 +459,12 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        // Diffusion 
-        convection = false;
 
-        if (this->params.visc != 0) {
+        if (this->params.visc > 1e-8) {
+            std::cout << "Diffusion step." << std::endl;
+            // Diffusion 
+            convection = false;
+
             par2grid();
 
             IpplTimings::startTimer(PTimer);
