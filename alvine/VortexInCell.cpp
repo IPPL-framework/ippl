@@ -22,14 +22,14 @@
 //     srun ./VortexInCell 128 128 100 FFT --overallocate 2.0 --info 10
 //     srun ./VortexInCell 128 128
 //
-//     to build, call 
-//          make VortexInCell 
+//     to build, call
+//          make VortexInCell
 //     in the build directory to only build this target
-//     
+//
 //     Example 3D:
 //     mkdir build_*/alvine/data
 //     chmod +x data
-//     srun ./VortexInCell 128 128 128 100 FFT 0.01 0.1 --overallocate 2.0 --info 10
+//     srun ./VortexInCell 64 64 64 100 FFT 0.01 0.1 --overallocate 2.0 --info 10
 
 constexpr unsigned Dim = 3;
 using T                = double;
@@ -54,7 +54,6 @@ const char* TestName   = "VortexInCell";
 #include "Manager/PicManager.h"
 #include "VortexInCellManager.h"
 
-
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -63,13 +62,14 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
-        unsigned arg = 1;    
+        int arg = 1;
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        int nt  = std::atoi(argv[arg++]);
+        int nt = std::atoi(argv[arg++]);
+        msg << "Time steps: " << nt << endl;
 
         std::string solver = argv[arg++];
 
@@ -78,9 +78,8 @@ int main(int argc, char* argv[]) {
         double visc = 0.0;
         if (arg < argc) {
             visc = std::atof(argv[arg++]);
+            msg << "Viscosity: " << visc << endl;
         }
-
-        msg << nt << endl;
 
         SimulationParameters<T, Dim> params(nt, nr, solver, lbt, visc);
         VortexInCellManager<T, Dim> manager(params);
