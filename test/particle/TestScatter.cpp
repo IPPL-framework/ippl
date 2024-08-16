@@ -7,11 +7,14 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
         : ippl::ParticleBase<PLayout>(playout) {
         this->addAttribute(Q);
+        this->addAttribute(Q_vec);
     }
 
     ~Bunch() {}
 
     typedef ippl::ParticleAttrib<double> charge_container_type;
+
+    ippl::ParticleAttrib<ippl::Vector<double, 3> > Q_vec;
     charge_container_type Q;
 };
 
@@ -20,6 +23,7 @@ int main(int argc, char* argv[]) {
     {
         typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
         typedef Bunch<playout_type> bunch_type;
+        using vector_type = ippl::Vector<double, 3>;
         using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
@@ -42,10 +46,14 @@ int main(int argc, char* argv[]) {
 
         bunch_type bunch(pl);
         typedef ippl::Field<double, 3, Mesh_t, Centering_t> field_type;
+        typedef ippl::Field<vector_type, 3, Mesh_t, Centering_t> vfield_type;
 
         field_type field;
 
+        vfield_type vfield;
+
         field.initialize(mesh, layout);
+        vfield.initialize(mesh, layout);
 
         bunch.setParticleBC(ippl::BC::PERIODIC);
 
@@ -92,13 +100,25 @@ int main(int argc, char* argv[]) {
 
         scatter(bunch.Q, field, bunch.R);
 
+        bunch.Q_vec = 1.0;
+
+        vfield = 0.0;
+        scatter(bunch.Q_vec, vfield, bunch.R);
+
         // Check charge conservation
         try {
             double Total_charge_field = field.sum();
 
-            std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
-            std::cout << "Total charge of the particles:" << bunch.Q.sum() << std::endl;
-            std::cout << "Error:" << std::fabs(bunch.Q.sum() - Total_charge_field) << std::endl;
+            std::cout << "Total charge in the field: " << Total_charge_field << std::endl;
+            std::cout << "Total charge of the particles: " << bunch.Q.sum() << std::endl;
+            std::cout << "Error: " << std::fabs(bunch.Q.sum() - Total_charge_field) << std::endl;
+
+            auto Total_charge_vfield = vfield.sum();
+
+            std::cout << "Total charge in the vector field: " << Total_charge_vfield << std::endl;
+            std::cout << "Total charge in the particle vectors: " << bunch.Q_vec.sum() << std::endl;
+            std::cout << "Error: " << vector_type(ippl::fabs(Total_charge_vfield - bunch.Q_vec.sum())) << std::endl;
+
         } catch (const std::exception& e) {
             std::cout << e.what() << std::endl;
         }
