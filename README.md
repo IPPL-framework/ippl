@@ -129,14 +129,14 @@ For example, to run a job on 1 MPI node, with 44 OpenMP threads:
 #SBATCH --output=<output_file_name>.out  # Name of output file
 #SBATCH --error=<error_file_name>.err    # Name of error file
 
-export OMP_NUM_THREADS=44
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export OMP_PROC_BIND=spread
 export OMP_PLACES=threads
 
 # need to pass the --cpus-per-task option to srun otherwise will not use more than 1 core per task
 # (see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting--ccpus-per-task)
 
-srun --cpus-per-task=44 ./<your_executable> <args>
+mpirun ./<your_executable> <args>
 ```
 
 ## Gwendolen GPU
