@@ -5,6 +5,7 @@
 #include "Ippl.h"
 
 #include <random>
+#include "Types/Vector.h"
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
@@ -17,10 +18,12 @@ class PICTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
 public:
     constexpr static unsigned dim = Dim;
     using value_type              = T;
+    using vector_type             = ippl::Vector<T, Dim>;
 
     using mesh_type      = ippl::UniformCartesian<double, Dim>;
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<double, Dim, mesh_type, centering_type, ExecSpace>;
+    using vfield_type     = ippl::Field<vector_type, Dim, mesh_type, centering_type, ExecSpace>;
     using flayout_type   = ippl::FieldLayout<Dim>;
     using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
 
@@ -29,11 +32,13 @@ public:
         explicit Bunch(PLayout& playout)
             : ippl::ParticleBase<PLayout>(playout) {
             this->addAttribute(Q);
+            this->addAttribute(Q_vec);
         }
 
         ~Bunch() = default;
 
         ippl::ParticleAttrib<double, ExecSpace> Q;
+        ippl::ParticleAttrib<vector_type, ExecSpace> Q_vec;
     };
 
     using bunch_type = Bunch<playout_type>;
@@ -65,6 +70,7 @@ public:
         mesh   = mesh_type(owned, hx, origin);
 
         field = std::make_unique<field_type>(mesh, layout);
+        vfield = std::make_unique<vfield_type>(mesh, layout);
 
         playout = playout_type(layout, mesh);
 
@@ -97,6 +103,7 @@ public:
     }
 
     std::shared_ptr<field_type> field;
+    std::shared_ptr<vfield_type> vfield;
     std::shared_ptr<bunch_type> bunch;
     size_t nParticles = 32;
     std::array<size_t, Dim> nPoints;
@@ -129,6 +136,29 @@ TYPED_TEST(PICTest, Scatter) {
 
     ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
                 tolerance<typename TestFixture::value_type>);
+}
+
+TYPED_TEST(PICTest, ScatterVector) {
+    auto& vfield      = this->vfield;
+    auto& bunch      = this->bunch;
+    auto& nParticles = this->nParticles;
+
+    *vfield = 0.0;
+
+    double charge = 0.5;
+
+    bunch->Q_vec = charge;
+
+    bunch->update();
+
+    scatter(bunch->Q_vec, *vfield, bunch->R);
+
+    auto totalcharge = vfield->sum();
+
+    for (size_t i = 0; i < this->dim; ++i) {
+        ASSERT_NEAR((nParticles * charge - totalcharge[i]) / (nParticles * charge), 0.0,
+                  tolerance<typename TestFixture::value_type>);
+    }
 }
 
 TYPED_TEST(PICTest, Gather) {
