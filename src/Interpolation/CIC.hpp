@@ -5,6 +5,9 @@
 //   these should be moved into structs.
 //
 
+#include "Types/Vector.h"
+#include "Utility/ParallelDispatch.h"
+
 namespace ippl {
     namespace detail {
         template <unsigned long Point, unsigned long Index, typename Weights>
@@ -34,20 +37,23 @@ namespace ippl {
         }
 
         template <unsigned long ScatterPoint, unsigned long... Index, typename View, typename T,
-                  typename IndexType>
+                  typename IndexType, typename T2>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToPoint(
             const std::index_sequence<Index...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, const T& val) {
-            Kokkos::atomic_add(&view(interpolationIndex<ScatterPoint, Index>(args)...),
-                               val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
+            const Vector<IndexType, View::rank>& args, const T2& val) {
+
+            T2 evaluated_val = val * ((interpolationWeight<ScatterPoint, Index>(wlo, whi)) * ...);
+
+            ippl::atomic_add(&view(interpolationIndex<ScatterPoint, Index>(args)...),
+                               evaluated_val);
         }
 
-        template <unsigned long... ScatterPoint, typename View, typename T, typename IndexType>
+        template <unsigned long... ScatterPoint, typename View, typename T, typename IndexType, typename ValueType>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, T val) {
+            const Vector<IndexType, View::rank>& args, ValueType val) {
             // The number of indices is equal to the view rank
             (scatterToPoint<ScatterPoint>(std::make_index_sequence<View::rank>{}, view, wlo, whi,
                                           args, val),

@@ -226,6 +226,19 @@ namespace ippl {
                 functor),
             std::forward<ReducerArgument>(reducer)...);
     }
+
+    template <typename T>
+        KOKKOS_INLINE_FUNCTION void atomic_add(T* dest, const T& value) {
+          Kokkos::atomic_add(dest, value); 
+    }
+
+    template <typename T, unsigned dim>
+        KOKKOS_INLINE_FUNCTION void atomic_add(ippl::Vector<T, dim>* dest, const ippl::Vector<T, dim>& value) {
+          for (size_t i = 0; i < dim; ++i) {
+              Kokkos::atomic_add(&(*dest)[i], value[i]);
+          }
+    }
+
 }  // namespace ippl
 
 #endif
