@@ -124,6 +124,11 @@ namespace ippl {
         FFTOpenPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
         ~FFTOpenPoissonSolver() = default;
 
+	void dumpScalField(std::string what);
+        void dumpComplScalField(std::string what);
+	void dumpVectField(std::string what);
+
+
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
         void setRhs(rhs_type& rhs) override;
