@@ -29,10 +29,10 @@ namespace ippl {
         using size_type = ippl::detail::size_type;
 
         Distribution dist_m;
-        const Vector<T, Dim> rmax_m;
-        const Vector<T, Dim> rmin_m;
-        Vector<T, Dim> umin_m, umax_m;
         size_type ntotal_m;
+        Vector<T, Dim> rmax_m;
+        Vector<T, Dim> rmin_m;
+        Vector<T, Dim> umin_m, umax_m;
 
         /*!
          * @brief Constructor for InverseTransformSampling class.
@@ -46,36 +46,55 @@ namespace ippl {
         template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, RegionLayout& rlayout_r, size_type &ntotal_r)
         : dist_m(dist_r),
-        rmax_m(rmax_r),
-        rmin_m(rmin_r),
         ntotal_m(ntotal_r){
-            const typename RegionLayout::host_mirror_type regions = rlayout_r.gethLocalRegions();
-            
+
+            updateBoundsNlocal(rmax_r, rmin_r, rlayout_r);
+
+        }
+
+        /*!
+         * @brief Updates the sampling bounds and reinitializes internal variables.
+         *
+         * This method allows the user to update the minimum and maximum bounds 
+         * for the sampling process, as well as the region layout. It recalculates
+         * the cumulative distribution function (CDF) values for the new bounds and 
+         * updates the internal variables to reflect these changes.
+         *
+         * @param new_rmax The new maximum range for sampling. This vector defines
+         *                 the upper bounds for each dimension.
+         * @param new_rmin The new minimum range for sampling. This vector defines
+         *                 the lower bounds for each dimension.
+         * @param new_rlayout The new region layout that defines the subdivisions
+         *                    of the sampling space across different ranks.
+        */
+        template <class RegionLayout>
+        void updateBoundsNlocal(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin, RegionLayout& new_rlayout) {
+            rmax_m = new_rmax;
+            rmin_m = new_rmin;
+
+            const typename RegionLayout::host_mirror_type regions = new_rlayout.gethLocalRegions();
             int rank = ippl::Comm->rank();
             Vector<T, Dim> nr_m, dr_m;
             for (unsigned d = 0; d < Dim; ++d) {
-                nr_m[d] = dist_m.getCdf(regions(rank)[d].max(), d) - dist_m.getCdf(regions(rank)[d].min(),d);
-                dr_m[d]   = dist_m.getCdf(rmax_m[d],d) - dist_m.getCdf(rmin_m[d],d);
-                umin_m[d] = dist_m.getCdf(regions(rank)[d].min(),d);
-                umax_m[d] = dist_m.getCdf(regions(rank)[d].max(),d);
+               nr_m[d] = dist_m.getCdf(regions(rank)[d].max(), d) - dist_m.getCdf(regions(rank)[d].min(), d);
+               dr_m[d] = dist_m.getCdf(rmax_m[d], d) - dist_m.getCdf(rmin_m[d], d);
+               umin_m[d] = dist_m.getCdf(regions(rank)[d].min(), d);
+               umax_m[d] = dist_m.getCdf(regions(rank)[d].max(), d);
             }
             T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
             T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
 
             T factor = pnr / pdr;
-            nlocal_m      = (size_type) (factor * ntotal_m);
-            size_type nglobal = 0;
+            nlocal_m = (size_type)(factor * ntotal_m);
 
-            MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-                          ippl::Comm->getCommunicator());
+            size_type nglobal = 0;
+            MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
 
             int rest = (int)(ntotal_m - nglobal);
-            
             if (rank < rest) {
                 ++nlocal_m;
             }
-
-        }
+         }
 
         /*!
          * @brief Deconstructor for InverseTransformSampling class.
@@ -144,7 +163,16 @@ namespace ippl {
          * @returns The local number of samples.
         */
         KOKKOS_INLINE_FUNCTION size_type getLocalSamplesNum() const { return nlocal_m; }
-        
+
+        /*!
+         * @brief Set the local number of particles.
+         *
+         * @param nlocal The new number of local particles.
+        */
+        KOKKOS_INLINE_FUNCTION void setLocalSamplesNum(size_type nlocal) {
+            nlocal_m = nlocal;
+        }
+
         /*!
          * @brief Generate random samples using inverse transform sampling.
          *
