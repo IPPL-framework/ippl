@@ -1,6 +1,6 @@
-// Testing the inverse transform sampling method for Normal Distribution on bounded domains
+// Testing the update functionality of the inverse transform sampling method for Normal Distribution
 //     Example:
-//     srun ./TestInverseTransformSamplingNormal --overallocate 2.0 --info 10
+//     srun ./TestInverseTransformSamplingUpdateBounds --overallocate 2.0 --info 10
 
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
@@ -57,8 +57,9 @@ void write_minmax(double *rmin1, double *rmax1, double *rmin2, double *rmax2){
     Inform csvout(NULL, "data/rmin_max_normal_dist.csv", Inform::APPEND);
     csvout.precision(10);
     csvout.setf(std::ios::scientific, std::ios::floatfield);
+    csvout << "dim    min(pos)    max(pos)    min(vel)    max(vel)" << endl;
     for(int i=0; i<Dim; i++){
-        csvout << rmin1[i] << " " << rmax1[i] << " " << rmin2[i] << " " << rmax2[i] << endl;
+        csvout << i << " " << rmin1[i] << " " << rmax1[i] << " " << rmin2[i] << " " << rmax2[i] << endl;
     }
     ippl::Comm->barrier();
 }
