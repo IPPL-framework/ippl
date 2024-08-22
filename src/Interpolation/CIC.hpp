@@ -5,9 +5,6 @@
 //   these should be moved into structs.
 //
 
-#include "Types/Vector.h"
-#include "Utility/ParallelDispatch.h"
-
 namespace ippl {
     namespace detail {
         template <unsigned long Point, unsigned long Index, typename Weights>
