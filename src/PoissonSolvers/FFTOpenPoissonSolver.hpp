@@ -307,7 +307,7 @@ namespace ippl {
     
         Field_t field;
 
-        if (what == "RHO2") {
+        if (what == "RHO2" || what == "RHO2INV" || what == "SOL2") {
             type = "scalar";
             unit = "Cb/m^3";
             field= rho2_mr;
@@ -523,6 +523,9 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+
+        Inform m("");
+
         // get algorithm and hessian flag from parameter list
         const int alg      = this->params_m.template get<int>("algorithm");
         const bool hessian = this->params_m.template get<bool>("hessian");
@@ -541,7 +544,21 @@ namespace ippl {
         mpi::Communicator comm = layout_mp->comm;
 
         // get mesh spacing and origin
+        /*
         hr_m               = mesh_mp->getMeshSpacing();
+        vector_type origin = mesh_mp->getOrigin();
+        */
+
+        // force r2c direction to be the same as OPAL
+        // force hr_m to be the same as OPAL
+        this->params_m.update("r2c_direction", 1);
+
+        Vector<double, 3> opal_spacing = {1.0, 1.0, 1.0};
+        Vector<double, 3> opal_origin = {0.0, 0.0, 0.0};
+        mesh_mp->setMeshSpacing(opal_spacing);
+        mesh_mp->setOrigin(opal_origin);
+
+        hr_m = opal_spacing;
         vector_type origin = mesh_mp->getOrigin();
 
         // create domain for the real fields
@@ -779,12 +796,12 @@ namespace ippl {
         // check whether the mesh spacing has changed with respect to the old one
         // if yes, update and set green flag to true
         bool green = false;
-        for (unsigned int i = 0; i < Dim; ++i) {
+        /*for (unsigned int i = 0; i < Dim; ++i) {
             if (hr_m[i] != mesh_mp->getMeshSpacing(i)) {
                 hr_m[i] = mesh_mp->getMeshSpacing(i);
                 green   = true;
             }
-        }
+        }*/
 
         // set mesh spacing on the other grids again
         mesh2_m->setMeshSpacing(hr_m);
@@ -873,16 +890,22 @@ namespace ippl {
                 });
         }
 
-        dumpScalField("RHO2");
-        
         IpplTimings::stopTimer(stod);
 
         // start a timer
         static IpplTimings::TimerRef fftrho = IpplTimings::getTimer("FFT: Rho");
         IpplTimings::startTimer(fftrho);
 
+        dumpScalField("RHO2");
+
         // forward FFT of the charge density field on doubled grid
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
+
+        dumpComplScalField("RHOTR");
+
+        fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
+
+        dumpScalField("RHO2INV");
 
         IpplTimings::stopTimer(fftrho);
 
@@ -892,13 +915,15 @@ namespace ippl {
         }
 
         dumpScalField("G");
-        dumpComplScalField("RHOTR");
+        //dumpComplScalField("RHOTR");
         dumpComplScalField("GTR");
         
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
         // minus sign since we are solving laplace(phi) = -rho
         rho2tr_m = -rho2tr_m * grntr_m;
+
+        dumpScalField("SOL2");
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -920,7 +945,7 @@ namespace ippl {
             for (unsigned int i = 0; i < Dim; ++i) {
                 switch (alg) {
                     case Algorithm::HOCKNEY:
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * nr_m[i] * hr_m[i];
                         break;
                     case Algorithm::VICO:
                     case Algorithm::BIHARMONIC:
