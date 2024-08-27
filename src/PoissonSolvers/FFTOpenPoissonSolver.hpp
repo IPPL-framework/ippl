@@ -357,9 +357,9 @@ namespace ippl {
 
         fout << std::endl;
 
-        for (int i = localIdx[0].first(); i <= localIdx[0].last(); i++) {
-            for (int j = localIdx[1].first(); j <= localIdx[1].last(); j++) {
-                for (int k = localIdx[2].first(); k <= localIdx[2].last(); k++) {
+        for (int i = localIdx[0].first() +1; i <= localIdx[0].last() +1; i++) {
+            for (int j = localIdx[1].first() +1; j <= localIdx[1].last() +1; j++) {
+                for (int k = localIdx[2].first() +1; k <= localIdx[2].last() +1; k++) {
                     
                     // define the physical points (cell-centered)
                     const double x = i * spacing[0] + origin[0];        
@@ -405,7 +405,7 @@ namespace ippl {
         
         CxField_t field;
         
-        if (what == "RHOTR") {
+        if (what == "RHOTR" || what == "SOL2TR") {
             type = "scalar";
             unit = "Cb/m^3";
             field= rho2tr_m;
@@ -455,9 +455,9 @@ namespace ippl {
         
         fout << std::endl;
         
-        for (int i = localIdx[0].first(); i <= localIdx[0].last(); i++) {
-            for (int j = localIdx[1].first(); j <= localIdx[1].last(); j++) {
-                for (int k = localIdx[2].first(); k <= localIdx[2].last(); k++) {
+        for (int i = localIdx[0].first() +1; i <= localIdx[0].last() +1; i++) {
+            for (int j = localIdx[1].first() +1; j <= localIdx[1].last() +1; j++) {
+                for (int k = localIdx[2].first() +1; k <= localIdx[2].last() +1; k++) {
                     
                     // define the physical points (cell-centered)
                     const double x = i * spacing[0] + origin[0];        
@@ -544,22 +544,15 @@ namespace ippl {
         mpi::Communicator comm = layout_mp->comm;
 
         // get mesh spacing and origin
-        /*
         hr_m               = mesh_mp->getMeshSpacing();
         vector_type origin = mesh_mp->getOrigin();
-        */
 
         // force r2c direction to be the same as OPAL
         // force hr_m to be the same as OPAL
         this->params_m.update("r2c_direction", 1);
 
-        Vector<double, 3> opal_spacing = {1.0, 1.0, 1.0};
-        Vector<double, 3> opal_origin = {0.0, 0.0, 0.0};
-        mesh_mp->setMeshSpacing(opal_spacing);
-        mesh_mp->setOrigin(opal_origin);
-
-        hr_m = opal_spacing;
-        vector_type origin = mesh_mp->getOrigin();
+        //Vector<double, 3> opal_spacing = {1.0, 1.0, 1.0};
+        //Vector<double, 3> opal_origin = {0.0, 0.0, 0.0};
 
         // create domain for the real fields
         domain_m = layout_mp->getDomain();
@@ -578,6 +571,7 @@ namespace ippl {
         // create double sized mesh and layout objects using the previously defined domain2_m
         using mesh_type = typename lhs_type::Mesh_t;
         mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
+        //mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, opal_spacing, opal_origin));
         layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain2_m, isParallel));
 
         // create the domain for the transformed (complex) fields
@@ -595,6 +589,7 @@ namespace ippl {
 
         // create mesh and layout for the real to complex FFT transformed fields
         meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
+        //meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, opal_spacing, opal_origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, isParallel));
 
@@ -795,7 +790,7 @@ namespace ippl {
 
         // check whether the mesh spacing has changed with respect to the old one
         // if yes, update and set green flag to true
-        bool green = false;
+        //bool green = false;
         /*for (unsigned int i = 0; i < Dim; ++i) {
             if (hr_m[i] != mesh_mp->getMeshSpacing(i)) {
                 hr_m[i] = mesh_mp->getMeshSpacing(i);
@@ -804,8 +799,8 @@ namespace ippl {
         }*/
 
         // set mesh spacing on the other grids again
-        mesh2_m->setMeshSpacing(hr_m);
-        meshComplex_m->setMeshSpacing(hr_m);
+        //mesh2_m->setMeshSpacing(hr_m);
+        //meshComplex_m->setMeshSpacing(hr_m);
 
         // field object on the doubled grid; zero-padded
         rho2_mr = 0.0;
@@ -822,7 +817,7 @@ namespace ippl {
         auto view2 = rho2_mr.getView();
         auto view1 = this->rhs_mp->getView();
 
-	m << "1: sum(rhs) = " << std::scientific << std::setprecision(3) << (*this->rhs_mp).sum() << endl;
+	    m << "1: sum(rhs) = " << std::scientific << std::setprecision(3) << (*this->rhs_mp).sum() << endl;
 
         const int nghost2 = rho2_mr.getNghost();
         const int nghost1 = this->rhs_mp->getNghost();
@@ -903,27 +898,26 @@ namespace ippl {
 
         dumpComplScalField("RHOTR");
 
-        fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
+        //fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
-        dumpScalField("RHO2INV");
+        //dumpScalField("RHO2INV");
 
         IpplTimings::stopTimer(fftrho);
 
         // call greensFunction to recompute if the mesh spacing has changed
-        if (green) {
-            greensFunction();
-        }
+        //if (green) {
+        //    greensFunction();
+        //}
 
-        dumpScalField("G");
-        //dumpComplScalField("RHOTR");
-        dumpComplScalField("GTR");
+        //dumpScalField("G");
+        //dumpComplScalField("GTR");
         
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
         // minus sign since we are solving laplace(phi) = -rho
         rho2tr_m = -rho2tr_m * grntr_m;
 
-        dumpScalField("SOL2");
+        dumpComplScalField("SOL2TR");
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -934,6 +928,8 @@ namespace ippl {
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
             fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
+            const scalar_type pi          = Kokkos::numbers::pi_v<scalar_type>;
+
             IpplTimings::stopTimer(fftc);
             // Hockney: multiply the rho2_mr field by the total number of points to account for
             // double counting (rho and green) of normalization factor in forward transform
@@ -942,10 +938,12 @@ namespace ippl {
             // since only backward transform was performed on the 4N grid
             // DCT_VICO: need to multiply by a factor of (2N)^3 to match the normalization factor in
             // the transform.
+            //
+            // change to match OPAL: remove multiplication by hr_m^3, add multiplication by (4*pi)^3
             for (unsigned int i = 0; i < Dim; ++i) {
                 switch (alg) {
                     case Algorithm::HOCKNEY:
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * nr_m[i] * hr_m[i];
+                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi); // * hr_m[i];
                         break;
                     case Algorithm::VICO:
                     case Algorithm::BIHARMONIC:
@@ -961,6 +959,8 @@ namespace ippl {
                             "supported for open BCs");
                 }
             }
+
+            dumpScalField("SOL2");
 
             // start a timer
             static IpplTimings::TimerRef dtos = IpplTimings::getTimer("Solve: Double to physical");
@@ -1351,7 +1351,6 @@ namespace ippl {
             }
             IpplTimings::stopTimer(hess);
         }
-        dumpScalField("G");
         IpplTimings::stopTimer(solve);
     };
 
@@ -1644,6 +1643,8 @@ namespace ippl {
         } else {
             // Hockney case
 
+            std::cout << "hr_m[0] = " << hr_m[0] << std::endl;
+
             // calculate square of the mesh spacing for each dimension
             Vector_t hrsq(hr_m * hr_m);
 
@@ -1677,9 +1678,13 @@ namespace ippl {
         static IpplTimings::TimerRef fftg = IpplTimings::getTimer("FFT: Green");
         IpplTimings::startTimer(fftg);
 
+        dumpScalField("G");
+
         // perform the FFT of the Green's function for the convolution
         fft_m->transform(FORWARD, grn_mr , grntr_m);
 
+        dumpComplScalField("GTR");
+        
         IpplTimings::stopTimer(fftg);
     };
 
