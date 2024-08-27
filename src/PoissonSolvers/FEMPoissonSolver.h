@@ -39,8 +39,7 @@ namespace ippl {
 
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs,
-                         const std::function<Tlhs(const Vector<Tlhs, Dim>&)>& rhs_f)
+        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
@@ -52,12 +51,25 @@ namespace ippl {
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
 
+            Inform m("");
+
+            m << "inside constructor" << endl;
+
             rhs.fillHalo();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs, rhs_f);
+            m << "after fillHalo" << endl;
+
+            //rhs.write();
+
+            lagrangeSpace_m.evaluateLoadVector(rhs);
+
+            m << "after eval load vector" << endl;
 
             rhs.accumulateHalo();
             rhs.fillHalo();
+
+            m << "after accumulate Halo" << endl;
+            //rhs.write();
             
             IpplTimings::stopTimer(init);
         }
@@ -109,7 +121,7 @@ namespace ippl {
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
             
                 return_field.accumulateHalo();
-                return_field.fillHalo();
+                //return_field.fillHalo();
             
                 IpplTimings::stopTimer(opTimer);
 
