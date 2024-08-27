@@ -35,7 +35,7 @@ namespace ippl {
         Vector<T, Dim> umin_m, umax_m;
 
         /*!
-         * @brief Constructor for InverseTransformSampling class.
+         * @brief Constructor for InverseTransformSampling class with domain decomposition.
          *
          * @param dist_ The distribution to sample from.
          * @param rmax_ Maximum range for sampling.
@@ -48,7 +48,27 @@ namespace ippl {
         : dist_m(dist_r),
         ntotal_m(ntotal_r){
 
-            updateBoundsNlocal(rmax_r, rmin_r, rlayout_r);
+            updateBounds(rmax_r, rmin_r, rlayout_r);
+
+        }
+
+        /*!
+         * @brief Constructor for InverseTransformSampling class.
+         *        In this method, we do not consider any domain decomposition.
+         *
+         * @param dist_ The distribution to sample from.
+         * @param rmax_ Maximum range for sampling.
+         * @param rmin_ Minimum range for sampling.
+         * @param ntotal_ Total number of samples to generate.
+        */
+	template <class RegionLayout>
+        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, size_type &ntotal_r)
+        : dist_m(dist_r),
+        ntotal_m(ntotal_r){
+
+            updateBounds(rmax_r, rmin_r);
+
+            nlocal_m = ntotal_m;
 
         }
 
@@ -68,7 +88,7 @@ namespace ippl {
          *                    of the sampling space across different ranks.
         */
         template <class RegionLayout>
-        void updateBoundsNlocal(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin, RegionLayout& new_rlayout) {
+        void updateBounds(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin, RegionLayout& new_rlayout) {
             rmax_m = new_rmax;
             rmin_m = new_rmin;
 
@@ -93,6 +113,31 @@ namespace ippl {
             int rest = (int)(ntotal_m - nglobal);
             if (rank < rest) {
                 ++nlocal_m;
+            }
+         }
+
+
+	/*!
+         * @brief Updates the sampling bounds using the CDF without any domain decomposition.
+         *
+         * This method allows the user to update the minimum and maximum bounds 
+         * for the inverse transform sampling method. It recalculates
+         * the cumulative distribution function (CDF) values for the new bounds and 
+         * updates the internal variables to reflect these changes.
+         *
+         * @param new_rmax The new maximum range for sampling. This vector defines
+         *                 the upper bounds for each dimension.
+         * @param new_rmin The new minimum range for sampling. This vector defines
+         *                 the lower bounds for each dimension.
+        */
+        void updateBounds(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin) {
+            rmax_m = new_rmax;
+            rmin_m = new_rmin;
+
+            Vector<T, Dim> nr_m, dr_m;
+            for (unsigned d = 0; d < Dim; ++d) {
+               umin_m[d] = dist_m.getCdf(rmin_m[d], d);
+               umax_m[d] = dist_m.getCdf(rmax_m[d], d);
             }
          }
 

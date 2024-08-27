@@ -114,19 +114,9 @@ int main(int argc, char* argv[]) {
 
         // now, we want to sample velocity with the same density, but different bounds
         // update bounds, and related parameters
-        rmin   = 0.;
-        rmax   = 2.;
-        length = rmax - rmin;
-        hr     = length / nr;
-        origin = rmin;
-
-        // update mesh
-        mesh.setMeshSpacing(hr);
-        mesh.setOrigin(origin);
-        // update rlayout with the new mesh
-        rlayout.changeDomain(fl, mesh);
-        // update sampler's bounds
-        sampling.updateBoundsNlocal(rmax, rmin, rlayout);
+        ippl::Vector<double, Dim> vmin   = 0.;
+        ippl::Vector<double, Dim> vmax   = 2.;
+        sampling.updateBounds(vmax, vmin);
         // set nlocal
         sampling.setLocalSamplesNum(nlocal);
         // create samples of updated ITS
