@@ -11,6 +11,7 @@
 #include "Meshes/Centering.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
+/*
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
@@ -22,6 +23,7 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 
     return Dim * pi * pi * val;
 }
+*/
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
@@ -92,15 +94,18 @@ KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const 
 }
 
 template <typename T, unsigned Dim>
-void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
+void testFEMSolver(const unsigned& numNodesPerDim,
                    const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
+                   // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
 
     Inform m("");
     Inform msg2all("", INFORM_ALL_NODES);
+
+    m << "inside test fem" << endl;
 
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
@@ -137,6 +142,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
     auto view = sol.getView();
     auto ldom = layout.getLocalNDIndex();
 
+    m << "before assigning solution" << endl;
+
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for("Assign solution", sol.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const index_array_type& args) {
@@ -151,8 +158,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
 
     IpplTimings::stopTimer(initTimer);
 
+    Kokkos::fence();
+    sol.write();
+    Kokkos::fence();
+
+    m << "after assigning solution" << endl;
+
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
+    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // set the parameters
     ippl::ParameterList params;
@@ -211,22 +224,30 @@ int main(int argc, char* argv[]) {
 
         if (dim == 1) {
             // 1D Sinusoidal
-            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, sinusoidalRHSFunction<T, 1>, -1.0,
-                                    1.0);
+            for (unsigned n = 1 << 2; n <= 1 << 2; n = n << 1) {
+                /*testFEMSolver<T, 1>(n, 
+                    [](ippl::Vector<T, 1> x) {
+                        return gaussian1D<T>(x[0], 0.05, 0.5);
+                    },
+                    [](ippl::Vector<T, 1> x) {
+                        return gaussianSol1D<T>(x[0], 0.05, 0.5);
+                    },
+                    0.0, 1.0);
+                */
+                testFEMSolver<T, 1>(n, -1.0, 1.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, -1.0,
-                                    1.0);
+                //testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0, 1.0);
+                testFEMSolver<T, 2>(n, -1.0, 1.0);
             }
         } else {
             // 3D Sinusoidal; problem size given by user
             const int n_arg = std::atoi(argv[1]);
             int n = 1 << n_arg;
-            testFEMSolver<T, 3>(n, sinusoidalRHSFunction<T, 3>, -1.0,
-                                1.0);
+            //testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
+            testFEMSolver<T, 3>(n, -1.0, 1.0);
         }
 
         // stop the timer
