@@ -22,34 +22,47 @@ namespace ippl {
         typedef Vector<T, Dim> vector_type;
         typedef Vector<vector_type, Dim> matrix_type;
 
+        KOKKOS_INLINE_FUNCTION
         Mesh(){};
 
+        KOKKOS_INLINE_FUNCTION
         virtual ~Mesh(){};
 
         // Get the origin of mesh vertex positions
+        KOKKOS_INLINE_FUNCTION
         vector_type getOrigin() const;
 
         // Set the origin of mesh vertex positions
+        KOKKOS_INLINE_FUNCTION
         void setOrigin(const vector_type& origin);
 
+        KOKKOS_INLINE_FUNCTION
         const vector_type& getGridsize() const;
 
         /*!
          * Query the cell volume of the grid
          * @return The volume of a single mesh cell
          */
+        KOKKOS_INLINE_FUNCTION
         virtual T getCellVolume() const = 0;
 
         /*!
          * Query the volume of the represented domain
          * @return Total volume of the mesh
          */
+        KOKKOS_INLINE_FUNCTION
         virtual T getMeshVolume() const = 0;
 
+        KOKKOS_INLINE_FUNCTION
         T getGridsize(size_t dim) const;
 
+        KOKKOS_INLINE_FUNCTION
         virtual vector_type getVertexPosition(const NDIndex<Dim>& ndi) const = 0;
 
+        KOKKOS_INLINE_FUNCTION
+        virtual const vector_type& getMeshSpacing() const = 0;
+
+        KOKKOS_INLINE_FUNCTION
         virtual vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const = 0;
 
     protected:
