@@ -10,22 +10,27 @@ namespace ippl {
         : mesh_m(mesh)
         , ref_element_m(ref_element)
         , quadrature_m(quadrature) {
+        
         assert(mesh.Dimension == Dim && "Mesh dimension does not match the dimension of the space");
 
-        //
-        for (std::size_t d = 0; d < Dim; ++d) {
-            assert(mesh.getGridsize(d) > 1 && "Mesh has no cells in at least one dimension");
+        nr_m     = mesh_m.getGridsize();
+        hr_m     = mesh_m.getMeshSpacing();
+        origin_m = mesh_m.getOrigin();
+
+        for (size_t d = 0; d < Dim; ++d) {
+            assert(nr_m[d] > 1 && "Mesh has no cells in at least one dimension");
         }
     }
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    std::size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    KOKKOS_FUNCTION
+    size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                    FieldRHS>::numElements() const {
-        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1u;
+        Vector<size_t, Dim> cells_per_dim = nr_m - 1u;
 
-        std::size_t num_elements = 1;
-        for (std::size_t d = 0; d < Dim; ++d) {
+        size_t num_elements = 1;
+        for (size_t d = 0; d < Dim; ++d) {
             num_elements *= cells_per_dim[d];
         }
 
@@ -34,14 +39,16 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
-    std::size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    KOKKOS_FUNCTION
+    size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         numElementsInDim(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                                   FieldRHS>::index_t& dim) const {
-        return this->mesh_m.getGridsize(dim) - 1u;
+        return nr_m[dim] - 1u;
     }
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
@@ -56,13 +63,13 @@ namespace ippl {
         ndindex_t vertex_indices;
 
         // This is the number of vertices in each dimension.
-        Vector<std::size_t, Dim> vertices_per_dim = this->mesh_m.getGridsize();
+        Vector<size_t, Dim> vertices_per_dim = nr_m;
 
         // The number_of_lower_dim_vertices is the product of the number of vertices per
         // dimension, it will get divided by the current dimensions number to get the index in
         // that dimension
-        std::size_t remaining_number_of_vertices = 1;
-        for (const std::size_t num_vertices : vertices_per_dim) {
+        size_t remaining_number_of_vertices = 1;
+        for (const size_t num_vertices : vertices_per_dim) {
             remaining_number_of_vertices *= num_vertices;
         }
 
@@ -77,18 +84,18 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getMeshVertexIndex(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& vertexNDIndex) const {
-        const auto meshSizes = this->mesh_m.getGridsize();
 
         // Compute the vector to multiply the ndindex with
-        ippl::Vector<std::size_t, Dim> vec(1);
-        for (std::size_t d = 1; d < dim; ++d) {
-            for (std::size_t d2 = d; d2 < Dim; ++d2) {
-                vec[d2] *= meshSizes[d - 1];
+        ippl::Vector<size_t, Dim> vec(1);
+        for (size_t d = 1; d < dim; ++d) {
+            for (size_t d2 = d; d2 < Dim; ++d2) {
+                vec[d2] *= nr_m[d - 1];
             }
         }
 
@@ -99,6 +106,7 @@ namespace ippl {
     // implementation of function to retrieve the index of an element in each dimension
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::ndindex_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
@@ -112,14 +120,14 @@ namespace ippl {
         ndindex_t element_nd_index;
 
         // This is the number of cells in each dimension. It is one less than the number of
-        // vertices in each dimension, which is returned by Mesh::getGridsize().
-        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1;
+        // vertices in each dimension, which is in nr_m (mesh.getGridsize()).
+        Vector<size_t, Dim> cells_per_dim = nr_m - 1;
 
         // The number_of_lower_dim_cells is the product of all the number of cells per
         // dimension, it will get divided by the current dimension's size to get the index in
         // that dimension
-        std::size_t remaining_number_of_cells = 1;
-        for (const std::size_t num_cells : cells_per_dim) {
+        size_t remaining_number_of_cells = 1;
+        for (const size_t num_cells : cells_per_dim) {
             remaining_number_of_cells *= num_cells;
         }
 
@@ -135,6 +143,7 @@ namespace ippl {
     // implementation of function to retrieve the global index of an element given the ndindex
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::index_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
@@ -145,9 +154,9 @@ namespace ippl {
 
         // This is the number of cells in each dimension. It is one less than the number of
         // vertices in each dimension, which is returned by Mesh::getGridsize().
-        Vector<std::size_t, Dim> cells_per_dim = this->mesh_m.getGridsize() - 1;
+        Vector<size_t, Dim> cells_per_dim = nr_m - 1;
 
-        std::size_t remaining_number_of_cells = 1;
+        size_t remaining_number_of_cells = 1;
 
         for (unsigned int d = 0; d < Dim; ++d) {
             element_index += ndindex[d] * remaining_number_of_cells;
@@ -159,17 +168,18 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::mesh_element_vertex_index_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexIndices(
             const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& element_nd_index) const {
-        const Vector<std::size_t, Dim> num_vertices = this->mesh_m.getGridsize();
+        const Vector<size_t, Dim> num_vertices = nr_m;
 
-        std::size_t smallest_vertex_index = 0;
+        size_t smallest_vertex_index = 0;
         for (int d = Dim - 1; d >= 0; --d) {
-            std::size_t temp_index = element_nd_index[d];
+            size_t temp_index = element_nd_index[d];
             for (int i = d; i >= 1; --i) {
                 temp_index *= num_vertices[i];
             }
@@ -196,10 +206,10 @@ namespace ippl {
         ...
         */
 
-        for (std::size_t d = 1; d < Dim; ++d) {
-            for (std::size_t i = 0; i < static_cast<unsigned>(1 << d); ++i) {
-                std::size_t size = 1;
-                for (std::size_t j = 0; j < d; ++j) {
+        for (size_t d = 1; d < Dim; ++d) {
+            for (size_t i = 0; i < static_cast<unsigned>(1 << d); ++i) {
+                size_t size = 1;
+                for (size_t j = 0; j < d; ++j) {
                     size *= num_vertices[j];
                 }
                 vertex_indices[i + (1 << d)] = vertex_indices[i] + size;
@@ -211,6 +221,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::mesh_element_vertex_ndindex_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
@@ -239,9 +250,9 @@ namespace ippl {
         // vertex_nd_indices[7] = vertex_nd_indices[3];
         // vertex_nd_indices[7][2] += 1;
 
-        for (std::size_t i = 0; i < (1 << Dim); ++i) {
+        for (size_t i = 0; i < (1 << Dim); ++i) {
             vertex_nd_indices[i] = smallest_vertex_nd_index;
-            for (std::size_t j = 0; j < Dim; ++j) {
+            for (size_t j = 0; j < Dim; ++j) {
                 vertex_nd_indices[i][j] += (i >> j) & 1;
             }
         }
@@ -251,6 +262,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION
     typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
                                 FieldRHS>::mesh_element_vertex_point_vec_t
     FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
@@ -264,14 +276,13 @@ namespace ippl {
             this->getElementMeshVertexNDIndices(elementNDIndex);
 
         // get the coordinates of the vertices of this element
-        for (std::size_t i = 0; i < vertex_nd_indices.dim; ++i) {
+        for (size_t i = 0; i < vertex_nd_indices.dim; ++i) {
             NDIndex<Dim> temp_ndindex;
-            for (std::size_t d = 0; d < Dim; ++d) {
+            for (size_t d = 0; d < Dim; ++d) {
                 temp_ndindex[d] = Index(vertex_nd_indices[i][d], vertex_nd_indices[i][d]);
+                vertex_points[i][d] = (temp_ndindex[d].first() * this->hr_m[d]) + this->origin_m[d];
             }
-            vertex_points[i] = this->mesh_m.getVertexPosition(temp_ndindex);
         }
-
         return vertex_points;
     }
 

@@ -5,7 +5,7 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::GaussJacobiQuadrature(
         const ElementType& ref_element, const T& alpha, const T& beta,
-        const std::size_t& max_newton_iterations, const std::size_t& min_newton_iterations)
+        const size_t& max_newton_iterations, const size_t& min_newton_iterations)
         : Quadrature<T, NumNodes1D, ElementType>(ref_element)
         , alpha_m(alpha)
         , beta_m(beta)
@@ -32,7 +32,7 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getChebyshevNodes(
-        const std::size_t& i) const {
+        const size_t& i) const {
         return -Kokkos::cos((2.0 * static_cast<scalar_t>(i) + 1.0) * Kokkos::numbers::pi_v<scalar_t>
                             / (2.0 * NumNodes1D));
     }
@@ -40,7 +40,7 @@ namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
     typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
     GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getLehrFEMInitialGuess(
-        const std::size_t& i,
+        const size_t& i,
         const Vector<GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t, NumNodes1D>&
             integration_nodes) const {
         const scalar_t alpha = this->alpha_m;
@@ -122,20 +122,20 @@ namespace ippl {
 
         // Compute the root of the Jacobi polynomial
 
-        for (std::size_t i = 0; i < NumNodes1D; ++i) {
+        for (size_t i = 0; i < NumNodes1D; ++i) {
             // initial guess depending on which root we are computing
             if (initial_guess_type == InitialGuessType::LehrFEM) {
                 z = this->getLehrFEMInitialGuess(i, integration_nodes);
             } else if (initial_guess_type == InitialGuessType::Chebyshev) {
                 z = -this->getChebyshevNodes(i);
             } else {
-                throw std::runtime_error("Unknown initial guess type");
+                throw IpplException("GaussJacobiQuadrature::computeNodesAndWeights", "Unknown initial guess type");
             }
 
             // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << " with "
             //           << initial_guess_type << std::endl;
 
-            std::size_t its = 1;
+            size_t its = 1;
             do {
                 // refinement by Newton's method (from LehrFEM++)
                 temp = 2.0 + alfbet;
@@ -144,7 +144,7 @@ namespace ippl {
                 // alpha * beta = 0 or -1
                 p1 = (alpha - beta + temp * z) / 2.0;
                 p2 = 1.0;
-                for (std::size_t j = 2; j <= NumNodes1D; ++j) {
+                for (size_t j = 2; j <= NumNodes1D; ++j) {
                     p3   = p2;
                     p2   = p1;
                     temp = 2 * j + alfbet;

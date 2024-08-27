@@ -77,6 +77,10 @@ namespace ippl {
                                             FieldRHS>::mesh_element_vertex_point_vec_t
             mesh_element_vertex_point_vec_t;
 
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+                                            FieldRHS>::mesh_element_vertex_ndindex_vec_t
+            mesh_element_vertex_ndindex_vec_t;
+
         // Field layout type for domain decomposition info
         typedef FieldLayout<Dim> Layout_t;
 
@@ -110,31 +114,33 @@ namespace ippl {
         /**
          * @brief Get the number of global degrees of freedom in the space
          *
-         * @return std::size_t - unsigned integer number of global degrees of freedom
+         * @return size_t - unsigned integer number of global degrees of freedom
          */
-        std::size_t numGlobalDOFs() const override;
+        KOKKOS_FUNCTION size_t numGlobalDOFs() const override;
 
         /**
          * @brief Get the elements local DOF from the element index and global DOF
          * index
          *
-         * @param elementIndex index_t (std::size_t) - The index of the element
-         * @param globalDOFIndex index_t (std::size_t) - The global DOF index
+         * @param elementIndex index_t (size_t) - The index of the element
+         * @param globalDOFIndex index_t (size_t) - The global DOF index
          *
-         * @return index_t (std::size_t) - The local DOF index
+         * @return index_t (size_t) - The local DOF index
          */
-        index_t getLocalDOFIndex(const index_t& elementIndex,
+        /*
+        KOKKOS_FUNCTION index_t getLocalDOFIndex(const index_t& elementIndex,
                                  const index_t& globalDOFIndex) const override;
+        */
 
         /**
          * @brief Get the global DOF index from the element index and local DOF
          *
-         * @param elementIndex index_t (std::size_t) - The index of the element
-         * @param localDOFIndex index_t (std::size_t) - The local DOF index
+         * @param elementIndex index_t (size_t) - The index of the element
+         * @param localDOFIndex index_t (size_t) - The local DOF index
          *
-         * @return index_t (std::size_t) - The global DOF index
+         * @return index_t (size_t) - The global DOF index
          */
-        index_t getGlobalDOFIndex(const index_t& elementIndex,
+        KOKKOS_FUNCTION index_t getGlobalDOFIndex(const index_t& elementIndex,
                                   const index_t& localDOFIndex) const override;
 
         /**
@@ -144,26 +150,26 @@ namespace ippl {
          *
          * @return Vector<index_t, NumElementDOFs> - The local DOF indices
          */
-        Vector<index_t, numElementDOFs> getLocalDOFIndices() const override;
+        KOKKOS_FUNCTION Vector<index_t, numElementDOFs> getLocalDOFIndices() const override;
 
         /**
          * @brief Get the global DOF indices (vector of global DOF indices) of an element
          *
-         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param elementIndex index_t (size_t) - The index of the element
          *
          * @return Vector<index_t, NumElementDOFs> - The global DOF indices
          */
-        Vector<index_t, numElementDOFs> getGlobalDOFIndices(
+        KOKKOS_FUNCTION Vector<index_t, numElementDOFs> getGlobalDOFIndices(
             const index_t& element_index) const override;
 
         /**
          * @brief Get the global DOF NDIndices (vector of global DOF NDIndices) of an element
          *
-         * @param elementIndex index_t (std::size_t) - The index of the element
+         * @param elementIndex index_t (size_t) - The index of the element
          *
          * @return Vector<ndindex_t, NumElementDOFs> - The global DOF NDIndices
          */
-        Vector<ndindex_t, numElementDOFs> getGlobalDOFNDIndices(
+        KOKKOS_FUNCTION Vector<ndindex_t, numElementDOFs> getGlobalDOFNDIndices(
             const index_t& element_index) const override;
 
         ///////////////////////////////////////////////////////////////////////
@@ -174,25 +180,25 @@ namespace ippl {
          * @brief Evaluate the shape function of a local degree of freedom at a given point in the
          * reference element
          *
-         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localDOF index_t (size_t) - The local degree of freedom index
          * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
          *
          * @return T - The value of the shape function at the given point
          */
-        T evaluateRefElementShapeFunction(const index_t& localDOF,
+        KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const index_t& localDOF,
                                           const point_t& localPoint) const override;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
          * given point in the reference element
          *
-         * @param localDOF index_t (std::size_t) - The local degree of freedom index
+         * @param localDOF index_t (size_t) - The local degree of freedom index
          * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
          *
          * @return gradient_vec_t (Vector<T, Dim>) - The gradient of the shape function at the given
          * point
          */
-        gradient_vec_t evaluateRefElementShapeFunctionGradient(
+        KOKKOS_FUNCTION gradient_vec_t evaluateRefElementShapeFunctionGradient(
             const index_t& localDOF, const point_t& localPoint) const override;
 
         ///////////////////////////////////////////////////////////////////////
@@ -214,7 +220,8 @@ namespace ippl {
                                                            FieldRHS>::numElementDOFs>&)>&
                 evalFunction) const override;
 
-        T evalFunc(const std::function<T(const point_t&)>& f, const T absDetDPhi,
+        KOKKOS_FUNCTION
+        T evalFunc(const T absDetDPhi,
                    const index_t elementIndex, const index_t& i, const point_t& q_k,
                    const Vector<T, numElementDOFs>& basis_q) const;
 
@@ -226,8 +233,7 @@ namespace ippl {
          *
          * @return FieldRHS - The RHS field containing b
          */
-        void evaluateLoadVector(FieldRHS& rhs_field,
-                                const std::function<T(const point_t&)>& f) const override;        
+        void evaluateLoadVector(FieldRHS& rhs_field) const override;        
 
     private:        
         /**
@@ -238,9 +244,9 @@ namespace ippl {
          * @return true - If the DOF is on the boundary
          * @return false - If the DOF is not on the boundary
          */
-        bool isDOFOnBoundary(const ndindex_t& ndindex) const {
+        KOKKOS_FUNCTION bool isDOFOnBoundary(const ndindex_t& ndindex) const {
             for (index_t d = 0; d < Dim; ++d) {
-                if (ndindex[d] <= 0 || ndindex[d] >= this->mesh_m.getGridsize(d) - 1) {
+                if (ndindex[d] <= 0 || ndindex[d] >= this->nr_m[d] - 1) {
                     return true;
                 }
             }
@@ -248,7 +254,6 @@ namespace ippl {
         }
 
         Kokkos::View<size_t*> elementIndices;
-        std::vector<size_t> myelements;
     };
 
 }  // namespace ippl

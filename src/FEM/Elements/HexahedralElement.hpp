@@ -1,5 +1,6 @@
 namespace ippl {
     template <typename T>
+    KOKKOS_FUNCTION
     typename HexahedralElement<T>::mesh_element_vertex_point_vec_t
     HexahedralElement<T>::getLocalVertices() const {
         HexahedralElement::mesh_element_vertex_point_vec_t vertices = {
@@ -10,6 +11,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename HexahedralElement<T>::diag_matrix_vec_t
     HexahedralElement<T>::getTransformationJacobian(
         const HexahedralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
@@ -23,6 +25,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename HexahedralElement<T>::diag_matrix_vec_t
     HexahedralElement<T>::getInverseTransformationJacobian(
         const HexahedralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {

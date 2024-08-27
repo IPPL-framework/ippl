@@ -34,7 +34,7 @@ namespace ippl {
          *
          * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, Dim>, NumVertices>)
          */
-        virtual mesh_element_vertex_point_vec_t getLocalVertices() const = 0;
+        KOKKOS_FUNCTION virtual mesh_element_vertex_point_vec_t getLocalVertices() const = 0;
 
         /**
          * @brief Transforms a point from global to local coordinates.
@@ -45,7 +45,7 @@ namespace ippl {
          *
          * @return point_t
          */
-        point_t globalToLocal(const mesh_element_vertex_point_vec_t&, const point_t&) const;
+        KOKKOS_FUNCTION point_t globalToLocal(const mesh_element_vertex_point_vec_t&, const point_t&) const;
 
         /**
          * @brief Transforms a point from local to global coordinates.
@@ -61,7 +61,7 @@ namespace ippl {
          *
          * @return point_t
          */
-        point_t localToGlobal(const mesh_element_vertex_point_vec_t& global_vertices,
+        KOKKOS_FUNCTION point_t localToGlobal(const mesh_element_vertex_point_vec_t& global_vertices,
                               const point_t& point) const;
 
         /**
@@ -72,7 +72,7 @@ namespace ippl {
          *
          * @return T - The determinant of the transformation Jacobian
          */
-        T getDeterminantOfTransformationJacobian(
+        KOKKOS_FUNCTION T getDeterminantOfTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const;
 
         /**
@@ -84,7 +84,7 @@ namespace ippl {
          * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
          * of the inverse transpose Jacobian matrix
          */
-        diag_matrix_vec_t getInverseTransposeTransformationJacobian(
+        KOKKOS_FUNCTION diag_matrix_vec_t getInverseTransposeTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const;
 
         /**
@@ -95,7 +95,7 @@ namespace ippl {
          * @return boolean - Returns true when the point is inside the reference element or on the
          * boundary. Returns false else
          */
-        bool isPointInRefElement(const Vector<T, Dim>& point) const;
+        KOKKOS_FUNCTION bool isPointInRefElement(const Vector<T, Dim>& point) const;
 
     protected:
         /**
@@ -107,7 +107,7 @@ namespace ippl {
          * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
          * of the Jacobian matrix
          */
-        virtual diag_matrix_vec_t getTransformationJacobian(
+        KOKKOS_FUNCTION virtual diag_matrix_vec_t getTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
 
         /**
@@ -120,7 +120,7 @@ namespace ippl {
          * @return diag_matrix_vec_t (Vector<T, Dim>) - A vector representing the diagonal elements
          * of the inverse Jacobian matrix
          */
-        virtual diag_matrix_vec_t getInverseTransformationJacobian(
+        KOKKOS_FUNCTION virtual diag_matrix_vec_t getInverseTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const = 0;
     };
 

@@ -5,10 +5,9 @@
 #define IPPL_QUADRATURE_H
 
 #include <cmath>
-
 #include "Types/Vector.h"
-
 #include "FEM/Elements/Element.h"
+#include "Utility/IpplException.h"
 
 // own power function since Kokkos::pow is not constexpr
 template <typename T>
@@ -54,14 +53,14 @@ namespace ippl {
          *
          * @return unsigned - order
          */
-        std::size_t getOrder() const;
+        size_t getOrder() const;
 
         /**
          * @brief Returns the degree of exactness of the quadrature rule.
          *
          * @return unsigned - degree
          */
-        std::size_t getDegree() const;
+        size_t getDegree() const;
 
         /**
          * @brief Get the quadrature weights for the reference element.

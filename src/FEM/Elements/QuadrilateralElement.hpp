@@ -1,6 +1,7 @@
 
 namespace ippl {
     template <typename T>
+    KOKKOS_FUNCTION
     typename QuadrilateralElement<T>::mesh_element_vertex_point_vec_t
     QuadrilateralElement<T>::getLocalVertices() const {
         QuadrilateralElement::mesh_element_vertex_point_vec_t vertices = {
@@ -10,6 +11,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename QuadrilateralElement<T>::diag_matrix_vec_t
     QuadrilateralElement<T>::getTransformationJacobian(
         const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
@@ -22,6 +24,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename QuadrilateralElement<T>::diag_matrix_vec_t
     QuadrilateralElement<T>::getInverseTransformationJacobian(
         const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {

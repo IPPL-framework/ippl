@@ -5,12 +5,12 @@ namespace ippl {
         : ref_element_m(ref_element) {}
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    std::size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {
+    size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {
         return this->degree_m + 1;
     }
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    std::size_t Quadrature<T, NumNodes1D, ElementType>::getDegree() const {
+    size_t Quadrature<T, NumNodes1D, ElementType>::getDegree() const {
         return this->degree_m;
     }
 

@@ -2,6 +2,7 @@
 namespace ippl {
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename EdgeElement<T>::mesh_element_vertex_point_vec_t EdgeElement<T>::getLocalVertices()
         const {
         EdgeElement::mesh_element_vertex_point_vec_t vertices;
@@ -11,6 +12,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getTransformationJacobian(
         const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         EdgeElement::diag_matrix_vec_t jacobian;
@@ -21,6 +23,7 @@ namespace ippl {
     }
 
     template <typename T>
+    KOKKOS_FUNCTION
     typename EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getInverseTransformationJacobian(
         const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         EdgeElement::diag_matrix_vec_t inv_jacobian;

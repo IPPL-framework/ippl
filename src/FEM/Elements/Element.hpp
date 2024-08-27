@@ -1,5 +1,6 @@
 namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
+    KOKKOS_FUNCTION
     typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::globalToLocal(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& global_point) const {
@@ -12,6 +13,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
+    KOKKOS_FUNCTION
     typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::localToGlobal(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& local_point) const {
@@ -24,6 +26,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
+    KOKKOS_FUNCTION
     T Element<T, Dim, NumVertices>::getDeterminantOfTransformationJacobian(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
         const {
@@ -39,6 +42,7 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
+    KOKKOS_FUNCTION
     typename Element<T, Dim, NumVertices>::diag_matrix_vec_t
     Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
         const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
@@ -48,10 +52,11 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, unsigned NumVertices>
+    KOKKOS_FUNCTION
     bool Element<T, Dim, NumVertices>::isPointInRefElement(const Vector<T, Dim>& point) const {
         // check if the local coordinates are inside the reference element
 
-        for (std::size_t d = 0; d < Dim; d++) {
+        for (size_t d = 0; d < Dim; d++) {
             if (point[d] > 1.0 || point[d] < 0.0) {
                 // The global coordinates are outside of the support.
                 return false;

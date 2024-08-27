@@ -40,8 +40,8 @@ namespace ippl {
          * @param min_newton_iterations minimum number of Newton iterations (default 1)
          */
         GaussJacobiQuadrature(const ElementType& ref_element, const T& alpha, const T& beta,
-                              const std::size_t& max_newton_itersations = 10,
-                              const std::size_t& min_newton_iterations  = 1);
+                              const size_t& max_newton_itersations = 10,
+                              const size_t& min_newton_iterations  = 1);
 
         /**
          * Computes the quadrature nodes and weights and stores them in the
@@ -56,7 +56,7 @@ namespace ippl {
          *
          * @return scalar_t - i-th Chebyshev node
          */
-        scalar_t getChebyshevNodes(const std::size_t& i) const;  // FIXME maybe move somewhere else?
+        scalar_t getChebyshevNodes(const size_t& i) const;  // FIXME maybe move somewhere else?
 
     private:
         /**
@@ -69,13 +69,13 @@ namespace ippl {
          * @return scalar_t - initial guess
          */
         scalar_t getLehrFEMInitialGuess(
-            const std::size_t& i, const Vector<scalar_t, NumNodes1D>& integration_nodes) const;
+            const size_t& i, const Vector<scalar_t, NumNodes1D>& integration_nodes) const;
 
         const T alpha_m;
         const T beta_m;
 
-        const std::size_t max_newton_iterations_m;
-        const std::size_t min_newton_iterations_m;
+        const size_t max_newton_iterations_m;
+        const size_t min_newton_iterations_m;
     };
 
     /**
@@ -97,8 +97,8 @@ namespace ippl {
          * @param min_newton_iterations minimum number of Newton iterations (default 1)
          */
         GaussLegendreQuadrature(const ElementType& ref_element,
-                                const std::size_t& max_newton_itersations = 10,
-                                const std::size_t& min_newton_iterations  = 1)
+                                const size_t& max_newton_itersations = 10,
+                                const size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
                 ref_element, 0.0, 0.0, max_newton_itersations, min_newton_iterations) {}
     };
@@ -122,8 +122,8 @@ namespace ippl {
          * @param min_newton_iterations minimum number of Newton iterations (default 1)
          */
         ChebyshevGaussQuadrature(const ElementType& ref_element,
-                                 const std::size_t& max_newton_itersations = 10,
-                                 const std::size_t& min_newton_iterations  = 1)
+                                 const size_t& max_newton_itersations = 10,
+                                 const size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
                 ref_element, -0.5, -0.5, max_newton_itersations, min_newton_iterations) {}
     };

@@ -25,7 +25,7 @@ namespace ippl {
          *
          * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, 2>, 4>)
          */
-        mesh_element_vertex_point_vec_t getLocalVertices() const override;
+        KOKKOS_FUNCTION mesh_element_vertex_point_vec_t getLocalVertices() const override;
 
         /**
          * @brief Returns the Jacobian of the transformation matrix.
@@ -36,7 +36,7 @@ namespace ippl {
          * @return diag_matrix_vec_t (Vector<T, 2>) - A vector representing the diagonal elements of
          * the Jacobian matrix
          */
-        diag_matrix_vec_t getTransformationJacobian(
+        KOKKOS_FUNCTION diag_matrix_vec_t getTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const override;
 
         /**
@@ -48,7 +48,7 @@ namespace ippl {
          * @return diag_matrix_vec_t (Vector<T, 2>) - A vector representing the diagonal elements of
          * the inverse Jacobian matrix
          */
-        diag_matrix_vec_t getInverseTransformationJacobian(
+        KOKKOS_FUNCTION diag_matrix_vec_t getInverseTransformationJacobian(
             const mesh_element_vertex_point_vec_t& global_vertices) const override;
     };
 }  // namespace ippl
