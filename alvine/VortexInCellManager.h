@@ -346,6 +346,10 @@ public:
         auto Ay = fc->getStreamFieldy().getView();
         auto Az = fc->getStreamFieldz().getView();
 
+        fc->getStreamFieldx().fillHalo();
+        fc->getStreamFieldy().fillHalo();
+        fc->getStreamFieldz().fillHalo();
+
         Kokkos::parallel_for(
             "Assign rhs", ippl::getRangePolicy(view_u, nghost_u),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
@@ -357,8 +361,8 @@ public:
                     (Ax(i, j, k + 1) - Ax(i, j, k - 1)) / (2 * this->params.hr(2))
                         - (Az(i + 1, j, k) - Az(i - 1, j, k)) / (2 * this->params.hr(0)),
                     // uz
-                    (Ay(i + 1, j, k) - Ay(i - 1, j, k)) / (2 * this->params.hr(0)),
-                    -(Az(i, j + 1, k) - Az(i, j - 1, k)) / (2 * this->params.hr(1))};
+                    (Ay(i + 1, j, k) - Ay(i - 1, j, k)) / (2 * this->params.hr(0))
+                    -(Ax(i, j + 1, k) - Ax(i, j - 1, k)) / (2 * this->params.hr(1))};
             });
 
         // Vortex stretching calculation
