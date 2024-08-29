@@ -4,7 +4,7 @@
 template <typename T, unsigned Dim>
 struct SimulationParameters {
     SimulationParameters(unsigned nt_, Vector_t<int, Dim>& nr_, std::string& solver_, double lbt_, double visc_,
-                         Vector_t<T, Dim> rmin_ = 0.0, Vector_t<T, Dim> rmax_ = 10.0,
+                         Vector_t<T, Dim> rmin_ = 0.0, Vector_t<T, Dim> rmax_ = 20.0,
                          Vector_t<T, Dim> origin_ = 0.0)
         : nt(nt_)
         , nr(nr_)

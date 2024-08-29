@@ -248,13 +248,18 @@ public:
 
         std::shared_ptr<ParticleContainer<T, Dim>> pc = this->getParticleContainer();
 
-        Circle<T, Dim> circ(2.5);
+        //Circle<T, Dim> circ(2.5);
+
+        VortexRing<T> vortex(4, 3.75, 0.6);
+        VortexRingScalar<T> vortexScalar(4, 3.75, 0.6);
+
         Vector_t<T, Dim> center = 0.5 * (this->params.rmax - this->params.rmin);
         ShiftTransformation<T, Dim> shift_to_center(-center);
-        circ.applyTransformation(shift_to_center);
+        //circ.applyTransformation(shift_to_center);
+        vortexScalar.applyTransformation(shift_to_center);
 
-        FilteredDistribution<T, Dim> filteredDist(circ, this->params.rmin, this->params.rmax,
-                                                  new GridPlacement<T, Dim>(this->params.nr));
+        FilteredDistribution<T, Dim> filteredDist(vortexScalar, this->params.rmin, this->params.rmax,
+                                                  new GridPlacement<T, Dim>(this->params.nr), 1e-4);
         this->params.np = filteredDist.getNumParticles();
 
         view_type particle_view = filteredDist.getParticles();
@@ -263,18 +268,11 @@ public:
 
         std::cout << this->params.np << std::endl;
 
-        for (int i = 0; i < 5; i++) {
-            Circle<T, Dim> added_circle((i + 1) * 0.5);
-            added_circle.applyTransformation(shift_to_center);
-            circ += added_circle;
-        }
 
         Kokkos::parallel_for(
             "AddParticles", this->params.np, KOKKOS_LAMBDA(const int& i) {
                 pc->R(i)        = particle_view(i);
-                pc->omega(i)[0] = 0;
-                pc->omega(i)[1] = 0;
-                pc->omega(i)[2] = circ.evaluate(pc->R(i));
+                pc->omega(i) = vortex.evaluate(pc->R(i) - center);
             });
 
         Kokkos::fence();

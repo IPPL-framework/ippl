@@ -49,6 +49,60 @@ public:
     }
 };
 
+template<typename T>
+class VortexRing : public CompositeDistributionFunction<ippl::Vector<T, 3>, ippl::Vector<T, 3> > {
+
+public:
+    VortexRing(T R, T Gamma_0, T a) : CompositeDistributionFunction<ippl::Vector<T, 3>, ippl::Vector<T, 3> >(
+        [R, Gamma_0, a](ippl::Vector<T, Dim> x) -> ippl::Vector<T, 3> {
+
+            T sigma = std::abs(std::sqrt(x[0] * x[0] + x[1] * x[1]) - R);
+
+            T r = std::sqrt(sigma * sigma + x[2] * x[2]);
+            T omega_0 = Gamma_0/(3.14159 * a * a) * std::exp(-r*r/(a*a));
+
+            T factor = std::cos(std::atan(x[1] / x[0])) * R / std::sqrt(x[0] * x[0] + x[1]*x[1]);
+
+            T b_x = factor * x[0];
+            T b_y = factor * x[1];
+            
+            T s_x = x[0] - b_x;
+            T s_y = x[1] - b_y;
+            T s_z = x[2];
+
+            T theta = std::acos(s_z / std::sqrt(s_x * s_x + s_y * s_y + s_z * s_z));
+
+            T phi = std::acos(s_x / std::sqrt(s_x * s_x + s_y * s_y));
+            
+            if (s_y < 0) {
+              phi = -phi;
+            }
+            
+
+            return  ippl::Vector<T,3>({omega_0 *std::sin(theta) * std::cos(phi), omega_0 *std::sin(theta) * std::sin(phi), omega_0 *std::cos(theta)});
+
+        }) {}
+};
+
+
+template<typename T>
+class VortexRingScalar : public CompositeDistributionFunction<ippl::Vector<T, 3>, T > {
+
+public:
+    VortexRingScalar(T R, T Gamma_0, T a) : CompositeDistributionFunction<ippl::Vector<T, 3>, T>(
+        [R, Gamma_0, a](ippl::Vector<T, Dim> x) -> T {
+
+            T sigma = std::abs(std::sqrt(x[0] * x[0] + x[1] * x[1]) - R);
+
+            T r = std::sqrt(sigma * sigma + x[2] * x[2]);
+            T omega_0 = Gamma_0/(3.14159 * a * a) * std::exp(-r*r/(a*a));
+
+            return omega_0;
+
+        }) {}
+};
+
+
 template<typename T, unsigned Dim>
 class Circle : public CompositeDistributionFunction<ippl::Vector<T, Dim>, T> {
     T radius;
