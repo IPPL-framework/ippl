@@ -511,12 +511,13 @@ namespace ippl {
         // check whether the mesh spacing has changed with respect to the old one
         // if yes, update and set green flag to true
         bool green = false;
+        /*
         for (unsigned int i = 0; i < Dim; ++i) {
             if (hr_m[i] != mesh_mp->getMeshSpacing(i)) {
                 hr_m[i] = mesh_mp->getMeshSpacing(i);
                 green   = true;
             }
-        }
+        }*/
 
         // set mesh spacing on the other grids again
         mesh2_m->setMeshSpacing(hr_m);
@@ -624,6 +625,9 @@ namespace ippl {
         // minus sign since we are solving laplace(phi) = -rho
         rho2tr_m = -rho2tr_m * grntr_m;
 
+        // define pi
+        const scalar_type pi  = Kokkos::numbers::pi_v<scalar_type>;
+
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
             // start a timer
@@ -644,7 +648,7 @@ namespace ippl {
             for (unsigned int i = 0; i < Dim; ++i) {
                 switch (alg) {
                     case Algorithm::HOCKNEY:
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi);
                         break;
                     case Algorithm::VICO:
                     case Algorithm::BIHARMONIC:
@@ -759,7 +763,6 @@ namespace ippl {
             auto view_g = temp_m.getView();
 
             // define some constants
-            const scalar_type pi          = Kokkos::numbers::pi_v<scalar_type>;
             const Kokkos::complex<Trhs> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
@@ -802,7 +805,7 @@ namespace ippl {
                 for (unsigned int i = 0; i < Dim; ++i) {
                     switch (alg) {
                         case Algorithm::HOCKNEY:
-                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi);
                             break;
                         case Algorithm::VICO:
                         case Algorithm::BIHARMONIC:
@@ -909,9 +912,6 @@ namespace ippl {
             // use temp_m as a temporary complex field
             auto view_g = temp_m.getView();
 
-            // define some constants
-            const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
-
             // define some member variables in local scope for the parallel_for
             vector_type hsize  = hr_m;
             Vector<int, Dim> N = nr_m;
@@ -960,7 +960,7 @@ namespace ippl {
                     for (unsigned int i = 0; i < Dim; ++i) {
                         switch (alg) {
                             case Algorithm::HOCKNEY:
-                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi);
                                 break;
                             case Algorithm::VICO:
                             case Algorithm::BIHARMONIC:
