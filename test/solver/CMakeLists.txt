@@ -96,6 +96,35 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable(TestCode_qualifier TestCode_qualifier.cpp)
+    target_link_libraries(
+        TestCode_qualifier
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
+    add_executable(TestCode_qualifier_incode TestCode_qualifier_incode.cpp)
+    target_link_libraries(
+        TestCode_qualifier_incode
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
+    add_executable(TestCode_final TestCode_final.cpp)
+    target_link_libraries(
+        TestCode_final
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
+    add_executable(TestCode_CRTP TestCode_CRTP.cpp)
+    target_link_libraries(
+        TestCode_CRTP
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+
     #add_executable(TestFEMPoissonSolver_scaling TestFEMPoissonSolver_scaling.cpp)
     #target_link_libraries(
     #    TestFEMPoissonSolver_scaling

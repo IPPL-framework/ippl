@@ -1,3 +1,4 @@
+#include <variant>
 #include <Kokkos_Core.hpp>
 #include <Ippl.h>
 
@@ -28,21 +29,31 @@ class Concrete2 : public Abstract {
 };
 
 /////////////////////////////////////////////////////////
-template <typename T>
+
 class ClassA {
     public:
-        T concrete;
+        Abstract* ptr_concrete;
 
-        ClassA(T& x) : concrete(x) {}
+        ClassA(Abstract& x) : ptr_concrete(&x) {}
 
         void execute(int N) {
-            printf("Test: call function \n");
+            printf("Test, concrete1 function \n");
 
             Kokkos::parallel_for("ClassA::execute", Kokkos::RangePolicy<>(0, N), KOKKOS_CLASS_LAMBDA(int i) {
                 printf("before call to function\n");
-                concrete.function();
+                ptr_concrete->function();
                 printf("after call to function\n");
-            });
+           });
+        }
+
+        void execute(int N, Concrete2& me) {
+            printf("Test, concrete2 function \n");
+
+            Kokkos::parallel_for("ClassA::execute", Kokkos::RangePolicy<>(0, N), KOKKOS_CLASS_LAMBDA(int i) {
+                printf("before call to function\n");
+                ptr_concrete->Concrete2::function();
+                printf("after call to function\n");
+           });
         }
  };
 
@@ -54,11 +65,11 @@ int main(int argc, char* argv[]) {
         Concrete1 x1;
         Concrete2 x2;
         
-        ClassA<Concrete1> classA1(x1);
-        ClassA<Concrete2> classA2(x2);
+        ClassA classA1(x1);
+        ClassA classA2(x2);
         
-        classA1.execute(1);
-        classA2.execute(1);
+        classA1.execute(1, x1);
+        classA2.execute(1, x2);
     }
 
     Kokkos::finalize();
