@@ -1,11 +1,10 @@
 
 namespace ippl {
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         FiniteElementSpace(const Mesh<T, Dim>& mesh,
-                           const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType,
-                                                    FieldLHS, FieldRHS>::ElementType& ref_element,
+                           const ElementType& ref_element,
                            const QuadratureType& quadrature)
         : mesh_m(mesh)
         , ref_element_m(ref_element)
@@ -22,10 +21,10 @@ namespace ippl {
         }
     }
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    size_t FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                    FieldRHS>::numElements() const {
         Vector<size_t, Dim> cells_per_dim = nr_m - 1u;
 
@@ -37,23 +36,23 @@ namespace ippl {
         return num_elements;
     }
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    size_t FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
-        numElementsInDim(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                                                  FieldRHS>::index_t& dim) const {
+    size_t FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+        numElementsInDim(const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
+                                                  FieldLHS, FieldRHS>::index_t& dim) const {
         return nr_m[dim] - 1u;
     }
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::ndindex_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         getMeshVertexNDIndex(
-            const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+            const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                      FieldRHS>::index_t& vertex_index) const {
         // Copy the vertex index to the index variable we can alter during the computation.
         index_t index = vertex_index;
@@ -82,13 +81,13 @@ namespace ippl {
         return vertex_indices;
     };
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::index_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         getMeshVertexIndex(
-            const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+            const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& vertexNDIndex) const {
 
         // Compute the vector to multiply the ndindex with
@@ -104,14 +103,14 @@ namespace ippl {
     }
 
     // implementation of function to retrieve the index of an element in each dimension
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::ndindex_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
-        getElementNDIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                                                   FieldRHS>::index_t& element_index) const {
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+        getElementNDIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
+                                                   FieldLHS, FieldRHS>::index_t& element_index) const {
         // Copy the element index to the index variable we can alter during the computation.
         index_t index = element_index;
 
@@ -141,14 +140,14 @@ namespace ippl {
     }
 
     // implementation of function to retrieve the global index of an element given the ndindex
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType, 
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::index_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
-        getElementIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                                                   FieldRHS>::ndindex_t& ndindex) const {
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+        getElementIndex(const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
+                                                 FieldLHS, FieldRHS>::ndindex_t& ndindex) const {
 
         index_t element_index = 0;
 
@@ -165,15 +164,15 @@ namespace ippl {
 
         return element_index;
     }
-
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+ 
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::mesh_element_vertex_index_vec_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexIndices(
-            const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+            const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& element_nd_index) const {
         const Vector<size_t, Dim> num_vertices = nr_m;
 
@@ -219,14 +218,14 @@ namespace ippl {
         return vertex_indices;
     }
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType, 
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
-                                FieldRHS>::mesh_element_vertex_ndindex_vec_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
+                                FieldLHS, FieldRHS>::mesh_element_vertex_ndindex_vec_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexNDIndices(
-            const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+            const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& elementNDIndex) const {
         mesh_element_vertex_ndindex_vec_t vertex_nd_indices;
 
@@ -260,14 +259,14 @@ namespace ippl {
         return vertex_nd_indices;
     }
 
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+    typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::mesh_element_vertex_point_vec_t
-    FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS, FieldRHS>::
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         getElementMeshVertexPoints(
-            const FiniteElementSpace<T, Dim, NumElementDOFs, QuadratureType, FieldLHS,
+            const FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
                                      FieldRHS>::ndindex_t& elementNDIndex) const {
         mesh_element_vertex_point_vec_t vertex_points;
 

@@ -35,8 +35,8 @@ namespace ippl {
      * @tparam FieldLHS The type of the left hand side field
      * @tparam FieldRHS The type of the right hand side field (can be the same as FieldLHS)
      */
-    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     // requires IsElement<QuadratureType>
     class FiniteElementSpace {
     public:
@@ -47,8 +47,6 @@ namespace ippl {
         static constexpr unsigned numElementVertices = calculateNumElementVertices(Dim);
 
         static constexpr unsigned numElementDOFs = NumElementDOFs;
-
-        typedef Element<T, Dim, numElementVertices> ElementType;
 
         // An unsigned integer number representing an index
         typedef size_t index_t;  // look at ippl::Index
@@ -299,8 +297,8 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
 
         const Mesh<T, Dim>& mesh_m;
-        const ElementType& ref_element_m;
         const QuadratureType& quadrature_m;
+        ElementType ref_element_m;
         Vector<int, Dim> nr_m;
         Vector<double, Dim> hr_m;
         Vector<double, Dim> origin_m;

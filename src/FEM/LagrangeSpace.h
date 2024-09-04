@@ -27,57 +27,54 @@ namespace ippl {
      * @tparam FieldLHS The type of the left hand side field
      * @tparam FieldRHS The type of the right hand side field
      */
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
-              typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     // requires IsQuadrature<QuadratureType>
     class LagrangeSpace : public FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order),
-                                                    QuadratureType, FieldLHS, FieldRHS> {
+                                                    ElementType, QuadratureType, FieldLHS, FieldRHS> {
     public:
         // The number of degrees of freedom per element
         static constexpr unsigned numElementDOFs = getLagrangeNumElementDOFs(Dim, Order);
 
         // The dimension of the mesh
         static constexpr unsigned dim =
-            FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS, FieldRHS>::dim;
+            FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::dim;
 
         // The order of the Lagrange space
         static constexpr unsigned order = Order;
 
         // The number of mesh vertices per element
         static constexpr unsigned numElementVertices =
-            FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+            FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                FieldRHS>::numElementVertices;
 
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
-                                            FieldRHS>::ElementType ElementType;
-
         // An unsigned integer number representing an index
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::index_t index_t;  // look at ippl::Index
 
         // A vector with the position of the element in the mesh in each dimension
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::ndindex_t ndindex_t;
 
         // A point in the global coordinate system
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::point_t point_t;
 
         // A gradient vector in the global coordinate system
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::gradient_vec_t gradient_vec_t;
 
         // A vector of vertex indices of the mesh
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::mesh_element_vertex_index_vec_t
             mesh_element_vertex_index_vec_t;
 
         // Vector of vertex points of the mesh
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::mesh_element_vertex_point_vec_t
             mesh_element_vertex_point_vec_t;
 
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, QuadratureType, FieldLHS,
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
                                             FieldRHS>::mesh_element_vertex_ndindex_vec_t
             mesh_element_vertex_ndindex_vec_t;
 
@@ -216,8 +213,8 @@ namespace ippl {
             const FieldLHS& field,
             const std::function<T(
                 const index_t&, const index_t&,
-                const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS,
-                                                           FieldRHS>::numElementDOFs>&)>&
+                const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                           FieldLHS, FieldRHS>::numElementDOFs>&)>&
                 evalFunction) const override;
 
         KOKKOS_FUNCTION
