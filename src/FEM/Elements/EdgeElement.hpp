@@ -17,6 +17,8 @@ namespace ippl {
         const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         EdgeElement::diag_matrix_vec_t jacobian;
 
+        printf("EdgeElement::getTransfJacobian");
+
         jacobian[0] = (global_vertices[1][0] - global_vertices[0][0]);
 
         return jacobian;

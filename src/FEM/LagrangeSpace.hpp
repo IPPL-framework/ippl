@@ -17,7 +17,7 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
         const Mesh<T, Dim>& mesh,
-        const ElementType& ref_element,
+        ElementType ref_element,
         const QuadratureType& quadrature,
         const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType,
@@ -595,6 +595,15 @@ namespace ippl {
         // start a timer
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateLoadVec: outer loop");
         IpplTimings::startTimer(outer_loop);
+
+        Kokkos::fence();
+
+        printf("after fence, before loop");
+
+        auto points = this->getElementMeshVertexPoints(this->getElementNDIndex(0));
+        printf("before loop, got points");
+        point_t val_in = this->ref_element_m.localToGlobal(points, q[0]);
+        printf("got the localtoglobal");
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),

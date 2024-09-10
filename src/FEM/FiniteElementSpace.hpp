@@ -4,7 +4,7 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         FiniteElementSpace(const Mesh<T, Dim>& mesh,
-                           const ElementType& ref_element,
+                           ElementType ref_element,
                            const QuadratureType& quadrature)
         : mesh_m(mesh)
         , ref_element_m(ref_element)
