@@ -53,6 +53,24 @@ namespace ippl {
         }
 
         /*!
+         * @brief Constructor for InverseTransformSampling class without applying domain decomposition..
+         *
+         * @param dist_ The distribution to sample from.
+         * @param rmax_ Maximum range for sampling.
+         * @param rmin_ Minimum range for sampling.
+         * @param rlayout The region layout.
+         * @param ntotal_ Total number of samples to generate.
+        */
+	template <class RegionLayout>
+        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, Vector<T, Dim> &locrmax_r, Vector<T, Dim> &locrmin_r, size_type &ntotal_r)
+        : dist_m(dist_r),
+        ntotal_m(ntotal_r){
+
+            updateBounds(rmax_r, rmin_r, locrmax_r, locrmin_r);
+
+        }
+
+        /*!
          * @brief Constructor for InverseTransformSampling class.
          *        In this method, we do not consider any domain decomposition.
          *
@@ -76,7 +94,7 @@ namespace ippl {
          * @brief Updates the sampling bounds and reinitializes internal variables.
          *
          * This method allows the user to update the minimum and maximum bounds 
-         * for the sampling process, as well as the region layout. It recalculates
+         * for the sampling process using the region layout. It recalculates
          * the cumulative distribution function (CDF) values for the new bounds and 
          * updates the internal variables to reflect these changes.
          *
@@ -88,11 +106,11 @@ namespace ippl {
          *                    of the sampling space across different ranks.
         */
         template <class RegionLayout>
-        void updateBounds(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin, RegionLayout& new_rlayout) {
-            rmax_m = new_rmax;
-            rmin_m = new_rmin;
+        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, RegionLayout& rlayout) {
+            rmax_m = rmax;
+            rmin_m = rmin;
 
-            const typename RegionLayout::host_mirror_type regions = new_rlayout.gethLocalRegions();
+            const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
             int rank = ippl::Comm->rank();
             Vector<T, Dim> nr_m, dr_m;
             for (unsigned d = 0; d < Dim; ++d) {
@@ -116,6 +134,49 @@ namespace ippl {
             }
          }
 
+        /*!
+         * @brief Updates the sampling bounds and reinitializes internal variables.
+         *
+         * This method allows the user to update the minimum and maximum bounds 
+         * for the sampling process It recalculates
+         * the cumulative distribution function (CDF) values for the new bounds and 
+         * updates the internal variables to reflect these changes.
+         *
+         * @param rmax The new maximum range for sampling. This vector defines
+         *                 the upper bounds for each dimension.
+         * @param rmin The new minimum range for sampling. This vector defines
+         *                 the lower bounds for each dimension.
+         * @param locrmax  The new local maximum range for sampling. This vector defines
+         *                 the upper bounds for each dimension for a given rank.
+         * @param locrmin  The new minimum range for sampling. This vector defines
+         *                 the lower bounds for each dimension for a given rank.
+        */
+        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, Vector<T, Dim>& locrmax, Vector<T, Dim>& locrmin) {
+            rmax_m = rmax;
+            rmin_m = rmin;
+
+	    int rank = ippl::Comm->rank();
+            Vector<T, Dim> nr_m, dr_m;
+            for (unsigned d = 0; d < Dim; ++d) {
+               nr_m[d] = dist_m.getCdf(locrmax[d], d) - dist_m.getCdf(locrmin[d], d);
+               dr_m[d] = dist_m.getCdf(rmax_m[d], d) - dist_m.getCdf(rmin_m[d], d);
+               umin_m[d] = dist_m.getCdf(locrmin[d], d);
+               umax_m[d] = dist_m.getCdf(locrmax[d], d);
+            }
+            T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
+            T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
+
+            T factor = pnr / pdr;
+            nlocal_m = (size_type)(factor * ntotal_m);
+
+            size_type nglobal = 0;
+            MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+
+            int rest = (int)(ntotal_m - nglobal);
+            if (rank < rest) {
+                ++nlocal_m;
+            }
+         }
 
 	/*!
          * @brief Updates the sampling bounds using the CDF without any domain decomposition.
