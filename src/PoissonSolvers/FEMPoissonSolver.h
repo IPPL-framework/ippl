@@ -84,7 +84,7 @@ namespace ippl {
             static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
             IpplTimings::startTimer(solve);
 
-            const Vector<std::size_t, Dim> zeroNdIndex = Vector<std::size_t, Dim>(0);
+            const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
             // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
             // on translation
@@ -102,7 +102,7 @@ namespace ippl {
 
             const auto poissonEquationEval =
                 [this, DPhiInvT, absDetDPhi](
-                    const std::size_t& i, const std::size_t& j,
+                    const size_t& i, const size_t& j,
                     const Vector<Vector<Tlhs, Dim>, this->lagrangeSpace_m.numElementDOFs>&
                         grad_b_q_k) {
                     return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
