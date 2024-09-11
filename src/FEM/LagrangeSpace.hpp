@@ -46,6 +46,8 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
+        int me = Comm->rank();
+
         Kokkos::View<size_t*> points("ComputeMapping", npoints);
         Kokkos::parallel_reduce("ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -463,12 +465,16 @@ namespace ippl {
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
         IpplTimings::startTimer(outer_loop);
 
+        m << "before Kokkos loop" << endl;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
                 const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
+
+                printf("inside kokkos loop!");
 
                 // local DOF indices
                 index_t i, j;
@@ -577,8 +583,6 @@ namespace ippl {
         const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
-        m << "get abs det phi = " << absDetDPhi << endl;
-
         // Get field data and make it atomic,
         // since it will be added to during the kokkos loop
         AtomicViewType atomic_view = field.getView();
@@ -590,20 +594,9 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
-        auto const&reference_element = this->ref_element_m;
-
         // start a timer
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateLoadVec: outer loop");
         IpplTimings::startTimer(outer_loop);
-
-        Kokkos::fence();
-
-        printf("after fence, before loop");
-
-        auto points = this->getElementMeshVertexPoints(this->getElementNDIndex(0));
-        printf("before loop, got points");
-        point_t val_in = this->ref_element_m.localToGlobal(points, q[0]);
-        printf("got the localtoglobal");
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
@@ -611,8 +604,6 @@ namespace ippl {
                 const index_t elementIndex                              = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-
-                printf("inside kokkos loop!\n");
 
                 index_t i, I;
 
@@ -631,51 +622,25 @@ namespace ippl {
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-
-                        printf("before anything \n");
-
-                        auto points = this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
-
-                        printf("got points \n");
+                        T val = sinusoidalRHSFunction<T,Dim>(this->ref_element_m.localToGlobal(
+                            this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q[k]));
                         
-                        point_t val_in = this->ref_element_m.localToGlobal(points, q[k]);
-                        
-                        printf("got val_in \n");
-
-                        T val = sinusoidalRHSFunction<T,Dim>(val_in);
-
-                        //T val = sinusoidalRHSFunction<T,Dim>(this->ref_element_m->localToGlobal(
-                        //    this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q[k]));
-                        
-                        printf("after val");
-
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
-                    printf("after contribution computation");
                     
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
                     }
 
-                    printf("before apply()");
-
                     // add the contribution of the element to the field
                     apply(atomic_view, dof_ndindex_I) += contrib;
-
-                    printf("after assign to apply");
-
                 }
         });
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalLoadV);
 
-        Kokkos::fence();
-        field.write();
-        Kokkos::fence();
-
         m << "inside evalLoadVec, end" << endl;
-
     }
 
 }  // namespace ippl

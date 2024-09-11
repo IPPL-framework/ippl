@@ -24,7 +24,7 @@ namespace ippl {
          *
          * @return mesh_element_vertex_point_vec_t (Vector<Vector<T, 3>, 8>)
          */
-        KOKKOS_FUNCTION mesh_element_vertex_point_vec_t getLocalVertices() const override;
+        KOKKOS_FUNCTION mesh_element_vertex_point_vec_t getLocalVertices() const;
 
         /**
          * @brief Returns the Jacobian of the transformation matrix.
@@ -36,7 +36,7 @@ namespace ippl {
          * the Jacobian matrix
          */
         KOKKOS_FUNCTION diag_matrix_vec_t getTransformationJacobian(
-            const mesh_element_vertex_point_vec_t& global_vertices) const override;
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
 
         /**
          * @brief Returns the inverse of the Jacobian of the transformation matrix.
@@ -48,7 +48,20 @@ namespace ippl {
          *  the inverse Jacobian matrix
          */
         KOKKOS_FUNCTION diag_matrix_vec_t getInverseTransformationJacobian(
-            const mesh_element_vertex_point_vec_t& global_vertices) const override;
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
+
+        KOKKOS_FUNCTION point_t globalToLocal(const mesh_element_vertex_point_vec_t&, const point_t&) const;
+
+        KOKKOS_FUNCTION point_t localToGlobal(const mesh_element_vertex_point_vec_t& global_vertices,
+                              const point_t& point) const;
+        
+        KOKKOS_FUNCTION T getDeterminantOfTransformationJacobian(
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
+        
+        KOKKOS_FUNCTION diag_matrix_vec_t getInverseTransposeTransformationJacobian(
+            const mesh_element_vertex_point_vec_t& global_vertices) const;
+
+        KOKKOS_FUNCTION bool isPointInRefElement(const Vector<T, 3>& point) const;
     };
 
 }  // namespace ippl

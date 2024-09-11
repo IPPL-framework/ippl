@@ -17,8 +17,6 @@ namespace ippl {
         const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
         EdgeElement::diag_matrix_vec_t jacobian;
 
-        printf("EdgeElement::getTransfJacobian");
-
         jacobian[0] = (global_vertices[1][0] - global_vertices[0][0]);
 
         return jacobian;
@@ -33,6 +31,72 @@ namespace ippl {
         inv_jacobian[0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
 
         return inv_jacobian;
+    }
+
+    template <typename T>
+    KOKKOS_FUNCTION
+    typename EdgeElement<T>::point_t EdgeElement<T>::globalToLocal(
+        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const EdgeElement<T>::point_t& global_point) const {
+        // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
+        const EdgeElement<T>::diag_matrix_vec_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
+
+        EdgeElement<T>::point_t local_point = glob2loc_matrix * (global_point - global_vertices[0]);
+
+        return local_point;
+    }
+
+    template <typename T>
+    KOKKOS_FUNCTION
+    typename EdgeElement<T>::point_t EdgeElement<T>::localToGlobal(
+        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const EdgeElement<T>::point_t& local_point) const {
+        // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
+        const EdgeElement<T>::diag_matrix_vec_t loc2glob_matrix = getTransformationJacobian(global_vertices);
+
+        EdgeElement<T>::point_t global_point = (loc2glob_matrix * local_point) + global_vertices[0];
+
+        return global_point;
+    }
+
+    template <typename T>
+    KOKKOS_FUNCTION
+    T EdgeElement<T>::getDeterminantOfTransformationJacobian(
+        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const {
+        T determinant = 1.0;
+
+        // Since the jacobian is a diagonal matrix in our case the determinant is the product of the
+        // diagonal elements
+        for (const T& jacobian_val : getTransformationJacobian(global_vertices)) {
+            determinant *= jacobian_val;
+        }
+
+        return determinant;
+    }
+
+    template <typename T>
+    KOKKOS_FUNCTION
+    typename EdgeElement<T>::diag_matrix_vec_t
+    EdgeElement<T>::getInverseTransposeTransformationJacobian(
+        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const {
+        // Simply return the inverse transformation jacobian since it is a diagonal matrix
+        return getInverseTransformationJacobian(global_vertices);
+    }
+
+    template <typename T>
+    KOKKOS_FUNCTION
+    bool EdgeElement<T>::isPointInRefElement(const Vector<T, 1>& point) const {
+        // check if the local coordinates are inside the reference element
+        for (size_t d = 0; d < 1; d++) {
+            if (point[d] > 1.0 || point[d] < 0.0) {
+                // The global coordinates are outside of the support.
+                return false;
+            }
+        }
+
+        return true;
     }
 
 }  // namespace ippl
