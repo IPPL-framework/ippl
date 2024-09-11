@@ -96,7 +96,7 @@ namespace ippl {
          * @param ref_element Reference to the reference element
          * @param quadrature Reference to the quadrature rule
          */
-        LagrangeSpace(const Mesh<T, Dim>& mesh, ElementType ref_element,
+        LagrangeSpace(const Mesh<T, Dim>& mesh, ElementType& ref_element,
                       const QuadratureType& quadrature, const Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////

@@ -78,7 +78,7 @@ namespace ippl {
          * @param ref_element The reference element object
          * @param quadrature The quadrature rule object
          */
-        FiniteElementSpace(const Mesh<T, Dim>& mesh, ElementType ref_element,
+        FiniteElementSpace(const Mesh<T, Dim>& mesh, ElementType& ref_element,
                            const QuadratureType& quadrature);
 
         ///////////////////////////////////////////////////////////////////////

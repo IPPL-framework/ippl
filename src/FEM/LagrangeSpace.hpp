@@ -17,7 +17,7 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
         const Mesh<T, Dim>& mesh,
-        ElementType ref_element,
+        ElementType& ref_element,
         const QuadratureType& quadrature,
         const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType,
