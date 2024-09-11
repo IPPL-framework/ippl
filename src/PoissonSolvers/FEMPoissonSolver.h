@@ -95,9 +95,9 @@ namespace ippl {
             const Vector<Tlhs, Dim> DPhiInvT =
                 refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
 
-            // Compute absolute value of the determinante of the transformation jacobian (|det D
+            // Compute absolute value of the determinant of the transformation jacobian (|det D
             // Phi_K|)
-            const Tlhs absDetDPhi = std::abs(
+            const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             const auto poissonEquationEval =

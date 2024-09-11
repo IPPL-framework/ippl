@@ -61,7 +61,7 @@ namespace ippl {
             // initial guess for the second largest root
             r1 = (4.1 + alpha) / ((1.0 + alpha) * (1.0 + 0.156 * alpha));
             r2 = 1.0 + 0.06 * (NumNodes1D - 8.0) * (1.0 + 0.12 * alpha) / NumNodes1D;
-            r3 = 1.0 + 0.012 * beta * (1.0 + 0.25 * std::abs(alpha)) / NumNodes1D;
+            r3 = 1.0 + 0.012 * beta * (1.0 + 0.25 * Kokkos::abs(alpha)) / NumNodes1D;
             z -= (1.0 - z) * r1 * r2 * r3;
         } else if (i == 2) {
             // initial guess for the third largest root

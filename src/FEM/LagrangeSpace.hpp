@@ -580,7 +580,7 @@ namespace ippl {
         }
 
         // Absolute value of det Phi_K
-        const T absDetDPhi = std::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
         // Get field data and make it atomic,
