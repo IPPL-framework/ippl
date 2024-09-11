@@ -342,29 +342,29 @@ protected:
     std::string solver_m;      ///< Solver type.
     std::string stepMethod_m;  ///< Time stepping method type.
 
-    double time_m;                   ///< Current simulation time.
-    double dt_m;                     ///< Time step size.
-    double a_m;                      ///< Scaling factor.
-    double Dloga;                    ///< Logarithmic increment of the scaling factor.
+    double time_m;                   ///< Current simulation time. [s]
+    double dt_m;                     ///< Time step size. [s]
+    double a_m;                      ///< Scaling factor. [1]
+    double Dloga;                    ///< Logarithmic increment of the scaling factor. [1]
     double Hubble_m;                 ///< Hubble constant at the current time [s^-1].
     double Hubble0;                  ///< Hubble constant today (73.8 km/sec/Mpc).
-    double G;                        ///< Gravitational constant.
-    double rho_crit0;                ///< Critical density today.
-    double O_m;                      ///< Matter density parameter.
-    double O_L;                      ///< Dark energy density parameter.
-    double t_L;                      ///< Characteristic time scale.
-    double z_m;                      ///< Initial redshift.
-    double z_f;                      ///< Final redshift.
-    int it_m;                        ///< Current iteration number.
+    double G;                        ///< Gravitational constant. [kpc^3/(Msun s^2)]
+    double rho_crit0;                ///< Critical density today. [Msun/kpc^3]
+    double O_m;                      ///< Matter density parameter. [1]
+    double O_L;                      ///< Dark energy density parameter. [1]
+    double t_L;                      ///< Characteristic time scale. [s]
+    double z_m;                      ///< Initial redshift. [1]
+    double z_f;                      ///< Final redshift.   [1]
+    int it_m;                        ///< Current iteration number. [1]
     Vector_t<double, Dim> rmin_m;    ///< Minimum comoving coordinates [kpc/h].
     Vector_t<double, Dim> rmax_m;    ///< Maximum comoving coordinates [kpc/h].
-    Vector_t<double, Dim> hr_m;      ///< Grid spacing in each dimension.
-    double M_m;                      ///< Total mass.
-    Vector_t<double, Dim> origin_m;  ///< Origin of the coordinate system.
-    bool isAllPeriodic_m;            ///< Flag indicating if all boundaries are periodic.
-    bool isFirstRepartition_m;       ///< Flag indicating if this is the first repartition.
-    ippl::NDIndex<Dim> domain_m;     ///< Domain index.
-    std::array<bool, Dim> decomp_m;  ///< Decomposition flags for each dimension.
-    double rhoNorm_m;                ///< Normalized density.
+    Vector_t<double, Dim> hr_m;      ///< Grid spacing in each dimension. [kpc/h]
+    double M_m;                      ///< Total mass. [Msun]
+    Vector_t<double, Dim> origin_m;  ///< Origin of the coordinate system. [kpc/h]
+    bool isAllPeriodic_m;            ///< Flag indicating if all boundaries are periodic. [bool]
+    bool isFirstRepartition_m;       ///< Flag indicating if this is the first repartition. [bool]
+    ippl::NDIndex<Dim> domain_m;     ///< Domain index. [1]
+    std::array<bool, Dim> decomp_m;  ///< Decomposition flags for each dimension. [bool]
+    double rhoNorm_m;                ///< Normalized density. [1]
 };
 #endif
