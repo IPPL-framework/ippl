@@ -7,23 +7,44 @@ class Abstract {
     public:
         virtual ~Abstract() = default;
 
-        // Pure virtual functions
-        KOKKOS_FUNCTION virtual void function() const = 0;
+        /*
+        KOKKOS_FUNCTION int call_function() const {
+            printf("Abstract::call_function()\n");
+            int result = this->function();
+            return result;
+        }
+
+        KOKKOS_FUNCTION virtual int function() const = 0;
+        */
 };
 
 /////////////////////////////////////////////////////////
 
 class Concrete1 : public Abstract {
     public:
-        KOKKOS_FUNCTION void function() const override {
-            printf("Inside concrete 1 function\n");
+        KOKKOS_FUNCTION int call_function() const {
+            printf("Concrete1::call_function()\n");
+            int result = this->function();
+            return result;
+        }
+
+        KOKKOS_FUNCTION int function() const {
+            printf("Concrete1::function()\n");
+            return 1;
         }
 };
 
 class Concrete2 : public Abstract {
     public:
-        KOKKOS_FUNCTION void function() const override {
-            printf("Inside concrete 2 function\n");
+        KOKKOS_FUNCTION int call_function() const {
+            printf("Concrete2::call_function()\n");
+            int result = this->function();
+            return result;
+        }
+
+        KOKKOS_FUNCTION int function() const {
+            printf("Concrete2::function()\n");
+            return 2;
         }
 };
 
@@ -35,16 +56,25 @@ class ClassA {
 
         ClassA(T& x) : concrete(x) {}
 
-        void execute(int N) {
+        virtual void execute(int N) = 0;
+ };
+
+template <typename T>
+class ClassB : public ClassA<T> {
+    public:
+        ClassB(T& x) : ClassA<T>(x) {}
+
+        void execute(int N) override
+        {
             printf("Test: call function \n");
 
             Kokkos::parallel_for("ClassA::execute", Kokkos::RangePolicy<>(0, N), KOKKOS_CLASS_LAMBDA(int i) {
                 printf("before call to function\n");
-                concrete.function();
-                printf("after call to function\n");
+                int result = this->concrete.call_function();
+                printf("after call to function, result = %d\n", result);
             });
         }
- };
+};
 
 /////////////////////////////////////////////////////////
 
@@ -54,14 +84,13 @@ int main(int argc, char* argv[]) {
         Concrete1 x1;
         Concrete2 x2;
         
-        ClassA<Concrete1> classA1(x1);
-        ClassA<Concrete2> classA2(x2);
+        ClassB<Concrete1> classB1(x1);
+        ClassB<Concrete2> classB2(x2);
         
-        classA1.execute(1);
-        classA2.execute(1);
+        classB1.execute(1);
+        classB2.execute(1);
     }
 
     Kokkos::finalize();
     return 0;
 }
-
