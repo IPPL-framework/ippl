@@ -20,6 +20,13 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable (TestInverseTransformSamplingUpdateBounds TestInverseTransformSamplingUpdateBounds.cpp)
+target_link_libraries (
+    TestInverseTransformSamplingUpdateBounds
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable (TestInverseTransformSamplingCustom TestInverseTransformSamplingCustom.cpp)
 target_link_libraries (
     TestInverseTransformSamplingCustom
