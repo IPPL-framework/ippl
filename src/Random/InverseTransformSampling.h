@@ -37,28 +37,38 @@ namespace ippl {
         /*!
          * @brief Constructor for InverseTransformSampling class with domain decomposition.
          *
-         * @param dist_ The distribution to sample from.
-         * @param rmax_ Maximum range for sampling.
-         * @param rmin_ Minimum range for sampling.
-         * @param rlayout The region layout.
-         * @param ntotal_ Total number of samples to generate.
+         * @param dist_r The distribution to sample from.
+         * @param rmax_r Maximum global range.
+         * @param rmin_r Minimum global range.
+         * @param rlayout_r The region layout.
+         * @param ntotal_r Total number of samples to generate.
         */
         template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, RegionLayout& rlayout_r, size_type &ntotal_r)
         : dist_m(dist_r),
         ntotal_m(ntotal_r){
 
-            updateBounds(rmax_r, rmin_r, rlayout_r);
+            const typename RegionLayout::host_mirror_type regions = rlayout_r.gethLocalRegions();
+            int rank = ippl::Comm->rank();
+
+            Vector<T, Dim> locrmax, locrmin;
+            for (unsigned d = 0; d < Dim; ++d) {
+                locrmax[d] = regions(rank)[d].max();
+                locrmin[d] = regions(rank)[d].min();
+            }
+
+            updateBounds(rmax_r, rmin_r, locrmax, locrmin);
 
         }
 
         /*!
          * @brief Constructor for InverseTransformSampling class without applying domain decomposition..
          *
-         * @param dist_ The distribution to sample from.
-         * @param rmax_ Maximum range for sampling.
-         * @param rmin_ Minimum range for sampling.
-         * @param rlayout The region layout.
+         * @param dist_r The distribution to sample from.
+         * @param rmax_r Maximum global range.
+         * @param rmin_r Minimum global range.
+         * @param locrmax_r Maximum local (per rank) range.
+         * @param locrmin_r Minimum local (per rank) range.
          * @param ntotal_ Total number of samples to generate.
         */
 	template <class RegionLayout>
@@ -74,10 +84,10 @@ namespace ippl {
          * @brief Constructor for InverseTransformSampling class.
          *        In this method, we do not consider any domain decomposition.
          *
-         * @param dist_ The distribution to sample from.
-         * @param rmax_ Maximum range for sampling.
-         * @param rmin_ Minimum range for sampling.
-         * @param ntotal_ Total number of samples to generate.
+         * @param dist_r The distribution to sample from.
+         * @param rmax_r Maximum global range for sampling.
+         * @param rmin_r Minimum global range for sampling.
+         * @param ntotal_r Total number of samples to generate.
         */
 	template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, size_type &ntotal_r)
@@ -89,50 +99,6 @@ namespace ippl {
             nlocal_m = ntotal_m;
 
         }
-
-        /*!
-         * @brief Updates the sampling bounds and reinitializes internal variables.
-         *
-         * This method allows the user to update the minimum and maximum bounds 
-         * for the sampling process using the region layout. It recalculates
-         * the cumulative distribution function (CDF) values for the new bounds and 
-         * updates the internal variables to reflect these changes.
-         *
-         * @param new_rmax The new maximum range for sampling. This vector defines
-         *                 the upper bounds for each dimension.
-         * @param new_rmin The new minimum range for sampling. This vector defines
-         *                 the lower bounds for each dimension.
-         * @param new_rlayout The new region layout that defines the subdivisions
-         *                    of the sampling space across different ranks.
-        */
-        template <class RegionLayout>
-        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, RegionLayout& rlayout) {
-            rmax_m = rmax;
-            rmin_m = rmin;
-
-            const typename RegionLayout::host_mirror_type regions = rlayout.gethLocalRegions();
-            int rank = ippl::Comm->rank();
-            Vector<T, Dim> nr_m, dr_m;
-            for (unsigned d = 0; d < Dim; ++d) {
-               nr_m[d] = dist_m.getCdf(regions(rank)[d].max(), d) - dist_m.getCdf(regions(rank)[d].min(), d);
-               dr_m[d] = dist_m.getCdf(rmax_m[d], d) - dist_m.getCdf(rmin_m[d], d);
-               umin_m[d] = dist_m.getCdf(regions(rank)[d].min(), d);
-               umax_m[d] = dist_m.getCdf(regions(rank)[d].max(), d);
-            }
-            T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
-            T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
-
-            T factor = pnr / pdr;
-            nlocal_m = (size_type)(factor * ntotal_m);
-
-            size_type nglobal = 0;
-            MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
-
-            int rest = (int)(ntotal_m - nglobal);
-            if (rank < rest) {
-                ++nlocal_m;
-            }
-         }
 
         /*!
          * @brief Updates the sampling bounds and reinitializes internal variables.
@@ -152,14 +118,12 @@ namespace ippl {
          *                 the lower bounds for each dimension for a given rank.
         */
         void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, Vector<T, Dim>& locrmax, Vector<T, Dim>& locrmin) {
-            rmax_m = rmax;
-            rmin_m = rmin;
 
 	    int rank = ippl::Comm->rank();
             Vector<T, Dim> nr_m, dr_m;
             for (unsigned d = 0; d < Dim; ++d) {
                nr_m[d] = dist_m.getCdf(locrmax[d], d) - dist_m.getCdf(locrmin[d], d);
-               dr_m[d] = dist_m.getCdf(rmax_m[d], d) - dist_m.getCdf(rmin_m[d], d);
+               dr_m[d] = dist_m.getCdf(rmax[d], d) - dist_m.getCdf(rmin[d], d);
                umin_m[d] = dist_m.getCdf(locrmin[d], d);
                umax_m[d] = dist_m.getCdf(locrmax[d], d);
             }
