@@ -30,8 +30,6 @@ namespace ippl {
 
         Distribution dist_m;
         size_type ntotal_m;
-        Vector<T, Dim> rmax_m;
-        Vector<T, Dim> rmin_m;
         Vector<T, Dim> umin_m, umax_m;
 
         /*!
@@ -71,7 +69,6 @@ namespace ippl {
          * @param locrmin_r Minimum local (per rank) range.
          * @param ntotal_ Total number of samples to generate.
         */
-	template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, Vector<T, Dim> &locrmax_r, Vector<T, Dim> &locrmin_r, size_type &ntotal_r)
         : dist_m(dist_r),
         ntotal_m(ntotal_r){
@@ -89,7 +86,6 @@ namespace ippl {
          * @param rmin_r Minimum global range for sampling.
          * @param ntotal_r Total number of samples to generate.
         */
-	template <class RegionLayout>
         InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, size_type &ntotal_r)
         : dist_m(dist_r),
         ntotal_m(ntotal_r){
@@ -155,14 +151,12 @@ namespace ippl {
          * @param new_rmin The new minimum range for sampling. This vector defines
          *                 the lower bounds for each dimension.
         */
-        void updateBounds(Vector<T, Dim>& new_rmax, Vector<T, Dim>& new_rmin) {
-            rmax_m = new_rmax;
-            rmin_m = new_rmin;
+        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin) {
 
             Vector<T, Dim> nr_m, dr_m;
             for (unsigned d = 0; d < Dim; ++d) {
-               umin_m[d] = dist_m.getCdf(rmin_m[d], d);
-               umax_m[d] = dist_m.getCdf(rmax_m[d], d);
+               umin_m[d] = dist_m.getCdf(rmin[d], d);
+               umax_m[d] = dist_m.getCdf(rmax[d], d);
             }
          }
 
