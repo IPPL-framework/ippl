@@ -100,7 +100,7 @@ Collaboration diagram for ippl::random::InverseTransformSampling&lt; T, Dim, Dev
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1random_1_1InverseTransformSampling__coll__graph.png" border="0" usemap="#aippl_1_1random_1_1InverseTransformSampling_3_01T_00_01Dim_00_01DeviceType_00_01Distribution_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1random_1_1InverseTransformSampling_3_01T_00_01Dim_00_01DeviceType_00_01Distribution_01_4_coll__map" id="aippl_1_1random_1_1InverseTransformSampling_3_01T_00_01Dim_00_01DeviceType_00_01Distribution_01_4_coll__map">
-<area shape="rect" title="A class for inverse transform sampling." alt="" coords="29,299,233,544"/>
+<area shape="rect" title="A class for inverse transform sampling." alt="" coords="29,299,233,559"/>
 <area shape="rect" href="classippl_1_1random_1_1Distribution.html" title="The class that represents a distribution." alt="" coords="5,5,256,236"/>
 </map>
 </div>
@@ -148,6 +148,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae30242b3d4fd3226d40ad62d09122a5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#ae30242b3d4fd3226d40ad62d09122a5d">generate</a> (<a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> view, Kokkos::Random_XorShift64_Pool&lt;&gt; rand_pool64)</td></tr>
 <tr class="memdesc:ae30242b3d4fd3226d40ad62d09122a5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate random samples using inverse transform sampling.  <a href="classippl_1_1random_1_1InverseTransformSampling.html#ae30242b3d4fd3226d40ad62d09122a5d">More...</a><br /></td></tr>
 <tr class="separator:ae30242b3d4fd3226d40ad62d09122a5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48f5365ebc2bc84e1be3c21ad6bcf29"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#ae48f5365ebc2bc84e1be3c21ad6bcf29">generate</a> (<a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> view, <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a2cb48a885d2cbe16a2cfd1cb2559995b">size_type</a> startIndex, <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a2cb48a885d2cbe16a2cfd1cb2559995b">size_type</a> endIndex, Kokkos::Random_XorShift64_Pool&lt;&gt; rand_pool64)</td></tr>
+<tr class="memdesc:ae48f5365ebc2bc84e1be3c21ad6bcf29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate random samples using inverse transform sampling for a specific range of particles.  <a href="classippl_1_1random_1_1InverseTransformSampling.html#ae48f5365ebc2bc84e1be3c21ad6bcf29">More...</a><br /></td></tr>
+<tr class="separator:ae48f5365ebc2bc84e1be3c21ad6bcf29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -444,7 +447,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae30242b3d4fd3226d40ad62d09122a5d" name="ae30242b3d4fd3226d40ad62d09122a5d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae30242b3d4fd3226d40ad62d09122a5d">&#9670;&#160;</a></span>generate()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae30242b3d4fd3226d40ad62d09122a5d">&#9670;&#160;</a></span>generate() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -483,6 +486,67 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">view</td><td>The view to fill with random samples. </td></tr>
+    <tr><td class="paramname">rand_pool64</td><td>The random number generator pool. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae48f5365ebc2bc84e1be3c21ad6bcf29" name="ae48f5365ebc2bc84e1be3c21ad6bcf29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae48f5365ebc2bc84e1be3c21ad6bcf29">&#9670;&#160;</a></span>generate() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::generate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a>&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a2cb48a885d2cbe16a2cfd1cb2559995b">size_type</a>&#160;</td>
+          <td class="paramname"><em>startIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a2cb48a885d2cbe16a2cfd1cb2559995b">size_type</a>&#160;</td>
+          <td class="paramname"><em>endIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Kokkos::Random_XorShift64_Pool&lt;&gt;&#160;</td>
+          <td class="paramname"><em>rand_pool64</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Generate random samples using inverse transform sampling for a specific range of particles. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td>The view to fill with random samples. </td></tr>
+    <tr><td class="paramname">startIndex</td><td>The starting index of view. </td></tr>
+    <tr><td class="paramname">endIndex</td><td>The ending index of view. </td></tr>
     <tr><td class="paramname">rand_pool64</td><td>The random number generator pool. </td></tr>
   </table>
   </dd>
