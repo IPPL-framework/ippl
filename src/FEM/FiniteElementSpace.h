@@ -276,11 +276,13 @@ namespace ippl {
          *
          * @return FieldLHS - The LHS field containing A*x
          */
+        /*template <typename F>
         virtual FieldLHS evaluateAx(
             const FieldLHS& field,
-            const std::function<T(const index_t&, const index_t&,
-                                  const Vector<Vector<T, Dim>, NumElementDOFs>&)>& evalFunction)
-            const = 0;
+            F& evalFunction) const = 0;
+            //const std::function<T(const index_t&, const index_t&,
+            //                      const Vector<Vector<T, Dim>, NumElementDOFs>&)>& evalFunction)
+            const = 0;*/
 
         /**
          * @brief Assemble the load vector b of the system Ax = b

@@ -407,12 +407,14 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
+    template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evaluateAx(
         const FieldLHS& field,
-        const std::function<T(
-            const index_t&, const index_t&,
-            const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                                                       FieldRHS>::numElementDOFs>&)>& evalFunction)
+        F& evalFunction)
+        //const std::function<T(
+        //    const index_t&, const index_t&,
+        //    const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+        //                                               FieldRHS>::numElementDOFs>&)>& evalFunction)
         const {
 
         Inform m("");
@@ -470,11 +472,20 @@ namespace ippl {
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
+
+                printf("inside kokkos loop!\n");
+
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
-                const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
+                //const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
 
-                printf("inside kokkos loop!");
+                const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+                const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
+                for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                printf("got global_dof_ndindices \n");
 
                 // local DOF indices
                 index_t i, j;
@@ -491,6 +502,8 @@ namespace ippl {
                         }
                     }
                 }
+
+                printf("after eval func \n");
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in each
                 // dimension)

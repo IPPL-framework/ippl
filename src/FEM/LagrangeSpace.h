@@ -209,13 +209,14 @@ namespace ippl {
          *
          * @return FieldLHS - The LHS field containing A*x
          */
+        template <typename F>
         FieldLHS evaluateAx(
-            const FieldLHS& field,
-            const std::function<T(
-                const index_t&, const index_t&,
-                const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
-                                                           FieldLHS, FieldRHS>::numElementDOFs>&)>&
-                evalFunction) const override;
+            const FieldLHS& field, F& evalFunction) const;
+            //const std::function<T(
+            //    const index_t&, const index_t&,
+            //    const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
+            //                                               FieldLHS, FieldRHS>::numElementDOFs>&)>&
+            //    evalFunction) const override;
 
         KOKKOS_FUNCTION
         T evalFunc(const T absDetDPhi,
