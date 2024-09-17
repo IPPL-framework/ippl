@@ -251,9 +251,27 @@ namespace ippl {
             for (unsigned d = 0; d < Dim; ++d) {
               Kokkos::parallel_for(numlocal_m, fill_random<Kokkos::Random_XorShift64_Pool<>>(targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
               Kokkos::fence();
-              ippl::Comm->barrier();
             }
         }
+
+	/*!
+         * @brief Generate random samples using inverse transform sampling for a specific range of particles
+         *
+         * @param view The view to fill with random samples.
+         * @param startIndex The starting index of view.
+         * @param endIndex The ending index of view.
+         * @param rand_pool64 The random number generator pool.
+        */
+	void generate(view_type view, size_type startIndex, size_type endIndex, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
+            Vector<T, Dim> minbound_m = umin_m;
+            Vector<T, Dim> maxbound_m = umax_m;
+            Distribution targetdist_m = dist_m;
+            for (unsigned d = 0; d < Dim; ++d) {
+              Kokkos::parallel_for(Kokkos::RangePolicy<>(startIndex,endIndex), fill_random<Kokkos::Random_XorShift64_Pool<>>(targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
+              Kokkos::fence();
+            }
+	}
+
     private:
         size_type nlocal_m;
     };
