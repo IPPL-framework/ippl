@@ -290,7 +290,7 @@ namespace ippl {
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // Scatter
-                scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args);
+                scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args, 1.0);
             });
 
         bf_m.accumulateHalo();

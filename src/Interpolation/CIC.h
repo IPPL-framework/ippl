@@ -48,11 +48,11 @@ namespace ippl {
          * @param val the value to interpolate
          */
         template <unsigned long ScatterPoint, unsigned long... Index, typename View, typename T,
-                  typename IndexType = size_t>
+                  typename IndexType = size_t, typename ValueType>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToPoint(
             const std::index_sequence<Index...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, const T& val);
+            const Vector<IndexType, View::rank>& args, const ValueType& val);
 
         /*!
          * Scatters the particle attribute to the field.
@@ -75,11 +75,11 @@ namespace ippl {
          * @param val the value to interpolate
          */
         template <unsigned long... ScatterPoint, typename View, typename T,
-                  typename IndexType = size_t>
+                  typename IndexType = size_t, typename ValueType>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, T val = 1);
+            const Vector<IndexType, View::rank>& args, ValueType val);
 
         /*!
          * Gathers from a field at a single point

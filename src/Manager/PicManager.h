@@ -4,7 +4,6 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 #include "Decomposition/OrthogonalRecursiveBisection.h"
-#include "Manager/FieldSolverBase.h"
 
  namespace ippl {
 
@@ -21,8 +20,9 @@
     * @tparam pc The particle container type.
     * @tparam fc The field container type.
     * @tparam orb The load balancer type.
+    * @tparam fs The field solver type.
     */
-    template <typename T, unsigned Dim, class pc, class fc, class orb>
+    template <typename T, unsigned Dim, class pc, class fc, class orb, class fs>
     class PicManager : public BaseManager {
     public:
         PicManager()
@@ -60,11 +60,11 @@
             fcontainer_m = fcontainer;
         }
 
-        std::shared_ptr<ippl::FieldSolverBase<T, Dim>> getFieldSolver() {
+        std::shared_ptr<fs> getFieldSolver() {
             return fsolver_m;
         }
 
-        void setFieldSolver(std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver) {
+        void setFieldSolver(std::shared_ptr<fs> fsolver) {
             fsolver_m = fsolver;
         }
 
@@ -83,7 +83,7 @@
 
         std::shared_ptr<orb> loadbalancer_m;
 
-        std::shared_ptr<ippl::FieldSolverBase<T, Dim>> fsolver_m;
+        std::shared_ptr<fs> fsolver_m;
 
     };
 }  // namespace ippl
