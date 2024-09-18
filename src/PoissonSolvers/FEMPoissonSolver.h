@@ -11,6 +11,22 @@
 
 namespace ippl {
 
+    template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
+    struct EvalFunctor {
+        const Vector<Tlhs, Dim> DPhiInvT;
+        const Tlhs absDetDPhi;
+
+        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi) 
+            : DPhiInvT(DPhiInvT), absDetDPhi(absDetDPhi) {}
+
+        KOKKOS_FUNCTION const auto operator()(const size_t& i, const size_t& j,
+                                   const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
+            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
+                   * absDetDPhi;
+        }
+    };
+
+
     /**
      * @brief A solver for the poisson equation using finite element methods and
      * Conjugate Gradient (CG)
@@ -100,14 +116,8 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            const auto poissonEquationEval =
-                [this, DPhiInvT, absDetDPhi](
-                    const size_t& i, const size_t& j,
-                    const Vector<Vector<Tlhs, Dim>, this->lagrangeSpace_m.numElementDOFs>&
-                        grad_b_q_k) {
-                    return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
-                           * absDetDPhi;
-                };
+            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
+                                                                         DPhiInvT, absDetDPhi);
 
             const auto algoOperator = [poissonEquationEval,
                                        this](lhs_type field) -> lhs_type {
