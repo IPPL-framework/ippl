@@ -56,6 +56,14 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+if(ENABLE_RENDERING)
+    add_executable (TestRendering TestRendering.cpp)
+    target_link_libraries (
+        TestRendering
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+endif()
 
 # vi: set et ts=4 sw=4 sts=4:
 
