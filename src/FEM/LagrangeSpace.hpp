@@ -419,7 +419,6 @@ namespace ippl {
         const {
 
         Inform m("");
-        m << "inside evalAx, start" << endl;
 
         // start a timer
         static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
@@ -468,13 +467,9 @@ namespace ippl {
         static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
         IpplTimings::startTimer(outer_loop);
 
-        m << "before Kokkos loop" << endl;
-
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-
-                printf("inside kokkos loop!\n");
 
                 const index_t elementIndex                                         = elementIndices(index);
                 const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
@@ -485,8 +480,6 @@ namespace ippl {
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
-
-                printf("got global_dof_ndindices \n");
 
                 // local DOF indices
                 index_t i, j;
@@ -503,8 +496,6 @@ namespace ippl {
                         }
                     }
                 }
-
-                printf("after eval func \n");
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in each
                 // dimension)
@@ -569,7 +560,6 @@ namespace ippl {
         FieldRHS& field) const {
 
         Inform m("");
-        m << "inside evalLoadVec, start" << endl;
 
         // start a timer
         static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
@@ -653,8 +643,6 @@ namespace ippl {
         });
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalLoadV);
-
-        m << "inside evalLoadVec, end" << endl;
     }
 
 }  // namespace ippl
