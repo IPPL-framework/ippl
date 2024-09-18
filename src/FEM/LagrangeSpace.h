@@ -166,8 +166,10 @@ namespace ippl {
          *
          * @return Vector<ndindex_t, NumElementDOFs> - The global DOF NDIndices
          */
+        /*
         KOKKOS_FUNCTION Vector<ndindex_t, numElementDOFs> getGlobalDOFNDIndices(
             const index_t& element_index) const override;
+        */
 
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////

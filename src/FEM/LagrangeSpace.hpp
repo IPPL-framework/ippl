@@ -283,6 +283,7 @@ namespace ippl {
         return globalDOFs;
     }
 
+    /*
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
@@ -304,7 +305,7 @@ namespace ippl {
         }
 
         return ndindices;
-    }
+    }*/
 
     ///////////////////////////////////////////////////////////////////////
     /// Basis functions and gradients /////////////////////////////////////
