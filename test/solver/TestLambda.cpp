@@ -37,6 +37,17 @@ class LagrangeSpace : public FEMSpace {
         }
 };
 
+struct EvalFunctor {
+    int val;
+
+    EvalFunctor(int v) : val(v) {}
+
+    KOKKOS_FUNCTION int operator()(size_t i) const {
+        return val * i;
+    }
+};
+
+
 class FEMPoissonSolver {
     public:
         FEMPoissonSolver(LagrangeSpace& space) : lagrange_space(space) {}
@@ -46,9 +57,7 @@ class FEMPoissonSolver {
             
             int val = 2;
 
-            const auto eval = [this, val](size_t i) {
-                return (val * i);
-            };
+            EvalFunctor eval(val);
 
             lagrange_space.evaluateAx(eval);
         }
