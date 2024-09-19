@@ -67,26 +67,13 @@ namespace ippl {
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
 
-            Inform m("");
-
-            m << "inside constructor" << endl;
-
             rhs.fillHalo();
 
-            m << "after fillHalo" << endl;
-
-            //rhs.write();
-
             lagrangeSpace_m.evaluateLoadVector(rhs);
-
-            m << "after eval load vector" << endl;
 
             rhs.accumulateHalo();
             rhs.fillHalo();
 
-            m << "after accumulate Halo" << endl;
-            //rhs.write();
-            
             IpplTimings::stopTimer(init);
         }
 

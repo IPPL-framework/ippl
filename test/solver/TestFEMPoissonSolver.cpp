@@ -105,8 +105,6 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     Inform m("");
     Inform msg2all("", INFORM_ALL_NODES);
 
-    m << "inside test fem" << endl;
-
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
@@ -142,8 +140,6 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     auto view = sol.getView();
     auto ldom = layout.getLocalNDIndex();
 
-    m << "before assigning solution" << endl;
-
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for("Assign solution", sol.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const index_array_type& args) {
@@ -157,12 +153,6 @@ void testFEMSolver(const unsigned& numNodesPerDim,
         });
 
     IpplTimings::stopTimer(initTimer);
-
-    Kokkos::fence();
-    sol.write();
-    Kokkos::fence();
-
-    m << "after assigning solution" << endl;
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
@@ -224,7 +214,7 @@ int main(int argc, char* argv[]) {
 
         if (dim == 1) {
             // 1D Sinusoidal
-            for (unsigned n = 1 << 2; n <= 1 << 2; n = n << 1) {
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
                 /*testFEMSolver<T, 1>(n, 
                     [](ippl::Vector<T, 1> x) {
                         return gaussian1D<T>(x[0], 0.05, 0.5);
