@@ -230,7 +230,7 @@ endif ()
 
 
 
-option (ENABLE_COSMOLOGY "Enable Cosmology" ON)
+option (ENABLE_COSMOLOGY "Enable Cosmology" OFF)
 if (ENABLE_COSMOLOGY)
     if (NOT ENABLE_SOLVERS)
         message (FATAL_ERROR "Cannot enable Cosmology since Solver not enabled (-DENABLE_SOLVERS=ON)!")
