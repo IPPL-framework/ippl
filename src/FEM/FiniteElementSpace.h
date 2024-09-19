@@ -226,18 +226,6 @@ namespace ippl {
         KOKKOS_FUNCTION virtual Vector<index_t, NumElementDOFs> getGlobalDOFIndices(
             const index_t& elementIndex) const = 0;
 
-        /**
-         * @brief Get the global DOF NDIndices (vector of global DOF NDIndices) of an element
-         *
-         * @param elementIndex index_t (size_t) - The index of the element
-         *
-         * @return Vector<ndindex_t, NumElementDOFs> - The global DOF NDIndices
-         */
-        /*
-        KOKKOS_FUNCTION virtual Vector<ndindex_t, NumElementDOFs> getGlobalDOFNDIndices(
-            const index_t& elementIndex) const = 0;
-        */
-
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////

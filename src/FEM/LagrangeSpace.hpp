@@ -283,30 +283,6 @@ namespace ippl {
         return globalDOFs;
     }
 
-    /*
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
-              typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    Vector<typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::ndindex_t,
-           LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFNDIndices(
-        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            elementIndex) const {
-        static_assert(Order == 1 && "Only order 1 is supported at the moment");
-
-        Vector<ndindex_t, numElementDOFs> ndindices;
-
-        // 1. get all the global DOFs for the element
-        Vector<index_t, numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-
-        // 2. convert the global DOFs to ndindices
-        for (index_t i = 0; i < numElementDOFs; ++i) {
-            ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);  // TODO fix for higher order
-        }
-
-        return ndindices;
-    }*/
-
     ///////////////////////////////////////////////////////////////////////
     /// Basis functions and gradients /////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
@@ -410,12 +386,7 @@ namespace ippl {
               typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evaluateAx(
-        const FieldLHS& field,
-        F& evalFunction)
-        //const std::function<T(
-        //    const index_t&, const index_t&,
-        //    const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-        //                                               FieldRHS>::numElementDOFs>&)>& evalFunction)
+        const FieldLHS& field, F& evalFunction) 
         const {
 
         Inform m("");
@@ -471,12 +442,11 @@ namespace ippl {
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
 
-                const index_t elementIndex                                         = elementIndices(index);
-                const Vector<index_t, this->numElementDOFs> local_dofs             = this->getLocalDOFIndices();
-                //const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices = this->getGlobalDOFNDIndices(elementIndex);
+                const index_t elementIndex                                = elementIndices(index);
+                const Vector<index_t, this->numElementDOFs> local_dof     = this->getLocalDOFIndices();
+                const Vector<index_t, this->numElementDOFs> global_dofs   = this->getGlobalDOFIndices(elementIndex);
+                Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
 
-                const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-                const Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
