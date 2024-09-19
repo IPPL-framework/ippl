@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 
         if (dim == 1) {
             // 1D Sinusoidal
-            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
                 /*testFEMSolver<T, 1>(n, 
                     [](ippl::Vector<T, 1> x) {
                         return gaussian1D<T>(x[0], 0.05, 0.5);
@@ -234,10 +234,10 @@ int main(int argc, char* argv[]) {
             }
         } else {
             // 3D Sinusoidal; problem size given by user
-            const int n_arg = std::atoi(argv[1]);
-            int n = 1 << n_arg;
-            //testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
-            testFEMSolver<T, 3>(n, -1.0, 1.0);
+            for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
+                //testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
+                testFEMSolver<T, 3>(n, -1.0, 1.0);
+            }
         }
 
         // stop the timer
