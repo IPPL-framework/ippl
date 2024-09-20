@@ -11,6 +11,7 @@
 #include "Meshes/Centering.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
+/*
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
@@ -22,6 +23,7 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 
     return Dim * pi * pi * val;
 }
+*/
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
@@ -34,10 +36,68 @@ KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
     return val;
 }
 
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian3d(ippl::Vector<T, 3> x_vec) {
+    const T& x = x_vec[0];
+    const T& y = x_vec[1];
+    const T& z = x_vec[2];
+
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T prefactor =
+        (1.0 / Kokkos::sqrt(2.0 * 2.0 * 2.0 * pi * pi * pi)) * (1.0 / (sigma * sigma * sigma));
+    const T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
+
+    return prefactor * Kokkos::exp(-r2 / (2.0 * sigma * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian3dSol(ippl::Vector<T, 3> x_vec) {
+    const T& x = x_vec[0];
+    const T& y = x_vec[1];
+    const T& z = x_vec[2];
+
+    const T sigma = 0.05;
+    const T mu    = 0.5;
+
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+
+    return (1.0 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    const T prefactor = (1.0 / Kokkos::sqrt(2.0 * pi)) * (1.0 / sigma);
+    const T r2        = (x - mu) * (x - mu);
+
+    return prefactor * Kokkos::exp(-r2 / (2.0 * sigma * sigma));
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
+    const T pi     = Kokkos::numbers::pi_v<T>;
+    const T sqrt_2 = Kokkos::sqrt(2.0);
+
+    const T r = (x - mu);
+
+    return (-sigma / sqrt_2)
+               * ((r / (sqrt_2 * sigma)) * Kokkos::erf(r / (sqrt_2 * sigma))
+                  + (1.0 / Kokkos::sqrt(pi)) * Kokkos::exp(-(r * r) / (2.0 * sigma * sigma)))
+           + (0.5 - mu) * x + 0.5 * mu;
+}
+
 template <typename T, unsigned Dim>
-void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<T, Dim> x)> f_rhs,
-                   std::function<T(ippl::Vector<T, Dim> x)> f_sol, const T& domain_start = 0.0,
+void testFEMSolver(const unsigned& numNodesPerDim,
+                   const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
+                   // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -89,13 +149,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, std::function<T(ippl::Vector<
             }
             const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
             
-            apply(view, args) = f_sol(x);
+            apply(view, args) = sinusoidalSolution<T, Dim>(x);
         });
 
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, f_rhs);
+    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // set the parameters
     ippl::ParameterList params;
@@ -140,8 +200,6 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
-        msg << "Dim = " << dim << endl;
-
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
@@ -153,16 +211,13 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < 5; ++i) {
             if (dim == 1) {
                 // 1D Sinusoidal
-                testFEMSolver<T, 1>(problem_size, sinusoidalRHSFunction<T, 1>, sinusoidalSolution<T, 1>,
-                                    -1.0, 1.0);
+                testFEMSolver<T, 1>(problem_size, -1.0, 1.0);
             } else if (dim == 2) {
                 // 2D Sinusoidal
-                testFEMSolver<T, 2>(problem_size, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>,
-                                    -1.0, 1.0);
+                testFEMSolver<T, 2>(problem_size, -1.0, 1.0);
             } else {
                 // 3D Sinusoidal
-                testFEMSolver<T, 3>(problem_size, sinusoidalRHSFunction<T, 3>, sinusoidalSolution<T, 3>,
-                                    -1.0, 1.0);
+                testFEMSolver<T, 3>(problem_size, -1.0, 1.0);
             }
         }
 
