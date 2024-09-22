@@ -119,7 +119,7 @@ void solver_send(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> i
 
     // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
     ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(BUF_MSG + id * 8 + i, nsends);
+        ippl::Comm->getBufferr<memory_space, Tf>(nsends);
 
     int tag = TAG + id;
 
@@ -140,7 +140,7 @@ void solver_recv(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> i
 
     // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
     ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(BUF_MSG + 8 * id + myRank, nrecvs);
+        ippl::Comm->getBufferr<memory_space, Tf>(nrecvs);
 
     int tag = TAG + id;
 
@@ -571,7 +571,7 @@ namespace ippl {
                     nrecvs = intersection.size();
 
                     buffer_type buf =
-                        Comm->getBuffer<memory_space, Trhs>(mpi::tag::SOLVER_RECV + myRank, nrecvs);
+                        Comm->getBufferr<memory_space, Trhs>(nrecvs);
 
                     Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
@@ -696,8 +696,7 @@ namespace ippl {
                         mpi::Communicator::size_type nrecvs;
                         nrecvs = intersection.size();
 
-                        buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                            mpi::tag::SOLVER_RECV + myRank, nrecvs);
+                        buffer_type buf = Comm->getBufferr<memory_space, Trhs>(nrecvs);
 
                         Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs),
                                    nrecvs);
@@ -853,8 +852,7 @@ namespace ippl {
                             mpi::Communicator::size_type nrecvs;
                             nrecvs = intersection.size();
 
-                            buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                mpi::tag::SOLVER_RECV + myRank, nrecvs);
+                            buffer_type buf = Comm->getBufferr<memory_space, Trhs>(nrecvs);
 
                             Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs),
                                        nrecvs);
@@ -1011,8 +1009,7 @@ namespace ippl {
                                 mpi::Communicator::size_type nrecvs;
                                 nrecvs = intersection.size();
 
-                                buffer_type buf = Comm->getBuffer<memory_space, Trhs>(
-                                    mpi::tag::SOLVER_RECV + myRank, nrecvs);
+                                buffer_type buf = Comm->getBufferr<memory_space, Trhs>(nrecvs);
 
                                 Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf,
                                            nrecvs * sizeof(Trhs), nrecvs);

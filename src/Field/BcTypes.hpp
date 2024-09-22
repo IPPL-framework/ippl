@@ -262,8 +262,7 @@ namespace ippl {
                     detail::size_type nSends;
                     halo.pack(range, view, haloData_m, nSends);
 
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(
-                        mpi::tag::PERIODIC_BC_SEND + i, nSends);
+                    buffer_type buf = comm.template getBufferr<memory_space, T>(nSends);
 
                     comm.isend(rank, tag, haloData_m, *buf, requests[i], nSends);
                     buf->resetWritePos();
@@ -279,8 +278,7 @@ namespace ippl {
 
                     detail::size_type nRecvs = range.size();
 
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(
-                        mpi::tag::PERIODIC_BC_RECV + i, nRecvs);
+                    buffer_type buf = comm.template getBufferr<memory_space, T>(nRecvs);
                     comm.recv(rank, matchtag, haloData_m, *buf, nRecvs * sizeof(T), nRecvs);
                     buf->resetReadPos();
 
@@ -290,6 +288,7 @@ namespace ippl {
                 if (!requests.empty()) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
+                comm.freeAllBuffers();
             }
             // For all other processors do nothing
         } else {

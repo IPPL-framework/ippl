@@ -6,6 +6,7 @@ set (_SRCS
     )
 
 set (_HDRS
+    BufferHandler.h
     Archive.h
     Archive.hpp
     Buffers.hpp

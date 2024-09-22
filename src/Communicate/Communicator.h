@@ -8,6 +8,7 @@
 #include <memory>
 #include <mpi.h>
 
+#include "Communicate/BufferHandler.h"
 #include "Communicate/Request.h"
 #include "Communicate/Status.h"
 
@@ -132,10 +133,11 @@ namespace ippl {
             using buffer_type = std::shared_ptr<archive_type<MemorySpace>>;
 
         private:
-            template <typename MemorySpace>
-            using map_type = std::map<int, buffer_type<MemorySpace>>;
 
-            using buffer_map_type = typename detail::ContainerForAllSpaces<map_type>::type;
+            template <typename MemorySpace>
+            using buffer_container_type = BufferHandler<MemorySpace>;
+
+            using buffer_handler_type = typename detail::ContainerForAllSpaces<buffer_container_type>::type;
 
         public:
             using size_type = detail::size_type;
@@ -144,14 +146,14 @@ namespace ippl {
 
             template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
                       typename T           = char>
-            buffer_type<MemorySpace> getBuffer(int id, size_type size, double overallocation = 1.0);
-
-            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
-            void deleteBuffer(int id) {
-                buffers_m.get<MemorySpace>().erase(id);
-            }
+            buffer_type<MemorySpace> getBufferr(size_type size, double overallocation = 1.0);
+            
 
             void deleteAllBuffers();
+            void freeAllBuffers();
+
+            template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+            void freeBuffer(buffer_type<MemorySpace> buffer); 
 
             const MPI_Comm& getCommunicator() const noexcept { return *comm_m; }
 
@@ -192,7 +194,8 @@ namespace ippl {
             }
 
         private:
-            buffer_map_type buffers_m;
+            buffer_handler_type buffer_handlers_m;
+
             double defaultOveralloc_m = 1.0;
 
             /////////////////////////////////////////////////////////////////////////////////////
