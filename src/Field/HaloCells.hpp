@@ -71,7 +71,7 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = comm.template getBufferr<memory_space, T>(nsends);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
 
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
@@ -94,7 +94,7 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf = comm.template getBufferr<memory_space, T>(nrecvs);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
 
                     comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();

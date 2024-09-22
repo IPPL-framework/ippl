@@ -24,7 +24,7 @@ namespace ippl {
     namespace mpi {
 
         template <typename MemorySpace, typename T>
-        Communicator::buffer_type<MemorySpace> Communicator::getBufferr(size_type size,
+        Communicator::buffer_type<MemorySpace> Communicator::getBuffer(size_type size,
                                                                         double overallocation) {
             auto& buffer_handler = buffer_handlers_m.get<MemorySpace>();
 

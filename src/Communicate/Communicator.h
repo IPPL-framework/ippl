@@ -146,7 +146,7 @@ namespace ippl {
 
             template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
                       typename T           = char>
-            buffer_type<MemorySpace> getBufferr(size_type size, double overallocation = 1.0);
+            buffer_type<MemorySpace> getBuffer(size_type size, double overallocation = 1.0);
             
 
             void deleteAllBuffers();

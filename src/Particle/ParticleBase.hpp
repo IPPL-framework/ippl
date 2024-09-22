@@ -280,7 +280,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBufferr<MemorySpace>(bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(bufSize);
 
             Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
@@ -296,7 +296,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBufferr<MemorySpace>(bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(bufSize);
 
             Comm->recv(rank, tag++, *this, *buf, bufSize, nRecvs);
             buf->resetReadPos();
