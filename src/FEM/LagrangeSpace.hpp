@@ -52,7 +52,7 @@ namespace ippl {
         Kokkos::parallel_reduce("ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
                 int idx = i;
-                ndindex_t val;
+                indices_t val;
                 bool isBoundary = false;
                 for (unsigned int d = 0; d < Dim; ++d) {
                     int range = last[d] - first[d] + 1;
@@ -132,21 +132,17 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
               typename FieldRHS>
     KOKKOS_FUNCTION
-    typename LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t
-    LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            elementIndex,
-        const LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            globalDOFIndex) const {
+    size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
+        const size_t& elementIndex, const size_t& globalDOFIndex) const { 
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
 
         // Get all the global DOFs for the element
-        const Vector<index_t, this->numElementDOFs> global_dofs =
+        const Vector<size_t, this->numElementDOFs> global_dofs =
             this->getGlobalDOFIndices(elementIndex);
 
-        ippl::Vector<index_t, this->numElementDOFs> dof_mapping;
+        ippl::Vector<size_t, this->numElementDOFs> dof_mapping;
         if (Dim == 1) {
             dof_mapping = {0, 1};
         } else if (Dim == 2) {
@@ -160,7 +156,7 @@ namespace ippl {
 
         // Find the global DOF in the vector and return the local DOF index
         // TODO this can be done faster since the global DOFs are sorted
-        for (index_t i = 0; i < dof_mapping.dim; ++i) {
+        for (size_t i = 0; i < dof_mapping.dim; ++i) {
             if (global_dofs[dof_mapping[i]] == globalDOFIndex) {
                 return dof_mapping[i];
             }
@@ -172,12 +168,9 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t
+    size_t
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndex(
-        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            elementIndex,
-        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            localDOFIndex) const {
+        const size_t& elementIndex, const size_t& localDOFIndex) const {
         const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
@@ -186,12 +179,12 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    Vector<typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t,
+    Vector<size_t,
            LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndices() const {
-        Vector<index_t, numElementDOFs> localDOFs;
+        Vector<size_t, numElementDOFs> localDOFs;
 
-        for (index_t dof = 0; dof < numElementDOFs; ++dof) {
+        for (size_t dof = 0; dof < numElementDOFs; ++dof) {
             localDOFs[dof] = dof;
         }
 
@@ -201,15 +194,14 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    Vector<typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t,
+    Vector<size_t,
            LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndices(
-        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t&
-            elementIndex) const {
-        Vector<index_t, this->numElementDOFs> globalDOFs(0);
+        const size_t& elementIndex) const {
+        Vector<size_t, this->numElementDOFs> globalDOFs(0);
 
         // get element pos
-        ndindex_t elementPos = this->getElementNDIndex(elementIndex);
+        indices_t elementPos = this->getElementNDIndex(elementIndex);
 
         // Compute the vector to multiply the ndindex with
         ippl::Vector<size_t, Dim> vec(1);
@@ -219,7 +211,7 @@ namespace ippl {
             }
         }
         vec *= Order;  // Multiply each dimension by the order
-        index_t smallestGlobalDOF = elementPos.dot(vec);
+        size_t smallestGlobalDOF = elementPos.dot(vec);
 
         // Add the vertex DOFs
         globalDOFs[0] = smallestGlobalDOF;
@@ -246,7 +238,7 @@ namespace ippl {
 
             // Add the edge DOFs
             if (Dim >= 2) {
-                for (index_t i = 0; i < Order - 1; ++i) {
+                for (size_t i = 0; i < Order - 1; ++i) {
                     globalDOFs[8 + i] = globalDOFs[0] + i + 1;
                     globalDOFs[8 + Order - 1 + i] =
                         globalDOFs[1] + (i + 1) * this->nr_m[1];
@@ -261,8 +253,8 @@ namespace ippl {
 
             // Add the face DOFs
             if (Dim >= 2) {
-                for (index_t i = 0; i < Order - 1; ++i) {
-                    for (index_t j = 0; j < Order - 1; ++j) {
+                for (size_t i = 0; i < Order - 1; ++i) {
+                    for (size_t j = 0; j < Order - 1; ++j) {
                         // TODO CHECK
                         globalDOFs[8 + 4 * (Order - 1) + i * (Order - 1) + j] =
                             globalDOFs[0] + (i + 1) + (j + 1) * this->nr_m[1];
@@ -291,8 +283,7 @@ namespace ippl {
               typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
     T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-        evaluateRefElementShapeFunction(const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
-                                                            FieldLHS, FieldRHS>::index_t& localDOF,
+        evaluateRefElementShapeFunction(const size_t& localDOF,
                                         const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, 
                                                             FieldLHS, FieldRHS>::point_t& localPoint) const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -310,7 +301,7 @@ namespace ippl {
         // The variable that accumulates the product of the shape functions.
         T product = 1;
 
-        for (index_t d = 0; d < Dim; d++) {
+        for (size_t d = 0; d < Dim; d++) {
             if (localPoint[d] < ref_element_point[d]) {
                 product *= localPoint[d];
             } else {
@@ -324,11 +315,10 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::gradient_vec_t
+    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::point_t
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         evaluateRefElementShapeFunctionGradient(
-            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::index_t&
-                localDOF,
+            const size_t& localDOF,
             const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::point_t&
                 localPoint) const {
         // TODO fix not order independent, only works for order 1
@@ -341,22 +331,22 @@ namespace ippl {
                && "Point is not in reference element");
 
         // Get the local dof nd_index
-        const mesh_element_vertex_point_vec_t local_vertex_points =
+        const vertex_points_t local_vertex_points =
             this->ref_element_m.getLocalVertices();
 
         const point_t& local_vertex_point = local_vertex_points[localDOF];
 
-        gradient_vec_t gradient(1);
+        point_t gradient(1);
 
         // To construct the gradient we need to loop over the dimensions and multiply the
         // shape functions in each dimension except the current one. The one of the current
         // dimension is replaced by the derivative of the shape function in that dimension,
         // which is either 1 or -1.
-        for (index_t d = 0; d < Dim; d++) {
+        for (size_t d = 0; d < Dim; d++) {
             // The variable that accumulates the product of the shape functions.
             T product = 1;
 
-            for (index_t d2 = 0; d2 < Dim; d2++) {
+            for (size_t d2 = 0; d2 < Dim; d2++) {
                 if (d2 == d) {
                     if (localPoint[d] < local_vertex_point[d]) {
                         product *= 1;
@@ -415,10 +405,10 @@ namespace ippl {
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<gradient_vec_t, this->numElementDOFs>, QuadratureType::numElementNodes>
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes>
             grad_b_q;
-        for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (index_t i = 0; i < this->numElementDOFs; ++i) {
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -442,17 +432,17 @@ namespace ippl {
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
 
-                const index_t elementIndex                                = elementIndices(index);
-                const Vector<index_t, this->numElementDOFs> local_dof     = this->getLocalDOFIndices();
-                const Vector<index_t, this->numElementDOFs> global_dofs   = this->getGlobalDOFIndices(elementIndex);
-                Vector<ndindex_t, this->numElementDOFs> global_dof_ndindices;
+                const size_t elementIndex                                = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dof     = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs   = this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, this->numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
-                index_t i, j;
+                size_t i, j;
 
                 // Element matrix
                 Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
@@ -461,7 +451,7 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         A_K[i][j] = 0.0;
-                        for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
                         }
                     }
@@ -469,7 +459,7 @@ namespace ippl {
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in each
                 // dimension)
-                ndindex_t I_nd, J_nd;
+                indices_t I_nd, J_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
@@ -513,7 +503,7 @@ namespace ippl {
     KOKKOS_FUNCTION
     T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evalFunc(
         const T absDetDPhi,
-        const index_t elementIndex, const index_t& i, const point_t& q_k,
+        const size_t elementIndex, const size_t& i, const point_t& q_k,
         const Vector<T, numElementDOFs>& basis_q_k) const {
 
         Vector<T, Dim> coords = this->ref_element_m.localToGlobal(
@@ -543,12 +533,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        const ndindex_t zeroNdIndex = Vector<index_t, Dim>(0);
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
         Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
-        for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (index_t i = 0; i < this->numElementDOFs; ++i) {
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
             }
         }
@@ -575,11 +565,11 @@ namespace ippl {
         // Loop over elements to compute contributions
         Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const index_t elementIndex                              = elementIndices(index);
-                const Vector<index_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
-                const Vector<index_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+                const size_t elementIndex                              = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
 
-                index_t i, I;
+                size_t i, I;
 
                 // 1. Compute b_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
@@ -595,7 +585,7 @@ namespace ippl {
 
                     // calculate the contribution of this element
                     T contrib = 0;
-                    for (index_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         T val = sinusoidalRHSFunction<T,Dim>(this->ref_element_m.localToGlobal(
                             this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q[k]));
                         
