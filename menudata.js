@@ -26,6 +26,7 @@ var menudata={children:[
 {text:"Main Page",url:"index.html"},
 {text:"Basics Usage",url:"Basics.html"},
 {text:"Installation",url:"Installation.html"},
+{text:"Profiling",url:"Profiling.html"},
 {text:"Namespaces",url:"namespaces.html",children:[
 {text:"Namespace List",url:"namespaces.html"},
 {text:"Namespace Members",url:"namespacemembers.html",children:[
