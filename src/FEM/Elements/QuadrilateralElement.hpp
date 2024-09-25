@@ -2,9 +2,9 @@
 namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
-    typename QuadrilateralElement<T>::mesh_element_vertex_point_vec_t
+    typename QuadrilateralElement<T>::vertex_points_t
     QuadrilateralElement<T>::getLocalVertices() const {
-        QuadrilateralElement::mesh_element_vertex_point_vec_t vertices = {
+        QuadrilateralElement::vertex_points_t vertices = {
             {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
 
         return vertices;
@@ -12,10 +12,10 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename QuadrilateralElement<T>::diag_matrix_vec_t
+    typename QuadrilateralElement<T>::point_t
     QuadrilateralElement<T>::getTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
-        QuadrilateralElement::diag_matrix_vec_t jacobian;
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices) const {
+        QuadrilateralElement::point_t jacobian;
 
         jacobian[0] = (global_vertices[1][0] - global_vertices[0][0]);
         jacobian[1] = (global_vertices[2][1] - global_vertices[0][1]);
@@ -25,10 +25,10 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename QuadrilateralElement<T>::diag_matrix_vec_t
+    typename QuadrilateralElement<T>::point_t
     QuadrilateralElement<T>::getInverseTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
-        QuadrilateralElement::diag_matrix_vec_t inv_jacobian;
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices) const {
+        QuadrilateralElement::point_t inv_jacobian;
 
         inv_jacobian[0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
         inv_jacobian[1] = 1.0 / (global_vertices[2][1] - global_vertices[0][1]);
@@ -39,10 +39,10 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     typename QuadrilateralElement<T>::point_t QuadrilateralElement<T>::globalToLocal(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices,
         const QuadrilateralElement<T>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
-        const QuadrilateralElement<T>::diag_matrix_vec_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
+        const QuadrilateralElement<T>::point_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
 
         QuadrilateralElement<T>::point_t local_point = glob2loc_matrix * (global_point - global_vertices[0]);
 
@@ -52,10 +52,10 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     typename QuadrilateralElement<T>::point_t QuadrilateralElement<T>::localToGlobal(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices,
         const QuadrilateralElement<T>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
-        const QuadrilateralElement<T>::diag_matrix_vec_t loc2glob_matrix = getTransformationJacobian(global_vertices);
+        const QuadrilateralElement<T>::point_t loc2glob_matrix = getTransformationJacobian(global_vertices);
 
         QuadrilateralElement<T>::point_t global_point = (loc2glob_matrix * local_point) + global_vertices[0];
 
@@ -65,7 +65,7 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     T QuadrilateralElement<T>::getDeterminantOfTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices)
         const {
         T determinant = 1.0;
 
@@ -80,9 +80,9 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename QuadrilateralElement<T>::diag_matrix_vec_t
+    typename QuadrilateralElement<T>::point_t
     QuadrilateralElement<T>::getInverseTransposeTransformationJacobian(
-        const QuadrilateralElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const QuadrilateralElement<T>::vertex_points_t& global_vertices)
         const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);

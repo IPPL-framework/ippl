@@ -3,10 +3,10 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
     KOKKOS_FUNCTION
     typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::globalToLocal(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
+        const Element<T, Dim, NumVertices>::vertex_points_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
-        const diag_matrix_vec_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
+        const point_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
 
         point_t local_point = glob2loc_matrix * (global_point - global_vertices[0]);
 
@@ -16,10 +16,10 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
     KOKKOS_FUNCTION
     typename Element<T, Dim, NumVertices>::point_t Element<T, Dim, NumVertices>::localToGlobal(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices,
+        const Element<T, Dim, NumVertices>::vertex_points_t& global_vertices,
         const Element<T, Dim, NumVertices>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
-        const diag_matrix_vec_t loc2glob_matrix = getTransformationJacobian(global_vertices);
+        const point_t loc2glob_matrix = getTransformationJacobian(global_vertices);
 
         point_t global_point = (loc2glob_matrix * local_point) + global_vertices[0];
 
@@ -29,7 +29,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumVertices>
     KOKKOS_FUNCTION
     T Element<T, Dim, NumVertices>::getDeterminantOfTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
+        const Element<T, Dim, NumVertices>::vertex_points_t& global_vertices)
         const {
         T determinant = 1.0;
 
@@ -44,9 +44,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumVertices>
     KOKKOS_FUNCTION
-    typename Element<T, Dim, NumVertices>::diag_matrix_vec_t
+    typename Element<T, Dim, NumVertices>::point_t
     Element<T, Dim, NumVertices>::getInverseTransposeTransformationJacobian(
-        const Element<T, Dim, NumVertices>::mesh_element_vertex_point_vec_t& global_vertices)
+        const Element<T, Dim, NumVertices>::vertex_points_t& global_vertices)
         const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);

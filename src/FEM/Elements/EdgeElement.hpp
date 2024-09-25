@@ -3,9 +3,9 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename EdgeElement<T>::mesh_element_vertex_point_vec_t EdgeElement<T>::getLocalVertices()
+    typename EdgeElement<T>::vertex_points_t EdgeElement<T>::getLocalVertices()
         const {
-        EdgeElement::mesh_element_vertex_point_vec_t vertices;
+        EdgeElement::vertex_points_t vertices;
         vertices[0] = {0.0};
         vertices[1] = {1.0};
         return vertices;
@@ -13,9 +13,9 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getTransformationJacobian(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
-        EdgeElement::diag_matrix_vec_t jacobian;
+    typename EdgeElement<T>::point_t EdgeElement<T>::getTransformationJacobian(
+        const EdgeElement<T>::vertex_points_t& global_vertices) const {
+        EdgeElement::point_t jacobian;
 
         jacobian[0] = (global_vertices[1][0] - global_vertices[0][0]);
 
@@ -24,9 +24,9 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename EdgeElement<T>::diag_matrix_vec_t EdgeElement<T>::getInverseTransformationJacobian(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices) const {
-        EdgeElement::diag_matrix_vec_t inv_jacobian;
+    typename EdgeElement<T>::point_t EdgeElement<T>::getInverseTransformationJacobian(
+        const EdgeElement<T>::vertex_points_t& global_vertices) const {
+        EdgeElement::point_t inv_jacobian;
 
         inv_jacobian[0] = 1.0 / (global_vertices[1][0] - global_vertices[0][0]);
 
@@ -36,10 +36,10 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     typename EdgeElement<T>::point_t EdgeElement<T>::globalToLocal(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const EdgeElement<T>::vertex_points_t& global_vertices,
         const EdgeElement<T>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
-        const EdgeElement<T>::diag_matrix_vec_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
+        const EdgeElement<T>::point_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
 
         EdgeElement<T>::point_t local_point = glob2loc_matrix * (global_point - global_vertices[0]);
 
@@ -49,10 +49,10 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     typename EdgeElement<T>::point_t EdgeElement<T>::localToGlobal(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices,
+        const EdgeElement<T>::vertex_points_t& global_vertices,
         const EdgeElement<T>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
-        const EdgeElement<T>::diag_matrix_vec_t loc2glob_matrix = getTransformationJacobian(global_vertices);
+        const EdgeElement<T>::point_t loc2glob_matrix = getTransformationJacobian(global_vertices);
 
         EdgeElement<T>::point_t global_point = (loc2glob_matrix * local_point) + global_vertices[0];
 
@@ -62,7 +62,7 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION
     T EdgeElement<T>::getDeterminantOfTransformationJacobian(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const EdgeElement<T>::vertex_points_t& global_vertices)
         const {
         T determinant = 1.0;
 
@@ -77,9 +77,9 @@ namespace ippl {
 
     template <typename T>
     KOKKOS_FUNCTION
-    typename EdgeElement<T>::diag_matrix_vec_t
+    typename EdgeElement<T>::point_t
     EdgeElement<T>::getInverseTransposeTransformationJacobian(
-        const EdgeElement<T>::mesh_element_vertex_point_vec_t& global_vertices)
+        const EdgeElement<T>::vertex_points_t& global_vertices)
         const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);
