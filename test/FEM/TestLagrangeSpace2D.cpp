@@ -35,15 +35,15 @@ int main(int argc, char* argv[]) {
 
         std::cout << "mesh spacing = " << mesh.getMeshSpacing() << "\n";
 
-        // Refernce element
-        const ElementType quad_element;
+        // Reference element
+        ElementType quad_element;
 
         // Create Midpoint Quadrature
         const ippl::MidpointQuadrature<T, 1, ElementType> midpoint_quadrature(quad_element);
 
         // Create LagrangeSpace
-        const ippl::LagrangeSpace<T, 2, 1, QuadratureType, FieldType, FieldType> lagrange_space(
-            mesh, quad_element, midpoint_quadrature, layout);
+        const ippl::LagrangeSpace<T, 2, 1, ElementType, QuadratureType, FieldType, FieldType>
+            lagrange_space(mesh, quad_element, midpoint_quadrature, layout);
 
         // Print the values for the local basis functions
         const std::string local_basis_filename = "~2D_lagrange_local_basis.csv";

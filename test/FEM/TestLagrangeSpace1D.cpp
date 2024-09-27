@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
         isParallel.fill(true);
         ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, number_of_vertices, isParallel);
 
-        // Refernce element
-        const ElementType ref_element;
+        // Reference element
+        ElementType ref_element;
 
         // Create Midpoint Quadrature
         const ippl::MidpointQuadrature<T, 1, ElementType> midpoint_quadrature(ref_element);
@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
         // Create LagrangeSpace
         const unsigned number_of_local_vertices = 2;
 
-        const ippl::LagrangeSpace<T, 1, 1, QuadratureType, FieldType, FieldType> lagrange_space(
-            mesh, ref_element, midpoint_quadrature, layout);
+        const ippl::LagrangeSpace<T, 1, 1, ElementType, QuadratureType, FieldType, FieldType>
+            lagrange_space(mesh, ref_element, midpoint_quadrature, layout);
 
         // Print the local basis values for plotting
         const unsigned number_of_points = 200;
