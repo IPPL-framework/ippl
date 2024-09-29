@@ -15,6 +15,14 @@ public:
     size_t usedBuffersSize() const { return used_buffers.size(); }
 
     size_t freeBuffersSize() const { return free_buffers.size(); }
+
+    size_t getAllocatedSize() const {
+        return BufferHandler<memory_space>::getAllocatedSize();
+    }
+
+    size_t getFreeSize() const {
+        return BufferHandler<memory_space>::getFreeSize();
+    }
 };
 
 class BufferHandlerTest : public ::testing::Test {
@@ -118,6 +126,57 @@ TEST_F(BufferHandlerTest, GetBuffer_ZeroSize) {
     EXPECT_EQ(handler->usedBuffersSize(), 1);
     EXPECT_EQ(handler->freeBuffersSize(), 0);
 }
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_EmptyHandler) {
+    EXPECT_EQ(handler->getAllocatedSize(), 0);
+    EXPECT_EQ(handler->getFreeSize(), 0);
+}
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_AfterBufferAllocation) {
+    auto buffer = handler->getBuffer(100, 1.0);
+    EXPECT_EQ(handler->getAllocatedSize(), 100);
+    EXPECT_EQ(handler->getFreeSize(), 0);
+}
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeBuffer) {
+    auto buffer = handler->getBuffer(100, 1.0);
+    handler->freeBuffer(buffer);
+
+    EXPECT_EQ(handler->getAllocatedSize(), 0);
+    EXPECT_EQ(handler->getFreeSize(), 100);
+}
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeAllBuffers) {
+    auto buffer1 = handler->getBuffer(50, 1.0);
+    auto buffer2 = handler->getBuffer(100, 1.0);
+
+    handler->freeAllBuffers();
+
+    EXPECT_EQ(handler->getAllocatedSize(), 0);
+    EXPECT_EQ(handler->getFreeSize(), 150);
+}
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers) {
+    handler->getBuffer(50, 1.0);
+    handler->getBuffer(100, 1.0);
+
+    handler->deleteAllBuffers();
+
+    EXPECT_EQ(handler->getAllocatedSize(), 0);
+    EXPECT_EQ(handler->getFreeSize(), 0);
+}
+
+TEST_F(BufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerThanAvailable) {
+    auto smallBuffer = handler->getBuffer(50, 1.0);
+    handler->freeBuffer(smallBuffer);
+
+    auto largeBuffer = handler->getBuffer(200, 1.0);
+    
+    EXPECT_EQ(handler->getAllocatedSize(), 200);
+    EXPECT_EQ(handler->getFreeSize(), 0);
+}
+
+
 
 
 int main(int argc, char* argv[]) {

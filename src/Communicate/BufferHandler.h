@@ -20,8 +20,8 @@ public:
     virtual void freeAllBuffers() = 0;
     virtual void deleteAllBuffers() = 0;
 protected:
-    virtual void insertBuffer(buffer_type buffer, bool isUsed) = 0;
-    virtual void eraseBuffer(buffer_type buffer, bool isUsed) = 0;
+    virtual size_type getAllocatedSize() const = 0;
+    virtual size_type getFreeSize() const = 0;
 };
 
 template <typename MemorySpace>
@@ -40,63 +40,63 @@ public:
 
         if (it != free_buffers.end()) {
             buffer_type buffer = *it;
-            eraseBuffer(buffer, false);
-            insertBuffer(buffer, true);
+
+            freeSize -= buffer->getBufferSize();
+            allocatedSize += buffer->getBufferSize();
+
+            free_buffers.erase(buffer);
+            used_buffers.insert(buffer);
             return buffer;
         }
 
         if (!free_buffers.empty()) {
             auto largest_it    = std::prev(free_buffers.end());
             buffer_type buffer = *largest_it;
-            eraseBuffer(buffer, false);
+
+            freeSize -= buffer->getBufferSize();
+            allocatedSize += requiredSize;
+
+            free_buffers.erase(buffer);
             buffer->reallocBuffer(requiredSize);
 
-            insertBuffer(buffer, true);
+            used_buffers.insert(buffer);
             return buffer;
         }
 
         buffer_type newBuffer = std::make_shared<archive_type>(requiredSize);
-        insertBuffer(newBuffer, true);
+
+        allocatedSize += newBuffer->getBufferSize();
+
+        used_buffers.insert(newBuffer);
         return newBuffer;
     }
 
     void freeBuffer(buffer_type buffer) override {
         auto it = used_buffers.find(buffer);
         if (it != used_buffers.end()) {
-            eraseBuffer(*it, true);
-            insertBuffer(*it, false);
+
+            allocatedSize -= (*it)->getBufferSize();
+            freeSize += (*it)->getBufferSize();
+
+            used_buffers.erase(*it);
+            free_buffers.insert(*it);
         }
     }
 
     void freeAllBuffers() override {
-        std::vector<buffer_type> buffersToMove(used_buffers.begin(), used_buffers.end());
-
-        for (auto& buffer : buffersToMove) {
-            eraseBuffer(buffer, true);
-            insertBuffer(buffer, false);
-        }
+        freeSize += allocatedSize;
+        allocatedSize = 0;
+        
+        free_buffers.insert(used_buffers.begin(), used_buffers.end());
+        used_buffers.clear();
     }
 
     void deleteAllBuffers() override {
+        freeSize = 0;
+        allocatedSize = 0;
+
         used_buffers.clear();
         free_buffers.clear();
-    }
-protected:
-
-    void insertBuffer(buffer_type buffer, bool isUsed) override {
-        if (isUsed) {
-            used_buffers.insert(buffer);
-        } else {
-            free_buffers.insert(buffer);
-        }
-    }
-
-    void eraseBuffer(buffer_type buffer, bool isUsed) override {
-        if (isUsed) {
-            used_buffers.erase(buffer);
-        } else {
-            free_buffers.erase(buffer);
-        }
     }
 
 private:
@@ -118,10 +118,23 @@ private:
                                 return buffer->getBufferSize() >= requiredSize;
                             });
     }
+    
+  size_type allocatedSize;
+  size_type freeSize;
+
 
 protected:
     std::set<buffer_type, BufferComparator> used_buffers;
     std::set<buffer_type, BufferComparator> free_buffers;
+
+  size_type getAllocatedSize() const override {
+    return allocatedSize;
+  }
+
+  size_type getFreeSize() const override {
+    return freeSize;
+  }
+
 };
 
 #endif
