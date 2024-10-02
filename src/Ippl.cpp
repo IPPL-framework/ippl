@@ -102,8 +102,8 @@ namespace ippl {
         Kokkos::finalize();
         // we must first delete the communicator and
         // afterwards the MPI environment
-        Comm.reset(nullptr);
-        Env.reset(nullptr);
+        // Comm.reset(nullptr);
+        // Env.reset(nullptr);
     }
 
     void fence() {
