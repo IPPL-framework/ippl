@@ -16,9 +16,9 @@ namespace ippl {
         }
 
         Environment::~Environment() {
-            if (!finalized()) {
-                MPI_Finalize();
-            }
+   //         if (!finalized()) {
+   //             MPI_Finalize();
+   //         }
         }
 
         bool Environment::initialized() {
