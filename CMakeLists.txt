@@ -99,7 +99,7 @@ else()
 endif()
 
 if(NOT Kokkos_VERSION)
-    set(Kokkos_VERSION "4.1.00")
+    set(Kokkos_VERSION "4.2.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
 else()
     message(STATUS "${Green}Selected Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
