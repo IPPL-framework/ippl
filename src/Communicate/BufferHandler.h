@@ -19,7 +19,7 @@ public:
     virtual void freeBuffer(buffer_type buffer) = 0;
     virtual void freeAllBuffers() = 0;
     virtual void deleteAllBuffers() = 0;
-protected:
+
     virtual size_type getAllocatedSize() const = 0;
     virtual size_type getFreeSize() const = 0;
 };
@@ -99,6 +99,14 @@ public:
         free_buffers.clear();
     }
 
+  size_type getAllocatedSize() const override {
+    return allocatedSize;
+  }
+
+  size_type getFreeSize() const override {
+    return freeSize;
+  }
+
 private:
     struct BufferComparator {
         bool operator()(const buffer_type& lhs, const buffer_type& rhs) const {
@@ -126,14 +134,6 @@ private:
 protected:
     std::set<buffer_type, BufferComparator> used_buffers;
     std::set<buffer_type, BufferComparator> free_buffers;
-
-  size_type getAllocatedSize() const override {
-    return allocatedSize;
-  }
-
-  size_type getFreeSize() const override {
-    return freeSize;
-  }
 
 };
 

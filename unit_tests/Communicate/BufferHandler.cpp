@@ -16,13 +16,6 @@ public:
 
     size_t freeBuffersSize() const { return free_buffers.size(); }
 
-    size_t getAllocatedSize() const {
-        return BufferHandler<memory_space>::getAllocatedSize();
-    }
-
-    size_t getFreeSize() const {
-        return BufferHandler<memory_space>::getFreeSize();
-    }
 };
 
 class BufferHandlerTest : public ::testing::Test {
