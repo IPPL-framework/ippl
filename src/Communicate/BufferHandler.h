@@ -5,7 +5,6 @@
 
 #include "Communicate/Archive.h"
 
-
 template <typename MemorySpace>
 class IBufferHandler {
 public:
@@ -16,12 +15,12 @@ public:
     virtual ~IBufferHandler() {}
 
     virtual buffer_type getBuffer(size_type size, double overallocation) = 0;
-    virtual void freeBuffer(buffer_type buffer) = 0;
-    virtual void freeAllBuffers() = 0;
-    virtual void deleteAllBuffers() = 0;
+    virtual void freeBuffer(buffer_type buffer)                          = 0;
+    virtual void freeAllBuffers()                                        = 0;
+    virtual void deleteAllBuffers()                                      = 0;
 
     virtual size_type getAllocatedSize() const = 0;
-    virtual size_type getFreeSize() const = 0;
+    virtual size_type getFreeSize() const      = 0;
 };
 
 template <typename MemorySpace>
@@ -64,26 +63,23 @@ public:
     }
 
     void deleteAllBuffers() override {
-        freeSize = 0;
+        freeSize      = 0;
         allocatedSize = 0;
 
         used_buffers.clear();
         free_buffers.clear();
     }
 
-    size_type getAllocatedSize() const override {
-      return allocatedSize;
-    }
+    size_type getAllocatedSize() const override { return allocatedSize; }
 
-    size_type getFreeSize() const override {
-      return freeSize;
-    }
+    size_type getFreeSize() const override { return freeSize; }
 
 private:
     using buffer_comparator_type = bool (*)(const buffer_type&, const buffer_type&);
+    using buffer_set_type        = std::set<buffer_type, buffer_comparator_type>;
 
     static bool bufferSizeComparator(const buffer_type& lhs, const buffer_type& rhs) {
-        // Compare by size first, then by memory address
+        // Compare by size first, then by memory address to get total ordering
         if (lhs->getBufferSize() != rhs->getBufferSize()) {
             return lhs->getBufferSize() < rhs->getBufferSize();
         }
@@ -96,7 +92,7 @@ private:
 
     void releaseUsedBuffer(buffer_type buffer) {
         auto it = used_buffers.find(buffer);
-        
+
         allocatedSize -= buffer->getBufferSize();
         freeSize += buffer->getBufferSize();
 
@@ -112,14 +108,12 @@ private:
         return nullptr;
     }
 
-    typename std::set<buffer_type, buffer_comparator_type>::iterator findSmallestSufficientBuffer(
-        size_type requiredSize) {
+    buffer_set_type::iterator findSmallestSufficientBuffer(size_type requiredSize) {
         return std::find_if(free_buffers.begin(), free_buffers.end(),
                             [requiredSize](const buffer_type& buffer) {
                                 return buffer->getBufferSize() >= requiredSize;
                             });
     }
-
 
     buffer_type allocateFromFreeBuffer(buffer_type buffer) {
         freeSize -= buffer->getBufferSize();
@@ -131,7 +125,7 @@ private:
     }
 
     buffer_type reallocateLargestFreeBuffer(size_type requiredSize) {
-        auto largest_it = std::prev(free_buffers.end());
+        auto largest_it    = std::prev(free_buffers.end());
         buffer_type buffer = *largest_it;
 
         freeSize -= buffer->getBufferSize();
@@ -151,15 +145,13 @@ private:
         used_buffers.insert(newBuffer);
         return newBuffer;
     }
-    
-  size_type allocatedSize;
-  size_type freeSize;
 
+    size_type allocatedSize;
+    size_type freeSize;
 
 protected:
-    std::set<buffer_type, buffer_comparator_type> used_buffers{&BufferHandler::bufferSizeComparator};
-    std::set<buffer_type, buffer_comparator_type> free_buffers{&BufferHandler::bufferSizeComparator};
-
+    buffer_set_type used_buffers{&BufferHandler::bufferSizeComparator};
+    buffer_set_type free_buffers{&BufferHandler::bufferSizeComparator};
 };
 
 #endif
