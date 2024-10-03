@@ -4,11 +4,6 @@
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //
-#include <iomanip>
-#include <fstream>
-
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
 
 // Communication specific functions (pack and unpack).
 template <typename Tb, typename Tf>
@@ -224,277 +219,16 @@ namespace ippl {
         this->setRhs(rhs);
     }
 
-
-    template <typename FieldLHS, typename FieldRHS>
-    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::dumpVectField(std::string what) {
-    /*
-      what == ef
-     */
-
-    Inform m("FS::dumpVectField() ");
-
-    //    std::variant<Field_t<3>*, VField_t<double, 3>* > field;
-
-    if (ippl::Comm->size() > 1) {
-        return;
-    }
-
-    m << "*** START DUMPING VECTOR FIELD ***" << endl;
-
-    std::string type;
-    std::string unit;
-    bool isVectorField;
-
-    if (what == "EF") {
-        type = "vector";
-        unit = "";
-        isVectorField = true;
-        //    field = this->getE();
-    }
-
-    int  call_counter = 0;
-    boost::filesystem::path file("../input-files/");
-    boost::format filename("%1%-%2%-%|3$06|.dat");
-    std::string basename = "fieldDump"; 
-    filename % basename % (what + std::string("_") + type) % call_counter;
-    file /= filename.str();
-    m << "*** FILE NAME " + file.string() << endl;
-    std::ofstream fout(file.string(), std::ios::out);
-    fout.precision(9);
-
-    fout << "# " << what << " " << type << " data on grid" << std::endl
-         << "#"
-         << std::setw(5)  << "i"
-         << std::setw(5)  << "j"
-         << std::setw(5)  << "k"
-         << std::setw(17) << "x [m]"
-         << std::setw(17) << "y [m]"
-         << std::setw(17) << "z [m]";
-
-    if (isVectorField) {
-        fout << std::setw(10) << what << "x [" << unit << "]"
-             << std::setw(10) << what << "y [" << unit << "]"
-             << std::setw(10) << what << "z [" << unit << "]";
-    } else {
-        fout << std::setw(13) << what << " [" << unit << "]";
-    }
-
-    fout << std::endl;
-
-    fout.close();
-    m << "*** FINISHED DUMPING " + what + " FIELD ***" << endl;
-    }
-
-    template <typename FieldLHS, typename FieldRHS>
-    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::dumpScalField(std::string what) {
-        /*
-          rho2_mr -> what == RHO2
-          grn_mr  -> what == G
-        */
-
-        Inform m("FSopen::dumpScalField() ");
-
-        if (ippl::Comm->size() > 1) {
-            return;
-        }
-        m << "*** START DUMPING SCALAR FIELD ***" << endl;
-
-        int step = 0;
-
-        std::string type;
-        std::string unit;
-        bool isVectorField = false;
-    
-        Field_t field;
-
-        if (what == "RHO2" || what == "RHO2INV" || what == "SOL2") {
-            type = "scalar";
-            unit = "Cb/m^3";
-            field= rho2_mr;
-        } else if (what == "G") {
-            type = "scalar";
-            unit = "V";
-            field= grn_mr;
-        }                        
-
-        auto localIdx = field.getOwned();
-        auto mesh_mp  = &(field.get_mesh());
-        auto spacing  = mesh_mp->getMeshSpacing();
-        auto origin   = mesh_mp->getOrigin();
-        
-        auto fieldV      = field.getView();
-        auto field_hostV = field.getHostMirror();
-
-    
-        Kokkos::deep_copy(field_hostV, fieldV);     
-
-        boost::filesystem::path file("../input-files/");
-        boost::format filename("%1%-%2%-%|3$06|.dat");
-        std::string basename = "fieldDump";
-        filename % basename % (what + std::string("_") + type) % step;
-        file /= filename.str();
-        m << "*** FILE NAME " + file.string() << endl;
-        std::ofstream fout(file.string(), std::ios::out);
-
-        fout << std::setprecision(9);
-    
-        fout << "# " << what << " " << type << " data on grid" << std::endl
-             << "# origin= " << std::fixed << origin << " h= " << std::fixed << spacing << std::endl 
-             << std::setw(5)  << "i"
-             << std::setw(5)  << "j"
-             << std::setw(5)  << "k"
-             << std::setw(17) << "x [m]"
-             << std::setw(17) << "y [m]"
-             << std::setw(17) << "z [m]";
-        
-        if (isVectorField) {
-            fout << std::setw(10) << what << "x [" << unit << "]"
-                 << std::setw(10) << what << "y [" << unit << "]"
-                 << std::setw(10) << what << "z [" << unit << "]";
-        } else {
-            fout << std::setw(13) << what << " [" << unit << "]";
-        }
-
-        fout << std::endl;
-
-        for (int i = localIdx[0].first() +1; i <= localIdx[0].last() +1; i++) {
-            for (int j = localIdx[1].first() +1; j <= localIdx[1].last() +1; j++) {
-                for (int k = localIdx[2].first() +1; k <= localIdx[2].last() +1; k++) {
-                    
-                    // define the physical points (cell-centered)
-                    const double x = i * spacing[0] + origin[0];        
-                    const double y = j * spacing[1] + origin[1];        
-                    const double z = k * spacing[2] + origin[2];     
-                    
-                    fout << std::setw(5) << i + 1
-                         << std::setw(5) << j + 1
-                         << std::setw(5) << k + 1
-                         << std::setw(17) << x
-                         << std::setw(17) << y
-                         << std::setw(17) << z
-                         << std::scientific << "\t" << field_hostV(i,j,k)
-                         << std::endl;
-                }
-            }
-        }
-        fout.close();
-        m << "*** FINISHED DUMPING " + what + " FIELD ***" << endl;
-    }
-
-
-    template <typename FieldLHS, typename FieldRHS>
-    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::dumpComplScalField(std::string what) {
-        /*
-          rho2tr_m -> what == RHOTR
-          grntr_m  -> what == GTR
-        */
-        
-        Inform m("FSopen::dumpComplScalField() ");
-        
-        if (ippl::Comm->size() > 1) {
-            return;
-        }
-        
-        m << "*** START DUMPING COMPLEX SCALAR FIELD ***" << endl;
-        
-        int step = 0;
-
-        std::string type;
-        std::string unit;
-        bool isVectorField = false;
-        
-        CxField_t field;
-        
-        if (what == "RHOTR" || what == "SOL2TR") {
-            type = "scalar";
-            unit = "Cb/m^3";
-            field= rho2tr_m;
-        } else if (what == "GTR") {
-            type = "scalar";
-            unit = "V";
-            field= grntr_m;
-        }                        
-
-        auto localIdx = field.getOwned();
-        auto mesh_mp  = &(field.get_mesh());
-        auto spacing  = mesh_mp->getMeshSpacing();
-        auto origin   = mesh_mp->getOrigin();
-
-        auto fieldV      = field.getView();
-        auto field_hostV = field.getHostMirror();
-
-    
-        Kokkos::deep_copy(field_hostV, fieldV);     
-
-        boost::filesystem::path file("../input-files/");
-        boost::format filename("%1%-%2%-%|3$06|.dat");
-        std::string basename = "fieldDump";
-        filename % basename % (what + std::string("_") + type) % step;
-        file /= filename.str();
-        m << "*** FILE NAME " + file.string() << endl;
-        std::ofstream fout(file.string(), std::ios::out);
-
-        fout << std::setprecision(9);
-    
-        fout << "# " << what << " " << type << " data on grid" << std::endl
-             << "# origin= " << std::fixed << origin << " h= " << std::fixed << spacing << std::endl 
-             << std::setw(5)  << "i"
-             << std::setw(5)  << "j"
-             << std::setw(5)  << "k"
-             << std::setw(17) << "x [m]"
-             << std::setw(17) << "y [m]"
-             << std::setw(17) << "z [m]";
-
-        if (isVectorField) {
-            fout << std::setw(10) << what << "x [" << unit << "]"
-                 << std::setw(10) << what << "y [" << unit << "]"
-                 << std::setw(10) << what << "z [" << unit << "]";
-        } else {
-            fout << std::setw(13) << what << " [" << unit << "]";
-        }
-        
-        fout << std::endl;
-        
-        for (int i = localIdx[0].first() +1; i <= localIdx[0].last() +1; i++) {
-            for (int j = localIdx[1].first() +1; j <= localIdx[1].last() +1; j++) {
-                for (int k = localIdx[2].first() +1; k <= localIdx[2].last() +1; k++) {
-                    
-                    // define the physical points (cell-centered)
-                    const double x = i * spacing[0] + origin[0];        
-                    const double y = j * spacing[1] + origin[1];        
-                    const double z = k * spacing[2] + origin[2];     
-                
-                    const double a = field_hostV(i,j,k).real();
-                    const double b = field_hostV(i,j,k).imag();
-                    const double c = (a*a) + (b*b);
-
-                    fout << std::setw(5) << i + 1
-                         << std::setw(5) << j + 1
-                         << std::setw(5) << k + 1
-                         << std::setw(17) << x
-                         << std::setw(17) << y
-                         << std::setw(17) << z
-                         << std::scientific << "\t" << c
-                         << std::endl;
-                }
-            }
-        }
-        fout.close();
-        m << "*** FINISHED DUMPING " + what + " FIELD ***" << endl;
-    }
-
-
     /////////////////////////////////////////////////////////////////////////
     // override setRhs to call class-specific initialization
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
-        
         Base::setRhs(rhs);
 
         // start a timer
         static IpplTimings::TimerRef initialize = IpplTimings::getTimer("Initialize");
         IpplTimings::startTimer(initialize);
-	
+
         initializeFields();
 
         IpplTimings::stopTimer(initialize);
@@ -523,9 +257,6 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-
-        Inform m("");
-
         // get algorithm and hessian flag from parameter list
         const int alg      = this->params_m.template get<int>("algorithm");
         const bool hessian = this->params_m.template get<bool>("hessian");
@@ -547,13 +278,6 @@ namespace ippl {
         hr_m               = mesh_mp->getMeshSpacing();
         vector_type origin = mesh_mp->getOrigin();
 
-        // force r2c direction to be the same as OPAL
-        // force hr_m to be the same as OPAL
-        this->params_m.update("r2c_direction", 1);
-
-        //Vector<double, 3> opal_spacing = {1.0, 1.0, 1.0};
-        //Vector<double, 3> opal_origin = {0.0, 0.0, 0.0};
-
         // create domain for the real fields
         domain_m = layout_mp->getDomain();
 
@@ -571,7 +295,6 @@ namespace ippl {
         // create double sized mesh and layout objects using the previously defined domain2_m
         using mesh_type = typename lhs_type::Mesh_t;
         mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, hr_m, origin));
-        //mesh2_m         = std::unique_ptr<mesh_type>(new mesh_type(domain2_m, opal_spacing, opal_origin));
         layout2_m = std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domain2_m, isParallel));
 
         // create the domain for the transformed (complex) fields
@@ -589,7 +312,6 @@ namespace ippl {
 
         // create mesh and layout for the real to complex FFT transformed fields
         meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, hr_m, origin));
-        //meshComplex_m = std::unique_ptr<mesh_type>(new mesh_type(domainComplex_m, opal_spacing, opal_origin));
         layoutComplex_m =
             std::unique_ptr<FieldLayout_t>(new FieldLayout_t(comm, domainComplex_m, isParallel));
 
@@ -770,9 +492,9 @@ namespace ippl {
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::solve() {
-
-        Inform m("FFTOpenPoissonSolver: ");
         // start a timer
+        Inform m ("FFTOpenPoissonSolver::solve ");
+        
         static IpplTimings::TimerRef solve = IpplTimings::getTimer("Solve");
         IpplTimings::startTimer(solve);
 
@@ -790,17 +512,26 @@ namespace ippl {
 
         // check whether the mesh spacing has changed with respect to the old one
         // if yes, update and set green flag to true
-        //bool green = false;
-        /*for (unsigned int i = 0; i < Dim; ++i) {
+
+        bool green = false;
+
+        // ADA
+        //        m << "Old mesh h= " << hr_m << endl;
+        for (unsigned int i = 0; i < Dim; ++i) {
             if (hr_m[i] != mesh_mp->getMeshSpacing(i)) {
                 hr_m[i] = mesh_mp->getMeshSpacing(i);
                 green   = true;
             }
-        }*/
+        }
+        // if (green)
+        //    m << "new mesh h= " << hr_m << endl;
+
+        //        auto rho = this->rhs_mp;
+        // m << "sum(rhs) = " << std::scientific << std::setprecision(3) << (*rho).sum() << endl;
 
         // set mesh spacing on the other grids again
-        //mesh2_m->setMeshSpacing(hr_m);
-        //meshComplex_m->setMeshSpacing(hr_m);
+        mesh2_m->setMeshSpacing(hr_m);
+        meshComplex_m->setMeshSpacing(hr_m);
 
         // field object on the doubled grid; zero-padded
         rho2_mr = 0.0;
@@ -816,8 +547,6 @@ namespace ippl {
 
         auto view2 = rho2_mr.getView();
         auto view1 = this->rhs_mp->getView();
-
-	    m << "1: sum(rhs) = " << std::scientific << std::setprecision(3) << (*this->rhs_mp).sum() << endl;
 
         const int nghost2 = rho2_mr.getNghost();
         const int nghost1 = this->rhs_mp->getNghost();
@@ -891,33 +620,23 @@ namespace ippl {
         static IpplTimings::TimerRef fftrho = IpplTimings::getTimer("FFT: Rho");
         IpplTimings::startTimer(fftrho);
 
-        dumpScalField("RHO2");
-
         // forward FFT of the charge density field on doubled grid
         fft_m->transform(FORWARD, rho2_mr, rho2tr_m);
-
-        dumpComplScalField("RHOTR");
-
-        //fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
-
-        //dumpScalField("RHO2INV");
 
         IpplTimings::stopTimer(fftrho);
 
         // call greensFunction to recompute if the mesh spacing has changed
-        //if (green) {
-        //    greensFunction();
-        //}
+        if (green) {
+            greensFunction();
+        }
 
-        //dumpScalField("G");
-        //dumpComplScalField("GTR");
-        
         // multiply FFT(rho2)*FFT(green)
         // convolution becomes multiplication in FFT
         // minus sign since we are solving laplace(phi) = -rho
         rho2tr_m = -rho2tr_m * grntr_m;
 
-        dumpComplScalField("SOL2TR");
+        // define pi
+        const scalar_type pi  = Kokkos::numbers::pi_v<scalar_type>;
 
         // if output_type is SOL or SOL_AND_GRAD, we caculate solution
         if ((out == Base::SOL) || (out == Base::SOL_AND_GRAD)) {
@@ -928,8 +647,6 @@ namespace ippl {
             // inverse FFT of the product and store the electrostatic potential in rho2_mr
             fft_m->transform(BACKWARD, rho2_mr, rho2tr_m);
 
-            const scalar_type pi          = Kokkos::numbers::pi_v<scalar_type>;
-
             IpplTimings::stopTimer(fftc);
             // Hockney: multiply the rho2_mr field by the total number of points to account for
             // double counting (rho and green) of normalization factor in forward transform
@@ -938,12 +655,10 @@ namespace ippl {
             // since only backward transform was performed on the 4N grid
             // DCT_VICO: need to multiply by a factor of (2N)^3 to match the normalization factor in
             // the transform.
-            //
-            // change to match OPAL: remove multiplication by hr_m^3, add multiplication by (4*pi)^3
             for (unsigned int i = 0; i < Dim; ++i) {
                 switch (alg) {
                     case Algorithm::HOCKNEY:
-                        rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi); // * hr_m[i];
+                        rho2_mr = rho2_mr * 2.0 * nr_m[i]; // * (4.0 * pi);
                         break;
                     case Algorithm::VICO:
                     case Algorithm::BIHARMONIC:
@@ -959,8 +674,6 @@ namespace ippl {
                             "supported for open BCs");
                 }
             }
-
-            dumpScalField("SOL2");
 
             // start a timer
             static IpplTimings::TimerRef dtos = IpplTimings::getTimer("Solve: Double to physical");
@@ -1060,7 +773,6 @@ namespace ippl {
             auto view_g = temp_m.getView();
 
             // define some constants
-            const scalar_type pi          = Kokkos::numbers::pi_v<scalar_type>;
             const Kokkos::complex<Trhs> I = {0.0, 1.0};
 
             // define some member variables in local scope for the parallel_for
@@ -1103,7 +815,7 @@ namespace ippl {
                 for (unsigned int i = 0; i < Dim; ++i) {
                     switch (alg) {
                         case Algorithm::HOCKNEY:
-                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                            rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi);
                             break;
                         case Algorithm::VICO:
                         case Algorithm::BIHARMONIC:
@@ -1210,9 +922,6 @@ namespace ippl {
             // use temp_m as a temporary complex field
             auto view_g = temp_m.getView();
 
-            // define some constants
-            const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
-
             // define some member variables in local scope for the parallel_for
             vector_type hsize  = hr_m;
             Vector<int, Dim> N = nr_m;
@@ -1261,7 +970,7 @@ namespace ippl {
                     for (unsigned int i = 0; i < Dim; ++i) {
                         switch (alg) {
                             case Algorithm::HOCKNEY:
-                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * hr_m[i];
+                                rho2_mr = rho2_mr * 2.0 * nr_m[i] * (4.0 * pi);
                                 break;
                             case Algorithm::VICO:
                             case Algorithm::BIHARMONIC:
@@ -1643,8 +1352,6 @@ namespace ippl {
         } else {
             // Hockney case
 
-            std::cout << "hr_m[0] = " << hr_m[0] << std::endl;
-
             // calculate square of the mesh spacing for each dimension
             Vector_t hrsq(hr_m * hr_m);
 
@@ -1678,13 +1385,9 @@ namespace ippl {
         static IpplTimings::TimerRef fftg = IpplTimings::getTimer("FFT: Green");
         IpplTimings::startTimer(fftg);
 
-        dumpScalField("G");
-
         // perform the FFT of the Green's function for the convolution
-        fft_m->transform(FORWARD, grn_mr , grntr_m);
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
 
-        dumpComplScalField("GTR");
-        
         IpplTimings::stopTimer(fftg);
     };
 
