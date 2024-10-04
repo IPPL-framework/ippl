@@ -5,10 +5,6 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-
-//using MemorySpaces = typename ippl::detail::TypeForAllSpaces<std::type_identity>::unique_memory_spaces;
-
-
 template <typename T>
 struct VariantToTypes;
 
