@@ -672,7 +672,7 @@ namespace ippl {
                 local += contrib;
             }, error);
 
-        return error;
+        return Kokkos::sqrt(error);
     }
 
 }  // namespace ippl
