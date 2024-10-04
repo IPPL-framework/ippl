@@ -204,6 +204,21 @@ namespace ippl {
          */
         void evaluateLoadVector(FieldRHS& rhs_field) const override;        
 
+        ///////////////////////////////////////////////////////////////////////
+        /// Error norm computations ///////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        /**
+         * @brief Given two fields, compute the error between them
+         *
+         * @param u_h The numerical solution found using FEM
+         * @param u_sol The 
+         *
+         * @return error - The error ||u_h - u_sol||
+         */
+        template <typename F>
+        T computeError(const FieldLHS& u_h, const F& u_sol) const;
+
     private:        
         /**
          * @brief Check if a DOF is on the boundary of the mesh

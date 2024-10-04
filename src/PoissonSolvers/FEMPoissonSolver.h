@@ -26,6 +26,18 @@ namespace ippl {
         }
     };
 
+    template <typename Tlhs, unsigned Dim>
+    struct AnalyticSol {
+        const Tlhs pi = Kokkos::numbers::pi_v<Tlhs>;
+
+        KOKKOS_FUNCTION const Tlhs operator()(Vector<Tlhs, Dim> x_vec) const {
+            Tlhs val = 1.0;
+            for (unsigned d = 0; d < Dim; d++) {
+                val *= Kokkos::sin(pi * x_vec[d]);
+            }
+            return val;
+        }
+    };
 
     /**
      * @brief A solver for the poisson equation using finite element methods and
@@ -134,6 +146,12 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             IpplTimings::stopTimer(pcgTimer);
+
+            // compute and print out error
+            AnalyticSol<Tlhs, Dim> analytic;
+            Tlhs error_norm = this->lagrangeSpace_m.computeError(*(this->lhs_mp), analytic);
+            Inform m("solve");
+            m << "Error = " << error_norm << endl;
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
