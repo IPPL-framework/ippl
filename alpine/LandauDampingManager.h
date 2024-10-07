@@ -265,6 +265,17 @@ public:
                 IpplTimings::stopTimer(domainDecomposition);
         }
 
+        // sort the particle positions for over-decomposition
+        auto *FL = &this->fcontainer_m->getFL();
+        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
+
+        unsigned int grid_size = 1;
+        for (unsigned int i = 0; i < Dim; ++i) {
+            grid_size *= ldom[i].length();
+        }
+        Kokkos::View<size_t*> cell_positions("ComputeMapping", grid_size);
+        this->sort(cell_positions);
+
         // scatter the charge onto the underlying grid
         nvtxRangePush("scatter");
         this->par2grid();
@@ -288,6 +299,31 @@ public:
         pc->P = pc->P - 0.5 * dt * pc->E;
         nvtxRangePop();
         IpplTimings::stopTimer(PTimer);
+    }
+
+    void sort(Kokkos::View<size_t*>& cell_positions) {
+        // given a particle container with positions, return the index in the grid
+
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        auto Rview = pc->R.getView();
+
+        Vector_t<double, Dim> hr     = this->hr_m;
+        Vector_t<double, Dim> origin = this->origin_m;
+
+        auto *FL = &this->fcontainer_m->getFL();
+        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
+
+        Kokkos::parallel_for("Get cell index", pc->getLocalNum(),
+            KOKKOS_LAMBDA(size_t idx) {
+                Vector_t<double, Dim> pos = Rview(idx);
+                size_t serialized = ((pos[0] - origin[0]) * (1.0 / hr[0])) - 0.5;
+                for (unsigned int i = 1; i < Dim; ++i) {
+                    size_t index_i = ((pos[i] - origin[i]) * (1.0 / hr[i])) - 0.5;
+                    index_i = index_i - ldom[i].length();
+                    serialized += index_i * ldom[i-1].length();
+                }
+                cell_positions(idx) = serialized;
+        });
     }
 
     void dump() override {
