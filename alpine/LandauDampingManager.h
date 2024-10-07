@@ -1,6 +1,8 @@
 #ifndef IPPL_LANDAU_DAMPING_MANAGER_H
 #define IPPL_LANDAU_DAMPING_MANAGER_H
 
+#include <nvtx3/nvToolsExt.h>
+
 #include <memory>
 
 #include "FieldContainer.hpp"
@@ -233,17 +235,23 @@ public:
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
         IpplTimings::startTimer(PTimer);
+        nvtxRangePush("pushVelocity1");
         pc->P = pc->P - 0.5 * dt * pc->E;
+        nvtxRangePop();
         IpplTimings::stopTimer(PTimer);
 
         // drift
         IpplTimings::startTimer(RTimer);
+        nvtxRangePush("pushPosition");
         pc->R = pc->R + dt * pc->P;
+        nvtxRangePop();
         IpplTimings::stopTimer(RTimer);
 
         // Since the particles have moved spatially update them to correct processors
         IpplTimings::startTimer(updateTimer);
+        nvtxRangePush("update");
         pc->update();
+        nvtxRangePop();
         IpplTimings::stopTimer(updateTimer);
 
         size_type totalP        = this->totalP_m;
@@ -258,19 +266,27 @@ public:
         }
 
         // scatter the charge onto the underlying grid
+        nvtxRangePush("scatter");
         this->par2grid();
+        nvtxRangePop();
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
+        nvtxRangePush("solve");
         this->fsolver_m->runSolver();
+        nvtxRangePop();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
+        nvtxRangePush("gather");
         this->grid2par();
+        nvtxRangePop();
 
         // kick
         IpplTimings::startTimer(PTimer);
+        nvtxRangePush("pushVelocity2");
         pc->P = pc->P - 0.5 * dt * pc->E;
+        nvtxRangePop();
         IpplTimings::stopTimer(PTimer);
     }
 

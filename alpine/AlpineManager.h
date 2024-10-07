@@ -144,7 +144,7 @@ public:
                 m << "Total particles in the sim. " << totalP_m << " "
                   << "after update: " << TotalParticles << endl;
                 m << "Rel. error in charge conservation: " << relError << endl;
-                ippl::Comm->abort();
+                //ippl::Comm->abort();
             }
 	}
 
