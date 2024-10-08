@@ -85,7 +85,9 @@ void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->stop();
-    
+    #ifdef Kokkos_ENABLE_CUDA
+    nvtxRangePop();
+    #endif
 }
 
 // clear a timer, by turning it off and throwing away its time
