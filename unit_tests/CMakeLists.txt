@@ -1,3 +1,8 @@
+include_directories(
+    ${CMAKE_SOURCE_DIR}/src
+    ${IPPL_SOURCE_DIR}/src
+)
+
 macro(list_subdirectories retval curdir)
   file(GLOB sub-dir RELATIVE ${curdir} *)
   set(list_of_dirs "")

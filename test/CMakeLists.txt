@@ -14,6 +14,10 @@ endmacro()
 #  add_subdirectory (${test})
 #endforeach()
 
+include_directories(
+  ${IPPL_SOURCE_DIR}/src
+)
+
 add_subdirectory (kokkos)
 add_subdirectory (types)
 add_subdirectory (field)

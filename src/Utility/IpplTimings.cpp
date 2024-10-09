@@ -75,7 +75,7 @@ void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     #ifdef Kokkos_ENABLE_CUDA
-    nvtxRangePush(TimerList[t]->name);
+    nvtxRangePush(TimerList[t]->name.c_str());
     #endif
     TimerList[t]->start();
 }

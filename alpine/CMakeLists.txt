@@ -3,6 +3,7 @@ message (STATUS "Adding index test found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
+    ${IPPL_SOURCE_DIR}/src
 )
 
 link_directories (
