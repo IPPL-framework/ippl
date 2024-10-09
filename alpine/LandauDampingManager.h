@@ -224,11 +224,13 @@ public:
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
         // an attribute
-        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
-        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef SortTimer           = IpplTimings::getTimer("sort");
+        static IpplTimings::TimerRef PermuteTimer        = IpplTimings::getTimer("permute");
 
         double dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
@@ -265,16 +267,29 @@ public:
                 IpplTimings::stopTimer(domainDecomposition);
         }
 
+        Kokkos::fence();
+
         // sort the particle positions for over-decomposition
+        IpplTimings::startTimer(SortTimer);
+        nvtxRangePush("sort");
         auto *FL = &this->fcontainer_m->getFL();
         const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
-
-        unsigned int grid_size = 1;
+        int ncell = 1;
         for (unsigned int i = 0; i < Dim; ++i) {
-            grid_size *= ldom[i].length();
+            ncell *= ldom[i].length();
         }
-        Kokkos::View<size_t*> cell_positions("ComputeMapping", grid_size);
-        this->sort(cell_positions);
+        Kokkos::View<int*> index("index", pc->getLocalNum());
+        Kokkos::View<int*> start("start", ncell+1);
+        this->sort(index, start, ncell);
+        nvtxRangePop();
+        IpplTimings::stopTimer(SortTimer);
+
+        IpplTimings::startTimer(PermuteTimer);
+        nvtxRangePush("permute");
+        auto Rview = pc->R.getView();
+        this->permute<Kokkos::View<ippl::Vector<double, Dim>*>>(Rview, index);
+        nvtxRangePop();
+        IpplTimings::stopTimer(PermuteTimer);
 
         // scatter the charge onto the underlying grid
         nvtxRangePush("scatter");
@@ -301,10 +316,11 @@ public:
         IpplTimings::stopTimer(PTimer);
     }
 
-    void sort(Kokkos::View<size_t*>& cell_positions) {
+    void sort(Kokkos::View<int*> index, Kokkos::View<int*> start, int ncell) {
         // given a particle container with positions, return the index in the grid
 
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        int npart  = pc->getLocalNum();
         auto Rview = pc->R.getView();
 
         Vector_t<double, Dim> hr     = this->hr_m;
@@ -313,17 +329,84 @@ public:
         auto *FL = &this->fcontainer_m->getFL();
         const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
 
-        Kokkos::parallel_for("Get cell index", pc->getLocalNum(),
+        Kokkos::View<int*> cell("c", npart), sorted("s",npart);
+
+        int ncell_ = ncell;
+
+        Kokkos::parallel_for("Get cell index", npart,
             KOKKOS_LAMBDA(size_t idx) {
                 Vector_t<double, Dim> pos = Rview(idx);
-                size_t serialized = ((pos[0] - origin[0]) * (1.0 / hr[0])) - 0.5;
+                size_t serialized = ((pos[0] - origin[0]) * (1.0 / hr[0]));
+
                 for (unsigned int i = 1; i < Dim; ++i) {
-                    size_t index_i = ((pos[i] - origin[i]) * (1.0 / hr[i])) - 0.5;
-                    index_i = index_i - ldom[i].length();
-                    serialized += index_i * ldom[i-1].length();
+                    // compute index for each dim
+                    size_t index_i = ((pos[i] - origin[i]) * (1.0 / hr[i]));
+                    index_i = index_i - ldom[i].first();
+
+                    // serialize to get global cell index
+                    size_t length = 1;
+                    for (unsigned int j = 0; j < i; ++j) {
+                        length *= ldom[j].length();
+                    }
+                    serialized += index_i * length;
                 }
-                cell_positions(idx) = serialized;
+
+                if ((serialized < 0) || (serialized >= ncell_)) {
+                    printf("wrong cell id!\n");
+                }
+                cell(idx) = serialized;
         });
+
+        Kokkos::deep_copy(start,0);
+
+        Kokkos::parallel_for(npart,
+            KOKKOS_LAMBDA (int i) {
+                int c=cell(i);
+                Kokkos::atomic_add(&start(c+1),1);
+        });
+        
+        Kokkos::parallel_scan(ncell,
+            KOKKOS_LAMBDA(int i, int &sum, bool is_final) {
+                int tmp;
+                if (is_final) {
+                    tmp = sum;
+                }
+                sum += start(i+1);
+                if (is_final) {
+                    start(i+1) = tmp;
+                }
+        });
+
+        int ncells = ncell;
+
+        Kokkos::parallel_for(npart,
+            KOKKOS_LAMBDA (int i) {
+                int loc = Kokkos::atomic_fetch_add(&start(cell(i)+1),1);
+                index(i)=loc;
+        });
+        
+        Kokkos::parallel_for(npart,
+            KOKKOS_LAMBDA (int i) {
+                sorted(index(i))=cell(i);
+        });
+    }
+
+    template <typename Attrib>
+    void permute(Attrib orig_attrib, Kokkos::View<int*> index) {
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        int npart  = pc->getLocalNum();
+
+        // size of temp should be (overalloc factor * npart) to match Rview
+        int overalloc = ippl::Comm->getDefaultOverallocation();
+        Attrib temp("temp view", overalloc * npart);
+
+        Kokkos::parallel_for("Permute", npart, 
+            KOKKOS_LAMBDA(int i) {
+                temp(index(i)) = orig_attrib(i);
+            });
+        Kokkos::fence();
+
+        Kokkos::deep_copy(orig_attrib, temp);
     }
 
     void dump() override {
