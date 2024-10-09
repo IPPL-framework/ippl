@@ -198,7 +198,10 @@ if (ENABLE_FFT)
         endif()
         FetchContent_MakeAvailable(Heffte)
         # Required to suppress warnings related to heffte
-        target_include_directories(Heffte SYSTEM PUBLIC "${Heffte_SOURCE_DIR}/include")
+        target_include_directories(Heffte SYSTEM PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+            $<INSTALL_INTERFACE:include/>
+        )
         set(Heffte_DIR "${Heffte_SOURCE_DIR}")
         remove_flag_from_target(Heffte "-Werror")
         remove_flag_from_target(Heffte "-Wall")
