@@ -39,9 +39,9 @@ namespace ippl {
             const std::index_sequence<Index...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
             const Vector<IndexType, View::rank>& args, const T& val) {
-            view(interpolationIndex<ScatterPoint, Index>(args)...) += val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...);
-            //Kokkos::atomic_add(&view(interpolationIndex<ScatterPoint, Index>(args)...),
-            //                   val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
+            //view(interpolationIndex<ScatterPoint, Index>(args)...) += val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...);
+            Kokkos::atomic_add(&view(interpolationIndex<ScatterPoint, Index>(args)...),
+                               val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
         }
 
         template <unsigned long... ScatterPoint, typename View, typename T, typename IndexType>
