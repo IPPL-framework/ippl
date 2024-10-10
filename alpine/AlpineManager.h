@@ -60,6 +60,9 @@ protected:
     ippl::NDIndex<Dim> domain_m;
     std::array<bool, Dim> decomp_m;
     double rhoNorm_m;
+    Kokkos::View<int*> index_m;
+    Kokkos::View<int*> start_m;
+    Kokkos::View<int*> permuteTemp_m;
 
 public:
     size_type getTotalP() const { return totalP_m; }
@@ -129,6 +132,7 @@ public:
         Vector_t<double, Dim> hr        = hr_m;
 
         scatter(*q, *rho, *R);
+
         double relError = std::fabs((Q-(*rho).sum())/Q);
 
         m << relError << endl;
@@ -144,7 +148,7 @@ public:
                 m << "Total particles in the sim. " << totalP_m << " "
                   << "after update: " << TotalParticles << endl;
                 m << "Rel. error in charge conservation: " << relError << endl;
-                //ippl::Comm->abort();
+                ippl::Comm->abort();
             }
 	}
 
