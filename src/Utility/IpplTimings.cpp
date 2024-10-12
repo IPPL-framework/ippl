@@ -33,6 +33,10 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 
+#ifdef CUDA_ENABLE_NVTX  
+ #include <nvtx3/nvToolsExt.h> 
+#endif
+
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
@@ -71,6 +75,9 @@ void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->start();
+    #ifdef CUDA_ENABLE_NVTX
+     nvtxRangePush(TimerList[t]->name.c_str());
+    #endif
 }
 
 // stop a timer, and accumulate it's values
@@ -78,6 +85,9 @@ void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->stop();
+    #ifdef CUDA_ENABLE_NVTX
+     nvtxRangePop();
+    #endif
 }
 
 // clear a timer, by turning it off and throwing away its time
