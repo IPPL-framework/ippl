@@ -58,17 +58,28 @@ if(NOT IPPL_PLATFORMS)
     set(IPPL_PLATFORMS "SERIAL")
 endif()
 
-
 #message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
 if(Ippl_PLATFORMS)
     set(IPPL_PLATFORMS ${Ippl_PLATFORMS})
 endif()
+
 string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
 # Perform case distinction
 if("${IPPL_PLATFORMS}" STREQUAL "CUDA")
     message(STATUS "${Green}CUDA backend enabled${ColourReset}")
     set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
     set(Heffte_ENABLE_CUDA ON CACHE BOOL "Set Heffte CUDA Backend")
+
+    # Create an option for enabling CUDA NVTX
+    option(CUDA_ENABLE_NVTX "Enable NVTX for CUDA profiling" OFF)
+    # Check CUDA NVTX
+    if(CUDA_ENABLE_NVTX)
+     add_definitions(-DCUDA_ENABLE_NVTX)
+     message(STATUS "CUDA_ENABLE_NVTX is ON")
+    else()
+     message(STATUS "CUDA_ENABLE_NVTX is OFF")
+    endif()
+
 
 elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
     message(STATUS "${Green}OpenMP backend enabled${ColourReset}")
