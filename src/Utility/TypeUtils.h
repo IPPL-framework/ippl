@@ -410,6 +410,12 @@ namespace ippl {
             using container_type = MultispaceContainer<Type, Spaces...>;
 
             using type = typename TypeForAllSpaces<container_type>::memory_spaces_type;
+
+            // Static factory function that takes a lambda to initialize each memory space
+            template <typename Functor>
+            static type createContainer(Functor&& initFunc) {
+                return type{std::forward<Functor>(initFunc)};
+            }
         };
 
         /*!

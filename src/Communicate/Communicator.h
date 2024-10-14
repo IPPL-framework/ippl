@@ -9,6 +9,7 @@
 #include <mpi.h>
 
 #include "Communicate/BufferHandler.h"
+#include "Communicate/LoggingBufferHandler.h"
 #include "Communicate/Request.h"
 #include "Communicate/Status.h"
 
@@ -135,7 +136,7 @@ namespace ippl {
         private:
 
             template <typename MemorySpace>
-            using buffer_container_type = BufferHandler<MemorySpace>;
+            using buffer_container_type = LoggingBufferHandler<MemorySpace>;
 
             using buffer_handler_type = typename detail::ContainerForAllSpaces<buffer_container_type>::type;
 
@@ -192,8 +193,16 @@ namespace ippl {
                 }
                 MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);
             }
+            
+            void printLogs();
 
         private:
+            std::vector<LogEntry> gatherLocalLogs();
+            void sendLogsToRank0(const std::vector<LogEntry>& localLogs);
+            std::vector<LogEntry> gatherLogsFromAllRanks(const std::vector<LogEntry>& localLogs);
+            void writeLogsToFile(const std::vector<LogEntry>& allLogs);
+
+
             buffer_handler_type buffer_handlers_m;
 
             double defaultOveralloc_m = 1.0;

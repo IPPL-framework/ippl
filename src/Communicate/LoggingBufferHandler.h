@@ -7,16 +7,7 @@
 #include <memory>
 #include <map>
 #include "Communicate/BufferHandler.h"
-
-struct LogEntry {
-    std::string methodName;
-    std::map<std::string, std::string> parameters;
-    size_t allocatedSize;
-    size_t freeSize;
-    std::string memorySpace;
-    int rank;
-    std::chrono::time_point<std::chrono::high_resolution_clock> timestamp;
-};
+#include "Communicate/LogEntry.h"
 
 template <typename MemorySpace>
 class LoggingBufferHandler : public IBufferHandler<MemorySpace> {
@@ -26,6 +17,11 @@ public:
 
     LoggingBufferHandler(std::shared_ptr<IBufferHandler<MemorySpace>> handler, int rank)
         : handler_(std::move(handler)), rank_(rank) {}
+
+    LoggingBufferHandler() {
+        handler_ = std::make_shared<BufferHandler<MemorySpace>>();
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+    }
 
     buffer_type getBuffer(size_type size, double overallocation) override {
         auto buffer = handler_->getBuffer(size, overallocation);
@@ -57,6 +53,7 @@ public:
     }
 
     const std::vector<LogEntry>& getLogs() const {
+        std::cout << logEntries_.size() << std::endl;
         return logEntries_;
     }
 

@@ -17,6 +17,9 @@ gtest_discover_tests(BufferHandler PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 add_executable (LoggingBufferHandler LoggingBufferHandler.cpp)
 gtest_discover_tests(LoggingBufferHandler PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
+add_executable (LogEntry LogEntry.cpp)
+gtest_discover_tests(LogEntry PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
 target_link_libraries (
     BufferHandler 
     ippl
@@ -27,6 +30,14 @@ target_link_libraries (
 
 target_link_libraries (
     LoggingBufferHandler 
+    ippl
+    pthread
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
+
+target_link_libraries (
+    LogEntry 
     ippl
     pthread
     GTest::gtest_main
