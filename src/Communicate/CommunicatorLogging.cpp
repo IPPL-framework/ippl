@@ -107,12 +107,12 @@ namespace ippl {
                 bool first = true;
                 for (const auto& [key, value] : log.parameters) {
                     if (!first) {
-                        logFile << "; "; // Separate key-value pairs with a semicolon
+                        logFile << "; ";
                     }
                     logFile << key << ": " << value;
                     first = false;
                 }
-                logFile << "\"\n"; // End of the line
+                logFile << "\"\n";
             }
 
             logFile.close();
