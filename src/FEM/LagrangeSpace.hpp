@@ -670,9 +670,76 @@ namespace ippl {
                     contrib += w[k] * Kokkos::pow(val_u_sol - val_u_h, 2) * absDetDPhi;
                 }
                 local += contrib;
-            }, error);
+            }, Kokkos::Sum<double>(error));
 
         return Kokkos::sqrt(error);
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
+              typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorInf(const FieldLHS& u_h, const F& u_sol) const {
+
+        if (this->quadrature_m.getOrder() < (2*Order +1)) {
+            // throw exception
+            throw IpplException("LagrangeSpace::computeError()", "Order of quadrature rule for error computation should be > 2*p + 1");
+        }
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Variable to sum the error to    
+        T error = 0;
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_reduce("Compute error over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index, double& local_max) {
+
+                const size_t elementIndex = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+                auto dof_points = this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
+
+                for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                    size_t I = global_dofs[i];
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                    // computed field value at DOF
+                    T val_u_h = apply(u_h, dof_ndindex_I);
+
+                    // solution field value at DOF
+                    T val_u_sol = u_sol(dof_points[i]);
+
+                    T local_norm = Kokkos::abs(val_u_h - val_u_sol);
+                    
+                    if (local_norm > local_max) {
+                        local_max = local_norm;
+                    }
+                }
+            }, Kokkos::Max<double>(error));
+
+        return error;
     }
 
 }  // namespace ippl

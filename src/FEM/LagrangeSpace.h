@@ -219,6 +219,8 @@ namespace ippl {
         template <typename F>
         T computeError(const FieldLHS& u_h, const F& u_sol) const;
 
+        template <typename F>
+        T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
     private:        
         /**
          * @brief Check if a DOF is on the boundary of the mesh

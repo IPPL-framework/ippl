@@ -150,8 +150,9 @@ namespace ippl {
             // compute and print out error
             AnalyticSol<Tlhs, Dim> analytic;
             Tlhs error_norm = this->lagrangeSpace_m.computeError(*(this->lhs_mp), analytic);
+            Tlhs error_inf  = this->lagrangeSpace_m.computeErrorInf(*(this->lhs_mp), analytic);
             Inform m("solve");
-            m << "Error = " << error_norm << endl;
+            m << "Error = " << error_norm << ", inf norm = " << error_inf << endl;
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
