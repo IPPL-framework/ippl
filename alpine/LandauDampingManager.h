@@ -1,6 +1,8 @@
 #ifndef IPPL_LANDAU_DAMPING_MANAGER_H
 #define IPPL_LANDAU_DAMPING_MANAGER_H
 
+#include <nvtx3/nvToolsExt.h>
+
 #include <memory>
 
 #include "FieldContainer.hpp"
@@ -222,28 +224,36 @@ public:
         // Here, we assume a constant charge-to-mass ratio of -1 for
         // all the particles hence eliminating the need to store mass as
         // an attribute
-        static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("pushVelocity");
-        static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("pushPosition");
-        static IpplTimings::TimerRef updateTimer      = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef PTimer              = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
-        static IpplTimings::TimerRef SolveTimer       = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+        static IpplTimings::TimerRef SortTimer           = IpplTimings::getTimer("sort");
+        static IpplTimings::TimerRef PermuteTimer        = IpplTimings::getTimer("permute");
 
         double dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
         IpplTimings::startTimer(PTimer);
+        nvtxRangePush("pushVelocity1");
         pc->P = pc->P - 0.5 * dt * pc->E;
+        nvtxRangePop();
         IpplTimings::stopTimer(PTimer);
 
         // drift
         IpplTimings::startTimer(RTimer);
+        nvtxRangePush("pushPosition");
         pc->R = pc->R + dt * pc->P;
+        nvtxRangePop();
         IpplTimings::stopTimer(RTimer);
 
         // Since the particles have moved spatially update them to correct processors
         IpplTimings::startTimer(updateTimer);
+        nvtxRangePush("update");
         pc->update();
+        nvtxRangePop();
         IpplTimings::stopTimer(updateTimer);
 
         size_type totalP        = this->totalP_m;
@@ -257,21 +267,261 @@ public:
                 IpplTimings::stopTimer(domainDecomposition);
         }
 
+        Kokkos::fence();
+
+        // sort the particle positions for over-decomposition
+        IpplTimings::startTimer(SortTimer);
+        nvtxRangePush("sort");
+
+        auto *FL = &this->fcontainer_m->getFL();
+        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
+
+        size_t ncells = 1;
+        for (unsigned int i = 0; i < Dim; ++i) {
+            ncells *= ldom[i].length();
+        }
+
+        if (this->index_m.extent(0) < pc->getLocalNum()) {
+            this->index_m = Kokkos::View<int*> ("resize_index", pc->getLocalNum()); 
+        }
+        if (this->start_m.extent(0) < ncells + 1) {
+            this->start_m = Kokkos::View<int*> ("resize_start", ncells + 1); 
+        }
+
+        this->sort(this->index_m, this->start_m, ncells);
+
+        nvtxRangePop();
+        IpplTimings::stopTimer(SortTimer);
+
+        IpplTimings::startTimer(PermuteTimer);
+        nvtxRangePush("permute");
+        auto Rview = pc->R.getView();
+        this->permute<Kokkos::View<ippl::Vector<double, Dim>*>>(Rview, this->index_m);
+        nvtxRangePop();
+        IpplTimings::stopTimer(PermuteTimer);
+
         // scatter the charge onto the underlying grid
-        this->par2grid();
+        nvtxRangePush("scatter");
+        //this->par2grid();
+        scatter_new(this->start_m);
+        nvtxRangePop();
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
+        nvtxRangePush("solve");
         this->fsolver_m->runSolver();
+        nvtxRangePop();
         IpplTimings::stopTimer(SolveTimer);
 
         // gather E field
+        nvtxRangePush("gather");
         this->grid2par();
+        nvtxRangePop();
 
         // kick
         IpplTimings::startTimer(PTimer);
+        nvtxRangePush("pushVelocity2");
         pc->P = pc->P - 0.5 * dt * pc->E;
+        nvtxRangePop();
         IpplTimings::stopTimer(PTimer);
+    }
+
+    void sort(Kokkos::View<int*> index, Kokkos::View<int*> start, size_t ncells) {
+        // given a particle container with positions, return the index in the grid
+
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        int npart  = pc->getLocalNum();
+        auto Rview = pc->R.getView();
+
+        Vector_t<double, Dim> hr     = this->hr_m;
+        Vector_t<double, Dim> origin = this->origin_m;
+
+        auto *FL = &this->fcontainer_m->getFL();
+        const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();
+
+        Kokkos::deep_copy(start,0);
+
+        Kokkos::parallel_for("Get cell index", npart,
+            KOKKOS_LAMBDA(size_t idx) {
+                Vector_t<double, Dim> pos = Rview(idx);
+                size_t serialized = ((pos[0] - origin[0]) * (1.0 / hr[0]));
+
+                for (unsigned int i = 1; i < Dim; ++i) {
+                    // compute index for each dim
+                    size_t index_i = ((pos[i] - origin[i]) * (1.0 / hr[i]));
+                    index_i = index_i - ldom[i].first();
+
+                    // serialize to get global cell index
+                    size_t length = 1;
+                    for (unsigned int j = 0; j < i; ++j) {
+                        length *= ldom[j].length();
+                    }
+                    serialized += index_i * length;
+                }
+
+                Kokkos::atomic_add(&start(serialized+1),1);
+        });
+
+        Kokkos::parallel_scan(ncells,
+            KOKKOS_LAMBDA(int i, int &sum, bool is_final) {
+                int tmp;
+                if (is_final) {
+                    tmp = sum;
+                }
+                sum += start(i+1);
+                if (is_final) {
+                    start(i+1) = tmp;
+                }
+        });
+
+        Kokkos::parallel_for(npart,
+            KOKKOS_LAMBDA (int idx) {
+                Vector_t<double, Dim> pos = Rview(idx);
+                size_t serialized = ((pos[0] - origin[0]) * (1.0 / hr[0]));
+
+                for (unsigned int i = 1; i < Dim; ++i) {
+                    // compute index for each dim
+                    size_t index_i = ((pos[i] - origin[i]) * (1.0 / hr[i]));
+                    index_i = index_i - ldom[i].first();
+
+                    // serialize to get global cell index
+                    size_t length = 1;
+                    for (unsigned int j = 0; j < i; ++j) {
+                        length *= ldom[j].length();
+                    }
+                    serialized += index_i * length;
+                }
+
+                int loc = Kokkos::atomic_fetch_add(&start(serialized+1),1);
+                index(idx)=loc;
+        });
+    }
+
+    template <typename Attrib>
+    void permute(Attrib orig_attrib, Kokkos::View<int*> index) {
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        int npart  = pc->getLocalNum();
+
+        using type = typename Attrib::value_type;
+
+        // size of temp should be (overalloc factor * npart) to match Rview
+        int overalloc = ippl::Comm->getDefaultOverallocation();
+        size_t val = sizeof(type)/sizeof(int);
+        if (this->permuteTemp_m.extent(0) < npart * val) {
+            this->permuteTemp_m = Kokkos::View<int*> ("permute", npart * val); 
+        }
+        Kokkos::View<type*, Kokkos::MemoryTraits<Kokkos::Unmanaged>> temp((type*)this->permuteTemp_m.data(), npart);
+
+        Kokkos::parallel_for("Permute", npart, 
+            KOKKOS_LAMBDA(int i) {
+                temp(index(i)) = orig_attrib(i);
+            });
+
+        Kokkos::parallel_for("Permute", npart, 
+            KOKKOS_LAMBDA(int i) {
+                orig_attrib(i) = temp(i);
+            });
+
+        Kokkos::fence();
+    }
+
+    void scatter_new(Kokkos::View<int*> start) {
+        Inform m("scatter_new ");
+
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        ippl::detail::size_type npart  = pc->getLocalNum();
+
+        ippl::ParticleAttrib<double> *q                    = &pc->q;
+        ippl::ParticleAttrib<ippl::Vector<double, Dim>> *R = &pc->R;
+        Field_t<Dim> *rho                                  = &this->fcontainer_m->getRho();
+
+        (*rho) = 0.0;
+
+        double Q                        = this->Q_m;
+        Vector_t<double, Dim> rmin   	= this->rmin_m;
+        Vector_t<double, Dim> rmax  	= this->rmax_m;
+        Vector_t<double, Dim> hr        = this->hr_m;
+        Vector_t<double, Dim> origin    = this->origin_m;
+        Vector_t<double, Dim> invdx     = 1.0 / hr;
+        auto mesh                       = (*rho).get_mesh();
+
+        auto qview       = (*q).getView();
+        auto Rview       = (*R).getView();
+        auto view_field  = (*rho).getView();
+
+        auto layout = (*rho).getLayout();
+        auto lDom   = layout.getLocalNDIndex();
+        int nghost  = (*rho).getNghost();
+
+        Kokkos::parallel_for("new_scatter", start.extent(0) - 1,
+            KOKKOS_CLASS_LAMBDA(const int i) {
+
+                int idx = start(i);
+
+                Vector_t<int, Dim> index    = (Rview(idx) - origin) * invdx + 0.5;
+                Vector_t<size_t, Dim> args  = index - lDom.first() + nghost;
+
+                Vector_t<Vector_t<size_t, Dim>, (1 << Dim)> interpol_idx;
+
+                // interpolation indices
+                for (int ScatterPoint = 0; ScatterPoint < (1 << Dim); ++ScatterPoint) {
+                    for (unsigned int k = 0; k < Dim; ++k) {
+                        interpol_idx[ScatterPoint][k] = (ScatterPoint & (1 << k)) ? args[k] - 1 : args[k];
+                    }
+                }
+
+                // array of local values scattered in my cell
+                double local_vals[1 << Dim] = { 0.0 };
+
+                // loop over the particles in my cell (using start array)
+                // to compute local interpolation values
+                for (int j = start(i); j < start(i+1); ++j) {
+
+                    // find nearest grid point
+                    Vector_t<double, Dim> l     = (Rview(j) - origin) * invdx + 0.5;
+                    Vector_t<double, Dim> whi   = l - index;
+                    Vector_t<double, Dim> wlo   = 1.0 - whi;
+
+                    // scatter
+                    const double& val = qview(j);
+
+                    for (int ScatterPoint = 0; ScatterPoint < (1 << Dim); ++ScatterPoint) {
+                        double weights = 1.0;
+                        for (unsigned int k = 0; k < Dim; ++k) {
+                            weights *= (ScatterPoint & (1 << k)) ? wlo[k] : whi[k];
+                        }
+                        local_vals[ScatterPoint] += val * weights;
+                    }
+                }
+
+                // add each local cell interpolated value atomically to field vals
+                for (int ScatterPoint = 0; ScatterPoint < (1 << Dim); ++ScatterPoint) {
+                    Kokkos::atomic_add(&view_field(interpol_idx[ScatterPoint][0],
+                            interpol_idx[ScatterPoint][1], interpol_idx[ScatterPoint][2]), 
+                            local_vals[ScatterPoint]);
+                }
+            });
+        Kokkos::fence();
+
+        (*rho).accumulateHalo();
+
+        double relError = std::fabs((Q-(*rho).sum())/Q);
+
+        m << relError << endl;
+
+        ippl::detail::size_type TotalParticles = 0;
+
+        ippl::Comm->reduce(npart, TotalParticles, 1, std::plus<ippl::detail::size_type>());
+
+        if (ippl::Comm->rank() == 0) {
+            if (TotalParticles != this->getTotalP() || relError > 1e-10) {
+                m << "Time step: " << this->it_m << endl;
+                m << "Total particles in the sim. " << this->getTotalP() << " "
+                  << "after update: " << TotalParticles << endl;
+                m << "Rel. error in charge conservation: " << relError << endl;
+                ippl::Comm->abort();
+            }
+        }
     }
 
     void dump() override {
