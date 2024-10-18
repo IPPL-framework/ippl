@@ -130,7 +130,7 @@ namespace ippl {
             nlocal_m = (size_type)(factor * ntotal_m);
 
             size_type nglobal = 0;
-            MPI_Allreduce(&nlocal_m, &nglobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, ippl::Comm->getCommunicator());
+            ippl::Comm->allreduce(&nlocal_m, &nglobal, 1, std::plus<size_type>());
 
             int rest = (int)(ntotal_m - nglobal);
             if (rank < rest) {
