@@ -161,7 +161,7 @@ void Timing::print(const std::string& fn, const std::map<std::string, unsigned i
         *msg << endl;
     }
 
-    *msg << std::setw(27) << "num Nodes" << std::setw(11) << "Wall tot\n"
+    *msg << std::setw(27) << "ranks" << std::setw(11) << "Wall tot\n"
          << std::string().assign(37, '=') << "\n";
     {
         TimerInfo* tptr  = TimerList[0].get();
@@ -177,7 +177,7 @@ void Timing::print(const std::string& fn, const std::map<std::string, unsigned i
     }
 
     *msg << "\n"
-         << std::setw(27) << "num Nodes" << std::setw(10) << "Wall max" << std::setw(10)
+         << std::setw(27) << "ranks" << std::setw(10) << "Wall max" << std::setw(10)
          << "Wall min" << std::setw(11) << "Wall avg\n"
          << std::string().assign(57, '=') << "\n";
     for (unsigned int i = 0; i < TimerList.size(); ++i) {
