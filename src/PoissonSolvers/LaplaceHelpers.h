@@ -238,7 +238,7 @@ namespace ippl {
         mesh_type& mesh = u.get_mesh();
         typename mesh_type::vector_type hvector(0);
         for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+            hvector[d] = 1.0 / Kokkos::pow(mesh.getMeshSpacing(d), 2);
         }
         const auto& layout = u.getLayout();
         unsigned nghosts   = u.getNghost();
@@ -274,7 +274,7 @@ namespace ippl {
         mesh_type& mesh = u.get_mesh();
         typename mesh_type::vector_type hvector(0);
         for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+            hvector[d] = 1.0 / Kokkos::pow(mesh.getMeshSpacing(d), 2);
         }
         const auto& layout = u.getLayout();
         unsigned nghosts   = u.getNghost();
@@ -310,7 +310,7 @@ namespace ippl {
         mesh_type& mesh = u.get_mesh();
         typename mesh_type::vector_type hvector(0);
         for (unsigned d = 0; d < Dim; d++) {
-            hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
+            hvector[d] = 1.0 / Kokkos::pow(mesh.getMeshSpacing(d), 2);
         }
         return detail::meta_upper_and_lower_laplace<Field>(u, hvector);
     }
@@ -321,27 +321,41 @@ namespace ippl {
      */
 
     template <typename Field>
-    Field negative_inverse_diagonal_laplace(Field& u) {
+    double negative_inverse_diagonal_laplace(Field u) {
         constexpr unsigned Dim = Field::dim;
         using mesh_type        = typename Field::Mesh_t;
-        using layout_type      = typename Field::Layout_t;
+        //using layout_type      = typename Field::Layout_t;
         mesh_type& mesh        = u.get_mesh();
-        layout_type& layout    = u.getLayout();
-        Field res(mesh, layout);
-        auto&& bc = u.getFieldBC();
-        res.setFieldBC(bc);
+        //layout_type& layout    = u.getLayout();
+        //Field res(mesh, layout);
+        //auto&& bc = u.getFieldBC();
+        //res.setFieldBC(bc);
         double sum    = 0.0;
         double factor = 1.0;
         typename mesh_type::vector_type hvector(0);
         for (unsigned d = 0; d < Dim; ++d) {
-            hvector[d] = std::pow(mesh.getMeshSpacing(d), 2);
-            sum += std::pow(mesh.getMeshSpacing(d), 2)
-                   * std::pow(mesh.getMeshSpacing((d + 1) % Dim), 2);
+            hvector[d] = Kokkos::pow(mesh.getMeshSpacing(d), 2);
+            sum += hvector[d]* Kokkos::pow(mesh.getMeshSpacing((d + 1) % Dim), 2);
             factor *= hvector[d];
         }
 
-        res = 0.5 * (factor / sum) * u;
-        return res;
+        //u = 0.5 * (factor / sum) * u;
+        return 0.5 * (factor / sum);
+    }
+
+
+    template <typename Field>
+    double diagonal_laplace(Field u) {
+        constexpr unsigned Dim = Field::dim;
+        using mesh_type        = typename Field::Mesh_t;
+        mesh_type& mesh        = u.get_mesh();
+        double sum    = 0.0;
+        for (unsigned d = 0; d < Dim; ++d) {
+            sum += 1/(Kokkos::pow(mesh.getMeshSpacing(d), 2));
+        }
+
+        //u = - 2.0 * sum * u;
+        return - 2.0 * sum;
     }
 }  // namespace ippl
 #endif  // IPPL_LAPLACE_HELPERS_H

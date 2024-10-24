@@ -342,9 +342,10 @@ namespace ippl {
                 U = upper_m(x);
                 r = b - U;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    L       = lower_m(x);
+                    L = lower_m(x);
                     r_inner = r - L;
-                    x       = inverse_diagonal_m(r_inner);
+                    x = inverse_diagonal_m(r_inner);
+
                 }
                 L = lower_m(x);
                 r = b - L;
@@ -353,6 +354,7 @@ namespace ippl {
                     r_inner = r - U;
                     x       = inverse_diagonal_m(r_inner);
                 }
+
             }
             return x;
         }
@@ -364,6 +366,91 @@ namespace ippl {
         unsigned innerloops_m;
         unsigned outerloops_m;
     };
+
+
+    /*!
+     * Symmetric successive over-relaxation
+     */
+    template <typename Field, typename LowerF, typename UpperF, typename InvDiagF, typename DiagF>
+    struct ssor_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        ssor_preconditioner(LowerF&& lower, UpperF&& upper, InvDiagF&& inverse_diagonal, DiagF&& diagonal, unsigned innerloops, unsigned outerloops, double omega)
+            : preconditioner<Field>("ssor")
+            , innerloops_m(innerloops)
+            , outerloops_m(outerloops) 
+            , omega_m(omega){
+            lower_m            = std::move(lower);
+            upper_m            = std::move(upper);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+            diagonal_m         = std::move(diagonal);
+        }
+
+        Field operator()(Field& b) override {
+
+
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+            
+            Field x(mesh, layout);
+            
+            Field r(mesh, layout);
+
+            Field r_inner(mesh, layout);
+
+            Field L(mesh, layout);
+
+            Field U(mesh, layout);
+ 
+            double D;
+
+            double InvD;
+
+            x = 0;  // Initial guess
+            
+            
+
+            static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("Preconditioner loOop");
+                IpplTimings::startTimer(loopTimer);
+
+            for (unsigned int k = 0; k < outerloops_m; ++k) {
+                U = upper_m(x);
+                D = diagonal_m(x);
+                r = b - omega_m * U + (1.0 - omega_m)* D * x;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    L = lower_m(x);
+                    r_inner = r - omega_m * L;
+                    InvD = inverse_diagonal_m(r_inner);
+                    x = InvD*r_inner;
+
+                }
+                L = lower_m(x);
+                D = diagonal_m(x);
+                r = b - omega_m * L + (1.0 - omega_m)*D * x;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    U       = upper_m(x);
+                    r_inner = r - omega_m * U;
+                    InvD = inverse_diagonal_m(r_inner);
+                    x  = InvD * r_inner;
+                }
+
+            }
+            IpplTimings::stopTimer(loopTimer);
+            return x;
+        }
+
+    protected:
+        LowerF lower_m;
+        UpperF upper_m;
+        InvDiagF inverse_diagonal_m;
+        DiagF diagonal_m;
+        unsigned innerloops_m;
+        unsigned outerloops_m;
+        double omega_m;
+    };
+
 
     /*!
      * Computes the largest Eigenvalue of the Functor f
