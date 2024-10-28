@@ -107,7 +107,7 @@ void unpack(const ippl::NDIndex<3> intersect,
 }
 
 template <typename Tb, typename Tf, unsigned Dim>
-void solver_send(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
+void solver_send(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
                  const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
                  ippl::detail::FieldBufferData<Tb>& fd, std::vector<MPI_Request>& requests) {
     using memory_space = typename Kokkos::View<Tf***>::memory_space;
@@ -128,15 +128,14 @@ void solver_send(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> i
 }
 
 template <typename Tb, typename Tf, unsigned Dim>
-void solver_recv(int BUF_MSG, int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
+void solver_recv(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
                  const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
                  ippl::detail::FieldBufferData<Tb>& fd, bool x = false, bool y = false,
                  bool z = false) {
     using memory_space = typename Kokkos::View<Tf***>::memory_space;
 
     ippl::mpi::Communicator::size_type nrecvs;
-    const int myRank = ippl::Comm->rank();
-    nrecvs           = intersection.size();
+    nrecvs = intersection.size();
 
     // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
     ippl::mpi::Communicator::buffer_type<memory_space> buf =
@@ -554,14 +553,13 @@ namespace ippl {
                 if (lDomains2[i].touches(ldom1)) {
                     auto intersection = lDomains2[i].intersect(ldom1);
 
-                    solver_send(mpi::tag::SOLVER_SEND, mpi::tag::OPEN_SOLVER, 0, i, intersection,
+                    solver_send(mpi::tag::OPEN_SOLVER, 0, i, intersection,
                                 ldom1, nghost1, view1, fd_m, requests);
                 }
             }
 
             // receive
             const auto& lDomains1 = layout_mp->getHostLocalDomains();
-            int myRank            = Comm->rank();
 
             for (int i = 0; i < ranks; ++i) {
                 if (lDomains1[i].touches(ldom2)) {
@@ -570,8 +568,7 @@ namespace ippl {
                     mpi::Communicator::size_type nrecvs;
                     nrecvs = intersection.size();
 
-                    buffer_type buf =
-                        Comm->getBuffer<memory_space, Trhs>(nrecvs);
+                    buffer_type buf = Comm->getBuffer<memory_space, Trhs>(nrecvs);
 
                     Comm->recv(i, mpi::tag::OPEN_SOLVER, fd_m, *buf, nrecvs * sizeof(Trhs), nrecvs);
                     buf->resetReadPos();
@@ -681,14 +678,13 @@ namespace ippl {
                     if (lDomains1[i].touches(ldom2)) {
                         auto intersection = lDomains1[i].intersect(ldom2);
 
-                        solver_send(mpi::tag::SOLVER_SEND, mpi::tag::OPEN_SOLVER, 0, i,
+                        solver_send(mpi::tag::OPEN_SOLVER, 0, i,
                                     intersection, ldom2, nghost2, view2, fd_m, requests);
                     }
                 }
 
                 // receive
                 const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                int myRank            = Comm->rank();
 
                 for (int i = 0; i < ranks; ++i) {
                     if (ldom1.touches(lDomains2[i])) {
@@ -838,14 +834,13 @@ namespace ippl {
                         if (lDomains1[i].touches(ldom2)) {
                             auto intersection = lDomains1[i].intersect(ldom2);
 
-                            solver_send(mpi::tag::SOLVER_SEND, mpi::tag::OPEN_SOLVER, 0, i,
+                            solver_send(mpi::tag::OPEN_SOLVER, 0, i,
                                         intersection, ldom2, nghost2, view2, fd_m, requests);
                         }
                     }
 
                     // receive
                     const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                    int myRank            = Comm->rank();
 
                     for (int i = 0; i < ranks; ++i) {
                         if (ldom1.touches(lDomains2[i])) {
@@ -996,14 +991,13 @@ namespace ippl {
                             if (lDomains1[i].touches(ldom2)) {
                                 auto intersection = lDomains1[i].intersect(ldom2);
 
-                                solver_send(mpi::tag::SOLVER_SEND, mpi::tag::OPEN_SOLVER, 0, i,
+                                solver_send(mpi::tag::OPEN_SOLVER, 0, i,
                                             intersection, ldom2, nghost2, view2, fd_m, requests);
                             }
                         }
 
                         // receive
                         const auto& lDomains2 = layout2_m->getHostLocalDomains();
-                        int myRank            = Comm->rank();
 
                         for (int i = 0; i < ranks; ++i) {
                             if (ldom1.touches(lDomains2[i])) {
@@ -1444,7 +1438,7 @@ namespace ippl {
                 if (ldom_g.touches(intersection)) {
                     intersection = intersection.intersect(ldom_g);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 0, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 0, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1462,7 +1456,7 @@ namespace ippl {
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 1, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 1, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1480,7 +1474,7 @@ namespace ippl {
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 2, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 2, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1498,7 +1492,7 @@ namespace ippl {
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 3, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 3, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1518,7 +1512,7 @@ namespace ippl {
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 4, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 4, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1537,7 +1531,7 @@ namespace ippl {
 
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 5, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 5, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1556,7 +1550,7 @@ namespace ippl {
 
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 6, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 6, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1577,7 +1571,7 @@ namespace ippl {
 
                 if (ldom_g.touches(domain4)) {
                     intersection = ldom_g.intersect(domain4);
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 7, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 7, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1591,7 +1585,7 @@ namespace ippl {
                 if (lDomains4[i].touches(intersection)) {
                     intersection = intersection.intersect(lDomains4[i]);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 0, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 0, i, intersection,
                                 ldom, nghost, view, fd_m);
                 }
             }
@@ -1614,7 +1608,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 1, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 1, i, intersection,
                                 ldom, nghost, view, fd_m, true, false, false);
                 }
             }
@@ -1637,7 +1631,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 2, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 2, i, intersection,
                                 ldom, nghost, view, fd_m, false, true, false);
                 }
             }
@@ -1660,7 +1654,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 3, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 3, i, intersection,
                                 ldom, nghost, view, fd_m, false, false, true);
                 }
             }
@@ -1687,7 +1681,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 4, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 4, i, intersection,
                                 ldom, nghost, view, fd_m, true, true, false);
                 }
             }
@@ -1714,7 +1708,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 5, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 5, i, intersection,
                                 ldom, nghost, view, fd_m, false, true, true);
                 }
             }
@@ -1741,7 +1735,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 6, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 6, i, intersection,
                                 ldom, nghost, view, fd_m, true, false, true);
                 }
             }
@@ -1772,7 +1766,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain4);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 7, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 7, i, intersection,
                                 ldom, nghost, view, fd_m, true, true, true);
                 }
             }
@@ -1847,7 +1841,7 @@ namespace ippl {
                 if (ldom_g.touches(intersection)) {
                     intersection = intersection.intersect(ldom_g);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 0, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 0, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1865,7 +1859,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 1, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 1, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1883,7 +1877,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 2, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 2, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1901,7 +1895,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 3, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 3, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1921,7 +1915,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 4, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 4, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1941,7 +1935,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 5, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 5, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1961,7 +1955,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 6, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 6, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1983,7 +1977,7 @@ namespace ippl {
                 if (ldom_g.touches(domain2n1)) {
                     intersection = ldom_g.intersect(domain2n1);
 
-                    solver_send(mpi::tag::VICO_SEND, mpi::tag::VICO_SOLVER, 7, i, intersection,
+                    solver_send(mpi::tag::VICO_SOLVER, 7, i, intersection,
                                 ldom_g, nghost_g, view_g, fd_m, requests);
                 }
             }
@@ -1997,7 +1991,7 @@ namespace ippl {
                 if (lDomains2n1[i].touches(intersection)) {
                     intersection = intersection.intersect(lDomains2n1[i]);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 0, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 0, i, intersection,
                                 ldom, nghost, view, fd_m);
                 }
             }
@@ -2020,7 +2014,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 1, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 1, i, intersection,
                                 ldom, nghost, view, fd_m, true, false, false);
                 }
             }
@@ -2043,7 +2037,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 2, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 2, i, intersection,
                                 ldom, nghost, view, fd_m, false, true, false);
                 }
             }
@@ -2066,7 +2060,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 3, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 3, i, intersection,
                                 ldom, nghost, view, fd_m, false, false, true);
                 }
             }
@@ -2093,7 +2087,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 4, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 4, i, intersection,
                                 ldom, nghost, view, fd_m, true, true, false);
                 }
             }
@@ -2120,7 +2114,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 5, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 5, i, intersection,
                                 ldom, nghost, view, fd_m, false, true, true);
                 }
             }
@@ -2147,7 +2141,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 6, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 6, i, intersection,
                                 ldom, nghost, view, fd_m, true, false, true);
                 }
             }
@@ -2178,7 +2172,7 @@ namespace ippl {
 
                     intersection = intersection.intersect(domain2n1);
 
-                    solver_recv(mpi::tag::VICO_RECV, mpi::tag::VICO_SOLVER, 7, i, intersection,
+                    solver_recv(mpi::tag::VICO_SOLVER, 7, i, intersection,
                                 ldom, nghost, view, fd_m, true, true, true);
                 }
             }
