@@ -187,7 +187,6 @@ int main(int argc, char* argv[]) {
         ::testing::InitGoogleTest(&argc, argv);
         success = RUN_ALL_TESTS();
         
-        debugType<MemorySpaces>();
     }
     ippl::finalize();
     return success;

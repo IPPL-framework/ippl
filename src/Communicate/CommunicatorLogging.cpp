@@ -38,23 +38,22 @@ namespace ippl {
             std::vector<char> buffer = serializeLogs(localLogs);
 
             int logSize = buffer.size();
-            MPI_Send(&logSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-            MPI_Send(buffer.data(), logSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            this->send(logSize, 1, 0, 0);
+            this->send<char>(buffer.data(), logSize, 0, 0);
         }
 
         std::vector<LogEntry> Communicator::gatherLogsFromAllRanks(const std::vector<LogEntry>& localLogs) {
             std::vector<LogEntry> allLogs = localLogs;
 
-            int worldSize;
-            MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-
-            for (int rank = 1; rank < worldSize; ++rank) {
+            for (int rank = 1; rank < size_m; ++rank) {
                 int logSize;
-                MPI_Recv(&logSize, 1, MPI_INT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                Status status;
+
+                this->recv(logSize, 1, rank, 0, status);
 
                 std::vector<char> buffer(logSize);
-                MPI_Recv(buffer.data(), logSize, MPI_CHAR, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                this->recv<char>(buffer.data(), logSize, rank, 0, status);
 
                 std::vector<LogEntry> deserializedLogs = deserializeLogs(buffer);
                 allLogs.insert(allLogs.end(), deserializedLogs.begin(), deserializedLogs.end());
