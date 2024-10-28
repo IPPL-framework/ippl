@@ -5,16 +5,7 @@
 #include "Communicate/BufferHandler.h"
 #include "gtest/gtest.h"
 
-template <typename T>
-struct VariantToTypes;
-
-template <typename... Ts>
-struct VariantToTypes<std::variant<Ts...>> {
-    using type = ::testing::Types<Ts...>;
-};
-
-using MemorySpaces = typename VariantToTypes<
-    ippl::detail::TypeForAllSpaces<std::type_identity>::unique_memory_spaces>::type;
+using MemorySpaces = ippl::detail::TypeForAllSpaces<::testing::Types>::memory_spaces_type;
 
 template <typename MemorySpace>
 class TypedLoggingBufferHandlerTest : public ::testing::Test {
