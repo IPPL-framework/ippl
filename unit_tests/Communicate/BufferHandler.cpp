@@ -1,19 +1,18 @@
 #include "Ippl.h"
+#include "Utility/TypeUtils.h"
 
 #include "Communicate/BufferHandler.h"
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
+using MemorySpaces = ippl::detail::TypeForAllSpaces<::testing::Types>::memory_spaces_type;
+
 template <typename T>
-struct VariantToTypes;
+void debugType() {
+    std::cout << __PRETTY_FUNCTION__ << '\n'; 
+}
 
-template <typename... Ts>
-struct VariantToTypes<std::variant<Ts...>> {
-    using type = ::testing::Types<Ts...>;
-};
-
-using MemorySpaces = typename VariantToTypes<ippl::detail::TypeForAllSpaces<std::type_identity>::unique_memory_spaces>::type;
 
 
 template <typename MemorySpace>
@@ -187,6 +186,8 @@ int main(int argc, char* argv[]) {
     {
         ::testing::InitGoogleTest(&argc, argv);
         success = RUN_ALL_TESTS();
+        
+        debugType<MemorySpaces>();
     }
     ippl::finalize();
     return success;
