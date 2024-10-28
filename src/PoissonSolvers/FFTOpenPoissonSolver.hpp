@@ -584,6 +584,7 @@ namespace ippl {
             if (requests.size() > 0) {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
+            ippl::Comm->freeAllBuffers();
 
         } else {
             Kokkos::parallel_for(
@@ -710,6 +711,7 @@ namespace ippl {
                 if (requests.size() > 0) {
                     MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                 }
+                ippl::Comm->freeAllBuffers();
 
             } else {
                 Kokkos::parallel_for(
@@ -866,6 +868,7 @@ namespace ippl {
                     if (requests.size() > 0) {
                         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                     }
+                    ippl::Comm->freeAllBuffers();
 
                 } else {
                     Kokkos::parallel_for(
@@ -1023,6 +1026,7 @@ namespace ippl {
                         if (requests.size() > 0) {
                             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
                         }
+                        ippl::Comm->freeAllBuffers();
 
                     } else {
                         Kokkos::parallel_for(
@@ -1777,6 +1781,7 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
+        ippl::Comm->freeAllBuffers();
     };
 
     // CommunicateVico for DCT_VICO (2N+1 to 2N)
@@ -2182,5 +2187,6 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
+        ippl::Comm->freeAllBuffers();
     };
 }  // namespace ippl

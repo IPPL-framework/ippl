@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
+        ippl::Comm->printLogs();
     }
     ippl::finalize();
 
