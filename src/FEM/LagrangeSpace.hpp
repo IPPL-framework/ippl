@@ -1,5 +1,6 @@
 
 namespace ippl {
+    /*
     template <typename T, unsigned Dim>
     KOKKOS_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
         const T pi = Kokkos::numbers::pi_v<T>;
@@ -10,7 +11,7 @@ namespace ippl {
         }
 
         return Dim * pi * pi * val;
-    }
+    }*/
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
@@ -498,6 +499,7 @@ namespace ippl {
         return resultField;
     }
 
+    /*
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
@@ -512,7 +514,7 @@ namespace ippl {
         const T& f_q_k = sinusoidalRHSFunction<T,Dim>(coords);
         
         return f_q_k * basis_q_k[i] * absDetDPhi;
-    }
+    }*/
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
@@ -547,13 +549,17 @@ namespace ippl {
         const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
-        // Get field data and make it atomic,
-        // since it will be added to during the kokkos loop
-        AtomicViewType atomic_view = field.getView();
-
         // Get domain information and ghost cells
         auto ldom          = (field.getLayout()).getLocalNDIndex();
         const int nghost   = field.getNghost();
+
+        FieldRHS temp_field(field.get_mesh(), field.getLayout(), nghost);
+
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        // We work with a temporary field since we need to use field
+        // to evaluate the load vector; then we assign temp to RHS field
+        AtomicViewType atomic_view = temp_field.getView();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -586,8 +592,15 @@ namespace ippl {
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        T val = sinusoidalRHSFunction<T,Dim>(this->ref_element_m.localToGlobal(
-                            this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q[k]));
+                        T val = 0;
+                        for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                            // get field index corresponding to this DOF
+                            size_t I = global_dofs[i];
+                            auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                            // get field value at DOF and interpolate to q_k
+                            val += basis_q[k][i] * apply(field, dof_ndindex_I);
+                        }
                         
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
@@ -602,6 +615,10 @@ namespace ippl {
                 }
         });
         IpplTimings::stopTimer(outer_loop);
+
+        // assign temp_field to field so that the RHS is the evaluated Load Vector
+        field = temp_field;
+
         IpplTimings::stopTimer(evalLoadV);
     }
 

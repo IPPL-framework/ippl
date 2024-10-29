@@ -11,7 +11,6 @@
 #include "Meshes/Centering.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
-/*
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     const T pi = Kokkos::numbers::pi_v<T>;
@@ -23,7 +22,6 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 
     return Dim * pi * pi * val;
 }
-*/
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
@@ -136,6 +134,9 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
 
+    // set rhs
+    auto view_rhs = rhs.getView();
+
     // set solution
     auto view = sol.getView();
     auto ldom = layout.getLocalNDIndex();
@@ -149,7 +150,8 @@ void testFEMSolver(const unsigned& numNodesPerDim,
             }
             const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
             
-            apply(view, args) = sinusoidalSolution<T, Dim>(x);
+            apply(view, args)     = sinusoidalSolution<T, Dim>(x);
+            apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
         });
 
     IpplTimings::stopTimer(initTimer);

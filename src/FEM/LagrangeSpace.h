@@ -189,20 +189,22 @@ namespace ippl {
             //                                               FieldLHS, FieldRHS>::numElementDOFs>&)>&
             //    evalFunction) const override;
 
+        /*
         KOKKOS_FUNCTION
         T evalFunc(const T absDetDPhi,
                    const size_t elementIndex, const size_t& i, const point_t& q_k,
                    const Vector<T, numElementDOFs>& basis_q) const;
+        */
 
         /**
          * @brief Assemble the load vector b of the system Ax = b
          *
          * @param rhs_field The field to set with the load vector
-         * @param f The source function
+         * @param f The source function (charge density field)
          *
          * @return FieldRHS - The RHS field containing b
          */
-        void evaluateLoadVector(FieldRHS& rhs_field) const override;        
+        void evaluateLoadVector(FieldRHS& field) const override;        
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
