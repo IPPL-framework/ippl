@@ -114,6 +114,7 @@ namespace ippl {
 
         // create the FFT object
         fft_m = std::make_unique<FFT_t>(*layout_mp, *layoutComplex_m, this->params_m);
+        fft_m->warmup(grn_m, grntr_m); // warmup the FFT object
 
         // these are fields that are used for calculating the Green's function
         for (unsigned int d = 0; d < Dim; ++d) {

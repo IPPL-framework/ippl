@@ -1,26 +1,24 @@
 file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding unit tests found in ${_relPath}")
+message (STATUS "Adding index test found in ${_relPath}")
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
+
+
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${Kokkos_DIR}/..
 )
 
-add_executable (FFT FFT.cpp)
-gtest_discover_tests(FFT PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
-target_link_libraries (
-    FFT
-    ippl
-    pthread
-    GTest::gtest_main
-    ${MPI_CXX_LIBRARIES}
-)
+set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
+set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
+
+add_executable (StructureFormation StructureFormation.cpp)
+target_link_libraries (StructureFormation ${IPPL_LIBS})
+
 
 # vi: set et ts=4 sw=4 sts=4:
 

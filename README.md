@@ -75,7 +75,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_
 - `VOLTA70`
 - `VOLTA72`
 - `TURING75`
-- `AMPERE80`
+- `AMPERE80` (PSI GWENDOLEN machine)
 - `AMPERE86`
 
 
@@ -108,4 +108,52 @@ take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UN
   year={2024},
   organization={SIAM}
 }
+```
+
+# Job scripts for running on Merlin and Gwendolen (at PSI)
+You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm.
+More documentation on the local cluster can be found [here](https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html) (need to be in the PSI network to access).
+
+## Merlin CPU (MPI + OpenMP)
+For example, to run a job on 1 MPI node, with 44 OpenMP threads:
+```
+#!/bin/bash
+#SBATCH --partition=hourly      # Using 'hourly' will grant higher priority
+#SBATCH --nodes=1               # No. of nodes
+#SBATCH --ntasks-per-node=1     # No. of MPI ranks per node. Merlin CPU nodes have 44 cores
+#SBATCH --cpus-per-task=44      # No. of OMP threads
+#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)
+#SBATCH --hint=nomultithread    # Without hyperthreading
+##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)
+
+#SBATCH --output=<output_file_name>.out  # Name of output file
+#SBATCH --error=<error_file_name>.err    # Name of error file
+
+export OMP_NUM_THREADS=44
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+# need to pass the --cpus-per-task option to srun otherwise will not use more than 1 core per task
+# (see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting--ccpus-per-task)
+
+srun --cpus-per-task=44 ./<your_executable> <args>
+```
+
+## Gwendolen GPU
+For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node):
+```
+#!/bin/bash
+#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)
+#SBATCH --nodes=1               # No. of nodes (there is only 1 node on Gwendolen)
+#SBATCH --ntasks=4              # No. of tasks (max. 8)
+#SBATCH --clusters=gmerlin6     # Specify that we are running on the GPU cluster
+#SBATCH --partition=gwendolen   # Running on the Gwendolen partition of the GPU cluster
+#SBATCH --account=gwendolen
+##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)
+#SBATCH --gpus=4                # No. of GPUs (max. 8)
+
+#SBATCH --output=<output_file_name>.out  # Name of output file
+#SBATCH --error=<error_file_name>.err    # Name of error file
+
+srun ./<your_executable> <args> --kokkos-map-device-id-by=mpi_rank
 ```

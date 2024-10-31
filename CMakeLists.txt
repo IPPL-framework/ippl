@@ -138,7 +138,7 @@ set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 #set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if (NOT "${IPPL_PLATFORMS}" STREQUAL "CUDA" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # Use sanitizer flags for GCC or Clang only
     set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
 endif ()
@@ -157,7 +157,15 @@ endif()
 # Resolve all library dependencies
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
+
+
 find_package (MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
+link_directories(${MPI_LIBRARY_PATH})
+
+
+
+
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
@@ -169,7 +177,7 @@ if (USE_ALTERNATIVE_VARIANT)
 endif()
 
 
-option (ENABLE_FFT "Enable FFT transform" OFF)
+option (ENABLE_FFT "Enable FFT transform" ON)
 if (ENABLE_FFT)
     add_definitions (-DENABLE_FFT)
     if(NOT Heffte_VERSION)
@@ -215,7 +223,7 @@ if (ENABLE_FFT)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
-option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
+option (ENABLE_SOLVERS "Enable IPPL solvers" ON)
 
 add_subdirectory (src)
 
@@ -235,6 +243,20 @@ if (ENABLE_ALPINE)
     message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
     add_subdirectory(fel)
+endif ()
+
+
+
+option (ENABLE_COSMOLOGY "Enable Cosmology" OFF)
+if (ENABLE_COSMOLOGY)
+    if (NOT ENABLE_SOLVERS)
+        message (FATAL_ERROR "Cannot enable Cosmology since Solver not enabled (-DENABLE_SOLVERS=ON)!")
+    endif ()
+    if (NOT ENABLE_FFT)
+        message (FATAL_ERROR "Cannot enable Cosmology since FFT not enabled (-DENABLE_FFT=ON)!")
+    endif ()
+    message (STATUS "Enable Cosmology")
+    add_subdirectory (cosmology)
 endif ()
 
 option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)

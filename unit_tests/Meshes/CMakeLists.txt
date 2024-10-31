@@ -12,7 +12,7 @@ link_directories (
 )
 
 add_executable (UniformCartesian UniformCartesian.cpp)
-gtest_discover_tests (UniformCartesian)
+gtest_discover_tests (UniformCartesian PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
 
 target_link_libraries (
     UniformCartesian
