@@ -24,15 +24,17 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 }
 
 template <typename T, unsigned Dim>
-KOKKOS_INLINE_FUNCTION T sinusoidalSolution(ippl::Vector<T, Dim> x_vec) {
+struct AnalyticSol {
     const T pi = Kokkos::numbers::pi_v<T>;
 
-    T val = 1.0;
-    for (unsigned d = 0; d < Dim; d++) {
-        val *= Kokkos::sin(pi * x_vec[d]);
+    KOKKOS_FUNCTION const T operator()(ippl::Vector<T, Dim> x_vec) const {
+        T val = 1.0;
+        for (unsigned d = 0; d < Dim; d++) {
+            val *= Kokkos::sin(pi * x_vec[d]);
+        }
+        return val;
     }
-    return val;
-}
+};
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION T gaussian3d(ippl::Vector<T, 3> x_vec) {
@@ -124,7 +126,6 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, domain, isParallel);
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
-    Field_t sol(mesh, layout, numGhosts);  // exact solution
 
     // Define boundary conditions
     BConds_t bcField;
@@ -136,13 +137,10 @@ void testFEMSolver(const unsigned& numNodesPerDim,
 
     // set rhs
     auto view_rhs = rhs.getView();
-
-    // set solution
-    auto view = sol.getView();
     auto ldom = layout.getLocalNDIndex();
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-    ippl::parallel_for("Assign solution", sol.getFieldRangePolicy(),
+    ippl::parallel_for("Assign RHS", rhs.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const index_array_type& args) {
             ippl::Vector<int, Dim> iVec = args - numGhosts;
             for (unsigned d = 0; d < Dim; ++d) {
@@ -151,7 +149,6 @@ void testFEMSolver(const unsigned& numNodesPerDim,
 
             const ippl::Vector<T, Dim> x = (iVec) * cellSpacing + origin;
             
-            apply(view, args)     = sinusoidalSolution<T, Dim>(x);
             apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
         });
 
@@ -174,9 +171,8 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     IpplTimings::startTimer(errorTimer);
 
     // Compute the error
-    Field_t error(mesh, layout, numGhosts);
-    error                 = lhs - sol;
-    const double relError = norm(error) / norm(sol);
+    AnalyticSol<T, Dim> analytic;
+    const T relError = solver.getL2Error(analytic);
 
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
@@ -191,8 +187,7 @@ void testFEMSolver(const unsigned& numNodesPerDim,
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform msg(argv[0]);
-        Inform msg2all(argv[0], INFORM_ALL_NODES);
+        Inform msg("");
 
         using T = double;
 

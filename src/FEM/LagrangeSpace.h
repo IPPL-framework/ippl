@@ -211,16 +211,24 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
 
         /**
-         * @brief Given two fields, compute the error between them
+         * @brief Given two fields, compute the L2 norm error
          *
          * @param u_h The numerical solution found using FEM
-         * @param u_sol The 
+         * @param u_sol The analytical solution (functor)
          *
-         * @return error - The error ||u_h - u_sol||
+         * @return error - The error ||u_h - u_sol||_L2
          */
         template <typename F>
         T computeError(const FieldLHS& u_h, const F& u_sol) const;
 
+        /**
+         * @brief Given two fields, compute the L-infinity error
+         *
+         * @param u_h The numerical solution found using FEM
+         * @param u_sol The analytical solution (functor)
+         *
+         * @return error - The error ||u_h - u_sol||_Linf
+         */
         template <typename F>
         T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
     private:        

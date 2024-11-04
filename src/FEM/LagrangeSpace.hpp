@@ -77,37 +77,6 @@ namespace ippl {
                     elementIndices(idx) = points(i);
                 }
             });
-
-        // naive implementation below
-        /*
-        
-        const size_t numElements = this->numElements();
-        const unsigned int numRanks   = Comm->size();
-        //const unsigned int myRank     = Comm->rank();
-        size_t elementsPerRank   = numElements/numRanks;
-        unsigned int remainder        = numElements - (elementsPerRank * numRanks);
-        // if elements are remaining to be assigned to a rank, assign them
-        if (myRank < remainder) {
-            elementsPerRank++;
-        }
-
-        elementIndices = Kokkos::View<size_t*>("i", elementsPerRank);
-
-        for (size_t i = 0; i < elementsPerRank; ++i) {
-            size_t global = i + ldom[0].first();
-            myelements.push_back(global);
-        }
-
-        using exec_space  = typename Kokkos::View<size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
-        
-        Kokkos::parallel_for("Element index view", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t i) {
-                size_t global = i + ldom[0].first();
-                elementIndices(i) = global;
-            });
-        Kokkos::fence();
-        */
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -497,23 +466,6 @@ namespace ippl {
         return resultField;
     }
 
-    /*
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evalFunc(
-        const T absDetDPhi,
-        const size_t elementIndex, const size_t& i, const point_t& q_k,
-        const Vector<T, numElementDOFs>& basis_q_k) const {
-
-        Vector<T, Dim> coords = this->ref_element_m.localToGlobal(
-                                this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q_k);
-
-        const T& f_q_k = sinusoidalRHSFunction<T,Dim>(coords);
-        
-        return f_q_k * basis_q_k[i] * absDetDPhi;
-    }*/
-
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evaluateLoadVector(
@@ -707,7 +659,8 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
               typename FieldLHS, typename FieldRHS>
     template <typename F>
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorInf(const FieldLHS& u_h, const F& u_sol) const {
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorInf(
+        const FieldLHS& u_h, const F& u_sol) const {
 
         if (this->quadrature_m.getOrder() < (2*Order +1)) {
             // throw exception
