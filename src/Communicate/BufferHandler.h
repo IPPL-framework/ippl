@@ -2,7 +2,7 @@
 #define IPPL_BUFFER_HANDLER_H
 
 #include <set>
-
+#include <memory>
 #include "Communicate/Archive.h"
 
 template <typename MemorySpace>
@@ -23,6 +23,16 @@ public:
     virtual size_type getFreeSize() const      = 0;
 };
 
+/**
+ * @class BufferHandler
+ * @brief Concrete implementation of IBufferHandler for managing memory buffers.
+ * 
+ * This class implements the IBufferHandler interface, providing concrete behavior for
+ * buffer allocation, freeing, and memory management. It maintains a pool of allocated
+ * and free buffers to optimize memory usage.
+ *
+ * @tparam MemorySpace The memory space type for the buffer (e.g., `Kokkos::HostSpace`).
+ */
 template <typename MemorySpace>
 class BufferHandler : public IBufferHandler<MemorySpace> {
 public:
@@ -30,128 +40,74 @@ public:
     using buffer_type  = std::shared_ptr<archive_type>;
     using size_type    = ippl::detail::size_type;
 
-    ~BufferHandler() {}
+    ~BufferHandler() override;
 
-    buffer_type getBuffer(size_type size, double overallocation) override {
-        size_type requiredSize = static_cast<size_type>(size * overallocation);
+    /**
+     * @brief Retrieves a buffer of the specified size, or creates a new one if needed.
+     *
+     * This function first searches for a free buffer of the requested size or larger.
+     * If none is found, it allocates a new buffer or reallocates an existing one.
+     * 
+     * @param size The required size of the buffer.
+     * @param overallocation A multiplier to determine additional buffer space.
+     * @return A shared pointer to the allocated buffer.
+     */
+    buffer_type getBuffer(size_type size, double overallocation) override;
 
-        auto freeBuffer = findFreeBuffer(requiredSize);
+    /**
+     * @brief Frees a specific buffer, returning it to the free buffer pool without deallocating the actual memory region.
+     *
+     * @param buffer The buffer to free.
+     */
+    void freeBuffer(buffer_type buffer) override;
 
-        if (freeBuffer != nullptr) {
-            return allocateFromFreeBuffer(freeBuffer);
-        }
+    /**
+     * @brief Frees all allocated buffers and adds them to the free pool without deallocating the actual memory region.
+     */
+    void freeAllBuffers() override;
 
-        if (!free_buffers.empty()) {
-            return reallocateLargestFreeBuffer(requiredSize);
-        }
+    /**
+     * @brief Deletes all buffers, thereby freeing the memory.
+     */
+    void deleteAllBuffers() override;
 
-        return allocateNewBuffer(requiredSize);
-    }
+    /**
+     * @brief Retrieves the total allocated size, i.e. the size of allocated memory currently in use.
+     * 
+     * @return The total size of allocated buffers in use.
+     */
+    size_type getAllocatedSize() const override;
 
-    void freeBuffer(buffer_type buffer) override {
-        if (isBufferUsed(buffer)) {
-            releaseUsedBuffer(buffer);
-        }
-    }
-
-    void freeAllBuffers() override {
-        free_buffers.insert(used_buffers.begin(), used_buffers.end());
-        used_buffers.clear();
-
-        freeSize += allocatedSize;
-        allocatedSize = 0;
-    }
-
-    void deleteAllBuffers() override {
-        freeSize      = 0;
-        allocatedSize = 0;
-
-        used_buffers.clear();
-        free_buffers.clear();
-    }
-
-    size_type getAllocatedSize() const override { return allocatedSize; }
-
-    size_type getFreeSize() const override { return freeSize; }
+    /**
+     * @brief Retrieves the total size of free buffers, i.e. size of allocated memory currently not in use.
+     * 
+     * @return The total size of free buffers.
+     */
+    size_type getFreeSize() const override;
 
 private:
     using buffer_comparator_type = bool (*)(const buffer_type&, const buffer_type&);
     using buffer_set_type        = std::set<buffer_type, buffer_comparator_type>;
 
-    static bool bufferSizeComparator(const buffer_type& lhs, const buffer_type& rhs) {
-        // Compare by size first, then by memory address to get total ordering
-        if (lhs->getBufferSize() != rhs->getBufferSize()) {
-            return lhs->getBufferSize() < rhs->getBufferSize();
-        }
-        return lhs < rhs;
-    }
+    static bool bufferSizeComparator(const buffer_type& lhs, const buffer_type& rhs);
 
-    bool isBufferUsed(buffer_type buffer) const {
-        return used_buffers.find(buffer) != used_buffers.end();
-    }
+    bool isBufferUsed(buffer_type buffer) const;
+    void releaseUsedBuffer(buffer_type buffer);
+    buffer_type findFreeBuffer(size_type requiredSize);
+    buffer_set_type::iterator findSmallestSufficientBuffer(size_type requiredSize);
+    buffer_type allocateFromFreeBuffer(buffer_type buffer);
+    buffer_type reallocateLargestFreeBuffer(size_type requiredSize);
+    buffer_type allocateNewBuffer(size_type requiredSize);
 
-    void releaseUsedBuffer(buffer_type buffer) {
-        auto it = used_buffers.find(buffer);
-
-        allocatedSize -= buffer->getBufferSize();
-        freeSize += buffer->getBufferSize();
-
-        used_buffers.erase(it);
-        free_buffers.insert(buffer);
-    }
-
-    buffer_type findFreeBuffer(size_type requiredSize) {
-        auto it = findSmallestSufficientBuffer(requiredSize);
-        if (it != free_buffers.end()) {
-            return *it;
-        }
-        return nullptr;
-    }
-
-    buffer_set_type::iterator findSmallestSufficientBuffer(size_type requiredSize) {
-        return std::find_if(free_buffers.begin(), free_buffers.end(),
-                            [requiredSize](const buffer_type& buffer) {
-                                return buffer->getBufferSize() >= requiredSize;
-                            });
-    }
-
-    buffer_type allocateFromFreeBuffer(buffer_type buffer) {
-        freeSize -= buffer->getBufferSize();
-        allocatedSize += buffer->getBufferSize();
-
-        free_buffers.erase(buffer);
-        used_buffers.insert(buffer);
-        return buffer;
-    }
-
-    buffer_type reallocateLargestFreeBuffer(size_type requiredSize) {
-        auto largest_it    = std::prev(free_buffers.end());
-        buffer_type buffer = *largest_it;
-
-        freeSize -= buffer->getBufferSize();
-        allocatedSize += requiredSize;
-
-        free_buffers.erase(buffer);
-        buffer->reallocBuffer(requiredSize);
-
-        used_buffers.insert(buffer);
-        return buffer;
-    }
-
-    buffer_type allocateNewBuffer(size_type requiredSize) {
-        buffer_type newBuffer = std::make_shared<archive_type>(requiredSize);
-
-        allocatedSize += newBuffer->getBufferSize();
-        used_buffers.insert(newBuffer);
-        return newBuffer;
-    }
-
-    size_type allocatedSize;
-    size_type freeSize;
+    size_type allocatedSize; ///< Total size of all allocated buffers
+    size_type freeSize; ///< Total size of all free buffers
 
 protected:
-    buffer_set_type used_buffers{&BufferHandler::bufferSizeComparator};
-    buffer_set_type free_buffers{&BufferHandler::bufferSizeComparator};
+    buffer_set_type used_buffers{&BufferHandler::bufferSizeComparator}; ///< Set of used buffers
+    buffer_set_type free_buffers{&BufferHandler::bufferSizeComparator}; ///< Set of free buffers
 };
 
+#include "BufferHandler.hpp"
+
 #endif
+
