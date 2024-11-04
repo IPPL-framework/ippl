@@ -194,13 +194,13 @@ namespace ippl {
                 MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);
             }
             
-            void printLogs();
+            void printLogs(const std::string& filename);
 
         private:
             std::vector<LogEntry> gatherLocalLogs();
             void sendLogsToRank0(const std::vector<LogEntry>& localLogs);
             std::vector<LogEntry> gatherLogsFromAllRanks(const std::vector<LogEntry>& localLogs);
-            void writeLogsToFile(const std::vector<LogEntry>& allLogs);
+            void writeLogsToFile(const std::vector<LogEntry>& allLogs, const std::string& filename);
 
 
             buffer_handler_type buffer_handlers_m;

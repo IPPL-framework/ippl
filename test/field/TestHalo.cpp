@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
         
-        layout.comm.printLogs();
+        layout.comm.printLogs("testfile.csv");
 
     }
     ippl::finalize();

@@ -1,13 +1,14 @@
 #include "Communicate/Communicator.h"
 #include "Communicate/LogEntry.h"
 #include "Communicate/CommunicatorLogging.hpp"
+#include "Utility/Inform.h"
 
 #include <iomanip> 
 #include <fstream>
 
 namespace ippl {
     namespace mpi {
-        void Communicator::printLogs() {
+        void Communicator::printLogs(const std::string& filename) {
             std::vector<LogEntry> localLogs = gatherLocalLogs();
 
             std::vector<LogEntry> allLogs;
@@ -18,7 +19,7 @@ namespace ippl {
             }
 
             if (rank() == 0) {
-                writeLogsToFile(allLogs);
+                writeLogsToFile(allLogs, filename);
             }
 
         }
@@ -89,11 +90,14 @@ namespace ippl {
             return logs;
         }
 
-        void Communicator::writeLogsToFile(const std::vector<LogEntry>& allLogs) {
-            std::ofstream logFile("log_entries.csv");
+        void Communicator::writeLogsToFile(const std::vector<LogEntry>& allLogs, const std::string& filename) {
+            Inform logFile(0, filename.c_str(), Inform::OVERWRITE, 0);
+            logFile.setOutputLevel(1);
 
-            logFile << "Timestamp,Method,Rank,MemorySpace,AllocatedSize,FreeSize,Parameters\n";
-
+            logFile << "Timestamp,Method,Rank,MemorySpace,AllocatedSize,FreeSize,Parameters" << endl;
+            std::cout << "hello world" << std::endl;
+            std::cout << allLogs.size() << std::endl;
+              
             for (const auto& log : allLogs) {
                 auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
                                      log.timestamp.time_since_epoch())
@@ -111,10 +115,10 @@ namespace ippl {
                     logFile << key << ": " << value;
                     first = false;
                 }
-                logFile << "\"\n";
+                logFile << "\"" << endl;
             }
 
-            logFile.close();
+            logFile.flush();
         }
 
     }  // namespace mpi
