@@ -8,13 +8,6 @@
 
 using MemorySpaces = ippl::detail::TypeForAllSpaces<::testing::Types>::memory_spaces_type;
 
-template <typename T>
-void debugType() {
-    std::cout << __PRETTY_FUNCTION__ << '\n'; 
-}
-
-
-
 template <typename MemorySpace>
 class TypedBufferHandlerTest : public ::testing::Test {
 protected:

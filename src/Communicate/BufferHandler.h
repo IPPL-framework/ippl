@@ -167,7 +167,7 @@ protected:
     buffer_set_type free_buffers{&BufferHandler::bufferSizeComparator}; ///< Set of free buffers
 };
 
-#include "BufferHandler.hpp"
+#include "Communicate/BufferHandler.hpp"
 
 #endif
 
