@@ -267,9 +267,9 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
 
         const Mesh<T, Dim>& mesh_m;
-        const QuadratureType& quadrature_m;
         ElementType ref_element_m;
-        Vector<int, Dim> nr_m;
+        const QuadratureType& quadrature_m;
+        Vector<size_t, Dim> nr_m;
         Vector<double, Dim> hr_m;
         Vector<double, Dim> origin_m;
     };

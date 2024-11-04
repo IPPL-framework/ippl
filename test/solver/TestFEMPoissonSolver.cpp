@@ -148,7 +148,8 @@ void testFEMSolver(const unsigned& numNodesPerDim,
             for (unsigned d = 0; d < Dim; ++d) {
                 iVec[d] += ldom[d].first();
             }
-            const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
+
+            const ippl::Vector<T, Dim> x = (iVec) * cellSpacing + origin;
             
             apply(view, args)     = sinusoidalSolution<T, Dim>(x);
             apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);

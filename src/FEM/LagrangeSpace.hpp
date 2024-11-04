@@ -47,8 +47,6 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        int me = Comm->rank();
-
         Kokkos::View<size_t*> points("ComputeMapping", npoints);
         Kokkos::parallel_reduce("ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -593,13 +591,16 @@ namespace ippl {
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         T val = 0;
-                        for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                        for (size_t j = 0; j < this->numElementDOFs; ++j) {
                             // get field index corresponding to this DOF
-                            size_t I = global_dofs[i];
-                            auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                            size_t J = global_dofs[j];
+                            auto dof_ndindex_J = this->getMeshVertexNDIndex(J);
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                dof_ndindex_J[d] = dof_ndindex_J[d] - ldom[d].first() + nghost;
+                            }
 
                             // get field value at DOF and interpolate to q_k
-                            val += basis_q[k][i] * apply(field, dof_ndindex_I);
+                            val += basis_q[k][j] * apply(field, dof_ndindex_J);
                         }
                         
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
@@ -657,6 +658,10 @@ namespace ippl {
         // Variable to sum the error to    
         T error = 0;
 
+        // Get domain information and ghost cells
+        auto ldom          = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost   = u_h.getNghost();
+
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -679,6 +684,9 @@ namespace ippl {
                         // get field index corresponding to this DOF
                         size_t I = global_dofs[i];
                         auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                        }
 
                         // get field value at DOF and interpolate to q_k
                         val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
@@ -720,12 +728,12 @@ namespace ippl {
 
         const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
 
-        // Absolute value of det Phi_K
-        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
-            this->getElementMeshVertexPoints(zeroNdIndex)));
-
         // Variable to sum the error to    
         T error = 0;
+
+        // Get domain information and ghost cells
+        auto ldom          = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost   = u_h.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -741,6 +749,9 @@ namespace ippl {
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
 
                     // computed field value at DOF
                     T val_u_h = apply(u_h, dof_ndindex_I);

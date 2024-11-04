@@ -65,7 +65,7 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, 2, ElementType>;
 
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
