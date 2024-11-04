@@ -1,17 +1,5 @@
 
 namespace ippl {
-    /*
-    template <typename T, unsigned Dim>
-    KOKKOS_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
-        const T pi = Kokkos::numbers::pi_v<T>;
-
-        T val = 1.0;
-        for (unsigned d = 0; d < Dim; d++) {
-            val *= Kokkos::sin(pi * x_vec[d]);
-        }
-
-        return Dim * pi * pi * val;
-    }*/
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
