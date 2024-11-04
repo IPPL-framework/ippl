@@ -697,7 +697,11 @@ namespace ippl {
                 local += contrib;
             }, Kokkos::Sum<double>(error));
 
-        return Kokkos::sqrt(error);
+        // MPI reduce 
+        T global_error = 0.0;
+        Comm->allreduce(error, global_error, 1, std::plus<T>());
+
+        return Kokkos::sqrt(global_error);
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
@@ -767,7 +771,11 @@ namespace ippl {
                 }
             }, Kokkos::Max<double>(error));
 
-        return error;
+        // MPI reduce 
+        T global_error = 0.0;
+        Comm->allreduce(error, global_error, 1, std::greater<T>());
+
+        return global_error;
     }
 
 }  // namespace ippl

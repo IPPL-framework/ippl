@@ -65,7 +65,7 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, 2, ElementType>;
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
@@ -144,6 +144,8 @@ namespace ippl {
             IpplTimings::startTimer(pcgTimer);
 
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
+
+            (this->lhs_mp)->fillHalo();
 
             IpplTimings::stopTimer(pcgTimer);
 
