@@ -5,6 +5,15 @@
 #include <memory>
 #include "Communicate/Archive.h"
 
+/**
+ * @brief Interface for memory buffer handling.
+ *
+ * Defines methods for acquiring, freeing, and managing memory buffers.
+ * Implementations are responsible for managing buffers efficiently, 
+ * ensuring that allocated buffers are reused where possible.
+ *
+ * @tparam MemorySpace The memory space type used for buffer allocation.
+ */
 template <typename MemorySpace>
 class IBufferHandler {
 public:
@@ -14,13 +23,59 @@ public:
 
     virtual ~IBufferHandler() {}
 
+    /**
+     * @brief Requests a memory buffer of a specified size.
+     *
+     * Provides a buffer of at least the specified size, with the option
+     * to allocate additional space based on an overallocation multiplier.
+     * This function attempts to reuse available buffers if possible.
+     *
+     * @param size The required size of the buffer, in bytes.
+     * @param overallocation A multiplier to allocate extra space, which may help
+     *                       avoid frequent reallocation in some use cases.
+     * @return A shared pointer to the allocated buffer.
+     */
     virtual buffer_type getBuffer(size_type size, double overallocation) = 0;
+
+    /**
+     * @brief Frees a specified buffer.
+     *
+     * Moves the specified buffer to a free state, making it available
+     * for reuse in future buffer requests.
+     *
+     * @param buffer The buffer to be freed.
+     */
     virtual void freeBuffer(buffer_type buffer)                          = 0;
+
+    /**
+     * @brief Frees all currently used buffers.
+     *
+     * Transfers all used buffers to the free state, making them available
+     * for reuse. This does not deallocate memory but resets buffer usage.
+     */
     virtual void freeAllBuffers()                                        = 0;
+
+    /**
+     * @brief Deletes all buffers.
+     *
+     * Releases all allocated memory buffers, both used and free.
+     * After this call, no buffers are available until new allocations.
+     */
     virtual void deleteAllBuffers()                                      = 0;
 
+    /**
+     * @brief Gets the size of all allocated buffers.
+     *
+     * @return Total size of allocated buffers in bytes.
+     */
     virtual size_type getAllocatedSize() const = 0;
-    virtual size_type getFreeSize() const      = 0;
+
+    /**
+     * @brief Gets the size of all free buffers.
+     *
+     * @return Total size of free buffers in bytes.
+     */
+    virtual size_type getFreeSize() const = 0;
 };
 
 /**
@@ -43,21 +98,26 @@ public:
     ~BufferHandler() override;
 
     /**
-     * @brief Retrieves a buffer of the specified size, or creates a new one if needed.
+     * @brief Acquires a buffer of at least the specified size.
      *
-     * This function first searches for a free buffer of the requested size or larger.
-     * If none is found, it allocates a new buffer or reallocates an existing one.
-     * 
-     * @param size The required size of the buffer.
-     * @param overallocation A multiplier to determine additional buffer space.
+     * Requests a memory buffer of the specified size, with the option
+     * to request a buffer larger than the base size by an overallocation
+     * multiplier. Implementations should attempt to reuse existing
+     * buffers if possible.
+     *
+     * @param size The required buffer size.
+     * @param overallocation A multiplier to allocate additional buffer space.
      * @return A shared pointer to the allocated buffer.
      */
     buffer_type getBuffer(size_type size, double overallocation) override;
 
     /**
-     * @brief Frees a specific buffer, returning it to the free buffer pool without deallocating the actual memory region.
+     * @brief Frees a specified buffer.
      *
-     * @param buffer The buffer to free.
+     * Moves the specified buffer to a free state, making it available
+     * for reuse in future buffer requests.
+     *
+     * @param buffer The buffer to be freed.
      */
     void freeBuffer(buffer_type buffer) override;
 
