@@ -56,16 +56,16 @@ public:
         // fill the global reference DOFs
     }
 
-    const ElementType ref_element;
+    ElementType ref_element;
     const MeshType mesh;
     const MeshType biggerMesh;
     const MeshType symmetricMesh;
     const QuadratureType quadrature;
     const BetterQuadratureType betterQuadrature;
-    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType> lagrangeSpace;
-    const ippl::LagrangeSpace<T, Dim, Order, QuadratureType, FieldType, FieldType>
+    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType> lagrangeSpace;
+    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>
         lagrangeSpaceBigger;
-    const ippl::LagrangeSpace<T, Dim, Order, BetterQuadratureType, FieldType, FieldType>
+    const ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>
         symmetricLagrangeSpace;
 };
 
@@ -700,6 +700,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
     using FieldType = typename TestFixture::FieldType;
 
+    using T                   = typename TestFixture::value_t;
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
     const std::size_t& dim    = lagrangeSpace.dim;
@@ -723,18 +724,36 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             FieldType ref_field(mesh, layout, 1);
 
             // define the RHS function f
-            auto f = [&pi](ippl::Vector<double, 1> x) {
-                return pi * pi * Kokkos::sin(pi * x[0]);
-            };
+            int nghost    = rhs_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
+            auto hr       = mesh.getGridsize(0);
+            auto origin   = mesh.getOrigin();
+
+            auto view_rhs   = rhs_field.getView();
+            auto mirror_rhs = Kokkos::create_mirror_view(view_rhs);
+
+            nestedViewLoop(mirror_rhs, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first() - nghost;
+                }
+                T x = (coords[0] * hr) + origin[0];
+
+                mirror_rhs(args...) = pi * pi * Kokkos::sin(pi * x);
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_rhs, mirror_rhs);
 
             // call evaluateLoadVector
             rhs_field.fillHalo();
-            lagrangeSpace.evaluateLoadVector(rhs_field, f);
+            lagrangeSpace.evaluateLoadVector(rhs_field);
             rhs_field.accumulateHalo();
 
             // set up for comparison
-            int nghost    = rhs_field.getNghost();
-            auto ldom     = layout.getLocalNDIndex();
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 

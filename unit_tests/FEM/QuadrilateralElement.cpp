@@ -19,8 +19,8 @@ protected:
 public:
     using value_t = T;
     using point_t = ippl::QuadrilateralElement<T>::point_t;
-    using mesh_element_vertex_point_vec_t =
-        ippl::QuadrilateralElement<T>::mesh_element_vertex_point_vec_t;
+    using vertex_points_t =
+        ippl::QuadrilateralElement<T>::vertex_points_t;
 
     static constexpr unsigned NumQuads = 3;
 
@@ -56,11 +56,11 @@ public:
 
     ippl::QuadrilateralElement<T> quad_element;
 
-    const mesh_element_vertex_point_vec_t local_points = {
+    const vertex_points_t local_points = {
         {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
     const point_t local_mid_point = {0.5, 0.5};
 
-    ippl::Vector<mesh_element_vertex_point_vec_t, NumQuads> quads;
+    ippl::Vector<vertex_points_t, NumQuads> quads;
 };
 
 using Tests = TestParams::tests<42>;
@@ -78,12 +78,12 @@ TYPED_TEST(QuadrilateralElementTest, LocalVertices) {
 TYPED_TEST(QuadrilateralElementTest, LocalToGlobal) {
     using T = typename TestFixture::value_t;
     // using point_t      = typename TestFixture::point_t;
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& quad_element = this->quad_element;
 
     for (unsigned i = 0; i < this->quads.dim; i++) {
-        mesh_element_vertex_point_vec_t transformed_points;
+        vertex_points_t transformed_points;
         for (unsigned p = 0; p < 4; p++) {
             transformed_points[p] =
                 quad_element.localToGlobal(this->quads[i], this->local_points[p]);
@@ -104,12 +104,12 @@ TYPED_TEST(QuadrilateralElementTest, LocalToGlobal) {
 TYPED_TEST(QuadrilateralElementTest, GlobalToLocal) {
     using T = typename TestFixture::value_t;
     // using point_t      = typename TestFixture::point_t;
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& quad_element = this->quad_element;
 
     for (unsigned i = 0; i < this->quads.dim; i++) {
-        mesh_element_vertex_point_vec_t transformed_points;
+        vertex_points_t transformed_points;
         for (unsigned p = 0; p < 4; p++) {
             transformed_points[p] = quad_element.globalToLocal(this->quads[i], this->quads[i][p]);
 

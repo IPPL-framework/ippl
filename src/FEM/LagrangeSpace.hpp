@@ -84,12 +84,11 @@ namespace ippl {
         return num_global_dofs;
     }
 
-    /*
-    template <typename T, unsigned Dim, unsigned Order, typename QuadratureType, typename FieldLHS,
-              typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION
-    size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
-        const size_t& elementIndex, const size_t& globalDOFIndex) const {
+    size_t LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex
+    (const size_t& elementIndex, const size_t& globalDOFIndex) const {
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -105,10 +104,6 @@ namespace ippl {
             dof_mapping = {0, 1, 3, 2};
         } else if (Dim == 3) {
             dof_mapping = {0, 1, 3, 2, 4, 5, 7, 6};
-        } else {
-            // throw exception
-            throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Dimension
-    not supported");
         }
 
         // Find the global DOF in the vector and return the local DOF index
@@ -118,10 +113,10 @@ namespace ippl {
                 return dof_mapping[i];
             }
         }
-        throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Global DOF not
-    found in specified element");
+        return std::numeric_limits<size_t>::quiet_NaN();
+        //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
+        //                    "FEM Lagrange Space: Global DOF not found in specified element");
     }
-    */
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>

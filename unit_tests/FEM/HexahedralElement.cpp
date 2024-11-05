@@ -18,8 +18,8 @@ protected:
 public:
     using value_t = T;
     using point_t = ippl::HexahedralElement<T>::point_t;
-    using mesh_element_vertex_point_vec_t =
-        ippl::HexahedralElement<T>::mesh_element_vertex_point_vec_t;
+    using vertex_points_t =
+        ippl::HexahedralElement<T>::vertex_points_t;
 
     static constexpr unsigned NumHexs = 3;
 
@@ -79,12 +79,12 @@ public:
 
     ippl::HexahedralElement<T> hex_element;
 
-    const mesh_element_vertex_point_vec_t local_points = {
+    const vertex_points_t local_points = {
         {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
         {0.0, 0.0, 1.0}, {1.0, 0.0, 1.0}, {1.0, 1.0, 1.0}, {0.0, 1.0, 1.0}};
     const point_t local_mid_point = {0.5, 0.5, 0.5};
 
-    ippl::Vector<mesh_element_vertex_point_vec_t, NumHexs> hexs;
+    ippl::Vector<vertex_points_t, NumHexs> hexs;
 };
 
 using Tests = TestParams::tests<42>;
@@ -102,12 +102,12 @@ TYPED_TEST(HexahedralElementTest, LocalVertices) {
 TYPED_TEST(HexahedralElementTest, LocalToGlobal) {
     using T = typename TestFixture::value_t;
     // using point_t      = typename TestFixture::point_t;
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& hex_element = this->hex_element;
 
     for (unsigned i = 0; i < 1; i++) {  // TODO this->hexs.dim; i++) {
-        mesh_element_vertex_point_vec_t transformed_points;
+        vertex_points_t transformed_points;
         for (unsigned p = 0; p < 8; p++) {
             transformed_points[p] = hex_element.localToGlobal(this->hexs[i], this->local_points[p]);
 
@@ -129,12 +129,12 @@ TYPED_TEST(HexahedralElementTest, LocalToGlobal) {
 TYPED_TEST(HexahedralElementTest, GlobalToLocal) {
     using T = typename TestFixture::value_t;
 
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& hex_element = this->hex_element;
 
     for (unsigned i = 0; i < this->hexs.dim; i++) {
-        mesh_element_vertex_point_vec_t transformed_points;
+        vertex_points_t transformed_points;
         for (unsigned p = 0; p < 8; p++) {
             transformed_points[p] = hex_element.globalToLocal(this->hexs[i], this->hexs[i][p]);
 

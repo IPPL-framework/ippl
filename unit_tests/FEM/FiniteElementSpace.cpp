@@ -44,10 +44,10 @@ public:
     std::mt19937 rng;
 
     const ippl::Vector<unsigned, Dim> meshSizes;
-    const ElementType ref_element;
+    ElementType ref_element;
     const MeshType mesh;
     const QuadratureType quadrature;
-    const ippl::LagrangeSpace<T, Dim, 1, QuadratureType, FieldType, FieldType> fem_space;
+    const ippl::LagrangeSpace<T, Dim, 1, ElementType, QuadratureType, FieldType, FieldType> fem_space;
 };
 
 using Tests = TestParams::tests<2, 3>;

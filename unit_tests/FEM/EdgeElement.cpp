@@ -17,9 +17,9 @@ protected:
     void SetUp() override {}
 
 public:
-    using value_t                         = T;
-    using point_t                         = ippl::EdgeElement<T>::point_t;
-    using mesh_element_vertex_point_vec_t = ippl::EdgeElement<T>::mesh_element_vertex_point_vec_t;
+    using value_t         = T;
+    using point_t         = ippl::EdgeElement<T>::point_t;
+    using vertex_points_t = ippl::EdgeElement<T>::vertex_points_t;
 
     static constexpr unsigned NumEdges = 3;
 
@@ -39,10 +39,10 @@ public:
 
     ippl::EdgeElement<T> edge_element;
 
-    const mesh_element_vertex_point_vec_t local_points = {{0.0}, {1.0}};
+    const vertex_points_t local_points = {{0.0}, {1.0}};
     const point_t local_mid_point                      = {0.5};
 
-    ippl::Vector<mesh_element_vertex_point_vec_t, NumEdges> edges;
+    ippl::Vector<vertex_points_t, NumEdges> edges;
 };
 
 using Tests = TestParams::tests<42>;
@@ -60,11 +60,11 @@ TYPED_TEST(EdgeElementTest, LocalVertices) {
 TYPED_TEST(EdgeElementTest, LocalToGlobal) {
     using T                               = typename TestFixture::value_t;
     using point_t                         = typename TestFixture::point_t;
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& edge_element = this->edge_element;
 
-    for (const mesh_element_vertex_point_vec_t& edge : this->edges) {
+    for (const vertex_points_t& edge : this->edges) {
         point_t transformed_start_point = edge_element.localToGlobal(edge, this->local_points[0]);
         point_t transformed_mid_point   = edge_element.localToGlobal(edge, this->local_mid_point);
         point_t transformed_end_point   = edge_element.localToGlobal(edge, this->local_points[1]);
@@ -86,11 +86,11 @@ TYPED_TEST(EdgeElementTest, LocalToGlobal) {
 TYPED_TEST(EdgeElementTest, GlobalToLocal) {
     using T                               = typename TestFixture::value_t;
     using point_t                         = typename TestFixture::point_t;
-    using mesh_element_vertex_point_vec_t = typename TestFixture::mesh_element_vertex_point_vec_t;
+    using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& edge_element = this->edge_element;
 
-    for (const mesh_element_vertex_point_vec_t& edge : this->edges) {
+    for (const vertex_points_t& edge : this->edges) {
         point_t transformed_start_point = edge_element.globalToLocal(edge, edge[0]);
         point_t transformed_mid_point = edge_element.globalToLocal(edge, 0.5 * (edge[0] + edge[1]));
         point_t transformed_end_point = edge_element.globalToLocal(edge, edge[1]);

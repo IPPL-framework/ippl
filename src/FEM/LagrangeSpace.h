@@ -107,10 +107,8 @@ namespace ippl {
          *
          * @return size_t - The local DOF index
          */
-        /*
         KOKKOS_FUNCTION size_t getLocalDOFIndex(const size_t& elementIndex,
                                  const size_t& globalDOFIndex) const override;
-        */
 
         /**
          * @brief Get the global DOF index from the element index and local DOF
