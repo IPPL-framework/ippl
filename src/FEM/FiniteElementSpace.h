@@ -11,11 +11,11 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Utility/IpplException.h"
+
 #include "FEM/Elements/Element.h"
 #include "FEM/Quadrature/Quadrature.h"
 #include "Meshes/Mesh.h"
-
-#include "Utility/IpplException.h"
 
 constexpr unsigned calculateNumElementVertices(unsigned Dim) {
     return 1 << Dim;  // 2^Dim
@@ -45,7 +45,7 @@ namespace ippl {
         // the number of mesh vertices per element (not necessarily the same as degrees of freedom,
         // e.g. a 2D element has 4 vertices)
         static constexpr unsigned numElementVertices = calculateNumElementVertices(Dim);
-        static constexpr unsigned numElementDOFs = NumElementDOFs;
+        static constexpr unsigned numElementDOFs     = NumElementDOFs;
 
         // A vector with the position of the element in the mesh in each dimension
         typedef Vector<size_t, Dim> indices_t;
@@ -140,8 +140,8 @@ namespace ippl {
          * @return vertex_indices_t (Vector<size_t, numElementVertices>) -
          * vector of vertex indices
          */
-        KOKKOS_FUNCTION vertex_indices_t getElementMeshVertexIndices(
-            const indices_t& elementNDIndex) const;
+        KOKKOS_FUNCTION vertex_indices_t
+        getElementMeshVertexIndices(const indices_t& elementNDIndex) const;
 
         /**
          * @brief Get all the NDIndices of the vertices of an element (given by its NDIndex).
@@ -151,8 +151,8 @@ namespace ippl {
          * @return indices_list_t (Vector<Vector<size_t, Dim>,
          * numElementVertices>) - vector of vertex NDIndices
          */
-        KOKKOS_FUNCTION indices_list_t getElementMeshVertexNDIndices(
-            const indices_t& elementNDIndex) const;
+        KOKKOS_FUNCTION indices_list_t
+        getElementMeshVertexNDIndices(const indices_t& elementNDIndex) const;
 
         /**
          * @brief Get all the global vertex points of an element (given by its NDIndex).
@@ -161,8 +161,8 @@ namespace ippl {
          *
          * @return vertex_points_t (Vector<Vector<T, Dim>, numElementVertices>) -
          */
-        KOKKOS_FUNCTION vertex_points_t getElementMeshVertexPoints(
-            const indices_t& elementNDIndex) const;
+        KOKKOS_FUNCTION vertex_points_t
+        getElementMeshVertexPoints(const indices_t& elementNDIndex) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Degree of Freedom operations //////////////////////////////////////
@@ -198,7 +198,7 @@ namespace ippl {
          * @return size_t - The global DOF index
          */
         KOKKOS_FUNCTION virtual size_t getGlobalDOFIndex(const size_t& elementIndex,
-                                          const size_t& localDOFIndex) const = 0;
+                                                         const size_t& localDOFIndex) const = 0;
 
         /**
          * @brief Get the local DOF indices (vector of local DOF indices)
@@ -232,8 +232,8 @@ namespace ippl {
          *
          * @return T - The value of the shape function at the given point
          */
-        KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(const size_t& localDOF,
-                                                  const point_t& localPoint) const = 0;
+        KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(
+            const size_t& localDOF, const point_t& localPoint) const = 0;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a

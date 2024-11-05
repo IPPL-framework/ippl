@@ -231,7 +231,8 @@ namespace ippl {
             constexpr unsigned Dim = lhs_type::dim;
 
             if (preconditioner_m == nullptr) {
-                throw IpplException("PCG::operator()", "Preconditioner has not been set for PCG solver");
+                throw IpplException("PCG::operator()",
+                                    "Preconditioner has not been set for PCG solver");
             }
 
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();

@@ -1524,7 +1524,7 @@ namespace std _GLIBCXX_VISIBILITY(default) {
 
                 using __detail::__variant::__gen_vtable_impl;
                 using __detail::__variant::_Multi_array;
-                using _Ma = _Multi_array<_Result_type (*)(_Visitor&&, _V0&&)>;
+                using _Ma = _Multi_array<_Result_type (*)(_Visitor&&, _V0 &&)>;
 
 #ifdef _GLIBCXX_DEBUG
 #define _GLIBCXX_VISIT_UNREACHABLE __builtin_trap

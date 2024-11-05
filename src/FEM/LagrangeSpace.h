@@ -27,18 +27,19 @@ namespace ippl {
      * @tparam FieldLHS The type of the left hand side field
      * @tparam FieldRHS The type of the right hand side field
      */
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     // requires IsQuadrature<QuadratureType>
-    class LagrangeSpace : public FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order),
-                                                    ElementType, QuadratureType, FieldLHS, FieldRHS> {
+    class LagrangeSpace
+        : public FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
+                                    QuadratureType, FieldLHS, FieldRHS> {
     public:
         // The number of degrees of freedom per element
         static constexpr unsigned numElementDOFs = getLagrangeNumElementDOFs(Dim, Order);
 
         // The dimension of the mesh
-        static constexpr unsigned dim =
-            FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::dim;
+        static constexpr unsigned dim = FiniteElementSpace<T, Dim, numElementDOFs, ElementType,
+                                                           QuadratureType, FieldLHS, FieldRHS>::dim;
 
         // The order of the Lagrange space
         static constexpr unsigned order = Order;
@@ -49,22 +50,23 @@ namespace ippl {
                                FieldRHS>::numElementVertices;
 
         // A vector with the position of the element in the mesh in each dimension
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
-                                            FieldRHS>::indices_t indices_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
+                                            FieldLHS, FieldRHS>::indices_t indices_t;
 
         // A point in the global coordinate system
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
-                                            FieldRHS>::point_t point_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
+                                            FieldLHS, FieldRHS>::point_t point_t;
 
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
-                                            FieldRHS>::vertex_points_t vertex_points_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
+                                            FieldLHS, FieldRHS>::vertex_points_t vertex_points_t;
 
         // Field layout type for domain decomposition info
         typedef FieldLayout<Dim> Layout_t;
 
         // View types
         typedef typename detail::ViewType<T, Dim>::view_type ViewType;
-        typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type AtomicViewType;
+        typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type
+            AtomicViewType;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
@@ -119,7 +121,7 @@ namespace ippl {
          * @return size_t - The global DOF index
          */
         KOKKOS_FUNCTION size_t getGlobalDOFIndex(const size_t& elementIndex,
-                                  const size_t& localDOFIndex) const override;
+                                                 const size_t& localDOFIndex) const override;
 
         /**
          * @brief Get the local DOF indices (vector of local DOF indices)
@@ -154,7 +156,7 @@ namespace ippl {
          * @return T - The value of the shape function at the given point
          */
         KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
-                                          const point_t& localPoint) const override;
+                                                          const point_t& localPoint) const override;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
@@ -181,13 +183,13 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx(
-            const FieldLHS& field, F& evalFunction) const;
-            //const std::function<T(
-            //    const size_t&, const size_t&,
-            //    const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
-            //                                               FieldLHS, FieldRHS>::numElementDOFs>&)>&
-            //    evalFunction) const override;
+        FieldLHS evaluateAx(const FieldLHS& field, F& evalFunction) const;
+        // const std::function<T(
+        //     const size_t&, const size_t&,
+        //     const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType,
+        //     QuadratureType,
+        //                                                FieldLHS, FieldRHS>::numElementDOFs>&)>&
+        //     evalFunction) const override;
 
         /*
         KOKKOS_FUNCTION
@@ -204,7 +206,7 @@ namespace ippl {
          *
          * @return FieldRHS - The RHS field containing b
          */
-        void evaluateLoadVector(FieldRHS& field) const override;        
+        void evaluateLoadVector(FieldRHS& field) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
@@ -231,7 +233,8 @@ namespace ippl {
          */
         template <typename F>
         T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
-    private:        
+
+    private:
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *

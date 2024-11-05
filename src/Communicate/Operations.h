@@ -125,14 +125,12 @@ namespace ippl {
             }
         };
 
-#define IPPL_MPI_OP(CppOp, MPIOp)                       \
-    template <typename Datatype_IfNotTrivial>           \
-    struct getMpiOpImpl<CppOp, Datatype_IfNotTrivial> { \
-        constexpr MPI_Op operator()() const noexcept {  \
-            return MPIOp;                               \
-        }                                               \
-    };                                                  \
-    template <>                                         \
+#define IPPL_MPI_OP(CppOp, MPIOp)                                      \
+    template <typename Datatype_IfNotTrivial>                          \
+    struct getMpiOpImpl<CppOp, Datatype_IfNotTrivial> {                \
+        constexpr MPI_Op operator()() const noexcept { return MPIOp; } \
+    };                                                                 \
+    template <>                                                        \
     struct is_ippl_mpi_type<CppOp> : std::true_type {};
 
         /* with C++14 we should be able

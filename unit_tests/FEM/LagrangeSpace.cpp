@@ -39,13 +39,20 @@ public:
                         ippl::Vector<T, Dim>(0.5), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
         , betterQuadrature(ref_element)
-        , lagrangeSpace(mesh, ref_element, quadrature, ippl::FieldLayout<Dim>(MPI_COMM_WORLD, 
-                        ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)), std::array<bool, Dim>{true}))
-        , lagrangeSpaceBigger(biggerMesh, ref_element, quadrature, ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                              ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), std::array<bool, Dim>{true}))
-        , symmetricLagrangeSpace(symmetricMesh, ref_element, betterQuadrature, ippl::FieldLayout<Dim>(
-                                 MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)), 
-                                 std::array<bool, Dim>{true})) {
+        , lagrangeSpace(mesh, ref_element, quadrature,
+                        ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
+                                               ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
+                                               std::array<bool, Dim>{true}))
+        , lagrangeSpaceBigger(
+              biggerMesh, ref_element, quadrature,
+              ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
+                                     ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
+                                     std::array<bool, Dim>{true}))
+        , symmetricLagrangeSpace(
+              symmetricMesh, ref_element, betterQuadrature,
+              ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
+                                     ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
+                                     std::array<bool, Dim>{true})) {
         // fill the global reference DOFs
     }
 
@@ -618,7 +625,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
                 if (i > 0) {
-                    ippl::Vector<int, lagrangeSpace.dim> idx = lagrangeSpace.getMeshVertexNDIndex(i - 1);
+                    ippl::Vector<int, lagrangeSpace.dim> idx =
+                        lagrangeSpace.getMeshVertexNDIndex(i - 1);
                     idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
 
                     ippl::apply(view_x, idx) = 0.0;
@@ -639,7 +647,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                 // Set the the i-th row-vector of A to z
                 for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    ippl::Vector<int, lagrangeSpace.dim> idx_z = lagrangeSpace.getMeshVertexNDIndex(j);
+                    ippl::Vector<int, lagrangeSpace.dim> idx_z =
+                        lagrangeSpace.getMeshVertexNDIndex(j);
                     idx_z[0] += nghost - (z.getLayout()).getLocalNDIndex()[0].first();
 
                     A(j, i) += ippl::apply(view_z, idx_z);
@@ -675,7 +684,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
                     std::cout << std::endl;
                 }
             } else {
-                //TODO make up a multi-node unit test for evalAx
+                // TODO make up a multi-node unit test for evalAx
                 GTEST_SKIP();
             }
         } else {
@@ -730,7 +739,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
-                using index_type = std::tuple_element_t<0, std::tuple<Idx...>>;
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
                 index_type coords[dim] = {args...};
 
                 // global coordinates
@@ -764,7 +773,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             Kokkos::deep_copy(view_ref, mirror);
 
             // compare values with reference
-            rhs_field = rhs_field - ref_field;
+            rhs_field  = rhs_field - ref_field;
             double err = ippl::norm(rhs_field);
 
             ASSERT_NEAR(err, 0.0, 1e-7);

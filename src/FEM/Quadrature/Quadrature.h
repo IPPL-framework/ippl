@@ -5,9 +5,12 @@
 #define IPPL_QUADRATURE_H
 
 #include <cmath>
+
 #include "Types/Vector.h"
-#include "FEM/Elements/Element.h"
+
 #include "Utility/IpplException.h"
+
+#include "FEM/Elements/Element.h"
 
 // own power function since Kokkos::pow is not constexpr
 template <typename T>

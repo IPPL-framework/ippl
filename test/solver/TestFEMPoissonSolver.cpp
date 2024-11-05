@@ -94,10 +94,9 @@ KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const 
 }
 
 template <typename T, unsigned Dim>
-void testFEMSolver(const unsigned& numNodesPerDim,
-                   const T& domain_start = 0.0,
+void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-                   // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
+    // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -137,18 +136,18 @@ void testFEMSolver(const unsigned& numNodesPerDim,
 
     // set rhs
     auto view_rhs = rhs.getView();
-    auto ldom = layout.getLocalNDIndex();
+    auto ldom     = layout.getLocalNDIndex();
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-    ippl::parallel_for("Assign RHS", rhs.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const index_array_type& args) {
+    ippl::parallel_for(
+        "Assign RHS", rhs.getFieldRangePolicy(), KOKKOS_LAMBDA(const index_array_type& args) {
             ippl::Vector<int, Dim> iVec = args - numGhosts;
             for (unsigned d = 0; d < Dim; ++d) {
                 iVec[d] += ldom[d].first();
             }
 
-            const ippl::Vector<T, Dim> x = (iVec) * cellSpacing + origin;
-            
+            const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
+
             apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
         });
 
@@ -213,7 +212,7 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                /*testFEMSolver<T, 1>(n, 
+                /*testFEMSolver<T, 1>(n,
                     [](ippl::Vector<T, 1> x) {
                         return gaussian1D<T>(x[0], 0.05, 0.5);
                     },
@@ -227,13 +226,14 @@ int main(int argc, char* argv[]) {
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                //testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>, -1.0, 1.0);
+                // testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>,
+                // -1.0, 1.0);
                 testFEMSolver<T, 2>(n, -1.0, 1.0);
             }
         } else {
             // 3D Sinusoidal; problem size given by user
             for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                //testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
+                // testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
                 testFEMSolver<T, 3>(n, -1.0, 1.0);
             }
         }

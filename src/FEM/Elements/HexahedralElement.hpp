@@ -1,7 +1,6 @@
 namespace ippl {
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::vertex_points_t
+    KOKKOS_FUNCTION typename HexahedralElement<T>::vertex_points_t
     HexahedralElement<T>::getLocalVertices() const {
         HexahedralElement::vertex_points_t vertices = {
             {0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {0.0, 1.0, 0.0},
@@ -11,8 +10,7 @@ namespace ippl {
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::point_t
+    KOKKOS_FUNCTION typename HexahedralElement<T>::point_t
     HexahedralElement<T>::getTransformationJacobian(
         const HexahedralElement<T>::vertex_points_t& global_vertices) const {
         HexahedralElement::point_t jacobian;
@@ -25,8 +23,7 @@ namespace ippl {
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::point_t
+    KOKKOS_FUNCTION typename HexahedralElement<T>::point_t
     HexahedralElement<T>::getInverseTransformationJacobian(
         const HexahedralElement<T>::vertex_points_t& global_vertices) const {
         HexahedralElement::point_t inv_jacobian;
@@ -39,36 +36,36 @@ namespace ippl {
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::point_t HexahedralElement<T>::globalToLocal(
+    KOKKOS_FUNCTION typename HexahedralElement<T>::point_t HexahedralElement<T>::globalToLocal(
         const HexahedralElement<T>::vertex_points_t& global_vertices,
         const HexahedralElement<T>::point_t& global_point) const {
         // This is actually not a matrix, but an IPPL vector that represents a diagonal matrix
-        const HexahedralElement<T>::point_t glob2loc_matrix = getInverseTransformationJacobian(global_vertices);
+        const HexahedralElement<T>::point_t glob2loc_matrix =
+            getInverseTransformationJacobian(global_vertices);
 
-        HexahedralElement<T>::point_t local_point = glob2loc_matrix * (global_point - global_vertices[0]);
+        HexahedralElement<T>::point_t local_point =
+            glob2loc_matrix * (global_point - global_vertices[0]);
 
         return local_point;
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::point_t HexahedralElement<T>::localToGlobal(
+    KOKKOS_FUNCTION typename HexahedralElement<T>::point_t HexahedralElement<T>::localToGlobal(
         const HexahedralElement<T>::vertex_points_t& global_vertices,
         const HexahedralElement<T>::point_t& local_point) const {
         // This is actually not a matrix but an IPPL vector that represents a diagonal matrix
-        const HexahedralElement<T>::point_t loc2glob_matrix = getTransformationJacobian(global_vertices);
+        const HexahedralElement<T>::point_t loc2glob_matrix =
+            getTransformationJacobian(global_vertices);
 
-        HexahedralElement<T>::point_t global_point = (loc2glob_matrix * local_point) + global_vertices[0];
+        HexahedralElement<T>::point_t global_point =
+            (loc2glob_matrix * local_point) + global_vertices[0];
 
         return global_point;
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    T HexahedralElement<T>::getDeterminantOfTransformationJacobian(
-        const HexahedralElement<T>::vertex_points_t& global_vertices)
-        const {
+    KOKKOS_FUNCTION T HexahedralElement<T>::getDeterminantOfTransformationJacobian(
+        const HexahedralElement<T>::vertex_points_t& global_vertices) const {
         T determinant = 1.0;
 
         // Since the jacobian is a diagonal matrix in our case the determinant is the product of the
@@ -81,18 +78,16 @@ namespace ippl {
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    typename HexahedralElement<T>::point_t
+    KOKKOS_FUNCTION typename HexahedralElement<T>::point_t
     HexahedralElement<T>::getInverseTransposeTransformationJacobian(
-        const HexahedralElement<T>::vertex_points_t& global_vertices)
-        const {
+        const HexahedralElement<T>::vertex_points_t& global_vertices) const {
         // Simply return the inverse transformation jacobian since it is a diagonal matrix
         return getInverseTransformationJacobian(global_vertices);
     }
 
     template <typename T>
-    KOKKOS_FUNCTION
-    bool HexahedralElement<T>::isPointInRefElement(const Vector<T, 3>& point) const {
+    KOKKOS_FUNCTION bool HexahedralElement<T>::isPointInRefElement(
+        const Vector<T, 3>& point) const {
         // check if the local coordinates are inside the reference element
 
         for (size_t d = 0; d < 3; d++) {

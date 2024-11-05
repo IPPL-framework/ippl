@@ -16,41 +16,33 @@ namespace ippl {
         typedef typename Mesh<T, Dim>::vector_type vector_type;
         typedef Cell DefaultCentering;
 
-        KOKKOS_INLINE_FUNCTION
-        UniformCartesian();
+        KOKKOS_INLINE_FUNCTION UniformCartesian();
 
-        KOKKOS_INLINE_FUNCTION
-        UniformCartesian(const NDIndex<Dim>& ndi, const vector_type& hx, const vector_type& origin);
+        KOKKOS_INLINE_FUNCTION UniformCartesian(const NDIndex<Dim>& ndi, const vector_type& hx,
+                                                const vector_type& origin);
 
-        KOKKOS_INLINE_FUNCTION
-        ~UniformCartesian() = default;
+        KOKKOS_INLINE_FUNCTION ~UniformCartesian() = default;
 
-        KOKKOS_INLINE_FUNCTION
-        void initialize(const NDIndex<Dim>& ndi, const vector_type& hx, const vector_type& origin);
+        KOKKOS_INLINE_FUNCTION void initialize(const NDIndex<Dim>& ndi, const vector_type& hx,
+                                               const vector_type& origin);
 
         // Set the spacings of mesh vertex positions (recompute Dvc, cell volume):
-        KOKKOS_INLINE_FUNCTION
-        void setMeshSpacing(const vector_type& meshSpacing);
+        KOKKOS_INLINE_FUNCTION void setMeshSpacing(const vector_type& meshSpacing);
 
         // Get the spacings of mesh vertex positions along specified direction
-        KOKKOS_INLINE_FUNCTION
-        T getMeshSpacing(unsigned dim) const;
+        KOKKOS_INLINE_FUNCTION T getMeshSpacing(unsigned dim) const;
 
-        KOKKOS_INLINE_FUNCTION
-        const vector_type& getMeshSpacing() const override;
+        KOKKOS_INLINE_FUNCTION const vector_type& getMeshSpacing() const override;
 
-        KOKKOS_INLINE_FUNCTION
-        T getCellVolume() const override;
+        KOKKOS_INLINE_FUNCTION T getCellVolume() const override;
 
-        KOKKOS_INLINE_FUNCTION
-        T getMeshVolume() const override;
+        KOKKOS_INLINE_FUNCTION T getMeshVolume() const override;
 
-        KOKKOS_INLINE_FUNCTION
-        void updateCellVolume_m();
+        KOKKOS_INLINE_FUNCTION void updateCellVolume_m();
 
         // (x,y,z) coordinates of indexed vertex:
-        KOKKOS_INLINE_FUNCTION
-        vector_type getVertexPosition(const NDIndex<Dim>& ndi) const override {
+        KOKKOS_INLINE_FUNCTION vector_type
+        getVertexPosition(const NDIndex<Dim>& ndi) const override {
             printf("inside getVertexPosition");
             vector_type vertexPosition;
             for (unsigned int d = 0; d < Dim; d++) {
@@ -61,8 +53,7 @@ namespace ippl {
         }
 
         // Vertex-vertex grid spacing of indexed cell:
-        KOKKOS_INLINE_FUNCTION
-        vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const override {
+        KOKKOS_INLINE_FUNCTION vector_type getDeltaVertex(const NDIndex<Dim>& ndi) const override {
             vector_type vertexVertexSpacing;
             for (unsigned int d = 0; d < Dim; d++)
                 vertexVertexSpacing[d] = meshSpacing_m[d] * ndi[d].length();

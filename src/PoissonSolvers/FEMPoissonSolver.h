@@ -16,13 +16,14 @@ namespace ippl {
         const Vector<Tlhs, Dim> DPhiInvT;
         const Tlhs absDetDPhi;
 
-        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi) 
-            : DPhiInvT(DPhiInvT), absDetDPhi(absDetDPhi) {}
+        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi)
+            : DPhiInvT(DPhiInvT)
+            , absDetDPhi(absDetDPhi) {}
 
-        KOKKOS_FUNCTION const auto operator()(const size_t& i, const size_t& j,
-                                   const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
-            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
-                   * absDetDPhi;
+        KOKKOS_FUNCTION const auto operator()(
+            const size_t& i, const size_t& j,
+            const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
+            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
         }
     };
 
@@ -43,8 +44,8 @@ namespace ippl {
         using typename Base::lhs_type, typename Base::rhs_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
-        using PCGSolverAlgorithm_t = CG<lhs_type, lhs_type, lhs_type, lhs_type,
-                                         lhs_type, FieldLHS, FieldRHS>;
+        using PCGSolverAlgorithm_t =
+            CG<lhs_type, lhs_type, lhs_type, lhs_type, lhs_type, FieldLHS, FieldRHS>;
 
         // FEM Space types
         using ElementType =
@@ -81,7 +82,6 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-
             // start a timer
             static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
             IpplTimings::startTimer(solve);
@@ -103,11 +103,9 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
-                                                                         DPhiInvT, absDetDPhi);
+                DPhiInvT, absDetDPhi);
 
-            const auto algoOperator = [poissonEquationEval,
-                                       this](lhs_type field) -> lhs_type {
-
+            const auto algoOperator = [poissonEquationEval, this](lhs_type field) -> lhs_type {
                 // start a timer
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
@@ -115,10 +113,10 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
-            
+
                 return_field.accumulateHalo();
-                //return_field.fillHalo();
-            
+                // return_field.fillHalo();
+
                 IpplTimings::stopTimer(opTimer);
 
                 return return_field;
@@ -177,7 +175,8 @@ namespace ippl {
 
         ElementType refElement_m;
         QuadratureType quadrature_m;
-        LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS> lagrangeSpace_m;
+        LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>
+            lagrangeSpace_m;
     };
 
 }  // namespace ippl

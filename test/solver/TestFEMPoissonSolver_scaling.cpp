@@ -94,10 +94,9 @@ KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const 
 }
 
 template <typename T, unsigned Dim>
-void testFEMSolver(const unsigned& numNodesPerDim,
-                   const T& domain_start = 0.0,
+void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-                   // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
+    // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -141,14 +140,14 @@ void testFEMSolver(const unsigned& numNodesPerDim,
     auto ldom = layout.getLocalNDIndex();
 
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-    ippl::parallel_for("Assign solution", sol.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const index_array_type& args) {
+    ippl::parallel_for(
+        "Assign solution", sol.getFieldRangePolicy(), KOKKOS_LAMBDA(const index_array_type& args) {
             ippl::Vector<int, Dim> iVec = args - numGhosts;
             for (unsigned d = 0; d < Dim; ++d) {
                 iVec[d] += ldom[d].first();
             }
             const ippl::Vector<T, Dim> x = (iVec * cellSpacing) + origin;
-            
+
             apply(view, args) = sinusoidalSolution<T, Dim>(x);
         });
 

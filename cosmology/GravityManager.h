@@ -232,7 +232,7 @@ public:
     /**
      * @brief Virtual method to dump data (default does nothing).
      */
-    virtual void dump() { /* default does nothing */ };
+    virtual void dump(){/* default does nothing */};
 
     // Step methods
 

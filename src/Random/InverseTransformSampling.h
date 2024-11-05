@@ -9,274 +9,280 @@
 #include "Random/Utility.h"
 
 namespace ippl {
-  namespace random {
-    /*!
-     * @file InverseTransformSampling.h
-     * @class InverseTransformSampling
-     * @brief A class for inverse transform sampling.
-     *
-     * This class performs inverse transform sampling for a given distribution.
-     *
-     * @tparam T Data type.
-     * @tparam Dim Dimensionality of the sample space.
-     * @tparam DeviceType The device type for Kokkos.
-     * @tparam Distribution Type of the distribution to sample from.
-    */
-    template <typename T, unsigned Dim, class DeviceType, class Distribution>
-    class InverseTransformSampling{
-    public:
-        using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
-        using size_type = ippl::detail::size_type;
-
-        Distribution dist_m;
-        size_type ntotal_m;
-        Vector<T, Dim> umin_m, umax_m;
-
+    namespace random {
         /*!
-         * @brief Constructor for InverseTransformSampling class with domain decomposition.
+         * @file InverseTransformSampling.h
+         * @class InverseTransformSampling
+         * @brief A class for inverse transform sampling.
          *
-         * @param dist_r The distribution to sample from.
-         * @param rmax_r Maximum global range.
-         * @param rmin_r Minimum global range.
-         * @param rlayout_r The region layout.
-         * @param ntotal_r Total number of samples to generate.
-        */
-        template <class RegionLayout>
-        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, RegionLayout& rlayout_r, size_type &ntotal_r)
-        : dist_m(dist_r),
-        ntotal_m(ntotal_r){
-
-            const typename RegionLayout::host_mirror_type regions = rlayout_r.gethLocalRegions();
-            int rank = ippl::Comm->rank();
-
-            Vector<T, Dim> locrmax, locrmin;
-            for (unsigned d = 0; d < Dim; ++d) {
-                locrmax[d] = regions(rank)[d].max();
-                locrmin[d] = regions(rank)[d].min();
-            }
-
-            updateBounds(rmax_r, rmin_r, locrmax, locrmin);
-
-        }
-
-        /*!
-         * @brief Constructor for InverseTransformSampling class without applying domain decomposition..
+         * This class performs inverse transform sampling for a given distribution.
          *
-         * @param dist_r The distribution to sample from.
-         * @param rmax_r Maximum global range.
-         * @param rmin_r Minimum global range.
-         * @param locrmax_r Maximum local (per rank) range.
-         * @param locrmin_r Minimum local (per rank) range.
-         * @param ntotal_ Total number of samples to generate.
-        */
-        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, Vector<T, Dim> &locrmax_r, Vector<T, Dim> &locrmin_r, size_type &ntotal_r)
-        : dist_m(dist_r),
-        ntotal_m(ntotal_r){
+         * @tparam T Data type.
+         * @tparam Dim Dimensionality of the sample space.
+         * @tparam DeviceType The device type for Kokkos.
+         * @tparam Distribution Type of the distribution to sample from.
+         */
+        template <typename T, unsigned Dim, class DeviceType, class Distribution>
+        class InverseTransformSampling {
+        public:
+            using view_type = typename ippl::detail::ViewType<Vector<T, Dim>, 1>::view_type;
+            using size_type = ippl::detail::size_type;
 
-            updateBounds(rmax_r, rmin_r, locrmax_r, locrmin_r);
-
-        }
-
-        /*!
-         * @brief Constructor for InverseTransformSampling class.
-         *        In this method, we do not consider any domain decomposition.
-         *
-         * @param dist_r The distribution to sample from.
-         * @param rmax_r Maximum global range for sampling.
-         * @param rmin_r Minimum global range for sampling.
-         * @param ntotal_r Total number of samples to generate.
-        */
-        InverseTransformSampling(Distribution &dist_r, Vector<T, Dim> &rmax_r, Vector<T, Dim> &rmin_r, size_type &ntotal_r)
-        : dist_m(dist_r),
-        ntotal_m(ntotal_r){
-
-            updateBounds(rmax_r, rmin_r);
-
-            nlocal_m = ntotal_m;
-
-        }
-
-        /*!
-         * @brief Updates the sampling bounds and reinitializes internal variables.
-         *
-         * This method allows the user to update the minimum and maximum bounds 
-         * for the sampling process It recalculates
-         * the cumulative distribution function (CDF) values for the new bounds and 
-         * updates the internal variables to reflect these changes.
-         *
-         * @param rmax The new maximum range for sampling. This vector defines
-         *                 the upper bounds for each dimension.
-         * @param rmin The new minimum range for sampling. This vector defines
-         *                 the lower bounds for each dimension.
-         * @param locrmax  The new local maximum range for sampling. This vector defines
-         *                 the upper bounds for each dimension for a given rank.
-         * @param locrmin  The new minimum range for sampling. This vector defines
-         *                 the lower bounds for each dimension for a given rank.
-        */
-        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, Vector<T, Dim>& locrmax, Vector<T, Dim>& locrmin) {
-
-	    int rank = ippl::Comm->rank();
-            Vector<T, Dim> nr_m, dr_m;
-            for (unsigned d = 0; d < Dim; ++d) {
-               nr_m[d] = dist_m.getCdf(locrmax[d], d) - dist_m.getCdf(locrmin[d], d);
-               dr_m[d] = dist_m.getCdf(rmax[d], d) - dist_m.getCdf(rmin[d], d);
-               umin_m[d] = dist_m.getCdf(locrmin[d], d);
-               umax_m[d] = dist_m.getCdf(locrmax[d], d);
-            }
-            T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
-            T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
-
-            T factor = pnr / pdr;
-            nlocal_m = (size_type)(factor * ntotal_m);
-
-            size_type nglobal = 0;
-            ippl::Comm->allreduce(&nlocal_m, &nglobal, 1, std::plus<size_type>());
-
-            int rest = (int)(ntotal_m - nglobal);
-            if (rank < rest) {
-                ++nlocal_m;
-            }
-         }
-
-	/*!
-         * @brief Updates the sampling bounds using the CDF without any domain decomposition.
-         *
-         * This method allows the user to update the minimum and maximum bounds 
-         * for the inverse transform sampling method. It recalculates
-         * the cumulative distribution function (CDF) values for the new bounds and 
-         * updates the internal variables to reflect these changes.
-         *
-         * @param new_rmax The new maximum range for sampling. This vector defines
-         *                 the upper bounds for each dimension.
-         * @param new_rmin The new minimum range for sampling. This vector defines
-         *                 the lower bounds for each dimension.
-        */
-        void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin) {
-
-            Vector<T, Dim> nr_m, dr_m;
-            for (unsigned d = 0; d < Dim; ++d) {
-               umin_m[d] = dist_m.getCdf(rmin[d], d);
-               umax_m[d] = dist_m.getCdf(rmax[d], d);
-            }
-         }
-
-        /*!
-         * @brief Deconstructor for InverseTransformSampling class.
-        */
-        ~InverseTransformSampling(){}
-
-        /*!
-         * @brief Functor that is used for generating samples.
-        */
-        template <class GeneratorPool>
-        struct fill_random {
-            using value_type = T;
-            Distribution targetdist_m;
-            view_type sample_m;
-            GeneratorPool pool_m;
-            Vector<T, Dim> minbound_m;
-            Vector<T, Dim> maxbound_m;
-            unsigned int dim_m;
+            Distribution dist_m;
+            size_type ntotal_m;
+            Vector<T, Dim> umin_m, umax_m;
 
             /*!
-             * @brief Constructor for the fill_random functor.
+             * @brief Constructor for InverseTransformSampling class with domain decomposition.
              *
-             * @param dist_ The distribution to sample from.
-             * @param x_ The view to generate samples in.
-             * @param rand_pool_ The random number generator pool.
-             * @param umin_ Minimum cumulative distribution values.
-             * @param umax_ Maximum cumulative distribution values.
-            */
-            KOKKOS_FUNCTION
-            fill_random(Distribution &dist_r, view_type &x_r, GeneratorPool &rand_pool_r, Vector<T, Dim> &umin_r, Vector<T, Dim> &umax_r, unsigned int &d_r)
-            : targetdist_m(dist_r)
-            , sample_m(x_r)
-            , pool_m(rand_pool_r)
-            , minbound_m(umin_r)
-            , maxbound_m(umax_r)
-            , dim_m(d_r){}
-            
-            /*!
-             * @brief Operator to fill random values.
-             *
-             * @param i Index for the random values.
-            */
-            KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-                typename GeneratorPool::generator_type rand_gen = pool_m.get_state();
-                
-                value_type u = 0.0;
+             * @param dist_r The distribution to sample from.
+             * @param rmax_r Maximum global range.
+             * @param rmin_r Minimum global range.
+             * @param rlayout_r The region layout.
+             * @param ntotal_r Total number of samples to generate.
+             */
+            template <class RegionLayout>
+            InverseTransformSampling(Distribution& dist_r, Vector<T, Dim>& rmax_r,
+                                     Vector<T, Dim>& rmin_r, RegionLayout& rlayout_r,
+                                     size_type& ntotal_r)
+                : dist_m(dist_r)
+                , ntotal_m(ntotal_r) {
+                const typename RegionLayout::host_mirror_type regions =
+                    rlayout_r.gethLocalRegions();
+                int rank = ippl::Comm->rank();
 
-                u       = rand_gen.drand(minbound_m[dim_m], maxbound_m[dim_m]);
+                Vector<T, Dim> locrmax, locrmin;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    locrmax[d] = regions(rank)[d].max();
+                    locrmin[d] = regions(rank)[d].min();
+                }
 
-                // first guess for Newton-Raphson
-                sample_m(i)[dim_m] = targetdist_m.getEstimate(u, dim_m);
-
-                // solve
-                ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(targetdist_m);
-
-                solver.solve(dim_m, sample_m(i)[dim_m], u);
-
-                pool_m.free_state(rand_gen);
-
+                updateBounds(rmax_r, rmin_r, locrmax, locrmin);
             }
+
+            /*!
+             * @brief Constructor for InverseTransformSampling class without applying domain
+             * decomposition..
+             *
+             * @param dist_r The distribution to sample from.
+             * @param rmax_r Maximum global range.
+             * @param rmin_r Minimum global range.
+             * @param locrmax_r Maximum local (per rank) range.
+             * @param locrmin_r Minimum local (per rank) range.
+             * @param ntotal_ Total number of samples to generate.
+             */
+            InverseTransformSampling(Distribution& dist_r, Vector<T, Dim>& rmax_r,
+                                     Vector<T, Dim>& rmin_r, Vector<T, Dim>& locrmax_r,
+                                     Vector<T, Dim>& locrmin_r, size_type& ntotal_r)
+                : dist_m(dist_r)
+                , ntotal_m(ntotal_r) {
+                updateBounds(rmax_r, rmin_r, locrmax_r, locrmin_r);
+            }
+
+            /*!
+             * @brief Constructor for InverseTransformSampling class.
+             *        In this method, we do not consider any domain decomposition.
+             *
+             * @param dist_r The distribution to sample from.
+             * @param rmax_r Maximum global range for sampling.
+             * @param rmin_r Minimum global range for sampling.
+             * @param ntotal_r Total number of samples to generate.
+             */
+            InverseTransformSampling(Distribution& dist_r, Vector<T, Dim>& rmax_r,
+                                     Vector<T, Dim>& rmin_r, size_type& ntotal_r)
+                : dist_m(dist_r)
+                , ntotal_m(ntotal_r) {
+                updateBounds(rmax_r, rmin_r);
+
+                nlocal_m = ntotal_m;
+            }
+
+            /*!
+             * @brief Updates the sampling bounds and reinitializes internal variables.
+             *
+             * This method allows the user to update the minimum and maximum bounds
+             * for the sampling process It recalculates
+             * the cumulative distribution function (CDF) values for the new bounds and
+             * updates the internal variables to reflect these changes.
+             *
+             * @param rmax The new maximum range for sampling. This vector defines
+             *                 the upper bounds for each dimension.
+             * @param rmin The new minimum range for sampling. This vector defines
+             *                 the lower bounds for each dimension.
+             * @param locrmax  The new local maximum range for sampling. This vector defines
+             *                 the upper bounds for each dimension for a given rank.
+             * @param locrmin  The new minimum range for sampling. This vector defines
+             *                 the lower bounds for each dimension for a given rank.
+             */
+            void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin, Vector<T, Dim>& locrmax,
+                              Vector<T, Dim>& locrmin) {
+                int rank = ippl::Comm->rank();
+                Vector<T, Dim> nr_m, dr_m;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    nr_m[d]   = dist_m.getCdf(locrmax[d], d) - dist_m.getCdf(locrmin[d], d);
+                    dr_m[d]   = dist_m.getCdf(rmax[d], d) - dist_m.getCdf(rmin[d], d);
+                    umin_m[d] = dist_m.getCdf(locrmin[d], d);
+                    umax_m[d] = dist_m.getCdf(locrmax[d], d);
+                }
+                T pnr = std::accumulate(nr_m.begin(), nr_m.end(), 1.0, std::multiplies<T>());
+                T pdr = std::accumulate(dr_m.begin(), dr_m.end(), 1.0, std::multiplies<T>());
+
+                T factor = pnr / pdr;
+                nlocal_m = (size_type)(factor * ntotal_m);
+
+                size_type nglobal = 0;
+                ippl::Comm->allreduce(&nlocal_m, &nglobal, 1, std::plus<size_type>());
+
+                int rest = (int)(ntotal_m - nglobal);
+                if (rank < rest) {
+                    ++nlocal_m;
+                }
+            }
+
+            /*!
+             * @brief Updates the sampling bounds using the CDF without any domain decomposition.
+             *
+             * This method allows the user to update the minimum and maximum bounds
+             * for the inverse transform sampling method. It recalculates
+             * the cumulative distribution function (CDF) values for the new bounds and
+             * updates the internal variables to reflect these changes.
+             *
+             * @param new_rmax The new maximum range for sampling. This vector defines
+             *                 the upper bounds for each dimension.
+             * @param new_rmin The new minimum range for sampling. This vector defines
+             *                 the lower bounds for each dimension.
+             */
+            void updateBounds(Vector<T, Dim>& rmax, Vector<T, Dim>& rmin) {
+                Vector<T, Dim> nr_m, dr_m;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    umin_m[d] = dist_m.getCdf(rmin[d], d);
+                    umax_m[d] = dist_m.getCdf(rmax[d], d);
+                }
+            }
+
+            /*!
+             * @brief Deconstructor for InverseTransformSampling class.
+             */
+            ~InverseTransformSampling() {}
+
+            /*!
+             * @brief Functor that is used for generating samples.
+             */
+            template <class GeneratorPool>
+            struct fill_random {
+                using value_type = T;
+                Distribution targetdist_m;
+                view_type sample_m;
+                GeneratorPool pool_m;
+                Vector<T, Dim> minbound_m;
+                Vector<T, Dim> maxbound_m;
+                unsigned int dim_m;
+
+                /*!
+                 * @brief Constructor for the fill_random functor.
+                 *
+                 * @param dist_ The distribution to sample from.
+                 * @param x_ The view to generate samples in.
+                 * @param rand_pool_ The random number generator pool.
+                 * @param umin_ Minimum cumulative distribution values.
+                 * @param umax_ Maximum cumulative distribution values.
+                 */
+                KOKKOS_FUNCTION
+                fill_random(Distribution& dist_r, view_type& x_r, GeneratorPool& rand_pool_r,
+                            Vector<T, Dim>& umin_r, Vector<T, Dim>& umax_r, unsigned int& d_r)
+                    : targetdist_m(dist_r)
+                    , sample_m(x_r)
+                    , pool_m(rand_pool_r)
+                    , minbound_m(umin_r)
+                    , maxbound_m(umax_r)
+                    , dim_m(d_r) {}
+
+                /*!
+                 * @brief Operator to fill random values.
+                 *
+                 * @param i Index for the random values.
+                 */
+                KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+                    typename GeneratorPool::generator_type rand_gen = pool_m.get_state();
+
+                    value_type u = 0.0;
+
+                    u = rand_gen.drand(minbound_m[dim_m], maxbound_m[dim_m]);
+
+                    // first guess for Newton-Raphson
+                    sample_m(i)[dim_m] = targetdist_m.getEstimate(u, dim_m);
+
+                    // solve
+                    ippl::random::detail::NewtonRaphson<value_type, Distribution> solver(
+                        targetdist_m);
+
+                    solver.solve(dim_m, sample_m(i)[dim_m], u);
+
+                    pool_m.free_state(rand_gen);
+                }
+            };
+
+            /*!
+             * @brief Get the local number of samples.
+             *
+             * @returns The local number of samples.
+             */
+            KOKKOS_INLINE_FUNCTION size_type getLocalSamplesNum() const { return nlocal_m; }
+
+            /*!
+             * @brief Set the local number of particles.
+             *
+             * @param nlocal The new number of local particles.
+             */
+            KOKKOS_INLINE_FUNCTION void setLocalSamplesNum(size_type nlocal) { nlocal_m = nlocal; }
+
+            /*!
+             * @brief Generate random samples using inverse transform sampling.
+             *
+             * @param view The view to fill with random samples.
+             * @param rand_pool64 The random number generator pool.
+             */
+            void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
+                Vector<T, Dim> minbound_m = umin_m;
+                Vector<T, Dim> maxbound_m = umax_m;
+                Distribution targetdist_m = dist_m;
+                size_type numlocal_m      = nlocal_m;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    Kokkos::parallel_for(numlocal_m, fill_random<Kokkos::Random_XorShift64_Pool<>>(
+                                                         targetdist_m, view, rand_pool64,
+                                                         minbound_m, maxbound_m, d));
+                    Kokkos::fence();
+                }
+            }
+
+            /*!
+             * @brief Generate random samples using inverse transform sampling for a specific range
+             * of particles
+             *
+             * @param view The view to fill with random samples.
+             * @param startIndex The starting index of view.
+             * @param endIndex The ending index of view.
+             * @param rand_pool64 The random number generator pool.
+             */
+            void generate(view_type view, size_type startIndex, size_type endIndex,
+                          Kokkos::Random_XorShift64_Pool<> rand_pool64) {
+                Vector<T, Dim> minbound_m = umin_m;
+                Vector<T, Dim> maxbound_m = umax_m;
+                Distribution targetdist_m = dist_m;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    Kokkos::parallel_for(
+                        Kokkos::RangePolicy<>(startIndex, endIndex),
+                        fill_random<Kokkos::Random_XorShift64_Pool<>>(
+                            targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
+                    Kokkos::fence();
+                }
+            }
+
+        private:
+            size_type nlocal_m;
         };
-        
-        /*!
-         * @brief Get the local number of samples.
-         *
-         * @returns The local number of samples.
-        */
-        KOKKOS_INLINE_FUNCTION size_type getLocalSamplesNum() const { return nlocal_m; }
 
-        /*!
-         * @brief Set the local number of particles.
-         *
-         * @param nlocal The new number of local particles.
-        */
-        KOKKOS_INLINE_FUNCTION void setLocalSamplesNum(size_type nlocal) {
-            nlocal_m = nlocal;
-        }
-
-        /*!
-         * @brief Generate random samples using inverse transform sampling.
-         *
-         * @param view The view to fill with random samples.
-         * @param rand_pool64 The random number generator pool.
-        */
-        void generate(view_type view, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
-            Vector<T, Dim> minbound_m = umin_m;
-            Vector<T, Dim> maxbound_m = umax_m;
-            Distribution targetdist_m = dist_m;
-            size_type numlocal_m = nlocal_m;
-            for (unsigned d = 0; d < Dim; ++d) {
-              Kokkos::parallel_for(numlocal_m, fill_random<Kokkos::Random_XorShift64_Pool<>>(targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
-              Kokkos::fence();
-            }
-        }
-
-	/*!
-         * @brief Generate random samples using inverse transform sampling for a specific range of particles
-         *
-         * @param view The view to fill with random samples.
-         * @param startIndex The starting index of view.
-         * @param endIndex The ending index of view.
-         * @param rand_pool64 The random number generator pool.
-        */
-	void generate(view_type view, size_type startIndex, size_type endIndex, Kokkos::Random_XorShift64_Pool<> rand_pool64) {
-            Vector<T, Dim> minbound_m = umin_m;
-            Vector<T, Dim> maxbound_m = umax_m;
-            Distribution targetdist_m = dist_m;
-            for (unsigned d = 0; d < Dim; ++d) {
-              Kokkos::parallel_for(Kokkos::RangePolicy<>(startIndex,endIndex), fill_random<Kokkos::Random_XorShift64_Pool<>>(targetdist_m, view, rand_pool64, minbound_m, maxbound_m, d));
-              Kokkos::fence();
-            }
-	}
-
-    private:
-        size_type nlocal_m;
-    };
-  
-  }  // namespace random
+    }  // namespace random
 }  // namespace ippl
 
 #endif

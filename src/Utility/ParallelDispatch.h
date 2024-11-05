@@ -180,8 +180,8 @@ namespace ippl {
         };
         template <typename T>
         concept HasMemberValueType = requires() {
-            { typename T::value_type() };
-        };
+                                         { typename T::value_type() };
+                                     };
         template <typename T>
         struct ExtractReducerReturnType {
             using type = T;

@@ -31,8 +31,7 @@ namespace ippl {
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     typename GaussJacobiQuadrature<T, NumNodes1D, ElementType>::scalar_t
-    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getChebyshevNodes(
-        const size_t& i) const {
+    GaussJacobiQuadrature<T, NumNodes1D, ElementType>::getChebyshevNodes(const size_t& i) const {
         return -Kokkos::cos((2.0 * static_cast<scalar_t>(i) + 1.0) * Kokkos::numbers::pi_v<scalar_t>
                             / (2.0 * NumNodes1D));
     }
@@ -129,7 +128,8 @@ namespace ippl {
             } else if (initial_guess_type == InitialGuessType::Chebyshev) {
                 z = -this->getChebyshevNodes(i);
             } else {
-                throw IpplException("GaussJacobiQuadrature::computeNodesAndWeights", "Unknown initial guess type");
+                throw IpplException("GaussJacobiQuadrature::computeNodesAndWeights",
+                                    "Unknown initial guess type");
             }
 
             // std::cout << NumNodes1D - i - 1 << ", initial guess: " << z << " with "

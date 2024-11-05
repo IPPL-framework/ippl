@@ -2,15 +2,13 @@
 namespace ippl {
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
-        const Mesh<T, Dim>& mesh,
-        ElementType& ref_element,
-        const QuadratureType& quadrature,
+        const Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
         const Layout_t& layout)
-        : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType,
-                             FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
+        : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
+                             QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
         static_assert(Dim >= 1 && Dim <= 3,
                       "Finite Element space only supports 1D, 2D and 3D meshes");
@@ -22,11 +20,12 @@ namespace ippl {
     // Initialize element indices Kokkos View
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initializeElementIndices(const Layout_t& layout) {
-        const auto& ldom = layout.getLocalNDIndex(); 
-        int npoints = ldom.size();
-        auto first  = ldom.first();
-        auto last   = ldom.last();
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::initializeElementIndices(const Layout_t& layout) {
+        const auto& ldom = layout.getLocalNDIndex();
+        int npoints      = ldom.size();
+        auto first       = ldom.first();
+        auto last        = ldom.last();
         ippl::Vector<double, Dim> bounds;
 
         for (size_t d = 0; d < Dim; ++d) {
@@ -36,14 +35,15 @@ namespace ippl {
         int upperBoundaryPoints = -1;
 
         Kokkos::View<size_t*> points("ComputeMapping", npoints);
-        Kokkos::parallel_reduce("ComputePoints", npoints,
+        Kokkos::parallel_reduce(
+            "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
                 int idx = i;
                 indices_t val;
                 bool isBoundary = false;
                 for (unsigned int d = 0; d < Dim; ++d) {
                     int range = last[d] - first[d] + 1;
-                    val[d] = first[d] + (idx % range);
+                    val[d]    = first[d] + (idx % range);
                     idx /= range;
                     if (val[d] == bounds[d]) {
                         isBoundary = true;
@@ -51,17 +51,18 @@ namespace ippl {
                 }
                 points(i) = (!isBoundary) * (this->getElementIndex(val));
                 local += isBoundary;
-            }, Kokkos::Sum<int>(upperBoundaryPoints));
+            },
+            Kokkos::Sum<int>(upperBoundaryPoints));
         Kokkos::fence();
 
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");
 
-        Kokkos::parallel_for("RemoveNaNs", npoints,
-            KOKKOS_CLASS_LAMBDA(const int i) {
+        Kokkos::parallel_for(
+            "RemoveNaNs", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
                 if ((points(i) != 0) || (i == 0)) {
-                    const size_t idx = Kokkos::atomic_fetch_add(&index(), 1);
+                    const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
                     elementIndices(idx) = points(i);
                 }
             });
@@ -71,11 +72,10 @@ namespace ippl {
     /// Degree of Freedom operations //////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    size_t LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numGlobalDOFs()
-        const {
+    KOKKOS_FUNCTION size_t LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                         FieldRHS>::numGlobalDOFs() const {
         size_t num_global_dofs = 1;
         for (size_t d = 0; d < Dim; ++d) {
             num_global_dofs *= this->nr_m[d] * Order;
@@ -89,7 +89,7 @@ namespace ippl {
               typename FieldRHS>
     KOKKOS_FUNCTION
     size_t LagrangeSpace<T, Dim, Order, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
-        const size_t& elementIndex, const size_t& globalDOFIndex) const { 
+        const size_t& elementIndex, const size_t& globalDOFIndex) const {
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -107,7 +107,8 @@ namespace ippl {
             dof_mapping = {0, 1, 3, 2, 4, 5, 7, 6};
         } else {
             // throw exception
-            throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Dimension not supported");
+            throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Dimension
+    not supported");
         }
 
         // Find the global DOF in the vector and return the local DOF index
@@ -117,16 +118,17 @@ namespace ippl {
                 return dof_mapping[i];
             }
         }
-        throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Global DOF not found in specified element");
+        throw IpplException("LagrangeSpace::getLocalDOFIndex()", "FEM Lagrange Space: Global DOF not
+    found in specified element");
     }
     */
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    size_t
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndex(
-        const size_t& elementIndex, const size_t& localDOFIndex) const {
+    KOKKOS_FUNCTION size_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::getGlobalDOFIndex(const size_t& elementIndex,
+                                               const size_t& localDOFIndex) const {
         const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
@@ -134,10 +136,10 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    Vector<size_t,
-           LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndices() const {
+    KOKKOS_FUNCTION Vector<size_t, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                 FieldLHS, FieldRHS>::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::getLocalDOFIndices() const {
         Vector<size_t, numElementDOFs> localDOFs;
 
         for (size_t dof = 0; dof < numElementDOFs; ++dof) {
@@ -147,13 +149,12 @@ namespace ippl {
         return localDOFs;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    Vector<size_t,
-           LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getGlobalDOFIndices(
-        const size_t& elementIndex) const {
+    KOKKOS_FUNCTION Vector<size_t, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                 FieldLHS, FieldRHS>::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::getGlobalDOFIndices(const size_t& elementIndex) const {
         Vector<size_t, this->numElementDOFs> globalDOFs(0);
 
         // get element pos
@@ -178,14 +179,10 @@ namespace ippl {
             globalDOFs[3] = globalDOFs[0] + this->nr_m[1] * Order;
         }
         if (Dim >= 3) {
-            globalDOFs[4] =
-                globalDOFs[0] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[5] =
-                globalDOFs[1] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[6] =
-                globalDOFs[2] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[7] =
-                globalDOFs[3] + this->nr_m[1] * this->nr_m[2] * Order;
+            globalDOFs[4] = globalDOFs[0] + this->nr_m[1] * this->nr_m[2] * Order;
+            globalDOFs[5] = globalDOFs[1] + this->nr_m[1] * this->nr_m[2] * Order;
+            globalDOFs[6] = globalDOFs[2] + this->nr_m[1] * this->nr_m[2] * Order;
+            globalDOFs[7] = globalDOFs[3] + this->nr_m[1] * this->nr_m[2] * Order;
         }
 
         if (Order > 1) {
@@ -195,12 +192,10 @@ namespace ippl {
             // Add the edge DOFs
             if (Dim >= 2) {
                 for (size_t i = 0; i < Order - 1; ++i) {
-                    globalDOFs[8 + i] = globalDOFs[0] + i + 1;
-                    globalDOFs[8 + Order - 1 + i] =
-                        globalDOFs[1] + (i + 1) * this->nr_m[1];
+                    globalDOFs[8 + i]                   = globalDOFs[0] + i + 1;
+                    globalDOFs[8 + Order - 1 + i]       = globalDOFs[1] + (i + 1) * this->nr_m[1];
                     globalDOFs[8 + 2 * (Order - 1) + i] = globalDOFs[2] - (i + 1);
-                    globalDOFs[8 + 3 * (Order - 1) + i] =
-                        globalDOFs[3] - (i + 1) * this->nr_m[1];
+                    globalDOFs[8 + 3 * (Order - 1) + i] = globalDOFs[3] - (i + 1) * this->nr_m[1];
                 }
             }
             if (Dim >= 3) {
@@ -215,8 +210,7 @@ namespace ippl {
                         globalDOFs[8 + 4 * (Order - 1) + i * (Order - 1) + j] =
                             globalDOFs[0] + (i + 1) + (j + 1) * this->nr_m[1];
                         globalDOFs[8 + 4 * (Order - 1) + (Order - 1) * (Order - 1) + i * (Order - 1)
-                                   + j] =
-                            globalDOFs[1] + (i + 1) + (j + 1) * this->nr_m[1];
+                                   + j] = globalDOFs[1] + (i + 1) + (j + 1) * this->nr_m[1];
                         globalDOFs[8 + 4 * (Order - 1) + 2 * (Order - 1) * (Order - 1)
                                    + i * (Order - 1) + j] =
                             globalDOFs[2] - (i + 1) + (j + 1) * this->nr_m[1];
@@ -235,13 +229,14 @@ namespace ippl {
     /// Basis functions and gradients /////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType, 
-              typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-        evaluateRefElementShapeFunction(const size_t& localDOF,
-                                        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, 
-                                                            FieldLHS, FieldRHS>::point_t& localPoint) const {
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION T
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+        evaluateRefElementShapeFunction(
+            const size_t& localDOF,
+            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                FieldRHS>::point_t& localPoint) const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < this->numElementDOFs
@@ -268,15 +263,15 @@ namespace ippl {
         return product;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::point_t
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::point_t
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         evaluateRefElementShapeFunctionGradient(
             const size_t& localDOF,
-            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::point_t&
-                localPoint) const {
+            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                FieldRHS>::point_t& localPoint) const {
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1 && "Only order 1 is supported at the moment");
 
@@ -287,8 +282,7 @@ namespace ippl {
                && "Point is not in reference element");
 
         // Get the local dof nd_index
-        const vertex_points_t local_vertex_points =
-            this->ref_element_m.getLocalVertices();
+        const vertex_points_t local_vertex_points = this->ref_element_m.getLocalVertices();
 
         const point_t& local_vertex_point = local_vertex_points[localDOF];
 
@@ -328,20 +322,18 @@ namespace ippl {
     /// Assembly operations ///////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
-    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evaluateAx(
-        const FieldLHS& field, F& evalFunction) 
-        const {
-
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx(const FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
         // start a timer
         static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
         IpplTimings::startTimer(evalAx);
 
-        // get number of ghost cells in field 
+        // get number of ghost cells in field
         const int nghost = field.getNghost();
 
         // create a new field for result with view initialized to zero (views are initialized to
@@ -361,8 +353,7 @@ namespace ippl {
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes>
-            grad_b_q;
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < this->numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
@@ -385,12 +376,13 @@ namespace ippl {
         IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
-        Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-
-                const size_t elementIndex                                = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dof     = this->getLocalDOFIndices();
-                const Vector<size_t, this->numElementDOFs> global_dofs   = this->getGlobalDOFIndices(elementIndex);
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, this->numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
@@ -413,8 +405,8 @@ namespace ippl {
                     }
                 }
 
-                // global DOF n-dimensional indices (Vector of N indices representing indices in each
-                // dimension)
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
                 indices_t I_nd, J_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
@@ -447,18 +439,17 @@ namespace ippl {
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
                 }
-        });
+            });
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
-    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::evaluateLoadVector(
-        FieldRHS& field) const {
-
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::evaluateLoadVector(FieldRHS& field) const {
         Inform m("");
 
         // start a timer
@@ -488,8 +479,8 @@ namespace ippl {
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
         // Get domain information and ghost cells
-        auto ldom          = (field.getLayout()).getLocalNDIndex();
-        const int nghost   = field.getNghost();
+        auto ldom        = (field.getLayout()).getLocalNDIndex();
+        const int nghost = field.getNghost();
 
         FieldRHS temp_field(field.get_mesh(), field.getLayout(), nghost);
 
@@ -503,15 +494,18 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
         // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateLoadVec: outer loop");
+        static IpplTimings::TimerRef outer_loop =
+            IpplTimings::getTimer("evaluateLoadVec: outer loop");
         IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
-        Kokkos::parallel_for("Loop over elements", policy_type(0, elementIndices.extent(0)),
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
-                const Vector<size_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+                const size_t elementIndex                             = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dofs = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
 
                 size_t i, I;
 
@@ -533,7 +527,7 @@ namespace ippl {
                         T val = 0;
                         for (size_t j = 0; j < this->numElementDOFs; ++j) {
                             // get field index corresponding to this DOF
-                            size_t J = global_dofs[j];
+                            size_t J           = global_dofs[j];
                             auto dof_ndindex_J = this->getMeshVertexNDIndex(J);
                             for (unsigned d = 0; d < Dim; ++d) {
                                 dof_ndindex_J[d] = dof_ndindex_J[d] - ldom[d].first() + nghost;
@@ -542,10 +536,10 @@ namespace ippl {
                             // get field value at DOF and interpolate to q_k
                             val += basis_q[k][j] * apply(field, dof_ndindex_J);
                         }
-                        
+
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
-                    
+
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
@@ -554,7 +548,7 @@ namespace ippl {
                     // add the contribution of the element to the field
                     apply(atomic_view, dof_ndindex_I) += contrib;
                 }
-        });
+            });
         IpplTimings::stopTimer(outer_loop);
 
         // assign temp_field to field so that the RHS is the evaluated Load Vector
@@ -563,14 +557,16 @@ namespace ippl {
         IpplTimings::stopTimer(evalLoadV);
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeError(const FieldLHS& u_h, const F& u_sol) const {
-
-        if (this->quadrature_m.getOrder() < (2*Order +1)) {
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeError(
+        const FieldLHS& u_h, const F& u_sol) const {
+        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
             // throw exception
-            throw IpplException("LagrangeSpace::computeError()", "Order of quadrature rule for error computation should be > 2*p + 1");
+            throw IpplException(
+                "LagrangeSpace::computeError()",
+                "Order of quadrature rule for error computation should be > 2*p + 1");
         }
 
         // List of quadrature weights
@@ -595,34 +591,35 @@ namespace ippl {
         const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
-        // Variable to sum the error to    
+        // Variable to sum the error to
         T error = 0;
 
         // Get domain information and ghost cells
-        auto ldom          = (u_h.getLayout()).getLocalNDIndex();
-        const int nghost   = u_h.getNghost();
+        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost = u_h.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
         // Loop over elements to compute contributions
-        Kokkos::parallel_reduce("Compute error over elements", policy_type(0, elementIndices.extent(0)),
+        Kokkos::parallel_reduce(
+            "Compute error over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
-
                 const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-
                     T val_u_sol = u_sol(this->ref_element_m.localToGlobal(
-                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)), q[k]));
-                    
+                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
+                        q[k]));
+
                     T val_u_h = 0;
                     for (size_t i = 0; i < this->numElementDOFs; ++i) {
                         // get field index corresponding to this DOF
-                        size_t I = global_dofs[i];
+                        size_t I           = global_dofs[i];
                         auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
@@ -635,24 +632,26 @@ namespace ippl {
                     contrib += w[k] * Kokkos::pow(val_u_sol - val_u_h, 2) * absDetDPhi;
                 }
                 local += contrib;
-            }, Kokkos::Sum<double>(error));
+            },
+            Kokkos::Sum<double>(error));
 
-        // MPI reduce 
+        // MPI reduce
         T global_error = 0.0;
         Comm->allreduce(error, global_error, 1, std::plus<T>());
 
         return Kokkos::sqrt(global_error);
     }
 
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType,
-              typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorInf(
-        const FieldLHS& u_h, const F& u_sol) const {
-
-        if (this->quadrature_m.getOrder() < (2*Order +1)) {
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                    FieldRHS>::computeErrorInf(const FieldLHS& u_h, const F& u_sol) const {
+        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
             // throw exception
-            throw IpplException("LagrangeSpace::computeError()", "Order of quadrature rule for error computation should be > 2*p + 1");
+            throw IpplException(
+                "LagrangeSpace::computeError()",
+                "Order of quadrature rule for error computation should be > 2*p + 1");
         }
 
         // List of quadrature weights
@@ -673,26 +672,28 @@ namespace ippl {
 
         const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
 
-        // Variable to sum the error to    
+        // Variable to sum the error to
         T error = 0;
 
         // Get domain information and ghost cells
-        auto ldom          = (u_h.getLayout()).getLocalNDIndex();
-        const int nghost   = u_h.getNghost();
+        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost = u_h.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
         // Loop over elements to compute contributions
-        Kokkos::parallel_reduce("Compute error over elements", policy_type(0, elementIndices.extent(0)),
+        Kokkos::parallel_reduce(
+            "Compute error over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index, double& local_max) {
-
                 const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs = this->getGlobalDOFIndices(elementIndex);
-                auto dof_points = this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                auto dof_points =
+                    this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
 
                 for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                    size_t I = global_dofs[i];
+                    size_t I           = global_dofs[i];
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
@@ -705,14 +706,15 @@ namespace ippl {
                     T val_u_sol = u_sol(dof_points[i]);
 
                     T local_norm = Kokkos::abs(val_u_h - val_u_sol);
-                    
+
                     if (local_norm > local_max) {
                         local_max = local_norm;
                     }
                 }
-            }, Kokkos::Max<double>(error));
+            },
+            Kokkos::Max<double>(error));
 
-        // MPI reduce 
+        // MPI reduce
         T global_error = 0.0;
         Comm->allreduce(error, global_error, 1, std::greater<T>());
 
