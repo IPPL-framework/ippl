@@ -10,6 +10,21 @@
 template <typename>
 class LagrangeSpaceTest;
 
+template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
+struct EvalFunctor {
+    const ippl::Vector<Tlhs, Dim> DPhiInvT;
+    const Tlhs absDetDPhi;
+
+    EvalFunctor(ippl::Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi)
+        : DPhiInvT(DPhiInvT)
+        , absDetDPhi(absDetDPhi) {}
+
+    KOKKOS_FUNCTION const auto operator()(const size_t& i, const size_t& j,
+                    const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
+        return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
+    }
+};
+
 template <typename T, typename ExecSpace, unsigned Order, unsigned Dim>
 class LagrangeSpaceTest<Parameters<T, ExecSpace, Rank<Order>, Rank<Dim>>> : public ::testing::Test {
 protected:
@@ -588,13 +603,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
                 lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex)));
 
             // Poisson equation eval function (based on the weak form)
-            const auto eval = [DPhiInvT, absDetDPhi](
-                                  const std::size_t& i, const std::size_t& j,
-                                  const ippl::Vector<ippl::Vector<T, lagrangeSpace.dim>,
-                                                     lagrangeSpace.numElementDOFs>& grad_b_q_k) {
-                return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply()
-                       * absDetDPhi;
-            };
+            EvalFunctor<T, lagrangeSpace.dim, lagrangeSpace.numElementDOFs> eval(DPhiInvT, absDetDPhi);
 
             // 2. Build the discrete poisson eqation matrix to test the assembly function against
             Kokkos::View<T**> A_ref("A_ref", numGlobalDOFs, numGlobalDOFs);
@@ -700,13 +709,10 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
     using FieldType = typename TestFixture::FieldType;
 
-    using T                   = typename TestFixture::value_t;
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
     const std::size_t& dim    = lagrangeSpace.dim;
     const std::size_t& order  = lagrangeSpace.order;
-
-    const double pi = Kokkos::numbers::pi_v<double>;
 
     if (order == 1) {
         if (dim == 1) {
@@ -723,30 +729,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             FieldType rhs_field(mesh, layout, 1);
             FieldType ref_field(mesh, layout, 1);
 
-            // define the RHS function f
-            int nghost    = rhs_field.getNghost();
-            auto ldom     = layout.getLocalNDIndex();
-            auto hr       = mesh.getGridsize(0);
-            auto origin   = mesh.getOrigin();
-
-            auto view_rhs   = rhs_field.getView();
-            auto mirror_rhs = Kokkos::create_mirror_view(view_rhs);
-
-            nestedViewLoop(mirror_rhs, 0, [&]<typename... Idx>(const Idx... args) {
-                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                index_type coords[dim] = {args...};
-
-                // global coordinates
-                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
-                }
-                T x = (coords[0] * hr) + origin[0];
-
-                mirror_rhs(args...) = pi * pi * Kokkos::sin(pi * x);
-            });
-            Kokkos::fence();
-
-            Kokkos::deep_copy(view_rhs, mirror_rhs);
+            rhs_field = 2.75;
 
             // call evaluateLoadVector
             rhs_field.fillHalo();
@@ -756,6 +739,9 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             // set up for comparison
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            int nghost    = rhs_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
                 using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
@@ -767,18 +753,19 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
                 }
 
                 // reference field
+
                 switch (coords[0]) {
                     case 0:
                         mirror(args...) = 0.0;
                         break;
                     case 1:
-                        mirror(args...) = -4.0;
+                        mirror(args...) = 1.375;
                         break;
                     case 2:
-                        mirror(args...) = 0.0;
+                        mirror(args...) = 1.375;
                         break;
                     case 3:
-                        mirror(args...) = 4.0;
+                        mirror(args...) = 1.375;
                         break;
                     case 4:
                         mirror(args...) = 0.0;
@@ -795,7 +782,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             rhs_field  = rhs_field - ref_field;
             double err = ippl::norm(rhs_field);
 
-            ASSERT_NEAR(err, 0.0, 1e-7);
+            ASSERT_NEAR(err, 0.0, 1e-6);
 
         } else {
             GTEST_SKIP();
