@@ -36,7 +36,7 @@ namespace ippl {
         void Communicator::freeBuffer(Communicator::buffer_type<MemorySpace> buffer) {
             auto& buffer_handler = buffer_handlers_m.get<MemorySpace>();
 
-            return buffer_handler.freeBuffer(buffer);
+            buffer_handler.freeBuffer(buffer);
         }
 
     }  // namespace mpi

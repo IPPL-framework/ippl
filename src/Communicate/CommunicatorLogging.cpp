@@ -94,9 +94,7 @@ namespace ippl {
             Inform logFile(0, filename.c_str(), Inform::OVERWRITE, 0);
             logFile.setOutputLevel(1);
 
-            logFile << "Timestamp,Method,Rank,MemorySpace,AllocatedSize,FreeSize,Parameters" << endl;
-            std::cout << "hello world" << std::endl;
-            std::cout << allLogs.size() << std::endl;
+            logFile << "Timestamp,Method,Rank,MemorySpace,usedSize,FreeSize,Parameters" << endl;
               
             for (const auto& log : allLogs) {
                 auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -104,7 +102,7 @@ namespace ippl {
                                      .count();
 
                 logFile << timestamp << "," << log.methodName << "," << log.rank << "," << log.memorySpace << ","
-                        << log.allocatedSize << "," << log.freeSize;
+                        << log.usedSize << "," << log.freeSize;
 
                 logFile << ",\"";
                 bool first = true;

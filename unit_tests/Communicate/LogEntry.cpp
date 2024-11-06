@@ -5,24 +5,24 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
-LogEntry createSampleLogEntry() {
-    LogEntry logEntry;
-    logEntry.methodName = "TestMethod";
-    logEntry.allocatedSize = 1024;
-    logEntry.freeSize = 512;
+ippl::LogEntry createSampleLogEntry() {
+    ippl::LogEntry logEntry;
+    logEntry.methodName  = "TestMethod";
+    logEntry.usedSize    = 1024;
+    logEntry.freeSize    = 512;
     logEntry.memorySpace = "HostSpace";
-    logEntry.rank = 1;
-    logEntry.timestamp = std::chrono::high_resolution_clock::now();
+    logEntry.rank        = 1;
+    logEntry.timestamp   = std::chrono::high_resolution_clock::now();
 
     logEntry.parameters["overallocation"] = "1.5";
-    logEntry.parameters["buffer_size"] = "2048";
+    logEntry.parameters["buffer_size"]    = "2048";
 
     return logEntry;
 }
 
 TEST(LogEntryTest, Serialize) {
-    LogEntry logEntry = createSampleLogEntry();
-    
+    ippl::LogEntry logEntry = createSampleLogEntry();
+
     std::vector<char> buffer;
     buffer = logEntry.serialize();
 
@@ -30,47 +30,51 @@ TEST(LogEntryTest, Serialize) {
 }
 
 TEST(LogEntryTest, Deserialize) {
-    LogEntry logEntry = createSampleLogEntry();
+    ippl::LogEntry logEntry = createSampleLogEntry();
 
     std::vector<char> buffer;
     buffer = logEntry.serialize();
 
-    LogEntry deserializedLogEntry = LogEntry::deserialize(buffer);
+    ippl::LogEntry deserializedLogEntry = ippl::LogEntry::deserialize(buffer);
 
     EXPECT_EQ(deserializedLogEntry.methodName, logEntry.methodName);
-    EXPECT_EQ(deserializedLogEntry.allocatedSize, logEntry.allocatedSize);
+    EXPECT_EQ(deserializedLogEntry.usedSize, logEntry.usedSize);
     EXPECT_EQ(deserializedLogEntry.freeSize, logEntry.freeSize);
     EXPECT_EQ(deserializedLogEntry.memorySpace, logEntry.memorySpace);
     EXPECT_EQ(deserializedLogEntry.rank, logEntry.rank);
 
     EXPECT_EQ(deserializedLogEntry.parameters.size(), logEntry.parameters.size());
-    EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"), logEntry.parameters.at("overallocation"));
-    EXPECT_EQ(deserializedLogEntry.parameters.at("buffer_size"), logEntry.parameters.at("buffer_size"));
+    EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"),
+              logEntry.parameters.at("overallocation"));
+    EXPECT_EQ(deserializedLogEntry.parameters.at("buffer_size"),
+              logEntry.parameters.at("buffer_size"));
 
-    auto originalTime = logEntry.timestamp.time_since_epoch().count();
+    auto originalTime     = logEntry.timestamp.time_since_epoch().count();
     auto deserializedTime = deserializedLogEntry.timestamp.time_since_epoch().count();
     EXPECT_EQ(originalTime, deserializedTime);
 }
 
 TEST(LogEntryTest, RoundTripSerialization) {
-    LogEntry logEntry = createSampleLogEntry();
+    ippl::LogEntry logEntry = createSampleLogEntry();
 
     std::vector<char> buffer;
     buffer = logEntry.serialize();
 
-    LogEntry deserializedLogEntry = LogEntry::deserialize(buffer);
+    ippl::LogEntry deserializedLogEntry = ippl::LogEntry::deserialize(buffer);
 
     EXPECT_EQ(deserializedLogEntry.methodName, logEntry.methodName);
-    EXPECT_EQ(deserializedLogEntry.allocatedSize, logEntry.allocatedSize);
+    EXPECT_EQ(deserializedLogEntry.usedSize, logEntry.usedSize);
     EXPECT_EQ(deserializedLogEntry.freeSize, logEntry.freeSize);
     EXPECT_EQ(deserializedLogEntry.memorySpace, logEntry.memorySpace);
     EXPECT_EQ(deserializedLogEntry.rank, logEntry.rank);
 
     EXPECT_EQ(deserializedLogEntry.parameters.size(), logEntry.parameters.size());
-    EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"), logEntry.parameters.at("overallocation"));
-    EXPECT_EQ(deserializedLogEntry.parameters.at("buffer_size"), logEntry.parameters.at("buffer_size"));
+    EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"),
+              logEntry.parameters.at("overallocation"));
+    EXPECT_EQ(deserializedLogEntry.parameters.at("buffer_size"),
+              logEntry.parameters.at("buffer_size"));
 
-    auto originalTime = logEntry.timestamp.time_since_epoch().count();
+    auto originalTime     = logEntry.timestamp.time_since_epoch().count();
     auto deserializedTime = deserializedLogEntry.timestamp.time_since_epoch().count();
     EXPECT_EQ(originalTime, deserializedTime);
 }

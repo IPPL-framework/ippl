@@ -12,14 +12,14 @@ class TypedLoggingBufferHandlerTest : public ::testing::Test {
 protected:
     void SetUp() override {
         rank                = 0;
-        this->bufferHandler = std::make_shared<BufferHandler<MemorySpace>>();
+        this->bufferHandler = std::make_shared<ippl::BufferHandler<MemorySpace>>();
         this->loggingHandler =
-            std::make_shared<LoggingBufferHandler<MemorySpace>>(bufferHandler, rank);
+            std::make_shared<ippl::LoggingBufferHandler<MemorySpace>>(bufferHandler, rank);
     }
 
     int rank;
-    std::shared_ptr<BufferHandler<MemorySpace>> bufferHandler;
-    std::shared_ptr<LoggingBufferHandler<MemorySpace>> loggingHandler;
+    std::shared_ptr<ippl::BufferHandler<MemorySpace>> bufferHandler;
+    std::shared_ptr<ippl::LoggingBufferHandler<MemorySpace>> loggingHandler;
 };
 
 TYPED_TEST_SUITE(TypedLoggingBufferHandlerTest, MemorySpaces);
@@ -52,7 +52,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, GetBufferLogsCorrectly) {
     std::string overallocationStr = entry.parameters.at("overallocation");
     compareNumericParameter(overallocationStr, 1.5);
 
-    EXPECT_EQ(entry.allocatedSize, this->bufferHandler->getAllocatedSize());
+    EXPECT_EQ(entry.usedSize, this->bufferHandler->getUsedSize());
     EXPECT_EQ(entry.freeSize, this->bufferHandler->getFreeSize());
     EXPECT_EQ(entry.memorySpace, TypeParam::name());
     EXPECT_EQ(entry.rank, this->rank);
@@ -67,7 +67,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, FreeBufferLogsCorrectly) {
 
     const auto& entry = logs[1];
     EXPECT_EQ(entry.methodName, "freeBuffer");
-    EXPECT_EQ(entry.allocatedSize, this->bufferHandler->getAllocatedSize());
+    EXPECT_EQ(entry.usedSize, this->bufferHandler->getUsedSize());
     EXPECT_EQ(entry.freeSize, this->bufferHandler->getFreeSize());
     EXPECT_EQ(entry.memorySpace, TypeParam::name());
     EXPECT_EQ(entry.rank, this->rank);
@@ -83,7 +83,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, FreeAllBuffersLogsCorrectly) {
 
     const auto& entry = logs[2];
     EXPECT_EQ(entry.methodName, "freeAllBuffers");
-    EXPECT_EQ(entry.allocatedSize, this->bufferHandler->getAllocatedSize());
+    EXPECT_EQ(entry.usedSize, this->bufferHandler->getUsedSize());
     EXPECT_EQ(entry.freeSize, this->bufferHandler->getFreeSize());
     EXPECT_EQ(entry.memorySpace, TypeParam::name());
     EXPECT_EQ(entry.rank, this->rank);
@@ -99,7 +99,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, DeleteAllBuffersLogsCorrectly) {
 
     const auto& entry = logs[2];
     EXPECT_EQ(entry.methodName, "deleteAllBuffers");
-    EXPECT_EQ(entry.allocatedSize, this->bufferHandler->getAllocatedSize());
+    EXPECT_EQ(entry.usedSize, this->bufferHandler->getUsedSize());
     EXPECT_EQ(entry.freeSize, this->bufferHandler->getFreeSize());
     EXPECT_EQ(entry.memorySpace, TypeParam::name());
     EXPECT_EQ(entry.rank, this->rank);

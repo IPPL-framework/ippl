@@ -13,10 +13,10 @@ class TypedBufferHandlerTest : public ::testing::Test {
 protected:
     using memory_space = MemorySpace;
 
-    class TestableBufferHandler : public BufferHandler<memory_space> {
+    class TestableBufferHandler : public ippl::BufferHandler<memory_space> {
     public:
-        using BufferHandler<memory_space>::deleteAllBuffers;
-        using BufferHandler<memory_space>::freeAllBuffers;
+        using ippl::BufferHandler<memory_space>::deleteAllBuffers;
+        using ippl::BufferHandler<memory_space>::freeAllBuffers;
 
         size_t usedBuffersSize() const { return this->used_buffers.size(); }
 
@@ -125,13 +125,13 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ZeroSize) {
 }
 
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_EmptyHandler) {
-    EXPECT_EQ(this->handler->getAllocatedSize(), 0);
+    EXPECT_EQ(this->handler->getUsedSize(), 0);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterBufferAllocation) {
     auto buffer = this->handler->getBuffer(100, 1.0);
-    EXPECT_EQ(this->handler->getAllocatedSize(), 100);
+    EXPECT_EQ(this->handler->getUsedSize(), 100);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
@@ -139,7 +139,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeBuffer) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     this->handler->freeBuffer(buffer);
 
-    EXPECT_EQ(this->handler->getAllocatedSize(), 0);
+    EXPECT_EQ(this->handler->getUsedSize(), 0);
     EXPECT_EQ(this->handler->getFreeSize(), 100);
 }
 
@@ -149,7 +149,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeAllBuffers) 
 
     this->handler->freeAllBuffers();
 
-    EXPECT_EQ(this->handler->getAllocatedSize(), 0);
+    EXPECT_EQ(this->handler->getUsedSize(), 0);
     EXPECT_EQ(this->handler->getFreeSize(), 150);
 }
 
@@ -159,7 +159,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers
 
     this->handler->deleteAllBuffers();
 
-    EXPECT_EQ(this->handler->getAllocatedSize(), 0);
+    EXPECT_EQ(this->handler->getUsedSize(), 0);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
@@ -169,7 +169,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerTha
 
     auto largeBuffer = this->handler->getBuffer(200, 1.0);
 
-    EXPECT_EQ(this->handler->getAllocatedSize(), 200);
+    EXPECT_EQ(this->handler->getUsedSize(), 200);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
