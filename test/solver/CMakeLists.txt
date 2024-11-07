@@ -90,23 +90,9 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable(TestCode TestCode.cpp)
+    add_executable(TestFEMPoissonSolver_periodic TestFEMPoissonSolver_periodic.cpp)
     target_link_libraries(
-        TestCode
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
-    add_executable(TestLambda TestLambda.cpp)
-    target_link_libraries(
-        TestLambda
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
-    add_executable(TestFEMPoissonSolver_scaling TestFEMPoissonSolver_scaling.cpp)
-    target_link_libraries(
-        TestFEMPoissonSolver_scaling
+        TestFEMPoissonSolver_periodic
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
