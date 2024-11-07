@@ -1,7 +1,8 @@
 #include "Ippl.h"
-#include "Utility/TypeUtils.h"
 
 #include "Communicate/BufferHandler.h"
+
+#include "Utility/TypeUtils.h"
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
@@ -13,10 +14,10 @@ class TypedBufferHandlerTest : public ::testing::Test {
 protected:
     using memory_space = MemorySpace;
 
-    class TestableBufferHandler : public ippl::BufferHandler<memory_space> {
+    class TestableBufferHandler : public ippl::DefaultBufferHandler<memory_space> {
     public:
-        using ippl::BufferHandler<memory_space>::deleteAllBuffers;
-        using ippl::BufferHandler<memory_space>::freeAllBuffers;
+        using ippl::DefaultBufferHandler<memory_space>::deleteAllBuffers;
+        using ippl::DefaultBufferHandler<memory_space>::freeAllBuffers;
 
         size_t usedBuffersSize() const { return this->used_buffers.size(); }
 
@@ -32,6 +33,7 @@ protected:
 
 TYPED_TEST_CASE(TypedBufferHandlerTest, MemorySpaces);
 
+// Test: Allocating a buffer when no free buffers are available
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     ASSERT_NE(buffer, nullptr);
@@ -40,6 +42,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: Allocating a buffer when a suitable free buffer is available
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_SuitableBufferAvailable) {
     auto buffer1 = this->handler->getBuffer(50, 1.0);
     this->handler->freeBuffer(buffer1);
@@ -49,6 +52,8 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_SuitableBufferAvailable) {
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
+
+// Test: Freeing a used buffer moves it to the free buffer pool
 TYPED_TEST(TypedBufferHandlerTest, FreeBuffer) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     this->handler->freeBuffer(buffer);
@@ -57,6 +62,7 @@ TYPED_TEST(TypedBufferHandlerTest, FreeBuffer) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 1);
 }
 
+// Test: Freeing all used buffers moves them to the free buffer pool
 TYPED_TEST(TypedBufferHandlerTest, FreeAllBuffers) {
     auto buffer1 = this->handler->getBuffer(50, 1.0);
     auto buffer2 = this->handler->getBuffer(100, 1.0);
@@ -67,9 +73,11 @@ TYPED_TEST(TypedBufferHandlerTest, FreeAllBuffers) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 2);
 }
 
+// Test: Deleting all buffers removes both used and free buffers
 TYPED_TEST(TypedBufferHandlerTest, DeleteAllBuffers) {
     this->handler->getBuffer(50, 1.0);
-    this->handler->getBuffer(100, 1.0);
+    auto buffer = this->handler->getBuffer(100, 1.0);
+    this->handler->freeBuffer(buffer);
 
     this->handler->deleteAllBuffers();
 
@@ -77,6 +85,7 @@ TYPED_TEST(TypedBufferHandlerTest, DeleteAllBuffers) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: Allocating a buffer larger than any available free buffer resizes the largest free buffer
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ResizeLargerThanAvailable) {
     auto smallBuffer = this->handler->getBuffer(50, 1.0);
     this->handler->freeBuffer(smallBuffer);
@@ -87,6 +96,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ResizeLargerThanAvailable) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: Allocating a buffer that matches the size of a free buffer exactly
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ExactSizeMatch) {
     auto buffer1 = this->handler->getBuffer(100, 1.0);
     this->handler->freeBuffer(buffer1);
@@ -97,15 +107,18 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ExactSizeMatch) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: Freeing a buffer that does not exist in the used pool has no effect
 TYPED_TEST(TypedBufferHandlerTest, FreeNonExistentBuffer) {
-    auto buffer    = this->handler->getBuffer(100, 1.0);
-    auto newBuffer = std::make_shared<ippl::detail::Archive<typename TestFixture::memory_space>>(200);
+    auto buffer = this->handler->getBuffer(100, 1.0);
+    auto newBuffer =
+        std::make_shared<ippl::detail::Archive<typename TestFixture::memory_space>>(200);
 
     this->handler->freeBuffer(newBuffer);
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: Repeatedly allocating and freeing buffers should consolidate free buffers
 TYPED_TEST(TypedBufferHandlerTest, RepeatedAllocateAndFreeCycle) {
     for (int i = 0; i < 10; ++i) {
         auto buffer = this->handler->getBuffer(100, 1.0);
@@ -116,6 +129,7 @@ TYPED_TEST(TypedBufferHandlerTest, RepeatedAllocateAndFreeCycle) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 1);
 }
 
+// Test: Allocating a zero-size buffer should succeed and result in a non-null buffer
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ZeroSize) {
     auto buffer = this->handler->getBuffer(0, 1.0);
     ASSERT_NE(buffer, nullptr);
@@ -124,17 +138,20 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ZeroSize) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
+// Test: The buffer sizes of an empty BufferHandler are zero
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_EmptyHandler) {
     EXPECT_EQ(this->handler->getUsedSize(), 0);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
+// Test: Allocating increases used buffer size correctly
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterBufferAllocation) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     EXPECT_EQ(this->handler->getUsedSize(), 100);
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
+// Test: Allocating increases used buffer size correctly
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeBuffer) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     this->handler->freeBuffer(buffer);
@@ -143,6 +160,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeBuffer) {
     EXPECT_EQ(this->handler->getFreeSize(), 100);
 }
 
+// Test: Correct size is computed after freeing all buffers
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeAllBuffers) {
     auto buffer1 = this->handler->getBuffer(50, 1.0);
     auto buffer2 = this->handler->getBuffer(100, 1.0);
@@ -153,6 +171,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeAllBuffers) 
     EXPECT_EQ(this->handler->getFreeSize(), 150);
 }
 
+// Test: Deleting all buffers results in zero free or used buffer sizes
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers) {
     this->handler->getBuffer(50, 1.0);
     this->handler->getBuffer(100, 1.0);
@@ -163,6 +182,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
+// Test: Buffer size is correctly accounted for if a free buffer is available but we request a larger one, thus reallocating this one
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerThanAvailable) {
     auto smallBuffer = this->handler->getBuffer(50, 1.0);
     this->handler->freeBuffer(smallBuffer);
@@ -179,7 +199,6 @@ int main(int argc, char* argv[]) {
     {
         ::testing::InitGoogleTest(&argc, argv);
         success = RUN_ALL_TESTS();
-        
     }
     ippl::finalize();
     return success;

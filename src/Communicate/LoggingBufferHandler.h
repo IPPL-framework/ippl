@@ -17,7 +17,7 @@ namespace ippl {
      * @brief Decorator class for buffer management that adds logging capabilities to buffer
      * operations.
      *
-     * `LoggingBufferHandler` extends the basic functionality of `IBufferHandler` by recording
+     * `LoggingBufferHandler` extends the basic functionality of `BufferHandler` by recording
      * detailed logs of buffer operations, such as allocation, deallocation, and resizing.
      * This allows tracking of memory usage patterns and provides a record of buffer activity.
      *
@@ -28,18 +28,18 @@ namespace ippl {
      * Instead, it adds logging for monitoring purposes.
      */
     template <typename MemorySpace>
-    class LoggingBufferHandler : public IBufferHandler<MemorySpace> {
+    class LoggingBufferHandler : public BufferHandler<MemorySpace> {
     public:
-        using buffer_type = typename IBufferHandler<MemorySpace>::buffer_type;
-        using size_type   = typename IBufferHandler<MemorySpace>::size_type;
+        using buffer_type = typename BufferHandler<MemorySpace>::buffer_type;
+        using size_type   = typename BufferHandler<MemorySpace>::size_type;
 
         /**
          * @brief Constructs a LoggingBufferHandler with an existing buffer handler.
-         * @param handler A shared pointer to an `IBufferHandler` instance used for buffer
+         * @param handler A shared pointer to an `BufferHandler` instance used for buffer
          * operations.
          * @param rank The MPI rank for logging purposes, used to identify the source of logs.
          */
-        LoggingBufferHandler(std::shared_ptr<IBufferHandler<MemorySpace>> handler, int rank);
+        LoggingBufferHandler(std::shared_ptr<BufferHandler<MemorySpace>> handler, int rank);
 
         /**
          * @brief Default constructor, creates an internal `BufferHandler` for managing buffers.
@@ -50,7 +50,7 @@ namespace ippl {
         /**
          * @brief Allocates or retrieves a buffer and logs the action.
          *
-         * Overrides `IBufferHandler::getBuffer`, providing the same buffer allocation behavior
+         * Overrides `BufferHandler::getBuffer`, providing the same buffer allocation behavior
          * while recording an entry in the log with the operation details.
          *
          * @param size Requested size of the buffer.
@@ -62,7 +62,7 @@ namespace ippl {
         /**
          * @brief Frees a buffer and logs the action.
          *
-         * Overrides `IBufferHandler::freeBuffer`. Calls `BufferHandler::freeBuffer` and records the
+         * Overrides `BufferHandler::freeBuffer`. Calls `BufferHandler::freeBuffer` and records the
          * operation in the log.
          *
          * @param buffer The buffer to be freed.
@@ -72,7 +72,7 @@ namespace ippl {
         /**
          * @brief Frees all buffers and logs the action.
          *
-         * Overrides `IBufferHandler::freeAllBuffers`. Calls `BufferHandler::freeAllBuffers` and
+         * Overrides `BufferHandler::freeAllBuffers`. Calls `BufferHandler::freeAllBuffers` and
          * logs the operation.
          */
         void freeAllBuffers() override;
@@ -80,7 +80,7 @@ namespace ippl {
         /**
          * @brief Deletes all buffers and logs the action.
          *
-         * Overrides `IBufferHandler::deleteAllBuffers`. Calls `BufferHandler::deleteAllBuffers` and
+         * Overrides `BufferHandler::deleteAllBuffers`. Calls `BufferHandler::deleteAllBuffers` and
          * logs the operation.
          */
         void deleteAllBuffers() override;
@@ -104,10 +104,10 @@ namespace ippl {
         const std::vector<LogEntry>& getLogs() const;
 
     private:
-        std::shared_ptr<IBufferHandler<MemorySpace>>
-            handler_m;                        ///< Internal handler for buffer management.
+        std::shared_ptr<BufferHandler<MemorySpace>>
+            handler_m;                       ///< Internal handler for buffer management.
         std::vector<LogEntry> logEntries_m;  ///< Log entries for buffer operations.
-        int rank_m;                           ///< MPI rank for identifying log sources.
+        int rank_m;                          ///< MPI rank for identifying log sources.
 
         /**
          * @brief Records a method call in the log with its parameters.

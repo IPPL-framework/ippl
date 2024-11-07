@@ -18,13 +18,13 @@ namespace ippl {
      * @tparam MemorySpace The memory space type used for buffer allocation.
      */
     template <typename MemorySpace>
-    class IBufferHandler {
+    class BufferHandler {
     public:
         using archive_type = ippl::detail::Archive<MemorySpace>;
         using buffer_type  = std::shared_ptr<archive_type>;
         using size_type    = ippl::detail::size_type;
 
-        virtual ~IBufferHandler() {}
+        virtual ~BufferHandler() {}
 
         /**
          * @brief Requests a memory buffer of a specified size.
@@ -67,9 +67,9 @@ namespace ippl {
         virtual void deleteAllBuffers() = 0;
 
         /**
-         * @brief Gets the size of all allocated buffers.
+         * @brief Gets the size of all buffers in use.
          *
-         * @return Total size of allocated buffers in bytes.
+         * @return Total size of buffers that are in use in bytes.
          */
         virtual size_type getUsedSize() const = 0;
 
@@ -82,31 +82,32 @@ namespace ippl {
     };
 
     /**
-     * @class BufferHandler
-     * @brief Concrete implementation of IBufferHandler for managing memory buffers.
+     * @class DefaultBufferHandler
+     * @brief Concrete implementation of BufferHandler for managing memory buffers.
      *
-     * This class implements the IBufferHandler interface, providing concrete behavior for
-     * buffer allocation, freeing, and memory management. It maintains a pool of allocated
-     * and free buffers to optimize memory usage.
+     * This class implements the BufferHandler interface, providing concrete behavior for
+     * buffer allocation, freeing, and memory management. It maintains two sorted sets of free and
+     * in-use buffers to allow for efficient queries.
      *
      * @tparam MemorySpace The memory space type for the buffer (e.g., `Kokkos::HostSpace`).
      */
     template <typename MemorySpace>
-    class BufferHandler : public IBufferHandler<MemorySpace> {
+    class DefaultBufferHandler : public BufferHandler<MemorySpace> {
     public:
-        using typename IBufferHandler<MemorySpace>::archive_type;
-        using typename IBufferHandler<MemorySpace>::buffer_type;
-        using typename IBufferHandler<MemorySpace>::size_type;
+        using typename BufferHandler<MemorySpace>::archive_type;
+        using typename BufferHandler<MemorySpace>::buffer_type;
+        using typename BufferHandler<MemorySpace>::size_type;
 
-        ~BufferHandler() override;
+        ~DefaultBufferHandler() override;
 
         /**
          * @brief Acquires a buffer of at least the specified size.
          *
          * Requests a memory buffer of the specified size, with the option
          * to request a buffer larger than the base size by an overallocation
-         * multiplier. Implementations should attempt to reuse existing
-         * buffers if possible.
+         * multiplier. If a sufficiently large buffer is available, it is returned. If not, the
+         * largest free buffer is reallocated. If there are no free buffers available, only then a
+         * new buffer is allocated.
          *
          * @param size The required buffer size.
          * @param overallocation A multiplier to allocate additional buffer space.
@@ -115,39 +116,27 @@ namespace ippl {
         buffer_type getBuffer(size_type size, double overallocation) override;
 
         /**
-         * @brief Frees a specified buffer.
-         *
-         * Moves the specified buffer to a free state, making it available
-         * for reuse in future buffer requests.
-         *
-         * @param buffer The buffer to be freed.
+         * @copydoc BufferHandler::freeBuffer
          */
         void freeBuffer(buffer_type buffer) override;
 
         /**
-         * @brief Frees all allocated buffers and adds them to the free pool without deallocating
-         * the actual memory region.
+         * @copydoc BufferHandler::freeBuffer
          */
         void freeAllBuffers() override;
 
         /**
-         * @brief Deletes all buffers, thereby freeing the memory.
+         * @copydoc BufferHandler::freeBuffer
          */
         void deleteAllBuffers() override;
 
         /**
-         * @brief Retrieves the total allocated size, i.e. the size of allocated memory currently in
-         * use.
-         *
-         * @return The total size of allocated buffers in use.
+         * @copydoc BufferHandler::freeBuffer
          */
         size_type getUsedSize() const override;
 
         /**
-         * @brief Retrieves the total size of free buffers, i.e. size of allocated memory currently
-         * not in use.
-         *
-         * @return The total size of free buffers.
+         * @copydoc BufferHandler::freeBuffer
          */
         size_type getFreeSize() const override;
 
@@ -170,9 +159,9 @@ namespace ippl {
 
     protected:
         buffer_set_type used_buffers{
-            &BufferHandler::bufferSizeComparator};  ///< Set of used buffers
+            &DefaultBufferHandler::bufferSizeComparator};  ///< Set of used buffers
         buffer_set_type free_buffers{
-            &BufferHandler::bufferSizeComparator};  ///< Set of free buffers
+            &DefaultBufferHandler::bufferSizeComparator};  ///< Set of free buffers
     };
 }  // namespace ippl
 

@@ -8,13 +8,13 @@ namespace ippl {
 
     template <typename MemorySpace>
     LoggingBufferHandler<MemorySpace>::LoggingBufferHandler(
-        std::shared_ptr<IBufferHandler<MemorySpace>> handler, int rank)
+        std::shared_ptr<BufferHandler<MemorySpace>> handler, int rank)
         : handler_m(std::move(handler))
         , rank_m(rank) {}
 
     template <typename MemorySpace>
     LoggingBufferHandler<MemorySpace>::LoggingBufferHandler() {
-        handler_m = std::make_shared<BufferHandler<MemorySpace>>();
+        handler_m = std::make_shared<DefaultBufferHandler<MemorySpace>>();
         MPI_Comm_rank(MPI_COMM_WORLD, &rank_m);
     }
 
@@ -66,8 +66,8 @@ namespace ippl {
     void LoggingBufferHandler<MemorySpace>::logMethod(
         const std::string& methodName, const std::map<std::string, std::string>& parameters) {
         logEntries_m.push_back({methodName, parameters, handler_m->getUsedSize(),
-                               handler_m->getFreeSize(), MemorySpace::name(), rank_m,
-                               std::chrono::high_resolution_clock::now()});
+                                handler_m->getFreeSize(), MemorySpace::name(), rank_m,
+                                std::chrono::high_resolution_clock::now()});
     }
 
 }  // namespace ippl

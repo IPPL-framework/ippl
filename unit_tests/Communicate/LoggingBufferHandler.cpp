@@ -12,13 +12,13 @@ class TypedLoggingBufferHandlerTest : public ::testing::Test {
 protected:
     void SetUp() override {
         rank                = 0;
-        this->bufferHandler = std::make_shared<ippl::BufferHandler<MemorySpace>>();
+        this->bufferHandler = std::make_shared<ippl::DefaultBufferHandler<MemorySpace>>();
         this->loggingHandler =
             std::make_shared<ippl::LoggingBufferHandler<MemorySpace>>(bufferHandler, rank);
     }
 
     int rank;
-    std::shared_ptr<ippl::BufferHandler<MemorySpace>> bufferHandler;
+    std::shared_ptr<ippl::DefaultBufferHandler<MemorySpace>> bufferHandler;
     std::shared_ptr<ippl::LoggingBufferHandler<MemorySpace>> loggingHandler;
 };
 
@@ -38,6 +38,7 @@ void compareNumericParameter(const std::string& paramString, T expectedValue,
     }
 }
 
+// Test: The information stored when calling getBuffer is correct
 TYPED_TEST(TypedLoggingBufferHandlerTest, GetBufferLogsCorrectly) {
     auto buffer      = this->loggingHandler->getBuffer(100, 1.5);
     const auto& logs = this->loggingHandler->getLogs();
@@ -58,6 +59,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, GetBufferLogsCorrectly) {
     EXPECT_EQ(entry.rank, this->rank);
 }
 
+// Test: The information stored when calling freeBuffer is correct
 TYPED_TEST(TypedLoggingBufferHandlerTest, FreeBufferLogsCorrectly) {
     auto buffer = this->loggingHandler->getBuffer(100, 1.0);
     this->loggingHandler->freeBuffer(buffer);
@@ -73,6 +75,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, FreeBufferLogsCorrectly) {
     EXPECT_EQ(entry.rank, this->rank);
 }
 
+// Test: The information stored when calling freeAllBuffers is correct
 TYPED_TEST(TypedLoggingBufferHandlerTest, FreeAllBuffersLogsCorrectly) {
     this->loggingHandler->getBuffer(100, 1.0);
     this->loggingHandler->getBuffer(200, 1.0);
@@ -89,6 +92,7 @@ TYPED_TEST(TypedLoggingBufferHandlerTest, FreeAllBuffersLogsCorrectly) {
     EXPECT_EQ(entry.rank, this->rank);
 }
 
+// Test: The information stored when calling deleteAllBuffers is correct
 TYPED_TEST(TypedLoggingBufferHandlerTest, DeleteAllBuffersLogsCorrectly) {
     this->loggingHandler->getBuffer(100, 1.0);
     this->loggingHandler->getBuffer(200, 1.0);

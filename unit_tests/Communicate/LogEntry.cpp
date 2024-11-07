@@ -20,6 +20,7 @@ ippl::LogEntry createSampleLogEntry() {
     return logEntry;
 }
 
+// Test to ensure LogEntry serialization produces a non-empty buffer
 TEST(LogEntryTest, Serialize) {
     ippl::LogEntry logEntry = createSampleLogEntry();
 
@@ -29,6 +30,7 @@ TEST(LogEntryTest, Serialize) {
     EXPECT_GT(buffer.size(), 0);
 }
 
+// Test to ensure LogEntry can be deserialized correctly 
 TEST(LogEntryTest, Deserialize) {
     ippl::LogEntry logEntry = createSampleLogEntry();
 
@@ -37,37 +39,14 @@ TEST(LogEntryTest, Deserialize) {
 
     ippl::LogEntry deserializedLogEntry = ippl::LogEntry::deserialize(buffer);
 
+    // Verify that all fields match the original LogEntry
     EXPECT_EQ(deserializedLogEntry.methodName, logEntry.methodName);
     EXPECT_EQ(deserializedLogEntry.usedSize, logEntry.usedSize);
     EXPECT_EQ(deserializedLogEntry.freeSize, logEntry.freeSize);
     EXPECT_EQ(deserializedLogEntry.memorySpace, logEntry.memorySpace);
     EXPECT_EQ(deserializedLogEntry.rank, logEntry.rank);
 
-    EXPECT_EQ(deserializedLogEntry.parameters.size(), logEntry.parameters.size());
-    EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"),
-              logEntry.parameters.at("overallocation"));
-    EXPECT_EQ(deserializedLogEntry.parameters.at("buffer_size"),
-              logEntry.parameters.at("buffer_size"));
-
-    auto originalTime     = logEntry.timestamp.time_since_epoch().count();
-    auto deserializedTime = deserializedLogEntry.timestamp.time_since_epoch().count();
-    EXPECT_EQ(originalTime, deserializedTime);
-}
-
-TEST(LogEntryTest, RoundTripSerialization) {
-    ippl::LogEntry logEntry = createSampleLogEntry();
-
-    std::vector<char> buffer;
-    buffer = logEntry.serialize();
-
-    ippl::LogEntry deserializedLogEntry = ippl::LogEntry::deserialize(buffer);
-
-    EXPECT_EQ(deserializedLogEntry.methodName, logEntry.methodName);
-    EXPECT_EQ(deserializedLogEntry.usedSize, logEntry.usedSize);
-    EXPECT_EQ(deserializedLogEntry.freeSize, logEntry.freeSize);
-    EXPECT_EQ(deserializedLogEntry.memorySpace, logEntry.memorySpace);
-    EXPECT_EQ(deserializedLogEntry.rank, logEntry.rank);
-
+    // Verify that all parameters are preserved
     EXPECT_EQ(deserializedLogEntry.parameters.size(), logEntry.parameters.size());
     EXPECT_EQ(deserializedLogEntry.parameters.at("overallocation"),
               logEntry.parameters.at("overallocation"));
