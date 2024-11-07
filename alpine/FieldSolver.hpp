@@ -44,6 +44,8 @@ public:
             initP3MSolver();
         } else if (this->getStype() == "OPEN") {
             initOpenSolver();
+        } else if (this->getStype() == "FEM") {
+            initFEMSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
@@ -97,6 +99,9 @@ public:
             if constexpr (Dim == 3) {
                 std::get<OpenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
+        } else if (this->getStype() == "FEM") {
+            FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
+            solver.solve();
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -111,8 +116,9 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
-            // The CG solver computes the potential directly and
+        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>
+                      || std::is_same_v<Solver, FEMSolver_t<T, Dim>>) {
+            // The CG and FEM solvers compute the potential directly and
             // uses this to get the electric field
             solver.setLhs(*phi_m);
             solver.setGradient(*E_m);
@@ -182,6 +188,14 @@ public:
         } else {
             throw std::runtime_error("Unsupported dimensionality for OPEN solver");
         }
+    }
+
+    void initFEMSolver() {
+        ippl::ParameterList sp;
+        sp.add("output_type", FEMSolver_t<T, Dim>::GRAD);
+        sp.add("tolerance", 1e-13);
+        sp.add("max_iterations", 2000);
+        initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
     }
 };
 #endif

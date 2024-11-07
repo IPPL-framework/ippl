@@ -1,7 +1,8 @@
 
 namespace ippl {
 
-    // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
+    // LagrangeSpace constructor, which calls the FiniteElementSpace constructor,
+    // and decomposes the elements among ranks according to layout.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
@@ -12,6 +13,33 @@ namespace ippl {
         // Assert that the dimension is either 1, 2 or 3.
         static_assert(Dim >= 1 && Dim <= 3,
                       "Finite Element space only supports 1D, 2D and 3D meshes");
+
+        // Initialize the elementIndices view
+        initializeElementIndices(layout);
+    }
+
+    // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
+        Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature)
+        : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
+                             QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
+        // Assert that the dimension is either 1, 2 or 3.
+        static_assert(Dim >= 1 && Dim <= 3,
+                      "Finite Element space only supports 1D, 2D and 3D meshes");
+    }
+
+    // LagrangeSpace initializer, to be made available to the FEMPoissonSolver 
+    // such that we can call it from setRhs.
+    // Sets the correct mesh ad decomposes the elements among ranks according to layout.
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initialize(
+        const Mesh<T, Dim>& mesh, const Layout_t& layout)
+    {
+        FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
+                           QuadratureType, FieldLHS, FieldRHS>::setMesh(mesh);
 
         // Initialize the elementIndices view
         initializeElementIndices(layout);

@@ -42,6 +42,7 @@ namespace ippl {
     public:
         using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
+        using MeshType = typename FieldRHS::Mesh_t;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
         using PCGSolverAlgorithm_t =
@@ -55,18 +56,29 @@ namespace ippl {
 
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
+        using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
+
+        // default constructor (compatibility with Alpine)
+        FEMPoissonSolver() 
+            : Base()
+            , refElement_m()
+            , quadrature_m(refElement_m, 0.0, 0.0)
+            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<T, Dim>(0), Vector<T, Dim>(0))), refElement_m, quadrature_m)
+        {}
+
+
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(lhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
             // start a timer
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
-
+            
             rhs.fillHalo();
 
             lagrangeSpace_m.evaluateLoadVector(rhs);
@@ -75,6 +87,17 @@ namespace ippl {
             rhs.fillHalo();
 
             IpplTimings::stopTimer(init);
+        }
+
+        void setRhs(rhs_type& rhs) override {
+            lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
+
+            rhs.fillHalo();
+
+            lagrangeSpace_m.evaluateLoadVector(rhs);
+
+            rhs.accumulateHalo();
+            rhs.fillHalo();
         }
 
         /**
@@ -175,8 +198,7 @@ namespace ippl {
 
         ElementType refElement_m;
         QuadratureType quadrature_m;
-        LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>
-            lagrangeSpace_m;
+        LagrangeType lagrangeSpace_m;
     };
 
 }  // namespace ippl

@@ -78,9 +78,30 @@ namespace ippl {
          * @param mesh Reference to the mesh
          * @param ref_element Reference to the reference element
          * @param quadrature Reference to the quadrature rule
+         * @param layout Reference to the field layout
          */
         LagrangeSpace(const Mesh<T, Dim>& mesh, ElementType& ref_element,
                       const QuadratureType& quadrature, const Layout_t& layout);
+
+        /**
+         * @brief Construct a new LagrangeSpace object (without layout)
+         * This constructor is made to work with the default constructor in
+         * FEMPoissonSolver.h such that it is compatible with alpine.
+         *
+         * @param mesh Reference to the mesh
+         * @param ref_element Reference to the reference element
+         * @param quadrature Reference to the quadrature rule
+         */
+        LagrangeSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
+                      const QuadratureType& quadrature);
+
+        /**
+         * @brief Initialize a LagrangeSpace object created with the default constructor
+         *
+         * @param mesh Reference to the mesh
+         * @param layout Reference to the field layout
+         */
+        void initialize(const Mesh<T, Dim>& mesh, const Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**

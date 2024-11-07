@@ -3,7 +3,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
-                       FieldRHS>::FiniteElementSpace(const Mesh<T, Dim>& mesh,
+                       FieldRHS>::FiniteElementSpace(Mesh<T, Dim>& mesh,
                                                      ElementType& ref_element,
                                                      const QuadratureType& quadrature)
         : mesh_m(mesh)
