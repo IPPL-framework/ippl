@@ -321,7 +321,7 @@ namespace ippl {
      */
 
     template <typename Field>
-    double negative_inverse_diagonal_laplace(Field u) {
+    double negative_inverse_diagonal_laplace(Field& u) {
         constexpr unsigned Dim = Field::dim;
         using mesh_type        = typename Field::Mesh_t;
         //using layout_type      = typename Field::Layout_t;
@@ -345,7 +345,7 @@ namespace ippl {
 
 
     template <typename Field>
-    double diagonal_laplace(Field u) {
+    double diagonal_laplace(Field& u) {
         constexpr unsigned Dim = Field::dim;
         using mesh_type        = typename Field::Mesh_t;
         mesh_type& mesh        = u.get_mesh();
@@ -356,6 +356,19 @@ namespace ippl {
 
         //u = - 2.0 * sum * u;
         return - 2.0 * sum;
+    }
+
+    template <typename Field>
+    void mult(Field& u, const double c) {
+
+        using view_type = Field::view_type;
+
+        view_type view = u.getView();
+
+        Kokkos::parallel_for("Field_mult_const", u.getFieldRangePolicy() , KOKKOS_LAMBDA(int i, int j, int k){
+            view(i,j,k) *= c;
+        });
+        return;
     }
 }  // namespace ippl
 #endif  // IPPL_LAPLACE_HELPERS_H

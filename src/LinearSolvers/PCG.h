@@ -255,6 +255,8 @@ namespace ippl {
             lhs_type s(mesh, layout);
             lhs_type q(mesh, layout);
 
+            preconditioner_m->init_fields(lhs);
+
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
             bc_type bc;
@@ -286,9 +288,13 @@ namespace ippl {
             this->residueNorm = std::sqrt(std::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * delta1;
 
+            static IpplTimings::TimerRef iterTimer = IpplTimings::getTimer("PCG iter.");
+
+            static IpplTimings::TimerRef preLoopTimer = IpplTimings::getTimer("Preconditioner");
+
             while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
-                static IpplTimings::TimerRef preLoopTimer = IpplTimings::getTimer("Preconditioned_loop");
-                IpplTimings::startTimer(preLoopTimer);
+                
+                IpplTimings::startTimer(iterTimer);
                 q       = this->op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
@@ -301,7 +307,9 @@ namespace ippl {
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
                 r = r - alpha * q;
+                IpplTimings::startTimer(preLoopTimer);
                 s = preconditioner_m->operator()(r);
+                IpplTimings::stopTimer(preLoopTimer);
 
                 delta0 = delta1;
                 delta1 = innerProduct(r, s);
@@ -311,14 +319,13 @@ namespace ippl {
 
                 d = s + beta * d;
                 ++this->iterations_m;
-                IpplTimings::stopTimer(preLoopTimer);
+                IpplTimings::stopTimer(iterTimer);
             }
 
             if (allFacesPeriodic) {
                 T avg = lhs.getVolumeAverage();
                 lhs   = lhs - avg;
             }
-            std::cout<< "Num Iter: " << this->iterations_m << std::endl;
         }
 
     protected:
