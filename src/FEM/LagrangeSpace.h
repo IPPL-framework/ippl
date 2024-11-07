@@ -80,7 +80,7 @@ namespace ippl {
          * @param quadrature Reference to the quadrature rule
          * @param layout Reference to the field layout
          */
-        LagrangeSpace(const Mesh<T, Dim>& mesh, ElementType& ref_element,
+        LagrangeSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
                       const QuadratureType& quadrature, const Layout_t& layout);
 
         /**
@@ -101,7 +101,7 @@ namespace ippl {
          * @param mesh Reference to the mesh
          * @param layout Reference to the field layout
          */
-        void initialize(const Mesh<T, Dim>& mesh, const Layout_t& layout);
+        void initialize(Mesh<T, Dim>& mesh, const Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**

@@ -6,7 +6,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
-        const Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
+        Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
         const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                              QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
@@ -36,7 +36,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initialize(
-        const Mesh<T, Dim>& mesh, const Layout_t& layout)
+        Mesh<T, Dim>& mesh, const Layout_t& layout)
     {
         FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                            QuadratureType, FieldLHS, FieldRHS>::setMesh(mesh);
