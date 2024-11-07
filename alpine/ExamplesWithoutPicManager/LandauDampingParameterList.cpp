@@ -217,6 +217,7 @@ int main(int argc, char* argv[]) {
         int chebyshev_degree;
         int richardson_iterations;
         int communication;
+        double ssor_omega;
         std::string preconditioner_type = "";
 
         if (solver == "OPEN") {
@@ -237,6 +238,10 @@ int main(int argc, char* argv[]) {
                 gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
                 gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
                 communication                 = std::atoi(argv[arg++]);
+            }else if (preconditioner_type == "ssor") {
+                gauss_seidel_inner_iterations = std::atoi(argv[arg++]);
+                gauss_seidel_outer_iterations = std::atoi(argv[arg++]);
+                ssor_omega                    = std::stod(argv[arg++]);
             }
 
             params.add("preconditioner_type", preconditioner_type);
@@ -246,6 +251,7 @@ int main(int argc, char* argv[]) {
             params.add("chebyshev_degree", chebyshev_degree);
             params.add("richardson_iterations", richardson_iterations);
             params.add("communication", communication);
+            params.add("ssor_omega",ssor_omega);
         }
 
         P = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, solver);
