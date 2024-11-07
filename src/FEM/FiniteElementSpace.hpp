@@ -22,6 +22,24 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::setMesh(const Mesh<T, Dim>& mesh)
+    {
+        assert(mesh.Dimension == Dim && "Mesh dimension does not match the dimension of the space");
+
+        mesh_m = mesh;
+
+        nr_m     = mesh_m.getGridsize();
+        hr_m     = mesh_m.getMeshSpacing();
+        origin_m = mesh_m.getOrigin();
+
+        for (size_t d = 0; d < Dim; ++d) {
+            assert(nr_m[d] > 1 && "Mesh has no cells in at least one dimension");
+        }
+    }
+
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION size_t FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
                                               FieldLHS, FieldRHS>::numElements() const {
         Vector<size_t, Dim> cells_per_dim = nr_m - 1u;

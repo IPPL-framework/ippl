@@ -74,9 +74,7 @@ namespace ippl {
         FiniteElementSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
                            const QuadratureType& quadrature);
 
-        void setMesh(const Mesh<T, Dim>& mesh) {
-            mesh_m = mesh;
-        }
+        void setMesh(const Mesh<T, Dim>& mesh);
 
         ///////////////////////////////////////////////////////////////////////
         /// Mesh and Element operations ///////////////////////////////////////
