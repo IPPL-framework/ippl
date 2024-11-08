@@ -271,6 +271,39 @@ namespace ippl {
             return false;
         }
 
+        /**
+         * @brief Check if a DOF is on the left boundary of the mesh in dimension d
+         *
+         * @param ndindex The NDIndex of the DOF
+         * @param d The dimension for which we are checking
+         *
+         * @return true - If the DOF is on the boundary
+         * @return false - If the DOF is not on the boundary
+         */
+        KOKKOS_FUNCTION bool isDOFOnLeftBoundary(const indices_t& ndindex, int d) const {
+            if (ndindex[d] <= 0) {
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * @brief Check if a DOF is on the right boundary of the mesh in dimension d
+         *
+         * @param ndindex The NDIndex of the DOF
+         * @param d The dimension for which we are checking
+         *
+         * @return true - If the DOF is on the boundary
+         * @return false - If the DOF is not on the boundary
+         */
+        KOKKOS_FUNCTION bool isDOFOnRightBoundary(const indices_t& ndindex, int d) const {
+            if (ndindex[d] >= this->nr_m[d] - 1) {
+                return true;
+            }
+            return false;
+        }
+
+
         Kokkos::View<size_t*> elementIndices;
     };
 

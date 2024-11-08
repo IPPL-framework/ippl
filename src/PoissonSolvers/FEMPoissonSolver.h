@@ -63,7 +63,7 @@ namespace ippl {
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<T, Dim>(0), Vector<T, Dim>(0))), refElement_m, quadrature_m)
+            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0), Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
 
@@ -84,7 +84,15 @@ namespace ippl {
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
+
+            // apply BCs to field
+            BConds<FieldRHS, Dim>& bcField = rhs.getFieldBC();
+            bcField.apply(rhs);
+
             rhs.fillHalo();
+
+            std::cout << "after fillHalo stuff:" << std::endl;
+            rhs.write();
 
             IpplTimings::stopTimer(init);
         }
@@ -97,6 +105,11 @@ namespace ippl {
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
+
+            // apply BCs to field
+            BConds<FieldRHS, Dim>& bcField = rhs.getFieldBC();
+            bcField.apply(rhs);
+
             rhs.fillHalo();
         }
 
@@ -138,7 +151,10 @@ namespace ippl {
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
                 return_field.accumulateHalo();
-                // return_field.fillHalo();
+
+                // apply BCs to field
+                BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+                bcField.apply(field);
 
                 IpplTimings::stopTimer(opTimer);
 

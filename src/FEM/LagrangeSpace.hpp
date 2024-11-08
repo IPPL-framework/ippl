@@ -505,7 +505,25 @@ namespace ippl {
         auto ldom        = (field.getLayout()).getLocalNDIndex();
         const int nghost = field.getNghost();
 
-        FieldRHS temp_field(field.get_mesh(), field.getLayout(), nghost);
+        // Get boundary conditions from field
+        BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+
+        NDIndex<Dim> temp_domain;
+        // Set up a temporary field for load vector computation
+        for (size_t d = 0; d < Dim; ++d) {
+            FieldBC bcType = bcField[d]->getBCType();
+            if (bcType == PERIODIC_FACE) {
+                temp_domain[d] = Index(this->nr_m[d] - 1);
+            } else {
+                temp_domain[d] = Index(this->nr_m[d]);
+            }
+        }
+        std::array<bool, Dim> isParallel = (field.getLayout()).isParallel();
+        typename FieldRHS::Mesh_t temp_mesh(temp_domain, this->hr_m, this->origin_m);
+        Layout_t temp_layout((field.getLayout()).comm, temp_domain, isParallel);
+
+        FieldRHS temp_field(temp_mesh, temp_layout, nghost);
+        temp_field.setFieldBC(bcField);
 
         // Get field data and make it atomic,
         // since it will be added to during the kokkos loop
@@ -539,9 +557,19 @@ namespace ippl {
                     // TODO fix for higher order
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
-                    // homogeneous Dirichlet boundary conditions
-                    if (this->isDOFOnBoundary(dof_ndindex_I)) {
-                        continue;
+                    for (size_t d = 0; d < 1; ++d) {
+                        FieldBC bcType = bcField[d]->getBCType();
+                        if (bcType == ZERO_FACE) {
+                            // Skip contribution computation if homogeneous Dirichlet BCs
+                            if (this->isDOFOnBoundary(dof_ndindex_I)) {
+                                continue;
+                            }
+                        } else if (bcType == PERIODIC_FACE) {
+                            if (this->isDOFOnRightBoundary(dof_ndindex_I, d)) {
+                                // if it's on right, should contribute to itself and left boundary
+                                dof_ndindex_I[d] = 0;
+                            }
+                        }
                     }
 
                     // calculate the contribution of this element
@@ -563,6 +591,9 @@ namespace ippl {
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
 
+                    std::cout << "dof = " << dof_ndindex_I << ", el = " << elementIndex << ", contrib = " << contrib << std::endl;
+
+
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
@@ -570,12 +601,30 @@ namespace ippl {
 
                     // add the contribution of the element to the field
                     apply(atomic_view, dof_ndindex_I) += contrib;
+
                 }
             });
         IpplTimings::stopTimer(outer_loop);
 
-        // assign temp_field to field so that the RHS is the evaluated Load Vector
-        field = temp_field;
+        std::cout << "inside evalLoadVector, temp field: " << std::endl;
+        temp_field.write();
+
+        bcField.apply(temp_field);
+        
+        std::cout << "after BCs, temp field: " << std::endl;
+        temp_field.write();
+
+        auto view_field = field.getView();
+        auto view_temp  = temp_field.getView();
+
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for("assign temp to field", temp_field.getFieldRangePolicy(1),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(view_field, args) = apply(view_temp, args);
+            });
+        
+        std::cout << "final field: " << std::endl;
+        field.write();
 
         IpplTimings::stopTimer(evalLoadV);
     }
