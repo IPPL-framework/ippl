@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         using FieldType      = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
 
         const ippl::NDIndex<2> meshIndex(number_of_vertices_per_dim, number_of_vertices_per_dim);
-        const ippl::UniformCartesian<double, 2> mesh(meshIndex, {h, h}, {-1.0, -1.0});
+        ippl::UniformCartesian<double, 2> mesh(meshIndex, {h, h}, {-1.0, -1.0});
         // specifies decomposition; here all dimensions are parallel
         std::array<bool, Dim> isParallel;
         isParallel.fill(true);

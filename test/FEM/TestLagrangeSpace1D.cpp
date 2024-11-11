@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
         const unsigned number_of_vertices = 10;
         const unsigned number_of_elements = number_of_vertices - 1;
         const T interval_size             = 2.0;
-        const MeshType mesh(number_of_vertices, {interval_size / number_of_elements}, {-1.0});
+        MeshType mesh(number_of_vertices, {interval_size / number_of_elements}, {-1.0});
         // specifies decomposition; here all dimensions are parallel
         std::array<bool, Dim> isParallel;
         isParallel.fill(true);
