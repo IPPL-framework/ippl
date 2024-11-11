@@ -66,7 +66,6 @@ namespace ippl {
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0), Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
@@ -91,13 +90,13 @@ namespace ippl {
 
             rhs.fillHalo();
 
-            std::cout << "after fillHalo stuff:" << std::endl;
-            rhs.write();
-
             IpplTimings::stopTimer(init);
         }
 
         void setRhs(rhs_type& rhs) override {
+
+            Base::setRhs(rhs);
+
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
 
             rhs.fillHalo();
@@ -153,8 +152,8 @@ namespace ippl {
                 return_field.accumulateHalo();
 
                 // apply BCs to field
-                BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
-                bcField.apply(field);
+                //BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+                //bcField.apply(field);
 
                 IpplTimings::stopTimer(opTimer);
 
