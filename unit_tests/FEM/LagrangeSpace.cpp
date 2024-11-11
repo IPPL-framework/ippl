@@ -72,9 +72,9 @@ public:
     }
 
     ElementType ref_element;
-    const MeshType mesh;
-    const MeshType biggerMesh;
-    const MeshType symmetricMesh;
+    MeshType mesh;
+    MeshType biggerMesh;
+    MeshType symmetricMesh;
     const QuadratureType quadrature;
     const BetterQuadratureType betterQuadrature;
     const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType> lagrangeSpace;

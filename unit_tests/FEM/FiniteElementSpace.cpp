@@ -45,7 +45,7 @@ public:
 
     const ippl::Vector<unsigned, Dim> meshSizes;
     ElementType ref_element;
-    const MeshType mesh;
+    MeshType mesh;
     const QuadratureType quadrature;
     const ippl::LagrangeSpace<T, Dim, 1, ElementType, QuadratureType, FieldType, FieldType> fem_space;
 };
