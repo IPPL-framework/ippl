@@ -15,7 +15,7 @@
 
 #include "FEM/Elements/Element.h"
 #include "FEM/Quadrature/Quadrature.h"
-#include "Meshes/Mesh.h"
+#include "Meshes/UniformCartesian.h"
 
 constexpr unsigned calculateNumElementVertices(unsigned Dim) {
     return 1 << Dim;  // 2^Dim
@@ -71,10 +71,10 @@ namespace ippl {
          * @param ref_element The reference element object
          * @param quadrature The quadrature rule object
          */
-        FiniteElementSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
+        FiniteElementSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
                            const QuadratureType& quadrature);
 
-        void setMesh(Mesh<T, Dim>& mesh);
+        void setMesh(UniformCartesian<T, Dim>& mesh);
 
         ///////////////////////////////////////////////////////////////////////
         /// Mesh and Element operations ///////////////////////////////////////
@@ -266,7 +266,7 @@ namespace ippl {
         /// Member variables //////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        Mesh<T, Dim>& mesh_m;
+        UniformCartesian<T, Dim>& mesh_m;
         ElementType ref_element_m;
         const QuadratureType& quadrature_m;
         Vector<size_t, Dim> nr_m;

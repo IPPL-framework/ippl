@@ -54,7 +54,7 @@ public:
     void setPotentialBCs() {
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
-        if (this->getStype() == "CG") {
+        if (this->getStype() == "CG" || this->getStype() == "FEM") {
             typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {

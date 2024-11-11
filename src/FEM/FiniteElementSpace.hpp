@@ -3,7 +3,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
-                       FieldRHS>::FiniteElementSpace(Mesh<T, Dim>& mesh,
+                       FieldRHS>::FiniteElementSpace(UniformCartesian<T, Dim>& mesh,
                                                      ElementType& ref_element,
                                                      const QuadratureType& quadrature)
         : mesh_m(mesh)
@@ -15,15 +15,15 @@ namespace ippl {
         hr_m     = mesh_m.getMeshSpacing();
         origin_m = mesh_m.getOrigin();
 
-        for (size_t d = 0; d < Dim; ++d) {
+        /*for (size_t d = 0; d < Dim; ++d) {
             assert(nr_m[d] > 1 && "Mesh has no cells in at least one dimension");
-        }
+        }*/
     }
 
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
-                       FieldRHS>::setMesh(Mesh<T, Dim>& mesh)
+                       FieldRHS>::setMesh(UniformCartesian<T, Dim>& mesh)
     {
         assert(mesh.Dimension == Dim && "Mesh dimension does not match the dimension of the space");
 

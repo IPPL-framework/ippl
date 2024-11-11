@@ -80,7 +80,7 @@ namespace ippl {
          * @param quadrature Reference to the quadrature rule
          * @param layout Reference to the field layout
          */
-        LagrangeSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
+        LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
                       const QuadratureType& quadrature, const Layout_t& layout);
 
         /**
@@ -92,7 +92,7 @@ namespace ippl {
          * @param ref_element Reference to the reference element
          * @param quadrature Reference to the quadrature rule
          */
-        LagrangeSpace(Mesh<T, Dim>& mesh, ElementType& ref_element,
+        LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
                       const QuadratureType& quadrature);
 
         /**
@@ -101,7 +101,7 @@ namespace ippl {
          * @param mesh Reference to the mesh
          * @param layout Reference to the field layout
          */
-        void initialize(Mesh<T, Dim>& mesh, const Layout_t& layout);
+        void initialize(UniformCartesian<T, Dim>& mesh, const Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**

@@ -6,7 +6,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
-        Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
+        UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
         const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                              QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
@@ -22,7 +22,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
-        Mesh<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature)
+        UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                              QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
@@ -36,7 +36,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initialize(
-        Mesh<T, Dim>& mesh, const Layout_t& layout)
+        UniformCartesian<T, Dim>& mesh, const Layout_t& layout)
     {
         FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                            QuadratureType, FieldLHS, FieldRHS>::setMesh(mesh);
@@ -506,24 +506,25 @@ namespace ippl {
         const int nghost = field.getNghost();
 
         // Get boundary conditions from field
-        BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+        //BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
 
         NDIndex<Dim> temp_domain;
         // Set up a temporary field for load vector computation
         for (size_t d = 0; d < Dim; ++d) {
-            FieldBC bcType = bcField[d]->getBCType();
+            /*FieldBC bcType = bcField[d]->getBCType();
             if (bcType == PERIODIC_FACE) {
                 temp_domain[d] = Index(this->nr_m[d] - 1);
             } else {
                 temp_domain[d] = Index(this->nr_m[d]);
-            }
+            }*/
+            temp_domain[d] = Index(this->nr_m[d]);
         }
         std::array<bool, Dim> isParallel = (field.getLayout()).isParallel();
         typename FieldRHS::Mesh_t temp_mesh(temp_domain, this->hr_m, this->origin_m);
         Layout_t temp_layout((field.getLayout()).comm, temp_domain, isParallel);
 
         FieldRHS temp_field(temp_mesh, temp_layout, nghost);
-        temp_field.setFieldBC(bcField);
+        //temp_field.setFieldBC(bcField);
 
         // Get field data and make it atomic,
         // since it will be added to during the kokkos loop
@@ -557,7 +558,7 @@ namespace ippl {
                     // TODO fix for higher order
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
-                    for (size_t d = 0; d < 1; ++d) {
+                    /*for (size_t d = 0; d < 1; ++d) {
                         FieldBC bcType = bcField[d]->getBCType();
                         if (bcType == ZERO_FACE) {
                             // Skip contribution computation if homogeneous Dirichlet BCs
@@ -570,6 +571,9 @@ namespace ippl {
                                 dof_ndindex_I[d] = 0;
                             }
                         }
+                    }*/
+                    if (this->isDOFOnBoundary(dof_ndindex_I)) {
+                        continue;
                     }
 
                     // calculate the contribution of this element
@@ -591,8 +595,6 @@ namespace ippl {
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
 
-                    std::cout << "dof = " << dof_ndindex_I << ", el = " << elementIndex << ", contrib = " << contrib << std::endl;
-
 
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -606,13 +608,7 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        std::cout << "inside evalLoadVector, temp field: " << std::endl;
-        temp_field.write();
-
-        bcField.apply(temp_field);
-        
-        std::cout << "after BCs, temp field: " << std::endl;
-        temp_field.write();
+        //bcField.apply(temp_field);
 
         auto view_field = field.getView();
         auto view_temp  = temp_field.getView();
@@ -623,9 +619,6 @@ namespace ippl {
                 apply(view_field, args) = apply(view_temp, args);
             });
         
-        std::cout << "final field: " << std::endl;
-        field.write();
-
         IpplTimings::stopTimer(evalLoadV);
     }
 
