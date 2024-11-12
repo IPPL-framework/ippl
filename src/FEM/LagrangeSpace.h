@@ -202,7 +202,7 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx(const FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
         // const std::function<T(
         //     const size_t&, const size_t&,
         //     const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType,

@@ -95,6 +95,8 @@ namespace ippl {
 
         void setRhs(rhs_type& rhs) override {
 
+            std::cout << "setting RHS in FEMPoissonSolver" << std::endl;
+
             Base::setRhs(rhs);
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
@@ -169,6 +171,9 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
+
+            Inform m("solve");
+            m << "The sum of the solution is: " << (this->lhs_mp)->sum() << endl;
 
             IpplTimings::stopTimer(pcgTimer);
 

@@ -43,11 +43,11 @@ namespace ippl {
         // (x,y,z) coordinates of indexed vertex:
         KOKKOS_INLINE_FUNCTION vector_type
         getVertexPosition(const NDIndex<Dim>& ndi) const override {
-            printf("inside getVertexPosition");
+            //printf("inside getVertexPosition");
             vector_type vertexPosition;
             for (unsigned int d = 0; d < Dim; d++) {
                 vertexPosition(d) = ndi[d].first() * meshSpacing_m[d] + this->origin_m(d);
-                printf("vertexPos = %lf", vertexPosition(d));
+                //printf("vertexPos = %lf", vertexPosition(d));
             }
             return vertexPosition;
         }

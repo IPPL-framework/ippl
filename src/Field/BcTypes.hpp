@@ -343,4 +343,57 @@ namespace ippl {
                 });
         }
     }
+
+    template <typename Field>
+    void PeriodicFace<Field>::assignPeriodicGhostToMax(Field& field) {
+        unsigned int face               = this->face_m;
+        unsigned int d                  = face / 2;
+        typename Field::view_type& view = field.getView();
+        const Layout_t& layout          = field.getLayout();
+        const int nghost                = field.getNghost();
+        const auto& lDomains            = layout.getHostLocalDomains();
+
+        if (d >= Dim) {
+            throw IpplException("PeriodicFace::apply", "face number wrong");
+        }
+
+        auto N = view.extent(d) - 1;
+
+        using exec_space = typename Field::execution_space;
+        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
+        Kokkos::Array<index_type, Dim> begin, end;
+
+        // For the axis along which BCs are being applied, iterate
+        // through only the ghost cells. For all other axes, iterate
+        // through all internal cells.
+        for (size_t i = 0; i < Dim; ++i) {
+            end[i]   = view.extent(i) - nghost;
+            begin[i] = nghost;
+        }
+        begin[d] = 0;
+        end[d]   = nghost;
+
+        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
+        ippl::parallel_for(
+            "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
+            KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
+                // The ghosts are filled starting from the inside of
+                // the domain proceeding outwards for both lower and
+                // upper faces.
+
+                // to avoid ambiguity with the member function
+                using ippl::apply;
+
+                // get the value at ghost cells
+                coords[d]    += nghost;
+                auto&& right = apply(view, coords);
+
+                std::cout << "coords = " << coords << ", got val = " << right << std::endl;
+
+                // apply to the last physical cells (boundary(
+                coords[d] = N - nghost;
+                std::cout << "applying to = " << coords << std::endl;
+                apply(view, coords) = right;
+            });
+    }
 }  // namespace ippl
