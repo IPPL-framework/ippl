@@ -148,6 +148,7 @@ namespace ippl {
         void setDefaultParameters() override {
             this->params_m.add("max_iterations", 2000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
+            this->params_m.add("solver", "non-preconditioned");
         }
     };
 
