@@ -140,13 +140,47 @@ namespace ippl {
 
         for (int d = Dim - 1; d >= 0; --d) {
             remaining_number_of_cells /= cells_per_dim[d];
-            element_nd_index[d] = index / remaining_number_of_cells;
-            index -= element_nd_index[d] * remaining_number_of_cells;
+            element_nd_index[d] = (index / remaining_number_of_cells);
+            index -= (element_nd_index[d]) * remaining_number_of_cells;
         }
 
         return element_nd_index;
     }
 
+    // implementation of function to retrieve the index of an element in each dimension
+    template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType,
+                                                FieldLHS, FieldRHS>::indices_t
+    FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::getElementNDIndex_ghost(const size_t& element_index) const {
+        // Copy the element index to the index variable we can alter during the computation.
+        size_t index = element_index;
+
+        // Create a vector to store the element indices in each dimension for the corresponding
+        // element.
+        indices_t element_nd_index;
+
+        // This is the number of cells in each dimension. It is one less than the number of
+        // vertices in each dimension, which is in nr_m (mesh.getGridsize()).
+        Vector<size_t, Dim> cells_per_dim = nr_m - 1 + 2; // +2 ghost cells
+
+        // The number_of_lower_dim_cells is the product of all the number of cells per
+        // dimension, it will get divided by the current dimension's size to get the index in
+        // that dimension
+        size_t remaining_number_of_cells = 1;
+        for (const size_t num_cells : cells_per_dim) {
+            remaining_number_of_cells *= num_cells;
+        }
+
+        for (int d = Dim - 1; d >= 0; --d) {
+            remaining_number_of_cells /= cells_per_dim[d];
+            element_nd_index[d] = (index / remaining_number_of_cells);
+            index -= (element_nd_index[d]) * remaining_number_of_cells; 
+        }
+
+        return element_nd_index;
+    }
     // implementation of function to retrieve the global index of an element given the ndindex
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>

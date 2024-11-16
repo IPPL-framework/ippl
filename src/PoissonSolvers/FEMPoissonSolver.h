@@ -54,7 +54,7 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, 2, ElementType>;
 
         using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
@@ -83,20 +83,12 @@ namespace ippl {
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
-
-            // apply BCs to field
-            BConds<FieldRHS, Dim>& bcField = rhs.getFieldBC();
-            bcField.apply(rhs);
-
             rhs.fillHalo();
 
             IpplTimings::stopTimer(init);
         }
 
         void setRhs(rhs_type& rhs) override {
-
-            std::cout << "setting RHS in FEMPoissonSolver" << std::endl;
-
             Base::setRhs(rhs);
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
@@ -106,11 +98,6 @@ namespace ippl {
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
-
-            // apply BCs to field
-            BConds<FieldRHS, Dim>& bcField = rhs.getFieldBC();
-            bcField.apply(rhs);
-
             rhs.fillHalo();
         }
 
@@ -149,14 +136,14 @@ namespace ippl {
 
                 field.fillHalo();
 
+                // apply BCs to field
+                BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+                bcField.apply(field);
+
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
                 return_field.accumulateHalo();
-
-                // apply BCs to field
-                //BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
-                //bcField.apply(field);
-
+                
                 IpplTimings::stopTimer(opTimer);
 
                 return return_field;
@@ -171,9 +158,6 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
-
-            Inform m("solve");
-            m << "The sum of the solution is: " << (this->lhs_mp)->sum() << endl;
 
             IpplTimings::stopTimer(pcgTimer);
 

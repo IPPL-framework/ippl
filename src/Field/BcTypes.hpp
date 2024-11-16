@@ -345,7 +345,7 @@ namespace ippl {
     }
 
     template <typename Field>
-    void PeriodicFace<Field>::assignPeriodicGhostToMax(Field& field) {
+    void PeriodicFace<Field>::assignPeriodicGhostToPhysical(Field& field) {
         unsigned int face               = this->face_m;
         unsigned int d                  = face / 2;
         typename Field::view_type& view = field.getView();
@@ -370,8 +370,8 @@ namespace ippl {
             end[i]   = view.extent(i) - nghost;
             begin[i] = nghost;
         }
-        begin[d] = 0;
-        end[d]   = nghost;
+        begin[d] = (0 + nghost - 1) * (1 - face) + (N * face);
+        end[d]   = begin[d] + 1;
 
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         ippl::parallel_for(
@@ -385,15 +385,13 @@ namespace ippl {
                 using ippl::apply;
 
                 // get the value at ghost cells
-                coords[d]    += nghost;
                 auto&& right = apply(view, coords);
 
-                std::cout << "coords = " << coords << ", got val = " << right << std::endl;
+                int shift = 1 - (2 * face);
 
-                // apply to the last physical cells (boundary(
-                coords[d] = N - nghost;
-                std::cout << "applying to = " << coords << std::endl;
-                apply(view, coords) = right;
+                // apply to the last physical cells (boundary)
+                coords[d] += shift;
+                apply(view, coords) += right;
             });
     }
 }  // namespace ippl

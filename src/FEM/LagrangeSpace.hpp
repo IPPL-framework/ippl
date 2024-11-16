@@ -183,6 +183,11 @@ namespace ippl {
         // get element pos
         indices_t elementPos = this->getElementNDIndex(elementIndex);
 
+        /* for the ghost element impl
+        if (ghost) {
+            elementPos = this->getElementNDIndex_ghost(elementIndex);
+        }*/
+
         // Compute the vector to multiply the ndindex with
         ippl::Vector<size_t, Dim> vec(1);
         for (size_t d = 1; d < dim; ++d) {
@@ -352,8 +357,6 @@ namespace ippl {
                            FieldRHS>::evaluateAx(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
-        m << "Inside evaluateAx" << endl;
-
         // start a timer
         static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
         IpplTimings::startTimer(evalAx);
@@ -364,9 +367,6 @@ namespace ippl {
         // create a new field for result with view initialized to zero (views are initialized to
         // zero by default)
         FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
-
-        //bool checkEssentialBDCs = true;  // TODO get from field in the future
-        // T bc_const_value        = 1.0;   // TODO get from field (non-homogeneous BCs)
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -431,7 +431,6 @@ namespace ippl {
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
                         }
-                        std::cout << "A_K[i][j], K = " << elementIndex << " i = " << i << " j = " << j << " A= " << A_K[i][j] << std::endl;
                     }
                 }
 
@@ -446,13 +445,6 @@ namespace ippl {
                     // Skip boundary DOFs (Zero Dirichlet BCs)
                     if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
-                    } else if (bcType == PERIODIC_FACE) {
-                        for (size_t d = 0; d < Dim; ++d) {
-                            if (this->isDOFOnRightBoundary(I_nd, d)) {
-                                // if it's on right, should contribute to left boundary
-                                I_nd[d] = 0;
-                            }
-                        }
                     }
 
                     // get the appropriate index for the Kokkos view of the field
@@ -466,13 +458,6 @@ namespace ippl {
                         // Skip boundary DOFs (Zero Dirichlet BCs)
                         if ((bcType == ZERO_FACE) && this->isDOFOnBoundary(J_nd)) {
                             continue;
-                        } else if (bcType == PERIODIC_FACE) {
-                            for (size_t d = 0; d < Dim; ++d) {
-                                if (this->isDOFOnRightBoundary(I_nd, d)) {
-                                    // if it's on right, should contribute to left boundary
-                                    J_nd[d] = 0;
-                                }
-                            }
                         }
 
                         // get the appropriate index for the Kokkos view of the field
@@ -482,17 +467,14 @@ namespace ippl {
 
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                     }
-                    std::cout << "resultView at " << I_nd << " = " << apply(resultView, I_nd) << std::endl;
                 }
             });
         IpplTimings::stopTimer(outer_loop);
 
-        /*
         bcField.apply(resultField);
         if (bcType == PERIODIC_FACE) {
-            bcField.assignPeriodicGhostToMax(resultField);
-        }*/
-        resultField.write();
+            bcField.assignPeriodicGhostToPhysical(resultField);
+        }
 
         IpplTimings::stopTimer(evalAx);
 
@@ -560,8 +542,8 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                             = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dofs = this->getLocalDOFIndices();
+                const size_t elementIndex                              = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<size_t, this->numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
 
@@ -576,13 +558,6 @@ namespace ippl {
 
                     if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(dof_ndindex_I))) {
                         continue;
-                    } else if (bcType == PERIODIC_FACE) {
-                        for (size_t d = 0; d < Dim; ++d) {
-                            if (this->isDOFOnRightBoundary(dof_ndindex_I, d)) {
-                                // if it's on right, should contribute to left boundary
-                                dof_ndindex_I[d] = 0;
-                            }
-                        }
                     }
 
                     // calculate the contribution of this element
@@ -604,7 +579,6 @@ namespace ippl {
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
                     }
 
-
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
@@ -617,19 +591,12 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        std::cout << "temp = " << std::endl;
-        temp_field.write();
-
-        /*
         bcField.apply(temp_field);
         if (bcType == PERIODIC_FACE) {
-            bcField.assignPeriodicGhostToMax(temp_field);
-        }*/
+            bcField.assignPeriodicGhostToPhysical(temp_field);
+        }
 
         field = temp_field;
-
-        std::cout << "field aftyer eval load vec = " << std::endl;
-        field.write();
 
         IpplTimings::stopTimer(evalLoadV);
     }

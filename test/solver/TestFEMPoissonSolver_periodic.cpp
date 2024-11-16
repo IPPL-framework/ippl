@@ -22,6 +22,15 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 
     return Dim * pi * pi * val;
 }
+template <typename T, unsigned Dim>
+KOKKOS_INLINE_FUNCTION T sinusoidalAnalyticSol(ippl::Vector<T, Dim> x_vec) {
+    const T pi = Kokkos::numbers::pi_v<T>;
+    T val = 1.0;
+    for (unsigned d = 0; d < Dim; d++) {
+        val *= Kokkos::sin(pi * x_vec[d]);
+    }
+    return val;
+}
 
 template <typename T, unsigned Dim>
 struct AnalyticSol {
@@ -67,7 +76,10 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, domain, isParallel);
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
-    Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
+    Field_t rhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
+
+    Field_t analytical(mesh, layout, numGhosts);  // right hand side (set once)
+    auto view_analytical = analytical.getView();
 
     // Define boundary conditions
     BConds_t bcField;
@@ -92,6 +104,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
             apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
+            apply(view_analytical, args) = sinusoidalAnalyticSol<T, Dim>(x);
         });
 
     IpplTimings::stopTimer(initTimer);
@@ -116,9 +129,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     AnalyticSol<T, Dim> analytic;
     const T relError = solver.getL2Error(analytic);
 
+    lhs = lhs - analytical;
+    T normError = norm(lhs) / norm(analytical);
+
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
     m << std::setw(25) << std::setprecision(16) << relError;
+    m << std::setw(25) << std::setprecision(16) << normError;
     m << std::setw(25) << std::setprecision(16) << solver.getResidue();
     m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
     m << endl;
@@ -148,16 +165,17 @@ int main(int argc, char* argv[]) {
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
+        msg << std::setw(25) << "Norm Error";
         msg << std::setw(25) << "Residue";
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
         if (dim == 1) {
             // 1D Sinusoidal
-            //for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-            int n = 5;
-            testFEMSolver<T, 1>(n,-0.5, 1.5);
-            //}
+            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
+            //int n = 5;
+                testFEMSolver<T, 1>(n,-1, 1);
+            }
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {

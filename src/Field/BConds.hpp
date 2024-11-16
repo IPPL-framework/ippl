@@ -35,9 +35,9 @@ namespace ippl {
     }
 
     template <typename Field, unsigned Dim>
-    void BConds<Field, Dim>::assignPeriodicGhostToMax(Field& field) {
+    void BConds<Field, Dim>::assignPeriodicGhostToPhysical(Field& field) {
         for (auto& bc : bc_m) {
-            bc->assignPeriodicGhostToMax(field);
+            bc->assignPeriodicGhostToPhysical(field);
         }
         Kokkos::fence();
         field.getCommunicator().barrier();

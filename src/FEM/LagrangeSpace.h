@@ -203,19 +203,6 @@ namespace ippl {
          */
         template <typename F>
         FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
-        // const std::function<T(
-        //     const size_t&, const size_t&,
-        //     const Vector<Vector<T, Dim>, LagrangeSpace<T, Dim, Order, ElementType,
-        //     QuadratureType,
-        //                                                FieldLHS, FieldRHS>::numElementDOFs>&)>&
-        //     evalFunction) const override;
-
-        /*
-        KOKKOS_FUNCTION
-        T evalFunc(const T absDetDPhi,
-                   const size_t elementIndex, const size_t& i, const point_t& q_k,
-                   const Vector<T, numElementDOFs>& basis_q) const;
-        */
 
         /**
          * @brief Assemble the load vector b of the system Ax = b
@@ -270,39 +257,6 @@ namespace ippl {
             }
             return false;
         }
-
-        /**
-         * @brief Check if a DOF is on the left boundary of the mesh in dimension d
-         *
-         * @param ndindex The NDIndex of the DOF
-         * @param d The dimension for which we are checking
-         *
-         * @return true - If the DOF is on the boundary
-         * @return false - If the DOF is not on the boundary
-         */
-        KOKKOS_FUNCTION bool isDOFOnLeftBoundary(const indices_t& ndindex, int d) const {
-            if (ndindex[d] <= 0) {
-                return true;
-            }
-            return false;
-        }
-
-        /**
-         * @brief Check if a DOF is on the right boundary of the mesh in dimension d
-         *
-         * @param ndindex The NDIndex of the DOF
-         * @param d The dimension for which we are checking
-         *
-         * @return true - If the DOF is on the boundary
-         * @return false - If the DOF is not on the boundary
-         */
-        KOKKOS_FUNCTION bool isDOFOnRightBoundary(const indices_t& ndindex, int d) const {
-            if (ndindex[d] >= this->nr_m[d] - 1) {
-                return true;
-            }
-            return false;
-        }
-
 
         Kokkos::View<size_t*> elementIndices;
     };
