@@ -125,8 +125,6 @@ namespace ippl {
          */
         KOKKOS_FUNCTION indices_t getElementNDIndex(const size_t& elementIndex) const;
 
-        KOKKOS_FUNCTION indices_t getElementNDIndex_ghost(const size_t& elementIndex) const;
-
         /**
          * @brief Get the global index of a mesh element given the NDIndex.
          *
