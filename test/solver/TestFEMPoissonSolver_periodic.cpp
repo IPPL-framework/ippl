@@ -173,7 +173,6 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-            //int n = 5;
                 testFEMSolver<T, 1>(n,-1, 1);
             }
         } else if (dim == 2) {
