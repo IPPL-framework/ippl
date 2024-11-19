@@ -183,11 +183,6 @@ namespace ippl {
         // get element pos
         indices_t elementPos = this->getElementNDIndex(elementIndex);
 
-        /* for the ghost element impl
-        if (ghost) {
-            elementPos = this->getElementNDIndex_ghost(elementIndex);
-        }*/
-
         // Compute the vector to multiply the ndindex with
         ippl::Vector<size_t, Dim> vec(1);
         for (size_t d = 1; d < dim; ++d) {
@@ -471,8 +466,8 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        bcField.apply(resultField);
         if (bcType == PERIODIC_FACE) {
+            bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
 
@@ -591,8 +586,8 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        bcField.apply(temp_field);
         if (bcType == PERIODIC_FACE) {
+            bcField.apply(temp_field);
             bcField.assignPeriodicGhostToPhysical(temp_field);
         }
 
