@@ -351,47 +351,52 @@ namespace ippl {
         typename Field::view_type& view = field.getView();
         const Layout_t& layout          = field.getLayout();
         const int nghost                = field.getNghost();
-        const auto& lDomains            = layout.getHostLocalDomains();
+        const auto& ldom                = layout.getLocalNDIndex();
+        const auto& domain              = layout.getDomain();
 
         if (d >= Dim) {
             throw IpplException("PeriodicFace::apply", "face number wrong");
         }
 
-        auto N = view.extent(d) - 1;
+        bool isBoundary = ((ldom[d].max() == domain[d].max()) && (face & 1))
+                           || ((ldom[d].min() == domain[d].min()) && !(face & 1));
 
-        using exec_space = typename Field::execution_space;
-        using index_type = typename RangePolicy<Dim, exec_space>::index_type;
-        Kokkos::Array<index_type, Dim> begin, end;
+        if (isBoundary) {
+            auto N = view.extent(d) - 1;
 
-        // For the axis along which BCs are being applied, iterate
-        // through only the ghost cells. For all other axes, iterate
-        // through all internal cells.
-        for (size_t i = 0; i < Dim; ++i) {
-            end[i]   = view.extent(i) - nghost;
-            begin[i] = nghost;
-        }
-        begin[d] = (0 + nghost - 1) * (1 - face) + (N * face);
-        end[d]   = begin[d] + 1;
+            using exec_space = typename Field::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end;
 
-        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
-        ippl::parallel_for(
-            "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
-            KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
-                // The ghosts are filled starting from the inside of
-                // the domain proceeding outwards for both lower and
-                // upper faces.
+            // For the axis along which BCs are being applied, iterate
+            // through only the ghost cells. For all other axes, iterate
+            // through all internal cells.
+            for (size_t i = 0; i < Dim; ++i) {
+                end[i]   = view.extent(i) - nghost;
+                begin[i] = nghost;
+            }
+            begin[d] = (0 + nghost - 1) * (1 - face) + (N * face);
+            end[d]   = begin[d] + 1;
 
-                // to avoid ambiguity with the member function
-                using ippl::apply;
+            using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
+            ippl::parallel_for(
+                "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
+                KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
+                    // The ghosts are filled starting from the inside of
+                    // the domain proceeding outwards for both lower and
+                    // upper faces.
 
-                // get the value at ghost cells
-                auto&& right = apply(view, coords);
+                    // to avoid ambiguity with the member function
+                    using ippl::apply;
 
-                int shift = 1 - (2 * face);
+                    // get the value at ghost cells
+                    auto&& right = apply(view, coords);
 
-                // apply to the last physical cells (boundary)
-                coords[d] += shift;
-                apply(view, coords) += right;
+                    // apply to the last physical cells (boundary)
+                    int shift = 1 - (2 * face);
+                    coords[d] += shift;
+                    apply(view, coords) += right;
             });
+        }
     }
 }  // namespace ippl
