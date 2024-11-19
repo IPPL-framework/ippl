@@ -54,7 +54,7 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, 2, ElementType>;
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
         using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
@@ -80,10 +80,25 @@ namespace ippl {
             
             rhs.fillHalo();
 
+            /*
+            int me = Comm->rank();
+            Comm->barrier();
+            std::cout << "me = " << me << ", rhs = " << std::endl;
+            rhs.write();
+            Comm->barrier();
+            */
+
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
             rhs.fillHalo();
+            
+            /*
+            Comm->barrier();
+            std::cout << "me = " << me << ", load = " << std::endl;
+            rhs.write();
+            Comm->barrier();
+            */
 
             IpplTimings::stopTimer(init);
         }
@@ -136,14 +151,25 @@ namespace ippl {
 
                 field.fillHalo();
 
-                // apply BCs to field
-                BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
-                bcField.apply(field);
+                /*
+                int me = Comm->rank();
+                Comm->barrier();
+                std::cout << "me = " << me << ", before evalAx = " << std::endl;
+                field.write();
+                Comm->barrier();
+                */
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
                 return_field.accumulateHalo();
                 
+                /*
+                Comm->barrier();
+                std::cout << "me = " << me << ", after evalAx = " << std::endl;
+                return_field.write();
+                Comm->barrier();
+                */
+
                 IpplTimings::stopTimer(opTimer);
 
                 return return_field;
