@@ -358,10 +358,12 @@ namespace ippl {
             throw IpplException("PeriodicFace::apply", "face number wrong");
         }
 
-        bool isBoundary = ((ldom[d].max() == domain[d].max()) && (face & 1))
-                           || ((ldom[d].min() == domain[d].min()) && !(face & 1));
+        bool upperFace = (face & 1);
+        bool isBoundary = ((ldom[d].max() == domain[d].max()) && upperFace)
+                           || ((ldom[d].min() == domain[d].min()) && !(upperFace));
 
         if (isBoundary) {
+
             auto N = view.extent(d) - 1;
 
             using exec_space = typename Field::execution_space;
@@ -371,11 +373,12 @@ namespace ippl {
             // For the axis along which BCs are being applied, iterate
             // through only the ghost cells. For all other axes, iterate
             // through all internal cells.
+            bool isCorner = (d != 0);
             for (size_t i = 0; i < Dim; ++i) {
-                end[i]   = view.extent(i) - nghost;
-                begin[i] = nghost;
+                end[i]   = view.extent(i) - nghost - (isCorner);
+                begin[i] = nghost + (isCorner);
             }
-            begin[d] = (0 + nghost - 1) * (1 - face) + (N * face);
+            begin[d] = ((0 + nghost - 1) * (1 - upperFace)) + (N * upperFace);
             end[d]   = begin[d] + 1;
 
             using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
@@ -393,8 +396,9 @@ namespace ippl {
                     auto&& right = apply(view, coords);
 
                     // apply to the last physical cells (boundary)
-                    int shift = 1 - (2 * face);
+                    int shift = 1 - (2 * upperFace);
                     coords[d] += shift;
+
                     apply(view, coords) += right;
             });
         }
