@@ -43,6 +43,7 @@ public:
     using QuadratureType       = ippl::MidpointQuadrature<T, 1, ElementType>;
     using BetterQuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
+    using BCType               = ippl::BConds<FieldType, Dim>;
 
     LagrangeSpaceTest()
         : ref_element()
@@ -562,6 +563,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
 TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using T         = typename TestFixture::value_t;
     using FieldType = typename TestFixture::FieldType;
+    using BCType    = typename TestFixture::BCType;
 
     const auto& refElement           = this->ref_element;
     const auto& lagrangeSpace        = this->lagrangeSpaceBigger;
@@ -584,6 +586,14 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
             FieldType x(mesh, layout, 1);
             FieldType z(mesh, layout, 1);
+
+            // Define boundary conditions
+            BCType bcField;
+            for (unsigned int i = 0; i < 2 * dim; ++i) {
+                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+            }
+            x.setFieldBC(bcField);
+            z.setFieldBC(bcField);
 
             int nghost  = x.getNghost();
             auto view_x = x.getView();
@@ -708,6 +718,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
 TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
     using FieldType = typename TestFixture::FieldType;
+    using BCType    = typename TestFixture::BCType;
 
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
@@ -728,6 +739,13 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
             FieldType rhs_field(mesh, layout, 1);
             FieldType ref_field(mesh, layout, 1);
+
+            // Define boundary conditions
+            BCType bcField;
+            for (unsigned int i = 0; i < 2 * dim; ++i) {
+                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+            }
+            rhs_field.setFieldBC(bcField);
 
             rhs_field = 2.75;
 
