@@ -16,6 +16,7 @@
 #include "Ippl.h"
 
 #include <iostream>
+//#include <format>
 
 #include "Stream/InSitu/CatalystAdaptor.h"
 
@@ -93,8 +94,12 @@ int main(int argc, char* argv[]) {
         int nRanks = ippl::Comm->size();
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == ippl::Comm->rank()) {
-                std::string fname = std::format("field_AllBC_{}.dat", std::to_string(rank));
-                Inform out("Output", fname.c_str(), Inform::OVERWRITE, rank);
+                std::stringstream fname;
+                fname << "field_AllBC_";
+                fname << ippl::Comm->rank();
+                fname << ".dat";
+                //std::string fname = std::format("field_AllBC_{}.dat", std::to_string(rank));
+                Inform out("Output", fname.str().c_str(), Inform::OVERWRITE, rank);
                 field.write(out);
             }
             ippl::Comm->barrier();

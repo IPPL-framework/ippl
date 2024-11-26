@@ -124,7 +124,7 @@ target_compile_definitions(ippl PUBLIC
 
 target_link_libraries(ippl PUBLIC
   Kokkos::kokkos
-  $<$<BOOL:${ENABLE_FFT}>:Heffte::Heffte>
+  $<$<BOOL:${ENABLE_FFT}>:Heffte>
   $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>
   )
 
