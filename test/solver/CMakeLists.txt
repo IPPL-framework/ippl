@@ -96,6 +96,19 @@ if (ENABLE_FFT)
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )
+
+    add_executable(TestCG_convergence TestCG_convergence.cpp)
+    target_link_libraries(
+        TestCG_convergence
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
+    add_executable(TestCG_convergence_fem TestCG_convergence_fem.cpp)
+    target_link_libraries(
+        TestCG_convergence_fem
+        ${IPPL_LIBS}
+        ${MPI_CXX_LIBRARIES}
+    )
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:
