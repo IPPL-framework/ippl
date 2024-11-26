@@ -157,7 +157,7 @@ public:
         rhoNorm_m = norm(*rho);
 
         // rho = rho_e - rho_i (only if periodic BCs)
-        if (this->fsolver_m->getStype() != "OPEN") {
+        if ((this->fsolver_m->getStype() != "OPEN") || (this->fsolver_m->getStype() != "FEM_DIRICHLET")) {
             double size = 1;
             for (unsigned d = 0; d < Dim; d++) {
                 size *= rmax[d] - rmin[d];

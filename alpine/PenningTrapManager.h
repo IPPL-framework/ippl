@@ -70,6 +70,9 @@ public:
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
         this->isAllPeriodic_m = true;
+        if ((this->solver_m == "FEM_DIRICHLET") || (this->solver_m == "OPEN")) {
+            this->isAllPeriodic_m = false;
+        }
 
         this->setFieldContainer(std::make_shared<FieldContainer_t>(
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,

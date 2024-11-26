@@ -20,7 +20,7 @@ public:
         , rho_m(rho)
         , E_m(E)
         , phi_m(phi) {
-        setPotentialBCs();
+        setBCs();
     }
 
     ~FieldSolver() {}
@@ -46,21 +46,36 @@ public:
             initOpenSolver();
         } else if (this->getStype() == "FEM") {
             initFEMSolver();
+        } else if (this->getStype() == "FEM_DIRICHLET") {
+            initFEMSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
     }
 
-    void setPotentialBCs() {
+    void setBCs() {
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
+        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
         if (this->getStype() == "CG" || this->getStype() == "FEM") {
-            typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
+        } else if (this->getStype() == "FEM_DIRICHLET") {
+            bc_type dirichlet;
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                dirichlet[i] = std::make_shared<ippl::ZeroFace<Field<T, Dim>>>(i);
+            }
+            phi_m->setFieldBC(dirichlet);
+            rho_m->setFieldBC(dirichlet);
+        } else if (this->getStype() == "OPEN") {
+            bc_type none;
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                none[i] = std::make_shared<ippl::NoBcFace<Field<T, Dim>>>(i);
+            }
+            rho_m->setFieldBC(none);
         }
     }
 
@@ -99,9 +114,28 @@ public:
             if constexpr (Dim == 3) {
                 std::get<OpenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
-        } else if (this->getStype() == "FEM") {
+        } else if ((this->getStype() == "FEM") || (this->getStype() == "FEM_DIRICHLET")) {
             FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
             solver.solve();
+
+            if (ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "data/FEM_";
+                fname << ippl::Comm->size();
+                fname << ".csv";
+
+                Inform log(NULL, fname.str().c_str(), Inform::APPEND);
+                int iterations = solver.getIterationCount();
+                // Assume the dummy solve is the first call
+                if (iterations == 0) {
+                    log << "residue,iterations" << endl;
+                }
+                // Don't print the dummy solve
+                if (iterations > 0) {
+                    log << solver.getResidue() << "," << iterations << endl;
+                }
+            }
+            ippl::Comm->barrier();
         } else {
             throw std::runtime_error("Unknown solver type");
         }
