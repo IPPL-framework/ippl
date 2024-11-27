@@ -15,8 +15,10 @@ var searchData=
   ['bconds_2ehpp_12',['BConds.hpp',['../BConds_8hpp.html',1,'']]],
   ['bctypes_2eh_13',['BcTypes.h',['../BcTypes_8h.html',1,'']]],
   ['bctypes_2ehpp_14',['BcTypes.hpp',['../BcTypes_8hpp.html',1,'']]],
-  ['buffers_2ecpp_15',['Buffers.cpp',['../Buffers_8cpp.html',1,'']]],
-  ['buffers_2ehpp_16',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]],
-  ['bumpontailinstability_2ecpp_17',['BumponTailInstability.cpp',['../BumponTailInstability_8cpp.html',1,'']]],
-  ['bumpontailinstabilitymanager_2eh_18',['BumponTailInstabilityManager.h',['../BumponTailInstabilityManager_8h.html',1,'']]]
+  ['bufferhandler_2eh_15',['BufferHandler.h',['../BufferHandler_8h.html',1,'']]],
+  ['bufferhandler_2ehpp_16',['BufferHandler.hpp',['../BufferHandler_8hpp.html',1,'']]],
+  ['buffers_2ecpp_17',['Buffers.cpp',['../Buffers_8cpp.html',1,'']]],
+  ['buffers_2ehpp_18',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]],
+  ['bumpontailinstability_2ecpp_19',['BumponTailInstability.cpp',['../BumponTailInstability_8cpp.html',1,'']]],
+  ['bumpontailinstabilitymanager_2eh_20',['BumponTailInstabilityManager.h',['../BumponTailInstabilityManager_8h.html',1,'']]]
 ];

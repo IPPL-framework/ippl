@@ -1,8 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1preconditioner.html" title=" " alt="" coords="5,157,135,197"/>
-<area shape="rect" id="node2" href="$structippl_1_1gs__preconditioner.html" title=" " alt="" coords="219,5,386,60"/>
-<area shape="rect" id="node3" href="$structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="217,85,388,125"/>
-<area shape="rect" id="node4" href="$structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="213,149,392,204"/>
-<area shape="rect" id="node5" href="$structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="223,228,382,283"/>
-<area shape="rect" id="node6" href="$structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="183,307,423,347"/>
+<area shape="rect" id="node1" href="$classippl_1_1ParticleBase.html" title=" " alt="" coords="5,5,176,45"/>
+<area shape="rect" id="node2" href="$classParticleContainer.html" title=" " alt="" coords="224,5,353,45"/>
 </map>

@@ -7,5 +7,9 @@ var searchData=
   ['landaudampingmixedprecision_2ecpp_4',['LandauDampingMixedPrecision.cpp',['../LandauDampingMixedPrecision_8cpp.html',1,'']]],
   ['landaudampingparameterlist_2ecpp_5',['LandauDampingParameterList.cpp',['../LandauDampingParameterList_8cpp.html',1,'']]],
   ['laplacehelpers_2eh_6',['LaplaceHelpers.h',['../LaplaceHelpers_8h.html',1,'']]],
-  ['loadbalancer_2ehpp_7',['LoadBalancer.hpp',['../LoadBalancer_8hpp.html',1,'']]]
+  ['loadbalancer_2ehpp_7',['LoadBalancer.hpp',['../LoadBalancer_8hpp.html',1,'']]],
+  ['logentry_2ecpp_8',['LogEntry.cpp',['../LogEntry_8cpp.html',1,'']]],
+  ['logentry_2eh_9',['LogEntry.h',['../LogEntry_8h.html',1,'']]],
+  ['loggingbufferhandler_2eh_10',['LoggingBufferHandler.h',['../LoggingBufferHandler_8h.html',1,'']]],
+  ['loggingbufferhandler_2ehpp_11',['LoggingBufferHandler.hpp',['../LoggingBufferHandler_8hpp.html',1,'']]]
 ];

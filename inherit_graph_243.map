@@ -1,3 +1,8 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1random_1_1detail_1_1NewtonRaphson.html" title="Functor for solving equations using the Newton&#45;Raphson method." alt="" coords="5,5,232,45"/>
+<area shape="rect" id="node1" href="$classippl_1_1Poisson.html" title=" " alt="" coords="5,133,171,173"/>
+<area shape="rect" id="node2" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="225,5,411,45"/>
+<area shape="rect" id="node3" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="219,69,417,109"/>
+<area shape="rect" id="node4" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="229,133,407,173"/>
+<area shape="rect" id="node5" href="$classippl_1_1P3MSolver.html" title=" " alt="" coords="227,197,409,237"/>
+<area shape="rect" id="node6" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="226,261,410,301"/>
 </map>

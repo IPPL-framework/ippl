@@ -137,12 +137,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a72192cbdd9ab5c7221e941f1473133c8"><td class="memTemplParams" colspan="2">template&lt;typename Tb , typename Tf &gt; </td></tr>
 <tr class="memitem:a72192cbdd9ab5c7221e941f1473133c8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FFTOpenPoissonSolver_8hpp.html#a72192cbdd9ab5c7221e941f1473133c8">unpack</a> (const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; 3 &gt; intersect, const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; Tf, 3 &gt;, 3 &gt; *** &gt; &amp;view, <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">ippl::detail::FieldBufferData</a>&lt; Tb &gt; &amp;fd, int nghost, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; 3 &gt; ldom, size_t dim1, size_t dim2)</td></tr>
 <tr class="separator:a72192cbdd9ab5c7221e941f1473133c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61cde393e5f49fa47319420cc1a96cfb"><td class="memTemplParams" colspan="2">template&lt;typename Tb , typename Tf , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a61cde393e5f49fa47319420cc1a96cfb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FFTOpenPoissonSolver_8hpp.html#a61cde393e5f49fa47319420cc1a96cfb">solver_send</a> (int BUF_MSG, int TAG, int id, int i, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; intersection, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; ldom, int nghost, Kokkos::View&lt; Tf *** &gt; &amp;view, <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">ippl::detail::FieldBufferData</a>&lt; Tb &gt; &amp;fd, std::vector&lt; MPI_Request &gt; &amp;requests)</td></tr>
-<tr class="separator:a61cde393e5f49fa47319420cc1a96cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a96c6f4a95369579360cc86f3638e72"><td class="memTemplParams" colspan="2">template&lt;typename Tb , typename Tf , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a9a96c6f4a95369579360cc86f3638e72"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FFTOpenPoissonSolver_8hpp.html#a9a96c6f4a95369579360cc86f3638e72">solver_recv</a> (int BUF_MSG, int TAG, int id, int i, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; intersection, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; ldom, int nghost, Kokkos::View&lt; Tf *** &gt; &amp;view, <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">ippl::detail::FieldBufferData</a>&lt; Tb &gt; &amp;fd, bool x=false, bool y=false, bool z=false)</td></tr>
-<tr class="separator:a9a96c6f4a95369579360cc86f3638e72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75b0fd8fd6ab18a0cef3958c3b4a3f78"><td class="memTemplParams" colspan="2">template&lt;typename Tb , typename Tf , unsigned Dim&gt; </td></tr>
+<tr class="memitem:a75b0fd8fd6ab18a0cef3958c3b4a3f78"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FFTOpenPoissonSolver_8hpp.html#a75b0fd8fd6ab18a0cef3958c3b4a3f78">solver_send</a> (int TAG, int id, int i, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; intersection, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; ldom, int nghost, Kokkos::View&lt; Tf *** &gt; &amp;view, <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">ippl::detail::FieldBufferData</a>&lt; Tb &gt; &amp;fd, std::vector&lt; MPI_Request &gt; &amp;requests)</td></tr>
+<tr class="separator:a75b0fd8fd6ab18a0cef3958c3b4a3f78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00b0d130981c908850cc29e6d2f2646a"><td class="memTemplParams" colspan="2">template&lt;typename Tb , typename Tf , unsigned Dim&gt; </td></tr>
+<tr class="memitem:a00b0d130981c908850cc29e6d2f2646a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FFTOpenPoissonSolver_8hpp.html#a00b0d130981c908850cc29e6d2f2646a">solver_recv</a> (int TAG, int id, int i, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; intersection, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; ldom, int nghost, Kokkos::View&lt; Tf *** &gt; &amp;view, <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">ippl::detail::FieldBufferData</a>&lt; Tb &gt; &amp;fd, bool x=false, bool y=false, bool z=false)</td></tr>
+<tr class="separator:a00b0d130981c908850cc29e6d2f2646a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ac6873845aaf1a303d95c7c65c8cda7a1" name="ac6873845aaf1a303d95c7c65c8cda7a1"></a>
@@ -199,8 +199,8 @@ template&lt;typename Tb , typename Tf &gt; </div>
 
 </div>
 </div>
-<a id="a9a96c6f4a95369579360cc86f3638e72" name="a9a96c6f4a95369579360cc86f3638e72"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a96c6f4a95369579360cc86f3638e72">&#9670;&#160;</a></span>solver_recv()</h2>
+<a id="a00b0d130981c908850cc29e6d2f2646a" name="a00b0d130981c908850cc29e6d2f2646a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00b0d130981c908850cc29e6d2f2646a">&#9670;&#160;</a></span>solver_recv()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -210,12 +210,6 @@ template&lt;typename Tb , typename Tf , unsigned Dim&gt; </div>
         <tr>
           <td class="memname">void solver_recv </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>BUF_MSG</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>TAG</em>, </td>
         </tr>
@@ -289,8 +283,8 @@ template&lt;typename Tb , typename Tf , unsigned Dim&gt; </div>
 
 </div>
 </div>
-<a id="a61cde393e5f49fa47319420cc1a96cfb" name="a61cde393e5f49fa47319420cc1a96cfb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61cde393e5f49fa47319420cc1a96cfb">&#9670;&#160;</a></span>solver_send()</h2>
+<a id="a75b0fd8fd6ab18a0cef3958c3b4a3f78" name="a75b0fd8fd6ab18a0cef3958c3b4a3f78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75b0fd8fd6ab18a0cef3958c3b4a3f78">&#9670;&#160;</a></span>solver_send()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,12 +294,6 @@ template&lt;typename Tb , typename Tf , unsigned Dim&gt; </div>
         <tr>
           <td class="memname">void solver_send </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>BUF_MSG</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>TAG</em>, </td>
         </tr>

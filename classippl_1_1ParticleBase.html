@@ -192,11 +192,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a2fe367c841ac657314d7d6e3dc60809a"><td class="memTemplParams" colspan="2">template&lt;typename... Properties&gt; </td></tr>
 <tr class="memitem:a2fe367c841ac657314d7d6e3dc60809a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a2fe367c841ac657314d7d6e3dc60809a">internalDestroy</a> (const Kokkos::View&lt; bool *, Properties... &gt; &amp;invalid, const <a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> destroyNum)</td></tr>
 <tr class="separator:a2fe367c841ac657314d7d6e3dc60809a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a945eb53ad700327ce5a02f059008ace6"><td class="memTemplParams" colspan="2">template&lt;typename HashType &gt; </td></tr>
-<tr class="memitem:a945eb53ad700327ce5a02f059008ace6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a945eb53ad700327ce5a02f059008ace6">sendToRank</a> (int rank, int tag, int sendNum, std::vector&lt; MPI_Request &gt; &amp;requests, const HashType &amp;hash)</td></tr>
-<tr class="separator:a945eb53ad700327ce5a02f059008ace6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedda1d0318bf13391e849d41a9f69457"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#aedda1d0318bf13391e849d41a9f69457">recvFromRank</a> (int rank, int tag, int recvNum, <a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nRecvs)</td></tr>
-<tr class="separator:aedda1d0318bf13391e849d41a9f69457"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3d4126c982bb9ee4fe1812b6c67b2ef"><td class="memTemplParams" colspan="2">template&lt;typename HashType &gt; </td></tr>
+<tr class="memitem:ad3d4126c982bb9ee4fe1812b6c67b2ef"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#ad3d4126c982bb9ee4fe1812b6c67b2ef">sendToRank</a> (int rank, int tag, std::vector&lt; MPI_Request &gt; &amp;requests, const HashType &amp;hash)</td></tr>
+<tr class="separator:ad3d4126c982bb9ee4fe1812b6c67b2ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf5d24d53d37df58854baeb8ad3ec5f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3">recvFromRank</a> (int rank, int tag, <a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nRecvs)</td></tr>
+<tr class="separator:aaf5d24d53d37df58854baeb8ad3ec5f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18a1fd153895545b58cf20bc4a1fa027"><td class="memTemplParams" colspan="2">template&lt;typename Archive &gt; </td></tr>
 <tr class="memitem:a18a1fd153895545b58cf20bc4a1fa027"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a18a1fd153895545b58cf20bc4a1fa027">serialize</a> (Archive &amp;ar, <a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nsends)</td></tr>
 <tr class="separator:a18a1fd153895545b58cf20bc4a1fa027"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1066,8 +1066,8 @@ template&lt;typename MemorySpace &gt; </div>
 
 </div>
 </div>
-<a id="aedda1d0318bf13391e849d41a9f69457" name="aedda1d0318bf13391e849d41a9f69457"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedda1d0318bf13391e849d41a9f69457">&#9670;&#160;</a></span>recvFromRank()</h2>
+<a id="aaf5d24d53d37df58854baeb8ad3ec5f3" name="aaf5d24d53d37df58854baeb8ad3ec5f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf5d24d53d37df58854baeb8ad3ec5f3">&#9670;&#160;</a></span>recvFromRank()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1085,12 +1085,6 @@ template&lt;class PLayout , typename... IP&gt; </div>
           <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>tag</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>recvNum</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1117,8 +1111,8 @@ template&lt;class PLayout , typename... IP&gt; </div>
 
 </div>
 </div>
-<a id="a945eb53ad700327ce5a02f059008ace6" name="a945eb53ad700327ce5a02f059008ace6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a945eb53ad700327ce5a02f059008ace6">&#9670;&#160;</a></span>sendToRank()</h2>
+<a id="ad3d4126c982bb9ee4fe1812b6c67b2ef" name="ad3d4126c982bb9ee4fe1812b6c67b2ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3d4126c982bb9ee4fe1812b6c67b2ef">&#9670;&#160;</a></span>sendToRank()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1138,12 +1132,6 @@ template&lt;typename HashType &gt; </div>
           <td></td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>tag</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>sendNum</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

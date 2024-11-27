@@ -4,5 +4,7 @@ var searchData=
   ['face_5fm_1',['face_m',['../classippl_1_1detail_1_1BCondBase.html#a537b70a0b912950e86c1592ef9488859',1,'ippl::detail::BCondBase']]],
   ['fcontainer_5fm_2',['fcontainer_m',['../classippl_1_1PicManager.html#aa45e309161b4a22d2eb3ea4daa974e2f',1,'ippl::PicManager']]],
   ['flayout_5fm_3',['flayout_m',['../classippl_1_1ParticleSpatialLayout.html#a92469a49d0bcf474adbc0894d8dfeef9',1,'ippl::ParticleSpatialLayout']]],
-  ['fsolver_5fm_4',['fsolver_m',['../classippl_1_1PicManager.html#a3e35a3507cf0e1d3db1409088d82e6ec',1,'ippl::PicManager']]]
+  ['free_5fbuffers_4',['free_buffers',['../classippl_1_1DefaultBufferHandler.html#aef45416249a81c51161a7a625523ebe4',1,'ippl::DefaultBufferHandler']]],
+  ['freesize_5',['freeSize',['../structippl_1_1LogEntry.html#a43f5ed0f39d1404e9384133d9801b7ea',1,'ippl::LogEntry']]],
+  ['fsolver_5fm_6',['fsolver_m',['../classippl_1_1PicManager.html#a3e35a3507cf0e1d3db1409088d82e6ec',1,'ippl::PicManager']]]
 ];
