@@ -287,10 +287,10 @@ public:
 #ifdef ENABLE_CATALYST
         std::optional<conduit_cpp::Node> node = std::nullopt;
         //CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
-        //auto *rho               = &this->fcontainer_m->getRho();
-        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
-        auto *E               = &this->fcontainer_m->getE();
-        CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
+        auto *rho               = &this->fcontainer_m->getRho();
+        CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
+        //auto *E               = &this->fcontainer_m->getE();
+        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
         //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
 #endif
 
