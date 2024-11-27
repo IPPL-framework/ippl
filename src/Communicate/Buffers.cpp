@@ -32,9 +32,16 @@ namespace ippl {
         }
 
         void Communicator::deleteAllBuffers() {
-            buffers_m.forAll([]<typename Map>(Map&& m) {
-                m.clear();
+            buffer_handlers_m.forAll([]<typename BufferHandler>(BufferHandler&& bh) {
+                bh.deleteAllBuffers();
             });
         }
+
+        void Communicator::freeAllBuffers() {
+            buffer_handlers_m.forAll([]<typename BufferHandler>(BufferHandler&& bh) {
+                bh.freeAllBuffers();
+            });
+        }
+
     }  // namespace mpi
 }  // namespace ippl
