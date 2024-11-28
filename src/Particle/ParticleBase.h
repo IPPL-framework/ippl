@@ -289,7 +289,7 @@ namespace ippl {
          * @param hash a hash view indicating which particles need to be sent to which rank
          */
         template <typename HashType>
-        void sendToRank(int rank, int tag, int sendNum, std::vector<MPI_Request>& requests,
+        void sendToRank(int rank, int tag, std::vector<MPI_Request>& requests,
                         const HashType& hash);
 
         /*!
@@ -299,7 +299,7 @@ namespace ippl {
          * @param recvNum the number of messages already received (to distinguish the buffers)
          * @param nRecvs the number of particles to receive
          */
-        void recvFromRank(int rank, int tag, int recvNum, size_type nRecvs);
+        void recvFromRank(int rank, int tag, size_type nRecvs);
 
         /*!
          * Serialize to do MPI calls.

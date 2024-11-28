@@ -80,8 +80,7 @@ namespace ippl {
                     size_type nsends;
                     pack(range, view, haloData_m, nsends);
 
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(
-                        mpi::tag::HALO_SEND + i * cubeCount + index, nsends);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
 
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
@@ -104,8 +103,7 @@ namespace ippl {
 
                     size_type nrecvs = range.size();
 
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(
-                        mpi::tag::HALO_RECV + i * cubeCount + index, nrecvs);
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
 
                     comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
@@ -117,6 +115,7 @@ namespace ippl {
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
+            comm.freeAllBuffers();
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
