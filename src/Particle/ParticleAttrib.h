@@ -124,12 +124,23 @@ namespace ippl {
                      const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
 
         template <typename Field, typename P2>
-        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp, const typename Field::Mesh_t::vector_type::value_type offset = 0.5);
 
         T sum();
         T max();
         T min();
         T prod();
+        template<typename returnType, typename reductionLambda>
+            requires (std::is_invocable_v<reductionLambda, T, returnType&>)
+        returnType customReduction(reductionLambda lambda, returnType identity){
+            auto dview = this->dview_m;
+            Kokkos::parallel_reduce(*(this->localNum_mp), KOKKOS_LAMBDA(size_t i, returnType& ref){
+                lambda(dview(i), ref);
+            }, identity);
+            returnType globaltemp;
+            Comm->allreduce(identity, globaltemp, 1, std::plus<returnType>());
+            return globaltemp;
+        }
 
     private:
         view_type dview_m;
