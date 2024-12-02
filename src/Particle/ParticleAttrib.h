@@ -119,12 +119,14 @@ namespace ippl {
 
         //     // scatter the data from this attribute onto the given Field, using
         //     // the given Position attribute
-        template <typename Field, typename P2>
+        template <typename Field, typename P2, typename policy_type>
         void scatter(Field& f,
-                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                     policy_type iteration_policy, hash_type hash_array = {}) const;
 
         template <typename Field, typename P2>
-        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp, 
+                    const bool addToAttribute = false);
 
         T sum();
         T max();
