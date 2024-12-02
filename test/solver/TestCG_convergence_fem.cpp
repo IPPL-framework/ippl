@@ -27,7 +27,7 @@ struct AnalyticSol {
         T val = 1.0;
         for (unsigned d = 0; d < Dim; d++) {
             //val *= -sin(pi*x_vec[d]);
-            val *= sin(sin(pi*x_vec[d]));
+            val *= -sin(sin(pi*x_vec[d]));
         }
         return val;
     }
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
         Inform m("");
         m << "size, relError, residue, itCount" << endl;
 
-        for (unsigned pt = 1 << 2; pt <= 1 << 8; pt = pt << 1) {
+        for (unsigned pt = 1 << 9; pt <= 1 << 9; pt = pt << 1) {
             ippl::Vector <unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
@@ -57,9 +57,9 @@ int main(int argc, char* argv[]) {
             ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
             // Unit box
-            double dx                        = 4.0 / double(pt- 1);
+            double dx                        = 2.0 / double(pt- 1);
             ippl::Vector<double, dim> hx     = dx;
-            ippl::Vector<double, dim> origin = 0.0;
+            ippl::Vector<double, dim> origin = -1.0;
             Mesh_t mesh(domain, hx, origin);
 
             double pi = Kokkos::numbers::pi_v<double>;
@@ -139,8 +139,6 @@ int main(int argc, char* argv[]) {
                                  + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)) * sin(sin(pi * x)))
                                     * sin(sin(pi * y)));
                 });
-            */
-            /*
             Kokkos::parallel_for(
                 "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i) {
                     const size_t ig = i + lDom[0].first() - shift2;
@@ -152,11 +150,6 @@ int main(int argc, char* argv[]) {
                     //viewRHS(i) = pow(pi, 2) * sin(pi*x);
                 });
             */
-            //std::cout << "lhs before = " << std::endl;
-            //lhs.write();
-
-            //std::cout << "rhs before = " << std::endl;
-            //rhs.write();
 
             ippl::FEMPoissonSolver<field_type, field_type> lapsolver(lhs, rhs);
 
@@ -169,11 +162,6 @@ int main(int argc, char* argv[]) {
             lhs = 0;
             lapsolver.solve();
 
-            //std::cout << "lhs after = " << std::endl;
-            //lhs.write();
-
-            //std::cout << "rhs after = " << std::endl;
-            //rhs.write();
 
             field_type error(mesh, layout);
             // Solver solution - analytical solution
