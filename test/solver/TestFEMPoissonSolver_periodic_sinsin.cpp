@@ -1,8 +1,10 @@
-// Tests the conjugate gradient solver for Poisson problems
-// by checking the relative error from the exact solution
+// Tests the FEMPoissonSolver with periodic BCs
+// using the problem sin(sin(pi x)).
+// A convergence study is done by increasing the
+// problem size and looking at the relative error.
+//
 // Usage:
-//      TestCGSolver [size [scaling_type , preconditioner]]
-//      ./TestCGSolver 6 j --info 5
+//      ./TestFEMPoissonSolver_periodic_sinsin --info 5
 
 #include "Ippl.h"
 
@@ -16,8 +18,21 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "PoissonSolvers/PoissonCG.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
+
+template <typename T, unsigned Dim>
+struct AnalyticSol {
+    const T pi = Kokkos::numbers::pi_v<T>;
+
+    KOKKOS_FUNCTION const T operator()(ippl::Vector<T, Dim> x_vec) const {
+        T val = 1.0;
+        for (unsigned d = 0; d < Dim; d++) {
+            val *= -sin(sin(pi*x_vec[d]));
+        }
+        return val;
+    }
+};
+
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -29,7 +44,7 @@ int main(int argc, char* argv[]) {
         Inform m("");
         m << "size, relError, residue, itCount" << endl;
 
-        for (unsigned pt = 1 << 2; pt <= 1 << 10; pt = pt << 1) {
+        for (unsigned pt = 1 << 2; pt <= 1 << 9; pt = pt << 1) {
             ippl::Vector <unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
@@ -42,9 +57,9 @@ int main(int argc, char* argv[]) {
             ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
             // Unit box
-            double dx                        = 4.0 / double(pt);
+            double dx                        = 2.0 / double(pt- 1);
             ippl::Vector<double, dim> hx     = dx;
-            ippl::Vector<double, dim> origin = 0.0;
+            ippl::Vector<double, dim> origin = -1.0;
             Mesh_t mesh(domain, hx, origin);
 
             double pi = Kokkos::numbers::pi_v<double>;
@@ -58,7 +73,6 @@ int main(int argc, char* argv[]) {
 
             for (unsigned int i = 0; i < 2 * dim; ++i) {
                 bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
-                //bcField[i] = std::make_shared<ippl::ZeroFace<field_type>>(i);
             }
 
             lhs.setFieldBC(bcField);
@@ -77,11 +91,10 @@ int main(int argc, char* argv[]) {
                     const size_t ig = i + lDom[0].first() - shift1;
                     const size_t jg = j + lDom[1].first() - shift1;
                     const size_t kg = k + lDom[2].first() - shift1;
-                    double x        = (ig + 0.5) * hx[0];
-                    double y        = (jg + 0.5) * hx[1];
-                    double z        = (kg + 0.5) * hx[2];
+                    double x        = (ig ) * hx[0];
+                    double y        = (jg ) * hx[1];
+                    double z        = (kg ) * hx[2];
 
-                    //viewSol(i) = sin(pi*x); 
                     //viewSol(i) = sin(sin(pi*x)); 
                     //viewSol(i, j) = sin(sin(pi*x)) * sin(sin(pi*y)); 
                     viewSol(i, j, k) = sin(sin(pi*x)) * sin(sin(pi*y)) * sin(sin(pi*z));
@@ -95,10 +108,10 @@ int main(int argc, char* argv[]) {
                     const size_t ig = i + lDom[0].first() - shift2;
                     const size_t jg = j + lDom[1].first() - shift2;
                     const size_t kg = k + lDom[2].first() - shift2;
-                    double x        = (ig + 0.5) * hx[0];
-                    double y        = (jg + 0.5) * hx[1];
-                    double z        = (kg + 0.5) * hx[2];
-                    
+                    double x        = (ig ) * hx[0];
+                    double y        = (jg ) * hx[1];
+                    double z        = (kg ) * hx[2];
+
                     viewRHS(i, j, k) =
                         pow(pi, 2)
                         * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
@@ -114,8 +127,8 @@ int main(int argc, char* argv[]) {
                 "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j) {
                     const size_t ig = i + lDom[0].first() - shift2;
                     const size_t jg = j + lDom[1].first() - shift2;
-                    double x        = (ig + 0.5) * hx[0];
-                    double y        = (jg + 0.5) * hx[1];
+                    double x        = (ig ) * hx[0];
+                    double y        = (jg ) * hx[1];
 
                     viewRHS(i, j) =
                         pow(pi, 2)
@@ -124,25 +137,18 @@ int main(int argc, char* argv[]) {
                                  + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)) * sin(sin(pi * x)))
                                     * sin(sin(pi * y)));
                 });
-            */
-            /*
             Kokkos::parallel_for(
                 "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i) {
                     const size_t ig = i + lDom[0].first() - shift2;
-                    double x        = (ig + 0.5) * hx[0];
+                    double x        = (ig ) * hx[0];
 
                     viewRHS(i) =
                         pow(pi, 2) * ((cos(sin(pi * x)) * sin(pi * x)) 
                                  + (pow(cos(pi * x), 2) * sin(sin(pi * x))));
                 });
             */
-            //std::cout << "lhs before = " << std::endl;
-            //lhs.write();
 
-            //std::cout << "rhs before = " << std::endl;
-            //rhs.write();
-
-            ippl::PoissonCG<field_type> lapsolver;
+            ippl::FEMPoissonSolver<field_type, field_type> lapsolver(lhs, rhs);
 
             ippl::ParameterList params;
             params.add("max_iterations", 2000);
@@ -150,22 +156,16 @@ int main(int argc, char* argv[]) {
 
             lapsolver.mergeParameters(params);
 
-            lapsolver.setRhs(rhs);
-            lapsolver.setLhs(lhs);
-
             lhs = 0;
             lapsolver.solve();
-
-            //std::cout << "lhs after = " << std::endl;
-            //lhs.write();
-
-            //std::cout << "rhs after = " << std::endl;
-            //rhs.write();
 
             field_type error(mesh, layout);
             // Solver solution - analytical solution
             error           = lhs - solution;
             double relError = norm(error) / norm(solution);
+
+            AnalyticSol<double, dim> analytic;
+            double relError_int = lapsolver.getL2Error(analytic);
 
             // Laplace(solver solution) - rhs
             error          = -laplace(lhs) - rhs;
@@ -175,8 +175,8 @@ int main(int argc, char* argv[]) {
 
             int size    = pt;
             int itCount = lapsolver.getIterationCount();
-            m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
-              << endl;
+            m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount << ","
+              << relError_int << endl;
 
         }
         IpplTimings::print("timings.dat");

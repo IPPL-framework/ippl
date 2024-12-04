@@ -25,6 +25,31 @@ target_link_libraries (
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+add_executable(TestCGSolver_convergence TestCGSolver_convergence.cpp)
+target_link_libraries(
+    TestCGSolver_convergence
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestFEMPoissonSolver TestFEMPoissonSolver.cpp)
+target_link_libraries(
+    TestFEMPoissonSolver
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+add_executable(TestFEMPoissonSolver_periodic TestFEMPoissonSolver_periodic.cpp)
+target_link_libraries(
+    TestFEMPoissonSolver_periodic
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+add_executable(TestFEMPoissonSolver_periodic_sinsin TestFEMPoissonSolver_periodic_sinsin.cpp)
+target_link_libraries(
+    TestFEMPoissonSolver_periodic_sinsin
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 
 if (ENABLE_FFT)
     add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
@@ -79,33 +104,6 @@ if (ENABLE_FFT)
     add_executable (TestP3MSolver TestP3MSolver.cpp)
     target_link_libraries (
         TestP3MSolver
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
-    add_executable(TestFEMPoissonSolver TestFEMPoissonSolver.cpp)
-    target_link_libraries(
-        TestFEMPoissonSolver
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
-    add_executable(TestFEMPoissonSolver_periodic TestFEMPoissonSolver_periodic.cpp)
-    target_link_libraries(
-        TestFEMPoissonSolver_periodic
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-
-    add_executable(TestCG_convergence TestCG_convergence.cpp)
-    target_link_libraries(
-        TestCG_convergence
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
-    add_executable(TestCG_convergence_fem TestCG_convergence_fem.cpp)
-    target_link_libraries(
-        TestCG_convergence_fem
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )

@@ -5,6 +5,8 @@
 //
 // Exact solution is u(x) = sin(pi * x)
 //
+// Usage:
+//     ./TestFEMPoissonSolver_periodic <dim> --info 5
 
 #include "Ippl.h"
 
@@ -48,7 +50,6 @@ struct AnalyticSol {
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-    // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -181,7 +182,7 @@ int main(int argc, char* argv[]) {
                 testFEMSolver<T, 2>(n, -1.0, 1.0);
             }
         } else {
-            // 3D Sinusoidal; problem size given by user
+            // 3D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
                 testFEMSolver<T, 3>(n, -1.0, 1.0);
             }

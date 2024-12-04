@@ -5,6 +5,8 @@
 //
 // Exact solution is u(x) = sin(pi * x)
 //
+// Usage:
+//    ./TestFEMPoissonSolver <dim> --info 5
 
 #include "Ippl.h"
 
@@ -36,67 +38,9 @@ struct AnalyticSol {
     }
 };
 
-template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian3d(ippl::Vector<T, 3> x_vec) {
-    const T& x = x_vec[0];
-    const T& y = x_vec[1];
-    const T& z = x_vec[2];
-
-    const T sigma = 0.05;
-    const T mu    = 0.5;
-
-    const T pi = Kokkos::numbers::pi_v<T>;
-
-    const T prefactor =
-        (1.0 / Kokkos::sqrt(2.0 * 2.0 * 2.0 * pi * pi * pi)) * (1.0 / (sigma * sigma * sigma));
-    const T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
-
-    return prefactor * Kokkos::exp(-r2 / (2.0 * sigma * sigma));
-}
-
-template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian3dSol(ippl::Vector<T, 3> x_vec) {
-    const T& x = x_vec[0];
-    const T& y = x_vec[1];
-    const T& z = x_vec[2];
-
-    const T sigma = 0.05;
-    const T mu    = 0.5;
-
-    const T pi = Kokkos::numbers::pi_v<T>;
-
-    const T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-
-    return (1.0 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
-}
-
-template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
-    const T pi = Kokkos::numbers::pi_v<T>;
-
-    const T prefactor = (1.0 / Kokkos::sqrt(2.0 * pi)) * (1.0 / sigma);
-    const T r2        = (x - mu) * (x - mu);
-
-    return prefactor * Kokkos::exp(-r2 / (2.0 * sigma * sigma));
-}
-
-template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussianSol1D(const T& x, const T& sigma = 0.05, const T& mu = 0.5) {
-    const T pi     = Kokkos::numbers::pi_v<T>;
-    const T sqrt_2 = Kokkos::sqrt(2.0);
-
-    const T r = (x - mu);
-
-    return (-sigma / sqrt_2)
-               * ((r / (sqrt_2 * sigma)) * Kokkos::erf(r / (sqrt_2 * sigma))
-                  + (1.0 / Kokkos::sqrt(pi)) * Kokkos::exp(-(r * r) / (2.0 * sigma * sigma)))
-           + (0.5 - mu) * x + 0.5 * mu;
-}
-
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-    // std::function<T(ippl::Vector<T, Dim> x)> f_sol,
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -212,28 +156,16 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                /*testFEMSolver<T, 1>(n,
-                    [](ippl::Vector<T, 1> x) {
-                        return gaussian1D<T>(x[0], 0.05, 0.5);
-                    },
-                    [](ippl::Vector<T, 1> x) {
-                        return gaussianSol1D<T>(x[0], 0.05, 0.5);
-                    },
-                    0.0, 1.0);
-                */
                 testFEMSolver<T, 1>(n, -1.0, 1.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                // testFEMSolver<T, 2>(n, sinusoidalRHSFunction<T, 2>, sinusoidalSolution<T, 2>,
-                // -1.0, 1.0);
                 testFEMSolver<T, 2>(n, -1.0, 1.0);
             }
         } else {
-            // 3D Sinusoidal; problem size given by user
+            // 3D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                // testFEMSolver<T, 3>(n, gaussian3d<T>, gaussian3dSol<T>, 0.0, 1.0);
                 testFEMSolver<T, 3>(n, -1.0, 1.0);
             }
         }
