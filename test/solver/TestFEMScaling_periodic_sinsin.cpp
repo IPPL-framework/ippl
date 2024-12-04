@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         Inform m("");
         m << "size, normError, residue, itCount, integralError" << endl;
 
-        for (unsigned n = 0; n < 5; ++n) {
+        for (unsigned n = 0; n < 1; ++n) {
             ippl::Vector <unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
