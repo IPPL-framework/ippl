@@ -38,6 +38,12 @@ target_link_libraries(
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+add_executable(TestFEMPoissonSolver_gaussian1d TestFEMPoissonSolver_gaussian1d.cpp)
+target_link_libraries(
+    TestFEMPoissonSolver_gaussian1d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 add_executable(TestFEMPoissonSolver_periodic TestFEMPoissonSolver_periodic.cpp)
 target_link_libraries(
     TestFEMPoissonSolver_periodic
