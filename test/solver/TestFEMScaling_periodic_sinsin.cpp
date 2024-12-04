@@ -1,10 +1,5 @@
-// Tests the FEMPoissonSolver with periodic BCs
-// using the problem sin(sin(pi x)).
-// A convergence study is done by increasing the
-// problem size and looking at the relative error.
-//
-// Usage:
-//      ./TestFEMPoissonSolver_periodic_sinsin --info 5
+// periodic BCs scaling (5 times, 256^3)
+// sin(sin(pi x))
 
 #include "Ippl.h"
 
@@ -18,6 +13,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
+#include "PoissonSolvers/PoissonCG.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
 template <typename T, unsigned Dim>
@@ -33,7 +29,6 @@ struct AnalyticSol {
     }
 };
 
-
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -41,10 +36,12 @@ int main(int argc, char* argv[]) {
         using Mesh_t               = ippl::UniformCartesian<double, dim>;
         using Centering_t          = Mesh_t::DefaultCentering;
 
+        unsigned pt = std::atoi(argv[1]);
+
         Inform m("");
         m << "size, normError, residue, itCount, integralError" << endl;
 
-        for (unsigned pt = 1 << 2; pt <= 1 << 9; pt = pt << 1) {
+        for (unsigned n = 0; n < 5; ++n) {
             ippl::Vector <unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
@@ -95,8 +92,6 @@ int main(int argc, char* argv[]) {
                     double y        = (jg ) * hx[1];
                     double z        = (kg ) * hx[2];
 
-                    //viewSol(i) = sin(sin(pi*x)); 
-                    //viewSol(i, j) = sin(sin(pi*x)) * sin(sin(pi*y)); 
                     viewSol(i, j, k) = sin(sin(pi*x)) * sin(sin(pi*y)) * sin(sin(pi*z));
             });
 
@@ -122,31 +117,6 @@ int main(int argc, char* argv[]) {
                                     * sin(sin(pi * y)))
                                  * sin(sin(pi * z)));
                 });
-            /*
-            Kokkos::parallel_for(
-                "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j) {
-                    const size_t ig = i + lDom[0].first() - shift2;
-                    const size_t jg = j + lDom[1].first() - shift2;
-                    double x        = (ig ) * hx[0];
-                    double y        = (jg ) * hx[1];
-
-                    viewRHS(i, j) =
-                        pow(pi, 2)
-                        * (cos(sin(pi * y)) * sin(pi * y) * sin(sin(pi * x))
-                              + (cos(sin(pi * x)) * sin(pi * x)
-                                 + (pow(cos(pi * x), 2) + pow(cos(pi * y), 2)) * sin(sin(pi * x)))
-                                    * sin(sin(pi * y)));
-                });
-            Kokkos::parallel_for(
-                "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i) {
-                    const size_t ig = i + lDom[0].first() - shift2;
-                    double x        = (ig ) * hx[0];
-
-                    viewRHS(i) =
-                        pow(pi, 2) * ((cos(sin(pi * x)) * sin(pi * x)) 
-                                 + (pow(cos(pi * x), 2) * sin(sin(pi * x))));
-                });
-            */
 
             ippl::FEMPoissonSolver<field_type, field_type> lapsolver(lhs, rhs);
 
@@ -179,7 +149,10 @@ int main(int argc, char* argv[]) {
               << relError_int << endl;
 
         }
-        IpplTimings::print("timings.dat");
+
+        // print the timers
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 

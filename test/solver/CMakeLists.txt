@@ -50,6 +50,18 @@ target_link_libraries(
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+add_executable(TestFEMScaling_dirichlet_sin TestFEMScaling_dirichlet_sin.cpp)
+target_link_libraries(
+    TestFEMScaling_dirichlet_sin
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+add_executable(TestFEMScaling_periodic_sinsin TestFEMScaling_periodic_sinsin.cpp)
+target_link_libraries(
+    TestFEMScaling_periodic_sinsin
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 
 if (ENABLE_FFT)
     add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
