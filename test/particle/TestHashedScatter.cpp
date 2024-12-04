@@ -87,6 +87,10 @@ int main(int argc, char* argv[]) {
         Inform msg("TestHashedScatter");
         Inform msg2All("TestHashedScatter", INFORM_ALL_NODES);
 
+        bunch.update();
+        msg << "Updated bunch and local number of particles: " << nLoc << " --> " << bunch.getLocalNum() << endl;
+        nLoc = bunch.getLocalNum(); // update moves particles --> update nLoc for multi rank
+
         /*
         First test for custom range policy: Only scatter pt/2 particles and compare to the 
         total sum of the field.
@@ -94,7 +98,6 @@ int main(int argc, char* argv[]) {
         */
         {
             bunch.Q = 1.0;
-            bunch.update();
             field = 0.0;
             int NScatterred = nLoc / 2 + ippl::Comm->rank();
             
@@ -129,10 +132,8 @@ int main(int argc, char* argv[]) {
             for (unsigned int i = 0; i < nLoc; ++i) { Q_host(i) = unif_charge(eng); }
             Kokkos::deep_copy(bunch.Q.getView(), Q_host);
             
-            bunch.update();
-            
             // Reset the field
-            int NScatterred = nLoc / 2 + ippl::Comm->rank();
+            unsigned int NScatterred = nLoc / 2 + ippl::Comm->rank();
             field = 0.0;
 
             // Create index array using hash_type
@@ -155,9 +156,18 @@ int main(int argc, char* argv[]) {
                 val += viewQ(hash(i));
             }, Kokkos::Sum<double>(Q_total));
             ippl::Comm->allreduce(Q_total, 1, std::plus<double>());
-            
-            std::cout << "Q_total: " << Q_total << std::endl;
-            std::cout << hash.extent(0) << std::endl;
+
+            /*{
+                std::cout << "Checking hash array bounds..." << std::endl;
+                auto hh = Kokkos::create_mirror_view(hash);
+                Kokkos::deep_copy(hh, hash);
+                for (unsigned int i = 0; i < NScatterred; ++i) {
+                    if (hh(i) < 0 || hh(i) >= static_cast<int>(nLoc)) {
+                        std::cout << "Error: " << hh(i) << std::endl;
+                    }
+                }
+                std::cout << "Done" << std::endl;
+            }*/
 
             // Perform the scatter over the custom hash_type
             scatter(bunch.Q, field, bunch.R, policy, hash);
@@ -170,6 +180,8 @@ int main(int argc, char* argv[]) {
             msg2All << "Total charge of the particles: " << Q_total << endl;
             msg2All << "Error:                         --> " << std::fabs(Q_total - Total_charge_field) << endl;
         }
+        ippl::Comm->barrier();
+        msg << endl << "Note: the values should all be the same per test case, since they are communicated over ranks!" << endl;
 
     }
     ippl::finalize();
