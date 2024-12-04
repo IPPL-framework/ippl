@@ -24,15 +24,6 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
 
     return Dim * pi * pi * val;
 }
-template <typename T, unsigned Dim>
-KOKKOS_INLINE_FUNCTION T sinusoidalAnalyticSol(ippl::Vector<T, Dim> x_vec) {
-    const T pi = Kokkos::numbers::pi_v<T>;
-    T val = 1.0;
-    for (unsigned d = 0; d < Dim; d++) {
-        val *= Kokkos::sin(pi * x_vec[d]);
-    }
-    return val;
-}
 
 template <typename T, unsigned Dim>
 struct AnalyticSol {
@@ -94,6 +85,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     auto view_rhs = rhs.getView();
     auto ldom     = layout.getLocalNDIndex();
 
+    AnalyticSol<T, Dim> analytic;
+
     using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     ippl::parallel_for(
         "Assign RHS", rhs.getFieldRangePolicy(), KOKKOS_LAMBDA(const index_array_type& args) {
@@ -105,7 +98,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
             apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
-            apply(view_analytical, args) = sinusoidalAnalyticSol<T, Dim>(x);
+            apply(view_analytical, args) = analytic(x);
         });
 
     IpplTimings::stopTimer(initTimer);
@@ -127,7 +120,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::startTimer(errorTimer);
 
     // Compute the error
-    AnalyticSol<T, Dim> analytic;
     const T relError = solver.getL2Error(analytic);
 
     lhs = lhs - analytical;
