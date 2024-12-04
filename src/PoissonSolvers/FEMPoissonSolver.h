@@ -63,7 +63,8 @@ namespace ippl {
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0), Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
+            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
+                                Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
@@ -80,26 +81,11 @@ namespace ippl {
             
             rhs.fillHalo();
 
-            /*
-            int me = Comm->rank();
-            Comm->barrier();
-            std::cout << "me = " << me << ", rhs = " << std::endl;
-            rhs.write();
-            Comm->barrier();
-            */
-
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
             rhs.accumulateHalo();
             rhs.fillHalo();
             
-            /*
-            Comm->barrier();
-            std::cout << "me = " << me << ", load = " << std::endl;
-            rhs.write();
-            Comm->barrier();
-            */
-
             IpplTimings::stopTimer(init);
         }
 
@@ -151,25 +137,10 @@ namespace ippl {
 
                 field.fillHalo();
 
-                /*
-                int me = Comm->rank();
-                Comm->barrier();
-                std::cout << "me = " << me << ", before evalAx = " << std::endl;
-                field.write();
-                Comm->barrier();
-                */
-
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
                 return_field.accumulateHalo();
                 
-                /*
-                Comm->barrier();
-                std::cout << "me = " << me << ", after evalAx = " << std::endl;
-                return_field.write();
-                Comm->barrier();
-                */
-
                 IpplTimings::stopTimer(opTimer);
 
                 return return_field;
