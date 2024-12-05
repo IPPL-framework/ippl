@@ -62,7 +62,7 @@ namespace ippl {
 
         void pack(const hash_type&) override;
 
-        void unpack(size_type) override;
+        void unpack(size_type, const bool overwrite = false) override;
 
         void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
             ar.serialize(buf_m, nsends);

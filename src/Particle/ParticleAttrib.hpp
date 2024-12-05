@@ -60,15 +60,15 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::unpack(size_type nrecvs) {
+    void ParticleAttrib<T, Properties...>::unpack(size_type nrecvs, const bool overwrite) {
         auto size          = dview_m.extent(0);
-        size_type required = *(this->localNum_mp) + nrecvs;
+        size_type required = overwrite ? nrecvs : (*(this->localNum_mp) + nrecvs);
         if (size < required) {
             int overalloc = Comm->getDefaultOverallocation();
             this->resize(required * overalloc);
         }
 
-        size_type count   = *(this->localNum_mp);
+        size_type count   = overwrite ? 0 : *(this->localNum_mp); // Changed this!
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()", policy_type(0, nrecvs),

@@ -44,7 +44,7 @@ namespace ippl {
 
             virtual void pack(const hash_type&) = 0;
 
-            virtual void unpack(size_type) = 0;
+            virtual void unpack(size_type, const bool overwrite = false) = 0;
 
             virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
 
