@@ -25,6 +25,9 @@ target_link_libraries (PICnd ${IPPL_LIBS})
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
+add_executable (TestSorting TestSorting.cpp)
+target_link_libraries (TestSorting ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
