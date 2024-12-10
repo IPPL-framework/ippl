@@ -1,11 +1,16 @@
 set (_SRCS
     Communicator.cpp
+    CommunicatorLogging.cpp
     Environment.cpp
     Buffers.cpp
     Request.cpp
+    LogEntry.cpp
     )
 
 set (_HDRS
+    LogEntry.h
+    BufferHandler.h
+    LoggingBufferHandler.h
     Archive.h
     Archive.hpp
     Buffers.hpp
@@ -23,6 +28,7 @@ set (_HDRS
     Window.h
     Window.hpp
     PointToPoint.hpp
+    CommunicatorLogging.hpp
     )
 
 include_directories (
