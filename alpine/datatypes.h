@@ -42,6 +42,9 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 template <typename T = double, unsigned Dim = 3>
 using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
+template <typename T = double, unsigned Dim = 3>
+using PCGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
+
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T = double, unsigned Dim = 3>

@@ -64,8 +64,21 @@ int main(int argc, char* argv[]) {
         double lbt              = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
 
+
+        std::vector<std::string> preconditioner_params;
+
         // Create an instance of a manger for the considered application
-        PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        if(solver == "PCG"){
+            
+            preconditioner_params.push_back(argv[arg++]);
+
+            for(int i = 0; i < 4; i++){
+                preconditioner_params.push_back(argv[arg++]);
+            }
+        }
+
+        // Create an instance of a manger for the considered application
+        PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, preconditioner_params);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();

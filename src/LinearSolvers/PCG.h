@@ -137,7 +137,6 @@ namespace ippl {
                 T avg = lhs.getVolumeAverage();
                 lhs   = lhs - avg;
             }
-            std::cout<< "Num Iter: " << iterations_m << std::endl;
         }
 
         virtual T getResidue() const { return residueNorm; }
@@ -187,13 +186,13 @@ namespace ippl {
                 // set in main
                 int degree = 31,  // This is a dummy default parameter, actual default parameter should
                 // be set in main
-                int richardson_iterations = 1,  // This is a dummy default parameter, actual default
+                int richardson_iterations = 4,  // This is a dummy default parameter, actual default
                 // parameter should be set in main
-                int inner = 5,  // This is a dummy default parameter, actual default parameter should be
+                int inner = 2,  // This is a dummy default parameter, actual default parameter should be
                 // set in main
-                int outer = 1,   // This is a dummy default parameter, actual default parameter should be
+                int outer = 2,   // This is a dummy default parameter, actual default parameter should be
                 // set in main
-                double omega = 1   // This is a dummy default parameter, actual default parameter should be
+                double omega = 1.57079632679    // This is a dummy default parameter, actual default parameter should be
                 // set in main
         ) override {
             if (preconditioner_type == "jacobi") {
