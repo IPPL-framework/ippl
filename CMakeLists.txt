@@ -207,6 +207,7 @@ if (ENABLE_FFT)
 endif ()
 
 option (ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
+option (ENABLE_ASCENT "Build example with Ascent enabled" OFF)
 option (ENABLE_SOLVERS "Enable IPPL solvers" ON)
 
 add_subdirectory (src)
