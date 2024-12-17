@@ -48,7 +48,14 @@ int main(int argc, char* argv[]) {
     {
 
 #ifdef ENABLE_CATALYST
-        CatalystAdaptor::Initialize(argc, argv);
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+            // reduce the argument list
+            char* reducedArgv[] = { argv[0], argv[i + 1] };
+            CatalystAdaptor::Initialize(2, reducedArgv);
+            break;
+        }
+    }
 #endif
 
         Inform msg(TestName);
