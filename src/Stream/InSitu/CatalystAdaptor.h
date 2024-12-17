@@ -56,8 +56,12 @@ namespace CatalystAdaptor {
 
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
-        for (int cc = 1; cc < argc; ++cc) {
-            node["catalyst/scripts/script" + std::to_string(cc - 1)].set_string(argv[cc]);
+        std::cout << "pvscript path: " << argv[1] << std::endl;
+        node["catalyst/scripts/script/filename"].set_string(argv[1]);
+        for (int cc = 2; cc < argc; ++cc) {
+            std::cout << "pvscript args: " << argv[cc] << std::endl;
+            conduit_cpp::Node list_entry = node["catalyst/scripts/script/args"].append();
+            list_entry.set(argv[cc]);
         }
         try {
             node["catalyst_load/implementation"]        = getenv("CATALYST_IMPLEMENTATION_NAME");
