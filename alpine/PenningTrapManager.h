@@ -70,7 +70,7 @@ public:
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
         this->isAllPeriodic_m = true;
-        if ((this->solver_m == "FEM_DIRICHLET") || (this->solver_m == "OPEN")) {
+        if (this->solver_m == "FEM_DIRICHLET") {
             this->isAllPeriodic_m = false;
         }
 
