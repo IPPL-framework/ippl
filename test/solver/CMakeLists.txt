@@ -68,6 +68,12 @@ target_link_libraries(
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+add_executable(TestOld3d TestOld3d.cpp)
+target_link_libraries(
+    TestOld3d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
 
 if (ENABLE_FFT)
     add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
