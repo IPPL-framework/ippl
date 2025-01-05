@@ -15,8 +15,7 @@
 #include "Random/Randn.h"
 
 #ifdef ENABLE_CATALYST
-#include <optional>
-#include "Stream/InSitu/CatalystAdaptor.h"
+#include "CatalystAdaptor.h"
 #endif
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
@@ -284,14 +283,17 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
+
 #ifdef ENABLE_CATALYST
-        std::optional<conduit_cpp::Node> node = std::nullopt;
-        //CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
-        auto *rho               = &this->fcontainer_m->getRho();
-        CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
-        //auto *E               = &this->fcontainer_m->getE();
-        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
-        //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
+        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields = {
+            {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields);
 #endif
 
         // Field solve

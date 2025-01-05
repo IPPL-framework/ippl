@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: Copyright (c) Kitware Inc.
-// SPDX-License-Identifier: BSD-3-Clause
 #ifndef CatalystAdaptor_h
 #define CatalystAdaptor_h
 
@@ -15,31 +13,6 @@
 
 #include "Utility/IpplException.h"
 
-// ----
-// instead of including alpine/datatypes.h
-template <unsigned Dim>
-using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
-template <unsigned Dim>
-using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
-
-template <typename T, unsigned Dim= 3, class... ViewArgs>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
-
-template <typename T, unsigned Dim>
-using Vector_t = ippl::Vector<T, Dim>;
-
-template <unsigned Dim, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template <typename T = double, unsigned Dim=3, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
-
-// instead of including alpine/AlpineManager.h
-//template <typename T, unsigned Dim>
-//using ParticleContainer_t = ParticleContainer<T, Dim>;
-// ----
-
 
 namespace CatalystAdaptor {
 
@@ -49,8 +22,8 @@ namespace CatalystAdaptor {
     template <typename T, unsigned Dim>
     using FieldPair = std::pair<std::string, FieldVariant<T, Dim>>;
 
-    //template <typename T, unsigned Dim>
-    //using ParticlePair = std::pair<std::string, std::shared_ptr<ParticleContainer_t<T, Dim> > >;
+    template <typename T, unsigned Dim>
+    using ParticlePair = std::pair<std::string, std::shared_ptr<ParticleContainer<T, Dim> > >;
 
 
     using View_vector =
@@ -69,6 +42,7 @@ namespace CatalystAdaptor {
         node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
     }
 
+
     using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
     inline void setData(conduit_cpp::Node& node, const View_scalar& view) {
         node["density/association"].set_string("element");
@@ -78,18 +52,6 @@ namespace CatalystAdaptor {
         node["density/values"].set_external(view.data(), view.size());
     }
 
-    inline void callCatalystExecute(const conduit_cpp::Node& node) {
-
-        // TODO: we should add here this IPPL-INFO stuff
-        //if ( static auto called {false}; !std::exchange(called, true) ) {
-        //    catalyst_conduit_node_print(conduit_cpp::c_node(&node));
-        //}
-
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-        }
-    }
 
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
@@ -116,156 +78,23 @@ namespace CatalystAdaptor {
     }
 
 
-    void Initialize_Adios(int argc, char* argv[])
-    {
+    void Finalize() {
         conduit_cpp::Node node;
-        for (int cc = 1; cc < argc; ++cc)
-        {
-            if (strstr(argv[cc], "xml"))
-            {
-                node["adios/config_filepath"].set_string(argv[cc]);
-            }
-            else
-            {
-                node["catalyst/scripts/script" +std::to_string(cc - 1)].set_string(argv[cc]);
-            }
-        }
-        node["catalyst_load/implementation"] = getenv("CATALYST_IMPLEMENTATION_NAME");
-        catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok)
-        {
-            std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
+        catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
         }
     }
 
 
-    template <class Field>
-    std::optional<conduit_cpp::Node> Execute_Field(int cycle, double time, int rank, Field& field, std::optional<conduit_cpp::Node>& node_in) {
-        static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
-        // catalyst blueprint definition
-        // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
-        //
-        // conduit blueprint definition (v.8.3)
-        // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
-        conduit_cpp::Node node;
-        if (node_in)
-            node = node_in.value();
-
-        auto nGhost = field.getNghost();
-
-        // Creates a host-accessible mirror view and copies the data from the device view to the host.
-        typename Field::view_type::host_mirror_type host_view =
-            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
-
-        Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
-            host_view_layout_left("host_view_layout_left",
-                                  field.getLayout().getLocalNDIndex()[0].length(),
-                                  field.getLayout().getLocalNDIndex()[1].length(),
-                                  field.getLayout().getLocalNDIndex()[2].length());
-
-        for (size_t i = 0; i < field.getLayout().getLocalNDIndex()[0].length(); ++i) {
-            for (size_t j = 0; j < field.getLayout().getLocalNDIndex()[1].length(); ++j) {
-                for (size_t k = 0; k < field.getLayout().getLocalNDIndex()[2].length(); ++k) {
-                    host_view_layout_left(i, j, k) = host_view(i + nGhost, j + nGhost, k + nGhost);
-                }
-            }
-        }
-
-
-        // add time/cycle information
-        auto state = node["catalyst/state"];
-        state["cycle"].set(cycle);
-        state["time"].set(time);
-        state["domain_id"].set(rank);
-
-        // add catalyst channel named ippl_field, as fields is reserved
-        auto channel = node["catalyst/channels/ippl_field"];
-        channel["type"].set_string("mesh");
-
-        // in data channel now we adhere to conduits mesh blueprint definition
-        auto mesh = channel["data"];
-        mesh["coordsets/coords/type"].set_string("uniform");
-
-        // number of points in specific dimension
-        std::string field_node_dim{"coordsets/coords/dims/i"};
-        std::string field_node_origin{"coordsets/coords/origin/x"};
-        std::string field_node_spacing{"coordsets/coords/spacing/dx"};
-
-        for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            // add dimension
-            mesh[field_node_dim].set(field.getLayout().getLocalNDIndex()[iDim].length() + 1);
-
-            // add origin
-            mesh[field_node_origin].set(
-                field.get_mesh().getOrigin()[iDim] + field.getLayout().getLocalNDIndex()[iDim].first()
-                      * field.get_mesh().getMeshSpacing(iDim));
-
-            // add spacing
-            mesh[field_node_spacing].set(field.get_mesh().getMeshSpacing(iDim));
-
-            // increment last char in string
-            ++field_node_dim.back();
-            ++field_node_origin.back();
-            ++field_node_spacing.back();
-        }
-
-        // add topology
-        mesh["topologies/mesh/type"].set_string("uniform");
-        mesh["topologies/mesh/coordset"].set_string("coords");
-        std::string field_node_origin_topo{"topologies/mesh/origin/x"};
-        for (unsigned int iDim = 0; iDim < field.get_mesh().getGridsize().dim; ++iDim) {
-            // shift origin
-            mesh[field_node_origin_topo].set(field.get_mesh().getOrigin()[iDim]
-                                             + field.getLayout().getLocalNDIndex()[iDim].first()
-                                                   * field.get_mesh().getMeshSpacing(iDim));
-
-            // increment last char in string
-            ++field_node_origin_topo.back();
-        }
-
-        // add values and subscribe to data
-        auto fields = mesh["fields"];
-        setData(fields, host_view_layout_left);
-
-        // as we have a local copy of the field, the catalyst_execute needs to be called
-        // within this scope otherwise the memory location might be already overwritten
-        if (node_in == std::nullopt)
-        {
-            callCatalystExecute(node);
-            return {};
-        }
-        else
-          return node;
-
-    }
-
-    template <class ParticleContainer>
-    std::optional<conduit_cpp::Node> Execute_Particle(int cycle, double time, int rank, ParticleContainer& particleContainer, std::optional<conduit_cpp::Node>& node_in) {
-      assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
-
-        //auto layout_view = particleContainer->R.getView();
-        typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror R_host = particleContainer->R.getHostMirror();
-        typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror P_host = particleContainer->P.getHostMirror();
-        typename ippl::ParticleAttrib<double>::HostMirror q_host = particleContainer->q.getHostMirror();
-        typename ippl::ParticleAttrib<std::int64_t>::HostMirror ID_host = particleContainer->ID.getHostMirror();
-        Kokkos::deep_copy(R_host, particleContainer->R.getView());
-        Kokkos::deep_copy(P_host, particleContainer->P.getView());
-        Kokkos::deep_copy(q_host, particleContainer->q.getView());
-        Kokkos::deep_copy(ID_host, particleContainer->ID.getView());
-
-        // if node is passed in, append data to it
-        conduit_cpp::Node node;
-        if (node_in)
-            node = node_in.value();
-
-        // add time/cycle information
-        auto state = node["catalyst/state"];
-        state["cycle"].set(cycle);
-        state["time"].set(time);
-        state["domain_id"].set(rank);
+    void Execute_Particle(
+         const auto& particleContainer,
+         const auto& R_host, const auto& P_host, const auto& q_host, const auto& ID_host,
+         const std::string& particlesName,
+         conduit_cpp::Node& node) {
 
         // channel for particles
-        auto channel = node["catalyst/channels/ippl_particle"];
+        auto channel = node["catalyst/channels/ippl_" + particlesName];
         channel["type"].set_string("mesh");
 
         // in data channel now we adhere to conduits mesh blueprint definition
@@ -319,43 +148,14 @@ namespace CatalystAdaptor {
         fields["position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         fields["position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         fields["position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-
-        // this node we can return as the pointer to velocity and charge is globally valid
-        if (node_in == std::nullopt)
-        {
-            callCatalystExecute(node);
-            return {};
-        }
-        else
-            return node;
     }
-
-
-    template <class Field, class ParticleContainer>
-    void Execute_Field_Particle(int cycle, double time, int rank, Field& field, ParticleContainer& particle) {
-
-        auto node = std::make_optional<conduit_cpp::Node>();
-        node = CatalystAdaptor::Execute_Particle(cycle, time, rank, particle, node);
-        CatalystAdaptor::Execute_Field(cycle, time, rank, field, node);
-    }
-
-    void Finalize() {
-        conduit_cpp::Node node;
-        catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
-        }
-    }
-
-
-// === NEW =================================
 
 
     template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    void Execute_Field_new(Field* field, const std::string& fieldName,
+    void Execute_Field(Field* field, const std::string& fieldName,
          Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
          conduit_cpp::Node& node) {
-         static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
+        static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
 
         // A) define mesh
 
@@ -435,7 +235,8 @@ namespace CatalystAdaptor {
 
     template <typename T, unsigned Dim>
     void Execute(int cycle, double time, int rank,
-    const auto& /* std::shared_ptr<ParticleContainer<double, 3> >& */ particle,
+    // const auto& /* std::shared_ptr<ParticleContainer<double, 3> >& */ particle,
+    const std::vector<CatalystAdaptor::ParticlePair<T, Dim>>& particles,
     const std::vector<FieldPair<T, Dim>>& fields) {
 
         // catalyst blueprint definition
@@ -452,6 +253,37 @@ namespace CatalystAdaptor {
         state["domain_id"].set(rank);
 
         // Handle particles
+
+        std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> R_host_map;
+        std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> P_host_map;
+        std::map<std::string, typename ippl::ParticleAttrib<double>::HostMirror> q_host_map;
+        std::map<std::string, typename ippl::ParticleAttrib<std::int64_t>::HostMirror> ID_host_map;
+
+        // Loop over all particle container
+        for (const auto& particlesPair : particles)
+        {
+            const std::string& particlesName = particlesPair.first;
+            const auto particleContainer = particlesPair.second;
+
+            assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
+
+            R_host_map[particlesName]  = particleContainer->R.getHostMirror();
+            P_host_map[particlesName]  = particleContainer->P.getHostMirror();
+            q_host_map[particlesName]  = particleContainer->q.getHostMirror();
+            ID_host_map[particlesName] = particleContainer->ID.getHostMirror();
+
+            Kokkos::deep_copy(R_host_map[particlesName],  particleContainer->R.getView());
+            Kokkos::deep_copy(P_host_map[particlesName],  particleContainer->P.getView());
+            Kokkos::deep_copy(q_host_map[particlesName],  particleContainer->q.getView());
+            Kokkos::deep_copy(ID_host_map[particlesName], particleContainer->ID.getView());
+
+            Execute_Particle(
+              particleContainer,
+              R_host_map[particlesName], P_host_map[particlesName], q_host_map[particlesName], ID_host_map[particlesName],
+              particlesName,
+              node);
+        }
+
 
         // Handle fields
 
@@ -471,18 +303,14 @@ namespace CatalystAdaptor {
                 Field_t<Dim>* field = std::get<Field_t<Dim>*>(fieldVariant);
                 // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 
-                Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left;
-                Execute_Field_new(field, fieldName, host_view_layout_left, node);
-                scalar_host_views[fieldName] = host_view_layout_left;
+                Execute_Field(field, fieldName, scalar_host_views[fieldName], node);
             }
             // If field is a _vector_ field
             else if (std::holds_alternative<VField_t<T, Dim>*>(fieldVariant)) {
                 VField_t<T, Dim>* field = std::get<VField_t<T, Dim>*>(fieldVariant);
                 // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 
-                Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left;
-                Execute_Field_new(field, fieldName, host_view_layout_left, node);
-                vector_host_views[fieldName] = host_view_layout_left;                
+                Execute_Field(field, fieldName, vector_host_views[fieldName], node);     
             }
         }
 
@@ -493,14 +321,6 @@ namespace CatalystAdaptor {
         }
 
     }
-
-//    void Execute(int cycle, double time, int rank,
-//	const auto& /* std::shared_ptr<ParticleContainer<double, 3> >& */ particle, const std::string& particle_name, bool particle_onoff,
-//        const auto& /* ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*& */ E, const std::string& E_name, bool E_onoff,
-//        const auto& /* ippl::Field<double,                  3, ippl::UniformCartesian<double, 3>, Cell>*& */ rho, const std::string& rho_name, bool rho_onoff,
-//        const auto& /* ippl::Field<double,                  3, ippl::UniformCartesian<double, 3>, Cell>*& */ phi, const std::string& phi_name, bool phi_onoff) {
-//        // todo
-//    }
 
 }  // namespace CatalystAdaptor
 

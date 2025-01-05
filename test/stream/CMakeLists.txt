@@ -13,12 +13,12 @@ link_directories (
 set (IPPL_LIBS ippl)
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
-add_executable (TestCatalystAdaptor TestCatalystAdaptor.cpp)
-target_link_libraries (
-        TestCatalystAdaptor
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-)
+#add_executable (TestCatalystAdaptor TestCatalystAdaptor.cpp)
+#target_link_libraries (
+#        TestCatalystAdaptor
+#        ${IPPL_LIBS}
+#        ${MPI_CXX_LIBRARIES}
+#)
 
 # vi: set et ts=4 sw=4 sts=4:
 
