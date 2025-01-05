@@ -29,7 +29,6 @@ add_subdirectory (random)
 add_subdirectory (serialization)
 
 if (ENABLE_CATALYST)
-  add_subdirectory (stream)
 endif ()
 
 # vi: set et ts=4 sw=4 sts=4:

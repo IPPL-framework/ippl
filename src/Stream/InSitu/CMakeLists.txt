@@ -2,7 +2,6 @@ set (_SRCS
 )
 
 set (_HDRS
-        CatalystAdaptor.h
 )
 
 include_DIRECTORIES (
