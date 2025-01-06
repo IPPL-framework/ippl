@@ -40,7 +40,7 @@ const char* TestName   = "PenningTrap";
 #include "PenningTrapManager.h"
 
 #ifdef ENABLE_CATALYST
-#include "Stream/InSitu/CatalystAdaptor.h"
+#include "CatalystAdaptor.h"
 #endif
 
 int main(int argc, char* argv[]) {
