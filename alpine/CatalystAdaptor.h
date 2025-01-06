@@ -56,12 +56,16 @@ namespace CatalystAdaptor {
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
         std::cout << "pvscript path: " << argv[1] << std::endl;
-        node["catalyst/scripts/script/filename"].set_string(argv[1]);
+        std::cout << "pvproxy path: " << argv[2] << std::endl;
+        node["catalyst/scripts/script/filename"].set(argv[1]);
+        node["catalyst/proxies/proxy"].set(argv[2]);
+        /*
         for (int cc = 2; cc < argc; ++cc) {
             std::cout << "pvscript args: " << argv[cc] << std::endl;
             conduit_cpp::Node list_entry = node["catalyst/scripts/script/args"].append();
             list_entry.set(argv[cc]);
         }
+        */
         try {
             node["catalyst_load/implementation"]        = getenv("CATALYST_IMPLEMENTATION_NAME");
             node["catalyst_load/search_paths/paraview"] = getenv("CATALYST_IMPLEMENTATION_PATHS");
@@ -232,12 +236,47 @@ namespace CatalystAdaptor {
         setData(fields, host_view_layout_left);
     }
 
+    void AddSteerableChannel(conduit_cpp::Node& node, double scaleFactor) {
+        auto steerable = node["catalyst/channels/steerable"];
+        steerable["type"].set("mesh");
+
+        auto steerable_data = steerable["data"];
+        steerable_data["coordsets/coords/type"].set_string("explicit");
+        steerable_data["coordsets/coords/values/x"].set_float64_vector({ 1 });
+        steerable_data["coordsets/coords/values/y"].set_float64_vector({ 2 });
+        steerable_data["coordsets/coords/values/z"].set_float64_vector({ 3 });
+        steerable_data["topologies/mesh/type"].set("unstructured");
+        steerable_data["topologies/mesh/coordset"].set("coords");
+        steerable_data["topologies/mesh/elements/shape"].set("point");
+        steerable_data["topologies/mesh/elements/connectivity"].set_int32_vector({ 0 });
+        steerable_data["fields/steerable/association"].set("vertex");
+        steerable_data["fields/steerable/topology"].set("mesh");
+        steerable_data["fields/steerable/volume_dependent"].set("false");
+        steerable_data["fields/steerable/values"].set_float64_vector({scaleFactor});
+    }
+
+    void Results( double& scaleFactor) {
+        
+        conduit_cpp::Node results;
+        catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
+
+        if (err != catalyst_status_ok)
+        {
+            std::cerr << "Failed to execute Catalyst-results: " << err << std::endl;
+        }
+        else
+        {
+            std::cout << "Result Node dump:" << std::endl;
+            const std::string value_path = "catalyst/steerable/fields/scalefactor/values";
+            scaleFactor = results[value_path].to_double();
+        }   
+    }
 
     template <typename T, unsigned Dim>
     void Execute(int cycle, double time, int rank,
     // const auto& /* std::shared_ptr<ParticleContainer<double, 3> >& */ particle,
     const std::vector<CatalystAdaptor::ParticlePair<T, Dim>>& particles,
-    const std::vector<FieldPair<T, Dim>>& fields) {
+    const std::vector<FieldPair<T, Dim>>& fields, double& scaleFactor) {
 
         // catalyst blueprint definition
         // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
@@ -314,12 +353,15 @@ namespace CatalystAdaptor {
             }
         }
 
+        AddSteerableChannel(node, scaleFactor);
+
         // Pass Conduit node to Catalyst
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
             std::cerr << "Failed to execute Catalyst: " << err << std::endl;
         }
 
+        Results(scaleFactor);
     }
 
 }  // namespace CatalystAdaptor

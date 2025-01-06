@@ -27,10 +27,11 @@ public:
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
+    double scaleFactor;
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),scaleFactor(30){}
 
     ~PenningTrapManager(){}
 
@@ -228,7 +229,7 @@ public:
         double alpha = this->alpha_m;
         double Bext = this->Bext_m;
         double DrInv = this->DrInv_m;
-        double V0  = 30 * this->length_m[2];
+        double V0  = scaleFactor * this->length_m[2];
         Vector_t<double, Dim> length = this->length_m;
         Vector_t<double, Dim> origin = this->origin_m;
         double dt = this->dt_m;
@@ -291,9 +292,9 @@ public:
         std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields = {
             {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
             {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-            {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+            //{"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
         };
-        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields);
+        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields, scaleFactor);
 #endif
 
         // Field solve
