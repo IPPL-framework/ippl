@@ -48,14 +48,20 @@ int main(int argc, char* argv[]) {
     {
 
 #ifdef ENABLE_CATALYST
+    char* script = nullptr;
+    char* proxy = nullptr;
     for (int i = 1; i < argc; ++i) {
         if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
-            // reduce the argument list
-            char* reducedArgv[] = { argv[0], argv[i + 1] };
-            CatalystAdaptor::Initialize(2, reducedArgv);
-            break;
+            script = argv[i+1]; 
+            i++;
+        }   
+        if (std::string(argv[i]) == "--pvproxy" && i+1 < argc) {
+            proxy = argv[i+1];
+            i++;
         }
     }
+    char* reducedArgv[] = { argv[0], script, proxy};
+    CatalystAdaptor::Initialize(2, reducedArgv);
 #endif
 
         Inform msg(TestName);
@@ -106,3 +112,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
