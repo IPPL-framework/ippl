@@ -49,7 +49,7 @@ class LoadBalancer{
             (*E_m).updateLayout(*fl);
             (*rho_m).updateLayout(*fl);
 
-            if (fs_m->getStype() == "CG") {
+            if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG") {
                 phi_m->updateLayout(*fl);
                 phi_m->setFieldBC(phi_m->getFieldBC());
             }

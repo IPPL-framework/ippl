@@ -28,6 +28,10 @@ public:
                        double lbt_, std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
 
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
+                       double lbt_, std::string& solver_, std::string& stepMethod_,std::vector<std::string> preconditioner_params_)
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,preconditioner_params_){}
+
     ~PenningTrapManager(){}
 
 private:
@@ -77,7 +81,12 @@ public:
 
         this->fcontainer_m->initializeFields(this->solver_m);
 
-        this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
+
+        if(this->getSolver() == "PCG"){
+            this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi(), this->preconditioner_params_m) );            
+        }else{
+            this->setFieldSolver( std::make_shared<FieldSolver_t>( this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(), &this->fcontainer_m->getPhi()) );
+        }
 
         this->fsolver_m->initSolver();
 
