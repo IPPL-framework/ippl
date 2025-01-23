@@ -19,6 +19,10 @@
 #include "Stream/InSitu/CatalystAdaptor.h"
 #endif
 
+#ifdef ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
+#endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
@@ -285,13 +289,19 @@ public:
         // scatter the charge onto the underlying grid
         this->par2grid();
 #ifdef ENABLE_CATALYST
-        std::optional<conduit_cpp::Node> node = std::nullopt;
+        std::optional<conduit::Node> node = std::nullopt;
         //CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
         auto *rho               = &this->fcontainer_m->getRho();
         CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
         //auto *E               = &this->fcontainer_m->getE();
         //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
         //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
+#endif
+
+#ifdef ENABLE_ASCENT
+        std::optional<conduit::Node> node = std::nullopt;
+        auto *rho               = &this->fcontainer_m->getRho();
+        AscentAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
 #endif
 
         // Field solve

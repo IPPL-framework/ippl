@@ -39,8 +39,8 @@ const char* TestName   = "PenningTrap";
 #include "Manager/PicManager.h"
 #include "PenningTrapManager.h"
 
-#ifdef ENABLE_CATALYST
-#include "Stream/InSitu/CatalystAdaptor.h"
+#ifdef ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
 #endif
 
 int main(int argc, char* argv[]) {

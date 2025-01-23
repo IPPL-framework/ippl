@@ -98,10 +98,17 @@ if (ENABLE_CATALYST)
     message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
 endif()
 
+if (ENABLE_ASCENT)
+    find_package(Ascent REQUIRED)
+    message (STATUS "Enable Ascent")
+    message (STATUS "Found ascent_DIR: ${Ascent_DIR}")
+endif()
+
 if (ENABLE_AMR)
     add_subdirectory(AmrParticle)
 endif ()
 include_directories (
+    $<$<BOOL:${ENABLE_ASCENT}>:${ASCENT_INSTALL_PREFIX}/include/ascent>
     BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
@@ -119,6 +126,7 @@ message("Timer fences for this build: ${TimerFences}")
 target_compile_definitions(ippl PUBLIC
   $<$<BOOL:${ENABLE_FFT}>:-DENABLE_FFT>
   $<$<BOOL:${ENABLE_CATALYST}>:-DENABLE_CATALYST>
+  $<$<BOOL:${ENABLE_ASCENT}>:-DENABLE_ASCENT>
   IPPL_ENABLE_TIMER_FENCES=${TimerFences}
 )
 
@@ -126,6 +134,7 @@ target_link_libraries(ippl PUBLIC
   Kokkos::kokkos
   $<$<BOOL:${ENABLE_FFT}>:Heffte>
   $<$<BOOL:${ENABLE_CATALYST}>:catalyst::catalyst>
+  $<$<BOOL:${ENABLE_ASCENT}>:ascent::ascent_mpi>
   )
 
 install (TARGETS ippl DESTINATION lib)

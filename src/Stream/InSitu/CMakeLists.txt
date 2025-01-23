@@ -2,6 +2,7 @@ set (_SRCS
 )
 
 set (_HDRS
+        AscentAdaptor.h
         CatalystAdaptor.h
 )
 

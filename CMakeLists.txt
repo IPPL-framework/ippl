@@ -23,7 +23,6 @@ macro(remove_flag_from_target _target _flag)
     endif()
 endmacro()
 
-
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 
     set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
@@ -207,7 +206,7 @@ if (ENABLE_FFT)
 endif ()
 
 option (ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
-option (ENABLE_ASCENT "Build example with Ascent enabled" OFF)
+option (ENABLE_ASCENT "Build example with Ascent enabled" ON)
 option (ENABLE_SOLVERS "Enable IPPL solvers" ON)
 
 add_subdirectory (src)
