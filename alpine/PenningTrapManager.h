@@ -299,9 +299,9 @@ public:
 #endif
 
 #ifdef ENABLE_ASCENT
-        std::optional<conduit::Node> node = std::nullopt;
         auto *rho               = &this->fcontainer_m->getRho();
-        AscentAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
+        //AscentAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho);
+        AscentAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc);
 #endif
 
         // Field solve

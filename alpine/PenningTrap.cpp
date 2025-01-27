@@ -51,6 +51,10 @@ int main(int argc, char* argv[]) {
         CatalystAdaptor::Initialize(argc, argv);
 #endif
 
+#ifdef ENABLE_ASCENT
+        AscentAdaptor::Initialize(argc, argv);
+#endif
+
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
@@ -88,6 +92,10 @@ int main(int argc, char* argv[]) {
 
 #ifdef ENABLE_CATALYST
         CatalystAdaptor::Finalize();
+#endif
+
+#ifdef ENABLE_ASCENT
+        AscentAdaptor::Finalize();
 #endif
 
 
