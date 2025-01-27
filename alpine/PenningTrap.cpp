@@ -39,8 +39,13 @@ const char* TestName   = "PenningTrap";
 #include "Manager/PicManager.h"
 #include "PenningTrapManager.h"
 
+
 #ifdef ENABLE_ASCENT
-#include "Stream/InSitu/AscentAdaptor.h"
+#include "AscentAdaptor.h"
+#endif
+
+#ifdef ENABLE_CATALYST
+#include "CatalystAdaptor.h"
 #endif
 
 int main(int argc, char* argv[]) {
@@ -48,7 +53,20 @@ int main(int argc, char* argv[]) {
     {
 
 #ifdef ENABLE_CATALYST
-        CatalystAdaptor::Initialize(argc, argv);
+    char* script = nullptr;
+    char* proxy = nullptr;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+            script = argv[i+1]; 
+            i++;
+        }   
+        if (std::string(argv[i]) == "--pvproxy" && i+1 < argc) {
+            proxy = argv[i+1];
+            i++;
+        }
+    }
+    char* reducedArgv[] = { argv[0], script, proxy};
+    CatalystAdaptor::Initialize(2, reducedArgv);
 #endif
 
 #ifdef ENABLE_ASCENT
@@ -107,3 +125,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+

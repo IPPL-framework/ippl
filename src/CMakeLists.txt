@@ -82,7 +82,7 @@ add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
 add_subdirectory (Stream)
-add_subdirectory (Stream/InSitu)
+# add_subdirectory (Stream/InSitu)
 add_subdirectory (Random)
 
 if (ENABLE_SOLVERS)
