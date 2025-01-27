@@ -70,7 +70,15 @@ int main(int argc, char* argv[]) {
 #endif
 
 #ifdef ENABLE_ASCENT
-        AscentAdaptor::Initialize(argc, argv);
+        int frequency = 1;
+        for (int i = 1; i < argc; ++i) {
+            if (std::string(argv[i]) == "--frequency" && i + 1 < argc) {
+                frequency = atoi(argv[i+1]); 
+                i++;
+            } 
+        }
+
+        AscentAdaptor::Initialize(frequency);
 #endif
 
         Inform msg(TestName);

@@ -19,7 +19,7 @@
 #endif
 
 #ifdef ENABLE_ASCENT
-#include "Stream/InSitu/AscentAdaptor.h"
+#include "AscentAdaptor.h"
 #endif
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
@@ -302,9 +302,15 @@ public:
 #endif
 
 #ifdef ENABLE_ASCENT
-        auto *rho               = &this->fcontainer_m->getRho();
-        //AscentAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho);
-        AscentAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc);
+        std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<AscentAdaptor::FieldPair<T, Dim>> fields = {
+            {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            //{"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        AscentAdaptor::Execute(it, this->time_m, ippl::Comm->rank(),  particles, fields, scaleFactor);
 #endif
 
         // Field solve
