@@ -28,9 +28,9 @@ namespace AscentAdaptor {
 
     using View_vector =
         Kokkos::View<ippl::Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-    inline void setData(conduit::Node& node, const View_vector& view) {
+    inline void setData(conduit::Node& node, const View_vector& view, const std::string& fieldName) {
         node["electrostatic/association"].set_string("element");
-        node["electrostatic/topology"].set_string("mesh");
+        node["electrostatic/topology"].set_string(fieldName + "_mesh");
         node["electrostatic/volume_dependent"].set_string("false");
 
         auto length = std::size(view);
@@ -43,9 +43,9 @@ namespace AscentAdaptor {
     }
 
     using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-    inline void setData(conduit::Node& node, const View_scalar& view) {
+    inline void setData(conduit::Node& node, const View_scalar& view, const std::string& fieldName) {
         node["density/association"].set_string("element");
-        node["density/topology"].set_string("mesh");
+        node["density/topology"].set_string(fieldName + "_mesh");
         node["density/volume_dependent"].set_string("false");
 
         node["density/values"].set_external(view.data(), view.size());
@@ -73,58 +73,60 @@ namespace AscentAdaptor {
     void Execute_Particle(
          const auto& particleContainer,
          const auto& R_host, const auto& P_host, const auto& q_host, const auto& ID_host,
+         const std::string& particlesName,
          conduit::Node& node) {
             
+        std::cout << "Adding particles: " << particlesName << std::endl;
 
-        node["coordsets/particle_coords/type"].set_string("explicit");
+        node["coordsets/" + particlesName + "_coords/type"].set_string("explicit");
 
         //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        node["coordsets/particle_coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        node["coordsets/particle_coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        node["coordsets/particle_coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        node["coordsets/" + particlesName + "_coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        node["coordsets/" + particlesName + "_coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        node["coordsets/" + particlesName + "_coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
-        node["topologies/particle_topo/type"].set_string("unstructured");
-        node["topologies/particle_topo/coordset"].set_string("particle_coords");
-        node["topologies/particle_topo/elements/shape"].set_string("point");
+        node["topologies/" + particlesName + "_topo/type"].set_string("unstructured");
+        node["topologies/" + particlesName + "_topo/coordset"].set_string(particlesName + "_coords");
+        node["topologies/" + particlesName + "_topo/elements/shape"].set_string("point");
         //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
-        node["topologies/particle_topo/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
+        node["topologies/" + particlesName + "_topo/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
 
         //auto charge_view = particleContainer->getQ().getView();
 
         // add values for scalar charge field
         auto &fields = node["fields"];
-        fields["particle_charge/association"].set_string("vertex");
-        fields["particle_charge/topology"].set_string("particle_topo");
-        fields["particle_charge/volume_dependent"].set_string("false");
+        fields[particlesName + "_charge/association"].set_string("vertex");
+        fields[particlesName + "_charge/topology"].set_string(particlesName + "_topo");
+        fields[particlesName + "_charge/volume_dependent"].set_string("false");
 
         //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
-        fields["particle_charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
+        fields[particlesName + "_charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
 
         // add values for vector velocity field
         //auto velocity_view = particleContainer->P.getView();
-        fields["particle_velocity/association"].set_string("vertex");
-        fields["particle_velocity/topology"].set_string("particle_topo");
-        fields["particle_velocity/volume_dependent"].set_string("false");
+        fields[particlesName + "_velocity/association"].set_string("vertex");
+        fields[particlesName + "_velocity/topology"].set_string(particlesName + "_topo");
+        fields[particlesName + "_velocity/volume_dependent"].set_string("false");
 
         //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["particle_velocity/values/x"].set_external(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["particle_velocity/values/y"].set_external(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["particle_velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+        fields[particlesName + "_velocity/values/x"].set_external(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+        fields[particlesName + "_velocity/values/y"].set_external(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+        fields[particlesName + "_velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
 
-        fields["particle_position/association"].set_string("vertex");
-        fields["particle_position/topology"].set_string("particle_topo");
-        fields["particle_position/volume_dependent"].set_string("false");
+        fields[particlesName + "_position/association"].set_string("vertex");
+        fields[particlesName + "_position/topology"].set_string(particlesName + "_topo");
+        fields[particlesName + "_position/volume_dependent"].set_string("false");
 
         //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["particle_position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["particle_position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["particle_position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields[particlesName + "_position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields[particlesName + "_position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields[particlesName + "_position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         conduit::Node verify_info;
         if(!conduit::blueprint::mesh::verify(node, verify_info))
@@ -141,14 +143,13 @@ namespace AscentAdaptor {
          Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
          conduit::Node& node) {
         static_assert(Field::dim == 3, "AscentAdaptor only supports 3D");
-        
 
-        node["coordsets/coords/type"].set_string("uniform");
+        node["coordsets/" + fieldName + "_coords/type"].set_string("uniform");
 
         // number of points in specific dimension
-        std::string field_node_dim{"coordsets/coords/dims/i"};
-        std::string field_node_origin{"coordsets/coords/origin/x"};
-        std::string field_node_spacing{"coordsets/coords/spacing/dx"};
+        std::string field_node_dim{"coordsets/" + fieldName + "_coords/dims/i"};
+        std::string field_node_origin{"coordsets/" + fieldName + "_coords/origin/x"};
+        std::string field_node_spacing{"coordsets/" + fieldName + "_coords/spacing/dx"};
 
         for (unsigned int iDim = 0; iDim < field->get_mesh().getGridsize().dim; ++iDim) {
             // add dimension
@@ -169,9 +170,9 @@ namespace AscentAdaptor {
         }
 
         // add topology
-        node["topologies/mesh/type"].set_string("uniform");
-        node["topologies/mesh/coordset"].set_string("coords");
-        std::string field_node_origin_topo{"topologies/mesh/origin/x"};
+        node["topologies/" + fieldName + "_mesh/type"].set_string("uniform");
+        node["topologies/" + fieldName + "_mesh/coordset"].set_string(fieldName + "_coords");
+        std::string field_node_origin_topo{"topologies/" + fieldName + "_mesh/origin/x"};
         for (unsigned int iDim = 0; iDim < field->get_mesh().getGridsize().dim; ++iDim) {
             // shift origin
             node[field_node_origin_topo].set(field->get_mesh().getOrigin()[iDim]
@@ -206,7 +207,7 @@ namespace AscentAdaptor {
         }
 
         auto &fields = node["fields"];
-        setData(fields, host_view_layout_left);
+        setData(fields, host_view_layout_left, fieldName);
 
         conduit::Node verify_info;
         if(!conduit::blueprint::mesh::verify(node, verify_info))
