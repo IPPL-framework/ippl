@@ -1,0 +1,25 @@
+-
+  action: "add_pipelines"
+  pipelines:
+    pl1:
+      f1:
+        type: "threshold"
+        params:
+          field: "particle_magnitude"
+          min_value: 0
+          max_value: 1
+- 
+  action: "add_scenes"
+  scenes: 
+    s1: 
+      plots: 
+        p1:
+          type: pseudocolor
+          field: particle_charge
+          points:
+            radius: 0.1
+          pipeline: "pl1"
+      renders: 
+        r1: 
+          image_prefix: "render_%06d"
+          screen_annotations: "false"

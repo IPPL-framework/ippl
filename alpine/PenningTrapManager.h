@@ -302,6 +302,7 @@ public:
 #endif
 
 #ifdef ENABLE_ASCENT
+
         std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles = {
             {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
         };
@@ -310,7 +311,8 @@ public:
             {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
             //{"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
         };
-        AscentAdaptor::Execute(it, this->time_m, ippl::Comm->rank(),  particles, fields, scaleFactor);
+        AscentAdaptor::Execute(it, this->time_m ,  particles, fields);
+
 #endif
 
         // Field solve

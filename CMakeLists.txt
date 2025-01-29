@@ -196,6 +196,7 @@ if (ENABLE_FFT)
         endif()
         FetchContent_MakeAvailable(Heffte)
         # Required to suppress warnings related to heffte
+        MESSAGE(STATUS "HEFFTE: "${Heffte_SOURCE_DIR}"")
         target_include_directories(Heffte SYSTEM PUBLIC "${Heffte_SOURCE_DIR}/include")
         set(Heffte_DIR "${Heffte_SOURCE_DIR}")
         remove_flag_from_target(Heffte "-Werror")

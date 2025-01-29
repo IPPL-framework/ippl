@@ -24,6 +24,12 @@ target_link_libraries (LandauDamping ${IPPL_LIBS})
 add_executable (BumponTailInstability BumponTailInstability.cpp)
 target_link_libraries (BumponTailInstability ${IPPL_LIBS})
 
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/ascent_actions.yaml"
+    "${CMAKE_CURRENT_BINARY_DIR}/ascent_actions.yaml"
+    COPYONLY
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
