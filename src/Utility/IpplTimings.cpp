@@ -32,7 +32,7 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
-#define Kokkos_ENABLE_CUDA 0
+// #define Kokkos_ENABLE_CUDA 0
 #ifdef Kokkos_ENABLE_CUDA      // \todo need a better macro 
  #include <nvtx3/nvToolsExt.h> 
 #endif
