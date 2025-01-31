@@ -5,6 +5,7 @@
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
+#include "PoissonSolvers/NullSolver.h"
 
 #include <memory>
 #include "Manager/BaseManager.h"
@@ -41,6 +42,9 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 template <typename T, unsigned Dim>
 using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
+template <typename T, unsigned Dim>
+using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
+
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T, unsigned Dim>
@@ -56,7 +60,8 @@ using OpenSolver_t =
 
 template <typename T, unsigned Dim>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
+                                             NullSolver_t<T, Dim>>;
 
 // Define the FieldSolverBase class
 namespace ippl {
