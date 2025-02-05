@@ -59,13 +59,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     bcField.apply(lhs);
     bcField.apply(rhs);
 
-    //std::cout << "write lhs" << std::endl;
-    //lhs.write();
-    
     rhs = 1.0;
-
-    //std::cout << "rhs set = " << std::endl;
-    //rhs.write();
 
     // set rhs
     auto view_rhs = rhs.getView();
@@ -83,8 +77,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
             }
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            //std::cout << "x = " << x << std::endl;
-
             apply(view_sol, args) = analytic(x);
         });
 
@@ -96,8 +88,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     // set the parameters
     ippl::ParameterList params;
-    params.add("tolerance", 1e-7);
-    params.add("max_iterations", 100);
+    params.add("tolerance", 1e-13);
+    params.add("max_iterations", 2000);
 
     solver.mergeParameters(params);
 
@@ -144,7 +136,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 3; n = n << 1) {
+        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
             testFEMSolver<T, 1>(n, 0.0, 1.0);
         }
 

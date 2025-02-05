@@ -154,10 +154,6 @@ namespace ippl {
             *(this->rhs_mp) = *(this->rhs_mp) -
                                 lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
             
-            // debug print
-            std::cout << "modified rhs=" << std::endl;
-            (this->rhs_mp)->write();
-
             // start a timer
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
@@ -165,10 +161,6 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
-
-            // debug print
-            std::cout << "final solution=" << std::endl;
-            (this->lhs_mp)->write();
 
             IpplTimings::stopTimer(pcgTimer);
 
