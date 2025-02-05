@@ -32,49 +32,6 @@ target_link_libraries(
     ${MPI_CXX_LIBRARIES}
 )
 
-add_executable(TestFEMPoissonSolver TestFEMPoissonSolver.cpp)
-target_link_libraries(
-    TestFEMPoissonSolver
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestFEMPoissonSolver_gaussian1d TestFEMPoissonSolver_gaussian1d.cpp)
-target_link_libraries(
-    TestFEMPoissonSolver_gaussian1d
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestFEMPoissonSolver_periodic TestFEMPoissonSolver_periodic.cpp)
-target_link_libraries(
-    TestFEMPoissonSolver_periodic
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestFEMPoissonSolver_periodic_sinsin TestFEMPoissonSolver_periodic_sinsin.cpp)
-target_link_libraries(
-    TestFEMPoissonSolver_periodic_sinsin
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestFEMScaling_dirichlet_sin TestFEMScaling_dirichlet_sin.cpp)
-target_link_libraries(
-    TestFEMScaling_dirichlet_sin
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestFEMScaling_periodic_sinsin TestFEMScaling_periodic_sinsin.cpp)
-target_link_libraries(
-    TestFEMScaling_periodic_sinsin
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-add_executable(TestOld3d TestOld3d.cpp)
-target_link_libraries(
-    TestOld3d
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
 if (ENABLE_FFT)
     add_executable (TestGaussian_convergence TestGaussian_convergence.cpp)
     target_link_libraries (
