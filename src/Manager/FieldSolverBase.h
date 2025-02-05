@@ -9,6 +9,7 @@
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
+#include "PoissonSolvers/NullSolver.h"
 
 template <unsigned Dim>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
@@ -43,6 +44,9 @@ template <typename T, unsigned Dim>
 using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
 template <typename T, unsigned Dim>
+using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
+
+template <typename T, unsigned Dim>
 using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
@@ -59,9 +63,9 @@ using OpenSolver_t =
     ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T, unsigned Dim>
-using Solver_t =
-    VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>, P3MSolver_t<T, Dim>,
-                                OpenSolver_t<T, Dim>, FEMSolver_t<T, Dim>>;
+using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
+                                             NullSolver_t<T, Dim>, FEMSolver_t<T, Dim>>;
 
 // Define the FieldSolverBase class
 namespace ippl {
