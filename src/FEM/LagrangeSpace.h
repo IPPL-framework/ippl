@@ -81,7 +81,7 @@ namespace ippl {
          * @param layout Reference to the field layout
          */
         LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature, const Layout_t& layout);
+                      const QuadratureType& quadrature, const Layout_t& layout, T dirichlet_val = 0.0);
 
         /**
          * @brief Construct a new LagrangeSpace object (without layout)
@@ -205,6 +205,18 @@ namespace ippl {
         FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
 
         /**
+         * @brief Assemble the left stiffness matrix A of the system 
+         * but only for the boundary values, so that they can be 
+         * subtracted from the RHS for treatment of Dirichlet BCs
+         *
+         * @param field The field to assemble the matrix for
+         *
+         * @return FieldLHS - The LHS field containing A*x
+         */
+        template <typename F>
+        FieldLHS evaluateAx_lift(FieldLHS& field, F& evalFunction) const;
+
+        /**
          * @brief Assemble the load vector b of the system Ax = b
          *
          * @param rhs_field The field to set with the load vector
@@ -258,6 +270,7 @@ namespace ippl {
             return false;
         }
 
+        T dirichletval_m;
         Kokkos::View<size_t*> elementIndices;
     };
 

@@ -69,11 +69,11 @@ namespace ippl {
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
+        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs, Tlhs dirichlet_val = 0.0)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout(), dirichlet_val) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 
@@ -150,6 +150,14 @@ namespace ippl {
 
             pcg_algo_m.setOperator(algoOperator);
 
+            // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
+            *(this->rhs_mp) = *(this->rhs_mp) -
+                                lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
+            
+            // debug print
+            std::cout << "modified rhs=" << std::endl;
+            (this->rhs_mp)->write();
+
             // start a timer
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
@@ -157,6 +165,10 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
+
+            // debug print
+            std::cout << "final solution=" << std::endl;
+            (this->lhs_mp)->write();
 
             IpplTimings::stopTimer(pcgTimer);
 
