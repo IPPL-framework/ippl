@@ -1,14 +1,15 @@
 // Tests the FEM Poisson solver by solving the problem:
 //
-// -Laplacian(u) = pi^2 * sin(pi * x), x in [-1,1]
+// -Laplacian(u) = 2.0, x in [-1,1]
 // u(-1) = u(1) = 0
 //
-// Exact solution is u(x) = sin(pi * x)
+// Exact solution is u(x) = 1 - (x * x)
 //
 // BCs: Homogeneous Dirichlet BCs (Zero).
+// This is only 1D!
 //
 // Usage:
-//    ./TestZeroBC_sin <dim> --info 5
+//    ./TestZeroBC_constant --info 5
 
 #include "Ippl.h"
 
@@ -16,26 +17,19 @@
 #include "PoissonSolvers/FEMPoissonSolver.h"
 
 template <typename T, unsigned Dim>
-KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
-    const T pi = Kokkos::numbers::pi_v<T>;
+KOKKOS_INLINE_FUNCTION T RHSFunction(ippl::Vector<T, Dim> x_vec) {
+    T val = -2.0 * (x_vec[1]*x_vec[1] - Kokkos::pow(x_vec[1],4) + (Kokkos::pow(x_vec[0],4)
+         * (-1.0 + 6*x_vec[1]*x_vec[1])) + x_vec[0]*x_vec[0]*(1 - 12*x_vec[1]*x_vec[1]
+         + 6*Kokkos::pow(x_vec[1],4)));
 
-    T val = 1.0;
-    for (unsigned d = 0; d < Dim; d++) {
-        val *= Kokkos::sin(pi * x_vec[d]);
-    }
-
-    return Dim * pi * pi * val;
+    return val;
 }
 
 template <typename T, unsigned Dim>
 struct AnalyticSol {
-    const T pi = Kokkos::numbers::pi_v<T>;
-
     KOKKOS_FUNCTION const T operator()(ippl::Vector<T, Dim> x_vec) const {
-        T val = 1.0;
-        for (unsigned d = 0; d < Dim; d++) {
-            val *= Kokkos::sin(pi * x_vec[d]);
-        }
+        T val = (x_vec[0] * x_vec[0]) * (1 - (x_vec[0]*x_vec[0])) 
+                * (x_vec[1] * x_vec[1]) * (1 - (x_vec[1]*x_vec[1]));
         return val;
     }
 };
@@ -43,6 +37,7 @@ struct AnalyticSol {
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
+    
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
@@ -94,7 +89,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
+            apply(view_rhs, args) = RHSFunction<T, Dim>(x);
         });
 
     IpplTimings::stopTimer(initTimer);
@@ -136,14 +131,6 @@ int main(int argc, char* argv[]) {
 
         using T = double;
 
-        unsigned dim = 3;
-
-        if (argc > 1 && std::atoi(argv[1]) == 1) {
-            dim = 1;
-        } else if (argc > 1 && std::atoi(argv[1]) == 2) {
-            dim = 2;
-        }
-
         // start the timer
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
@@ -155,21 +142,8 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        if (dim == 1) {
-            // 1D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, 1.0, 3.0);
-            }
-        } else if (dim == 2) {
-            // 2D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, 1.0, 3.0);
-            }
-        } else {
-            // 3D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                testFEMSolver<T, 3>(n, 1.0, 3.0);
-            }
+        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+            testFEMSolver<T, 2>(n, 0.0, 1.0);
         }
 
         // stop the timer

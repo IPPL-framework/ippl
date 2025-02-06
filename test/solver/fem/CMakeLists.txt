@@ -19,6 +19,20 @@ target_link_libraries(
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable(TestZeroBC_constant1d TestZeroBC_constant1d.cpp)
+target_link_libraries(
+    TestZeroBC_constant1d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestZeroBC_polynomial2d TestZeroBC_polynomial2d.cpp)
+target_link_libraries(
+    TestZeroBC_polynomial2d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable(TestPeriodicBC_sin TestPeriodicBC_sin.cpp)
 target_link_libraries(
     TestPeriodicBC_sin
