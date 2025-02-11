@@ -23,6 +23,8 @@ int main(int argc, char* argv[]) {
         using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
+        Inform msg("TestGather");
+
         int pt = 512;
         ippl::Index I(pt);
         ippl::NDIndex<3> owned(I, I, I);
@@ -68,8 +70,18 @@ int main(int argc, char* argv[]) {
 
         field = 1.0;
 
+        msg << "Testing addToAttribute=false. Expected output: 1" << endl;
         gather(bunch.Q, field, bunch.R);
+        
+        // Should printout 1.0 for each particle
+        bunch.Q.print();
 
+        ippl::Comm->barrier(); // so output of 1 and 2 is separated
+
+        msg << "Testing addToAttribute=true. Expected output: 2" << endl;
+        gather(bunch.Q, field, bunch.R, true);
+
+        // Should printout 2.0 for each particle
         bunch.Q.print();
     }
     ippl::finalize();

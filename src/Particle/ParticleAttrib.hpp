@@ -102,9 +102,10 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    template <typename Field, class PT>
+    template <typename Field, class PT, typename policy_type>
     void ParticleAttrib<T, Properties...>::scatter(
-        Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp) const {
+        Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
+        policy_type iteration_policy, hash_type hash_array) const {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
 
@@ -127,12 +128,21 @@ namespace ippl {
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
         const int nghost               = f.getNghost();
 
-        using policy_type = Kokkos::RangePolicy<execution_space>;
+        //using policy_type = Kokkos::RangePolicy<execution_space>;
+        const bool useHashView = hash_array.extent(0) > 0;
+        if (useHashView && (iteration_policy.end() > hash_array.extent(0))) {
+            Inform m("scatter");
+            m << "Hash array was passed to scatter, but size does not match iteration policy." << endl;
+            ippl::Comm->abort();
+        }
         Kokkos::parallel_for(
-            "ParticleAttrib::scatter", policy_type(0, *(this->localNum_mp)),
+            "ParticleAttrib::scatter", iteration_policy,
             KOKKOS_CLASS_LAMBDA(const size_t idx) {
+                // map index to possible hash_map
+                size_t mapped_idx = useHashView ? hash_array(idx) : idx;
+
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                vector_type l                        = (pp(mapped_idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
@@ -140,7 +150,7 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // scatter
-                const value_type& val = dview_m(idx);
+                const value_type& val = dview_m(mapped_idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
@@ -155,7 +165,8 @@ namespace ippl {
     template <typename T, class... Properties>
     template <typename Field, typename P2>
     void ParticleAttrib<T, Properties...>::gather(
-        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) {
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+        const bool addToAttribute) {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
 
@@ -194,8 +205,10 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // gather
-                dview_m(idx) = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
-                                                       view, wlo, whi, args);
+                value_type gathered = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
+                                                              view, wlo, whi, args);
+                if (addToAttribute) dview_m(idx) += gathered;
+                else                dview_m(idx)  = gathered;
             });
         IpplTimings::stopTimer(gatherTimer);
     }
@@ -205,14 +218,24 @@ namespace ippl {
      *
      */
 
-    template <typename Attrib1, typename Field, typename Attrib2>
+    template <typename Attrib1, typename Field, typename Attrib2, 
+                typename policy_type = Kokkos::RangePolicy<typename Field::execution_space>>
     inline void scatter(const Attrib1& attrib, Field& f, const Attrib2& pp) {
-        attrib.scatter(f, pp);
+        attrib.scatter(f, pp, policy_type(0, attrib.getParticleCount())); 
+    }
+
+    // Second implementation for custom range policy, but without index array
+    template <typename Attrib1, typename Field, typename Attrib2, 
+                typename policy_type = Kokkos::RangePolicy<typename Field::execution_space>>
+    inline void scatter(const Attrib1& attrib, Field& f, const Attrib2& pp, 
+                        policy_type iteration_policy, typename Attrib1::hash_type hash_array = {}) {
+        attrib.scatter(f, pp, iteration_policy, hash_array);
     }
 
     template <typename Attrib1, typename Field, typename Attrib2>
-    inline void gather(Attrib1& attrib, Field& f, const Attrib2& pp) {
-        attrib.gather(f, pp);
+    inline void gather(Attrib1& attrib, Field& f, const Attrib2& pp, 
+                        const bool addToAttribute = false) {
+        attrib.gather(f, pp, addToAttribute);
     }
 
 #define DefineParticleReduction(fun, name, op, MPI_Op)            \
