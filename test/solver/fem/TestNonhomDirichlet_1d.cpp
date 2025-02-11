@@ -2,7 +2,7 @@
 // and homogeneous Dirichlet boundaries
 //
 // Usage:
-//     ./TestNonHomDirichlet --info 5
+//     ./TestNonHomDirichlet_1d --info 5
 
 #include "Ippl.h"
 
@@ -59,10 +59,10 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     bcField.apply(lhs);
     bcField.apply(rhs);
 
+    // set rhs
     rhs = 1.0;
 
-    // set rhs
-    auto view_rhs = rhs.getView();
+    // set analytic sol
     auto view_sol = sol.getView();
     auto ldom     = layout.getLocalNDIndex();
 
