@@ -39,12 +39,21 @@ target_link_libraries(
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+
+add_executable(TestNonhomDirichlet_Gauss3d TestNonhomDirichlet_Gauss3d.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_Gauss3d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable(TestScaling_ZeroBC_sin TestScaling_ZeroBC_sin.cpp)
 target_link_libraries(
     TestScaling_ZeroBC_sin
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+
 add_executable(TestScaling_PeriodicBC_sinsin TestScaling_PeriodicBC_sinsin.cpp)
 target_link_libraries(
     TestScaling_PeriodicBC_sinsin
