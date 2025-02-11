@@ -113,6 +113,27 @@ if(NOT Kokkos_FOUND)
     )
     FetchContent_MakeAvailable(kokkos)
 endif()
+option (ENABLE_RENDERING "Enable Renderer tests" OFF)
+if(ENABLE_RENDERING)
+    file(
+        DOWNLOAD
+        https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+
+        "${CMAKE_BINARY_DIR}/downloaded_headers/stb_image_write.hpp"
+    )
+    file(
+        DOWNLOAD
+        https://raw.githubusercontent.com/manuel5975p/frast/egl_branch/rastmath.hpp
+
+        "${CMAKE_BINARY_DIR}/downloaded_headers/rastmath.hpp"
+    )
+    FetchContent_Declare(
+        flaschentype
+        GIT_REPOSITORY https://github.com/manuel5975p/flaschentype
+    )
+    FetchContent_MakeAvailable(flaschentype)
+    include_directories("${CMAKE_BINARY_DIR}/downloaded_headers/")
+endif()
 # Select flags.
 set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CUDA_EXTENSIONS OFF)
