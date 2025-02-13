@@ -72,35 +72,46 @@ namespace AscentAdaptor {
 
     void Execute_Particle(
          const auto& particleContainer,
-         const auto& R_host, const auto& P_host, const auto& q_host, const auto& ID_host,
+         const auto& R_host, const auto& P_host, const auto& q_host,
          const auto& magnitude_host,
          const std::string& particlesName,
-         conduit::Node& node) {
+         conduit::Node& node,
+         std::array<double, 3>& center ) {
             
         node["coordsets/" + particlesName + "_coords/type"].set_string("explicit");
-
-        //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         node["coordsets/" + particlesName + "_coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         node["coordsets/" + particlesName + "_coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         node["coordsets/" + particlesName + "_coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
-        node["topologies/" + particlesName + "_topo/type"].set_string("unstructured");
+        node["topologies/" + particlesName + "_topo/type"].set_string("points");
         node["topologies/" + particlesName + "_topo/coordset"].set_string(particlesName + "_coords");
-        node["topologies/" + particlesName + "_topo/elements/shape"].set_string("point");
-        //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
-        node["topologies/" + particlesName + "_topo/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
 
-        //auto charge_view = particleContainer->getQ().getView();
+        node["topologies/" + particlesName + "_topo/type"].set_string("points");
+        node["topologies/" + particlesName + "_topo/coordset"].set_string(particlesName + "_coords");
+
+        /* Particle_center */
+        node["coordsets/" + particlesName + "_center_coords/type"].set_string("explicit");
+
+        node["coordsets/" + particlesName + "_center_coords/values/x"].set(&center[0], 1);
+        node["coordsets/" + particlesName + "_center_coords/values/y"].set(&center[1], 1);
+        node["coordsets/" + particlesName + "_center_coords/values/z"].set(&center[2], 1);
+        node["topologies/" + particlesName + "_center_topo/type"].set_string("points");
+        node["topologies/" + particlesName + "_center_topo/coordset"].set_string(particlesName + "_center_coords");
+
+        std::vector<double> dummy_field = { 1.0f };
+        // add a dummy field
+        auto &fields = node["fields"];
+        fields[particlesName + "_center/association"].set_string("vertex");
+        fields[particlesName + "_center/topology"].set_string(particlesName + "_center_topo");
+        fields[particlesName + "_center/volume_dependent"].set_string("false");
+        fields[particlesName + "_center/values"].set(dummy_field);
+        /* end particle center */
 
         // add values for scalar charge field
-        auto &fields = node["fields"];
         fields[particlesName + "_charge/association"].set_string("vertex");
         fields[particlesName + "_charge/topology"].set_string(particlesName + "_topo");
         fields[particlesName + "_charge/volume_dependent"].set_string("false");
 
-        //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
         fields[particlesName + "_charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
 
         // add values for vector velocity field
@@ -109,9 +120,6 @@ namespace AscentAdaptor {
         fields[particlesName + "_velocity/topology"].set_string(particlesName + "_topo");
         fields[particlesName + "_velocity/volume_dependent"].set_string("false");
 
-        //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         fields[particlesName + "_velocity/values/x"].set_external(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         fields[particlesName + "_velocity/values/y"].set_external(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         fields[particlesName + "_velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
@@ -120,20 +128,17 @@ namespace AscentAdaptor {
         fields[particlesName + "_position/topology"].set_string(particlesName + "_topo");
         fields[particlesName + "_position/volume_dependent"].set_string("false");
 
-        //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         fields[particlesName + "_position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         fields[particlesName + "_position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         fields[particlesName + "_position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+
 
         fields[particlesName + "_magnitude/association"].set_string("vertex");
         fields[particlesName + "_magnitude/topology"].set_string(particlesName + "_topo");
         fields[particlesName + "_magnitude/volume_dependent"].set_string("false");
 
-        fields[particlesName + "_magnitude/values/x"].set_external(&magnitude_host[0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields[particlesName + "_magnitude/values/y"].set_external(&magnitude_host[1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields[particlesName + "_magnitude/values/z"].set_external(&magnitude_host[2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+
+        fields[particlesName + "_magnitude/values"].set(magnitude_host.data(), magnitude_host.extent(0));
 
         conduit::Node verify_info;
         if(!conduit::blueprint::mesh::verify(node, verify_info))
@@ -247,6 +252,7 @@ namespace AscentAdaptor {
         // Copy local sum to host
         Kokkos::deep_copy(global_sum, local_sum);
 
+
         // Get local particle count
         int local_count = num_particles;
         int global_count;
@@ -265,12 +271,13 @@ namespace AscentAdaptor {
         // Compute global center
         std::array<double, 3> center = {0.0, 0.0, 0.0};
         if (global_count > 0) {
-            center[0] = global_sum(0) / global_count;
-            center[1] = global_sum(1) / global_count;
-            center[2] = global_sum(2) / global_count;
+            center[0] = global_sum(0);
+            center[1] = global_sum(1);
+            center[2] = global_sum(2);
         }
 
-        return center;
+
+        return {global_sum(0), global_sum(1), global_sum(2)};
     }
 
     // Function to compute the magnitude of each point from the center
@@ -292,7 +299,7 @@ namespace AscentAdaptor {
                 double dz = R_view(i)[2] - center[2];
                 magnitude(i) = sqrt(dx * dx + dy * dy + dz * dz);
             });
-
+        
         // Copy magnitudes to host
         Kokkos::View<double*, Kokkos::HostSpace> host_magnitude("host_magnitude", num_particles);
         Kokkos::deep_copy(host_magnitude, magnitude);
@@ -307,7 +314,7 @@ namespace AscentAdaptor {
     const std::vector<FieldPair<T, Dim>>& fields) {
         conduit::Node node;
 
-        if(mFrequency % (cycle+1) != 0) return;
+        if((cycle+1) % mFrequency != 0) return;
 
         // add time/cycle information
         auto state = node["state"];
@@ -333,22 +340,22 @@ namespace AscentAdaptor {
             R_host_map[particlesName]  = particleContainer->R.getHostMirror();
             P_host_map[particlesName]  = particleContainer->P.getHostMirror();
             q_host_map[particlesName]  = particleContainer->q.getHostMirror();
-            ID_host_map[particlesName] = particleContainer->ID.getHostMirror();
+            
 
             Kokkos::deep_copy(R_host_map[particlesName],  particleContainer->R.getView());
             Kokkos::deep_copy(P_host_map[particlesName],  particleContainer->P.getView());
             Kokkos::deep_copy(q_host_map[particlesName],  particleContainer->q.getView());
-            Kokkos::deep_copy(ID_host_map[particlesName], particleContainer->ID.getView());
             
             std::array<double, 3> center = compute_center(particleContainer, MPI_COMM_WORLD);
-            auto host_magnitudes = compute_magnitude_from_center(particleContainer, center);
+            auto magnitude_host = compute_magnitude_from_center(particleContainer, center);
 
             Execute_Particle(
               particleContainer,
-              R_host_map[particlesName], P_host_map[particlesName], q_host_map[particlesName], ID_host_map[particlesName],
-              host_magnitudes,
+              R_host_map[particlesName], P_host_map[particlesName], q_host_map[particlesName],
+              magnitude_host,
               particlesName,
-              node);
+              node,
+              center);
         }
 
         // Handle fields
@@ -374,7 +381,6 @@ namespace AscentAdaptor {
             // If field is a _vector_ field
             else if (std::holds_alternative<VField_t<T, Dim>*>(fieldVariant)) {
                 VField_t<T, Dim>* field = std::get<VField_t<T, Dim>*>(fieldVariant);
-                // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 
                 Execute_Field(field, fieldName, vector_host_views[fieldName], node);     
             }
