@@ -89,7 +89,7 @@ namespace ippl {
         };
 #endif
 
-#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
@@ -116,6 +116,21 @@ namespace ippl {
 #error cuFFT backend is enabled for heFFTe but CUDA is not enabled for Kokkos!
 #endif
 #endif
+
+#ifdef Heffte_ENABLE_ROCM
+#ifdef KOKKOS_ENABLE_HIP
+        template <>
+        struct HeffteBackendType<Kokkos::HIPSpace> {
+            using backend     = heffte::backend::rocfft;
+            using backendSine = heffte::backend::rocfft_sin;
+            using backendCos  = heffte::backend::rocfft_cos;
+            using backendCos1 = heffte::backend::rocfft_cos1;
+        };
+#else
+#error rocFFT backend is enabled for heFFTe but HIP is not enabled for Kokkos!
+#endif
+#endif
+        
     }  // namespace detail
 
     template <typename Field, template <typename...> class FFT, typename Backend,
