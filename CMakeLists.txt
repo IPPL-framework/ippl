@@ -42,13 +42,18 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#¼add_compile_options (-Werror)
+#add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
+
+message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
+
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options (-Wno-deprecated-copy)
     add_compile_options (-Wno-sign-compare)
+    add_compile_options (-fpermissive)
 endif()
 
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
@@ -80,6 +85,11 @@ elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
     endif()
     set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
 
+elseif("${IPPL\_PLATFORMS}" STREQUAL "HIP")
+    message(STATUS "${Green}HIP backend enabled${ColourReset}")
+    set(Heffte\_ENABLE\_ROCM ON CACHE BOOL "Set Heffte ROCM Backend")
+    set(Kokkos\_ENABLE\_HIP ON CACHE BOOL "Enable Kokkos HIP Backend")
+
 elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
     message(STATUS "${Green}Serial backend enabled${ColourReset}")
     if(NOT Heffte_ENABLE_FFTW)
@@ -93,13 +103,19 @@ elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUA
     set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
     set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA Backend")
 
+elseif("${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;HIP")
+    message(STATUS "${Green}HIP and OpenMP backend enabled${ColourReset}")
+    set(Heffte_ENABLE_ROCM ON CACHE BOOL "Set Heffte ROCM Backend")
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
+    set(Kokkos_ENABLE_HIP ON CACHE BOOL "Enable Kokkos HIP Backend")
+
 else()
     message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
     # Handle unknown or unsupported platform
 endif()
 
 if(NOT Kokkos_VERSION)
-    set(Kokkos_VERSION "4.1.00")
+    set(Kokkos_VERSION "4.3.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
 else()
     message(STATUS "${Green}Selected Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
@@ -124,7 +140,7 @@ set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 if (NOT "${IPPL_PLATFORMS}" STREQUAL "CUDA" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # Use sanitizer flags for GCC or Clang only
-    set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
+    # set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined")
 endif ()
 
 if ("${Kokkos_DEVICES}" MATCHES "CUDA")
