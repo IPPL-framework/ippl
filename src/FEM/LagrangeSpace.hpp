@@ -426,6 +426,7 @@ namespace ippl {
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
                         }
+                        Kokkos::fence();
                     }
                 }
 
