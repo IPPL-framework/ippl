@@ -136,7 +136,7 @@ set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINGO} -O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-#set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
+set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0 -g")
 
 if (NOT "${IPPL_PLATFORMS}" STREQUAL "CUDA" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # Use sanitizer flags for GCC or Clang only
@@ -176,6 +176,15 @@ if (USE_ALTERNATIVE_VARIANT)
     add_definitions (-DUSE_ALTERNATIVE_VARIANT)
 endif()
 
+set(Heffte_ENABLE_TESTS ON CACHE BOOL "Enable heFFTe tests")
+message (STATUS "heFFTe test are : ${Heffte_ENABLE_TESTS}")
+
+
+set(Heffte_ENABLE_TESTS ON CACHE BOOL "Enable heFFTe tests")
+
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Enable shared libs")
+set(Heffte_ENABLE_AVX ON CACHE BOOL "Enable AVX")
+set(Heffte_ENABLE_ROCM ON CACHE BOOL "Enable rocm") 
 
 option (ENABLE_FFT "Enable FFT transform" ON)
 if (ENABLE_FFT)
