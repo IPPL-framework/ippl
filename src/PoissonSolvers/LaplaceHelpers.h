@@ -316,7 +316,9 @@ namespace ippl {
     }
 
     /*!
-     * Returns the inverse of the diagonal of the Laplacian applied to a field
+     * Returns the factor by which to multiply the u field to get
+     * the inverse of the diagonal of the Laplacian.
+     *
      * @param u field
      */
 
@@ -324,12 +326,7 @@ namespace ippl {
     double negative_inverse_diagonal_laplace(Field& u) {
         constexpr unsigned Dim = Field::dim;
         using mesh_type        = typename Field::Mesh_t;
-        // using layout_type      = typename Field::Layout_t;
         mesh_type& mesh = u.get_mesh();
-        // layout_type& layout    = u.getLayout();
-        // Field res(mesh, layout);
-        // auto&& bc = u.getFieldBC();
-        // res.setFieldBC(bc);
         double sum    = 0.0;
         double factor = 1.0;
         typename mesh_type::vector_type hvector(0);
@@ -339,7 +336,6 @@ namespace ippl {
             factor *= hvector[d];
         }
 
-        // u = 0.5 * (factor / sum) * u;
         return 0.5 * (factor / sum);
     }
 
