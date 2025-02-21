@@ -1,8 +1,9 @@
 #ifndef IPPL_LOAD_BALANCER_H
 #define IPPL_LOAD_BALANCER_H
 
-#include "GravityParticleContainer.hpp"
 #include <memory>
+
+#include "GravityParticleContainer.hpp"
 
 /**
  * @brief A class for load balancing in a particle simulation
@@ -12,20 +13,26 @@
  */
 template <typename T, unsigned Dim>
 class LoadBalancer {
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base          = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using FieldSolver_t = ippl::FieldSolverBase<T, Dim>;
 
 public:
     /**
      * @brief Constructor for the LoadBalancer class
-     * 
+     *
      * @param lbs Load balance threshold
      * @param fc Shared pointer to the field container
      * @param pc Shared pointer to the particle container
      * @param fs Shared pointer to the field solver
      */
-    LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T, Dim>>& fc, std::shared_ptr<ParticleContainer<T, Dim>>& pc, std::shared_ptr<FieldSolver_t>& fs)
-        : loadbalancethreshold_m(lbs), rho_m(&fc->getRho()), F_m(&fc->getF()), phi_m(&fc->getPhi()), pc_m(pc), fs_m(fs) {}
+    LoadBalancer(double lbs, std::shared_ptr<FieldContainer<T, Dim>>& fc,
+                 std::shared_ptr<ParticleContainer<T, Dim>>& pc, std::shared_ptr<FieldSolver_t>& fs)
+        : loadbalancethreshold_m(lbs)
+        , rho_m(&fc->getRho())
+        , F_m(&fc->getF())
+        , phi_m(&fc->getPhi())
+        , pc_m(pc)
+        , fs_m(fs) {}
 
     /**
      * @brief Destructor for the LoadBalancer class
@@ -53,12 +60,13 @@ public:
 
     /**
      * @brief Update the layout of fields and particles
-     * 
+     *
      * @param fl Pointer to the field layout
      * @param mesh Pointer to the mesh
      * @param isFirstRepartition Flag indicating if this is the first repartition
      */
-    void updateLayout(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
+    void updateLayout(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh,
+                      bool& isFirstRepartition) {
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
@@ -85,7 +93,7 @@ public:
 
     /**
      * @brief Initialize the ORB for domain partitioning
-     * 
+     *
      * @param fl Pointer to the field layout
      * @param mesh Pointer to the mesh
      */
@@ -95,16 +103,17 @@ public:
 
     /**
      * @brief Repartition the domains
-     * 
+     *
      * @param fl Pointer to the field layout
      * @param mesh Pointer to the mesh
      * @param isFirstRepartition Flag indicating if this is the first repartition
      */
-    void repartition(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh, bool& isFirstRepartition) {
+    void repartition(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh,
+                     bool& isFirstRepartition) {
         // Repartition the domains
         using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
         typename Base::particle_position_type* R;
-        R = &pc_m->R;
+        R        = &pc_m->R;
         bool res = orb.binaryRepartition(*R, *fl, isFirstRepartition);
         if (!res) {
             std::cout << "Could not repartition!" << std::endl;
@@ -129,7 +138,7 @@ public:
 
     /**
      * @brief Perform load balancing
-     * 
+     *
      * @param totalP Total number of particles
      * @param nstep Current step number
      * @return true if load balancing is needed, false otherwise
@@ -148,7 +157,8 @@ public:
             if (dev > loadbalancethreshold_m) {
                 local = 1;
             }
-            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
+            MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
+                          ippl::Comm->getCommunicator());
 
             for (unsigned int i = 0; i < res.size(); i++) {
                 if (res[i] == 1) {
@@ -160,16 +170,14 @@ public:
     }
 
 private:
-    double loadbalancethreshold_m; ///< Threshold for load balancing
-    Field_t<Dim>* rho_m;           ///< Pointer to the rho field
-    VField_t<T, Dim>* F_m;         ///< Pointer to the vector field F
-    Field<T, Dim>* phi_m;          ///< Pointer to the scalar field phi
-    std::shared_ptr<ParticleContainer<T, Dim>> pc_m; ///< Shared pointer to the particle container
-    std::shared_ptr<FieldSolver_t> fs_m;             ///< Shared pointer to the field solver
-    unsigned int loadbalancefreq_m;                  ///< Frequency of load balancing
-    ORB<T, Dim> orb;                                 ///< ORB for domain partitioning
-
-
+    double loadbalancethreshold_m;                    ///< Threshold for load balancing
+    Field_t<Dim>* rho_m;                              ///< Pointer to the rho field
+    VField_t<T, Dim>* F_m;                            ///< Pointer to the vector field F
+    Field<T, Dim>* phi_m;                             ///< Pointer to the scalar field phi
+    std::shared_ptr<ParticleContainer<T, Dim>> pc_m;  ///< Shared pointer to the particle container
+    std::shared_ptr<FieldSolver_t> fs_m;              ///< Shared pointer to the field solver
+    unsigned int loadbalancefreq_m;                   ///< Frequency of load balancing
+    ORB<T, Dim> orb;                                  ///< ORB for domain partitioning
 };
 
-#endif // IPPL_LOAD_BALANCER_H
+#endif  // IPPL_LOAD_BALANCER_H

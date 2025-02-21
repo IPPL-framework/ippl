@@ -275,7 +275,7 @@ public:
         IpplTimings::startTimer(tupdateLayout);
         E_m.updateLayout(fl);
         rho_m.updateLayout(fl);
-        if (stype_m == "CG" || stype_m == "PCG" ) {
+        if (stype_m == "CG" || stype_m == "PCG") {
             this->phi_m.updateLayout(fl);
             phi_m.setFieldBC(allPeriodic);
         }
@@ -295,7 +295,7 @@ public:
     void initializeFields(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& fl) {
         E_m.initialize(mesh, fl);
         rho_m.initialize(mesh, fl);
-        if (stype_m == "CG" || stype_m == "PCG" ) {
+        if (stype_m == "CG" || stype_m == "PCG") {
             phi_m.initialize(mesh, fl);
             phi_m.setFieldBC(allPeriodic);
         }
@@ -448,7 +448,7 @@ public:
     }
 
     void runSolver() {
-        if (stype_m == "CG" || stype_m == "PCG" ) {
+        if (stype_m == "CG" || stype_m == "PCG") {
             CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(solver_m);
             solver.solve();
 
@@ -456,7 +456,9 @@ public:
                 std::stringstream fname;
                 fname << "data/";
                 fname << stype_m << "_";
-                if(stype_m == "PCG"){fname << ptype_m << "_";}
+                if (stype_m == "PCG") {
+                    fname << ptype_m << "_";
+                }
                 fname << ippl::Comm->size();
                 fname << ".csv";
 
@@ -516,12 +518,12 @@ public:
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
-        std::string  solver_type = "";
-        if (stype_m == "PCG" ){
+        std::string solver_type = "";
+        if (stype_m == "PCG") {
             solver_type = "preconditioned";
-            ptype_m = sp.get<std::string>("preconditioner_type");
+            ptype_m     = sp.get<std::string>("preconditioner_type");
         }
-        sp.add("solver" , solver_type);
+        sp.add("solver", solver_type);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }

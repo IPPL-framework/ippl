@@ -178,15 +178,15 @@ namespace ippl {
         struct ExtractRank<Kokkos::MDRangePolicy<T...>> {
             static constexpr int rank = Kokkos::MDRangePolicy<T...>::rank;
         };
-        template<typename T>
-        concept HasMemberValueType = requires(){
-            {typename T::value_type() };
-        };
-        template<typename T>
+        template <typename T>
+        concept HasMemberValueType = requires() {
+                                         { typename T::value_type() };
+                                     };
+        template <typename T>
         struct ExtractReducerReturnType {
             using type = T;
         };
-        template<HasMemberValueType T>
+        template <HasMemberValueType T>
         struct ExtractReducerReturnType<T> {
             using type = typename T::value_type;
         };
@@ -222,7 +222,8 @@ namespace ippl {
                          const FunctorType& functor, ReducerArgument&&... reducer) {
         Kokkos::parallel_reduce(
             name, policy,
-            detail::functorize<detail::REDUCE, ExecPolicy, typename detail::ExtractReducerReturnType<ReducerArgument>::type...>(
+            detail::functorize<detail::REDUCE, ExecPolicy,
+                               typename detail::ExtractReducerReturnType<ReducerArgument>::type...>(
                 functor),
             std::forward<ReducerArgument>(reducer)...);
     }

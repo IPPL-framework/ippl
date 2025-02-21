@@ -46,6 +46,7 @@ namespace ippl {
                                     + 2 * sizeof(typename E::Layout_t::NDIndex_t)
                                     + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
+            using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
             meta_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector,
@@ -106,6 +107,7 @@ namespace ippl {
                                     + 2 * sizeof(typename E::Layout_t::NDIndex_t)
                                     + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
+            using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
             meta_upper_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector,
@@ -164,6 +166,7 @@ namespace ippl {
             : public Expression<meta_upper_and_lower_laplace<E>,
                                 sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
+            using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
             meta_upper_and_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)

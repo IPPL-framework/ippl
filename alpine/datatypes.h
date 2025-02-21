@@ -1,3 +1,4 @@
+#include "PoissonSolvers/FEMPoissonSolver.h"
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
@@ -22,10 +23,10 @@ using size_type = ippl::detail::size_type;
 template <typename T, unsigned Dim>
 using Vector = ippl::Vector<T, Dim>;
 
-template <typename T, unsigned Dim= 3, class... ViewArgs>
+template <typename T, unsigned Dim = 3, class... ViewArgs>
 using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
 
-template <typename T = double, unsigned Dim=3>
+template <typename T = double, unsigned Dim = 3>
 using ORB = ippl::OrthogonalRecursiveBisection<Field<double, Dim>, T>;
 
 template <typename T>
@@ -37,7 +38,7 @@ using Vector_t = ippl::Vector<T, Dim>;
 template <unsigned Dim, class... ViewArgs>
 using Field_t = Field<double, Dim, ViewArgs...>;
 
-template <typename T = double, unsigned Dim=3, class... ViewArgs>
+template <typename T = double, unsigned Dim = 3, class... ViewArgs>
 using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 
 template <typename T = double, unsigned Dim = 3>
@@ -45,6 +46,9 @@ using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
 using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
+
+template <typename T = double, unsigned Dim = 3>
+using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
@@ -62,7 +66,7 @@ using OpenSolver_t =
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
                                              P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
-                                             NullSolver_t<T, Dim>>;
+                                             NullSolver_t<T, Dim>, FEMSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<T>;
 

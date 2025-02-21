@@ -26,11 +26,10 @@ namespace ippl {
         }
     }
 
-    template<typename T, unsigned Dim>
-    KOKKOS_FUNCTION
-    Vector<T, Dim>::Vector(const T& val){ 
+    template <typename T, unsigned Dim>
+    KOKKOS_FUNCTION Vector<T, Dim>::Vector(const T& val) {
         for (unsigned int i = 0; i < Dim; ++i)
-	  	data_m[i] = val;
+            data_m[i] = val;
     }
 
     template <typename T, unsigned Dim>
@@ -203,20 +202,20 @@ namespace ippl {
         }
         return out;
     }
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION Vector<T, Dim> min(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> min(const Vector<T, Dim>& a, const Vector<T, Dim>& b) {
         using Kokkos::min;
         Vector<T, Dim> ret;
-        for(unsigned d = 0; d < Dim;d++){
+        for (unsigned d = 0; d < Dim; d++) {
             ret[d] = min(a[d], b[d]);
         }
         return ret;
     }
-    template<typename T, unsigned Dim>
-    KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b){
+    template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b) {
         using Kokkos::max;
         Vector<T, Dim> ret;
-        for(unsigned d = 0; d < Dim;d++){
+        for (unsigned d = 0; d < Dim; d++) {
             ret[d] = max(a[d], b[d]);
         }
         return ret;

@@ -2,8 +2,8 @@
 #define IPPL_FIELD_SOLVER_H
 
 #include <memory>
-#include "Manager/BaseManager.h"
 
+#include "Manager/BaseManager.h"
 
 /**
  * @brief A solver class for various field types
@@ -13,45 +13,43 @@
  */
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
-  private:
-    Field_t<Dim> *rho_m;
-    VField_t<T, Dim> *F_m;
-    Field<T, Dim> *phi_m;
+private:
+    Field_t<Dim>* rho_m;
+    VField_t<T, Dim>* F_m;
+    Field<T, Dim>* phi_m;
 
-  public:
+public:
     /**
      * @brief Constructor for the FieldSolver class
-     * 
+     *
      * @param solver Solver type as a string
      * @param rho Pointer to the mass density
      * @param F Pointer to the gravitational force field F
      * @param phi Pointer to the potential phi
      */
-    FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *F, Field<T, Dim> *phi)
-          : ippl::FieldSolverBase<T, Dim>(solver)
-          , rho_m(rho)
-          , F_m(F)
-          , phi_m(phi) {
-            setPotentialBCs();
-          }
+    FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* F, Field<T, Dim>* phi)
+        : ippl::FieldSolverBase<T, Dim>(solver)
+        , rho_m(rho)
+        , F_m(F)
+        , phi_m(phi) {
+        setPotentialBCs();
+    }
 
     /**
      * @brief Destructor for the FieldSolver class
      */
-    ~FieldSolver(){}
+    ~FieldSolver() {}
 
-
-        
     // Getters and Setters
-    Field_t<Dim> *getRho() const { return rho_m; }
-    void setRho(Field_t<Dim> *rho){ rho_m = rho; }
+    Field_t<Dim>* getRho() const { return rho_m; }
+    void setRho(Field_t<Dim>* rho) { rho_m = rho; }
 
-    VField_t<T, Dim> *getF() const { return F_m; }
-    void setF(VField_t<T, Dim> *F){ F_m = F; }
+    VField_t<T, Dim>* getF() const { return F_m; }
+    void setF(VField_t<T, Dim>* F) { F_m = F; }
 
-    Field<T, Dim> *getPhi() const { return phi_m; }
-    void setPhi(Field<T, Dim> *phi){ phi_m = phi; }
-   
+    Field<T, Dim>* getPhi() const { return phi_m; }
+    void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
+
     /**
      * @brief Initialize the solver based on the provided type
      */
@@ -69,8 +67,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             m << "No solver matches the argument" << endl;
         }
     }
-    
-    
+
     /**
      * @brief Set potential boundary conditions for the solver
      */
@@ -86,7 +83,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             phi_m->setFieldBC(allPeriodic);
         }
     }
-
 
     /**
      * @brief Run the solver based on the provided type
@@ -112,7 +108,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
                 if (iterations > 0) {
                     log << solver.getResidue() << "," << iterations << endl;
                 }
-
             }
             ippl::Comm->barrier();
         } else if (this->getStype() == "FFT") {
@@ -132,10 +127,9 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
         }
     }
 
-
     /**
      * @brief Initialize the solver with parameters
-     * 
+     *
      * @tparam Solver Solver type
      * @param sp Parameter list for the solver
      */
@@ -160,7 +154,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
         }
     }
 
-
     /**
      * @brief Initialize the FFT solver with parameters
      */
@@ -180,8 +173,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             throw std::runtime_error("Unsupported dimensionality for FFT solver");
         }
     }
-    
-    
+
     /**
      * @brief Initialize the CG solver with parameters
      */
@@ -193,7 +185,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
-
 
     /**
      * @brief Initialize the P3M solver with parameters
@@ -214,7 +205,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             throw std::runtime_error("Unsupported dimensionality for P3M solver");
         }
     }
-
 
     /**
      * @brief Initialize the Open solver with parameters

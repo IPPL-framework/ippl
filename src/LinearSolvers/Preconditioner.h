@@ -163,7 +163,7 @@ namespace ippl {
         unsigned int level_m;  // Number of recursive calls
         double zeta_m;  // smallest (alpha + beta) is multiplied by (1+zeta) to avoid clustering of
                         // Eigenvalues
-        double* eta_m     = nullptr;  // Size is determined at runtime
+        double* eta_m = nullptr;  // Size is determined at runtime
     };
 
     /*!
@@ -269,7 +269,7 @@ namespace ippl {
         double sigma_m;
         unsigned degree_m;
         double zeta_m;
-        double* rho_m     = nullptr;  // Size is determined at runtime
+        double* rho_m = nullptr;  // Size is determined at runtime
     };
 
     /*!

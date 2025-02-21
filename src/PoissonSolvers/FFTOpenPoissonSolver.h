@@ -90,7 +90,7 @@ namespace ippl {
             HOCKNEY    = 0b01,
             VICO       = 0b10,
             BIHARMONIC = 0b11,
-            DCT_VICO    = 0b100
+            DCT_VICO   = 0b100
         };
 
         // define a type for a 3 dimensional field (e.g. charge density field)

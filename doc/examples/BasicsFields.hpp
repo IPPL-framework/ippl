@@ -1,12 +1,13 @@
 
 /**
-* @page basics_fields Basics: Fields 
- * 
- * 
- * 
+* @page basics_fields Basics: Fields
+ *
+ *
+ *
 @section field_intro Introduction
-This sections provides the readers with a brief background on the used classes for handling Fields in IPPL.
-* ## FieldLayout 
+This sections provides the readers with a brief background on the used classes for handling Fields
+in IPPL.
+* ## FieldLayout
 //
 FieldLayout describes how a given index space (represented by an NDIndex
 object) is distributed among MPI ranks. It performs the initial
@@ -21,17 +22,23 @@ partitioned by flagging that axis as 'SERIAL' (instead of 'PARALLEL').
         // all parallel layout, standard domain, normal axis order
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 * @endcode
-In this example, we create a 3-dimensional FieldLayout with 25 points in each direction. The layout is distributed among MPI ranks.
+In this example, we create a 3-dimensional FieldLayout with 25 points in each direction. The layout
+is distributed among MPI ranks.
 
 
-* ## BareField 
-The BareField class in IPPL is a template class that represents a numerical field in a computational domain. It is designed to handle data in up to three dimensions and supports various data types through its template parameter T.
-It provides a Kokkos-based multidimensional array, or view, which is the main data structure used to store field values.
-The class is integrated with IPPL's field layout and halo cell system for managing computational domains and communication between them, especially in parallel computing environments.
-A field can be initialized with a specific layout, and it supports operations such as resizing, updating the layout, and operations related to ghost cells which are used for boundary conditions and domain communication.
-It offers functions for calculating aggregate values over the field, such as sums, maxima, minima, and products.
-Fields can be assigned values from constants or other fields through expression templates, allowing for complex computations and assignments.
-The class provides range policies for iteration that can exclude or include ghost layers, giving flexibility in how the field data is traversed and manipulated.
+* ## BareField
+The BareField class in IPPL is a template class that represents a numerical field in a computational
+domain. It is designed to handle data in up to three dimensions and supports various data types
+through its template parameter T. It provides a Kokkos-based multidimensional array, or view, which
+is the main data structure used to store field values. The class is integrated with IPPL's field
+layout and halo cell system for managing computational domains and communication between them,
+especially in parallel computing environments. A field can be initialized with a specific layout,
+and it supports operations such as resizing, updating the layout, and operations related to ghost
+cells which are used for boundary conditions and domain communication. It offers functions for
+calculating aggregate values over the field, such as sums, maxima, minima, and products. Fields can
+be assigned values from constants or other fields through expression templates, allowing for complex
+computations and assignments. The class provides range policies for iteration that can exclude or
+include ghost layers, giving flexibility in how the field data is traversed and manipulated.
 
 
 *@code
@@ -48,15 +55,18 @@ ippl::BareField<double, dim> field(layout, 1);
 
 
 *@section Field Field
-The Field class in IPPL is an advanced version of BareField, augmented with a mesh for defining the spatial domain and equipped with customizable boundary conditions. The class is templated to be flexible for various data types (T), dimensions (Dim), mesh types (Mesh), and centering schemes (Centering), along with additional Kokkos view arguments (ViewArgs...).
-It's associated with a Mesh object that dictates the structure of the simulation space.
-Boundary conditions can be set and updated, affecting how the field interacts with the limits of the simulation space.
-Offers methods for calculating volume integrals and averages, which are useful for analyzing the field over its entire domain.
-Inherits from BareField, allowing for basic field operations and attribute access.
+The Field class in IPPL is an advanced version of BareField, augmented with a mesh for defining the
+spatial domain and equipped with customizable boundary conditions. The class is templated to be
+flexible for various data types (T), dimensions (Dim), mesh types (Mesh), and centering schemes
+(Centering), along with additional Kokkos view arguments (ViewArgs...). It's associated with a Mesh
+object that dictates the structure of the simulation space. Boundary conditions can be set and
+updated, affecting how the field interacts with the limits of the simulation space. Offers methods
+for calculating volume integrals and averages, which are useful for analyzing the field over its
+entire domain. Inherits from BareField, allowing for basic field operations and attribute access.
 
 ### Example: Creating a Field
  * The following example showcases the creation and basic manipulation of a field in IPPL:
- * 
+ *
  * @code{.cpp}
 using namespace ippl;
 
@@ -82,7 +92,8 @@ UniformCartesian<double,dim> mesh(owned, hx, origin);
 Field<double,dim> field(mesh, layout);
 @endcode
 *
-* This example outlines the steps to define a three-dimensional field, specifying its layout and parallelization strategy.
+* This example outlines the steps to define a three-dimensional field, specifying its layout and
+parallelization strategy.
 *
 
 
@@ -98,7 +109,7 @@ auto fieldNorm = norm(field,p);
 // Computes dot product of vector fields (in each element) and returns a scalar field
 auto field = dot(vfield, vfield)
 
-// Innerproduct of two scalar fields and returns a scalar 
+// Innerproduct of two scalar fields and returns a scalar
 auto fSquare = innerProduct(field, field);
 
 // Computes the sum of the field
@@ -110,10 +121,10 @@ auto fieldVolIntegral = field.getVolumeIntegral();
 
 
 *@subsubsection field_properties Field Properties
-*@code 
+*@code
 // Returns the range policy for the fields excluding the ghosts layers.
 // If you want to include ghost layers specify nghost as an argument
-auto fieldRange = field.getFieldRangePolicy(); 
+auto fieldRange = field.getFieldRangePolicy();
 
 // Return the number of ghost layers in the field
 auto nghost = field.getNghost();
@@ -139,7 +150,7 @@ auto field2 = field1.deepCopy();
 // Return the underyling Kokkos View of the field
 auto fview = field.getView();
 
-// Return the Host Mirror corresponding to the Kokkos device view 
+// Return the Host Mirror corresponding to the Kokkos device view
 // of the field. It is a no-op if the field is already on the host.
 auto fHostView = field.getHostMirror();
 
@@ -149,31 +160,33 @@ Kokkos::deep_copy(fview, fHostView); // host to device
 *@endcode
 
 * @subsubsection init_field_from_func Initializing a Field from a Function
-* @code 
+* @code
 const ippl::NDIndex<Dim>& lDom = fieldLayout.getLocalNDIndex();
 const int nghost = field.getNghost();
 auto fview = field.getView();
 
 using index_array_type = typenamep ippl::RangePolicy<Dim>::index_array_type;
 
-ippl::parallel_for( 
+ippl::parallel_for(
     "Assign a field based on func", field.getFieldRangePolicy(),
     KOKKOS_LAMBDA(const index_array_type& args) {
         // local to global index conversion
         Vector<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
 
-        // ippl::apply accesses the view at the given indices and obtains a 
+        // ippl::apply accesses the view at the given indices and obtains a
         // reference; see src/Expression/IpplOperations.h
         ippl::apply(fview, args) = func(xvec);
     });
 *@endcode
 
-- To write dimension independent kernels use the wrappers 'ippl::parallel_for' and 'ippl::parallel_reduce'.
-- If you don't want dimension independence in your application then you can just use 'Kokkos::parallel_for' and 'Kokkos::parallel_reduce'.
+- To write dimension independent kernels use the wrappers 'ippl::parallel_for' and
+'ippl::parallel_reduce'.
+- If you don't want dimension independence in your application then you can just use
+'Kokkos::parallel_for' and 'Kokkos::parallel_reduce'.
 * @subsubsection boundary_conditions_fields Boundary Conditions for Fields
-Setting BCs for fields is a necessary prerequisite before applying differential operators on fields! Otherwise
-you will get garbage for the points close to the boundary.
-*@code 
+Setting BCs for fields is a necessary prerequisite before applying differential operators on fields!
+Otherwise you will get garbage for the points close to the boundary.
+*@code
 typedef ippl::BConds<Field<t, Dim>, Dim> bc_type;
 bc_type bc;
 // Available BCs in Ippl see src/Field/BcTypes.h
@@ -196,22 +209,25 @@ sfield_type sfield (field.get_mesh(), field.getLayout());
 vfield_type vfield (field.get_mesh (), field.getLayout ());
 mfield_type mfield (field.get_mesh (), field.getLayout ());
 
-// Computes gradient of a scalar field by cell - centered finite difference and returns a vector field
-vfield = grad(field);
+// Computes gradient of a scalar field by cell - centered finite difference and returns a vector
+field vfield = grad(field);
 
-// Computes divergence of a vector field by cell - centered finite difference and returns a scalar field
-field = div(vfield);
+// Computes divergence of a vector field by cell - centered finite difference and returns a scalar
+field field = div(vfield);
 
 // Computes curl of a scalar field by cell - centered finite difference and returns a vector field
 // Only available in 3 D for the moment
 vfield = curl(field);
 
-// Computes Hessian of a scalar field by cell - centered finite difference and returns a matrix field
+// Computes Hessian of a scalar field by cell - centered finite difference and returns a matrix
+field
 // There is no native matrix data type in ippl so the output field is vector of vectors
 mfield = hess(field);
 
-// Computes Laplacian of a scalar field by cell - centered finite difference and returns a scalar field .
-// At the moment ippl does not do a copy of the original field when you specify the same scalar field
+// Computes Laplacian of a scalar field by cell - centered finite difference and returns a scalar
+field .
+// At the moment ippl does not do a copy of the original field when you specify the same scalar
+field
 // in both rhs and lhs . So the user has to allocate a different scalar field for lhs and rhs .
 sfield = laplace(field);
 

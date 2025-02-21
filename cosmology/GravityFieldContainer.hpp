@@ -2,6 +2,7 @@
 #define IPPL_FIELD_CONTAINER_H
 
 #include <memory>
+
 #include "Manager/BaseManager.h"
 
 /**
@@ -11,11 +12,11 @@
  * @tparam Dim Dimensionality of the field (default is 3)
  */
 template <typename T, unsigned Dim = 3>
-class FieldContainer{
+class FieldContainer {
 public:
     /**
      * @brief Constructor for the FieldContainer class
-     * 
+     *
      * @param hr Grid spacing vector
      * @param rmin Starting Points of the Domain
      * @param rmax Ending Points of the Domain
@@ -24,9 +25,8 @@ public:
      * @param origin The origin of the mesh
      * @param isAllPeriodic Flag indicating periodic boundary conditions in all dimension
      */
-    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin,
-                   Vector_t<T, Dim>& rmax, std::array<bool, Dim> decomp,
-                   ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
+    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin, Vector_t<T, Dim>& rmax,
+                   std::array<bool, Dim> decomp, ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
                    bool isAllPeriodic)
         : hr_m(hr)
         , rmin_m(rmin)
@@ -38,14 +38,14 @@ public:
     /**
      * @brief Destructor for the FieldContainer class
      */
-    ~FieldContainer(){}
+    ~FieldContainer() {}
 
     ///< Get/Set the force field F
-    VField_t<T, Dim>& getF() { return F_m; }    
-    void setF(VField_t<T, Dim>& F) { F_m = F; }   
+    VField_t<T, Dim>& getF() { return F_m; }
+    void setF(VField_t<T, Dim>& F) { F_m = F; }
 
-    ///< Get/Set the mass density rho 
-    Field_t<Dim>& getRho() { return rho_m; }     
+    ///< Get/Set the mass density rho
+    Field_t<Dim>& getRho() { return rho_m; }
     void setRho(Field_t<Dim>& rho) { rho_m = rho; }
 
     ///< Get/Set potential phi
@@ -70,7 +70,7 @@ public:
 
     ///< Get/Set the mesh
     Mesh_t<Dim>& getMesh() { return mesh_m; }
-    void setMesh(Mesh_t<Dim> & mesh) { mesh_m = mesh; }
+    void setMesh(Mesh_t<Dim>& mesh) { mesh_m = mesh; }
 
     ///< Get/Set the field layout
     FieldLayout_t<Dim>& getFL() { return fl_m; }
@@ -78,8 +78,9 @@ public:
 
     /**
      * @brief Initialize the fields based on the provided type
-     * 
-     * @param stype_m String indicating the solver type (e.g., "CG" for the conjugate gradient solver)
+     *
+     * @param stype_m String indicating the solver type (e.g., "CG" for the conjugate gradient
+     * solver)
      */
     void initializeFields(std::string stype_m = "") {
         F_m.initialize(mesh_m, fl_m);
@@ -91,15 +92,15 @@ public:
 
 private:
     // Member variables
-    Vector_t<double, Dim> hr_m;           ///< Grid spacing vector
-    Vector_t<double, Dim> rmin_m;         ///< Start points of domain
-    Vector_t<double, Dim> rmax_m;         ///< End points of domain
-    std::array<bool, Dim> decomp_m;       ///< Decomposition array for each dimension
-    VField_t<T, Dim> F_m;                 ///< Force field
-    Field_t<Dim> rho_m;                   ///< Mass density
-    Field<T, Dim> phi_m;                  ///< Potential
-    Mesh_t<Dim> mesh_m;                   ///< Mesh associated with the fields
-    FieldLayout_t<Dim> fl_m;              ///< Field layout
+    Vector_t<double, Dim> hr_m;      ///< Grid spacing vector
+    Vector_t<double, Dim> rmin_m;    ///< Start points of domain
+    Vector_t<double, Dim> rmax_m;    ///< End points of domain
+    std::array<bool, Dim> decomp_m;  ///< Decomposition array for each dimension
+    VField_t<T, Dim> F_m;            ///< Force field
+    Field_t<Dim> rho_m;              ///< Mass density
+    Field<T, Dim> phi_m;             ///< Potential
+    Mesh_t<Dim> mesh_m;              ///< Mesh associated with the fields
+    FieldLayout_t<Dim> fl_m;         ///< Field layout
 };
 
 #endif

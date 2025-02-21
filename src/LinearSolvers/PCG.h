@@ -11,7 +11,7 @@
 
 namespace ippl {
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
-            typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+              typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class CG : public SolverAlgorithm<FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
@@ -32,26 +32,32 @@ namespace ippl {
          */
         virtual void setOperator(OperatorF op) { op_m = std::move(op); }
         virtual void setPreconditioner(
-                [[ maybe_unused ]] OperatorF&& op,                   // Operator passed to chebyshev and newton
-                [[ maybe_unused ]] LowerF&& lower,                   // Operator passed to 2-step gauss-seidel
-                [[ maybe_unused ]] UpperF&& upper,                   // Operator passed to 2-step gauss-seidel
-                [[ maybe_unused ]] UpperLowerF&& upper_and_lower,    // Operator passed to 2-step gauss-seidel
-                [[ maybe_unused ]] InverseDiagF&& inverse_diagonal,  // Operator passed to jacobi and 2-step gauss-seidel
-                [[ maybe_unused ]] double alpha,                     // smallest eigenvalue of the operator
-                [[ maybe_unused ]] double beta,                      // largest eigenvalue of the operator
-                [[ maybe_unused ]] std::string preconditioner_type = "",  // Name of the preconditioner that should be used
-                [[ maybe_unused ]] int level = 5,  // This is a dummy default parameter, actual default parameter should be
-                // set in main
-                [[ maybe_unused ]] int degree = 31,  // This is a dummy default parameter, actual default parameter should
-                // be set in main
-                [[ maybe_unused ]] int richardson_iterations = 1,  // This is a dummy default parameter, actual default
-                // parameter should be set in main
-                [[ maybe_unused ]] int inner = 5,  // This is a dummy default parameter, actual default parameter should be
-                // set in main
-                [[ maybe_unused ]] int outer = 1   // This is a dummy default parameter, actual default parameter should be
-                // set in main
-        )
-                {}
+            [[maybe_unused]] OperatorF&& op,  // Operator passed to chebyshev and newton
+            [[maybe_unused]] LowerF&& lower,  // Operator passed to 2-step gauss-seidel
+            [[maybe_unused]] UpperF&& upper,  // Operator passed to 2-step gauss-seidel
+            [[maybe_unused]] UpperLowerF&&
+                upper_and_lower,  // Operator passed to 2-step gauss-seidel
+            [[maybe_unused]] InverseDiagF&&
+                inverse_diagonal,           // Operator passed to jacobi and 2-step gauss-seidel
+            [[maybe_unused]] double alpha,  // smallest eigenvalue of the operator
+            [[maybe_unused]] double beta,   // largest eigenvalue of the operator
+            [[maybe_unused]] std::string preconditioner_type =
+                "",  // Name of the preconditioner that should be used
+            [[maybe_unused]] int level =
+                5,  // This is a dummy default parameter, actual default parameter should be
+            // set in main
+            [[maybe_unused]] int degree =
+                31,  // This is a dummy default parameter, actual default parameter should
+            // be set in main
+            [[maybe_unused]] int richardson_iterations =
+                1,  // This is a dummy default parameter, actual default
+            // parameter should be set in main
+            [[maybe_unused]] int inner =
+                5,  // This is a dummy default parameter, actual default parameter should be
+            // set in main
+            [[maybe_unused]] int outer = 1  // This is a dummy default parameter, actual default
+                                            // parameter should be set in main
+        ) {}
         /*!
          * Query how many iterations were required to obtain the solution
          * the last time this solver was used
@@ -107,7 +113,8 @@ namespace ippl {
             lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                q       = op_m(d);
+                q = op_m(d);
+
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
@@ -143,9 +150,9 @@ namespace ippl {
     };
 
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
-            typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+              typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
     class PCG : public CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS,
-            FieldRHS> {
+                          FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
@@ -158,34 +165,34 @@ namespace ippl {
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
 
         PCG()
-                : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS,
-                FieldRHS>()
-                , preconditioner_m(nullptr){};
+            : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS,
+                 FieldRHS>()
+            , preconditioner_m(nullptr){};
 
         /*!
          * Sets the differential operator for the conjugate gradient algorithm
          * @param op A function that returns OpRet and takes a field of the LHS type
          */
         void setPreconditioner(
-                OperatorF&& op,                   // Operator passed to chebyshev and newton
-                LowerF&& lower,                   // Operator passed to 2-step gauss-seidel
-                UpperF&& upper,                   // Operator passed to 2-step gauss-seidel
-                UpperLowerF&& upper_and_lower,    // Operator passed to 2-step gauss-seidel
-                InverseDiagF&& inverse_diagonal,  // Operator passed to jacobi and 2-step gauss-seidel
-                double alpha,                     // smallest eigenvalue of the operator
-                double beta,                      // largest eigenvalue of the operator
-                std::string preconditioner_type = "",  // Name of the preconditioner that should be used
-                int level = 5,  // This is a dummy default parameter, actual default parameter should be
-                // set in main
-                int degree = 31,  // This is a dummy default parameter, actual default parameter should
-                // be set in main
-                int richardson_iterations = 1,  // This is a dummy default parameter, actual default
-                // parameter should be set in main
-                int inner = 5,  // This is a dummy default parameter, actual default parameter should be
-                // set in main
-                int outer = 1   // This is a dummy default parameter, actual default parameter should be
-                // set in main
-        ) override {
+            OperatorF&& op,                   // Operator passed to chebyshev and newton
+            LowerF&& lower,                   // Operator passed to 2-step gauss-seidel
+            UpperF&& upper,                   // Operator passed to 2-step gauss-seidel
+            UpperLowerF&& upper_and_lower,    // Operator passed to 2-step gauss-seidel
+            InverseDiagF&& inverse_diagonal,  // Operator passed to jacobi and 2-step gauss-seidel
+            double alpha,                     // smallest eigenvalue of the operator
+            double beta,                      // largest eigenvalue of the operator
+            std::string preconditioner_type = "",  // Name of the preconditioner that should be used
+            int level = 5,  // This is a dummy default parameter, actual default parameter should be
+            // set in main
+            int degree = 31,  // This is a dummy default parameter, actual default parameter should
+            // be set in main
+            int richardson_iterations = 1,  // This is a dummy default parameter, actual default
+            // parameter should be set in main
+            int inner = 5,  // This is a dummy default parameter, actual default parameter should be
+            // set in main
+            int outer = 1  // This is a dummy default parameter, actual default parameter should be
+                           // set in main
+            ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
                 /*
@@ -194,27 +201,27 @@ namespace ippl {
                 InverseDiagF>>(std::move(inverse_diagonal), w));
                 */
                 preconditioner_m =
-                        std::move(std::make_unique<jacobi_preconditioner<FieldLHS, InverseDiagF>>(
-                                std::move(inverse_diagonal)));
+                    std::move(std::make_unique<jacobi_preconditioner<FieldLHS, InverseDiagF>>(
+                        std::move(inverse_diagonal)));
             } else if (preconditioner_type == "newton") {
                 preconditioner_m = std::move(
-                        std::make_unique<polynomial_newton_preconditioner<FieldLHS, OperatorF>>(
-                                std::move(op), alpha, beta, level, 1e-3));
+                    std::make_unique<polynomial_newton_preconditioner<FieldLHS, OperatorF>>(
+                        std::move(op), alpha, beta, level, 1e-3));
             } else if (preconditioner_type == "chebyshev") {
                 preconditioner_m = std::move(
-                        std::make_unique<polynomial_chebyshev_preconditioner<FieldLHS, OperatorF>>(
-                                std::move(op), alpha, beta, degree, 1e-3));
+                    std::make_unique<polynomial_chebyshev_preconditioner<FieldLHS, OperatorF>>(
+                        std::move(op), alpha, beta, degree, 1e-3));
             } else if (preconditioner_type == "richardson") {
                 preconditioner_m =
-                        std::move(std::make_unique<
-                                richardson_preconditioner<FieldLHS, UpperLowerF, InverseDiagF>>(
-                                std::move(upper_and_lower), std::move(inverse_diagonal),
-                                richardson_iterations));
+                    std::move(std::make_unique<
+                              richardson_preconditioner<FieldLHS, UpperLowerF, InverseDiagF>>(
+                        std::move(upper_and_lower), std::move(inverse_diagonal),
+                        richardson_iterations));
             } else if (preconditioner_type == "gauss-seidel") {
                 preconditioner_m = std::move(
-                        std::make_unique<gs_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF>>(
-                                std::move(lower), std::move(upper), std::move(inverse_diagonal), inner,
-                                outer));
+                    std::make_unique<gs_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF>>(
+                        std::move(lower), std::move(upper), std::move(inverse_diagonal), inner,
+                        outer));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }
@@ -224,7 +231,8 @@ namespace ippl {
             constexpr unsigned Dim = lhs_type::dim;
 
             if (preconditioner_m == nullptr) {
-                throw IpplException("PCG::operator()", "Preconditioner has not been set for PCG solver");
+                throw IpplException("PCG::operator()",
+                                    "Preconditioner has not been set for PCG solver");
             }
 
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
@@ -268,7 +276,7 @@ namespace ippl {
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            this->residueNorm = std::sqrt(std::abs(delta1));
+            this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * delta1;
 
             while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
@@ -290,7 +298,7 @@ namespace ippl {
                 delta1 = innerProduct(r, s);
 
                 T beta            = delta1 / delta0;
-                this->residueNorm = std::sqrt(std::abs(delta1));
+                this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
 
                 d = s + beta * d;
                 ++this->iterations_m;
@@ -309,5 +317,3 @@ namespace ippl {
 };  // namespace ippl
 
 #endif
-
-

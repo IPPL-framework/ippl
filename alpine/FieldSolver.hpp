@@ -2,36 +2,37 @@
 #define IPPL_FIELD_SOLVER_H
 
 #include <memory>
+
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
 
 // Define the FieldSolver class
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
-  private:
-    Field_t<Dim> *rho_m;
-    VField_t<T, Dim> *E_m;
-    Field<T, Dim> *phi_m;
+private:
+    Field_t<Dim>* rho_m;
+    VField_t<T, Dim>* E_m;
+    Field<T, Dim>* phi_m;
 
-  public:
-    FieldSolver(std::string solver, Field_t<Dim> *rho, VField_t<T, Dim> *E, Field<T, Dim> *phi)
-          : ippl::FieldSolverBase<T, Dim>(solver)
-          , rho_m(rho)
-          , E_m(E)
-          , phi_m(phi) {
-            setPotentialBCs();
-          }
+public:
+    FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* E, Field<T, Dim>* phi)
+        : ippl::FieldSolverBase<T, Dim>(solver)
+        , rho_m(rho)
+        , E_m(E)
+        , phi_m(phi) {
+        setBCs();
+    }
 
-    ~FieldSolver(){}
+    ~FieldSolver() {}
 
-    Field_t<Dim> *getRho() const { return rho_m; }
-    void setRho(Field_t<Dim> *rho){ rho_m = rho; }
+    Field_t<Dim>* getRho() const { return rho_m; }
+    void setRho(Field_t<Dim>* rho) { rho_m = rho; }
 
-    VField_t<T, Dim> *getE() const { return E_m; }
-    void setE(VField_t<T, Dim> *E){ E_m = E; }
+    VField_t<T, Dim>* getE() const { return E_m; }
+    void setE(VField_t<T, Dim>* E) { E_m = E; }
 
-    Field<T, Dim> *getPhi() const { return phi_m; }
-    void setPhi(Field<T, Dim> *phi){ phi_m = phi; }
+    Field<T, Dim>* getPhi() const { return phi_m; }
+    void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
 
     void initSolver() override {
         Inform m("solver ");
@@ -43,21 +44,38 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             initP3MSolver();
         } else if (this->getStype() == "OPEN") {
             initOpenSolver();
+        } else if (this->getStype() == "FEM") {
+            initFEMSolver();
+        } else if (this->getStype() == "FEM_DIRICHLET") {
+            initFEMSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
     }
 
-    void setPotentialBCs() {
+    void setBCs() {
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
-        if (this->getStype() == "CG") {
-            typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+        if (this->getStype() == "CG" || this->getStype() == "FEM") {
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
+        } else if (this->getStype() == "FEM_DIRICHLET") {
+            bc_type dirichlet;
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                dirichlet[i] = std::make_shared<ippl::ZeroFace<Field<T, Dim>>>(i);
+            }
+            phi_m->setFieldBC(dirichlet);
+            rho_m->setFieldBC(dirichlet);
+        } else if (this->getStype() == "OPEN") {
+            bc_type none;
+            for (unsigned int i = 0; i < 2 * Dim; ++i) {
+                none[i] = std::make_shared<ippl::NoBcFace<Field<T, Dim>>>(i);
+            }
+            rho_m->setFieldBC(none);
         }
     }
 
@@ -82,7 +100,6 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
                 if (iterations > 0) {
                     log << solver.getResidue() << "," << iterations << endl;
                 }
-
             }
             ippl::Comm->barrier();
         } else if (this->getStype() == "FFT") {
@@ -97,6 +114,28 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             if constexpr (Dim == 3) {
                 std::get<OpenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
+        } else if ((this->getStype() == "FEM") || (this->getStype() == "FEM_DIRICHLET")) {
+            FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
+            solver.solve();
+
+            if (ippl::Comm->rank() == 0) {
+                std::stringstream fname;
+                fname << "data/FEM_";
+                fname << ippl::Comm->size();
+                fname << ".csv";
+
+                Inform log(NULL, fname.str().c_str(), Inform::APPEND);
+                int iterations = solver.getIterationCount();
+                // Assume the dummy solve is the first call
+                if (iterations == 0) {
+                    log << "residue,iterations" << endl;
+                }
+                // Don't print the dummy solve
+                if (iterations > 0) {
+                    log << solver.getResidue() << "," << iterations << endl;
+                }
+            }
+            ippl::Comm->barrier();
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -111,8 +150,9 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
         solver.setRhs(*rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
-            // The CG solver computes the potential directly and
+        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>
+                      || std::is_same_v<Solver, FEMSolver_t<T, Dim>>) {
+            // The CG and FEM solvers compute the potential directly and
             // uses this to get the electric field
             solver.setLhs(*phi_m);
             solver.setGradient(*E_m);
@@ -182,6 +222,14 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
         } else {
             throw std::runtime_error("Unsupported dimensionality for OPEN solver");
         }
+    }
+
+    void initFEMSolver() {
+        ippl::ParameterList sp;
+        sp.add("output_type", FEMSolver_t<T, Dim>::GRAD);
+        sp.add("tolerance", 1e-13);
+        sp.add("max_iterations", 2000);
+        initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
     }
 };
 #endif
