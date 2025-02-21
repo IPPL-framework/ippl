@@ -25,12 +25,12 @@ namespace ippl {
 
         template <typename MemorySpace, typename T>
         Communicator::buffer_type<MemorySpace> Communicator::getBuffer(size_type size,
-                                                                        double overallocation) {
+                                                                       double overallocation) {
             auto& buffer_handler = buffer_handlers_m.get<MemorySpace>();
 
-            return buffer_handler.getBuffer(size * sizeof(T), std::max(overallocation, defaultOveralloc_m));
+            return buffer_handler.getBuffer(size * sizeof(T),
+                                            std::max(overallocation, defaultOveralloc_m));
         }
-
 
         template <typename MemorySpace>
         void Communicator::freeBuffer(Communicator::buffer_type<MemorySpace> buffer) {

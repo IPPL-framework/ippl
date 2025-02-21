@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
         params.add("chebyshev_degree", chebyshev_degree);
         params.add("richardson_iterations", richardson_iterations);
         params.add("communication", communication);
-        params.add("ssor_omega",ssor_omega);
+        params.add("ssor_omega", ssor_omega);
 
         lapsolver.mergeParameters(params);
 
@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
           << endl;
         IpplTimings::print();
-        //IpplTimings::print("timings" + std::to_string(pt) + ".dat");
+        // IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }
     ippl::finalize();
 

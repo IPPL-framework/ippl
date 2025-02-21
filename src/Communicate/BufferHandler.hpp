@@ -7,8 +7,8 @@ namespace ippl {
     DefaultBufferHandler<MemorySpace>::~DefaultBufferHandler() {}
 
     template <typename MemorySpace>
-    typename DefaultBufferHandler<MemorySpace>::buffer_type DefaultBufferHandler<MemorySpace>::getBuffer(
-        size_type size, double overallocation) {
+    typename DefaultBufferHandler<MemorySpace>::buffer_type
+    DefaultBufferHandler<MemorySpace>::getBuffer(size_type size, double overallocation) {
         size_type requiredSize = static_cast<size_type>(size * overallocation);
 
         auto freeBuffer = findFreeBuffer(requiredSize);
@@ -41,7 +41,7 @@ namespace ippl {
 
     template <typename MemorySpace>
     void DefaultBufferHandler<MemorySpace>::deleteAllBuffers() {
-        freeSize_m      = 0;
+        freeSize_m = 0;
         usedSize_m = 0;
 
         used_buffers.clear();
@@ -49,19 +49,20 @@ namespace ippl {
     }
 
     template <typename MemorySpace>
-    typename DefaultBufferHandler<MemorySpace>::size_type DefaultBufferHandler<MemorySpace>::getUsedSize()
-        const {
+    typename DefaultBufferHandler<MemorySpace>::size_type
+    DefaultBufferHandler<MemorySpace>::getUsedSize() const {
         return usedSize_m;
     }
 
     template <typename MemorySpace>
-    typename DefaultBufferHandler<MemorySpace>::size_type DefaultBufferHandler<MemorySpace>::getFreeSize() const {
+    typename DefaultBufferHandler<MemorySpace>::size_type
+    DefaultBufferHandler<MemorySpace>::getFreeSize() const {
         return freeSize_m;
     }
 
     template <typename MemorySpace>
     bool DefaultBufferHandler<MemorySpace>::bufferSizeComparator(const buffer_type& lhs,
-                                                          const buffer_type& rhs) {
+                                                                 const buffer_type& rhs) {
         if (lhs->getBufferSize() != rhs->getBufferSize()) {
             return lhs->getBufferSize() < rhs->getBufferSize();
         }
@@ -87,8 +88,8 @@ namespace ippl {
     }
 
     template <typename MemorySpace>
-    typename DefaultBufferHandler<MemorySpace>::buffer_type DefaultBufferHandler<MemorySpace>::findFreeBuffer(
-        size_type requiredSize) {
+    typename DefaultBufferHandler<MemorySpace>::buffer_type
+    DefaultBufferHandler<MemorySpace>::findFreeBuffer(size_type requiredSize) {
         auto it = findSmallestSufficientBuffer(requiredSize);
         if (it != free_buffers.end()) {
             return *it;
@@ -133,8 +134,8 @@ namespace ippl {
     }
 
     template <typename MemorySpace>
-    typename DefaultBufferHandler<MemorySpace>::buffer_type DefaultBufferHandler<MemorySpace>::allocateNewBuffer(
-        size_type requiredSize) {
+    typename DefaultBufferHandler<MemorySpace>::buffer_type
+    DefaultBufferHandler<MemorySpace>::allocateNewBuffer(size_type requiredSize) {
         buffer_type newBuffer = std::make_shared<archive_type>(requiredSize);
 
         usedSize_m += newBuffer->getBufferSize();

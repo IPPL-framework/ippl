@@ -56,15 +56,15 @@ namespace ippl {
             double alpha                       = 0;
             if (solver_type == "preconditioned") {
                 algo_m = std::move(
-                    std::make_unique<PCG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet, 
+                    std::make_unique<PCG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
                                          InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
                 std::string preconditioner_type =
                     this->params_m.template get<std::string>("preconditioner_type");
-                int level  = this->params_m.template get<int>("newton_level");
-                int degree = this->params_m.template get<int>("chebyshev_degree");
-                int inner  = this->params_m.template get<int>("gauss_seidel_inner_iterations");
-                int outer  = this->params_m.template get<int>("gauss_seidel_outer_iterations");
-                double omega  = this->params_m.template get<double>("ssor_omega");
+                int level    = this->params_m.template get<int>("newton_level");
+                int degree   = this->params_m.template get<int>("chebyshev_degree");
+                int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
+                int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
+                double omega = this->params_m.template get<double>("ssor_omega");
                 int richardson_iterations =
                     this->params_m.template get<int>("richardson_iterations");
                 int communication = this->params_m.template get<int>("communication");
@@ -99,9 +99,9 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
-                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type),
-                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
-                        inner, outer,omega);
+                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
+                        preconditioner_type, level, degree, richardson_iterations, inner, outer,
+                        omega);
                 } else {
                     algo_m->setPreconditioner(
                         IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
@@ -109,14 +109,14 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace_no_comm, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace_no_comm, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
-                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type),
-                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
-                        inner, outer,omega);
+                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
+                        preconditioner_type, level, degree, richardson_iterations, inner, outer,
+                        omega);
                 }
             } else {
-                algo_m =
-                    std::move(std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
-                                                  InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
+                algo_m = std::move(
+                    std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
+                                        InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
             }
         }
 
@@ -145,8 +145,8 @@ namespace ippl {
         Tlhs getResidue() const { return algo_m->getResidue(); }
 
     protected:
-        std::unique_ptr<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet, InverseDiagonalRet, DiagRet,
-                           FieldLHS, FieldRHS>>
+        std::unique_ptr<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet, InverseDiagonalRet,
+                           DiagRet, FieldLHS, FieldRHS>>
             algo_m;
 
         void setDefaultParameters() override {
