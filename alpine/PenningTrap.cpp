@@ -68,9 +68,7 @@ int main(int argc, char* argv[]) {
 
         // Create an instance of a manger for the considered application
         if (solver == "PCG") {
-            preconditioner_params.push_back(argv[arg++]);
-
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 5; i++) {
                 preconditioner_params.push_back(argv[arg++]);
             }
         }
