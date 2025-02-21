@@ -61,6 +61,13 @@ target_link_libraries(
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable(TestNonhomDirichlet_1dcos TestNonhomDirichlet_1dcos.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_1dcos
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable(TestScaling_ZeroBC_sin TestScaling_ZeroBC_sin.cpp)
 target_link_libraries(
     TestScaling_ZeroBC_sin
