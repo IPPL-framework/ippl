@@ -16,16 +16,8 @@ private:
     std::vector<std::string> preconditioner_params_m;
 
 public:
-    FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* E, Field<T, Dim>* phi)
-        : ippl::FieldSolverBase<T, Dim>(solver)
-        , rho_m(rho)
-        , E_m(E)
-        , phi_m(phi) {
-        setPotentialBCs();
-    }
-
     FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* E, Field<T, Dim>* phi,
-                std::vector<std::string> preconditioner_params)
+                std::vector<std::string> preconditioner_params = {})
         : ippl::FieldSolverBase<T, Dim>(solver)
         , rho_m(rho)
         , E_m(E)
