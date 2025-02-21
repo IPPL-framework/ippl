@@ -37,19 +37,8 @@ protected:
 
 public:
     AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                  std::string& solver_, std::string& stepMethod_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                           LoadBalancer<T, Dim>>()
-        , totalP_m(totalP_)
-        , nt_m(nt_)
-        , nr_m(nr_)
-        , lbt_m(lbt_)
-        , solver_m(solver_)
-        , stepMethod_m(stepMethod_) {}
-
-    AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                   std::string& solver_, std::string& stepMethod_,
-                  std::vector<std::string> preconditioner_params)
+                  std::vector<std::string> preconditioner_params = {})
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
                            LoadBalancer<T, Dim>>()
         , totalP_m(totalP_)
