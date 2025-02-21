@@ -119,8 +119,6 @@ namespace ippl {
             lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                static IpplTimings::TimerRef cgLoopTimer = IpplTimings::getTimer("CG_loop");
-                IpplTimings::startTimer(cgLoopTimer);
                 q       = op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
@@ -140,7 +138,6 @@ namespace ippl {
                 residueNorm = std::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
-                IpplTimings::stopTimer(cgLoopTimer);
             }
 
             if (allFacesPeriodic) {
@@ -301,12 +298,7 @@ namespace ippl {
             this->residueNorm = std::sqrt(std::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * delta1;
 
-            static IpplTimings::TimerRef iterTimer = IpplTimings::getTimer("PCG iter.");
-
-            static IpplTimings::TimerRef preLoopTimer = IpplTimings::getTimer("Preconditioner");
-
             while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
-                IpplTimings::startTimer(iterTimer);
                 q       = this->op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
@@ -319,9 +311,7 @@ namespace ippl {
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
                 r = r - alpha * q;
-                IpplTimings::startTimer(preLoopTimer);
                 s = preconditioner_m->operator()(r);
-                IpplTimings::stopTimer(preLoopTimer);
 
                 delta0 = delta1;
                 delta1 = innerProduct(r, s);
@@ -331,7 +321,6 @@ namespace ippl {
 
                 d = s + beta * d;
                 ++this->iterations_m;
-                IpplTimings::stopTimer(iterTimer);
             }
 
             if (allFacesPeriodic) {
