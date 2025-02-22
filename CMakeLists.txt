@@ -23,6 +23,7 @@ macro(remove_flag_from_target _target _flag)
 endmacro()
 
 
+
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 
     set (CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
@@ -34,7 +35,6 @@ else ()
     message (STATUS "${Green}Build type is: ${CMAKE_BUILD_TYPE}${ColourReset}")
 endif()
 
-
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     add_definitions (-DNOPAssert)
 endif ()
@@ -42,7 +42,23 @@ endif ()
 add_compile_options (-Wall)
 add_compile_options (-Wunused)
 add_compile_options (-Wextra)
-#¼add_compile_options (-Werror)
+
+
+# allow deprecated functions
+add_compile_options (-Wno-deprecated-declarations)
+file(
+    DOWNLOAD
+    https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
+    "${CMAKE_BINARY_DIR}/downloaded_headers/json.hpp"
+)
+file(
+    DOWNLOAD
+    https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+    "${CMAKE_BINARY_DIR}/downloaded_headers/stb_image_write.hpp"
+)
+include_directories("${CMAKE_BINARY_DIR}/downloaded_headers/")
+
+#add_compile_options (-Werror)
 
 # allow deprecated functions
 add_compile_options (-Wno-deprecated-declarations)
@@ -118,7 +134,7 @@ set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CUDA_EXTENSIONS OFF)
 set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINGO} -O3 -g ")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g ")
 set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 #set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
@@ -226,6 +242,7 @@ if (ENABLE_ALPINE)
     endif ()
     message (STATUS "Enable Alpine")
     add_subdirectory (alpine)
+    add_subdirectory(fel)
 endif ()
 
 
