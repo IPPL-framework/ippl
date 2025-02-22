@@ -108,6 +108,8 @@ elseif("${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL
     set(Heffte_ENABLE_ROCM ON CACHE BOOL "Set Heffte ROCM Backend")
     set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
     set(Kokkos_ENABLE_HIP ON CACHE BOOL "Enable Kokkos HIP Backend")
+    set(KOKKOS_ENABLE_PROFILING ON CACHE BOOL "Enable Kokkos Profiling")
+    set(Kokkos_ENABLE_LIBDL ON CACHE BOOL "Enable LIBDL")
 
 else()
     message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
@@ -115,7 +117,7 @@ else()
 endif()
 
 if(NOT Kokkos_VERSION)
-    set(Kokkos_VERSION "4.3.00")
+    set(Kokkos_VERSION "4.5.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
 else()
     message(STATUS "${Green}Selected Kokkos version: ${Kokkos_VERSION} ${ColourReset}")

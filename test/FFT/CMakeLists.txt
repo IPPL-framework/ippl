@@ -27,6 +27,13 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable (TestLumi TestLumi.cpp)
+target_link_libraries (
+    TestLumi
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable (TestSine TestSine.cpp)
 target_link_libraries (
     TestSine
