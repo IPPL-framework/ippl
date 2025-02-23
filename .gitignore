@@ -8,6 +8,22 @@ manual/*.idx
 manual/*.lof
 manual/*.lot
 manual/ippl_user_guide.pdf
-*~
-*.~
 
+# ignure vtk dump stuff
+data/
+datasets*/
+*.vtk
+
+# CMake and Build folder
+CMakeFiles/
+build*
+tags
+compile_commands.json
+
+# temporary folder
+.cache/
+.idea/
+*.dat
+__pycache__
+
+*.~

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<!-- For more details about how configure it : -->
+<!-- https://adios2.readthedocs.io/en/latest/engines/engines.html#sst-sustainable-staging-transport -->
+<adios-config>
+    <!-- For Simulation Nodes -->
+    <io name="Writer">
+        <engine type="SST">
+            <!-- Define the number of readers needed to start the simulation -->
+            <!-- This should correspond to as many readers launched an not the number of processes per reader -->
+            <parameter key="RendezvousReaderCount" value="1" />
+
+            <!-- Define max number of step cached for the Reader -->
+            <parameter key="QueueLimit" value="5" />
+            <!-- Define the number of step stored for late-arriving readers -->
+            <parameter key="ReserveQueueLimit" value="3" />
+
+            <!-- Define writer's behavior when the queue is full -->
+            <parameter key="QueueFullPolicy" value="Block" />
+
+            <!-- First and last step will never be discarded -->
+            <parameter key="FirstTimestepPrecious" value="true" />
+            <parameter key="AlwaysProvideLatestTimestep" value="true" />
+
+            <!-- Specify the timeout -->
+            <parameter key="OpenTimeoutSecs" value="100.0" />
+        </engine>
+    </io>
+
+    <!--  For Analysis Nodes -->
+    <io name="Reader">
+        <engine type="SST">
+            <!-- Specify the timeout -->
+            <parameter key="OpenTimeoutSecs" value="100.0" />
+        </engine>
+    </io>
+</adios-config>

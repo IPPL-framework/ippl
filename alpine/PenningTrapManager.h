@@ -14,6 +14,11 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+#ifdef ENABLE_CATALYST
+#include <optional>
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
@@ -59,7 +64,7 @@ public:
 
         nrMax_m    = 2048;  // Max grid size in our studies
         dxFinest_m = length_m[0] / nrMax_m;
-        this->dt_m = 0.5 * dxFinest_m;  // size of timestep
+        this->dt_m = 0.05;//0.5 * dxFinest_m;  // size of timestep
 
         this->it_m   = 0;
         this->time_m = 0.0;
@@ -279,6 +284,15 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
+#ifdef ENABLE_CATALYST
+        std::optional<conduit_cpp::Node> node = std::nullopt;
+        //CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
+        auto *rho               = &this->fcontainer_m->getRho();
+        CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
+        //auto *E               = &this->fcontainer_m->getE();
+        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
+        //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
+#endif
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);

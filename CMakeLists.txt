@@ -1,5 +1,6 @@
-cmake_minimum_required (VERSION 3.20.3)
-project (IPPL CXX)
+cmake_minimum_required (VERSION 3.24)
+project (IPPL LANGUAGES C CXX)
+
 set (IPPL_VERSION_MAJOR 3)
 set (IPPL_VERSION_MINOR 0.2)
 include(FetchContent)
@@ -146,12 +147,10 @@ set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 find_package (MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 link_directories(${MPI_LIBRARY_PATH})
-
-
-
-
+message (STATUS "The C compiler identification is: ${CMAKE_C_COMPILER_ID}")
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
+message (STATUS "The MPI C compiler is: ${MPI_C_COMPILER}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
 message (STATUS "The underlying C++ compiler is: ${CMAKE_CXX_COMPILER}")
 
@@ -207,6 +206,7 @@ if (ENABLE_FFT)
     message (STATUS "Found Heffte_DIR: ${Heffte_DIR}")
 endif ()
 
+option (ENABLE_CATALYST "Build example with Catalyst enabled" OFF)
 option (ENABLE_SOLVERS "Enable IPPL solvers" ON)
 
 add_subdirectory (src)
@@ -274,7 +274,7 @@ install (
     RENAME ${PROJECT_NAME}Config.cmake
     )
 
-# vi: set et ts=4 sw=4 sts=4:
+# vim: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
 # mode: cmake
