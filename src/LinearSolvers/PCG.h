@@ -201,8 +201,10 @@ namespace ippl {
             int outer = 2,  // This is a dummy default parameter, actual default parameter should be
             // set in main
             double omega = 1.57079632679  // This is a dummy default parameter, actual default
-                                          // parameter should be
-                                          // set in main
+            // parameter should be set in main
+            // default = pi/2 as this was found optimal during hyperparameter scan for test case 
+            // (see https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
+                                        
             ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
