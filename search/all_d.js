@@ -10,7 +10,7 @@ var searchData=
   ['ndregion_2ehpp_7',['NDRegion.hpp',['../NDRegion_8hpp.html',1,'']]],
   ['ndregion_3c_20t_2c_20dim_20_3e_8',['NDRegion&lt; T, Dim &gt;',['../classippl_1_1NDRegion.html',1,'ippl']]],
   ['ndregion_5ft_9',['NDRegion_t',['../classippl_1_1detail_1_1RegionLayout.html#adfe1c0b9e8d63213cd9667e282621e85',1,'ippl::detail::RegionLayout']]],
-  ['negative_5finverse_5fdiagonal_5flaplace_10',['negative_inverse_diagonal_laplace',['../namespaceippl.html#a97e105fb1a2583602b9bec01883afbed',1,'ippl']]],
+  ['negative_5finverse_5fdiagonal_5flaplace_10',['negative_inverse_diagonal_laplace',['../namespaceippl.html#a71361c359de8a7d79bc92a57351abc34',1,'ippl']]],
   ['neighbor_5flist_11',['neighbor_list',['../classippl_1_1FieldLayout.html#a489d6f8b884f8193807d7704d5e106a6',1,'ippl::FieldLayout::neighbor_list()'],['../classippl_1_1ParticleSpatialLayout.html#aec1de04a618491ccc01f506351891ae1',1,'ippl::ParticleSpatialLayout::neighbor_list()']]],
   ['neighbor_5frange_5flist_12',['neighbor_range_list',['../classippl_1_1FieldLayout.html#ab4004e828ab9973447bdc381afa90d69',1,'ippl::FieldLayout']]],
   ['nestedloop_13',['nestedLoop',['../namespaceippl_1_1detail.html#afb03cdea17d9979f149b65b3a4def1bd',1,'ippl::detail']]],

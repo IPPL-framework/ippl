@@ -364,13 +364,11 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Datatype_IfNotTrivial&gt;           \</div>
-<div class="line">    <span class="keyword">struct </span>getMpiOpImpl&lt;CppOp, Datatype_IfNotTrivial&gt; { \</div>
-<div class="line">        <span class="keyword">constexpr</span> MPI_Op operator()() const noexcept {  \</div>
-<div class="line">            <span class="keywordflow">return</span> MPIOp;                               \</div>
-<div class="line">        }                                               \</div>
-<div class="line">    };                                                  \</div>
-<div class="line">    <span class="keyword">template</span> &lt;&gt;                                         \</div>
+<b>Value:</b><div class="fragment"><div class="line">    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Datatype_IfNotTrivial&gt;                          \</div>
+<div class="line">    <span class="keyword">struct </span>getMpiOpImpl&lt;CppOp, Datatype_IfNotTrivial&gt; {                \</div>
+<div class="line">        <span class="keyword">constexpr</span> MPI_Op operator()() const noexcept { <span class="keywordflow">return</span> MPIOp; } \</div>
+<div class="line">    };                                                                 \</div>
+<div class="line">    <span class="keyword">template</span> &lt;&gt;                                                        \</div>
 <div class="line">    <span class="keyword">struct </span>is_ippl_mpi_type&lt;CppOp&gt; : std::true_type {};</div>
 </div><!-- fragment -->
 </div>

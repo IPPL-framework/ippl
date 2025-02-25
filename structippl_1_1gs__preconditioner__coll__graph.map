@@ -1,4 +1,7 @@
 <map id="ippl::gs_preconditioner&lt; Field, LowerF, UpperF, InvDiagF &gt;" name="ippl::gs_preconditioner&lt; Field, LowerF, UpperF, InvDiagF &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,211,172,397"/>
-<area shape="rect" id="node2" href="$structippl_1_1preconditioner.html" title=" " alt="" coords="22,5,155,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="10,771,177,972"/>
+<area shape="rect" id="node2" href="$structippl_1_1preconditioner.html" title=" " alt="" coords="5,485,139,657"/>
+<area shape="rect" id="node3" href="$classippl_1_1Field.html" title=" " alt="" coords="163,448,338,693"/>
+<area shape="rect" id="node4" href="$classippl_1_1BareField.html" title=" " alt="" coords="185,168,316,399"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="139,5,362,119"/>
 </map>

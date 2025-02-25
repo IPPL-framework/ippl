@@ -87,67 +87,67 @@ $(function() {
   <div class="headertitle"><div class="title">CommunicatorLogging.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="Communicator_8h_source.html">Communicate/Communicator.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="LogEntry_8h_source.html">Communicate/LogEntry.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="CommunicatorLogging_8hpp_source.html">Communicate/CommunicatorLogging.hpp</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="Inform_8h_source.html">Utility/Inform.h</a>&quot;</code><br />
-<code>#include &lt;iomanip&gt;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="CommunicatorLogging_8hpp_source.html">Communicate/CommunicatorLogging.hpp</a>&quot;</code><br />
 <code>#include &lt;fstream&gt;</code><br />
+<code>#include &lt;iomanip&gt;</code><br />
+<code>#include &quot;<a class="el" href="Inform_8h_source.html">Utility/Inform.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="Communicator_8h_source.html">Communicate/Communicator.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="LogEntry_8h_source.html">Communicate/LogEntry.h</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for CommunicatorLogging.cpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="CommunicatorLogging_8cpp__incl.png" border="0" usemap="#aCommunicatorLogging_8cpp" alt=""/></div>
 <map name="aCommunicatorLogging_8cpp" id="aCommunicatorLogging_8cpp">
-<area shape="rect" title=" " alt="" coords="1664,5,1840,31"/>
-<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="1171,79,1371,104"/>
-<area shape="rect" title=" " alt="" coords="2147,548,2213,573"/>
-<area shape="rect" href="LogEntry_8h.html" title=" " alt="" coords="73,247,239,273"/>
-<area shape="rect" href="CommunicatorLogging_8hpp.html" title=" " alt="" coords="25,152,215,192"/>
-<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="2081,475,2188,500"/>
-<area shape="rect" title=" " alt="" coords="2263,79,2329,104"/>
-<area shape="rect" title=" " alt="" coords="1395,328,1463,353"/>
-<area shape="rect" title=" " alt="" coords="1001,328,1055,353"/>
-<area shape="rect" href="BufferHandler_8h.html" title=" " alt="" coords="1739,247,1933,273"/>
-<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="1787,328,1947,353"/>
-<area shape="rect" href="LoggingBufferHandler_8h.html" title=" " alt="" coords="291,152,477,192"/>
-<area shape="rect" href="Request_8h.html" title=" " alt="" coords="854,159,1018,185"/>
-<area shape="rect" href="Status_8h.html" title=" " alt="" coords="1333,247,1488,273"/>
-<area shape="rect" title=" " alt="" coords="1094,159,1154,185"/>
-<area shape="rect" title=" " alt="" coords="1178,159,1238,185"/>
-<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2009,247,2133,273"/>
-<area shape="rect" href="TagMaker_8h.html" title=" " alt="" coords="417,247,591,273"/>
-<area shape="rect" href="Tags_8h.html" title=" " alt="" coords="1262,159,1407,185"/>
-<area shape="rect" href="Collectives_8hpp.html" title=" " alt="" coords="584,159,779,185"/>
-<area shape="rect" href="PointToPoint_8hpp.html" title=" " alt="" coords="1432,159,1637,185"/>
-<area shape="rect" href="Buffers_8hpp.html" title=" " alt="" coords="1661,159,1832,185"/>
-<area shape="rect" title=" " alt="" coords="1488,328,1528,353"/>
-<area shape="rect" href="BufferHandler_8hpp.html" title=" " alt="" coords="1553,328,1762,353"/>
-<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="1563,401,1690,427"/>
-<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="1849,401,1983,427"/>
-<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="1715,401,1824,427"/>
-<area shape="rect" href="Archive_8hpp.html" title=" " alt="" coords="1448,401,1539,427"/>
-<area shape="rect" title=" " alt="" coords="1399,475,1465,500"/>
-<area shape="rect" title=" " alt="" coords="1933,475,2057,500"/>
-<area shape="rect" title=" " alt="" coords="1704,475,1800,500"/>
-<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="1489,475,1679,500"/>
-<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="1825,475,1909,500"/>
-<area shape="rect" title=" " alt="" coords="1831,548,1903,573"/>
-<area shape="rect" title=" " alt="" coords="641,475,703,500"/>
-<area shape="rect" title=" " alt="" coords="229,328,291,353"/>
-<area shape="rect" title=" " alt="" coords="423,328,470,353"/>
-<area shape="rect" title=" " alt="" coords="301,401,355,427"/>
-<area shape="rect" title=" " alt="" coords="5,328,64,353"/>
-<area shape="rect" href="LoggingBufferHandler_8hpp.html" title=" " alt="" coords="1072,240,1259,280"/>
-<area shape="rect" title=" " alt="" coords="1304,328,1371,353"/>
-<area shape="rect" href="Variant_8h.html" title=" " alt="" coords="1971,328,2083,353"/>
-<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="1079,328,1225,353"/>
-<area shape="rect" title=" " alt="" coords="2008,401,2069,427"/>
-<area shape="rect" href="DataTypes_8h.html" title=" " alt="" coords="819,247,997,273"/>
-<area shape="rect" href="Operations_8h.html" title=" " alt="" coords="616,247,795,273"/>
-<area shape="rect" title=" " alt="" coords="775,328,846,353"/>
-<area shape="rect" title=" " alt="" coords="877,328,939,353"/>
-<area shape="rect" title=" " alt="" coords="671,328,747,353"/>
-<area shape="rect" title=" " alt="" coords="2053,548,2123,573"/>
+<area shape="rect" title=" " alt="" coords="73,5,249,31"/>
+<area shape="rect" href="CommunicatorLogging_8hpp.html" title=" " alt="" coords="94,152,285,192"/>
+<area shape="rect" href="LogEntry_8h.html" title=" " alt="" coords="361,247,527,273"/>
+<area shape="rect" title=" " alt="" coords="93,79,160,104"/>
+<area shape="rect" title=" " alt="" coords="23,548,89,573"/>
+<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="48,475,155,500"/>
+<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="1124,79,1324,104"/>
+<area shape="rect" title=" " alt="" coords="111,328,169,353"/>
+<area shape="rect" title=" " alt="" coords="479,328,540,353"/>
+<area shape="rect" title=" " alt="" coords="184,475,245,500"/>
+<area shape="rect" title=" " alt="" coords="1054,328,1101,353"/>
+<area shape="rect" title=" " alt="" coords="942,401,997,427"/>
+<area shape="rect" title=" " alt="" coords="368,548,440,573"/>
+<area shape="rect" title=" " alt="" coords="113,548,183,573"/>
+<area shape="rect" title=" " alt="" coords="863,328,931,353"/>
+<area shape="rect" title=" " alt="" coords="1581,328,1635,353"/>
+<area shape="rect" href="BufferHandler_8h.html" title=" " alt="" coords="615,247,809,273"/>
+<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="244,328,404,353"/>
+<area shape="rect" href="LoggingBufferHandler_8h.html" title=" " alt="" coords="885,152,1072,192"/>
+<area shape="rect" href="Request_8h.html" title=" " alt="" coords="1205,159,1369,185"/>
+<area shape="rect" href="Status_8h.html" title=" " alt="" coords="1447,247,1601,273"/>
+<area shape="rect" title=" " alt="" coords="1499,159,1559,185"/>
+<area shape="rect" title=" " alt="" coords="1583,159,1643,185"/>
+<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2082,247,2206,273"/>
+<area shape="rect" href="TagMaker_8h.html" title=" " alt="" coords="1037,247,1211,273"/>
+<area shape="rect" href="Tags_8h.html" title=" " alt="" coords="1938,159,2083,185"/>
+<area shape="rect" href="Collectives_8hpp.html" title=" " alt="" coords="1668,159,1863,185"/>
+<area shape="rect" href="PointToPoint_8hpp.html" title=" " alt="" coords="411,159,616,185"/>
+<area shape="rect" href="Buffers_8hpp.html" title=" " alt="" coords="640,159,811,185"/>
+<area shape="rect" title=" " alt="" coords="799,328,839,353"/>
+<area shape="rect" href="BufferHandler_8hpp.html" title=" " alt="" coords="565,328,774,353"/>
+<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="359,401,486,427"/>
+<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="714,401,849,427"/>
+<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="511,401,620,427"/>
+<area shape="rect" href="Archive_8hpp.html" title=" " alt="" coords="244,401,335,427"/>
+<area shape="rect" title=" " alt="" coords="273,475,338,500"/>
+<area shape="rect" title=" " alt="" coords="1049,475,1173,500"/>
+<area shape="rect" title=" " alt="" coords="685,475,781,500"/>
+<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="470,475,661,500"/>
+<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="362,475,446,500"/>
+<area shape="rect" href="LoggingBufferHandler_8hpp.html" title=" " alt="" coords="1236,240,1423,280"/>
+<area shape="rect" title=" " alt="" coords="1491,328,1557,353"/>
+<area shape="rect" href="Variant_8h.html" title=" " alt="" coords="2161,328,2273,353"/>
+<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="1940,328,2087,353"/>
+<area shape="rect" title=" " alt="" coords="2187,401,2248,427"/>
+<area shape="rect" href="DataTypes_8h.html" title=" " alt="" coords="1879,247,2057,273"/>
+<area shape="rect" href="Operations_8h.html" title=" " alt="" coords="1676,247,1855,273"/>
+<area shape="rect" title=" " alt="" coords="1659,328,1730,353"/>
+<area shape="rect" title=" " alt="" coords="1855,328,1916,353"/>
+<area shape="rect" title=" " alt="" coords="1754,328,1830,353"/>
 </map>
 </div>
 </div><table class="memberdecls">

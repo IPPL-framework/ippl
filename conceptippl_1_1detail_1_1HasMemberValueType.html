@@ -88,9 +88,9 @@ $(function() {
 <p><code>#include &lt;<a class="el" href="ParallelDispatch_8h_source.html">ParallelDispatch.h</a>&gt;</code></p>
 <h2 class="groupheader">Concept definition</h2>
 <div class="fragment"><div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><span class="keyword">concept </span><a class="code hl_concept" href="conceptippl_1_1detail_1_1HasMemberValueType.html">ippl::detail::HasMemberValueType</a> =  <span class="keyword">requires</span>(){</div>
-<div class="line">            {<span class="keyword">typename</span> T::value_type() };</div>
-<div class="line">        }</div>
+<div class="line"><span class="keyword">concept </span><a class="code hl_concept" href="conceptippl_1_1detail_1_1HasMemberValueType.html">ippl::detail::HasMemberValueType</a> =  <span class="keyword">requires</span>() {</div>
+<div class="line">                                         { <span class="keyword">typename</span> T::value_type() };</div>
+<div class="line">                                     }</div>
 <div class="ttc" id="aconceptippl_1_1detail_1_1HasMemberValueType_html"><div class="ttname"><a href="conceptippl_1_1detail_1_1HasMemberValueType.html">ippl::detail::HasMemberValueType</a></div><div class="ttdef"><b>Definition:</b> ParallelDispatch.h:182</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

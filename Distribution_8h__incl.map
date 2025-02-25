@@ -1,9 +1,9 @@
 <map id="Distribution.h" name="Distribution.h">
-<area shape="rect" id="node1" title=" " alt="" coords="593,5,690,31"/>
-<area shape="rect" id="node2" href="$Utility_8h.html" title=" " alt="" coords="535,79,652,104"/>
-<area shape="rect" id="node6" href="$ViewTypes_8h.html" title=" " alt="" coords="690,152,825,177"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,152,240,177"/>
-<area shape="rect" id="node4" title=" " alt="" coords="264,152,496,177"/>
-<area shape="rect" id="node5" title=" " alt="" coords="521,152,666,177"/>
-<area shape="rect" id="node7" title=" " alt="" coords="695,225,819,251"/>
+<area shape="rect" id="node1" title=" " alt="" coords="129,5,227,31"/>
+<area shape="rect" id="node2" href="$ViewTypes_8h.html" title=" " alt="" coords="5,152,140,177"/>
+<area shape="rect" id="node4" href="$Utility_8h.html" title=" " alt="" coords="223,79,341,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="11,225,135,251"/>
+<area shape="rect" id="node5" title=" " alt="" coords="165,152,399,177"/>
+<area shape="rect" id="node6" title=" " alt="" coords="423,152,655,177"/>
+<area shape="rect" id="node7" title=" " alt="" coords="680,152,825,177"/>
 </map>

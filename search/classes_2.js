@@ -32,7 +32,7 @@ var searchData=
   ['cell_29',['Cell',['../classCell.html',1,'']]],
   ['centering_30',['Centering',['../classCentering.html',1,'']]],
   ['cg_31',['CG',['../classippl_1_1CG.html',1,'ippl']]],
-  ['cg_3c_20operatorret_2c_20lowerret_2c_20upperret_2c_20upperlowerret_2c_20inversediagret_2c_20fieldlhs_2c_20fieldlhs_20_3e_32',['CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS, FieldLHS &gt;',['../classippl_1_1CG.html',1,'ippl']]],
+  ['cg_3c_20operatorret_2c_20lowerret_2c_20upperret_2c_20upperlowerret_2c_20inversediagret_2c_20diagret_2c_20fieldlhs_2c_20fieldlhs_20_3e_32',['CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldLHS &gt;',['../classippl_1_1CG.html',1,'ippl']]],
   ['chargedparticles_33',['ChargedParticles',['../classChargedParticles.html',1,'']]],
   ['commoncartesiancenterings_34',['CommonCartesianCenterings',['../structCommonCartesianCenterings.html',1,'']]],
   ['commoncartesiancenterings_3c_201u_2c_201u_2c_200u_20_3e_35',['CommonCartesianCenterings&lt; 1U, 1U, 0U &gt;',['../structCommonCartesianCenterings_3_011U_00_011U_00_010U_01_4.html',1,'']]],

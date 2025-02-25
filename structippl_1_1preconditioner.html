@@ -97,12 +97,13 @@ Inheritance diagram for ippl::preconditioner&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1preconditioner__inherit__graph.png" border="0" usemap="#aippl_1_1preconditioner_3_01Field_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1preconditioner_3_01Field_01_4_inherit__map" id="aippl_1_1preconditioner_3_01Field_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="419,5,553,163"/>
-<area shape="rect" href="structippl_1_1gs__preconditioner.html" title=" " alt="" coords="5,284,172,471"/>
-<area shape="rect" href="structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="196,313,371,441"/>
-<area shape="rect" href="structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="395,211,577,544"/>
-<area shape="rect" href="structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="602,240,845,515"/>
-<area shape="rect" href="structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="869,306,1109,449"/>
+<area shape="rect" title=" " alt="" coords="538,5,671,177"/>
+<area shape="rect" href="structippl_1_1gs__preconditioner.html" title=" " alt="" coords="5,277,172,507"/>
+<area shape="rect" href="structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="196,328,371,456"/>
+<area shape="rect" href="structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="395,225,577,559"/>
+<area shape="rect" href="structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="602,255,845,529"/>
+<area shape="rect" href="structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="869,306,1109,478"/>
+<area shape="rect" href="structippl_1_1ssor__preconditioner.html" title=" " alt="" coords="1133,262,1300,522"/>
 </map>
 </div>
 <div class="dynheader">
@@ -110,7 +111,7 @@ Collaboration diagram for ippl::preconditioner&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1preconditioner__coll__graph.png" border="0" usemap="#aippl_1_1preconditioner_3_01Field_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1preconditioner_3_01Field_01_4_coll__map" id="aippl_1_1preconditioner_3_01Field_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,139,163"/>
+<area shape="rect" title=" " alt="" coords="5,5,139,177"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -131,6 +132,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2b68e9ea6b38a1b90eaef0c86a9cbc9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75bc8700a7b518c38ce02a59eaf48f66"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Field.html">Field</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1preconditioner.html#a75bc8700a7b518c38ce02a59eaf48f66">operator()</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;u)</td></tr>
 <tr class="separator:a75bc8700a7b518c38ce02a59eaf48f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f5f88b6c38e3419f177c05aeb62e49c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1preconditioner.html#a8f5f88b6c38e3419f177c05aeb62e49c">init_fields</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;b)</td></tr>
+<tr class="separator:a8f5f88b6c38e3419f177c05aeb62e49c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaae30251446986d4ef6a0aa5de3d2e0e"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1preconditioner.html#aaae30251446986d4ef6a0aa5de3d2e0e">get_type</a> ()</td></tr>
 <tr class="separator:aaae30251446986d4ef6a0aa5de3d2e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -288,6 +291,36 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
 
 </div>
 </div>
+<a id="a8f5f88b6c38e3419f177c05aeb62e49c" name="a8f5f88b6c38e3419f177c05aeb62e49c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f5f88b6c38e3419f177c05aeb62e49c">&#9670;&#160;</a></span>init_fields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="structippl_1_1preconditioner.html">ippl::preconditioner</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::init_fields </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>b</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="structippl_1_1richardson__preconditioner.html#a1cb410e2aec3f53b11fdbb11656e6ea1">ippl::richardson_preconditioner&lt; Field, UpperAndLowerF, InvDiagF &gt;</a>, <a class="el" href="structippl_1_1gs__preconditioner.html#afe3754cbfb039b26012b0c460ac9a351">ippl::gs_preconditioner&lt; Field, LowerF, UpperF, InvDiagF &gt;</a>, and <a class="el" href="structippl_1_1ssor__preconditioner.html#a701b4f1a0ed500f94d0380137bd4ece9">ippl::ssor_preconditioner&lt; Field, LowerF, UpperF, InvDiagF, DiagF &gt;</a>.</p>
+
+</div>
+</div>
 <a id="a75bc8700a7b518c38ce02a59eaf48f66" name="a75bc8700a7b518c38ce02a59eaf48f66"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a75bc8700a7b518c38ce02a59eaf48f66">&#9670;&#160;</a></span>operator()()</h2>
 
@@ -314,7 +347,7 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="structippl_1_1gs__preconditioner.html#ac263375f3d6ef481aac66cf5303722b5">ippl::gs_preconditioner&lt; Field, LowerF, UpperF, InvDiagF &gt;</a>, <a class="el" href="structippl_1_1polynomial__chebyshev__preconditioner.html#aa01abcb9c499f36d2897d62f2e84d38e">ippl::polynomial_chebyshev_preconditioner&lt; Field, OperatorF &gt;</a>, <a class="el" href="structippl_1_1richardson__preconditioner.html#a12a09bdb8c0a3e802e3d874ed06a56b3">ippl::richardson_preconditioner&lt; Field, UpperAndLowerF, InvDiagF &gt;</a>, <a class="el" href="structippl_1_1jacobi__preconditioner.html#a871ff0ab2f3f88b24cab006873a37946">ippl::jacobi_preconditioner&lt; Field, InvDiagF &gt;</a>, and <a class="el" href="structippl_1_1polynomial__newton__preconditioner.html#a95e6de9e5b1fd5901d482d49e0f3d568">ippl::polynomial_newton_preconditioner&lt; Field, OperatorF &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="structippl_1_1gs__preconditioner.html#ac263375f3d6ef481aac66cf5303722b5">ippl::gs_preconditioner&lt; Field, LowerF, UpperF, InvDiagF &gt;</a>, <a class="el" href="structippl_1_1ssor__preconditioner.html#a99fc06a8497daebda33acc3e83d1811e">ippl::ssor_preconditioner&lt; Field, LowerF, UpperF, InvDiagF, DiagF &gt;</a>, <a class="el" href="structippl_1_1polynomial__chebyshev__preconditioner.html#aa01abcb9c499f36d2897d62f2e84d38e">ippl::polynomial_chebyshev_preconditioner&lt; Field, OperatorF &gt;</a>, <a class="el" href="structippl_1_1richardson__preconditioner.html#a12a09bdb8c0a3e802e3d874ed06a56b3">ippl::richardson_preconditioner&lt; Field, UpperAndLowerF, InvDiagF &gt;</a>, <a class="el" href="structippl_1_1jacobi__preconditioner.html#a871ff0ab2f3f88b24cab006873a37946">ippl::jacobi_preconditioner&lt; Field, InvDiagF &gt;</a>, and <a class="el" href="structippl_1_1polynomial__newton__preconditioner.html#a95e6de9e5b1fd5901d482d49e0f3d568">ippl::polynomial_newton_preconditioner&lt; Field, OperatorF &gt;</a>.</p>
 
 </div>
 </div>

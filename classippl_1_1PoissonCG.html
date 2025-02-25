@@ -128,8 +128,10 @@ Public Types</h2></td></tr>
 <tr class="separator:a5b264b24a61615ebd8f8de21c42b390b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac85b6b69df358feca0bf80ebae83dbea"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#ac85b6b69df358feca0bf80ebae83dbea">UpperAndLowerRet</a> = UnaryMinus&lt; <a class="el" href="structippl_1_1detail_1_1meta__upper__and__lower__laplace.html">detail::meta_upper_and_lower_laplace</a>&lt; <a class="el" href="classippl_1_1PoissonCG.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a> &gt; &gt;</td></tr>
 <tr class="separator:ac85b6b69df358feca0bf80ebae83dbea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a995eaebde202ab4af649aa4d05da805b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#a995eaebde202ab4af649aa4d05da805b">InverseDiagonalRet</a> = <a class="el" href="classippl_1_1PoissonCG.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a></td></tr>
-<tr class="separator:a995eaebde202ab4af649aa4d05da805b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80e6ceaaeb1fc203bca3e298a49a3a2c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#a80e6ceaaeb1fc203bca3e298a49a3a2c">InverseDiagonalRet</a> = double</td></tr>
+<tr class="separator:a80e6ceaaeb1fc203bca3e298a49a3a2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef95cf65afa2e51f90481a3464dd00b0"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#aef95cf65afa2e51f90481a3464dd00b0">DiagRet</a> = double</td></tr>
+<tr class="separator:aef95cf65afa2e51f90481a3464dd00b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb9803ccc30ca00408107714a1f7ab41"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a> = FieldLHS</td></tr>
 <tr class="separator:afb9803ccc30ca00408107714a1f7ab41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96a91a7da45bb0d881ec749ddfef38e3"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#a96a91a7da45bb0d881ec749ddfef38e3">rhs_type</a> = FieldRHS</td></tr>
@@ -204,8 +206,8 @@ Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a97a9419442cd24c5d978c6622b2cfd56"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1CG.html">CG</a>&lt; <a class="el" href="classippl_1_1PoissonCG.html#aa2dd19d040a5fbbd2614be3e6a1bd4c5">OperatorRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a060b6f82a52e4989a50d1a8b263b810f">LowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a5b264b24a61615ebd8f8de21c42b390b">UpperRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#ac85b6b69df358feca0bf80ebae83dbea">UpperAndLowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a995eaebde202ab4af649aa4d05da805b">InverseDiagonalRet</a>, FieldLHS, FieldRHS &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#a97a9419442cd24c5d978c6622b2cfd56">algo_m</a></td></tr>
-<tr class="separator:a97a9419442cd24c5d978c6622b2cfd56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ecf34bb0139a111deee4ddf75e76d69"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1CG.html">CG</a>&lt; <a class="el" href="classippl_1_1PoissonCG.html#aa2dd19d040a5fbbd2614be3e6a1bd4c5">OperatorRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a060b6f82a52e4989a50d1a8b263b810f">LowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a5b264b24a61615ebd8f8de21c42b390b">UpperRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#ac85b6b69df358feca0bf80ebae83dbea">UpperAndLowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a80e6ceaaeb1fc203bca3e298a49a3a2c">InverseDiagonalRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#aef95cf65afa2e51f90481a3464dd00b0">DiagRet</a>, FieldLHS, FieldRHS &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PoissonCG.html#a8ecf34bb0139a111deee4ddf75e76d69">algo_m</a></td></tr>
+<tr class="separator:a8ecf34bb0139a111deee4ddf75e76d69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classippl_1_1Poisson"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classippl_1_1Poisson')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson&lt; FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memitem:a73eae524c9fa61e6d71d4e1edc045500 inherit pro_attribs_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParameterList.html">ParameterList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a73eae524c9fa61e6d71d4e1edc045500">params_m</a></td></tr>
 <tr class="separator:a73eae524c9fa61e6d71d4e1edc045500 inherit pro_attribs_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -233,8 +235,8 @@ template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
 
 </div>
 </div>
-<a id="a995eaebde202ab4af649aa4d05da805b" name="a995eaebde202ab4af649aa4d05da805b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a995eaebde202ab4af649aa4d05da805b">&#9670;&#160;</a></span>InverseDiagonalRet</h2>
+<a id="aef95cf65afa2e51f90481a3464dd00b0" name="aef95cf65afa2e51f90481a3464dd00b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef95cf65afa2e51f90481a3464dd00b0">&#9670;&#160;</a></span>DiagRet</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -242,7 +244,23 @@ template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; FieldLHS, FieldRHS &gt;::InverseDiagonalRet =  <a class="el" href="classippl_1_1PoissonCG.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; FieldLHS, FieldRHS &gt;::DiagRet =  double</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a80e6ceaaeb1fc203bca3e298a49a3a2c" name="a80e6ceaaeb1fc203bca3e298a49a3a2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80e6ceaaeb1fc203bca3e298a49a3a2c">&#9670;&#160;</a></span>InverseDiagonalRet</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; FieldLHS, FieldRHS &gt;::InverseDiagonalRet =  double</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -557,8 +575,8 @@ template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a97a9419442cd24c5d978c6622b2cfd56" name="a97a9419442cd24c5d978c6622b2cfd56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97a9419442cd24c5d978c6622b2cfd56">&#9670;&#160;</a></span>algo_m</h2>
+<a id="a8ecf34bb0139a111deee4ddf75e76d69" name="a8ecf34bb0139a111deee4ddf75e76d69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ecf34bb0139a111deee4ddf75e76d69">&#9670;&#160;</a></span>algo_m</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -569,7 +587,7 @@ template&lt;typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1CG.html">CG</a>&lt;<a class="el" href="classippl_1_1PoissonCG.html#aa2dd19d040a5fbbd2614be3e6a1bd4c5">OperatorRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a060b6f82a52e4989a50d1a8b263b810f">LowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a5b264b24a61615ebd8f8de21c42b390b">UpperRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#ac85b6b69df358feca0bf80ebae83dbea">UpperAndLowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a995eaebde202ab4af649aa4d05da805b">InverseDiagonalRet</a>, FieldLHS, FieldRHS&gt; &gt; <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; FieldLHS, FieldRHS &gt;::algo_m</td>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1CG.html">CG</a>&lt;<a class="el" href="classippl_1_1PoissonCG.html#aa2dd19d040a5fbbd2614be3e6a1bd4c5">OperatorRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a060b6f82a52e4989a50d1a8b263b810f">LowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a5b264b24a61615ebd8f8de21c42b390b">UpperRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#ac85b6b69df358feca0bf80ebae83dbea">UpperAndLowerRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#a80e6ceaaeb1fc203bca3e298a49a3a2c">InverseDiagonalRet</a>, <a class="el" href="classippl_1_1PoissonCG.html#aef95cf65afa2e51f90481a3464dd00b0">DiagRet</a>, FieldLHS, FieldRHS&gt; &gt; <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; FieldLHS, FieldRHS &gt;::algo_m</td>
         </tr>
       </table>
   </td>

@@ -1,4 +1,4 @@
-<map id="ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS, FieldRHS &gt;" name="ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS, FieldRHS &gt;">
+<map id="ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;" name="ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;">
 <area shape="rect" id="node1" title=" " alt="" coords="5,387,227,529"/>
 <area shape="rect" id="node2" href="$classippl_1_1CG.html" title=" " alt="" coords="8,123,224,339"/>
 <area shape="rect" id="node3" href="$classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="35,5,197,75"/>

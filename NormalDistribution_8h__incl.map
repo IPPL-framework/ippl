@@ -1,10 +1,10 @@
 <map id="NormalDistribution.h" name="NormalDistribution.h">
-<area shape="rect" id="node1" title=" " alt="" coords="580,5,719,31"/>
-<area shape="rect" id="node2" href="$Utility_8h.html" title=" " alt="" coords="535,152,652,177"/>
-<area shape="rect" id="node8" href="$Distribution_8h.html" title=" " alt="" coords="631,79,780,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,225,240,251"/>
-<area shape="rect" id="node4" title=" " alt="" coords="264,225,496,251"/>
-<area shape="rect" id="node5" title=" " alt="" coords="521,225,666,251"/>
-<area shape="rect" id="node6" href="$ViewTypes_8h.html" title=" " alt="" coords="690,225,825,251"/>
-<area shape="rect" id="node7" title=" " alt="" coords="695,299,819,324"/>
+<area shape="rect" id="node1" title=" " alt="" coords="157,5,295,31"/>
+<area shape="rect" id="node2" href="$Distribution_8h.html" title=" " alt="" coords="95,79,245,104"/>
+<area shape="rect" id="node5" href="$Utility_8h.html" title=" " alt="" coords="223,152,341,177"/>
+<area shape="rect" id="node3" href="$ViewTypes_8h.html" title=" " alt="" coords="5,225,140,251"/>
+<area shape="rect" id="node4" title=" " alt="" coords="11,299,135,324"/>
+<area shape="rect" id="node6" title=" " alt="" coords="165,225,399,251"/>
+<area shape="rect" id="node7" title=" " alt="" coords="423,225,655,251"/>
+<area shape="rect" id="node8" title=" " alt="" coords="680,225,825,251"/>
 </map>

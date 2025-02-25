@@ -9,7 +9,7 @@ var searchData=
   ['_7ebconds_6',['~BConds',['../classippl_1_1BConds.html#a8bb94b5329ae7666e9a75a85acb0ad25',1,'ippl::BConds']]],
   ['_7ebufferhandler_7',['~BufferHandler',['../classippl_1_1BufferHandler.html#a4fbe2a71e3c19ba065aeb5a6c72a9576',1,'ippl::BufferHandler']]],
   ['_7ebumpontailinstabilitymanager_8',['~BumponTailInstabilityManager',['../classBumponTailInstabilityManager.html#a8b5a435f37762f842a80199dfbfaac26',1,'BumponTailInstabilityManager']]],
-  ['_7ecg_9',['~CG',['../classippl_1_1CG.html#aac1bc656c760014ab19915315cf90074',1,'ippl::CG']]],
+  ['_7ecg_9',['~CG',['../classippl_1_1CG.html#a6240387216ee4bbe18277edfaa22bb7c',1,'ippl::CG']]],
   ['_7echargedparticles_10',['~ChargedParticles',['../classChargedParticles.html#ab9c95632eacb2d0b33b5ce018137c471',1,'ChargedParticles']]],
   ['_7ecommunicate_11',['~Communicate',['../classippl_1_1Communicate.html#ac729ea3e68f9f58f0dae738b25aa15fa',1,'ippl::Communicate']]],
   ['_7ecommunicator_12',['~Communicator',['../classippl_1_1mpi_1_1Communicator.html#ac1119b0f06d050189332d2e1f71895ab',1,'ippl::mpi::Communicator']]],
