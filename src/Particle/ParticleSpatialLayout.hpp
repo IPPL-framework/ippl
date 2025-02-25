@@ -131,7 +131,6 @@ namespace ippl {
         pc.internalDestroy(invalid, invalidCount);
         Kokkos::fence();
 
-
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
@@ -216,7 +215,6 @@ namespace ippl {
                 }
             });
         Kokkos::fence();
-
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>

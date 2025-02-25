@@ -38,6 +38,12 @@ namespace ippl {
             return res;
         }
 
+        // Placeholder for setting additional fields, actually implemented in the derived classes
+        virtual void init_fields(Field& b) {
+            Field res = b.deepCopy();
+            return;
+        }
+
         std::string get_type() { return type_m; };
 
     protected:
@@ -163,7 +169,7 @@ namespace ippl {
         unsigned int level_m;  // Number of recursive calls
         double zeta_m;  // smallest (alpha + beta) is multiplied by (1+zeta) to avoid clustering of
                         // Eigenvalues
-        double* eta_m     = nullptr;  // Size is determined at runtime
+        double* eta_m = nullptr;  // Size is determined at runtime
     };
 
     /*!
@@ -269,7 +275,7 @@ namespace ippl {
         double sigma_m;
         unsigned degree_m;
         double zeta_m;
-        double* rho_m     = nullptr;  // Size is determined at runtime
+        double* rho_m = nullptr;  // Size is determined at runtime
     };
 
     /*!
@@ -293,20 +299,28 @@ namespace ippl {
             mesh_type& mesh     = r.get_mesh();
             layout_type& layout = r.getLayout();
             Field g(mesh, layout);
-            Field ULg(mesh, layout);
+
             g = 0;
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                ULg = upper_and_lower_m(g);
-                g   = r - ULg;
-                g   = inverse_diagonal_m(g);
+                ULg_m = upper_and_lower_m(g);
+                g     = r - ULg_m;
+                g     = inverse_diagonal_m(g) * g;
             }
             return g;
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+
+            ULg_m = Field(mesh, layout);
         }
 
     protected:
         UpperAndLowerF upper_and_lower_m;
         InvDiagF inverse_diagonal_m;
         unsigned innerloops_m;
+        Field ULg_m;
     };
 
     /*!
@@ -331,30 +345,36 @@ namespace ippl {
         Field operator()(Field& b) override {
             layout_type& layout = b.getLayout();
             mesh_type& mesh     = b.get_mesh();
+
             Field x(mesh, layout);
-            Field r(mesh, layout);
-            Field r_inner(mesh, layout);
-            Field L(mesh, layout);
-            Field U(mesh, layout);
+
             x = 0;  // Initial guess
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                U = upper_m(x);
-                r = b - U;
+                UL_m = upper_m(x);
+                r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    L       = lower_m(x);
-                    r_inner = r - L;
-                    x       = inverse_diagonal_m(r_inner);
+                    UL_m = lower_m(x);
+                    x    = r_m - UL_m;
+                    x    = inverse_diagonal_m(x) * x;
                 }
-                L = lower_m(x);
-                r = b - L;
+                UL_m = lower_m(x);
+                r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    U       = upper_m(x);
-                    r_inner = r - U;
-                    x       = inverse_diagonal_m(r_inner);
+                    UL_m = upper_m(x);
+                    x    = r_m - UL_m;
+                    x    = inverse_diagonal_m(x) * x;
                 }
             }
             return x;
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+
+            UL_m = Field(mesh, layout);
+            r_m  = Field(mesh, layout);
         }
 
     protected:
@@ -363,6 +383,91 @@ namespace ippl {
         InvDiagF inverse_diagonal_m;
         unsigned innerloops_m;
         unsigned outerloops_m;
+        Field UL_m;
+        Field r_m;
+    };
+
+    /*!
+     * Symmetric successive over-relaxation
+     */
+    template <typename Field, typename LowerF, typename UpperF, typename InvDiagF, typename DiagF>
+    struct ssor_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        ssor_preconditioner(LowerF&& lower, UpperF&& upper, InvDiagF&& inverse_diagonal,
+                            DiagF&& diagonal, unsigned innerloops, unsigned outerloops,
+                            double omega)
+            : preconditioner<Field>("ssor")
+            , innerloops_m(innerloops)
+            , outerloops_m(outerloops)
+            , omega_m(omega) {
+            lower_m            = std::move(lower);
+            upper_m            = std::move(upper);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+            diagonal_m         = std::move(diagonal);
+        }
+
+        Field operator()(Field& b) override {
+            static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("SSOR Init");
+            IpplTimings::startTimer(initTimer);
+
+            double D;
+
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+
+            Field x(mesh, layout);
+
+            x = 0;  // Initial guess
+
+            IpplTimings::stopTimer(initTimer);
+
+            static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("SSOR loop");
+            IpplTimings::startTimer(loopTimer);
+
+            for (unsigned int k = 0; k < outerloops_m; ++k) {
+                UL_m = upper_m(x);
+                D    = diagonal_m(x);
+                r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
+
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    UL_m = lower_m(x);
+                    x    = r_m - omega_m * UL_m;
+                    x    = inverse_diagonal_m(x) * x;
+                }
+                UL_m = lower_m(x);
+                D    = diagonal_m(x);
+                r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    UL_m = upper_m(x);
+                    x    = r_m - omega_m * UL_m;
+                    x    = inverse_diagonal_m(x) * x;
+                }
+            }
+            IpplTimings::stopTimer(loopTimer);
+            return x;
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+
+            UL_m = Field(mesh, layout);
+            r_m  = Field(mesh, layout);
+        }
+
+    protected:
+        LowerF lower_m;
+        UpperF upper_m;
+        InvDiagF inverse_diagonal_m;
+        DiagF diagonal_m;
+        unsigned innerloops_m;
+        unsigned outerloops_m;
+        double omega_m;
+        Field UL_m;
+        Field r_m;
     };
 
     /*!

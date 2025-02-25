@@ -6,7 +6,7 @@
 #ifndef IPPL_TYPES_H
 #define IPPL_TYPES_H
 
-#include <cstddef> //For std::size_t
+#include <cstddef>  //For std::size_t
 
 namespace ippl {
     namespace detail {

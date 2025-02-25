@@ -2,11 +2,12 @@
 #define IPPL_PARTICLE_CONTAINER_H
 
 #include <memory>
+
 #include "Manager/BaseManager.h"
 
 /**
  * @brief Class representing a container for particles.
- * 
+ *
  * @tparam T Type of the particle attribute.
  * @tparam Dim Dimensionality of the configuration space (default is 3).
  */
@@ -32,7 +33,7 @@ public:
 
     /**
      * @brief Constructor for ParticleContainer.
-     * 
+     *
      * @param mesh Reference to the mesh object.
      * @param FL Reference to the field layout object.
      */
@@ -50,14 +51,14 @@ public:
 
     /**
      * @brief Get the particle layout.
-     * 
+     *
      * @return Shared pointer to the particle layout.
      */
     std::shared_ptr<PLayout_t<T, Dim>> getPL() const { return pl_m; }
 
     /**
      * @brief Set the particle layout.
-     * 
+     *
      * @param pl Shared pointer to the particle layout.
      */
     void setPL(const std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
@@ -88,4 +89,4 @@ private:
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 };
 
-#endif // IPPL_PARTICLE_CONTAINER_H
+#endif  // IPPL_PARTICLE_CONTAINER_H

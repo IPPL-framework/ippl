@@ -1,10 +1,12 @@
-#include "Communicate/Communicator.h"
-#include "Communicate/LogEntry.h"
 #include "Communicate/CommunicatorLogging.hpp"
+
+#include <fstream>
+#include <iomanip>
+
 #include "Utility/Inform.h"
 
-#include <iomanip> 
-#include <fstream>
+#include "Communicate/Communicator.h"
+#include "Communicate/LogEntry.h"
 
 namespace ippl {
     namespace mpi {
@@ -21,7 +23,6 @@ namespace ippl {
             if (rank() == 0) {
                 writeLogsToFile(allLogs, filename);
             }
-
         }
 
         std::vector<LogEntry> Communicator::gatherLocalLogs() {
@@ -44,7 +45,8 @@ namespace ippl {
             this->send<char>(buffer.data(), logSize, 0, 0);
         }
 
-        std::vector<LogEntry> Communicator::gatherLogsFromAllRanks(const std::vector<LogEntry>& localLogs) {
+        std::vector<LogEntry> Communicator::gatherLogsFromAllRanks(
+            const std::vector<LogEntry>& localLogs) {
             std::vector<LogEntry> allLogs = localLogs;
 
             for (int rank = 1; rank < size_m; ++rank) {
@@ -63,7 +65,6 @@ namespace ippl {
             return allLogs;
         }
 
-
         std::vector<char> serializeLogs(const std::vector<LogEntry>& logs) {
             std::vector<char> buffer;
 
@@ -75,7 +76,6 @@ namespace ippl {
             return buffer;
         }
 
-
         std::vector<LogEntry> deserializeLogs(const std::vector<char>& buffer) {
             std::vector<LogEntry> logs;
             size_t offset = 0;
@@ -85,24 +85,25 @@ namespace ippl {
 
                 logs.push_back(logEntry);
 
-                offset += logEntry.serialize().size(); 
+                offset += logEntry.serialize().size();
             }
             return logs;
         }
 
-        void Communicator::writeLogsToFile(const std::vector<LogEntry>& allLogs, const std::string& filename) {
+        void Communicator::writeLogsToFile(const std::vector<LogEntry>& allLogs,
+                                           const std::string& filename) {
             Inform logFile(0, filename.c_str(), Inform::OVERWRITE, 0);
             logFile.setOutputLevel(1);
 
             logFile << "Timestamp,Method,Rank,MemorySpace,usedSize,FreeSize,Parameters" << endl;
-              
+
             for (const auto& log : allLogs) {
                 auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
                                      log.timestamp.time_since_epoch())
                                      .count();
 
-                logFile << timestamp << "," << log.methodName << "," << log.rank << "," << log.memorySpace << ","
-                        << log.usedSize << "," << log.freeSize;
+                logFile << timestamp << "," << log.methodName << "," << log.rank << ","
+                        << log.memorySpace << "," << log.usedSize << "," << log.freeSize;
 
                 logFile << ",\"";
                 bool first = true;

@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
         int chebyshev_degree;
         int richardson_iterations;
         int communication;
+        double ssor_omega;
         std::string solver              = "not preconditioned";
         std::string preconditioner_type = "";
         // Preconditioner Setup End
@@ -74,6 +75,13 @@ int main(int argc, char* argv[]) {
                         gauss_seidel_outer_iterations = std::atoi(argv[4]);
                         communication                 = std::atoi(argv[5]);
                     }
+                    if (argv[2][0] == 's') {
+                        solver                        = "preconditioned";
+                        preconditioner_type           = "ssor";
+                        gauss_seidel_inner_iterations = std::atoi(argv[3]);
+                        gauss_seidel_outer_iterations = std::atoi(argv[4]);
+                        ssor_omega                    = std::stod(argv[5]);
+                    }
                     if (argv[2][0] == 'r') {
                         solver                = "preconditioned";
                         preconditioner_type   = "richardson";
@@ -102,6 +110,13 @@ int main(int argc, char* argv[]) {
                         gauss_seidel_inner_iterations = std::atoi(argv[4]);
                         gauss_seidel_outer_iterations = std::atoi(argv[5]);
                         communication                 = std::atoi(argv[6]);
+                    }
+                    if (argv[3][0] == 's') {
+                        solver                        = "preconditioned";
+                        preconditioner_type           = "ssor";
+                        gauss_seidel_inner_iterations = std::atoi(argv[4]);
+                        gauss_seidel_outer_iterations = std::atoi(argv[5]);
+                        ssor_omega                    = std::stod(argv[6]);
                     }
                     if (argv[3][0] == 'r') {
                         solver                = "preconditioned";
@@ -196,7 +211,7 @@ int main(int argc, char* argv[]) {
         ippl::PoissonCG<field_type> lapsolver;
 
         ippl::ParameterList params;
-        params.add("max_iterations", 2000);
+        params.add("max_iterations", 500);
         params.add("solver", solver);
         // Preconditioner Setup
         params.add("preconditioner_type", preconditioner_type);
@@ -206,6 +221,7 @@ int main(int argc, char* argv[]) {
         params.add("chebyshev_degree", chebyshev_degree);
         params.add("richardson_iterations", richardson_iterations);
         params.add("communication", communication);
+        params.add("ssor_omega", ssor_omega);
 
         lapsolver.mergeParameters(params);
 
@@ -213,7 +229,9 @@ int main(int argc, char* argv[]) {
         lapsolver.setLhs(lhs);
 
         lhs = 0;
+        info << "Solver is set up" << endl;
         lapsolver.solve();
+        info << "Solver is done" << endl;
 
         const char* name = isWeak ? "Convergence (weak)" : "Convergence";
         Inform m(name);
@@ -231,8 +249,8 @@ int main(int argc, char* argv[]) {
         int itCount = lapsolver.getIterationCount();
         m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
           << endl;
-
-        IpplTimings::print("timings" + std::to_string(pt) + ".dat");
+        IpplTimings::print();
+        // IpplTimings::print("timings" + std::to_string(pt) + ".dat");
     }
     ippl::finalize();
 
