@@ -117,8 +117,8 @@ namespace ippl {
 #endif
 #endif
 
-#ifdef Heffte_ENABLE_ROCM
 #ifdef KOKKOS_ENABLE_HIP
+#ifdef Heffte_ENABLE_ROCM
         template <>
         struct HeffteBackendType<Kokkos::HIPSpace> {
             using backend     = heffte::backend::rocfft;
@@ -127,7 +127,13 @@ namespace ippl {
             using backendCos1 = heffte::backend::rocfft_cos1;
         };
 #else
-#error rocFFT backend is enabled for heFFTe but HIP is not enabled for Kokkos!
+        template <>
+        struct HeffteBackendType<Kokkos::HIPSpace> {
+            using backend     = heffte::backend::stock;
+            using backendSine = heffte::backend::stock_sin;
+            using backendCos  = heffte::backend::stock_cos;
+            using backendCos1 = heffte::backend::stock_cos1;
+        };
 #endif
 #endif
         
