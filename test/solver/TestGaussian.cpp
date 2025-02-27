@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized heffte parameter");
         }
         params.add("use_heffte_defaults", false);
-        params.add("use_gpu_aware", true);
+        params.add("use_gpu_aware", false);
         params.add("r2c_direction", 0);
 
         // set the algorithm
