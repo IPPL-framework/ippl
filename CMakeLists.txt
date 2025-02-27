@@ -57,7 +57,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
-
+option (Heffte_ENABLE_GPU_AWARE_MPI "Is a issue ... " OFF)
 if(NOT IPPL_PLATFORMS)
     message(STATUS "${Yellow}IPPL_PLATFORMS flag is not set, defaulting to serial backend${ColourReset}")
     set(IPPL_PLATFORMS "SERIAL")
