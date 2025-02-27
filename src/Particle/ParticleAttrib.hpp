@@ -207,8 +207,11 @@ namespace ippl {
                 // gather
                 value_type gathered = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
                                                               view, wlo, whi, args);
-                if (addToAttribute) dview_m(idx) += gathered;
-                else                dview_m(idx)  = gathered;
+                if (addToAttribute) {
+                    dview_m(idx) += gathered;
+                } else {
+                    dview_m(idx)  = gathered;
+                }
             });
         IpplTimings::stopTimer(gatherTimer);
     }
@@ -218,13 +221,46 @@ namespace ippl {
      *
      */
 
+    /**
+     * @brief Non-class interface for scattering particle attribute data onto a field.
+     *
+     * This overload preserves legacy functionality by providing a default iteration policy.
+     * It calls the member scatter() with a default Kokkos::RangePolicy.
+     * 
+     * @note The default behaviour is to scatter all particles without any custom index mapping.
+     *
+     * @tparam Attrib1 The type of the particle attribute.
+     * @tparam Field The type of the field.
+     * @tparam Attrib2 The type of the particle position attribute.
+     * @tparam policy_type (Default: `Kokkos::RangePolicy<typename Field::execution_space>`)
+     * @param attrib The particle attribute to scatter.
+     * @param f The field onto which the data is scattered.
+     * @param pp The ParticleAttrib representing particle positions.
+     */
     template <typename Attrib1, typename Field, typename Attrib2, 
                 typename policy_type = Kokkos::RangePolicy<typename Field::execution_space>>
     inline void scatter(const Attrib1& attrib, Field& f, const Attrib2& pp) {
         attrib.scatter(f, pp, policy_type(0, attrib.getParticleCount())); 
     }
 
-    // Second implementation for custom range policy, but without index array
+    /**
+     * @brief Non-class interface for scattering with a custom iteration policy and optional index array.
+     *
+     * This overload allows the caller to specify a custom `Kokkos::range_policy` and an optional
+     * `ippl::hash_type` array. It forwards the parameters to the member scatter() function.
+     * 
+     * @note See ParticleAttrib::scatter() for more information on the custom iteration functionality.
+     *
+     * @tparam Attrib1 The type of the particle attribute.
+     * @tparam Field The type of the field.
+     * @tparam Attrib2 The type of the particle position attribute.
+     * @tparam policy_type (Default: `Kokkos::RangePolicy<typename Field::execution_space>`)
+     * @param attrib The particle attribute to scatter.
+     * @param f The field onto which the data is scattered.
+     * @param pp The ParticleAttrib representing particle positions.
+     * @param iteration_policy A custom `Kokkos::range_policy` defining the iteration range.
+     * @param hash_array An optional `ippl::hash_type` array for index mapping.
+     */
     template <typename Attrib1, typename Field, typename Attrib2, 
                 typename policy_type = Kokkos::RangePolicy<typename Field::execution_space>>
     inline void scatter(const Attrib1& attrib, Field& f, const Attrib2& pp, 
@@ -232,6 +268,23 @@ namespace ippl {
         attrib.scatter(f, pp, iteration_policy, hash_array);
     }
 
+    /**
+     * @brief Non-class interface for gathering field data into a particle attribute.
+     * 
+     * This interface calls the member ParticleAttrib::gather() function with the provided
+     * parameters and preserving legacy behavior by assigning `addToAttribute` a default value.
+     * 
+     * @note See ParticleAttrib::gather() for more information on the behavior of `addToAttribute`.
+     * 
+     * @tparam Attrib1 The type of the particle attribute.
+     * @tparam Field The type of the field.
+     * @tparam Attrib2 The type of the particle position attribute.
+     * @param attrib The particle attribute to gather data into.
+     * @param f The field from which data is gathered.
+     * @param pp The ParticleAttrib representing particle positions.
+     * @param addToAttribute If true, the gathered field value is added to the current attribute value;
+     *                       otherwise, the attribute value is overwritten.
+     */
     template <typename Attrib1, typename Field, typename Attrib2>
     inline void gather(Attrib1& attrib, Field& f, const Attrib2& pp, 
                         const bool addToAttribute = false) {
