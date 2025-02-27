@@ -2,7 +2,7 @@
 // and homogeneous Dirichlet boundaries
 //
 // Usage:
-//     ./TestNonHomDirichlet --info 5
+//     ./TestNonHomDirichlet_3d --info 5
 
 #include "Ippl.h"
 
@@ -11,27 +11,26 @@
 
 template <typename T>
 struct AnalyticSol {
-    KOKKOS_FUNCTION const T operator()(ippl::Vector<T, 3> x_vec, T mu = 0.5, T sigma = 0.05) const {
-        T pi = Kokkos::numbers::pi_v<T>;
+    KOKKOS_FUNCTION const T operator()(ippl::Vector<T, 3> x_vec) const {
         T x = x_vec[0];
         T y = x_vec[1];
         T z = x_vec[2];
-        T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
 
-        return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+        return -(x*x)*(4 - x*x)*(y*y)*(4 - y*y)*(z*z)*(4 - z*z) + 8.0;
     }
 };
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian(ippl::Vector<T, 3> x_vec, T mu = 0.5, T sigma = 0.05) {
-    T pi        = Kokkos::numbers::pi_v<T>;
-    T prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
-    T x         = x_vec[0];
-    T y         = x_vec[1];
-    T z         = x_vec[2];
-    T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
+KOKKOS_INLINE_FUNCTION T rhs_function(ippl::Vector<T, 3> x_vec) {
+    T x2  = x_vec[0]*x_vec[0];
+    T y2  = x_vec[1]*x_vec[1];
+    T z2  = x_vec[2]*x_vec[2];
+    T x4  = x2*x2;
+    T y4  = y2*y2;
+    T z4  = z2*z2;
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return 8*y2*(-4+y2)*z2*(-4+z2)-4*x4*(-2*z2*(-4+z2)+y4*(-2+3*z2)+y2*(8-24*z2+3*z4)) 
+            -4*x2*(8*z2*(-4+z2) + y4*(8-24*z2+3*z4)-8*y2*(4-18*z2+3*z4));
 }
 
 template <typename T, unsigned Dim>
@@ -94,14 +93,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            apply(view_rhs, args) = gaussian<T>(x);
+            apply(view_rhs, args) = rhs_function<T>(x);
             apply(view_sol, args) = analytic(x);
         });
 
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    const T dirichlet = 0.0918881;
+    const T dirichlet = 8.0;
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, dirichlet);
 
     // set the parameters
@@ -154,8 +153,8 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-            testFEMSolver<T, 1>(n, 0.0, 1.0);
+        for (unsigned n = 1 << 2; n <= 1 << 8; n = n << 1) {
+            testFEMSolver<T, 3>(n, 0.0, 2.0);
         }
 
         // stop the timer

@@ -54,9 +54,16 @@ target_link_libraries(
     ${MPI_CXX_LIBRARIES}
 )
 
-add_executable(TestNonhomDirichlet_Gauss3d TestNonhomDirichlet_Gauss3d.cpp)
+add_executable(TestNonhomDirichlet_2d TestNonhomDirichlet_2d.cpp)
 target_link_libraries(
-    TestNonhomDirichlet_Gauss3d
+    TestNonhomDirichlet_2d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestNonhomDirichlet_3d TestNonhomDirichlet_3d.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_3d
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
