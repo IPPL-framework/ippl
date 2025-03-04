@@ -18,6 +18,21 @@
 #include <algorithm>
 #include <iostream>
 
+// A helper needed to reduce over a hash_type.
+// This is needed, since Kokkos kernels apparently
+// cannot be called inside a TYPED_TEST on device.
+struct ComputeTotalChargeLambda {
+    Kokkos::View<double*> viewQ;
+    Kokkos::View<int*> hash;
+
+    ComputeTotalChargeLambda(Kokkos::View<double*> viewQ_, Kokkos::View<int*> hash_) 
+        : viewQ(viewQ_), hash(hash_) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i, double& val) const {
+        val += viewQ(hash(i));
+    }
+};
+
 // A simple bunch_type holding a charge attribute 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -303,11 +318,16 @@ TYPED_TEST(GatherScatterTest, ScatterCustomHashTest) {
     // First compute the total charge of the first NScattered particles as determined by the hash map
     double Q_total = 0.0;
     auto viewQ = this->bunch->Q.getView();
+
+    ComputeTotalChargeLambda lambda(viewQ, hash);
     Kokkos::parallel_reduce("computeTotalCharge", 
+        Kokkos::RangePolicy<typename TestFixture::exec_space>(0, NScattered),
+        lambda, Q_total);
+    /*Kokkos::parallel_reduce("computeTotalCharge", 
         Kokkos::RangePolicy<typename TestFixture::exec_space>(0, NScattered),
         KOKKOS_LAMBDA(const size_t i, double& val) {
             val += viewQ(hash(i));
-        }, Q_total);
+        }, Q_total);*/
     ippl::Comm->allreduce(Q_total, 1, std::plus<double>());
 
     // Scatter the first NScattered particles using the custom hash
