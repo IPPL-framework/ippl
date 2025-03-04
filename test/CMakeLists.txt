@@ -14,6 +14,7 @@ endmacro()
 #  add_subdirectory (${test})
 #endforeach()
 
+add_subdirectory (mpi)
 add_subdirectory (kokkos)
 add_subdirectory (types)
 add_subdirectory (field)
