@@ -41,6 +41,16 @@ target_link_libraries (
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable (GatherScatterTest GatherScatterTest.cpp)
+gtest_discover_tests(GatherScatterTest PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
+target_link_libraries (
+    GatherScatterTest
+    ippl
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
