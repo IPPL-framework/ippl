@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
       int rank, size;
       rank = ippl::Comm->rank(); size = ippl::Comm->size();
 
-      constexpr int data_size = 1000;
+      constexpr int data_size = 10;
 
         int pt = 512;
         ippl::Index I(pt);
@@ -63,11 +63,11 @@ int main(int argc, char* argv[]) {
 
       // Determine source and destination ranks in a circular pattern
       int send_to = (rank + 1) % size;
-//       int recv_from = (rank - 1 + size) % size;
+      int recv_from = (rank - 1 + size) % size;
 
       // Initialize data
       for (int i = 0; i < data_size; ++i) {
-        particles.send_data(i) = static_cast<double>(rank * 1000 + i); // Unique data per rank
+        particles.send_data(i) = static_cast<double>(rank * data_size + i); // Unique data per rank
         particles.recv_data(i) = 0.0;
       }
 
@@ -79,20 +79,47 @@ int main(int argc, char* argv[]) {
 
 //       buffer_type buf = ippl::Comm->getBuffer<memory_space, double>(data_size);
 
-      ippl::detail::Archive<memory_space> ar(data_size);
+      ippl::detail::Archive<memory_space> ar(sizeof(double)*data_size);
 
 //       std::cout << buf->getSize() << std::endl;
 
-     particles.send_data.serialize(ar, data_size);
+      if (rank == 0) {
+            ippl::detail::hash_type<memory_space> hash("hash", data_size);
+
+            // mark which data is sent -- we send everything
+            for(int i = 0; i < data_size; ++i) {
+                hash(i) = i;
+            }
+
+            particles.send_data.pack(hash);
+
+            ippl::Comm->isend(send_to, tag, particles.send_data, ar, send_request, data_size);
+
+            MPI_Wait(&send_request, MPI_STATUS_IGNORE);
+
+      } else if (rank == 1) {
+
+        ippl::Comm->recv(recv_from, tag, particles.recv_data, ar, sizeof(double)*data_size, data_size);
+
+        particles.recv_data.unpack(data_size);
+
+
+        auto view = particles.recv_data.getView();
+
+        // note that this rank receives 'data_size' values. That data is appended to the
+        // existing 'recv_data' attributes, therefore the size is doubled
+        for (int i = data_size; i < 2 * data_size; ++i) {
+            std::cout << view(i) << std::endl;
+        }
 
 //       ippl::Comm->isend(send_to, tag, particles.send_data, *buf, send_request, data_size);
 
       //      MPI_Isend(send_data.data(), data_size, MPI_DOUBLE, send_to, 0, MPI_COMM_WORLD, &send_request);
       //      MPI_Irecv(recv_data.data(), data_size, MPI_DOUBLE, recv_from, 0, MPI_COMM_WORLD, &recv_request);
 
+    }
       // Wait for both operations to complete
-      //      MPI_Wait(&send_request, MPI_STATUS_IGNORE);
-      //      MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
+//         MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
 
       // Print verification message
       /*
