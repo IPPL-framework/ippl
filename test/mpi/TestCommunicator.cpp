@@ -16,8 +16,13 @@ int main(int argc, char* argv[]) {
       rank = ippl::Comm->rank(); size = ippl::Comm->size();
       
       constexpr int data_size = 1000;
-      std::vector<double> send_data(data_size);
-      std::vector<double> recv_data(data_size, 0.0);
+
+      ippl::ParticleAttrib<double> send_data;
+      ippl::ParticleAttrib<double> reci_data; 
+
+      send_data.create(data_size);
+      reci_data.create(data_size);
+      
       MPI_Request send_request, recv_request;
 
       // Determine source and destination ranks in a circular pattern
@@ -26,7 +31,8 @@ int main(int argc, char* argv[]) {
       
       // Initialize data
       for (int i = 0; i < data_size; ++i) {
-        send_data[i] = static_cast<double>(rank * 1000 + i); // Unique data per rank
+        send_data(i) = static_cast<double>(rank * 1000 + i); // Unique data per rank
+	reci_data(i) = 0.0;
       }
 
       std::vector<MPI_Request> send_requests(1);
@@ -37,10 +43,10 @@ int main(int argc, char* argv[]) {
 	
       using buffer_type  = ippl::mpi::Communicator::buffer_type<memory_space>;
 
-      buffer_type buf = ippl::Comm->template getBuffer<memory_space, double>(data_size);
+      buffer_type buf = ippl::Comm->template getBuffer<memory_space, double*>(data_size);
 
       
-      ippl::Comm->isend(send_to, tag, send_data.data(), *buf, send_requests.back(), data_size); // ippl::Comm->isend(send_data.data(), data_size, send_to, tag, send_requests.back());
+      ippl::Comm->isend(send_to, tag, send_data, *buf, send_requests.back(), data_size); 
       
       //      MPI_Isend(send_data.data(), data_size, MPI_DOUBLE, send_to, 0, MPI_COMM_WORLD, &send_request);
       //      MPI_Irecv(recv_data.data(), data_size, MPI_DOUBLE, recv_from, 0, MPI_COMM_WORLD, &recv_request);
@@ -50,11 +56,12 @@ int main(int argc, char* argv[]) {
       //      MPI_Wait(&recv_request, MPI_STATUS_IGNORE);
 
       // Print verification message
+      /*
       msg << " Sent data to Rank " << send_to
 	  << " and received data from Rank " << recv_from
 	  << ". First received element: " << recv_data[0]
 	  << ", Last: " << recv_data[data_size - 1] << endl;;
-      
+      */
     }
     ippl::finalize();
 }
