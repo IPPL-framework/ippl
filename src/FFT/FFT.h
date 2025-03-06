@@ -112,7 +112,29 @@ namespace ippl {
         };
 #endif
 
-#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
+#ifdef KOKKOS_ENABLE_HIP
+#ifdef Heffte_ENABLE_ROCM
+        template <>
+        struct HeffteBackendType<Kokkos::HIPSpace> {
+            using backend     = heffte::backend::rocfft;
+            using backendSine = heffte::backend::rocfft_sin;
+            using backendCos  = heffte::backend::rocfft_cos;
+            using backendCos1 = heffte::backend::rocfft_cos1;
+        };
+#else
+        template <>
+        struct HeffteBackendType<Kokkos::HIPSpace> {
+            using backend     = heffte::backend::stock;
+            using backendSine = heffte::backend::stock_sin;
+            using backendCos  = heffte::backend::stock_cos;
+            using backendCos1 = heffte::backend::stock_cos1;
+        };
+#endif
+#endif
+
+
+        
+#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW) && !defined(KOKKOS_ENABLE_HIP)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
