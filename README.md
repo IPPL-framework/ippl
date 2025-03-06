@@ -103,8 +103,7 @@ m-6.0.3/lib/llvm/lib"
 - `VOLTA72`
 - `TURING75`
 - `AMPERE80` (PSI GWENDOLEN machine)
-- `AMPERE86`
-
+- `AMD_GFX90A` (LUMI machine)
 
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
