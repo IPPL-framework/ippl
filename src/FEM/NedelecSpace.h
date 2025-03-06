@@ -1,92 +1,81 @@
-// Class LagrangeSpace
-//    This is the LagrangeSpace class. It is a class representing a Lagrange space
+// Class NedelecSpace
+//    This is the NedelecSpace class. It is a class representing a Nedelec space
 //    for finite element methods on a structured grid.
 
-#ifndef IPPL_LAGRANGESPACE_H
-#define IPPL_LAGRANGESPACE_H
+#ifndef IPPL_NEDELECSPACE_H
+#define IPPL_NEDELECSPACE_H
 
 #include <cmath>
 
 #include "FEM/FiniteElementSpace.h"
 
-constexpr unsigned getLagrangeNumElementDOFs(unsigned Dim, unsigned Order) {
+constexpr unsigned getNedelecNumElementDOFs(unsigned Dim, unsigned Order) {
     // needs to be constexpr pow function to work at compile time. Kokkos::pow doesn't work.
-    return static_cast<unsigned>(power(static_cast<int>(Order + 1), static_cast<int>(Dim)));
+    return static_cast<unsigned>(static_cast<int>(Dim)*power(2, static_cast<int>(Dim-1)));
 }
 
 namespace ippl {
 
     /**
-     * @brief A class representing a Lagrange space for finite element methods on a structured,
+     * @brief A class representing a Nedelec space for finite element methods on a structured,
      * rectilinear grid.
      *
      * @tparam T The floating point number type of the field values
      * @tparam Dim The dimension of the mesh
-     * @tparam Order The order of the Lagrange space
+     * @tparam Order The order of the Nedelec space
      * @tparam QuadratureType The type of the quadrature rule
      * @tparam FieldLHS The type of the left hand side field
      * @tparam FieldRHS The type of the right hand side field
      */
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
-              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType, typename FieldLHS, typename FieldRHS>
     // requires IsQuadrature<QuadratureType>
-    class LagrangeSpace
-        : public FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
-                                    QuadratureType, FieldLHS, FieldRHS> {
+    class NedelecSpace : public FiniteElementSpace<T, Dim, getNedelecNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS> {
     public:
         // The number of degrees of freedom per element
-        static constexpr unsigned numElementDOFs = getLagrangeNumElementDOFs(Dim, Order);
+        static constexpr unsigned numElementDOFs = getNedelecNumElementDOFs(Dim, Order);
 
         // The dimension of the mesh
-        static constexpr unsigned dim = FiniteElementSpace<T, Dim, numElementDOFs, ElementType,
-                                                           QuadratureType, FieldLHS, FieldRHS>::dim;
+        static constexpr unsigned dim = FiniteElementSpace<T, Dim, numElementDOFs, ElementType,QuadratureType, FieldLHS, FieldRHS>::dim;
 
-        // The order of the Lagrange space
+        // The order of the Nedelec space
         static constexpr unsigned order = Order;
 
         // The number of mesh vertices per element
-        static constexpr unsigned numElementVertices =
-            FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS,
-                               FieldRHS>::numElementVertices;
+        static constexpr unsigned numElementVertices = FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::numElementVertices;
 
         // A vector with the position of the element in the mesh in each dimension
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
-                                            FieldLHS, FieldRHS>::indices_t indices_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::indices_t indices_t;
 
         // A point in the global coordinate system
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
-                                            FieldLHS, FieldRHS>::point_t point_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::point_t point_t;
 
-        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType,
-                                            FieldLHS, FieldRHS>::vertex_points_t vertex_points_t;
+        typedef typename FiniteElementSpace<T, Dim, numElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS>::vertex_points_t vertex_points_t;
 
         // Field layout type for domain decomposition info
         typedef FieldLayout<Dim> Layout_t;
 
         // View types
         typedef typename detail::ViewType<T, Dim>::view_type ViewType;
-        typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type
-            AtomicViewType;
-        
-        typedef QuadratureType Quadrature_t;
+        typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type AtomicViewType;
+
+
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
         /**
-         * @brief Construct a new LagrangeSpace object
+         * @brief Construct a new NedelecSpace object
          *
          * @param mesh Reference to the mesh
          * @param ref_element Reference to the reference element
          * @param quadrature Reference to the quadrature rule
          * @param layout Reference to the field layout
          */
-        LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature, const Layout_t& layout);
+        NedelecSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature, const Layout_t& layout);
 
         /**
-         * @brief Construct a new LagrangeSpace object (without layout)
+         * @brief Construct a new NedelecSpace object (without layout)
          * This constructor is made to work with the default constructor in
          * FEMPoissonSolver.h such that it is compatible with alpine.
          *
@@ -94,11 +83,10 @@ namespace ippl {
          * @param ref_element Reference to the reference element
          * @param quadrature Reference to the quadrature rule
          */
-        LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature);
+        NedelecSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature);
 
         /**
-         * @brief Initialize a LagrangeSpace object created with the default constructor
+         * @brief Initialize a NedelecSpace object created with the default constructor
          *
          * @param mesh Reference to the mesh
          * @param layout Reference to the field layout
@@ -130,8 +118,7 @@ namespace ippl {
          *
          * @return size_t - The local DOF index
          */
-        KOKKOS_FUNCTION size_t getLocalDOFIndex(const size_t& elementIndex,
-                                 const size_t& globalDOFIndex) const override;
+        KOKKOS_FUNCTION size_t getLocalDOFIndex(const size_t& elementIndex, const size_t& globalDOFIndex) const override;
 
         /**
          * @brief Get the global DOF index from the element index and local DOF
@@ -141,8 +128,7 @@ namespace ippl {
          *
          * @return size_t - The global DOF index
          */
-        KOKKOS_FUNCTION size_t getGlobalDOFIndex(const size_t& elementIndex,
-                                                 const size_t& localDOFIndex) const override;
+        KOKKOS_FUNCTION size_t getGlobalDOFIndex(const size_t& elementIndex, const size_t& localDOFIndex) const override;
 
         /**
          * @brief Get the local DOF indices (vector of local DOF indices)
@@ -160,12 +146,37 @@ namespace ippl {
          *
          * @return Vector<size_t, NumElementDOFs> - The global DOF indices
          */
-        KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
-            const size_t& element_index) const override;
+        KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(const size_t& element_index) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
+
+        /**
+         * @brief Functor for evaluating a the bilinear form of $(\nabla \times b_j, \nabla \times b_i)$
+         * 
+         * @return std::function<T(size_t,size_t,size_t)> - The corresponding functor object
+         */
+        KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> curlCurlOperator() const;
+
+
+        /**
+         * @brief Functor for evaluating a the bilinear form of $(b_j, b_i)$
+         * 
+         * @return std::function<T(size_t,size_t,size_t)> - The corresponding functor object
+         */
+        KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> massOperator() const;
+
+
+        /**
+         * @brief Functor for evaluating a the linear form of $(b_i, f(x))$
+         * 
+         * @param f function like T(point_t) - The load function object
+         * @return std::function<T(size_t,size_t,point_t)> - The corresponding functor object
+         */
+        template<typename Functor>
+        KOKKOS_FUNCTION std::function<T(size_t,size_t, Vector<T,Dim>)> loadOperator(Functor f) const;
+
 
         /**
          * @brief Evaluate the shape function of a local degree of freedom at a given point in the
@@ -176,8 +187,7 @@ namespace ippl {
          *
          * @return T - The value of the shape function at the given point
          */
-        KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
-                                                          const point_t& localPoint) const override;
+        KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF, const point_t& localPoint) const override;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
@@ -189,39 +199,7 @@ namespace ippl {
          * @return point_t (Vector<T, Dim>) - The gradient of the shape function at the given
          * point
          */
-        KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
-            const size_t& localDOF, const point_t& localPoint) const override;
-
-        ///////////////////////////////////////////////////////////////////////
-        /// Assembly operations ///////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Assemble the left stiffness matrix A of the system Ax = b
-         *
-         * @param field The field to assemble the matrix for
-         *
-         * @return FieldLHS - The LHS field containing A*x
-         */
-        template <typename F>
-        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
-
-        /**
-         * @brief Assemble the load vector b of the system Ax = b
-         *
-         * @param rhs_field The field to set with the load vector
-         * @param f The source function (charge density field)
-         *
-         * @return FieldRHS - The RHS field containing b
-         */
-        void evaluateLoadVector(FieldRHS& field) const override;
-
-
-        std::function<T(size_t,size_t,size_t)> diffusionOperator() const;
-
-
-        template<typename Functor>
-        std::function<T(size_t,size_t, Vector<T,Dim>)> loadOperator(Functor f) const;
+        KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(const size_t& localDOF, const point_t& localPoint) const override;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
@@ -235,8 +213,7 @@ namespace ippl {
          *
          * @return error - The error ||u_h - u_sol||_L2
          */
-        template <typename F>
-        T computeError(const FieldLHS& u_h, const F& u_sol) const;
+        template <typename F> T computeError(const FieldLHS& u_h, const F& u_sol) const;
 
         /**
          * @brief Given two fields, compute the L-infinity error
@@ -246,10 +223,8 @@ namespace ippl {
          *
          * @return error - The error ||u_h - u_sol||_Linf
          */
-        template <typename F>
-        T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
+        template <typename F> T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
 
-    
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *
@@ -266,12 +241,39 @@ namespace ippl {
             }
             return false;
         }
+
+
+        /**
+         * @brief Check if a DOF is on the boundary of the mesh
+         *
+         * @param ndindex The NDIndex of the DOF
+         *
+         * @return true - If the DOF is on the boundary
+         * @return false - If the DOF is not on the boundary
+         */
+        //KOKKOS_FUNCTION ippl::Field<point_t, Dim, Mesh_t, Centering_t> reconstructSolution(const FieldLHS& field) const;
+
+
+
+        /**
+         * @brief Dummy function which overrides the parent function, is here as parent is abstract.
+         *
+         * @param rhs_field Dummy
+         * @param f Dummy
+         *
+         */
+        void evaluateLoadVector(FieldRHS& field) const override {
+
+        }
+    
     private:
+
         Kokkos::View<size_t*> elementIndices;
+
     };
 
 }  // namespace ippl
 
-#include "FEM/LagrangeSpace.hpp"
+#include "FEM/NedelecSpace.hpp"
 
 #endif

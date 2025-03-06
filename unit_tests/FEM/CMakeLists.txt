@@ -87,6 +87,30 @@ target_link_libraries(
     GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
 )
+
+
+add_executable(Solver Solver.cpp)
+gtest_discover_tests(Solver PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
+target_link_libraries(
+    Solver
+    ippl
+    pthread
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
+
+
+add_executable(NedelecSpace NedelecSpace.cpp)
+gtest_discover_tests(NedelecSpace PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
+target_link_libraries(
+    NedelecSpace
+    ippl
+    pthread
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

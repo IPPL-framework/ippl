@@ -596,6 +596,89 @@ namespace ippl {
         IpplTimings::stopTimer(evalLoadV);
     }
 
+/*
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    std::function<T(size_t,size_t,size_t)> LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::diffusionOperator() const {
+        
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+        
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
+        // on translation
+        const auto firstElementVertexPoints =
+            this->getElementMeshVertexPoints(zeroNdIndex);
+
+        // Compute Inverse Transpose Transformation Jacobian ()
+        const Vector<T, Dim> DPhiInvT =
+            this->ref_element_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        const T absDetDPhi = Kokkos::abs(
+            this->ref_element_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
+
+        auto f = KOKKOS_CLASS_LAMBDA(size_t i, size_t j, size_t q) -> T {
+            return w[q]*dot(DPhiInvT*grad_b_q[q][j], DPhiInvT*grad_b_q[q][i]).apply()*absDetDPhi;
+        };
+
+        return f;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename Functor>
+    std::function<T(size_t,size_t,ippl::Vector<T,Dim>)> LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::loadOperator(Functor f) const {
+        
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
+        // on translation
+        const auto firstElementVertexPoints =
+            this->getElementMeshVertexPoints(zeroNdIndex);
+
+        // Compute Inverse Transpose Transformation Jacobian ()
+        const Vector<T, Dim> DPhiInvT =
+            this->ref_element_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        const T absDetDPhi = Kokkos::abs(
+            this->ref_element_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
+
+        auto loadF = KOKKOS_CLASS_LAMBDA(size_t i, size_t q, point_t x) -> T {
+            return w[q]*basis_q[q][i]* f(x)*absDetDPhi;
+        };
+
+        return loadF;
+    }
+
+*/
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>

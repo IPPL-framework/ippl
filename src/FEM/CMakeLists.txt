@@ -30,6 +30,12 @@ set (_HDRS
     FiniteElementSpace.hpp
     LagrangeSpace.h
     LagrangeSpace.hpp
+    NedelecSpace.h
+    NedelecSpace.hpp
+
+    # Solvers
+    FEMSolver.h
+    FEMSolver.hpp
 )
 
 include_directories(
