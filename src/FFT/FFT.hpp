@@ -74,8 +74,11 @@ namespace ippl {
     void FFTBase<Field, FFT, Backend, T>::setup(const heffte::box3d<long long>& inbox,
                                                 const heffte::box3d<long long>& outbox,
                                                 const ParameterList& params) {
-        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
 
+        Inform m ("setup ");
+
+        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+        
         if (!params.get<bool>("use_heffte_defaults")) {
             heffteOptions.use_pencils = params.get<bool>("use_pencils");
             heffteOptions.use_reorder = params.get<bool>("use_reorder");
@@ -100,14 +103,17 @@ namespace ippl {
                     throw IpplException("FFT::setup", "Unrecognized heffte communication type");
             }
         }
+        
+        m << heffteOptions << " backend " << typeid(heffteBackend).name() << endl;
 
+        
         if constexpr (std::is_same_v<FFT<heffteBackend>, heffte::fft3d<heffteBackend>>) {
-            heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
-                inbox, outbox, Comm->getCommunicator(), heffteOptions);
+                heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
+                                                                           inbox, outbox, Comm->getCommunicator(), heffteOptions);
         } else {
             heffte_m = std::make_shared<FFT<heffteBackend, long long>>(
-                inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
-                heffteOptions);
+                                                                       inbox, outbox, params.get<int>("r2c_direction"), Comm->getCommunicator(),
+                                                                       heffteOptions);
         }
 
         // heffte::gpu::device_set(Comm->rank() % heffte::gpu::device_count());
@@ -178,6 +184,7 @@ namespace ippl {
          * 1D FFTs we just have to make the length in other
          * dimensions to be 1.
          */
+
         std::array<long long, 3> lowInput;
         std::array<long long, 3> highInput;
         std::array<long long, 3> lowOutput;
@@ -193,6 +200,7 @@ namespace ippl {
         heffte::box3d<long long> outbox = {lowOutput, highOutput};
 
         this->setup(inbox, outbox, params);
+
     }
 
     template <typename RealField>
@@ -227,13 +235,14 @@ namespace ippl {
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(tempFieldf, args - nghostf) = apply(fview, args);
             });
+
         ippl::parallel_for(
             "copy from Kokkos g field in FFT", getRangePolicy(gview, nghostg),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 apply(tempFieldg, args - nghostg).real(apply(gview, args).real());
                 apply(tempFieldg, args - nghostg).imag(apply(gview, args).imag());
             });
-
+        
         if (direction == FORWARD) {
             this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
                                     heffte::scale::full);
