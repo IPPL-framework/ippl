@@ -61,9 +61,9 @@ target_link_libraries(
 )
 
 
-add_executable(TestNedelecZeroCurlBC_sin TestNedelecZeroCurlBC_sin.cpp)
+add_executable(TestFEMSolverZeroBC_sin TestFEMSolverZeroBC_sin.cpp)
 target_link_libraries(
-    TestNedelecZeroCurlBC_sin
+    TestFEMSolverZeroBC_sin
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
