@@ -259,12 +259,14 @@ namespace ippl {
 
     protected:
         virtual void setDefaultParameters() override {
-            using heffteBackend       = typename FFT_t::heffteBackend;
-            heffte::plan_options opts = heffte::default_options<heffteBackend>();
-            this->params_m.add("use_pencils", opts.use_pencils);
-            this->params_m.add("use_reorder", opts.use_reorder);
-            this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
-            this->params_m.add("r2c_direction", 0);
+
+	  using heffteBackend       = typename FFT_t::heffteBackend;
+	  heffte::plan_options opts = heffte::default_options<heffteBackend>();
+	  this->params_m.add("use_pencils", opts.use_pencils);
+	  this->params_m.add("use_reorder", opts.use_reorder);
+	  //this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
+	  this->params_m.add("r2c_direction", 0);
+
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:
