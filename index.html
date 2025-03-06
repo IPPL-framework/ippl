@@ -213,7 +213,9 @@ need to pass the –cpus-per-task option to srun otherwise will not use more tha
 SBATCH –exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</h2>
 <p >#SBATCH &ndash;gpus=4 # No. of GPUs (max. 8)</p>
 <p >#SBATCH &ndash;output=&lt;output_file_name&gt;.out # Name of output file #SBATCH &ndash;error=&lt;error_file_name&gt;.err # Name of error file</p>
-<p >srun ./&lt;your_executable&gt; &lt;args&gt; &ndash;kokkos-map-device-id-by=mpi_rank ``` </p>
+<p >srun ./&lt;your_executable&gt; &lt;args&gt; &ndash;kokkos-map-device-id-by=mpi_rank </p><div class="fragment"><div class="line">## LUMI GPU partition</div>
+<div class="line">For example, to run a job on 8 nodes with 8 GPUs each:</div>
+</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;job-name=TestGaussian #SBATCH &ndash;error=TestGaussian-j.error #SBATCH &ndash;output=TestGaussian-j.out #SBATCH &ndash;partition=dev-g # partition name #SBATCH &ndash;time=00:10:00 #SBATCH &ndash;nodes 8 #SBATCH &ndash;ntasks-per-node=8 # 8 MPI ranks per node, 64 total (8x8) #SBATCH &ndash;gpus-per-node=8 # Allocate one gpu per MPI rank per node #SBATCH &ndash;account=project_xxx #SBATCH &ndash;hint=nomultithread module load LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03 CPU_BIND="map_cpu:49,57,17,25,1,9,33,41" export MPICH_GPU_SUPPORT_ENABLED=1 ulimit -s unlimited export EXE_DIR=/users/adelmann/sandbox/vico-paper/build/test/solver cat &lt;&lt; EOF &gt; select_gpu #!/bin/bash export ROCR_VISIBLE_DEVICES=$SLURM_LOCALID exec $* EOF chmod +x ./select_gpu srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY &ndash;info 5 rm -rf ./select_gpu ``` </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
