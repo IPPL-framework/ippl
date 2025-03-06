@@ -81,7 +81,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >Here, we'll provide detailed guidelines on how to extend this base class of the 'SolverAlgorithm' to develop your own solver algorithm, using the PCG (Preconditioned Conjugate Gradient) solver as an example.</p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 Introduction to SolverAlgorithm Base Class</h2>
 <p >The SolverAlgorithm class is a template abstract class designed to serve as a foundation for various numerical solver algorithms. It provides a common interface for solving problems of the form Op(lhs) = rhs, where Op is a differential operator and lhs and rhs are fields.</p>
 <p >Key Components of SolverAlgorithm **</p><ul>
@@ -104,9 +104,9 @@ Introduction to SolverAlgorithm Base Class</h2>
 <div class="ttc" id="aclassippl_1_1SolverAlgorithm_html_ac028d323dc2a9e7f1be744e6abd67d98"><div class="ttname"><a href="classippl_1_1SolverAlgorithm.html#ac028d323dc2a9e7f1be744e6abd67d98">ippl::SolverAlgorithm::rhs_type</a></div><div class="ttdeci">FieldRHS rhs_type</div><div class="ttdef"><b>Definition:</b> SolverAlgorithm.h:19</div></div>
 <div class="ttc" id="aclassippl_1_1SolverAlgorithm_html_acf54b2a10cc616069575cae1d33d8dcc"><div class="ttname"><a href="classippl_1_1SolverAlgorithm.html#acf54b2a10cc616069575cae1d33d8dcc">ippl::SolverAlgorithm::lhs_type</a></div><div class="ttdeci">FieldLHS lhs_type</div><div class="ttdef"><b>Definition:</b> SolverAlgorithm.h:18</div></div>
 <div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:20</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md30"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md31"></a>
 Steps to Create a Custom Solver</h2>
-<h3><a class="anchor" id="autotoc_md31"></a>
+<h3><a class="anchor" id="autotoc_md32"></a>
 1. Define the Solver Class</h3>
 <p >Start by defining your solver class that inherits from SolverAlgorithm. Specify any additional data members or methods needed for your solver.</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SolverAlgorithm_8h.html">SolverAlgorithm.h</a>&quot;</span></div>
@@ -120,7 +120,7 @@ Steps to Create a Custom Solver</h2>
 <div class="line">};</div>
 <div class="ttc" id="aSolverAlgorithm_8h_html"><div class="ttname"><a href="SolverAlgorithm_8h.html">SolverAlgorithm.h</a></div></div>
 <div class="ttc" id="aclassippl_1_1SolverAlgorithm_html"><div class="ttname"><a href="classippl_1_1SolverAlgorithm.html">ippl::SolverAlgorithm</a></div><div class="ttdef"><b>Definition:</b> SolverAlgorithm.h:16</div></div>
-</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md32"></a>
+</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md33"></a>
 2. Implement the Solver Logic</h2>
 <p >Implement the operator() function, which contains the core logic for the solver. This function should use the provided lhs, rhs, and params to compute the solution to the problem.</p>
 <div class="fragment"><div class="line"><span class="keywordtype">void</span> operator()(<span class="keyword">typename</span> Base::lhs_type&amp; lhs, <span class="keyword">typename</span> Base::rhs_type&amp; rhs, <span class="keyword">const</span> ParameterList&amp; params)<span class="keyword"> override </span>{</div>
