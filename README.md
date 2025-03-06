@@ -183,3 +183,31 @@ For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all o
 
 srun ./<your_executable> <args> --kokkos-map-device-id-by=mpi_rank
 ```
+## LUMI GPU partition
+For example, to run a job on 8 nodes with 8 GPUs each:
+```
+#!/bin/bash
+#SBATCH --job-name=TestGaussian
+#SBATCH --error=TestGaussian-%j.error
+#SBATCH --output=TestGaussian-%j.out
+#SBATCH --partition=dev-g  # partition name
+#SBATCH --time=00:10:00
+#SBATCH --nodes 8
+#SBATCH --ntasks-per-node=8     # 8 MPI ranks per node, 64 total (8x8)
+#SBATCH --gpus-per-node=8       # Allocate one gpu per MPI rank per node
+#SBATCH --account=project_xxx
+#SBATCH --hint=nomultithread
+module load  LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03
+CPU_BIND="map_cpu:49,57,17,25,1,9,33,41"
+export MPICH_GPU_SUPPORT_ENABLED=1
+ulimit -s unlimited
+export EXE_DIR=/users/adelmann/sandbox/vico-paper/build/test/solver
+cat << EOF > select_gpu
+#!/bin/bash
+export ROCR_VISIBLE_DEVICES=\$SLURM_LOCALID
+exec \$*
+EOF
+chmod +x ./select_gpu
+srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5
+rm -rf ./select_gpu
+```
