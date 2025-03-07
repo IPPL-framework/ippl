@@ -117,14 +117,58 @@ namespace ippl {
         // KOKKOS_INLINE_FUNCTION
         ParticleAttrib<T, Properties...>& operator=(detail::Expression<E, N> const& expr);
 
-        //     // scatter the data from this attribute onto the given Field, using
-        //     // the given Position attribute
-        template <typename Field, typename P2>
+        /**
+         * @brief Scatter particle attribute data onto a field.
+         *
+         * This function scatters data from this attribute onto the given field,
+         * using the given position attribute.
+         * The function can be used together with a custom iteration policy to iterate
+         * over a specified range and, optionally, an `ippl::hash_type` array to remap 
+         * iteration indices.
+         *
+         * When a non-empty `hash_array` is provided, the function:
+         *  - Checks that the iteration policy's range does not exceed the size of `hash_array`.
+         *  - Maps the current index to the appropriate index using the `hash_array`.
+         *  - Careful: access pattern optimization might be lost when using `hash_array`.
+         *
+         * @note This custom iteration functionality is needed to support energy binning 
+         * in the field solver of OPAL-X, allowing only particles within a specific bin
+         * to be scattered.
+         *
+         * @tparam Field The type of the field.
+         * @tparam P2 The type for the position attribute.
+         * @tparam policy_type The type of the Kokkos iteration policy when using `hash_array`.
+         * @param f The field onto which the particle data is scattered.
+         * @param pp The ParticleAttrib representing particle positions.
+         * @param iteration_policy A custom `Kokkos::range_policy` defining the iteration range.
+         * @param hash_array An optional `ippl::hash_type` array for index mapping. If empty, no map is used.
+         */
+        template <typename Field, typename P2, typename policy_type>
         void scatter(Field& f,
-                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp) const;
+                     const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                     policy_type iteration_policy, hash_type hash_array = {}) const;
 
+        /**
+         * @brief Gather field data into the particle attribute.
+         *
+         * This function gathers data from the given field into the particle attribute
+         * by iterating over all particles. Depending on the parameter @p addToAttribute,
+         * the gathered field value is either added to the existing attribute value (using "+=")
+         * or used to overwrite the attribute value.
+         *
+         * @note This behavior exists to give the OPAL-X field solver the ablity to gather field data
+         * per "energy bin".
+         *
+         * @tparam Field The type of the field.
+         * @tparam P2 The particle type for the position attribute.
+         * @param f The field from which data is gathered.
+         * @param pp The ParticleAttrib representing particle positions.
+         * @param addToAttribute If `true`, the gathered value is added to the current attribute value;
+         *                       otherwise, the attribute value is overwritten.
+         */
         template <typename Field, typename P2>
-        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp);
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp, 
+                    const bool addToAttribute = false);
 
         T sum();
         T max();
