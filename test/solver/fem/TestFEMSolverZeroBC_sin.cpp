@@ -15,6 +15,8 @@
 #include "Meshes/Centering.h"
 #include "FEM/FEMSolver.h"
 
+#include <fstream>
+
 
 
 template <typename T, unsigned Dim>
@@ -151,6 +153,44 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     // solve the problem
     Field_t result = solver.solve();
+
+    for (int i = 0; i < ippl::Comm->size(); ++i) {
+        if (i == ippl::Comm->rank()) {
+            std::ofstream file;
+            if (i == 0) {
+                file.open("sim_out.csv");
+                file << "x, y, z, val\n";
+            } else {
+                file.open("sim_out.csv", std::ios::app);
+            }
+            // create host view of inidices
+            auto h = Kokkos::create_mirror(solver.elementIndices);
+            Kokkos::deep_copy(h, solver.elementIndices);
+
+            // create host view of data
+            auto v = result.getHostMirror();
+            Kokkos::deep_copy(v, result.getView());
+
+            for (size_t n = 0; n < h.extent(0); ++n) {
+                // get coordinates
+                const size_t elementIndex = h(n);
+                const auto elementPos = space.getElementNDIndex(elementIndex);
+                const auto vertexPoses = space.getElementMeshVertexNDIndices(elementPos);
+                const auto vertecies = space.getElementMeshVertexPoints(elementPos);
+
+                // the coordinates
+                for (int d = 0; d < vertexPoses.dim; ++d) {
+                    file << vertecies[d][0] << ", " << vertecies[d][1] << ", " << vertecies[d][2] << ", ";
+
+                    // the value
+                    file << v(vertexPoses[d][0], vertexPoses[d][1], vertexPoses[d][2]) << "\n";
+                }
+            }
+
+            file.close();
+        }
+        ippl::Comm->barrier();
+    }
 
     // start the timer
     static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
