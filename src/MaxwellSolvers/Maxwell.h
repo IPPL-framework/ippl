@@ -15,7 +15,7 @@
 
 namespace ippl {
 
-    template <typename EMField, typename SourceField>
+    template <typename EMField, typename FourField>
     class Maxwell {
     public:
         constexpr static unsigned Dim = EMField::dim;

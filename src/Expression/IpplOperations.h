@@ -272,13 +272,16 @@ namespace ippl {
                 }
                 return res;
             }
+            KOKKOS_INLINE_FUNCTION operator typename E1::value_type() const{
+                return apply();
+            }
 
             /*
              * This is required for BareField::dot
              */
             template <typename... Args>
             KOKKOS_INLINE_FUNCTION auto operator()(Args... args) const {
-                return dot(u_m(args...), v_m(args...)).apply();
+                return dot(u_m(args...), v_m(args...));
             }
 
         private:
