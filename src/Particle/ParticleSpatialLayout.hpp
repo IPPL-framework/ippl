@@ -181,7 +181,6 @@ namespace ippl {
 
         int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
-        int sends = 0;
         for(size_t ridx=0; ridx < nDestinationRanks; ridx++){
             int rank = destinationRanks_hview[ridx];
             if(rank == Comm->rank()){
@@ -210,7 +209,6 @@ namespace ippl {
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
 
-        int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs_m[rank] > 0) {
                 pc.recvFromRank(rank, tag, nRecvs_m[rank]);
