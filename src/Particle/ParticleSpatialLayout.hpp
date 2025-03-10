@@ -189,7 +189,7 @@ namespace ippl {
             } 
             hash_type hash("hash", rankSendCount_hview(rank));
             fillHash(rank, particleRanks, hash);
-            pc.sendToRank(rank, tag, sends++, requests, hash);
+            pc.sendToRank(rank, tag, requests, hash);
         }
        
         IpplTimings::stopTimer(sendTimer);
@@ -213,7 +213,7 @@ namespace ippl {
         int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs_m[rank] > 0) {
-                pc.recvFromRank(rank, tag, recvs++, nRecvs_m[rank]);
+                pc.recvFromRank(rank, tag, nRecvs_m[rank]);
             }
         }
         IpplTimings::stopTimer(recvTimer);
