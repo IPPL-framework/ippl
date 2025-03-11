@@ -33,11 +33,6 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 
-#define Kokkos_ENABLE_CUDA 1
-#ifdef Kokkos_ENABLE_CUDA      // \todo need a better macro 
-  #include <nvtx3/nvToolsExt.h> 
-#endif
-
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
@@ -75,9 +70,6 @@ Timing::TimerRef Timing::getTimer(const char* nm) {
 void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
-    #ifdef Kokkos_ENABLE_CUDA
-    nvtxRangePush(TimerList[t]->name.c_str());
-    #endif
     TimerList[t]->start();
 }
 
@@ -86,9 +78,6 @@ void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->stop();
-    #ifdef Kokkos_ENABLE_CUDA
-    nvtxRangePop();
-    #endif
 }
 
 // clear a timer, by turning it off and throwing away its time
