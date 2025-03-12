@@ -33,7 +33,6 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 
-#define ENABLE_NSYS_PROFILER
 #ifdef ENABLE_NSYS_PROFILER
 
 #include "nvtx3/nvToolsExt.h"
