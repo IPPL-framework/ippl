@@ -92,8 +92,8 @@ void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
 #ifdef ENABLE_NSYS_PROFILER
-    //PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
-    nvtxRangePush(TimerList[t]->name.c_str());
+    PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
+    //nvtxRangePush(TimerList[t]->name.c_str());
 #endif // ENABLE_PROFILER
     TimerList[t]->start();
 }
