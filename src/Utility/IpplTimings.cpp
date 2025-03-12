@@ -33,7 +33,7 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 
-#ifdef ENABLE_PROFILER
+#ifdef ENABLE_NSYS_PROFILER
 
 #include "nvtx3/nvToolsExt.h"
 const uint32_t colors[] = { 0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff00ff, 0xff00ffff, 0xffff0000, 0xffffffff };
@@ -90,7 +90,7 @@ Timing::TimerRef Timing::getTimer(const char* nm) {
 void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
-#ifdef ENABLE_PROFILER
+#ifdef ENABLE_NSYS_PROFILER
     PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
 #endif // ENABLE_PROFILER
     TimerList[t]->start();
@@ -101,7 +101,7 @@ void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->stop();
-#ifdef ENABLE_PROFILER
+#ifdef ENABLE_NSYS_PROFILER
     nvtxRangePop();
 #endif // ENABLE_PROFILER
 }

@@ -271,7 +271,7 @@ if (ENABLE_NSYS_PROFILER)
       message (FATAL_ERROR "Cannot enable Nsight Systems Profiler since platform is not CUDA")
     endif()
     message (STATUS "Enabling Nsys Profiler")
-    add_definitions(-DENABLE_PROFILER)    
+    add_definitions(-DENABLE_NSYS_PROFILER)    
 endif()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
