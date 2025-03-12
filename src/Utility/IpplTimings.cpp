@@ -67,7 +67,7 @@ Timing::~Timing() {
     }
     TimerMap.clear();
 
-    TmerList.clear();
+    TimerList.clear();
 }
 
 // create a timer, or get one that already exists
