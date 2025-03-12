@@ -67,7 +67,7 @@ Timing::~Timing() {
     }
     TimerMap.clear();
 
-    TimerList.clear();
+    TmerList.clear();
 }
 
 // create a timer, or get one that already exists
@@ -92,7 +92,8 @@ void Timing::startTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
 #ifdef ENABLE_NSYS_PROFILER
-    PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
+    //PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
+    nvtxRangePush(TimerList[t]->name.c_str());
 #endif // ENABLE_PROFILER
     TimerList[t]->start();
 }
