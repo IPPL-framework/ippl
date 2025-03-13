@@ -265,7 +265,7 @@ if (ENABLE_UNIT_TESTS)
     add_subdirectory (unit_tests)
 endif ()
 
-option (ENABLE_NSYS_PROFILER "Enable Nsight Systems Profiler" OFF)
+option (IPPL_ENABLE_NSYS_PROFILER "Enable Nsight Systems Profiler" OFF)
 if (ENABLE_NSYS_PROFILER)
     if (NOT "${IPPL_PLATFORMS}" STREQUAL "CUDA")
         message (FATAL_ERROR "Cannot enable Nsight Systems Profiler since platform is not CUDA")
