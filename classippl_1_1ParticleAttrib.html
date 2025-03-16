@@ -170,12 +170,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memTemplParams" colspan="2">template&lt;typename E , size_t N&gt; </td></tr>
 <tr class="memitem:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#af4f287dce957d7f64f3c93d9e3fd6aa3">operator=</a> (<a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; const &amp;expr)</td></tr>
 <tr class="separator:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09d4326ad8c8bb420398a5949cd50cdc"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 &gt; </td></tr>
-<tr class="memitem:a09d4326ad8c8bb420398a5949cd50cdc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a09d4326ad8c8bb420398a5949cd50cdc">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp) const</td></tr>
-<tr class="separator:a09d4326ad8c8bb420398a5949cd50cdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac78429f7648d4d5fd1b656bce7bbae7f"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 &gt; </td></tr>
-<tr class="memitem:ac78429f7648d4d5fd1b656bce7bbae7f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ac78429f7648d4d5fd1b656bce7bbae7f">gather</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp)</td></tr>
-<tr class="separator:ac78429f7648d4d5fd1b656bce7bbae7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 , typename policy_type &gt; </td></tr>
+<tr class="memitem:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a6c1e525ba6f54288080cfe2ea3e5cfb0">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, policy_type iteration_policy, <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> hash_array={}) const</td></tr>
+<tr class="memdesc:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter particle attribute data onto a field.  <a href="classippl_1_1ParticleAttrib.html#a6c1e525ba6f54288080cfe2ea3e5cfb0">More...</a><br /></td></tr>
+<tr class="separator:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e3886c6f0c7a19eda43944b456016b9"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 &gt; </td></tr>
+<tr class="memitem:a8e3886c6f0c7a19eda43944b456016b9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9">gather</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, const bool addToAttribute=false)</td></tr>
+<tr class="memdesc:a8e3886c6f0c7a19eda43944b456016b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather field data into the particle attribute.  <a href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9">More...</a><br /></td></tr>
+<tr class="separator:a8e3886c6f0c7a19eda43944b456016b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1bfa23788a10d5a310bb76622a381119"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a1bfa23788a10d5a310bb76622a381119">sum</a> ()</td></tr>
 <tr class="separator:a1bfa23788a10d5a310bb76622a381119"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10dd97bf1e89441aede8255249946701"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a10dd97bf1e89441aede8255249946701">max</a> ()</td></tr>
@@ -184,9 +186,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a344019e1a886e1148fc2834f714f0abb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6">prod</a> ()</td></tr>
 <tr class="separator:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8dbf467ff6edf8b10aed146439ca7532"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT &gt; </td></tr>
-<tr class="memitem:a8dbf467ff6edf8b10aed146439ca7532"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a8dbf467ff6edf8b10aed146439ca7532">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; PT, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp) const</td></tr>
-<tr class="separator:a8dbf467ff6edf8b10aed146439ca7532"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7fcae16912897c88dec544afea3563c"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT , typename policy_type &gt; </td></tr>
+<tr class="memitem:ae7fcae16912897c88dec544afea3563c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae7fcae16912897c88dec544afea3563c">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; PT, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, policy_type iteration_policy, <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> hash_array) const</td></tr>
+<tr class="separator:ae7fcae16912897c88dec544afea3563c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; ParticleAttrib&lt; T, Properties... &gt;, sizeof(detail::ViewType&lt; T, 1, Properties... &gt;::view_type)&gt;</a></td></tr>
 <tr class="memitem:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#aa121b2144b45f7ca060a9e9b02a5991c">operator[]</a> (size_t i) const</td></tr>
 <tr class="separator:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -475,8 +477,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
-<a id="ac78429f7648d4d5fd1b656bce7bbae7f" name="ac78429f7648d4d5fd1b656bce7bbae7f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac78429f7648d4d5fd1b656bce7bbae7f">&#9670;&#160;</a></span>gather()</h2>
+<a id="a8e3886c6f0c7a19eda43944b456016b9" name="a8e3886c6f0c7a19eda43944b456016b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e3886c6f0c7a19eda43944b456016b9">&#9670;&#160;</a></span>gather()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -495,7 +497,13 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>pp</em>&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>addToAttribute</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -504,6 +512,25 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Gather field data into the particle attribute. </p>
+<p >This function gathers data from the given field into the particle attribute by iterating over all particles. Depending on the parameter <code>addToAttribute</code>, the gathered field value is either added to the existing attribute value (using "+=") or used to overwrite the attribute value.</p>
+<dl class="section note"><dt>Note</dt><dd>This behavior exists to give the OPAL-X field solver the ablity to gather field data per "energy bin".</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td>The type of the field. </td></tr>
+    <tr><td class="paramname">P2</td><td>The particle type for the position attribute. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>The field from which data is gathered. </td></tr>
+    <tr><td class="paramname">pp</td><td>The <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> representing particle positions. </td></tr>
+    <tr><td class="paramname">addToAttribute</td><td>If <code>true</code>, the gathered value is added to the current attribute value; otherwise, the attribute value is overwritten. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -868,15 +895,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
-<a id="a09d4326ad8c8bb420398a5949cd50cdc" name="a09d4326ad8c8bb420398a5949cd50cdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09d4326ad8c8bb420398a5949cd50cdc">&#9670;&#160;</a></span>scatter() <span class="overload">[1/2]</span></h2>
+<a id="a6c1e525ba6f54288080cfe2ea3e5cfb0" name="a6c1e525ba6f54288080cfe2ea3e5cfb0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c1e525ba6f54288080cfe2ea3e5cfb0">&#9670;&#160;</a></span>scatter() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 &gt; </div>
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 , typename policy_type &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::scatter </td>
@@ -888,7 +915,19 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>pp</em>&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a>&#160;</td>
+          <td class="paramname"><em>hash_array</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -898,17 +937,43 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
       </table>
 </div><div class="memdoc">
 
+<p>Scatter particle attribute data onto a field. </p>
+<p >This function scatters data from this attribute onto the given field, using the given position attribute. The function can be used together with a custom iteration policy to iterate over a specified range and, optionally, an <code>ippl::hash_type</code> array to remap iteration indices.</p>
+<p >When a non-empty <code>hash_array</code> is provided, the function:</p><ul>
+<li>Checks that the iteration policy's range does not exceed the size of <code>hash_array</code>.</li>
+<li>Maps the current index to the appropriate index using the <code>hash_array</code>.</li>
+<li>Careful: access pattern optimization might be lost when using <code>hash_array</code>.</li>
+</ul>
+<dl class="section note"><dt>Note</dt><dd>This custom iteration functionality is needed to support energy binning in the field solver of OPAL-X, allowing only particles within a specific bin to be scattered.</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td>The type of the field. </td></tr>
+    <tr><td class="paramname">P2</td><td>The type for the position attribute. </td></tr>
+    <tr><td class="paramname">policy_type</td><td>The type of the <a class="el" href="namespaceKokkos.html">Kokkos</a> iteration policy when using <code>hash_array</code>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>The field onto which the particle data is scattered. </td></tr>
+    <tr><td class="paramname">pp</td><td>The <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> representing particle positions. </td></tr>
+    <tr><td class="paramname">iteration_policy</td><td>A custom <code>Kokkos::range_policy</code> defining the iteration range. </td></tr>
+    <tr><td class="paramname">hash_array</td><td>An optional <code>ippl::hash_type</code> array for index mapping. If empty, no map is used. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
-<a id="a8dbf467ff6edf8b10aed146439ca7532" name="a8dbf467ff6edf8b10aed146439ca7532"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8dbf467ff6edf8b10aed146439ca7532">&#9670;&#160;</a></span>scatter() <span class="overload">[2/2]</span></h2>
+<a id="ae7fcae16912897c88dec544afea3563c" name="ae7fcae16912897c88dec544afea3563c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7fcae16912897c88dec544afea3563c">&#9670;&#160;</a></span>scatter() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT &gt; </div>
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT , typename policy_type &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::scatter </td>
@@ -920,7 +985,19 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , cl
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; PT, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;&#160;</td>
-          <td class="paramname"><em>pp</em>&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a>&#160;</td>
+          <td class="paramname"><em>hash_array</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

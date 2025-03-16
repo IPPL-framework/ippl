@@ -380,12 +380,18 @@ Functions</h2></td></tr>
 <tr class="memitem:af3d1f2467e1c99e0e38119913daf8d17"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Functor &gt; </td></tr>
 <tr class="memitem:af3d1f2467e1c99e0e38119913daf8d17"><td class="memTemplItemLeft" align="right" valign="top">double&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#af3d1f2467e1c99e0e38119913daf8d17">adapted_powermethod</a> (Functor &amp;&amp;f, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;x_0, double lambda_max, unsigned int max_iter=5000, double tol=1e-3)</td></tr>
 <tr class="separator:af3d1f2467e1c99e0e38119913daf8d17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8aca99db2f6c226beba5431b1195b9bc"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 &gt; </td></tr>
-<tr class="memitem:a8aca99db2f6c226beba5431b1195b9bc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a8aca99db2f6c226beba5431b1195b9bc">scatter</a> (const Attrib1 &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const Attrib2 &amp;pp)</td></tr>
-<tr class="separator:a8aca99db2f6c226beba5431b1195b9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f77549ff611d49272ba47dbf5a76007"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 &gt; </td></tr>
-<tr class="memitem:a0f77549ff611d49272ba47dbf5a76007"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a0f77549ff611d49272ba47dbf5a76007">gather</a> (Attrib1 &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const Attrib2 &amp;pp)</td></tr>
-<tr class="separator:a0f77549ff611d49272ba47dbf5a76007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4b695c957670e518d5d77db5d296198"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
+<tr class="memitem:ae4b695c957670e518d5d77db5d296198"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198">scatter</a> (const Attrib1 &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const Attrib2 &amp;pp)</td></tr>
+<tr class="memdesc:ae4b695c957670e518d5d77db5d296198"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-class interface for scattering particle attribute data onto a field.  <a href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198">More...</a><br /></td></tr>
+<tr class="separator:ae4b695c957670e518d5d77db5d296198"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab73fb1da4a3a5cf5ebd504bfc6741502"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
+<tr class="memitem:ab73fb1da4a3a5cf5ebd504bfc6741502"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ab73fb1da4a3a5cf5ebd504bfc6741502">scatter</a> (const Attrib1 &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const Attrib2 &amp;pp, policy_type iteration_policy, typename Attrib1::hash_type hash_array={})</td></tr>
+<tr class="memdesc:ab73fb1da4a3a5cf5ebd504bfc6741502"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-class interface for scattering with a custom iteration policy and optional index array.  <a href="namespaceippl.html#ab73fb1da4a3a5cf5ebd504bfc6741502">More...</a><br /></td></tr>
+<tr class="separator:ab73fb1da4a3a5cf5ebd504bfc6741502"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7687ef5c49b098bf3e8b5edc939580ac"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 &gt; </td></tr>
+<tr class="memitem:a7687ef5c49b098bf3e8b5edc939580ac"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a7687ef5c49b098bf3e8b5edc939580ac">gather</a> (Attrib1 &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const Attrib2 &amp;pp, const bool addToAttribute=false)</td></tr>
+<tr class="memdesc:a7687ef5c49b098bf3e8b5edc939580ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-class interface for gathering field data into a particle attribute.  <a href="namespaceippl.html#a7687ef5c49b098bf3e8b5edc939580ac">More...</a><br /></td></tr>
+<tr class="separator:a7687ef5c49b098bf3e8b5edc939580ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a901b9d075a3bb4b5dc1e8e3fcbec1e71"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a901b9d075a3bb4b5dc1e8e3fcbec1e71">DefineParticleReduction</a> (Sum, sum, <a class="el" href="namespaceippl.html#a8f7e4fb4eed1e301eff1ad5d8b35df33">valL</a>+=myVal, std::plus) DefineParticleReduction(Max</td></tr>
 <tr class="separator:a901b9d075a3bb4b5dc1e8e3fcbec1e71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc0e7dd2f32756604781f8e3b236a754"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#afc0e7dd2f32756604781f8e3b236a754">if</a> (myVal &gt; <a class="el" href="namespaceippl.html#a8f7e4fb4eed1e301eff1ad5d8b35df33">valL</a>) <a class="el" href="namespaceippl.html#a8f7e4fb4eed1e301eff1ad5d8b35df33">valL</a></td></tr>
@@ -1218,8 +1224,8 @@ template&lt;typename E1 , size_t N1, typename E2 , size_t N2&gt; </div>
 
 </div>
 </div>
-<a id="a0f77549ff611d49272ba47dbf5a76007" name="a0f77549ff611d49272ba47dbf5a76007"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f77549ff611d49272ba47dbf5a76007">&#9670;&#160;</a></span>gather()</h2>
+<a id="a7687ef5c49b098bf3e8b5edc939580ac" name="a7687ef5c49b098bf3e8b5edc939580ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7687ef5c49b098bf3e8b5edc939580ac">&#9670;&#160;</a></span>gather()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1245,7 +1251,13 @@ template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.h
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const Attrib2 &amp;&#160;</td>
-          <td class="paramname"><em>pp</em>&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>addToAttribute</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1259,6 +1271,27 @@ template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.h
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Non-class interface for gathering field data into a particle attribute. </p>
+<p >This interface calls the member <a class="el" href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9" title="Gather field data into the particle attribute.">ParticleAttrib::gather()</a> function with the provided parameters and preserving legacy behavior by assigning <code>addToAttribute</code> a default value.</p>
+<dl class="section note"><dt>Note</dt><dd>See <a class="el" href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9" title="Gather field data into the particle attribute.">ParticleAttrib::gather()</a> for more information on the behavior of <code>addToAttribute</code>.</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Attrib1</td><td>The type of the particle attribute. </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td>The type of the field. </td></tr>
+    <tr><td class="paramname">Attrib2</td><td>The type of the particle position attribute. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">attrib</td><td>The particle attribute to gather data into. </td></tr>
+    <tr><td class="paramname">f</td><td>The field from which data is gathered. </td></tr>
+    <tr><td class="paramname">pp</td><td>The <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> representing particle positions. </td></tr>
+    <tr><td class="paramname">addToAttribute</td><td>If true, the gathered field value is added to the current attribute value; otherwise, the attribute value is overwritten. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2538,13 +2571,13 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
 
 </div>
 </div>
-<a id="a8aca99db2f6c226beba5431b1195b9bc" name="a8aca99db2f6c226beba5431b1195b9bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8aca99db2f6c226beba5431b1195b9bc">&#9670;&#160;</a></span>scatter()</h2>
+<a id="ae4b695c957670e518d5d77db5d296198" name="ae4b695c957670e518d5d77db5d296198"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4b695c957670e518d5d77db5d296198">&#9670;&#160;</a></span>scatter() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 &gt; </div>
+template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -2579,6 +2612,106 @@ template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.h
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Non-class interface for scattering particle attribute data onto a field. </p>
+<p >This overload preserves legacy functionality by providing a default iteration policy. It calls the member <a class="el" href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198" title="Non-class interface for scattering particle attribute data onto a field.">scatter()</a> with a default Kokkos::RangePolicy.</p>
+<dl class="section note"><dt>Note</dt><dd>The default behaviour is to scatter all particles without any custom index mapping.</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Attrib1</td><td>The type of the particle attribute. </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td>The type of the field. </td></tr>
+    <tr><td class="paramname">Attrib2</td><td>The type of the particle position attribute. </td></tr>
+    <tr><td class="paramname">policy_type</td><td>(Default: <code>Kokkos::RangePolicy&lt;typename <a class="el" href="classippl_1_1BareField.html#ae3b8e4d26e218d9ec999a29871d61700">Field::execution_space</a>&gt;</code>) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">attrib</td><td>The particle attribute to scatter. </td></tr>
+    <tr><td class="paramname">f</td><td>The field onto which the data is scattered. </td></tr>
+    <tr><td class="paramname">pp</td><td>The <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> representing particle positions. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ab73fb1da4a3a5cf5ebd504bfc6741502" name="ab73fb1da4a3a5cf5ebd504bfc6741502"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab73fb1da4a3a5cf5ebd504bfc6741502">&#9670;&#160;</a></span>scatter() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Attrib1 , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename Attrib2 , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::scatter </td>
+          <td>(</td>
+          <td class="paramtype">const Attrib1 &amp;&#160;</td>
+          <td class="paramname"><em>attrib</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Attrib2 &amp;&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">typename Attrib1::hash_type&#160;</td>
+          <td class="paramname"><em>hash_array</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Non-class interface for scattering with a custom iteration policy and optional index array. </p>
+<p >This overload allows the caller to specify a custom <code>Kokkos::range_policy</code> and an optional <code>ippl::hash_type</code> array. It forwards the parameters to the member <a class="el" href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198" title="Non-class interface for scattering particle attribute data onto a field.">scatter()</a> function.</p>
+<dl class="section note"><dt>Note</dt><dd>See <a class="el" href="classippl_1_1ParticleAttrib.html#a6c1e525ba6f54288080cfe2ea3e5cfb0" title="Scatter particle attribute data onto a field.">ParticleAttrib::scatter()</a> for more information on the custom iteration functionality.</dd></dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Attrib1</td><td>The type of the particle attribute. </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td>The type of the field. </td></tr>
+    <tr><td class="paramname">Attrib2</td><td>The type of the particle position attribute. </td></tr>
+    <tr><td class="paramname">policy_type</td><td>(Default: <code>Kokkos::RangePolicy&lt;typename <a class="el" href="classippl_1_1BareField.html#ae3b8e4d26e218d9ec999a29871d61700">Field::execution_space</a>&gt;</code>) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">attrib</td><td>The particle attribute to scatter. </td></tr>
+    <tr><td class="paramname">f</td><td>The field onto which the data is scattered. </td></tr>
+    <tr><td class="paramname">pp</td><td>The <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> representing particle positions. </td></tr>
+    <tr><td class="paramname">iteration_policy</td><td>A custom <code>Kokkos::range_policy</code> defining the iteration range. </td></tr>
+    <tr><td class="paramname">hash_array</td><td>An optional <code>ippl::hash_type</code> array for index mapping. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
