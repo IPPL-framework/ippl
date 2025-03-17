@@ -22,6 +22,9 @@ target_link_libraries (TestGather ${IPPL_LIBS})
 add_executable (PICnd PICnd.cpp)
 target_link_libraries (PICnd ${IPPL_LIBS})
 
+add_executable (univ-1 univ-1.cpp)
+target_link_libraries (univ-1 ${IPPL_LIBS})
+
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 
