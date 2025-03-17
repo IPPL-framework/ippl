@@ -33,6 +33,12 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 
+
+#ifdef IPPL_ENABLE_HIP_PROFILER
+#include <omnitrace/user.h>
+#endif
+
+
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
 
@@ -68,9 +74,16 @@ Timing::TimerRef Timing::getTimer(const char* nm) {
 
 // start a timer
 void Timing::startTimer(TimerRef t) {
-    if (t >= TimerList.size())
-        return;
-    TimerList[t]->start();
+
+  if (t >= TimerList.size())
+    return;
+  TimerList[t]->start();
+
+#ifdef IPPL_ENABLE_HIP_PROFILER
+  omnitrace_push_region(TimerList[t]->name.c_str());
+#endif
+
+
 }
 
 // stop a timer, and accumulate it's values
@@ -78,6 +91,10 @@ void Timing::stopTimer(TimerRef t) {
     if (t >= TimerList.size())
         return;
     TimerList[t]->stop();
+
+#ifdef IPPL_ENABLE_HIP_PROFILER
+    omnitrace_pop_region(TimerList[t]->name.c_str());
+#endif
 }
 
 // clear a timer, by turning it off and throwing away its time

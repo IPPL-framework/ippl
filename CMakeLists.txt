@@ -64,7 +64,8 @@ if(NOT IPPL_PLATFORMS)
 endif()
 
 
-#message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+message(STATUS "IPPL_PLATFORMS flag is set to: ${IPPL_PLATFORMS}")
+
 if(Ippl_PLATFORMS)
     set(IPPL_PLATFORMS ${Ippl_PLATFORMS})
 endif()
@@ -85,10 +86,10 @@ elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
     endif()
     set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend")
 
-elseif("${IPPL\_PLATFORMS}" STREQUAL "HIP")
+elseif("${IPPL_PLATFORMS}" STREQUAL "HIP")
     message(STATUS "${Green}HIP backend enabled${ColourReset}")
-    set(Heffte\_ENABLE\_ROCM ON CACHE BOOL "Set Heffte ROCM Backend")
-    set(Kokkos\_ENABLE\_HIP ON CACHE BOOL "Enable Kokkos HIP Backend")
+    set(Heffte_ENABLE_ROCM ON CACHE BOOL "Set Heffte ROCM Backend")
+    set(Kokkos_ENABLE_HIP ON CACHE BOOL "Enable Kokkos HIP Backend")
 
 elseif("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
     message(STATUS "${Green}Serial backend enabled${ColourReset}")
@@ -115,6 +116,20 @@ else()
     message(FATAL_ERROR "Unknown or unsupported platform: ${IPPL_PLATFORMS}")
     # Handle unknown or unsupported platform
 endif()
+
+# Profiler section
+
+option (IPPL_ENABLE_HIP_PROFILER "Enable HIP Systems Profiler" OFF)
+
+if (IPPL_ENABLE_HIP_PROFILER)
+    if ("${IPPL_PLATFORMS}" STREQUAL "HIP" OR "${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;HIP")
+       message (STATUS "Enabling HIP Profiler")
+       add_compile_definitions(-DIPPL_ENABLE_HIP_PROFILER)    
+    else()
+        message (FATAL_ERROR "Cannot enable HIP Systems Profiler since platform is not HIP")
+    endif()
+endif()
+
 
 if(NOT Kokkos_VERSION)
     set(Kokkos_VERSION "4.5.00")
