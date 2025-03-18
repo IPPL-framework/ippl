@@ -26,6 +26,8 @@ namespace ippl {
         template <class... Args>
         KOKKOS_FUNCTION NDIndex(const Args&... args);
 
+        KOKKOS_FUNCTION NDIndex(const Vector<unsigned, Dim>& sizes);
+
         /*!
          * @returns a reference to any of the Indexes.
          */
