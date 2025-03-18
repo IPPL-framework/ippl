@@ -98,6 +98,19 @@ else()
     # Handle unknown or unsupported platform
 endif()
 
+# Profiler Section
+option (IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
+
+if (IPPL_ENABLE_NSYS_PROFILER)
+  if ("${IPPL_PLATFORMS}" STREQUAL "CUDA" OR "${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
+    message (STATUS "Enabling Nsys Profiler")
+    add_compile_definitions(-DIPPL_ENABLE_NSYS_PROFILER)    
+    else()
+      message (FATAL_ERROR "Cannot enable Nvidia Nsys Profiler since platform is not CUDA")
+    endif()
+endif()
+
+
 if(NOT Kokkos_VERSION)
     set(Kokkos_VERSION "4.1.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
@@ -264,15 +277,6 @@ if (ENABLE_UNIT_TESTS)
 
     add_subdirectory (unit_tests)
 endif ()
-
-option (IPPL_ENABLE_NSYS_PROFILER "Enable Nsight Systems Profiler" OFF)
-if (IPPL_ENABLE_NSYS_PROFILER)
-    if (NOT "${IPPL_PLATFORMS}" STREQUAL "CUDA")
-        message (FATAL_ERROR "Cannot enable Nsight Systems Profiler since platform is not CUDA")
-    endif()
-    message (STATUS "Enabling Nsys Profiler")
-    add_compile_definitions(-DIPPL_ENABLE_NSYS_PROFILER)    
-endif()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config_install.cmake )
