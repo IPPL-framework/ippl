@@ -81,7 +81,7 @@ public:
 
     Vector<int, Dim> nr_m;
 
-    ippl::e_dim_tag decomp_m[Dim];
+    std::array<bool, Dim> decomp_m;
 
     Vector_t hr_m;
     Vector_t rmin_m;
@@ -106,7 +106,7 @@ public:
     }
 
     ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     ippl::e_dim_tag decomp[Dim], double m)
+                     std::array<bool, Dim> decomp, double m)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
@@ -279,10 +279,12 @@ int main(int argc, char* argv[]) {
         // create mesh and layout objects for this problem domain
         Vector_t hr;
         ippl::NDIndex<Dim> domain;
-        ippl::e_dim_tag decomp[Dim];
+
+	std::array<bool, Dim> decomp;
+        decomp.fill(true);
+	
         for (unsigned d = 0; d < Dim; d++) {
             domain[d] = ippl::Index(nr[d]);
-            decomp[d] = ippl::PARALLEL;
             hr[d]     = rmax[d] / nr[d];
         }
 
@@ -290,13 +292,14 @@ int main(int argc, char* argv[]) {
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
-        FieldLayout_t FL(domain, decomp, isAllPeriodic);
+        FieldLayout_t FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t PL(FL, mesh);
 
         msg << "field layout created " << endl;
 	//        msg << FL << endl;
 
         float  M = 1.0;
+	
         univ        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, decomp, M);
 	
         unsigned long int nloc = totalP / ippl::Comm->size();
@@ -329,7 +332,7 @@ int main(int argc, char* argv[]) {
         bunch_type bunchBuffer(PL);
         static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
         IpplTimings::startTimer(UpdateTimer);
-        PL.update(*univ, bunchBuffer);
+        //PL.update(*univ, bunchBuffer);
         IpplTimings::stopTimer(UpdateTimer);
 	
         msg << "particles created and initial conditions assigned " << endl;
