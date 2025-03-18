@@ -98,6 +98,19 @@ else()
     # Handle unknown or unsupported platform
 endif()
 
+# Profiler Section
+option (IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
+
+if (IPPL_ENABLE_NSYS_PROFILER)
+  if ("${IPPL_PLATFORMS}" STREQUAL "CUDA" OR "${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
+    message (STATUS "Enabling Nsys Profiler")
+    add_compile_definitions(-DIPPL_ENABLE_NSYS_PROFILER)    
+    else()
+      message (FATAL_ERROR "Cannot enable Nvidia Nsys Profiler since platform is not CUDA")
+    endif()
+endif()
+
+
 if(NOT Kokkos_VERSION)
     set(Kokkos_VERSION "4.1.00")
     message(STATUS "${Green}Selecting default Kokkos version: ${Kokkos_VERSION} ${ColourReset}")
