@@ -144,9 +144,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
-        
-        layout.comm.printLogs("buffer_memory_logging.csv");
 
+        layout.comm.printLogs("buffer_memory_logging.csv");
     }
     ippl::finalize();
 

@@ -28,6 +28,12 @@ public:
                        std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
 
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+                       std::string& solver_, std::string& stepMethod_,
+                       std::vector<std::string> preconditioner_params_)
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
+                                preconditioner_params_) {}
+
     ~PenningTrapManager() {}
 
 private:
@@ -70,9 +76,6 @@ public:
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
         this->isAllPeriodic_m = true;
-        if (this->solver_m == "FEM_DIRICHLET") {
-            this->isAllPeriodic_m = false;
-        }
 
         this->setFieldContainer(std::make_shared<FieldContainer_t>(
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
@@ -83,9 +86,15 @@ public:
 
         this->fcontainer_m->initializeFields(this->solver_m);
 
-        this->setFieldSolver(std::make_shared<FieldSolver_t>(
-            this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
-            &this->fcontainer_m->getPhi()));
+        if (this->getSolver() == "PCG") {
+            this->setFieldSolver(std::make_shared<FieldSolver_t>(
+                this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
+                &this->fcontainer_m->getPhi(), this->preconditioner_params_m));
+        } else {
+            this->setFieldSolver(std::make_shared<FieldSolver_t>(
+                this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
+                &this->fcontainer_m->getPhi()));
+        }
 
         this->fsolver_m->initSolver();
 
