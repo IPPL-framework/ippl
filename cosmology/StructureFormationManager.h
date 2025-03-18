@@ -128,6 +128,10 @@ public:
 
         this->grid2par();
         this->dump();
+       	
+       	mes << "Initial conditions set up. Saving initial particle positions..." << endl;
+       	savePositions(0);  // Save initial particle positions
+
 
         mes << "Done";
     }
@@ -395,6 +399,7 @@ public:
     void advance() override {
         if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
+            savePositions(this->it_m); // Save particles at each step
         } else {
             throw IpplException(TestName, "Step method is not set/recognized!");
         }
