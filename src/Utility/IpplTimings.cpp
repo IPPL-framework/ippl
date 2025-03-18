@@ -92,8 +92,7 @@ void Timing::startTimer(TimerRef t) {
         return;
 #ifdef IPPL_ENABLE_NSYS_PROFILER
     PUSH_RANGE(TimerList[t]->name.c_str(), (int)t);
-    //nvtxRangePush(TimerList[t]->name.c_str());
-#endif // ENABLE_PROFILER
+#endif
     TimerList[t]->start();
 }
 
@@ -104,7 +103,7 @@ void Timing::stopTimer(TimerRef t) {
     TimerList[t]->stop();
 #ifdef IPPL_ENABLE_NSYS_PROFILER
     nvtxRangePop();
-#endif // ENABLE_PROFILER
+#endif
 }
 
 // clear a timer, by turning it off and throwing away its time
