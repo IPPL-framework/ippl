@@ -9,6 +9,10 @@ macro(list_subdirectories retval curdir)
   set(${retval} ${list_of_dirs})
 endmacro()
 
+include_directories(${gtest_SOURCE_DIR}/include)
+link_directories(${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgtest -lgtest_main")
+
 list_subdirectories("UNIT_TESTS" ${CMAKE_CURRENT_SOURCE_DIR})
 foreach (test ${UNIT_TESTS})
   add_subdirectory (${test})

@@ -160,9 +160,6 @@ find_package (MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 link_directories(${MPI_LIBRARY_PATH})
 
-
-
-
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
@@ -261,12 +258,12 @@ if (ENABLE_COSMOLOGY)
     add_subdirectory (cosmology)
 endif ()
 
-option (ENABLE_UNIT_TESTS "Enable unit tests" OFF)
+option (ENABLE_UNIT_TESTS "Enable unit tests" ON)
 if (ENABLE_UNIT_TESTS)
     if (NOT ENABLE_FFT)
         message(WARNING "Enabling unit tests even though FFT not enabled (-DENABLE_FFT=ON)!")
     endif ()
-    include(FetchContent)
+
     include(GoogleTest)
 
     enable_testing()
@@ -277,11 +274,13 @@ if (ENABLE_UNIT_TESTS)
         DOWNLOAD_EXTRACT_TIMESTAMP ON # policy hint for CMake > 3.24
         )
 
-    # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
+    message (STATUS "Enable gtest bin is at ${CMAKE_BINARY_DIR}/lib")
+    
     add_subdirectory (unit_tests)
+    
 endif ()
 
 configure_file (${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
