@@ -142,6 +142,9 @@ endif()
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules")
 
 find_package (MPI REQUIRED)
+include_directories (${MPI_INCLUDE_PATH})
+link_directories (${MPI_LIBRARY_PATH})
+
 message (STATUS "The C++ compiler identification is: ${CMAKE_CXX_COMPILER_ID}")
 message (STATUS "The C++ compiler version is: ${CMAKE_CXX_COMPILER_VERSION}")
 message (STATUS "The MPI C++ compiler is: ${MPI_CXX_COMPILER}")
