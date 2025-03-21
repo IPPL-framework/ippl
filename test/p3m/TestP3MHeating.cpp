@@ -26,7 +26,6 @@ using T = double;
 #include "Ippl.h"
 #include "../alpine/datatypes.h"
 #include "../alpine/P3MHeatingManager.hpp"
-#include "P3M/P3MParticleContainer.hpp"
 
 #include "Utility/IpplTimings.h"
 
@@ -48,7 +47,7 @@ int main(int argc, char* argv[]) {
         // const double alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const double dt             = 2.15623e-13;
         const double eps            = 0;
-        const unsigned int nt       = 1000;
+        const unsigned int nt       = 1;
         const double m_e            = 1;
         const double q_e            = 1;
         const double focus_strength = 1.5;

@@ -4,7 +4,6 @@ using T = double;
 #include "Ippl.h"
 #include "../alpine/datatypes.h"
 #include "../alpine/P3MBenchManager.hpp"
-#include "P3M/P3MParticleContainer.hpp"
 
 #include "Utility/IpplTimings.h"
 

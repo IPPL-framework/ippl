@@ -10,12 +10,13 @@
 
 // Alpine Headers
 // #include "../alpine/LoadBalancer.hpp"
+#include "ParticleContainer.hpp"
 #include "FieldContainer.hpp"
 
 // P3M Headers
 #include "Manager/P3M3DManager.h"
 #include "PoissonSolvers/P3MSolver.h"
-#include "../src/P3M/P3MParticleContainer.hpp"
+#include "ParticleContainer.hpp"
 
 // Distribution functions
 #include "Random/Distribution.h"
@@ -56,7 +57,7 @@ class P3M3DHeatingManager
     : public ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
 
-    using ParticleContainer_t = P3MParticleContainer<T, Dim>;
+    using ParticleContainer_t = ParticleContainer<T, Dim>;
     using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using FieldContainer_t = FieldContainer<T, Dim>;
 
@@ -139,7 +140,7 @@ public:
 
         // auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
-        auto Q = this->pcontainer_m->Q.getView();
+        auto Q = this->pcontainer_m->q.getView();
         auto P = this->pcontainer_m->P.getView();
 
         for(size_type i = 0; i < np+1; ++i){
@@ -303,7 +304,7 @@ public:
 	
         auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
-        auto Q = this->pcontainer_m->Q.getView();
+        auto Q = this->pcontainer_m->q.getView();
 
         double beamRad = this->beamRad_m;
 
@@ -498,7 +499,7 @@ public:
         );
 
         if(commSize == 1){
-            this->pcontainer_m->setNL(cellStartingIdx);
+            nl_m = cellStartingIdx;
             return;
         }
 
@@ -1023,7 +1024,7 @@ public:
         Inform m("scatter ");
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
+        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->q;
         typename Base::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
         double Q                        = this->Q_m;

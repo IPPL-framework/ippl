@@ -6,7 +6,6 @@
 #include "Decomposition/OrthogonalRecursiveBisection.h"
 #include "Manager/FieldSolverBase.h"
 
-#include "P3M/P3MParticleContainer.hpp"
 #include "PoissonSolvers/P3MSolver.h"
 
 namespace ippl {
@@ -24,9 +23,10 @@ namespace ippl {
      * @tparam fc   The field container type
      */
     template <typename T, unsigned Dim, class fc>
+        requires (Dim == 3) // Currently only 3D is implemented
     class P3M3DManager : public BaseManager {
     // use only the P3M Particle Container
-    using pc = P3MParticleContainer<T, Dim>;
+    using pc = ParticleContainer<T, Dim>;
     
     public:
         P3M3DManager()

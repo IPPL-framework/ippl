@@ -11,11 +11,11 @@
 // Alpine Headers
 // #include "../alpine/LoadBalancer.hpp"
 #include "FieldContainer.hpp"
+#include "ParticleContainer.hpp"
 
 // P3M Headers
 #include "Manager/P3M3DManager.h"
 #include "PoissonSolvers/P3MSolver.h"
-#include "../src/P3M/P3MParticleContainer.hpp"
 
 // Distribution functions
 #include "Random/Distribution.h"
@@ -56,8 +56,8 @@ class P3M3DBenchManager
     : public ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
 
-    using ParticleContainer_t = P3MParticleContainer<T, Dim>;
-    using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using ParticleContainer_t = ParticleContainer<T, Dim>;
+    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using FieldContainer_t = FieldContainer<T, Dim>;
 
 protected:
@@ -317,7 +317,7 @@ public:
 
         // required particle data
         auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->R.getView());
-        auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->Q.getView());
+        auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->q.getView());
 
         // 1. Corners
         for(int i = 0; i < 8; ++i){
@@ -1396,7 +1396,7 @@ public:
 	
         auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
-        auto Q = this->pcontainer_m->Q.getView();
+        auto Q = this->pcontainer_m->q.getView();
 
         double beamRad = this->beamRad_m;
 
@@ -1814,7 +1814,7 @@ public:
         Inform m("scatter ");
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
+        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->q;
         typename Base::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
         double Q                        = this->Q_m;

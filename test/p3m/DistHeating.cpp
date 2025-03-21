@@ -4,7 +4,6 @@ using T = double;
 #include "Ippl.h"
 #include "../alpine/datatypes.h"
 #include "../alpine/DistP3MHeating.hpp"
-#include "P3M/P3MParticleContainer.hpp"
 
 #include "Utility/IpplTimings.h"
 
@@ -43,9 +42,14 @@ int main(int argc, char* argv[]){
 
         msg << "Starting iterations ..." << endl;
 
+        static IpplTimings::TimerRef timer = IpplTimings::getTimer("total");
+
+        IpplTimings::startTimer(timer);
         double start = MPI_Wtime();
         manager.run(manager.getNt());
         double end = MPI_Wtime();
+        IpplTimings::stopTimer(timer);
+        IpplTimings::print();
         std::cout << "Total Simulation time: " << end-start << " seconds." << std::endl;
    }
     ippl::finalize();
