@@ -74,8 +74,13 @@ protected:
 public:
     P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
-        {}
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
+        {
+
+        for (int i = 0; i < ippl::Comm->size(); ++i){
+            neighbors_m(i) = false;
+        }
+    }
 
     ~P3M3DHeatingManager(){}
 
@@ -94,6 +99,11 @@ protected:
     ippl::NDIndex<Dim> domain_m;    // Domain as index range
     std::array<bool, Dim> decomp_m; // Domain Decomposition
     double rhoNorm_m;               // Rho norm, required for scatterCIC
+
+    Kokkos::View<unsigned int *, Device> nl_m;
+    bool nlValid_m = false;
+    Kokkos::View<bool*, Device> neighbors_m;
+    Kokkos::View<int [14*3], Device> offsetDevice_m;
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -195,14 +205,15 @@ public:
     
         this->fcontainer_m->initializeFields("P3M");
 
-        Kokkos::View<int[14*3], Device> offset_device("offset_device");
         Kokkos::View<int[14*3], Host> offset("offset");
 
-        int offset_arr[14][3] = {{ 1, 1, 1}, { 0, 1, 1}, {-1, 1, 1},
+        int offset_arr[14][3] = {
+            { 1, 1, 1}, { 0, 1, 1}, {-1, 1, 1},
             { 1, 0, 1}, { 0, 0, 1}, {-1, 0, 1},
             { 1,-1, 1}, { 0,-1, 1}, {-1,-1, 1},
             { 1, 1, 0}, { 0, 1, 0}, {-1, 1, 0},
-            { 1, 0, 0}, { 0, 0, 0}};
+            { 1, 0, 0}, { 0, 0, 0}
+        };
 
         Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Host>(0, 14*3),
 
@@ -213,8 +224,7 @@ public:
             }
         );
 
-        Kokkos::deep_copy(offset_device, offset);
-        this->pcontainer_m->setOffset(offset_device);
+        offsetDevice_m = offset;
 
         // initialize solver
         ippl::ParameterList sp;
@@ -512,7 +522,7 @@ public:
         Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
         Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
         
-        bool neighbors[commSize];	
+        Kokkos::View<bool *, Host> neighbors("neighbors", commSize);
 
         unsigned totalNeighbors = 0;
         // unsigned neighborcubes = 0;
@@ -624,8 +634,8 @@ public:
         neighbors[rank] = false;
         
         // set neighbor list after initialization
-        this->pcontainer_m->setNL(cellStartingIdx);
-        this->pcontainer_m->setNeighbors(neighbors);
+        nl_m = cellStartingIdx;
+        neighbors_m = neighbors;
         
         if(totalNeighbors > 0){
             double *recvBuffers[totalNeighbors];
@@ -682,8 +692,8 @@ public:
         auto R = this->pcontainer_m->R.getView();
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
-        auto offset = this->pcontainer_m->getOffset();
-        auto Q = this->pcontainer_m->Q.getView();
+        const auto& offset = offsetDevice_m;
+        auto Q = this->pcontainer_m->q.getView();
 
         // get simulation specific data
         auto rcut = this->rcut_m;
@@ -691,7 +701,7 @@ public:
         auto epsilon = this->epsilon_m;
 
         // get neighbor mesh data
-        auto cellStartingIdx = this->pcontainer_m->getNL();
+        const auto& cellStartingIdx = nl_m;
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
         int xCells = nCells[0];

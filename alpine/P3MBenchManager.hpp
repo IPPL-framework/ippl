@@ -75,12 +75,16 @@ protected:
 public:
     P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_, double boxlen_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_)
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
         {
             this->preallocatedSendBuffer_m = 1000;
             this->sendBuffer_m = new T[preallocatedSendBuffer_m];
             this->preallocatedRecvBuffer_m = 1000;
             this->recvBuffer_m = new T[preallocatedRecvBuffer_m];
+
+            for (int i = 0; i < ippl::Comm->size(); ++i){
+                neighbors_m(i) = false;
+            }
         }
 
     ~P3M3DBenchManager(){}
@@ -105,6 +109,11 @@ protected:
     T* sendBuffer_m;                // Send buffer
     unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
     T* recvBuffer_m;                // Recieve buffer
+
+    Kokkos::View<unsigned int *, Device> nl_m;
+    bool nlValid_m = false;
+    Kokkos::View<bool*, Device> neighbors_m;
+    Kokkos::View<int [14*3], Device> offsetDevice_m;
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -161,7 +170,7 @@ public:
         // get domain decomposition
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         auto neighbors = this->fcontainer_m->getFL().getNeighbors();
-        auto cellStartingIdx = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->pcontainer_m->getNL());
+        auto cellStartingIdx = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), nl_m);
         // Kokkos::deep_copy(cellStartingIdx, this->pcontainer_m->getNL());
         // auto cellStartingIdx = this->pcontainer_m->getNL();
         const unsigned nx = nCells_m[0];
@@ -1178,8 +1187,7 @@ public:
             }
         );
 
-        Kokkos::deep_copy(offset_device, offset);
-        this->pcontainer_m->setOffset(offset_device);
+        offsetDevice_m = offset;
 
         // initialize solver
         ippl::ParameterList sp;
@@ -1450,8 +1458,8 @@ public:
                 E(i) = tempE(i);
             }
         );
-        
-        this->pcontainer_m->setNL(cellStartingIdx);
+
+        nl_m = cellStartingIdx;
     }
 
     void pre_step() override {
@@ -1479,8 +1487,8 @@ public:
         auto R = this->pcontainer_m->R.getView();
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
-        auto offset = this->pcontainer_m->getOffset();
-        auto Q = this->pcontainer_m->Q.getView();
+        const auto& offset = offsetDevice_m;
+        auto Q = this->pcontainer_m->q.getView();
 
         // get simulation specific data
         auto rcut = this->rcut_m;
@@ -1489,7 +1497,7 @@ public:
         const double ke = 2.532638e8;
 
         // get neighbor mesh data
-        auto cellStartingIdx = this->pcontainer_m->getNL();
+        const auto& cellStartingIdx = nl_m;
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
         int xCells = nCells[0];
