@@ -328,9 +328,6 @@ namespace ippl {
     void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
 
-        // define pi
-        Trhs pi = Kokkos::numbers::pi_v<Trhs>;
-
         // This alpha parameter is a choice for the Green's function
         // it controls the "range" of the Green's function (e.g.
         // for the P3M collision modelling method, it indicates

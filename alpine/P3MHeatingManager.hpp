@@ -75,7 +75,7 @@ protected:
 public:
     P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), alpha_m(alpha_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
         {
 
         for (int i = 0; i < ippl::Comm->size(); ++i){
@@ -271,7 +271,7 @@ public:
 	    
         this->pcontainer_m->update();
 
-        std::cerr << "Pre Run finished" << endl;
+        std::cerr << "Pre Run finished" << std::endl;
     }
 
     void initializeParticles() {
@@ -322,7 +322,7 @@ public:
                 
                 // obtain random numbers
                 double u = generator.drand();
-                for(int i = 0; i < Dim; ++i){
+                for(unsigned i = 0; i < Dim; ++i){
                     x[i] = generator.normal(0.0, 1.0);
                 }
 
@@ -332,7 +332,7 @@ public:
                 T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
                 Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1./3.) / Kokkos::sqrt(normsq)) * x;
 
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
 		            R(index)[d] = pos[d];
                 }
@@ -416,7 +416,7 @@ public:
         // calculate chaining meshwidth and number of mesh cells
         double hCM[3], l_extend[3], r_extend[3];
         unsigned nCells[3], totalCells = 1;
-        for (int d = 0; d < Dim; ++d){
+        for (unsigned d = 0; d < Dim; ++d){
             l_extend[d] = hLocalRegions(rank)[d].min();
             r_extend[d] = hLocalRegions(rank)[d].max();
             double length = hLocalRegions(rank)[d].length();
@@ -597,7 +597,7 @@ public:
                         double sendBuf[nParticlesToSend * 3];
 
                         // build send buffer
-                        size_type sendBufIdx = 0;
+                        int sendBufIdx = 0;
                         for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
                             for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
                                 for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
@@ -607,7 +607,7 @@ public:
                         
                                     // loop over all particles in a cell
                                     for(size_type i = start; i < end; ++i){
-                                        for(int d = 0; d < Dim; ++d){
+                                        for(unsigned d = 0; d < Dim; ++d){
                                             // assert(sendBufIdx < nParticlesToSend && "too many particles");
                                             sendBuf[3*sendBufIdx + d] = R_host(i)[d];
                                         }
@@ -639,8 +639,7 @@ public:
         neighbors_m = neighbors;
         
         if(totalNeighbors > 0){
-            double *recvBuffers[totalNeighbors];
-            int senderCount = 0;	
+            int senderCount = 0;
             // recieve Messages
             for(int sender = 0; sender < commSize; ++sender){
                 if (neighbors[sender]){
@@ -654,7 +653,6 @@ public:
 
                     // allocate buffer and recieve
                     double recvBuf[count];
-                    recvBuffers[senderCount] = recvBuf;
                     ++senderCount;
                     MPI_Recv(recvBuf, count, MPI_DOUBLE, sender,/*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
                     //std::cerr << "Rank " << rank << " recieved " << count/3 << " paricles from " << sender << std::endl;
@@ -699,11 +697,11 @@ public:
         // get simulation specific data
         auto rcut = this->rcut_m;
         auto alpha = this->alpha_m;
-        auto epsilon = this->epsilon_m;
+        // auto epsilon = this->epsilon_m;
 
         // get neighbor mesh data
         const auto& cellStartingIdx = nl_m;
-        size_type totalCells = cellStartingIdx.size() - 1;
+        int totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
         int xCells = nCells[0];
         int yCells = nCells[1];
@@ -762,7 +760,7 @@ public:
 
                                 double rsq_ij = 0.0;
                                 Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                                for (int d = 0; d < Dim; ++d) {
+                                for (unsigned d = 0; d < Dim; ++d) {
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
 
@@ -863,7 +861,7 @@ public:
         auto R = this->pcontainer_m->R.getView();
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
-        double beamRad = this->beamRad_m;
+        // double beamRad = this->beamRad_m;
 
         Vector_t<double, 9> stats = 0.0;
 

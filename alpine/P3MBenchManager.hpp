@@ -75,7 +75,7 @@ protected:
 public:
     P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_, double boxlen_) 
         : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_), alpha_m(alpha_), neighbors_m("neighbor list", ippl::Comm->size()), offsetDevice_m("offset_device")
         {
             this->preallocatedSendBuffer_m = 1000;
             this->sendBuffer_m = new T[preallocatedSendBuffer_m];
@@ -137,9 +137,7 @@ public:
         int sources[26];
         int it = 0;
 
-        unsigned nx = nCells_m[0];
-        unsigned ny = nCells_m[1];
-        unsigned nz = nCells_m[2];
+
 
         for (const auto& componentNeighbors : neighbors) {
             for(const auto& neighbor : componentNeighbors){
@@ -149,7 +147,9 @@ public:
         }
 
         assert(it == 26 && "Invalid mesh topology");
-
+        int nx = nCells_m[0];
+        int ny = nCells_m[1];
+        int nz = nCells_m[2];
         int weights[26] = {1, 1, nx, 1, 1, nx, ny, ny, ny*nx, 1, 1, nx, 1, 1, nx, ny, ny, ny*nx, nz, nz, nx*nz, nz, nz, nx*nz, ny*nz, ny*nz};
 
         MPI_Comm dist_graph_comm;
@@ -163,7 +163,6 @@ public:
     void particleExchange() {      
 
         // get communicator size and rank
-        int commSize = ippl::Comm->size();
         int rank = ippl::Comm->rank();
 
         const double ke = 2.532638e8;
@@ -173,10 +172,10 @@ public:
         auto cellStartingIdx = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), nl_m);
         // Kokkos::deep_copy(cellStartingIdx, this->pcontainer_m->getNL());
         // auto cellStartingIdx = this->pcontainer_m->getNL();
-        const unsigned nx = nCells_m[0];
-        const unsigned ny = nCells_m[1];
-        const unsigned nz = nCells_m[2];
-        const unsigned nzm1 = nz - 1;
+        const int nx = nCells_m[0];
+        const int ny = nCells_m[1];
+        const int nz = nCells_m[2];
+        const int nzm1 = nz - 1;
         const double rcut = hLocalRegions(rank)[0].length() / (double)nx;
 
         // particle exchange facilitated in 3 steps
@@ -193,8 +192,8 @@ public:
         // We do this to make use of the fact that particles are stored in an ordered manner in the particle container
 
         // I. Compute the number of particles to be sent to each corner
-        unsigned neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx;
-        unsigned nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13;
+        int neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx;
+        int nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13;
 
         // all 8 corners only require a single gridCell in the PP grid
         neighbor00_Idx = 0; nParticles00 = cellStartingIdx(1);
@@ -207,14 +206,14 @@ public:
         neighbor13_Idx = neighbor04_Idx + nzm1; nParticles13 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor13_Idx);
 
         // required to build buffer
-        unsigned cornerIdx[8] = {neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx};
-        unsigned cornerCounts[8] = {nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13};
-        unsigned cornerIdentifiers[8] = {0, 1, 3, 4, 9, 10, 12, 13};
+        int cornerIdx[8] = {neighbor00_Idx, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, neighbor09_Idx, neighbor10_Idx, neighbor12_Idx, neighbor13_Idx};
+        int cornerCounts[8] = {nParticles00, nParticles01, nParticles03, nParticles04, nParticles09, nParticles10, nParticles12, nParticles13};
+        int cornerIdentifiers[8] = {0, 1, 3, 4, 9, 10, 12, 13};
 
         // std::cerr << "Checkpoint 1" << std::endl;
 
         // II. Compute the number of particles to be sent to each edge in z direction and faces in y-z plane
-        unsigned nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25;
+        int nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25;
 
         // cellStartingIdx is consecutive in z direction, thus simplifying the computation for 4 of the edges
         nParticles18 = cellStartingIdx(neighbor09_Idx + 1); // cellStartingIdx(0) = 0
@@ -227,14 +226,14 @@ public:
         nParticles25 = cellStartingIdx(neighbor13_Idx + 1) - cellStartingIdx(neighbor01_Idx);
 
         // required to build buffer
-        unsigned zTopologyIdx[6] = {0, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, 0, neighbor01_Idx};
-        unsigned zTopologyCounts[6] = {nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25};
-        unsigned zTopologyIdentifiers[6] = {18, 19, 21, 22, 24, 25};
+        int zTopologyIdx[6] = {0, neighbor01_Idx, neighbor03_Idx, neighbor04_Idx, 0, neighbor01_Idx};
+        int zTopologyCounts[6] = {nParticles18, nParticles19, nParticles21, nParticles22, nParticles24, nParticles25};
+        int zTopologyIdentifiers[6] = {18, 19, 21, 22, 24, 25};
 
         // std::cerr << "Checkpoint 2" << std::endl;
 
         // III. Compute the number of particles to be sent to each edge in x direction and faces in x-z plane
-        unsigned nParticles02 = 0, nParticles11 = 0, nParticles05 = 0, nParticles14 = 0, nParticles20 = 0, nParticles23 = 0;
+        int nParticles02 = 0, nParticles11 = 0, nParticles05 = 0, nParticles14 = 0, nParticles20 = 0, nParticles23 = 0;
 
         // replace with Kokkos parallel_for or reduce : TODO
         for(int x_Idx = 0; x_Idx < nx; ++x_Idx){
@@ -252,7 +251,7 @@ public:
         // std::cerr << "Checkpoint 3" << std::endl;
 
         // IV. Compute the number of particles to be sent to each edge in y direction and faces in x-y plane
-        unsigned nParticles06 = 0, nParticles15 = 0, nParticles07 = 0, nParticles16 = 0, nParticles08 = 0, nParticles17 = 0;
+        int nParticles06 = 0, nParticles15 = 0, nParticles07 = 0, nParticles16 = 0, nParticles08 = 0, nParticles17 = 0;
 
         // rest of the topology requires a bit more work
         for(int y_Idx = 0; y_Idx < ny; ++y_Idx){
@@ -338,7 +337,7 @@ public:
             // std::cerr << "zIdx: " << zIdx << " zCount: " << zCount << std::endl;
             unsigned zStart = cellStartingIdx(zIdx);
             for(unsigned j = 0; j < zCount; ++j){
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + d] = R_host(zStart + j)[d];
                 }
                 sendBuffer_m[displacements[zTopologyIdentifiers[i]] + 4*j + 3] = Q_host(zStart + j);
@@ -359,9 +358,9 @@ public:
                                             cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + 1), cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz)};
             unsigned lowerEdgeIdentifiers[4] = {2, 11, 5, 14};
 
-            for(int i = 0; i < 4; ++i){
+            for(unsigned i = 0; i < 4; ++i){
                 for(unsigned j = lowerEdgeStarts[i]; j < lowerEdgeEnds[i]; ++j){
-                    for(int d = 0; d < Dim; ++d){
+                    for(unsigned d = 0; d < Dim; ++d){
                         sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + d] = R_host(j)[d];
                     }
                     sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + 3] = Q_host(j);
@@ -373,7 +372,7 @@ public:
             unsigned lowerFaceStart = cellStartingIdx(x_Idx * ny * nz);
             unsigned lowerFaceEnd = cellStartingIdx(x_Idx * ny * nz + nz);
             for(unsigned i = lowerFaceStart; i < lowerFaceEnd; ++i) {
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[20] + 4*(i - lowerFaceStart) + d] = R_host(i)[d];
                 }
                 sendBuffer_m[displacements[20] + 4*(i - lowerFaceStart) + 3] = Q_host(i);
@@ -384,7 +383,7 @@ public:
             unsigned upperFaceStart = cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz);
             unsigned upperFaceEnd = cellStartingIdx(x_Idx * ny * nz + (ny-1) * nz + nz);
             for(unsigned i = upperFaceStart; i < upperFaceEnd; ++i) {
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     sendBuffer_m[displacements[23] + 4*(i - upperFaceStart) + d] = R_host(i)[d];
                 }
                 sendBuffer_m[displacements[23] + 4*(i - upperFaceStart) + 3] = Q_host(i);
@@ -410,7 +409,7 @@ public:
 
             for(int i = 0; i < 4; ++i){
                 for(unsigned j = lowerEdgeStarts[i]; j < lowerEdgeEnds[i]; ++j){
-                    for(int d = 0; d < Dim; ++d){
+                    for(unsigned d = 0; d < Dim; ++d){
                         sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + d] = R_host(j)[d];
                     }
                     sendBuffer_m[displacements[lowerEdgeIdentifiers[i]] + 4*(j - lowerEdgeStarts[i]) + 3] = Q_host(j);
@@ -424,9 +423,9 @@ public:
                 unsigned lowerFaceEnds[2] = {cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + 1), cellStartingIdx(x_Idx * ny * nz + y_Idx * nz + nz)};
                 unsigned lowerFaceIdentifiers[2] = {8, 17};
 
-                for(int i = 0; i < 2; ++i){
-                    for(int j = lowerFaceStarts[i]; j < lowerFaceEnds[i]; ++j){
-                        for(int d = 0; d < Dim; ++d){
+                for(unsigned i = 0; i < 2; ++i){
+                    for(unsigned j = lowerFaceStarts[i]; j < lowerFaceEnds[i]; ++j){
+                        for(unsigned d = 0; d < Dim; ++d){
                             sendBuffer_m[displacements[lowerFaceIdentifiers[i]] + 4*(j - lowerFaceStarts[i]) + d] = R_host(j)[d];
                         }
                         sendBuffer_m[displacements[lowerFaceIdentifiers[i]] + 4*(j - lowerFaceStarts[i]) + 3] = Q_host(j);
@@ -458,9 +457,9 @@ public:
         // 1. MPI_Neighbor_alltoall for size information
         int recvCounts[26];
 
-        double commStart = MPI_Wtime();
+//        double commStart = MPI_Wtime();
         MPI_Neighbor_alltoall(sendCounts, 1, MPI_INT, recvCounts, 1, MPI_INT, graph_comm_m);
-        double commEnd = MPI_Wtime();
+//        double commEnd = MPI_Wtime();
         // std::cerr << "Comm Time: " << commEnd - commStart << std::endl;
 
         // ippl::Comm->barrier();
@@ -487,9 +486,9 @@ public:
         }
 
         // 3. MPI_Neighbor_alltoallv to facilitate particle exchange
-        double commStart2 = MPI_Wtime();
+//        double commStart2 = MPI_Wtime();
         MPI_Neighbor_alltoallv(sendBuffer_m, sendCounts, displacements, MPI_DOUBLE, recvBuffer_m, recvCounts, recvDisplacements, MPI_DOUBLE, graph_comm_m);
-        double commEnd2 = MPI_Wtime();
+//        double commEnd2 = MPI_Wtime();
         // std::cerr << "Comm Time 2: " << commEnd2 - commStart2 << std::endl;
         // ippl::Comm->barrier();
 
@@ -529,7 +528,7 @@ public:
                     // compute distance
                     double rsq_ij = 0;
                     Vector_t<T, Dim> dist_ij;
-                    for(int d = 0; d < Dim; ++d){
+                    for(unsigned d = 0; d < Dim; ++d){
                         dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                         rsq_ij += dist_ij[d] * dist_ij[d];
                     }		    
@@ -585,7 +584,7 @@ public:
 
                 // particle particle interaction
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nz),
-                    [&](const int& zCellNumber){
+                    [&](int zCellNumber){
                         int localCellIdx = zTopologyIdx[i] + zCellNumber;
 
                         // starting index and count of local particles
@@ -619,7 +618,7 @@ public:
 
                             double rsq_ij = 0;
                             Vector_t<T, Dim> dist_ij;
-                            for(int d = 0; d < Dim; ++d){
+                            for(unsigned d = 0; d < Dim; ++d){
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
@@ -699,12 +698,12 @@ public:
                             int haloZCellIdx = zCellNumber + neighbors[neighborIdx][1];
                             if(haloYCellIdx < 0 || haloYCellIdx >= ny || haloZCellIdx < 0 || haloZCellIdx >= nz) return;
 
-                            int haloCellIdx = haloYCellIdx * nz + haloZCellIdx;
-                            int haloStartingIdx = yzFaceNeighborList(haloCellIdx);
-                            int haloCount = yzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
+                            unsigned haloCellIdx = haloYCellIdx * nz + haloZCellIdx;
+                            unsigned haloStartingIdx = yzFaceNeighborList(haloCellIdx);
+                            unsigned haloCount = yzFaceNeighborList(haloCellIdx+1) - haloStartingIdx;
 
                             Vector_t<T, Dim> tempFsr = 0.0;
-                            const int internalIdx = localStartingIdx + ii;
+                            const unsigned internalIdx = localStartingIdx + ii;
 
                             
                             for(unsigned jj = 0; jj < haloCount; ++jj){
@@ -712,7 +711,7 @@ public:
 
 				                double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
-                                for(int d = 0; d < Dim; ++d){
+                                for(unsigned d = 0; d < Dim; ++d){
                                     dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
@@ -734,8 +733,8 @@ public:
         // std::cerr << "Checkpoint 11" << std::endl;
 
         // III. Compute interactions on the edges in x direction and faces in x-z plane
-        unsigned xEdgeIdentifiers[4] = {2, 11, 5, 14};
-        unsigned xEdgeStartingIndices[4] = {0, nzm1, (ny-1) * nz, (ny-1) * nz + nzm1};
+        int xEdgeIdentifiers[4] = {2, 11, 5, 14};
+        int xEdgeStartingIndices[4] = {0, nzm1, (ny-1) * nz, (ny-1) * nz + nzm1};
         Kokkos::parallel_for("PP interaction for x edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
             KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
@@ -808,7 +807,7 @@ public:
 
                             double rsq_ij = 0;
                             Vector_t<T, Dim> dist_ij;
-                            for(int d = 0; d < Dim; ++d){
+                            for(unsigned d = 0; d < Dim; ++d){
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
@@ -907,7 +906,7 @@ public:
 
                                 double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
-                                for(int d = 0; d < Dim; ++d){
+                                for(unsigned d = 0; d < Dim; ++d){
                                     dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
@@ -927,8 +926,8 @@ public:
         // std::cerr << "Checkpoint 14 " << std::endl;
 
         // IV. Compute interactions on the edges in y direction and faces in x-y plane
-        unsigned yEdgeIdentifiers[4] = {6, 15, 7, 16};
-        unsigned yEdgeStartingIndices[4] = {0, nzm1, (nx-1) * ny * nz, (nx-1) * ny * nz + nzm1};
+        int yEdgeIdentifiers[4] = {6, 15, 7, 16};
+        int yEdgeStartingIndices[4] = {0, nzm1, (nx-1) * ny * nz, (nx-1) * ny * nz + nzm1};
         Kokkos::parallel_for("PP interaction for y edges", Kokkos::TeamPolicy<Host>(4, Kokkos::AUTO),
             KOKKOS_CLASS_LAMBDA(const team_t& team){
                 const int i = team.league_rank();
@@ -999,7 +998,7 @@ public:
 
                             double rsq_ij = 0;
                             Vector_t<T, Dim> dist_ij;
-                            for(int d = 0; d < Dim; ++d){
+                            for(unsigned d = 0; d < Dim; ++d){
                                 dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                 rsq_ij += dist_ij[d] * dist_ij[d];
                             }
@@ -1096,7 +1095,7 @@ public:
 
                                 double rsq_ij = 0;
                                 Vector_t<T, Dim> dist_ij;
-                                for(int d = 0; d < Dim; ++d){
+                                for(unsigned d = 0; d < Dim; ++d){
                                     dist_ij[d] = R_host(internalIdx)[d] - recvBuffer_m[haloIdx + d];
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
@@ -1290,7 +1289,7 @@ public:
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         Vector_t<T, Dim> domainMin, domainLength;
         
-        for(int d = 0; d < Dim; ++d){
+        for(unsigned d = 0; d < Dim; ++d){
             domainMin[d] = hLocalRegions(rank)[d].min();
             domainLength[d] = hLocalRegions(rank)[d].length();
         }
@@ -1309,7 +1308,7 @@ public:
                 
                 // obtain random numbers
                 Vector_t<T, Dim> u;
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     u[d] = generator.drand();
                 }
 
@@ -1324,7 +1323,7 @@ public:
                 // if (sign < 0.5) u = -u;
                 Vector_t<T, Dim> pos = domainMin + domainLength * u;
 
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
 		            R(index)[d] = pos[d];
                 }
@@ -1357,7 +1356,6 @@ public:
         Inform m("Initialize Neighbor List");
 
         // get communicator size and rank
-        int commSize = ippl::Comm->size();
         int rank = ippl::Comm->rank();
 
         // get other relevant information
@@ -1371,11 +1369,11 @@ public:
         // std::cout << hLocalRegions(rank) << std::endl;
         
         // calculate chaining meshwidth and number of mesh cells
-        double hCM[3], l_extend[3], r_extend[3];
+        double hCM[3], l_extend[3]; //, r_extend[3];
         unsigned nCells[3], totalCells = 1;
-        for (int d = 0; d < Dim; ++d){
+        for (unsigned d = 0; d < Dim; ++d){
             l_extend[d] = hLocalRegions(rank)[d].min();
-            r_extend[d] = hLocalRegions(rank)[d].max();
+            // r_extend[d] = hLocalRegions(rank)[d].max();
             double length = hLocalRegions(rank)[d].length();
 
             nCells[d] = floor(length / this->rcut_m);
@@ -1492,16 +1490,16 @@ public:
         // get simulation specific data
         auto rcut = this->rcut_m;
         auto alpha = this->alpha_m;
-        auto epsilon = this->epsilon_m;
+        // auto epsilon = this->epsilon_m;
         const double ke = 2.532638e8;
 
         // get neighbor mesh data
         const auto& cellStartingIdx = nl_m;
         size_type totalCells = cellStartingIdx.size() - 1;
         auto nCells = this->nCells_m;
-        int xCells = nCells[0];
-        int yCells = nCells[1];
-        int zCells = nCells[2];
+        unsigned xCells = nCells[0];
+        unsigned yCells = nCells[1];
+        unsigned zCells = nCells[2];
 
         assert(totalCells == xCells * yCells * zCells && "Invalid number of cells");
 
@@ -1514,9 +1512,9 @@ public:
                 const size_type cellIdx = team.league_rank();
 
                 // calculate cellIdx in each dimension
-                int xIdx = cellIdx / (yCells * zCells);
-                int yIdx = (cellIdx % (yCells * zCells)) / zCells;
-                int zIdx = cellIdx % zCells;
+                unsigned xIdx = cellIdx / (yCells * zCells);
+                unsigned yIdx = (cellIdx % (yCells * zCells)) / zCells;
+                unsigned zIdx = cellIdx % zCells;
 
                 // get number of particles in current cell
                 const size_type start = cellStartingIdx(cellIdx);
@@ -1556,7 +1554,7 @@ public:
 
                                 double rsq_ij = 0.0;
                                 Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                                for (int d = 0; d < Dim; ++d) {
+                                for (unsigned d = 0; d < Dim; ++d) {
                                     rsq_ij += dist_ij[d] * dist_ij[d];
                                 }
 
