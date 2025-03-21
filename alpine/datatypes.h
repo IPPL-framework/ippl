@@ -1,3 +1,6 @@
+#ifndef IPPL_DATATYPES_H
+#define IPPL_DATATYPES_H
+
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
@@ -62,3 +65,5 @@ using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, 
 const double pi = Kokkos::numbers::pi_v<T>;
 
 extern const char* TestName;
+
+#endif // IPPL_DATATYPES_H
