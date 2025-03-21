@@ -1589,7 +1589,7 @@ public:
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
         const auto& offset = offsetDevice_m;
-        auto Q = this->pcontainer_m->Q.getView();
+        auto Q = this->pcontainer_m->q.getView();
 
         // get simulation specific data
         auto rcut = this->rcut_m;
