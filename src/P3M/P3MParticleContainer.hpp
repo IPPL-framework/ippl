@@ -3,10 +3,9 @@
 
 #include <memory>
 #include "Manager/BaseManager.h"
+#include "../alpine/datatypes.h"
 
-using Device = Kokkos::DefaultExecutionSpace;
-using NList_t = Kokkos::View<unsigned int *, Device>;
-using Offset_t = Kokkos::View<int [14*3], Device>;
+
 
 /**
  * @class P3MParticleContainer
@@ -18,11 +17,14 @@ using Offset_t = Kokkos::View<int [14*3], Device>;
 
 template<typename T, unsigned Dim=3>
 class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim> >{
-    
+    using Device = Kokkos::DefaultExecutionSpace;
+    using Host = Kokkos::DefaultHostExecutionSpace;
+    using NList_t = Kokkos::View<unsigned int *, Device>;
+    using Offset_t = Kokkos::View<int [14*3], Device>;
+
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using Vector = ippl::Vector<T, Dim>;
-    typedef ippl::Vector<double, Dim> Vector_t; 
-    
+
     public:
         ippl::ParticleAttrib<double> Q;             // charge
         typename Base::particle_position_type P;    // particle velocity
