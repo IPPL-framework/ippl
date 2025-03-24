@@ -1,25 +1,19 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Interpolation/CMakeLists.txt
+#
+# Adds particle-to-grid interpolation headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+# Make headers accessible via <Interpolation/...> if needed
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Install Interpolation-related headers
+install(FILES
     CIC.h
     CIC.hpp
-    )
+    DESTINATION include/Interpolation
+)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-ADD_IPPL_SOURCES (${_SRCS})
-ADD_IPPL_HEADERS (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Interpolation)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

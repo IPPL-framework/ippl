@@ -1,25 +1,18 @@
-set (_SRCS
-  )
+# -----------------------------------------------------------------------------
+# src/Expression/CMakeLists.txt
+#
+# Adds expression-related headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
-  IpplExpressions.h
-  IpplOperations.h
-  )
-
-include_directories (
-  ${CMAKE_CURRENT_SOURCE_DIR}
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
+# Install public headers
+install(FILES
+    IpplExpressions.h
+    IpplOperations.h
+    DESTINATION include/Expression
+)
 
-install (FILES ${_HDRS} DESTINATION include/Expression)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

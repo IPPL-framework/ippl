@@ -1,17 +1,18 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/LinearSolvers/CMakeLists.txt
+#
+# Adds linear solver interface headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Install LinearSolvers headers
+install(FILES
     SolverAlgorithm.h
     Preconditioner.h
     PCG.h
+    DESTINATION include/LinearSolvers
 )
-
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/LinearSolvers)

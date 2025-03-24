@@ -1,26 +1,19 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Manager/CMakeLists.txt
+#
+# Adds simulation manager interfaces to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Install Manager-related headers
+install(FILES
     FieldSolverBase.h
     PicManager.h
     BaseManager.h
-    )
+    DESTINATION include/Manager
+)
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Manager)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

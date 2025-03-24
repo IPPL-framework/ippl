@@ -1,74 +1,60 @@
-message (STATUS "configure: make IpplInfo.h")
-execute_process (
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+# -----------------------------------------------------------------------------
+# src/CMakeLists.txt
+#
+# This file builds the main IPPL library target. It:
+#   - Generates IpplVersions.h from current build system info
+#   - Gathers sources and headers
+#   - Adds all component subdirectories (Communicate, Field, etc.)
+#   - Links to external libraries (Kokkos, Heffte)
+#   - Installs headers and the library
+# -----------------------------------------------------------------------------
+message(STATUS "📄 Generating IpplVersions.h")
+
+execute_process(
     COMMAND date
-    OUTPUT_VARIABLE DATE_OUT OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-execute_process (
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE IPPL_COMPILE_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
     COMMAND uname -a
-    OUTPUT_VARIABLE UNAME_OUT OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-execute_process (
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE IPPL_COMPILE_MACHINE OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
     COMMAND whoami
-    OUTPUT_VARIABLE WHOAMI_OUT OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+    OUTPUT_VARIABLE IPPL_COMPILE_USER OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
-set (IPPL_COMPILE_ARCH \"$ENV{IPPL_ARCH}\")
-set (IPPL_COMPILE_LINE \"${CMAKE_CXX_FLAGS}\")
-set (IPPL_COMPILE_DATE \"${DATE_OUT}\")
-set (IPPL_COMPILE_MACHINE \"${UNAME_OUT}\")
-set (IPPL_COMPILE_OPTIONS \"${CMAKE_CXX_FLAGS}\")
-set (IPPL_COMPILE_USER \"${WHOAMI_OUT}\")
+set(IPPL_COMPILE_ARCH "$ENV{IPPL_ARCH}")
+set(IPPL_COMPILE_LINE "${CMAKE_CXX_FLAGS}")
+set(IPPL_COMPILE_OPTIONS "${CMAKE_CXX_FLAGS}")
 
-configure_file (IpplVersions.h.in ${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h)
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
+)
 
-set (IPPL_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-macro (add_ippl_sources)
-    file (RELATIVE_PATH _relPath "${IPPL_SRC_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-    foreach (_src ${ARGN})
-        if (_relPath)
-            list (APPEND IPPL_SRCS "${_relPath}/${_src}")
-        else ()
-            list (APPEND IPPL_SRCS "${_src}")
-        endif ()
-    endforeach ()
-    if (_relPath)
-        # propagate SRCS to parent directory
-        set (IPPL_SRCS ${IPPL_SRCS} PARENT_SCOPE)
-    endif ()
-endmacro ()
+add_library(ippl)
 
-macro (add_ippl_headers)
-    file (RELATIVE_PATH _relPath "${IPPL_SRC_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-    foreach (_hdr ${ARGN})
-        if (_relPath)
-            list (APPEND IPPL_HDRS "${_relPath}/${_hdr}")
-        else ()
-            list (APPEND IPPL_HDRS "${_hdr}")
-        endif ()
-    endforeach ()
-    if (_relPath)
-        # propagate HDRS to parent directory
-        set (IPPL_HDRS ${IPPL_HDRS} PARENT_SCOPE)
-    endif ()
-endmacro ()
+target_sources(ippl
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp
+)
 
-set (IPPL_BASEDIR_HDRS
-    Ippl.h
-    IpplVersions.h
-    IpplCore.h 
-    )
-add_ippl_headers (${IPPL_BASEDIR_HDRS})
-add_ippl_sources (Ippl.cpp)
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}  # for generated IpplVersions.h
+)
 
 add_subdirectory (Communicate)
+
 if (ENABLE_FFT)
-    set (HEFFTE_LIBRARY Heffte)
     add_subdirectory (FFT)
-else()
-    set (HEFFTE_LIBRARY "")
 endif()
+
 add_subdirectory (Field)
 add_subdirectory (FieldLayout)
 add_subdirectory (Decomposition)
@@ -91,30 +77,27 @@ if (ENABLE_SOLVERS)
     add_subdirectory (LinearSolvers)
 endif ()
 
-include_directories (
-    BEFORE ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
-add_library ( ippl ${IPPL_SRCS} ${IPPL_SRCS_FORT})
+# === Install public headers ===
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/IpplCore.h
+    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
+    DESTINATION include
+)
 
-set(TimerFences true)
-string(REPLACE ";SERIAL" "" KokkosAccelerators "${Kokkos_DEVICES}")
-string(REPLACE "SERIAL;" "" KokkosAccelerators "${KokkosAccelerators}")
-if ("${KokkosAccelerators}" MATCHES ".+;.+")
-    set(TimerFences false)
+# === Install the library ===
+install(TARGETS ippl DESTINATION lib)
+
+target_link_libraries(ippl
+    PUBLIC
+        Kokkos::kokkos
+)
+
+if(ENABLE_FFT AND TARGET Heffte::heffte)
+    target_link_libraries(ippl PUBLIC Heffte::heffte)
+else()
+    message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
 endif()
-message("Timer fences for this build: ${TimerFences}")
-target_compile_definitions(ippl PUBLIC IPPL_ENABLE_TIMER_FENCES=${TimerFences})
-target_link_libraries(ippl PUBLIC Kokkos::kokkos ${HEFFTE_LIBRARY})
 
-install (TARGETS ippl DESTINATION lib)
-install (FILES ${IPPL_BASEDIR_HDRS} DESTINATION include)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode:cmake
-# cmake-tab-width: 4
-# indent-tabs-mode:nil
-# require-final-newline: nil
-# End:

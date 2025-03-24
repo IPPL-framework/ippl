@@ -1,8 +1,16 @@
-set (_SRCS
-#     Centering.cpp
-    )
+# -----------------------------------------------------------------------------
+# src/Meshes/CMakeLists.txt
+#
+# Adds structured grid mesh headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Install Meshes headers
+install(FILES
     CartesianCentering.hpp
     CartesianCentering.h
     Centering.h
@@ -10,22 +18,6 @@ set (_HDRS
     Mesh.hpp
     UniformCartesian.h
     UniformCartesian.hpp
-    )
+    DESTINATION include/Meshes
+)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-ADD_IPPL_SOURCES (${_SRCS})
-ADD_IPPL_HEADERS (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Meshes)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

@@ -1,7 +1,16 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Random/CMakeLists.txt
+#
+# Adds random sampling and distribution headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Install Random-related headers
+install(FILES
     InverseTransformSampling.h
     Utility.h
     Distribution.h
@@ -9,22 +18,6 @@ set (_HDRS
     NormalDistribution.h
     Randn.h
     Randu.h
-    )
+    DESTINATION include/Random
+)
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Random)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

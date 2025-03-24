@@ -1,26 +1,24 @@
-set (_SRCS
-  FieldLayout.cpp
-  )
+# -----------------------------------------------------------------------------
+# src/FieldLayout/CMakeLists.txt
+#
+# Adds FieldLayout implementation to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
-  FieldLayout.h
-  FieldLayout.hpp
-  )
-
-include_DIRECTORIES (
-  ${CMAKE_CURRENT_SOURCE_DIR}
+# Register FieldLayout source
+target_sources(ippl
+    PRIVATE
+        FieldLayout.cpp
 )
 
-ADD_IPPL_SOURCES (${_SRCS})
-ADD_IPPL_HEADERS (${_HDRS})
+target_include_directories(ippl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-install (FILES ${_HDRS} DESTINATION include/FieldLayout)
+# Install FieldLayout headers
+install(FILES
+    FieldLayout.h
+    FieldLayout.hpp
+    DESTINATION include/FieldLayout
+)
 
-# vi: set et ts=4 sw=4 sts=4:
-  
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
