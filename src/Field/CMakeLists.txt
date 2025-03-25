@@ -7,7 +7,8 @@
 # Add this directory to public include path
 target_include_directories(ippl
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Install Field-related headers

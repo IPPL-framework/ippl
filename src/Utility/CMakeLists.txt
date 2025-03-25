@@ -16,7 +16,8 @@ target_sources(ippl
 
 target_include_directories(ippl
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Install Utility headers

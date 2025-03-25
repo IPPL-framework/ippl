@@ -7,7 +7,8 @@
 # Make headers accessible via <Interpolation/...> if needed
 target_include_directories(ippl
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Install Interpolation-related headers

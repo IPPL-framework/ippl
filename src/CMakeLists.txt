@@ -36,7 +36,7 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
-add_library(ippl)
+add_library(ippl ${IPPL_LIB_TYPE})
 
 target_sources(ippl
     PRIVATE
@@ -45,8 +45,9 @@ target_sources(ippl
 
 target_include_directories(ippl
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}  # for generated IpplVersions.h
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
 add_subdirectory (Communicate)
@@ -79,17 +80,6 @@ endif ()
 
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
-# === Install public headers ===
-install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/IpplCore.h
-    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
-    DESTINATION include
-)
-
-# === Install the library ===
-install(TARGETS ippl DESTINATION lib)
-
 target_link_libraries(ippl
     PUBLIC
         Kokkos::kokkos
@@ -101,3 +91,4 @@ else()
     message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
 endif()
 
+include(${PROJECT_SOURCE_DIR}/cmake/InstallIppl.cmake)

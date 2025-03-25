@@ -21,6 +21,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(IPPL_LIB_TYPE STATIC)
+if(IPPL_DYL)
+    set(IPPL_LIB_TYPE SHARED)
+endif()
+message(STATUS "🔧 IPPL will be built as a ${IPPL_LIB_TYPE} library (IPPL_DYL = ${IPPL_DYL})")
+
 # === Default Build Type ===
 set(_allowed_build_types Debug Release RelWithDebInfo MinSizeRel)
 

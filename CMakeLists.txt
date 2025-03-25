@@ -8,6 +8,7 @@ option(ENABLE_FFT "Enable FFT support" OFF)
 option (ENABLE_SOLVERS "Enable IPPL solvers" OFF)
 option(ENABLE_ALPINE "Enable building the Alpine module" OFF)
 option(ENABLE_TESTS "Build integration tests in test/ directory" OFF)
+option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF)
 
 include(ProjectSetup)
 include(Version)
