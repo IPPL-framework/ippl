@@ -53,4 +53,7 @@
 // // FEM Solver
 #include "FEM/FEMSolver.h"
 
+// // FEM Vector
+#include "FEM/FEMVector.h"
+
 #endif

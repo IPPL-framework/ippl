@@ -111,6 +111,17 @@ target_link_libraries(
     GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
 )
+
+add_executable(FEMVector FEMVector.cpp)
+gtest_discover_tests(FEMVector PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
+target_link_libraries(
+    FEMVector
+    ippl
+    pthread
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

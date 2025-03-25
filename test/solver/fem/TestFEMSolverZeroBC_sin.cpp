@@ -33,12 +33,12 @@ struct AnalyticSol {
 };
 
 
-template <typename T, typename Space>
+template <typename T, unsigned Dim, typename Space>
 struct Bilinear {
     
     Bilinear(const Space& space) : space_m(space) {
         // List of quadrature nodes
-        const ippl::Vector<ippl::Vector<T,3>, Space::Quadrature_t::numElementNodes> q =
+        const ippl::Vector<ippl::Vector<T,Dim>, Space::Quadrature_t::numElementNodes> q =
             space_m.quadrature_m.getIntegrationNodesForRefElement();
         
         for (size_t k = 0; k < Space::Quadrature_t::numElementNodes; ++k) {
@@ -47,7 +47,7 @@ struct Bilinear {
             }
         }
 
-        const ippl::Vector<size_t, 3> zeroNdIndex = ippl::Vector<size_t, 3>(0);
+        const ippl::Vector<size_t, Dim> zeroNdIndex = ippl::Vector<size_t, Dim>(0);
 
         // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
         // on translation
@@ -58,9 +58,9 @@ struct Bilinear {
     }
 
     const Space& space_m;
-    ippl::Vector<ippl::Vector<ippl::Vector<T,3>, Space::numElementDOFs>, Space::Quadrature_t::numElementNodes> grad_b_q;
+    ippl::Vector<ippl::Vector<ippl::Vector<T,Dim>, Space::numElementDOFs>, Space::Quadrature_t::numElementNodes> grad_b_q;
     ippl::Vector<T, Space::Quadrature_t::numElementNodes> w;
-    ippl::Vector<T,3> DPhiInvT;
+    ippl::Vector<T,Dim> DPhiInvT;
 
     KOKKOS_INLINE_FUNCTION const T operator()(size_t i, size_t j, size_t q) const {
         return dot(DPhiInvT*grad_b_q[q][j], DPhiInvT*grad_b_q[q][i]).apply();
@@ -69,10 +69,10 @@ struct Bilinear {
 };
 
 
-template <typename T, typename Space>
+template <typename T, unsigned Dim, typename Space>
 struct Linear {
     Linear(const Space& space) : space_m(space) {
-        const ippl::Vector<ippl::Vector<T,3>, Space::Quadrature_t::numElementNodes> q =
+        const ippl::Vector<ippl::Vector<T,Dim>, Space::Quadrature_t::numElementNodes> q =
             space_m.quadrature_m.getIntegrationNodesForRefElement();
 
         for (size_t k = 0; k < Space::Quadrature_t::numElementNodes; ++k) {
@@ -85,15 +85,15 @@ struct Linear {
     const Space& space_m;
     ippl::Vector<ippl::Vector<T, Space::numElementDOFs>, Space::Quadrature_t::numElementNodes> basis_q;
 
-    KOKKOS_INLINE_FUNCTION const T operator()(size_t i, size_t q, ippl::Vector<T,3> x) const {
+    KOKKOS_INLINE_FUNCTION const T operator()(size_t i, size_t q, ippl::Vector<T,Dim> x) const {
         const T pi = Kokkos::numbers::pi_v<T>;
 
         T val = 1.0;
-        for (unsigned d = 0; d < 3; d++) {
+        for (unsigned d = 0; d < Dim; d++) {
             val *= Kokkos::sin(pi * x[d]);
         }
 
-        val = 3 * pi * pi * val;
+        val = Dim * pi * pi * val;
 
         return basis_q[q][i] * val;
     }
@@ -127,7 +127,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
-    const unsigned numGhosts      = 1;
 
     // Domain: [-1, 1]
     const ippl::Vector<unsigned, Dim> nodesPerDimVec(numNodesPerDim);
@@ -145,10 +144,10 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     SpaceType space(mesh, refElement_m, quadrature_m, layout);
 
-    Bilinear<T,SpaceType> bilinear(space);
-    Linear<T,SpaceType> linear(space);
+    Bilinear<T,Dim,SpaceType> bilinear(space);
+    Linear<T,Dim, SpaceType> linear(space);
 
-    ippl::FEMSolver<Field_t, Field_t, Bilinear<T,SpaceType>, Linear<T,SpaceType>, SpaceType, Mesh_t, QuadratureType> solver(bilinear, linear, space, mesh, layout, quadrature_m);
+    ippl::FEMSolver<Field_t, Field_t, Bilinear<T,Dim,SpaceType>, Linear<T,Dim,SpaceType>, SpaceType, Mesh_t, QuadratureType> solver(bilinear, linear, space, mesh, layout, quadrature_m);
 
 
     // solve the problem
@@ -180,10 +179,12 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
                 // the coordinates
                 for (int d = 0; d < vertexPoses.dim; ++d) {
-                    file << vertecies[d][0] << ", " << vertecies[d][1] << ", " << vertecies[d][2] << ", ";
+                    for (int k = 0; k < Dim; ++k) {
+                        file << vertecies[d][k] << ", ";
+                    }
 
                     // the value
-                    file << v(vertexPoses[d][0], vertexPoses[d][1], vertexPoses[d][2]) << "\n";
+                    file << ippl::apply(v,vertexPoses[d]) << "\n";
                 }
             }
 
@@ -221,7 +222,7 @@ int main(int argc, char* argv[]) {
         if (ippl::Comm->rank() == 0) {
             std::cout << std::setw(10) << "#n/dim" << std::setw(25) << "cell spacing" << std::setw(25) << "rel error" <<std::setw(25) << "CG residum" << std::setw(25) << "CG interation count\n";
         }
-        testFEMSolver<T, 3>(32, 1.0, 3.0);
+        testFEMSolver<T, 2u>(7, 1.0, 3.0);
         //for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
         //    testFEMSolver<T, 3>(n, 1.0, 3.0);
         //}

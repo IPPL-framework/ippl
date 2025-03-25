@@ -3,6 +3,7 @@
 
 
 #include <functional>
+#include <fstream>
 
 #include "LinearSolvers/PCG.h"
 
@@ -65,7 +66,52 @@ namespace ippl{
             static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
             IpplTimings::startTimer(opTimer);
 
+            for (unsigned r = 0; r < Comm->size(); ++r) {
+                if (r == Comm->rank()) {
+                    std::ofstream file;
+                    if (r == 0) {
+                        file.open("lhs.txt");
+                        file << "BEFORE FILL\n";
+                    } else {
+                        file.open("lhs.txt", std::ios::app);
+                    }
+                    file << "rank: " << r << "\n";
+                    auto h = field.getHostMirror();
+                    Kokkos::deep_copy(h, field.getView());
+                    for (int i = h.extent(0)-1; i >= 0; --i) {
+                        for(int j = 0; j < h.extent(1); ++j) {
+                            file << std::setw(15) << h(i,j); 
+                        }
+                        file << "\n";
+                    }
+                    file.close();
+                }
+                Comm->barrier();
+            }
+
             field.fillHalo();
+            for (unsigned r = 0; r < Comm->size(); ++r) {
+                if (r == Comm->rank()) {
+                    std::ofstream file;
+                    if (r == 0) {
+                        file.open("lhs.txt", std::ios::app);
+                        file << "AFTER FILL\n";
+                    } else {
+                        file.open("lhs.txt", std::ios::app);
+                    }
+                    file << "rank: " << r << "\n";
+                    auto h = field.getHostMirror();
+                    Kokkos::deep_copy(h, field.getView());
+                    for (int i = h.extent(0)-1; i >= 0; --i) {
+                        for(int j = 0; j < h.extent(1); ++j) {
+                            file << std::setw(15) << h(i,j); 
+                        }
+                        file << "\n";
+                    }
+                    file.close();
+                }
+                Comm->barrier();
+            }
 
             // start evaluateAx
             ViewType view = field.getView();
@@ -145,7 +191,53 @@ namespace ippl{
             });
             // End evaluateAx
 
+            for (unsigned r = 0; r < Comm->size(); ++r) {
+                if (r == Comm->rank()) {
+                    std::ofstream file;
+                    if (r == 0) {
+                        file.open("lhs.txt", std::ios::app);
+                        file << "BEFORE ACCUMULATEL\n";
+                    } else {
+                        file.open("lhs.txt", std::ios::app);
+                    }
+                    file << "rank: " << r << "\n";
+                    auto h = resultField.getHostMirror();
+                    Kokkos::deep_copy(h, resultField.getView());
+                    for (int i = h.extent(0)-1; i >= 0; --i) {
+                        for(int j = 0; j < h.extent(1); ++j) {
+                            file << std::setw(15) << h(i,j); 
+                        }
+                        file << "\n";
+                    }
+                    file.close();
+                }
+                Comm->barrier();
+            }
+
             resultField.accumulateHalo();
+
+            for (unsigned r = 0; r < Comm->size(); ++r) {
+                if (r == Comm->rank()) {
+                    std::ofstream file;
+                    if (r == 0) {
+                        file.open("lhs.txt", std::ios::app);
+                        file << "AFTER ACCUMULATEL\n";
+                    } else {
+                        file.open("lhs.txt", std::ios::app);
+                    }
+                    file << "rank: " << r << "\n";
+                    auto h = resultField.getHostMirror();
+                    Kokkos::deep_copy(h, resultField.getView());
+                    for (int i = h.extent(0)-1; i >= 0; --i) {
+                        for(int j = 0; j < h.extent(1); ++j) {
+                            file << std::setw(15) << h(i,j); 
+                        }
+                        file << "\n";
+                    }
+                    file.close();
+                }
+                Comm->barrier();
+            }
             
             IpplTimings::stopTimer(opTimer);
 
@@ -154,6 +246,15 @@ namespace ippl{
 
 
         pcg_algo_m.setOperator(algoOperator);
+
+        FieldLHS test_old_in(mesh_m, layout_m, 1);
+        test_old_in = 1.;
+        ippl::BConds<FieldLHS, Dim> test_old_bc_field;
+        for (unsigned int i = 0; i < 2 * Dim; ++i) {
+            test_old_bc_field[i] = std::make_shared<ippl::ZeroFace<FieldLHS>>(i);
+        }
+        test_old_in.setFieldBC(test_old_bc_field);
+        FieldLHS old_out = algoOperator(test_old_in);
 
 
         // create the lhs and rhs
@@ -241,7 +342,7 @@ namespace ippl{
         static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
         IpplTimings::startTimer(pcgTimer);
 
-        pcg_algo_m(lhs, rhs, params_m);
+        //pcg_algo_m(lhs, rhs, params_m);
 
         lhs.fillHalo();
 
@@ -330,6 +431,18 @@ namespace ippl{
                     elementIndices(idx) = points(i);
                 }
             });
+        
+        for (int r = 0; r < ippl::Comm->size(); ++r) {
+            if (r == Comm->rank()) {
+                std::cout << "rank: " << r << "\n";
+                std::cout << "min: " << first << "\n";
+                std::cout << "max: " << last << "\n";
+                for (int i = 0; i < elementIndices.extent(0); ++i) {
+                    std::cout << i << ": " << elementIndices(i) << "\n";
+                } 
+            }
+            Comm->barrier();
+        }
     }
 
 
