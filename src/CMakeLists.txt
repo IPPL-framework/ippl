@@ -91,4 +91,7 @@ else()
     message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
 endif()
 
+set(IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(IPPL_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 include(${PROJECT_SOURCE_DIR}/cmake/InstallIppl.cmake)

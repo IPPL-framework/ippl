@@ -5,9 +5,9 @@
 
 # Install public headers
 install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/IpplCore.h
-    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
+    ${IPPL_SOURCE_DIR}/Ippl.h
+    ${IPPL_SOURCE_DIR}/IpplCore.h
+    ${IPPL_BINARY_DIR}/IpplVersions.h
     DESTINATION include
 )
 
