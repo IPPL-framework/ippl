@@ -4,11 +4,9 @@
 //   and then tracks their motions in the static
 //   electric field using cloud-in-cell interpolation and periodic particle BCs.
 //
-//   This test also provides a base for load-balancing using a domain-decomposition
-//   based on an ORB.
-//
+
 //   Usage:
-//     srun ./PICnd 128 128 128 --info 10
+//     srun ./univ-2 128 128 128 --info 10
 //
 // Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
 // Paul Scherrer Institut, Villigen PSI, Switzerland
@@ -27,12 +25,13 @@
 /*
 
 salloc --nodes=64  --partition=standard-g --time=00:30:00 --account=project_465001705 --gres=gpu:8 --ntasks-per-node=8 --gpus-per-node=8
-srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./PICnd 4096 4096 4096  --info 5
+srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./univ-2 4096 4096 4096  --info 5
 */
 
 #include "Ippl.h"
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
+#include <Kokkos_Random.hpp>
 #include <iostream>
 #include <random>
 #include <set>
@@ -47,7 +46,7 @@ srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./PICnd 4096 4096 4096  --info 5
 // dimension of our positions
 #define DIM     3
 constexpr unsigned Dim          = DIM;
-constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
+constexpr const char* PROG_NAME = "univ-2-" xstr(DIM) "d";
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
@@ -61,38 +60,39 @@ using Vector = ippl::Vector<T, Dim>;
 template <typename T, unsigned Dim>
 using Field = ippl::Field<T, Dim, Mesh_t, Centering_t>;
 
-typedef ippl::OrthogonalRecursiveBisection<Field<double, Dim>> ORB;
-
 template <typename T>
 using ParticleAttrib = ippl::ParticleAttrib<T>;
 
 typedef Vector<double, Dim>  Vector_t;
 typedef Field<float, Dim>    SField_t;
 typedef Field<Vector_t, Dim> VField_t;
+typedef Field<Kokkos::complex<double>, Dim> CField_t;
 
 double pi = Kokkos::numbers::pi_v<double>;
+
+
+typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t, Centering_t> field_type;
+
+typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
 
 template <class PLayout>
 class ChargedParticles : public ippl::ParticleBase<PLayout> {
 public:
-  
-    Field<Vector<double, Dim>, Dim> forcF_m;
-    Field<float, Dim> densF_m;
 
-    Vector<int, Dim> nr_m;
+  field_type cfield_m; 
 
-    unsigned int decomp_m[Dim];
+  Vector<int, Dim> nr_m;
+    
+  Vector_t hr_m;
+  Vector_t rmin_m;
+  Vector_t rmax_m;
+  std::array<bool, Dim> decomp_m;
+  float M_m;
 
-    Vector_t hr_m;
-    Vector_t rmin_m;
-    Vector_t rmax_m;
+  std::unique_ptr<FFT_type> fft_m;
 
-    float M_m;
-
-public:
-
-    ParticleAttrib<float> M;                                       
-    typename ippl::ParticleBase<PLayout>::particle_position_type V;  // particle velocity
+  ParticleAttrib<float> M;                                       
+  typename ippl::ParticleBase<PLayout>::particle_position_type V;  // particle velocity
 
     /*
       This constructor is mandatory for all derived classes from
@@ -105,20 +105,22 @@ public:
         this->addAttribute(V);
     }
 
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     unsigned int decomp[Dim], double m)
+  ChargedParticles(PLayout& pl, FieldLayout_t& fl, Vector_t hr, Vector_t rmin, Vector_t rmax,
+                     std::array<bool, Dim> decomp, float m)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
+	, decomp_m(decomp)
         , M_m(m) {
         // register the particle attributes
         this->addAttribute(M);
         this->addAttribute(V);
         setupBCs();
-        for (unsigned int i = 0; i < Dim; i++) {
-            decomp_m[i] = decomp[i];
-        }
+
+	ippl::ParameterList fftParams;
+        fftParams.add("use_heffte_defaults", true);
+	fft_m = std::make_unique<FFT_type>(fl, fftParams);
     }
 
     void setupBCs() { setBCAllPeriodic(); }
@@ -127,8 +129,7 @@ public:
         // Update local fields
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        this->forcF_m.updateLayout(fl);
-        this->densF_m.updateLayout(fl);
+        this->cfield_m.updateLayout(fl);
 
         // Update layout with new FieldLayout
         PLayout& layout = this->getLayout();
@@ -143,53 +144,53 @@ public:
 
     ~ChargedParticles() {}
 
-
-
     void initFields() {
+
         static IpplTimings::TimerRef initFieldsTimer = IpplTimings::getTimer("initFields");
+
         IpplTimings::startTimer(initFieldsTimer);
         Inform m("initFields ");
 
-        ippl::NDIndex<Dim> domain = forcF_m.getDomain();
+        ippl::NDIndex<Dim> domain = cfield_m.getDomain();
 
         for (unsigned int i = 0; i < Dim; i++) {
             nr_m[i] = domain[i].length();
         }
 
-        double phi0 = 0.1;
-        double pi   = Kokkos::numbers::pi_v<double>;
-        // scale_fact so that particles move more
-        double scale_fact = 1e5;  // 1e6
+        typename CField_t::view_type& view        = cfield_m.getView();
 
-        Vector_t hr = hr_m;
+	typename CField_t::HostMirror cfield_host = cfield_m.getHostMirror();
+	m << "horst mirror done " << endl;
+        const int nghost                          = cfield_m.getNghost();
 
-        typename VField_t::view_type& view = forcF_m.getView();
-        const FieldLayout_t& layout        = forcF_m.getLayout();
-        const ippl::NDIndex<Dim>& lDom     = layout.getLocalNDIndex();
-        const int nghost                   = forcF_m.getNghost();
-
+	Kokkos::Random_XorShift64_Pool<> rand_pool(12345); // Seed for reproducibility
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
+	m << "about to start the loop nghost= " << nghost << endl;
+	
         ippl::parallel_for(
-            "Assign forcF_m", ippl::getRangePolicy(view, nghost),
-            KOKKOS_LAMBDA(const index_array_type& args) {
-                // local to global index conversion
-                Vector_t vec = (0.5 + args + lDom.first() - nghost) * hr;
+			   "Assign cfield_m", ippl::getRangePolicy(view, nghost),
+			   KOKKOS_LAMBDA(const index_array_type& args) {
+			     double rn1, rn2, rn;
+			     auto rand_gen = rand_pool.get_state();
+			     do {
+			       rn1 = -1.0 + 2.0 * rand_gen.drand();
+			       rn2 = -1.0 + 2.0 * rand_gen.drand();
+			       rn = rn1 * rn1 + rn2 * rn2;
+			     } while (rn > 1.0 || rn == 0.0);		     
+			     ippl::apply(view, args) = Kokkos::complex<double>(rn2 * Kokkos::sqrt(-2.0*Kokkos::log(rn)/rn), 0.0);
+			     rand_pool.free_state(rand_gen); 		   
+			   });
 
-                ippl::apply(view, args)[0] = -scale_fact * 2.0 * pi * phi0;
-                for (unsigned d1 = 0; d1 < Dim; d1++) {
-                    ippl::apply(view, args)[0] *= Kokkos::cos(2 * ((d1 + 1) % 3) * pi * vec[d1]);
-                }
-                for (unsigned d = 1; d < Dim; d++) {
-                    ippl::apply(view, args)[d] = scale_fact * 4.0 * pi * phi0;
-                    for (int d1 = 0; d1 < (int)Dim - 1; d1++) {
-                        ippl::apply(view, args)[d] *=
-                            Kokkos::sin(2 * ((d1 + 1) % 3) * pi * vec[d1]);
-                    }
-                }
-            });
+	m << "loop end ... " << endl;
+	
+	Kokkos::deep_copy(cfield_m.getView(), cfield_host);
 
-        densF_m = dot(forcF_m, forcF_m);
-        densF_m = sqrt(densF_m);
+	fft_m->transform(ippl::FORWARD, cfield_m);
+
+	Kokkos::deep_copy(cfield_m.getView(), cfield_host);
+
+	m << "fft done ... " << endl;
         IpplTimings::stopTimer(initFieldsTimer);
     }
 
@@ -291,14 +292,24 @@ int main(int argc, char* argv[]) {
         Vector_t origin = rmin;
 
 	const bool isAllPeriodic = true;
+
         Mesh_t mesh(domain, hr, origin);
         FieldLayout_t FL(MPI_COMM_WORLD, domain, decomp, isAllPeriodic);
         PLayout_t PL(FL, mesh);
 
-	
         msg << "field layout created " << endl;
+	msg << "FIELD LAYOUT (INITIAL)" << endl;
+        msg << FL << endl;
 
+	float  M = 1.0;
 
+	univ = std::make_unique<bunch_type>(PL, FL, hr, rmin, rmax, decomp, M);
+	
+        msg << "univ created " << endl;
+	univ->cfield_m.initialize(mesh, FL);
+        msg << "fields initialized " << endl;
+
+	univ->initFields();
 
         msg << "field test " << PROG_NAME << ": End." << endl;
         IpplTimings::stopTimer(mainTimer);
