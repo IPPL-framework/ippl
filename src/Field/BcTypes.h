@@ -104,7 +104,7 @@ namespace ippl {
 
         virtual void findBCNeighbors(Field& /*field*/) {}
         virtual void apply(Field& field);
-        virtual void assignPeriodicGhostToPhysical(Field& /*field*/) {}
+        virtual void assignPeriodicGhostToPhysical(Field& field);
 
         virtual void write(std::ostream& out) const;
 
