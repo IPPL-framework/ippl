@@ -69,7 +69,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Define boundary conditions
     BConds_t bcField;
     for (unsigned int i = 0; i < 2 * Dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
+        bcField[i] = std::make_shared<ippl::ConstantFace<Field_t>>(i, 8.0);
     }
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);

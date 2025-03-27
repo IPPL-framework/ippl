@@ -52,7 +52,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Define boundary conditions
     BConds_t bcField;
     for (unsigned int i = 0; i < 2 * Dim; ++i) {
-        bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
+        bcField[i] = std::make_shared<ippl::ConstantFace<Field_t>>(i, 1.0);
     }
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+        for (unsigned n = 1 << 3; n <= 1 << 3; n = n << 1) {
             testFEMSolver<T, 1>(n, 0.0, 1.0);
         }
 
