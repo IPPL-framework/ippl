@@ -13,7 +13,7 @@ add_subdirectory(kokkos)
 add_subdirectory(types)
 add_subdirectory(field)
 
-if (ENABLE_FFT)
+if (IPPL_ENABLE_FFT)
     add_subdirectory(FFT)
 endif()
 

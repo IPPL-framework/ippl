@@ -1,11 +1,11 @@
-# -----------------------------------------------------------------------------ZZ
+# -----------------------------------------------------------------------------
 # Dependencies.cmake
 #
 # Resolves third-party libraries: Kokkos and Heffte.
 #
 # Responsibilities:
 #   - Fetch or find Kokkos, using version and backends from Platforms.cmake
-#   - Fetch Heffte if ENABLE_FFT is ON, using CUDA or AVX2 based on platform
+#   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -32,8 +32,8 @@ endif()
 message(STATUS "✅ Kokkos ready")
 
 # === Heffte (only if FFT enabled) ===
-if(ENABLE_FFT)
-    add_compile_definitions(ENABLE_FFT)
+if(IPPL_ENABLE_FFT)
+    add_compile_definitions(IPPL_ENABLE_FFT)
 
     if(NOT DEFINED Heffte_VERSION)
         set(Heffte_VERSION "master")
@@ -92,7 +92,7 @@ if(ENABLE_FFT)
 endif()
 
 
-if(ENABLE_UNIT_TESTS)
+if(IPPL_ENABLE_UNIT_TESTS)
     include(FetchContent)
     FetchContent_Declare(
         googletest

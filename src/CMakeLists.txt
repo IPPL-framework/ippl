@@ -52,7 +52,7 @@ target_include_directories(ippl
 
 add_subdirectory (Communicate)
 
-if (ENABLE_FFT)
+if (IPPL_ENABLE_FFT)
     add_subdirectory (FFT)
 endif()
 
@@ -71,7 +71,7 @@ add_subdirectory (Types)
 add_subdirectory (Partition)
 add_subdirectory (Random)
 
-if (ENABLE_SOLVERS)
+if (IPPL_ENABLE_SOLVERS)
     message (STATUS "Adding Solver subdirectories")
     add_subdirectory (PoissonSolvers)
     add_subdirectory (MaxwellSolvers)
@@ -85,7 +85,7 @@ target_link_libraries(ippl
         Kokkos::kokkos
 )
 
-if(ENABLE_FFT AND TARGET Heffte::heffte)
+if(IPPL_ENABLE_FFT AND TARGET Heffte::heffte)
     target_link_libraries(ippl PUBLIC Heffte::heffte)
 else()
     message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")

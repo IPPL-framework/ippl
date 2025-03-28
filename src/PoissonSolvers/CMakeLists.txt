@@ -19,7 +19,7 @@ set(poisson_headers
 )
 
 # Add FFT-based solver headers conditionally
-if(ENABLE_FFT)
+if(IPPL_ENABLE_FFT)
     list(APPEND poisson_headers
         FFTOpenPoissonSolver.h
         FFTOpenPoissonSolver.hpp

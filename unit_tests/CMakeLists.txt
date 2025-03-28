@@ -1,15 +1,15 @@
 # -----------------------------------------------------------------------------
 # unit_test/CMakeLists.txt
 #
-# Configures and adds unit tests. This file assumes ENABLE_UNIT_TESTS is ON.
+# Configures and adds unit tests. This file assumes IPPL_ENABLE_UNIT_TESTS is ON.
 # -----------------------------------------------------------------------------
 
-if(NOT ENABLE_FFT)
-    message(FATAL_ERROR "Unit tests require ENABLE_FFT to be ON. Please configure with -DENABLE_FFT=ON.")
+if(NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "Unit tests require IPPL_ENABLE_FFT to be ON. Please configure with -DIPPL_ENABLE_FFT=ON.")
 endif()
 
 if(NOT TARGET GTest::gtest)
-    message(FATAL_ERROR "❌ GoogleTest not found. Check Dependencies.cmake.")
+  message(FATAL_ERROR "❌ GoogleTest not found. Check Dependencies.cmake.")
 endif()
 
 include(GoogleTest)

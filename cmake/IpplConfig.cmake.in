@@ -5,7 +5,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(Kokkos REQUIRED)
 find_dependency(MPI REQUIRED)
 
-if(@ENABLE_FFT@)
+if(@IPPL_ENABLE_FFT@)
     find_dependency(Heffte REQUIRED)
 endif()
 
