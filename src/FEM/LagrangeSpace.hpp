@@ -489,11 +489,12 @@ namespace ippl {
             bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
+        /*
         if (bcType == CONSTANT_FACE) {
             bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
-
+        */
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
@@ -728,20 +729,13 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        //if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
-        if (bcType == PERIODIC_FACE) {
-            bcField.apply(temp_field);
-            bcField.assignPeriodicGhostToPhysical(temp_field);
-        }
-
+        // with this change, 1D converges for single and multi-rank
+        // with this change, 2D converges for single rank; multi-rank only 1st order conv
         temp_field.accumulateHalo();
-
-        if (bcType == CONSTANT_FACE) {
-            std::cout << "inside this" << std::endl;
+        if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
             bcField.apply(temp_field);
             bcField.assignPeriodicGhostToPhysical(temp_field);
         }
-
         field = temp_field;
 
         IpplTimings::stopTimer(evalLoadV);
