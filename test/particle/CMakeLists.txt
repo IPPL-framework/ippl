@@ -28,6 +28,9 @@ target_link_libraries (univ-1 ${IPPL_LIBS})
 add_executable (univ-2 univ-2.cpp)
 target_link_libraries (univ-2 ${IPPL_LIBS})
 
+add_executable (univ-3 univ-3.cpp)
+target_link_libraries (univ-3 ${IPPL_LIBS})
+
 add_executable (benchmarkParticleUpdate benchmarkParticleUpdate.cpp)
 target_link_libraries (benchmarkParticleUpdate ${IPPL_LIBS})
 

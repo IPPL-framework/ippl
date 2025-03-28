@@ -144,28 +144,77 @@ public:
 
     ~ChargedParticles() {}
 
-    void initFields() {
+  void initFields() {
+    Inform msg ("FFTTEst ");
 
-        typename CField_t::view_type& view        = cfield_m.getView();
+    ippl::NDIndex<Dim> domain = cfield_m.getDomain();
 
-	Kokkos::Random_XorShift64_Pool<> rand_pool(12345); // Seed for reproducibility
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    for (unsigned int i = 0; i < Dim; i++) {
+      nr_m[i] = domain[i].length();
+    }
 
-        ippl::parallel_for(
-			   "Compute cfield_m", ippl::getRangePolicy(view),
-			   KOKKOS_LAMBDA(const index_array_type& args) {
-			     double rn1, rn2, rn;
-			     auto rand_gen = rand_pool.get_state();
-			     do {
-			       rn1 = -1.0 + 2.0 * rand_gen.drand();
-			       rn2 = -1.0 + 2.0 * rand_gen.drand();
-			       rn = rn1 * rn1 + rn2 * rn2;
-			     } while (rn > 1.0 || rn == 0.0);		     
-			     ippl::apply(view, args) = Kokkos::complex<double>(rn2 * Kokkos::sqrt(-2.0*Kokkos::log(rn)/rn), 0.0);
-			     rand_pool.free_state(rand_gen); 		   
-			   });
+    double Lx = 1.0, Ly = 1.0, Lz = 1.0;
+    double dx = Lx / nr_m[0];
+    double dy = Ly / nr_m[1];
+    double dz = Lz / nr_m[2];
+    int kx = 3, ky = 2, kz = 1;
+	
+    typename CField_t::view_type& view        = cfield_m.getView();
 
-	fft_m->transform(ippl::FORWARD, cfield_m);
+    Kokkos::Random_XorShift64_Pool<> rand_pool(12345); // Seed for reproducibility
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
+    ippl::parallel_for(
+		       "Compute cfield_m", ippl::getRangePolicy(view),
+		       KOKKOS_LAMBDA(const index_array_type& args) {
+			 auto pi =  Kokkos::numbers::pi_v<double>;
+			 int i = args[0];
+			 int j = args[1];
+			 int k = args[2];
+			 double x = i * dx;
+			 double y = j * dy;
+			 double z = k * dz;
+			 double val = Kokkos::sin(2.0 * pi * kx * x / Lx) * Kokkos::sin(2.0 * pi * ky * y / Ly) * Kokkos::sin(2.0 * pi * kz * z / Lz);
+			 ippl::apply(view, args) = Kokkos::complex<double>(val, 0.0);
+		       });
+
+    fft_m->transform(ippl::FORWARD, cfield_m);
+
+    // Copy to host to inspect
+    auto fft_result_host = cfield_m.getHostMirror();
+    Kokkos::deep_copy(fft_result_host, cfield_m.getView());
+
+	// Check if the correct mode has large magnitude and others are near zero
+    double max_mag = 0.0;
+    int found_i = -1, found_j = -1, found_k = -1;
+
+    for (int i = 0; i < nr_m[0] ; ++i) {
+      for (int j = 0; j < nr_m[1]; ++j) {
+	for (int k = 0; k < nr_m[2]; ++k) {
+	  double mag = Kokkos::abs(fft_result_host(i, j, k));
+	  if (mag > max_mag) {
+	    max_mag = mag;
+	    found_i = i;
+	    found_j = j;
+	    found_k = k;
+	  }
+	}
+      }
+    }
+    
+    msg << "Max FFT magnitude found at: (" << found_i << ", "
+	<< found_j << ", " << found_k << "), magnitude = " << max_mag << endl;
+    
+
+    // Expected locations for sin-sin-sin (due to real input, expect symmetrical peaks)
+    int expected_i = kx;
+    int expected_j = ky;
+    int expected_k = kz;
+
+    assert((found_i == expected_i || found_i == Nx - expected_i) &&
+           (found_j == expected_j || found_j == Ny - expected_j) &&
+           (found_k == expected_k || found_k == Nz - expected_k) &&
+           "FFT peak not at expected position!");
     }
 
     void initPositions(FieldLayout_t& fl, Vector_t& hr, unsigned int nloc) {
