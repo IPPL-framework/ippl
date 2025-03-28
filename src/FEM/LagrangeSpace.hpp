@@ -482,7 +482,14 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
+        resultField.accumulateHalo();
+
+        //if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
         if (bcType == PERIODIC_FACE) {
+            bcField.apply(resultField);
+            bcField.assignPeriodicGhostToPhysical(resultField);
+        }
+        if (bcType == CONSTANT_FACE) {
             bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
@@ -681,10 +688,12 @@ namespace ippl {
                     */
                     if (this->isDOFOnBoundary(dof_ndindex_I)) {
                         // get the appropriate index for the Kokkos view of the field
+                        /*
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
                         }
                         apply(atomic_view, dof_ndindex_I) = dirichletval_m;
+                        */
                         continue;
                     }
 
@@ -719,7 +728,16 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
+        //if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
         if (bcType == PERIODIC_FACE) {
+            bcField.apply(temp_field);
+            bcField.assignPeriodicGhostToPhysical(temp_field);
+        }
+
+        temp_field.accumulateHalo();
+
+        if (bcType == CONSTANT_FACE) {
+            std::cout << "inside this" << std::endl;
             bcField.apply(temp_field);
             bcField.assignPeriodicGhostToPhysical(temp_field);
         }
