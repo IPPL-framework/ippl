@@ -46,7 +46,8 @@ int main(int argc, char* argv[]) {
 		<< endl;
 
       constexpr int data_size = 10;
-
+      int tag = 42;
+      
       int pt = 512;
       ippl::Index I(pt);
       ippl::NDIndex<3> owned(I, I, I);
@@ -79,11 +80,7 @@ int main(int argc, char* argv[]) {
 	  particles.recv_data(i) = 0.0;
         });
 
-      
-      int tag = 42;
-
-      using memory_space=Kokkos::HIPSpace;
-
+      using memory_space = Kokkos::HIPSpace;
       using buffer_type  = ippl::mpi::Communicator::buffer_type<memory_space>;
 
       buffer_type buf = ippl::Comm->getBuffer<memory_space, double>(data_size);
@@ -109,10 +106,25 @@ int main(int argc, char* argv[]) {
 
       auto hostView = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
 
+      int  res = 0;
+      for (int i=data_size; i< 2*data_size; i++)
+	res += hostView[i];
+
+      int rec_from =0;
+      if (rank!=0)
+	rec_from = rank-1;
+      else
+	rec_from = size-1;
+
+
+ 
+      
+      auto analytic_res = hostView[data_size] + (0.5*(hostView[data_size-1])*hostView[data_size]);
+      
       msg2all << "Sent data to Rank " << send_to
 	      << " and received data from Rank " << recv_from 
 	      << " First received element: " << hostView[data_size]
-	      << ", Last: " << hostView[(2*data_size) - 1] << endl;
+	      << ", Last: " << hostView[(2*data_size) - 1] << " sum analytic= " << analytic_res << " sum " << res << endl;
     }
     ippl::finalize();
 }
