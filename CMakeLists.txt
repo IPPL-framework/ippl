@@ -15,6 +15,7 @@ option(IPPL_ENABLE_ALPINE "Enable building the Alpine module" OFF)
 option(IPPL_ENABLE_TESTS "Build integration tests in test/ directory" OFF)
 option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF)
 option(IPPL_ENABLE_COVERAGE "Enable code coverage" OFF)
+option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 
 
 include(ProjectSetup)

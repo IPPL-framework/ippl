@@ -24,6 +24,10 @@ add_compile_options(
     -Wno-deprecated-declarations
 )
 
+# === Use modified variant implementation ===
+if (USE_ALTERNATIVE_VARIANT)
+    add_definitions (-DUSE_ALTERNATIVE_VARIANT)
+endif()
 
 # === Code coverage options ===
 if(IPPL_ENABLE_COVERAGE AND (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"))
