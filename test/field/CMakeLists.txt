@@ -11,7 +11,7 @@ add_ippl_integration_test(TestFieldBC LABELS integration field)
 add_ippl_integration_test(TestHalo LABELS integration field)
 
 add_ippl_integration_test(TestCurl
-    LABELS integration field_test
+    LABELS integration field
     ARGS 10 0 --info 10
 )
 
