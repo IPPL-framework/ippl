@@ -34,6 +34,7 @@ The relevant options of IPPL are
 - `Heffte_VERSION`, default `MASTER`
   - If set to `MASTER`, an additional flag `Heffte_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
   - Currently, this is the only compatible commit of Heffte
+- `IPPL_DYL`, default `OFF`
 - `IPPL_ENABLE_SOLVERS`, default `OFF`
 - `IPPL_ENABLE_FFT`, default `OFF`
   - If `IPPL_ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
@@ -59,15 +60,36 @@ cd build
 ```
 #### Serial debug build with tests and newest Kokkos
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DIPPL_ENABLE_TESTS=True -DKokkos_VERSION=4.2.00
+cmake .. \ 
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_TESTS=True \
+    -DKokkos_VERSION=4.2.00
 ```
 #### OpenMP release build with alpine and FFTW
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_ALPINE=True -DIPPL_ENABLE_TESTS=ON -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_FFT=ON \
+    -DIPPL_ENABLE_SOLVERS=ON \
+    -DIPPL_ENABLE_ALPINE=True \
+    -DIPPL_ENABLE_TESTS=ON \
+    -DIPPL_PLATFORMS=openmp \
+    -DHeffte_ENABLE_FFTW=True
 ```
 #### Cuda alpine release build 
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_STANDARD=20 -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_TESTS=ON -DUSE_ALTERNATIVE_VARIANT=ON -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_ALPINE=True -DIPPL_PLATFORMS=cuda
+cmake .. \ 
+    -DCMAKE_BUILD_TYPE=Release \
+    -DKokkos_ARCH_[architecture]=ON \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_FFT=ON \
+    -DIPPL_ENABLE_TESTS=ON \
+    -DUSE_ALTERNATIVE_VARIANT=ON \
+    -DIPPL_ENABLE_SOLVERS=ON \
+    -DIPPL_ENABLE_ALPINE=True \
+    -DIPPL_PLATFORMS=cuda
 ```
 #### HIP release build (LUMI) 
 ```
