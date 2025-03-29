@@ -16,10 +16,6 @@
 # This file is only concerned with general correctness and development-time safety.
 # -----------------------------------------------------------------------------
 
-# === C++ Standard ===
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINGO} -O3 -g ")
-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-set (CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
 # === Basic warnings (apply to all builds) ===
 add_compile_options(
@@ -27,6 +23,15 @@ add_compile_options(
     -Wextra
     -Wno-deprecated-declarations
 )
+
+
+# === Code coverage options ===
+if(IPPL_ENABLE_COVERAGE AND (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"))
+    message(STATUS "${Yellow}Code coverage enabled.${ColourReset}")
+    add_compile_options(-fprofile-arcs -ftest-coverage -g)
+    add_link_options(-fprofile-arcs -ftest-coverage)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
+endif()
 
 # === Compiler-specific warning suppressions ===
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

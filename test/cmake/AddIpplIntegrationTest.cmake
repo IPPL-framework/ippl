@@ -9,27 +9,23 @@
 function(add_ippl_integration_test TEST_NAME)
     set(options)
     set(oneValueArgs COMMAND)
-    set(multiValueArgs LABELS)
+    set(multiValueArgs LABELS ARGS)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
 
     target_link_libraries(${TEST_NAME}
-        PRIVATE
-            ippl
-            ${MPI_CXX_LIBRARIES}
+        PRIVATE ippl ${MPI_CXX_LIBRARIES}
     )
 
     target_include_directories(${TEST_NAME}
-        PRIVATE
-            $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+        PRIVATE $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
     )
 
-    # Construct command
     if(TEST_COMMAND)
         add_test(NAME Integration.${TEST_NAME} COMMAND ${TEST_COMMAND})
     else()
-        add_test(NAME Integration.${TEST_NAME} COMMAND ${TEST_NAME})
+        add_test(NAME Integration.${TEST_NAME} COMMAND ${TEST_NAME} ${TEST_ARGS})
     endif()
 
     set_tests_properties(Integration.${TEST_NAME} PROPERTIES
@@ -37,3 +33,4 @@ function(add_ippl_integration_test TEST_NAME)
         LABELS "${TEST_LABELS}"
     )
 endfunction()
+
