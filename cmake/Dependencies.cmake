@@ -15,7 +15,7 @@
 include(FetchContent)
 
 # === Kokkos ===
-set(Kokkos_VERSION "4.1.00")
+set(Kokkos_VERSION "4.5.00")
 message(STATUS "🔍 Looking for Kokkos ${Kokkos_VERSION}")
 
 find_package(Kokkos ${Kokkos_VERSION} QUIET)
