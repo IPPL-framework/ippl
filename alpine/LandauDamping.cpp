@@ -34,7 +34,7 @@ const char* TestName   = "LandauDamping";
 #include <string>
 #include <vector>
 
-#include "datatypes.h"
+#include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
 
