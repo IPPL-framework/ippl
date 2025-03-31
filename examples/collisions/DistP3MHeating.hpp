@@ -13,9 +13,9 @@
 #include "FieldContainer.hpp"
 
 // P3M Headers
-#include "Manager/P3M3DManager.h"
+#include "P3M3DManager.h"
 #include "PoissonSolvers/P3MSolver.h"
-#include "../src/P3M/P3MParticleContainer.hpp"
+#include "P3MParticleContainer.hpp"
 
 // Distribution functions
 #include "Random/Distribution.h"
@@ -53,11 +53,11 @@ using Host = Kokkos::DefaultHostExecutionSpace;
 */
 template <typename T, unsigned Dim>
 class P3M3DBenchManager 
-    : public ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
+    : public P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
 
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
-    using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using FieldContainer_t = FieldContainer<T, Dim>;
 
 protected:
@@ -74,7 +74,7 @@ protected:
     
 public:
     P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_, double boxlen_) 
-        : ippl::P3M3DManager<T, Dim, FieldContainer<T, Dim> >() 
+        : P3M3DManager<T, Dim, FieldContainer<T, Dim> >()
         , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_)
         {
             this->preallocatedSendBuffer_m = 1000;

@@ -24,9 +24,9 @@ constexpr unsigned Dim = 3;
 using T = double;
 
 #include "Ippl.h"
-#include "../alpine/datatypes.h"
-#include "../alpine/P3MHeatingManager.hpp"
-#include "P3M/P3MParticleContainer.hpp"
+#include "datatypes.h"
+#include "P3MHeatingManager.hpp"
+#include "P3MParticleContainer.hpp"
 
 #include "Utility/IpplTimings.h"
 
