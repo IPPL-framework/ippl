@@ -91,7 +91,7 @@ public:
             }
             ippl::Comm->barrier();
         } else if (this->getStype() == "PCG") {
-            PCGSolver_t<T, Dim>& solver = std::get<PCGSolver_t<T, Dim>>(this->getSolver());
+            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
             solver.solve();
 
             if (ippl::Comm->rank() == 0) {
@@ -142,8 +142,7 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>
-                      || std::is_same_v<Solver, PCGSolver_t<T, Dim>>) {
+        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
             // The CG solver computes the potential directly and
             // uses this to get the electric field
             solver.setLhs(*phi_m);
@@ -184,7 +183,7 @@ public:
     void initPCGSolver() {
         ippl::ParameterList sp;
         sp.add("solver", "preconditioned");
-        sp.add("output_type", PCGSolver_t<T, Dim>::GRAD);
+        sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-10);
 
@@ -226,7 +225,7 @@ public:
         sp.add("communication", communication);
         sp.add("ssor_omega", ssor_omega);
 
-        initSolverWithParams<PCGSolver_t<T, Dim>>(sp);
+        initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
     void initP3MSolver() {
