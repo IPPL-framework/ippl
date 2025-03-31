@@ -68,39 +68,21 @@ public:
     }
 
     void runSolver() override {
-        if (this->getStype() == "CG") {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG")) {
             CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
             solver.solve();
 
             if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
-                fname << "data_CG/CG_";
-                fname << ippl::Comm->size();
-                fname << ".csv";
-
-                Inform log(NULL, fname.str().c_str(), Inform::APPEND);
-                int iterations = solver.getIterationCount();
-                // Assume the dummy solve is the first call
-                if (iterations == 0) {
-                    log << "residue,iterations" << endl;
+                if (this->getStype() == "CG") {
+                    fname << "data_CG/CG_";
+                } else {
+                    fname << "data_";
+                    fname << preconditioner_params_m[0];
+                    fname << "/";
+                    fname << preconditioner_params_m[0];
+                    fname << "_";
                 }
-                // Don't print the dummy solve
-                if (iterations > 0) {
-                    log << solver.getResidue() << "," << iterations << endl;
-                }
-            }
-            ippl::Comm->barrier();
-        } else if (this->getStype() == "PCG") {
-            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
-            solver.solve();
-
-            if (ippl::Comm->rank() == 0) {
-                std::stringstream fname;
-                fname << "data_";
-                fname << preconditioner_params_m[0];
-                fname << "/";
-                fname << preconditioner_params_m[0];
-                fname << "_";
                 fname << ippl::Comm->size();
                 fname << ".csv";
 
