@@ -102,7 +102,7 @@ Example Command</h3>
 Implementation Detail</h3>
 <p >The main function initializes the Ippl framework, sets up the simulation parameters from command-line arguments, and then creates and configures an instance of <code><a class="el" href="classLandauDampingManager.html">LandauDampingManager</a></code> to manage the simulation. It performs pre-run operations to set up the simulation environment and then runs the simulation for the specified number of time steps. <a class="el" href="structTiming.html">Timing</a> information is collected and output for performance analysis. </p><div class="fragment"><div class="line"><span class="keyword">constexpr</span> <span class="keywordtype">unsigned</span> <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> = 3;</div>
 <div class="line"><span class="keyword">using </span><a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> = double;</div>
-<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_variable" href="BumponTailInstability_8cpp.html#a17a8b6df8e098aa2526217331771b090">TestName</a> = <span class="stringliteral">&quot;LandauDamping&quot;</span>;</div>
+<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_variable" href="datatypes_8h.html#a17a8b6df8e098aa2526217331771b090">TestName</a> = <span class="stringliteral">&quot;LandauDamping&quot;</span>;</div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;Kokkos_MathematicalConstants.hpp&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;Kokkos_MathematicalFunctions.hpp&gt;</span></div>
@@ -124,8 +124,8 @@ Implementation Detail</h3>
 <div class="line">    <a class="code hl_function" href="namespaceippl.html#a0c7376f5476bb172361c963569a0c546">ippl::initialize</a>(argc, argv);</div>
 <div class="line">    {</div>
 <div class="line"> </div>
-<div class="line">        <a class="code hl_class" href="classInform.html">Inform</a> msg(<a class="code hl_variable" href="BumponTailInstability_8cpp.html#a17a8b6df8e098aa2526217331771b090">TestName</a>);</div>
-<div class="line">        <a class="code hl_class" href="classInform.html">Inform</a> msg2all(<a class="code hl_variable" href="BumponTailInstability_8cpp.html#a17a8b6df8e098aa2526217331771b090">TestName</a>, <a class="code hl_define" href="Inform_8h.html#a92f1a0cddb2239428b24e94b918e4efb">INFORM_ALL_NODES</a>);</div>
+<div class="line">        <a class="code hl_class" href="classInform.html">Inform</a> msg(<a class="code hl_variable" href="datatypes_8h.html#a17a8b6df8e098aa2526217331771b090">TestName</a>);</div>
+<div class="line">        <a class="code hl_class" href="classInform.html">Inform</a> msg2all(<a class="code hl_variable" href="datatypes_8h.html#a17a8b6df8e098aa2526217331771b090">TestName</a>, <a class="code hl_define" href="Inform_8h.html#a92f1a0cddb2239428b24e94b918e4efb">INFORM_ALL_NODES</a>);</div>
 <div class="line">        <span class="keyword">static</span> <a class="code hl_typedef" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">IpplTimings::TimerRef</a> mainTimer = <a class="code hl_function" href="classIpplTimings.html#a59ffa7a04c160376d3a6593bff568fb4">IpplTimings::getTimer</a>(<span class="stringliteral">&quot;total&quot;</span>);</div>
 <div class="line">        <a class="code hl_function" href="classIpplTimings.html#af9d914cab7e60b310cb44c75c8bff228">IpplTimings::startTimer</a>(mainTimer);</div>
 <div class="line"> </div>
@@ -141,7 +141,7 @@ Implementation Detail</h3>
 <div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> d = 0; d &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; d++) {</div>
 <div class="line">            nr[d] = std::atoi(argv[arg++]);</div>
 <div class="line">        }</div>
-<div class="line">        <a class="code hl_typedef" href="FieldSolverBase_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> totalP = std::atoll(argv[arg++]);</div>
+<div class="line">        <a class="code hl_typedef" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> totalP = std::atoll(argv[arg++]);</div>
 <div class="line">        <span class="keywordtype">int</span> nt  = std::atoi(argv[arg++]);</div>
 <div class="line">        std::string solver = argv[arg++];</div>
 <div class="line">        <span class="keywordtype">double</span> lbt = std::atof(argv[arg++]);</div>
@@ -177,10 +177,8 @@ Implementation Detail</h3>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_a0ddf1224851353fc92bfbff6f499fa97"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97">main</a></div><div class="ttdeci">int main(int argc, char *argv[])</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:45</div></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_a17a8b6df8e098aa2526217331771b090"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a17a8b6df8e098aa2526217331771b090">TestName</a></div><div class="ttdeci">const char * TestName</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:24</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
-<div class="ttc" id="aFieldSolverBase_8h_html_a117948da4a7f2c353ea5ef900c1762c4"><div class="ttname"><a href="FieldSolverBase_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a></div><div class="ttdeci">ippl::detail::size_type size_type</div><div class="ttdef"><b>Definition:</b> FieldSolverBase.h:25</div></div>
 <div class="ttc" id="aInform_8cpp_html_ab8fcb5b7d232d8e390b36e1e8491b236"><div class="ttname"><a href="Inform_8cpp.html#ab8fcb5b7d232d8e390b36e1e8491b236">endl</a></div><div class="ttdeci">Inform &amp; endl(Inform &amp;inf)</div><div class="ttdef"><b>Definition:</b> Inform.cpp:42</div></div>
 <div class="ttc" id="aInform_8h_html_a92f1a0cddb2239428b24e94b918e4efb"><div class="ttname"><a href="Inform_8h.html#a92f1a0cddb2239428b24e94b918e4efb">INFORM_ALL_NODES</a></div><div class="ttdeci">#define INFORM_ALL_NODES</div><div class="ttdef"><b>Definition:</b> Inform.h:38</div></div>
 <div class="ttc" id="aIpplTimings_8h_html"><div class="ttname"><a href="IpplTimings_8h.html">IpplTimings.h</a></div></div>
@@ -196,6 +194,8 @@ Implementation Detail</h3>
 <div class="ttc" id="aclassLandauDampingManager_html"><div class="ttname"><a href="classLandauDampingManager.html">LandauDampingManager</a></div><div class="ttdef"><b>Definition:</b> LandauDampingManager.h:46</div></div>
 <div class="ttc" id="aclassippl_1_1Vector_html"><div class="ttname"><a href="classippl_1_1Vector.html">ippl::Vector</a></div><div class="ttdef"><b>Definition:</b> Vector.h:23</div></div>
 <div class="ttc" id="adatatypes_8h_html"><div class="ttname"><a href="datatypes_8h.html">datatypes.h</a></div></div>
+<div class="ttc" id="adatatypes_8h_html_a117948da4a7f2c353ea5ef900c1762c4"><div class="ttname"><a href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a></div><div class="ttdeci">ippl::detail::size_type size_type</div><div class="ttdef"><b>Definition:</b> datatypes.h:23</div></div>
+<div class="ttc" id="adatatypes_8h_html_a17a8b6df8e098aa2526217331771b090"><div class="ttname"><a href="datatypes_8h.html#a17a8b6df8e098aa2526217331771b090">TestName</a></div><div class="ttdeci">const char * TestName</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:24</div></div>
 <div class="ttc" id="anamespaceippl_html_a0c7376f5476bb172361c963569a0c546"><div class="ttname"><a href="namespaceippl.html#a0c7376f5476bb172361c963569a0c546">ippl::initialize</a></div><div class="ttdeci">void initialize(int &amp;argc, char *argv[], MPI_Comm comm)</div><div class="ttdef"><b>Definition:</b> Ippl.cpp:16</div></div>
 <div class="ttc" id="anamespaceippl_html_a2067813c0b17952b7d4acb23587c1df2"><div class="ttname"><a href="namespaceippl.html#a2067813c0b17952b7d4acb23587c1df2">ippl::finalize</a></div><div class="ttdeci">void finalize()</div><div class="ttdef"><b>Definition:</b> Ippl.cpp:100</div></div>
 </div><!-- fragment --> </div></div><!-- contents -->

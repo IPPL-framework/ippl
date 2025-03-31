@@ -39,6 +39,6 @@ var searchData=
   ['ntotal_5fm_36',['ntotal_m',['../classippl_1_1random_1_1InverseTransformSampling.html#ab7d79552108f7371162d915958c5e250',1,'ippl::random::InverseTransformSampling']]],
   ['nullsolver_37',['NullSolver',['../classippl_1_1NullSolver.html',1,'ippl::NullSolver&lt; FieldLHS, FieldRHS &gt;'],['../classippl_1_1NullSolver.html#ad28cc10fe5af463f484f3592876062e4',1,'ippl::NullSolver::NullSolver(lhs_type &amp;lhs, rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#ad04075854a572c9c551a7e1e0468f499',1,'ippl::NullSolver::NullSolver(rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#a4330311bbf9e8bb31e471440af6e3e2e',1,'ippl::NullSolver::NullSolver()']]],
   ['nullsolver_2eh_38',['NullSolver.h',['../NullSolver_8h.html',1,'']]],
-  ['nullsolver_5ft_39',['NullSolver_t',['../FieldSolverBase_8h.html#ace8fabc88f00df2e15d636f24772fcef',1,'NullSolver_t():&#160;FieldSolverBase.h'],['../datatypes_8h.html#ace8fabc88f00df2e15d636f24772fcef',1,'NullSolver_t():&#160;datatypes.h']]],
+  ['nullsolver_5ft_39',['NullSolver_t',['../datatypes_8h.html#ace8fabc88f00df2e15d636f24772fcef',1,'datatypes.h']]],
   ['numberofsends_40',['numberOfSends',['../classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15',1,'ippl::ParticleSpatialLayout']]]
 ];

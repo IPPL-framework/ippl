@@ -2,8 +2,8 @@ var searchData=
 [
   ['data_5fm_0',['data_m',['../classippl_1_1Vector.html#a93c4fcb663d588863a4b614ae3579dd8',1,'ippl::Vector']]],
   ['databuffer_5ftype_1',['databuffer_type',['../classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e',1,'ippl::detail::HaloCells']]],
-  ['datatypes_2eh_2',['datatypes.h',['../datatypes_8h.html',1,'']]],
-  ['datatypes_2eh_3',['DataTypes.h',['../DataTypes_8h.html',1,'']]],
+  ['datatypes_2eh_2',['DataTypes.h',['../DataTypes_8h.html',1,'']]],
+  ['datatypes_2eh_3',['datatypes.h',['../datatypes_8h.html',1,'']]],
   ['dct_5fvico_4',['DCT_VICO',['../classippl_1_1FFTOpenPoissonSolver.html#aef3f7d047237466da93dbefe55eee50aab271f4563c8dca8e84536c94260799f2',1,'ippl::FFTOpenPoissonSolver']]],
   ['decomp_5fm_5',['decomp_m',['../classAlpineManager.html#ad69fe63f383f6a0399dcde900e51fe24',1,'AlpineManager']]],
   ['deepcopy_6',['deepCopy',['../classippl_1_1BareField.html#aa08ca408d9ca64a80f095684b65eb705',1,'ippl::BareField::deepCopy()'],['../classippl_1_1Field.html#a879d933753c17e0e22e88f670b73a891',1,'ippl::Field::deepCopy()']]],

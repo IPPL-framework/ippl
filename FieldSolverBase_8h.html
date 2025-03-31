@@ -83,73 +83,68 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle"><div class="title">FieldSolverBase.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;memory&gt;</code><br />
 <code>#include &quot;<a class="el" href="BaseManager_8h_source.html">Manager/BaseManager.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="FFTOpenPoissonSolver_8h_source.html">PoissonSolvers/FFTOpenPoissonSolver.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="FFTPeriodicPoissonSolver_8h_source.html">PoissonSolvers/FFTPeriodicPoissonSolver.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="P3MSolver_8h_source.html">PoissonSolvers/P3MSolver.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="PoissonCG_8h_source.html">PoissonSolvers/PoissonCG.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="NullSolver_8h_source.html">PoissonSolvers/NullSolver.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="datatypes_8h_source.html">datatypes.h</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for FieldSolverBase.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="FieldSolverBase_8h__incl.png" border="0" usemap="#aFieldSolverBase_8h" alt=""/></div>
 <map name="aFieldSolverBase_8h" id="aFieldSolverBase_8h">
-<area shape="rect" title=" " alt="" coords="2025,5,2151,31"/>
-<area shape="rect" title=" " alt="" coords="605,695,673,720"/>
-<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="259,79,426,104"/>
-<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="1979,152,2197,192"/>
-<area shape="rect" href="FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1213,152,1401,192"/>
-<area shape="rect" href="P3MSolver_8h.html" title=" " alt="" coords="2485,159,2675,185"/>
-<area shape="rect" href="PoissonCG_8h.html" title=" " alt="" coords="2831,159,3025,185"/>
-<area shape="rect" href="NullSolver_8h.html" title=" " alt="" coords="2227,79,2413,104"/>
-<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="301,159,355,185"/>
-<area shape="rect" title=" " alt="" coords="649,915,721,940"/>
-<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="614,768,741,793"/>
-<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="73,328,180,353"/>
-<area shape="rect" href="ParallelDispatch_8h.html" title=" " alt="" coords="1321,695,1484,720"/>
-<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="813,621,1013,647"/>
-<area shape="rect" href="Environment_8h.html" title=" " alt="" coords="94,247,282,273"/>
-<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="797,247,877,273"/>
-<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="1341,768,1451,793"/>
-<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="2391,768,2537,793"/>
-<area shape="rect" title=" " alt="" coords="1489,841,1585,867"/>
-<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="1139,841,1330,867"/>
-<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="1354,841,1438,867"/>
-<area shape="rect" title=" " alt="" coords="2437,841,2491,867"/>
-<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2357,695,2481,720"/>
-<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="783,695,943,720"/>
-<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="843,768,978,793"/>
-<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1045,401,1163,427"/>
-<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="1493,548,1664,573"/>
-<area shape="rect" href="Field_8h.html" title=" " alt="" coords="2162,328,2254,353"/>
-<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="510,475,621,500"/>
-<area shape="rect" href="PAssert_8h.html" title=" " alt="" coords="1815,621,1931,647"/>
-<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="944,475,1064,500"/>
-<area shape="rect" title=" " alt="" coords="1925,695,2003,720"/>
-<area shape="rect" href="NDIndex_8h.html" title=" " alt="" coords="1417,621,1535,647"/>
-<area shape="rect" title=" " alt="" coords="1661,621,1707,647"/>
-<area shape="rect" title=" " alt="" coords="1732,621,1791,647"/>
-<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="2213,401,2395,427"/>
-<area shape="rect" title=" " alt="" coords="1267,247,1501,273"/>
-<area shape="rect" title=" " alt="" coords="1576,247,1808,273"/>
-<area shape="rect" href="IpplTimings_8h.html" title=" " alt="" coords="2004,548,2140,573"/>
-<area shape="rect" href="FFT_8h.html" title=" " alt="" coords="2126,247,2210,273"/>
-<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="2438,247,2517,273"/>
-<area shape="rect" href="FFTOpenPoissonSolver_8hpp.html" title=" " alt="" coords="1832,240,2051,280"/>
-<area shape="rect" title=" " alt="" coords="2007,621,2060,647"/>
-<area shape="rect" title=" " alt="" coords="2085,621,2139,647"/>
-<area shape="rect" href="Timer_8h.html" title=" " alt="" coords="2163,621,2266,647"/>
-<area shape="rect" href="my__auto__ptr_8h.html" title=" " alt="" coords="2290,621,2430,647"/>
-<area shape="rect" href="FFTPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="953,240,1141,280"/>
-<area shape="rect" href="P3MSolver_8hpp.html" title=" " alt="" coords="2744,247,2949,273"/>
-<area shape="rect" href="LaplaceHelpers_8h.html" title=" " alt="" coords="2973,247,3096,273"/>
-<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="3120,247,3264,273"/>
+<area shape="rect" title=" " alt="" coords="349,5,475,31"/>
+<area shape="rect" title=" " alt="" coords="1058,636,1126,661"/>
+<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="329,79,495,104"/>
+<area shape="rect" href="datatypes_8h.html" title=" " alt="" coords="2180,79,2268,104"/>
+<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="380,159,433,185"/>
+<area shape="rect" title=" " alt="" coords="232,401,304,427"/>
+<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="277,709,403,735"/>
+<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="131,247,237,273"/>
+<area shape="rect" href="ParallelDispatch_8h.html" title=" " alt="" coords="1551,482,1713,507"/>
+<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="716,401,916,427"/>
+<area shape="rect" href="Environment_8h.html" title=" " alt="" coords="1082,328,1270,353"/>
+<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1409,247,1489,273"/>
+<area shape="rect" title=" " alt="" coords="307,783,373,808"/>
+<area shape="rect" title=" " alt="" coords="43,328,109,353"/>
+<area shape="rect" title=" " alt="" coords="133,328,203,353"/>
+<area shape="rect" title=" " alt="" coords="1678,783,1802,808"/>
+<area shape="rect" title=" " alt="" coords="1612,563,1663,588"/>
+<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="1924,709,2033,735"/>
+<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="2097,563,2244,588"/>
+<area shape="rect" title=" " alt="" coords="1400,636,1453,661"/>
+<area shape="rect" href="BufferHandler_8h.html" title=" " alt="" coords="720,563,915,588"/>
+<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="463,636,623,661"/>
+<area shape="rect" href="LoggingBufferHandler_8h.html" title=" " alt="" coords="999,475,1185,515"/>
+<area shape="rect" href="Request_8h.html" title=" " alt="" coords="1311,482,1475,507"/>
+<area shape="rect" href="Status_8h.html" title=" " alt="" coords="1349,563,1504,588"/>
+<area shape="rect" title=" " alt="" coords="631,482,691,507"/>
+<area shape="rect" title=" " alt="" coords="715,482,775,507"/>
+<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2234,482,2358,507"/>
+<area shape="rect" href="TagMaker_8h.html" title=" " alt="" coords="799,482,974,507"/>
+<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="1673,709,1807,735"/>
+<area shape="rect" href="Field_8h.html" title=" " alt="" coords="2434,328,2526,353"/>
+<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="1364,328,1535,353"/>
+<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="2473,401,2655,427"/>
+<area shape="rect" href="NDIndex_8h.html" title=" " alt="" coords="1940,401,2057,427"/>
+<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="1991,152,2209,192"/>
+<area shape="rect" href="FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1155,152,1343,192"/>
+<area shape="rect" href="P3MSolver_8h.html" title=" " alt="" coords="2827,159,3018,185"/>
+<area shape="rect" href="PoissonCG_8h.html" title=" " alt="" coords="2522,159,2715,185"/>
+<area shape="rect" href="NullSolver_8h.html" title=" " alt="" coords="2255,159,2441,185"/>
+<area shape="rect" title=" " alt="" coords="855,247,1089,273"/>
+<area shape="rect" title=" " alt="" coords="1564,247,1796,273"/>
+<area shape="rect" href="IpplTimings_8h.html" title=" " alt="" coords="1820,247,1956,273"/>
+<area shape="rect" href="FFT_8h.html" title=" " alt="" coords="2223,247,2307,273"/>
+<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="1164,247,1284,273"/>
+<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="2535,247,2614,273"/>
+<area shape="rect" href="FFTOpenPoissonSolver_8hpp.html" title=" " alt="" coords="1980,240,2199,280"/>
+<area shape="rect" href="FFTPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="642,240,830,280"/>
+<area shape="rect" href="P3MSolver_8hpp.html" title=" " alt="" coords="3055,247,3260,273"/>
+<area shape="rect" href="LaplaceHelpers_8h.html" title=" " alt="" coords="2639,247,2761,273"/>
+<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="2785,247,2929,273"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -181,312 +176,7 @@ Classes</h2></td></tr>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceippl"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html">ippl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:acf6afef09138aaa7329f5076e9d2d27f"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim&gt; </td></tr>
-<tr class="memitem:acf6afef09138aaa7329f5076e9d2d27f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a> = <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt; double, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
-<tr class="separator:acf6afef09138aaa7329f5076e9d2d27f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b4eeec6173ab4151f0684bb1707e6a2"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a1b4eeec6173ab4151f0684bb1707e6a2"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a1b4eeec6173ab4151f0684bb1707e6a2">PLayout_t</a> = typename <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
-<tr class="separator:a1b4eeec6173ab4151f0684bb1707e6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0c2f6ddbc74317f18dde648c40d6123"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim&gt; </td></tr>
-<tr class="memitem:aa0c2f6ddbc74317f18dde648c40d6123"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#aa0c2f6ddbc74317f18dde648c40d6123">Centering_t</a> = typename <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::DefaultCentering</td></tr>
-<tr class="separator:aa0c2f6ddbc74317f18dde648c40d6123"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62775f861ae59098011e0a07b912f0e5"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim&gt; </td></tr>
-<tr class="memitem:a62775f861ae59098011e0a07b912f0e5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a62775f861ae59098011e0a07b912f0e5">FieldLayout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
-<tr class="separator:a62775f861ae59098011e0a07b912f0e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a117948da4a7f2c353ea5ef900c1762c4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> = <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">ippl::detail::size_type</a></td></tr>
-<tr class="separator:a117948da4a7f2c353ea5ef900c1762c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85288a0d331794ed0a966fd0666c9d5b"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a85288a0d331794ed0a966fd0666c9d5b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a> = <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
-<tr class="separator:a85288a0d331794ed0a966fd0666c9d5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac96462ba5ddf81f7b4bded4078509ff5"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </td></tr>
-<tr class="memitem:ac96462ba5ddf81f7b4bded4078509ff5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> = <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#aa0c2f6ddbc74317f18dde648c40d6123">Centering_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, ViewArgs... &gt;</td></tr>
-<tr class="separator:ac96462ba5ddf81f7b4bded4078509ff5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a716e97cb94129a4800d15dc3d2fa4063"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a716e97cb94129a4800d15dc3d2fa4063"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a716e97cb94129a4800d15dc3d2fa4063">Vector_t</a> = <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
-<tr class="separator:a716e97cb94129a4800d15dc3d2fa4063"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ebebd69981b8926f65d22ceb1e9bb27"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim, class... ViewArgs&gt; </td></tr>
-<tr class="memitem:a1ebebd69981b8926f65d22ceb1e9bb27"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a> = <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt; double, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs... &gt;</td></tr>
-<tr class="separator:a1ebebd69981b8926f65d22ceb1e9bb27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0886db4e73ff70ec630296972a48fbe0"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </td></tr>
-<tr class="memitem:a0886db4e73ff70ec630296972a48fbe0"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a> = <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt; <a class="el" href="FieldSolverBase_8h.html#a716e97cb94129a4800d15dc3d2fa4063">Vector_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs... &gt;</td></tr>
-<tr class="separator:a0886db4e73ff70ec630296972a48fbe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65e3f12d3ed9e572b6952a0cbf0c79ed"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a65e3f12d3ed9e572b6952a0cbf0c79ed"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a65e3f12d3ed9e572b6952a0cbf0c79ed">CGSolver_t</a> = <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt; <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
-<tr class="separator:a65e3f12d3ed9e572b6952a0cbf0c79ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace8fabc88f00df2e15d636f24772fcef"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:ace8fabc88f00df2e15d636f24772fcef"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#ace8fabc88f00df2e15d636f24772fcef">NullSolver_t</a> = <a class="el" href="classippl_1_1NullSolver.html">ippl::NullSolver</a>&lt; <a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
-<tr class="separator:ace8fabc88f00df2e15d636f24772fcef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b17674f9bd5e4fc54eb15e8dbb15e3b"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a3b17674f9bd5e4fc54eb15e8dbb15e3b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a3b17674f9bd5e4fc54eb15e8dbb15e3b">FFTSolver_t</a> = ConditionalType&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>==2||<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>==3, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html">ippl::FFTPeriodicPoissonSolver</a>&lt; <a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &gt;</td></tr>
-<tr class="separator:a3b17674f9bd5e4fc54eb15e8dbb15e3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87e1ab2317ea3270a2fa24ef5daeedbc"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:a87e1ab2317ea3270a2fa24ef5daeedbc"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#a87e1ab2317ea3270a2fa24ef5daeedbc">P3MSolver_t</a> = ConditionalType&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>==3, <a class="el" href="classippl_1_1P3MSolver.html">ippl::P3MSolver</a>&lt; <a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &gt;</td></tr>
-<tr class="separator:a87e1ab2317ea3270a2fa24ef5daeedbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4af1d89bd336953ff4dbaf5c5ca9c8b"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:af4af1d89bd336953ff4dbaf5c5ca9c8b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#af4af1d89bd336953ff4dbaf5c5ca9c8b">OpenSolver_t</a> = ConditionalType&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>==3, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; <a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &gt;</td></tr>
-<tr class="separator:af4af1d89bd336953ff4dbaf5c5ca9c8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab57da13c5599ac65a0cb5c9b3c0a8d1b"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
-<tr class="memitem:ab57da13c5599ac65a0cb5c9b3c0a8d1b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="FieldSolverBase_8h.html#ab57da13c5599ac65a0cb5c9b3c0a8d1b">Solver_t</a> = VariantFromConditionalTypes&lt; <a class="el" href="FieldSolverBase_8h.html#a65e3f12d3ed9e572b6952a0cbf0c79ed">CGSolver_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a3b17674f9bd5e4fc54eb15e8dbb15e3b">FFTSolver_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#a87e1ab2317ea3270a2fa24ef5daeedbc">P3MSolver_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#af4af1d89bd336953ff4dbaf5c5ca9c8b">OpenSolver_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, <a class="el" href="FieldSolverBase_8h.html#ace8fabc88f00df2e15d636f24772fcef">NullSolver_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
-<tr class="separator:ab57da13c5599ac65a0cb5c9b3c0a8d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="aa0c2f6ddbc74317f18dde648c40d6123" name="aa0c2f6ddbc74317f18dde648c40d6123"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0c2f6ddbc74317f18dde648c40d6123">&#9670;&#160;</a></span>Centering_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#aa0c2f6ddbc74317f18dde648c40d6123">Centering_t</a> =  typename <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;::DefaultCentering</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a65e3f12d3ed9e572b6952a0cbf0c79ed" name="a65e3f12d3ed9e572b6952a0cbf0c79ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65e3f12d3ed9e572b6952a0cbf0c79ed">&#9670;&#160;</a></span>CGSolver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a65e3f12d3ed9e572b6952a0cbf0c79ed">CGSolver_t</a> =  <a class="el" href="classippl_1_1PoissonCG.html">ippl::PoissonCG</a>&lt;<a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a3b17674f9bd5e4fc54eb15e8dbb15e3b" name="a3b17674f9bd5e4fc54eb15e8dbb15e3b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b17674f9bd5e4fc54eb15e8dbb15e3b">&#9670;&#160;</a></span>FFTSolver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a3b17674f9bd5e4fc54eb15e8dbb15e3b">FFTSolver_t</a> =  ConditionalType&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> == 2 || <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> == 3, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html">ippl::FFTPeriodicPoissonSolver</a>&lt;<a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ac96462ba5ddf81f7b4bded4078509ff5" name="ac96462ba5ddf81f7b4bded4078509ff5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac96462ba5ddf81f7b4bded4078509ff5">&#9670;&#160;</a></span>Field</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> =  <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#aa0c2f6ddbc74317f18dde648c40d6123">Centering_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, ViewArgs...&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a1ebebd69981b8926f65d22ceb1e9bb27" name="a1ebebd69981b8926f65d22ceb1e9bb27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1ebebd69981b8926f65d22ceb1e9bb27">&#9670;&#160;</a></span>Field_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;unsigned Dim, class... ViewArgs&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a> =  <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt;double, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs...&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a62775f861ae59098011e0a07b912f0e5" name="a62775f861ae59098011e0a07b912f0e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62775f861ae59098011e0a07b912f0e5">&#9670;&#160;</a></span>FieldLayout_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a62775f861ae59098011e0a07b912f0e5">FieldLayout_t</a> =  <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="acf6afef09138aaa7329f5076e9d2d27f" name="acf6afef09138aaa7329f5076e9d2d27f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf6afef09138aaa7329f5076e9d2d27f">&#9670;&#160;</a></span>Mesh_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a> =  <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt;double, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ace8fabc88f00df2e15d636f24772fcef" name="ace8fabc88f00df2e15d636f24772fcef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace8fabc88f00df2e15d636f24772fcef">&#9670;&#160;</a></span>NullSolver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#ace8fabc88f00df2e15d636f24772fcef">NullSolver_t</a> =  <a class="el" href="classippl_1_1NullSolver.html">ippl::NullSolver</a>&lt;<a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af4af1d89bd336953ff4dbaf5c5ca9c8b" name="af4af1d89bd336953ff4dbaf5c5ca9c8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4af1d89bd336953ff4dbaf5c5ca9c8b">&#9670;&#160;</a></span>OpenSolver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#af4af1d89bd336953ff4dbaf5c5ca9c8b">OpenSolver_t</a> =  ConditionalType&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> == 3, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt;<a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a87e1ab2317ea3270a2fa24ef5daeedbc" name="a87e1ab2317ea3270a2fa24ef5daeedbc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87e1ab2317ea3270a2fa24ef5daeedbc">&#9670;&#160;</a></span>P3MSolver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a87e1ab2317ea3270a2fa24ef5daeedbc">P3MSolver_t</a> =  ConditionalType&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> == 3, <a class="el" href="classippl_1_1P3MSolver.html">ippl::P3MSolver</a>&lt;<a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a1b4eeec6173ab4151f0684bb1707e6a2" name="a1b4eeec6173ab4151f0684bb1707e6a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b4eeec6173ab4151f0684bb1707e6a2">&#9670;&#160;</a></span>PLayout_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a1b4eeec6173ab4151f0684bb1707e6a2">PLayout_t</a> =  typename <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="FieldSolverBase_8h.html#acf6afef09138aaa7329f5076e9d2d27f">Mesh_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a117948da4a7f2c353ea5ef900c1762c4" name="a117948da4a7f2c353ea5ef900c1762c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a117948da4a7f2c353ea5ef900c1762c4">&#9670;&#160;</a></span>size_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> =  <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">ippl::detail::size_type</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab57da13c5599ac65a0cb5c9b3c0a8d1b" name="ab57da13c5599ac65a0cb5c9b3c0a8d1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab57da13c5599ac65a0cb5c9b3c0a8d1b">&#9670;&#160;</a></span>Solver_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#ab57da13c5599ac65a0cb5c9b3c0a8d1b">Solver_t</a> =  VariantFromConditionalTypes&lt;<a class="el" href="FieldSolverBase_8h.html#a65e3f12d3ed9e572b6952a0cbf0c79ed">CGSolver_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a3b17674f9bd5e4fc54eb15e8dbb15e3b">FFTSolver_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#a87e1ab2317ea3270a2fa24ef5daeedbc">P3MSolver_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#af4af1d89bd336953ff4dbaf5c5ca9c8b">OpenSolver_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="FieldSolverBase_8h.html#ace8fabc88f00df2e15d636f24772fcef">NullSolver_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a85288a0d331794ed0a966fd0666c9d5b" name="a85288a0d331794ed0a966fd0666c9d5b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85288a0d331794ed0a966fd0666c9d5b">&#9670;&#160;</a></span>Vector</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a> =  <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a716e97cb94129a4800d15dc3d2fa4063" name="a716e97cb94129a4800d15dc3d2fa4063"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a716e97cb94129a4800d15dc3d2fa4063">&#9670;&#160;</a></span>Vector_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a716e97cb94129a4800d15dc3d2fa4063">Vector_t</a> =  <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a0886db4e73ff70ec630296972a48fbe0" name="a0886db4e73ff70ec630296972a48fbe0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0886db4e73ff70ec630296972a48fbe0">&#9670;&#160;</a></span>VField_t</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="FieldSolverBase_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a> =  <a class="el" href="FieldSolverBase_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt;<a class="el" href="FieldSolverBase_8h.html#a716e97cb94129a4800d15dc3d2fa4063">Vector_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs...&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
