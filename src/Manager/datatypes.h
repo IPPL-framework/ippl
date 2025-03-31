@@ -1,7 +1,11 @@
+#ifndef IPPL_DATATYPES_H
+#define IPPL_DATATYPES_H
+
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
+#include "PoissonSolvers/NullSolver.h"
 
 // some typedefs
 template <unsigned Dim>
@@ -43,7 +47,7 @@ template <typename T = double, unsigned Dim = 3>
 using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
-using PCGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
+using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
 
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
@@ -60,8 +64,11 @@ using OpenSolver_t =
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
+                                             NullSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<T>;
 
 extern const char* TestName;
+
+#endif
