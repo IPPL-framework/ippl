@@ -63,3 +63,15 @@ endif()
 if(NOT DEFINED Heffte_ENABLE_FFTW)
     set(Heffte_ENABLE_FFTW OFF CACHE BOOL "Enable FFTW in Heffte" FORCE)
 endif()
+
+
+# Profiler section
+option (IPPL_ENABLE_HIP_PROFILER "Enable HIP Systems Profiler" OFF)
+if (IPPL_ENABLE_HIP_PROFILER)
+    if ("${IPPL_PLATFORMS}" STREQUAL "HIP" OR "${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;HIP")
+       message (STATUS "Enabling HIP Profiler")
+       add_compile_definitions(-DIPPL_ENABLE_HIP_PROFILER)
+    else()
+        message (FATAL_ERROR "Cannot enable HIP Systems Profiler since platform is not HIP")
+    endif()
+endif()

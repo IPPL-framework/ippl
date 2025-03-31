@@ -23,6 +23,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
 set(IPPL_LIB_TYPE STATIC)
+
+option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
+option (Heffte_ENABLE_GPU_AWARE_MPI "Is a issue ... " OFF)
+
 if(IPPL_DYL)
     set(IPPL_LIB_TYPE SHARED)
 endif()
