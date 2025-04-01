@@ -122,6 +122,17 @@ target_link_libraries(
     GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
 )
+
+add_executable(LagrangeSpaceFEMVector LagrangeSpaceFEMVector.cpp)
+gtest_discover_tests(LagrangeSpaceFEMVector PROPERTIES TEST_DISCOVERY_TIMEOUT 600)
+
+target_link_libraries(
+    LagrangeSpaceFEMVector
+    ippl
+    pthread
+    GTest::gtest_main
+    ${MPI_CXX_LIBRARIES}
+)
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

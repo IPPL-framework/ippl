@@ -32,6 +32,8 @@ set (_HDRS
     LagrangeSpace.hpp
     NedelecSpace.h
     NedelecSpace.hpp
+    LagrangeSpaceFEMVector.h
+    LagrangeSpaceFEMVector.hpp
 
     # Solvers
     FEMSolver.h

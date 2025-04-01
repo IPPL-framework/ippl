@@ -14,6 +14,16 @@ namespace ippl {
     /**
      * @brief 1D vector used in the context of FEM.
      * 
+     * This class represents a 1D vector which stores elements of type \p T and
+     * provides functionalities to handle halo cells and their exchanges.
+     * It can conceptually be though of being a mathemtical vector, and to this
+     * extend is used during fem to represent the vectors \f$a\f$, \f$b\f$ when
+     * solving the linear system \f$Ax = b\f$.
+     * 
+     * We use this instead of an \c ippl::Field, because for basis
+     * functions which have DoFs at non-vertex positions a representation as a
+     * field is not easily possible.
+     * 
      * @tparam T The datatype which the vector is storing.
      */
     template <typename T>
@@ -26,7 +36,7 @@ namespace ippl {
          * operators to work.
          * 
          * In the file IpplOperations.h a bunch of operations are defined, we
-         * want to be able to use them with the FEMVector, the problem is that
+         * want to be able to use them with a \c FEMVector, the problem is that
          * they require the class to have a \p dim parameter, therefore we have
          * one here.
          */
@@ -37,7 +47,7 @@ namespace ippl {
          * defined operators to work.
          * 
          * In the file IpplOperations.h a bunch of operations are defined, we
-         * want to be able to use them with the FEMVector, the problem is that
+         * want to be able to use them with a \c FEMVector, the problem is that
          * they require the class to define a \p value_type type. So therefore
          * we define it here.
          */
@@ -59,6 +69,30 @@ namespace ippl {
             std::vector< Kokkos::View<size_t*> > sendIdxs,
             std::vector< Kokkos::View<size_t*> > recvIdxs);
         
+        
+        /**
+         * @brief Copy constructor (shallow).
+         * 
+         * Creates a shallow copy of the other vector, by copying the underlying
+         * \c Kokkos::View and boundary infromation.
+         * 
+         * @param other The other vector we are copying from.
+         */
+        FEMVector(const FEMVector<T>& other);
+
+        
+        /**
+         * @brief Constructor only taking size, does not create any MPI/boundary
+         * infromation.
+         * 
+         * This constructor only takes the size of the vector and allocates the
+         * appropriate number of elements, it does not sotre any MPI
+         * communication or boundary infromation. This constructor is useful
+         * if only a simply vector for arithmetic is needed without the need
+         * for any communication.
+         */
+        FEMVector(size_t n);
+        
 
         /**
          * @brief Copy values from neighboring ranks into local halo.
@@ -77,11 +111,11 @@ namespace ippl {
         void accumulateHalo();
 
         /**
-         * @brief Set the halo cells to \p clearValue.
+         * @brief Set the halo cells to \p setValue.
          * 
-         * @param clearValue The value to which the halo cells should be set.
+         * @param setValue The value to which the halo cells should be set.
          */
-        void clearHalo(T clearValue);
+        void setHalo(T setValue);
 
 
         /**
@@ -92,12 +126,12 @@ namespace ippl {
          * 
          * @param value The value to which the entries should be set.
          */
-        void operator= (T value);
+        FEMVector<T>& operator= (T value);
 
 
         /**
-         * @brief Set all the values of this vector to the values of the other
-         * vector
+         * @brief Set all the values of this vector to the values of the
+         * expression.
          * 
          * Set the values of this vector to the values of \p expr
          * 
@@ -108,7 +142,18 @@ namespace ippl {
          * operator[] function inside of the Kokkos::parallel_for.
          */
         template <typename E, size_t N>
-        void operator= (const detail::Expression<E, N>& expr);
+        FEMVector<T>& operator= (const detail::Expression<E, N>& expr);
+
+        
+        /**
+         * @brief Copy the values from another \c FEMVector to this one.
+         * 
+         * Sets the element values of this vector to the ones of \p v, only the
+         * values are set everything else (MPI config, boundaries) are ignored.
+         * 
+         * @param v The other vector to copy values from.
+        */
+        FEMVector<T>& operator= (const FEMVector<T>& v);
 
 
 
@@ -153,14 +198,33 @@ namespace ippl {
          * Currently this is a dummy function such that the CG code compiles.
          */
         T getVolumeAverage() const;
+
+
+        /**
+         * @brief Get the size (number of elements) of the vector.
+         */
+        size_t size() const;
+
+
+        /**
+         * @brief Create a deep copy, where all the information of this vector
+         * is copied to a new one.
+         * 
+         * Returns a \c FEMVector which is an exact copy of this one. All the
+         * information (elements, MPI information, etc.) are explicitly copied
+         * (i.e. deep copy).
+         * 
+         * @returns An exact copy of this vector
+        */
+        FEMVector<T> deepCopy() const;
         
 
         /**
-         * @brief Pack data into \p FEMVector::commBuffer_m for
+         * @brief Pack data into \p BoundaryInfo::commBuffer_m for
          * MPI communication.
          * 
          * This function takes data from the vector accoding to \p idxStore and
-         * stores it inside of \p FEMVector::commBuffer_m.
+         * stores it inside of \p BoundaryInfo::commBuffer_m.
          * 
          * @param idxStore A 2D Kokkos view which stores the the indices for
          * \p FEMVector::data_m which we want to send.
@@ -169,10 +233,10 @@ namespace ippl {
         
         
         /**
-         * @brief Unpack data from \p FEMVector::commBuffer_m into
+         * @brief Unpack data from \p BoundaryInfo::commBuffer_m into
          * \p FEMVector::data_m after communication.
          * 
-         * This function takes data from \p FEMVector::commBuffer_m and stores
+         * This function takes data from \p BoundaryInfo::commBuffer_m and stores
          * it accoding to \p idxStore in
          * \p FEMVector::data_m.
          * 
@@ -311,7 +375,7 @@ namespace ippl {
          * copied to device only a pointer and not all the data needs to be 
          * copied to device.
          */
-        BoundaryInfo* boundaryInfo_m;
+        std::shared_ptr<BoundaryInfo> boundaryInfo_m;
 
     };
 
@@ -323,7 +387,7 @@ namespace ippl {
      * \c ippl::FEMVector(s) \p a and \p b. Note that during the
      * inner product computations the halo cells are included, if this should
      * not be the case the hallo cells should be set to 0 using the
-     * \p ippl::FEMVector::clearHalo() function.
+     * \p ippl::FEMVector::setHalo() function.
      * 
      * @param a First field.
      * @param b Second field.
@@ -335,6 +399,8 @@ namespace ippl {
         T localSum = 0;
         auto aView = a.getView();
         auto bView = b.getView();
+
+        
         size_t n = aView.extent(0);
         Kokkos::parallel_reduce("FEMVector innerProduct", n,
             KOKKOS_LAMBDA(const size_t i, T& val){
@@ -346,6 +412,38 @@ namespace ippl {
         T globalSum = 0;
         ippl::Comm->allreduce(localSum, globalSum, 1, std::plus<T>());
         return globalSum;
+    }
+
+    template <typename T>
+    T norm(const FEMVector<T>& v, int p = 2) {
+
+        T local = 0;
+        auto view = v.getView();
+        size_t n = view.extent(0);
+        switch (p) {
+            case 0: {
+                Kokkos::parallel_reduce("FEMVector l0 norm", n,
+                    KOKKOS_LAMBDA(const size_t i, T& val) {
+                        val = Kokkos::max(val, Kokkos::abs(view(i)));
+                    },
+                    Kokkos::Max<T>(local)
+                );
+                T globalMax = 0;
+                ippl::Comm->allreduce(local, globalMax, 1, std::greater<T>());
+                return globalMax;
+            }
+            default: {
+                Kokkos::parallel_reduce("FEMVector lp norm", n,
+                    KOKKOS_LAMBDA(const size_t i, T& val) {
+                        val += std::pow(Kokkos::abs(view(i)), p);
+                    },
+                    Kokkos::Sum<T>(local)
+                );
+                T globalSum = 0;
+                ippl::Comm->allreduce(local, globalSum, 1, std::plus<T>());
+                return std::pow(globalSum, 1.0 / p);
+            }
+        }
     }
 }   // namespace ippl
 

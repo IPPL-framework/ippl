@@ -1,14 +1,15 @@
-// Class FEMPoissonSolver
+// Class FEMPoissonSolverFEMVector
 //   Solves the poisson equation using finite element methods and Conjugate
 //   Gradient
 
-#ifndef IPPL_FEMPOISSONSOLVER_H
-#define IPPL_FEMPOISSONSOLVER_H
+#ifndef IPPL_FEMPOISSONSOLVER_FEMVector_H
+#define IPPL_FEMPOISSONSOLVER_FEMVector_H
 
 // #include "FEM/FiniteElementSpace.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 #include <iomanip>
+#include <iostream>
 
 namespace ippl {
 
@@ -36,7 +37,7 @@ namespace ippl {
      * @tparam FieldRHS field type for the right hand side
      */
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
-    class FEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
+    class FEMPoissonSolverFEMVector : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
 
@@ -47,7 +48,7 @@ namespace ippl {
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
         using PCGSolverAlgorithm_t =
-            CG<lhs_type, lhs_type, lhs_type, lhs_type, lhs_type, FieldLHS, FieldRHS>;
+            CG<FEMVector<Tlhs>, FEMVector<Tlhs>, FEMVector<Tlhs>, FEMVector<Tlhs>, FEMVector<Tlhs>, FEMVector<Tlhs>, FEMVector<Tlhs>>;
 
         // FEM Space types
         using ElementType =
@@ -57,10 +58,10 @@ namespace ippl {
 
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
-        using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
+        using LagrangeType = LagrangeSpaceFEMVector<Tlhs, Dim, 1, ElementType, QuadratureType, FEMVector<Tlhs>, FieldRHS>;
 
         // default constructor (compatibility with Alpine)
-        FEMPoissonSolver() 
+        FEMPoissonSolverFEMVector() 
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
@@ -68,7 +69,7 @@ namespace ippl {
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
+        FEMPoissonSolverFEMVector(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
@@ -81,8 +82,10 @@ namespace ippl {
             IpplTimings::startTimer(init);
             
             rhs.fillHalo();
-
-            lagrangeSpace_m.evaluateLoadVector(rhs);
+            
+            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(rhs, rhs.getLayout());
+            lagrangeSpace_m.evaluateLoadVector(rhsVector);
+            lagrangeSpace_m.reconstructToField(rhsVector, rhs);
 
             rhs.accumulateHalo();
             rhs.fillHalo();
@@ -97,7 +100,9 @@ namespace ippl {
 
             rhs.fillHalo();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs);
+            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(rhs, rhs.getLayout());
+            lagrangeSpace_m.evaluateLoadVector(rhsVector);
+            lagrangeSpace_m.reconstructToField(rhsVector, rhs);
 
             rhs.accumulateHalo();
             rhs.fillHalo();
@@ -131,38 +136,53 @@ namespace ippl {
             EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
                 DPhiInvT, absDetDPhi);
 
-            const auto algoOperator = [poissonEquationEval, this](lhs_type field) -> lhs_type {
+            const auto algoOperator = [poissonEquationEval, this](FEMVector<Tlhs> vector)
+                                                                            -> FEMVector<Tlhs> {
                 // start a timer
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
 
-                field.fillHalo();
+                vector.fillHalo();
 
-                auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+                FEMVector<Tlhs> return_vector = lagrangeSpace_m.evaluateAx(vector,
+                    poissonEquationEval);
 
-                return_field.accumulateHalo();
+                return_vector.accumulateHalo();
                 
                 IpplTimings::stopTimer(opTimer);
 
-                return return_field;
+                return return_vector;
             };
 
             pcg_algo_m.setOperator(algoOperator);
+
+            
+                
+
 
             // start a timer
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
 
-            pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
-
-            (this->lhs_mp)->fillHalo();
+            FEMVector<Tlhs> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp),
+                                                            this->lhs_mp->getLayout());
+            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->rhs_mp),
+                                                            this->rhs_mp->getLayout());
+            
+            try {
+                pcg_algo_m(lhsVector, rhsVector, this->params_m);
+            } catch (IpplException& e) {
+                std::cout << e.what() << "\n";
+            }
+            
+            lhsVector.fillHalo();
 
             IpplTimings::stopTimer(pcgTimer);
 
-            int output = this->params_m.template get<int>("output_type");
-            if (output & Base::GRAD) {
-                *(this->grad_mp) = -grad(*(this->lhs_mp));
-            }
+            
+            lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
+            lagrangeSpace_m.reconstructToField(rhsVector, *(this->rhs_mp));
+
 
             IpplTimings::stopTimer(solve);
         }
@@ -194,7 +214,7 @@ namespace ippl {
         PCGSolverAlgorithm_t pcg_algo_m;
 
         virtual void setDefaultParameters() override {
-            this->params_m.add("max_iterations", 1000);
+            this->params_m.add("max_iterations", 10);
             this->params_m.add("tolerance", (Tlhs)1e-13);
         }
 

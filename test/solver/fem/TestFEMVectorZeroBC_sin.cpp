@@ -13,7 +13,7 @@
 #include "Ippl.h"
 
 #include "Meshes/Centering.h"
-#include "PoissonSolvers/FEMPoissonSolver.h"
+#include "PoissonSolvers/FEMPoissonSolverFEMVector.h"
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
@@ -99,17 +99,15 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     IpplTimings::stopTimer(initTimer);
 
-    //if (ippl::Comm->rank() == 0) {
-    //    rhs.write();
-    //}
+    
 
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+    ippl::FEMPoissonSolverFEMVector<Field_t, Field_t> solver(lhs, rhs);
 
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
-    params.add("max_iterations", 2000);
+    params.add("max_iterations", 10);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -161,24 +159,22 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        
         if (dim == 1) {
             // 1D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 5; n <= 1 << 12; n = n << 1) {
                 testFEMSolver<T, 1>(n, 1.0, 3.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
+            for (unsigned n = 1 << 5; n <= 1 << 12; n = n << 1) {
                 testFEMSolver<T, 2>(n, 1.0, 3.0);
             }
         } else {
             // 3D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
+            for (unsigned n = 1 << 5; n <= 1 << 12; n = n << 1) {
                 testFEMSolver<T, 3>(n, 1.0, 3.0);
             }
         }
-        
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);

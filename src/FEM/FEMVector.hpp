@@ -4,10 +4,23 @@ namespace ippl{
     FEMVector<T>::FEMVector(size_t n, std::vector<size_t> neighbors,
             std::vector< Kokkos::View<size_t*> > sendIdxs,
             std::vector< Kokkos::View<size_t*> > recvIdxs) : 
-            data_m("FEMVector::data", n) {
-            
-        boundaryInfo_m = new BoundaryInfo(std::move(neighbors), std::move(sendIdxs),
-                                            std::move(recvIdxs));
+            data_m("FEMVector::data", n), boundaryInfo_m(new BoundaryInfo(std::move(neighbors), std::move(sendIdxs),
+            std::move(recvIdxs))) {
+        
+    }
+
+
+    template <typename T>
+    FEMVector<T>::FEMVector(size_t n) : data_m("FEMVector::data", n), boundaryInfo_m(nullptr){
+
+    }
+
+
+    
+    template <typename T>
+    FEMVector<T>::FEMVector(const FEMVector<T>& other) : data_m(other.data_m),
+                                                    boundaryInfo_m(other.boundaryInfo_m) {
+
     }
 
 
@@ -22,6 +35,14 @@ namespace ippl{
 
     template <typename T>
     void FEMVector<T>::fillHalo() {
+        // check that we have halo information
+        if (!boundaryInfo_m) {
+            throw IpplException(
+                "FEMVector::fillHalo()",
+                "Cannot do halo operations, as no MPI communication information is provided."
+                "Did you use the correct constructor to construct the FEMVector?");
+        }
+
         using memory_space = typename Kokkos::View<size_t*>::memory_space;
         // List of MPI requests which we send
         std::vector<MPI_Request> requests(boundaryInfo_m->neighbors_m.size());
@@ -69,6 +90,14 @@ namespace ippl{
 
     template <typename T>
     void FEMVector<T>::accumulateHalo() {
+        // check that we have halo information
+        if (!boundaryInfo_m) {
+            throw IpplException(
+                "FEMVector::accumulateHalo()",
+                "Cannot do halo operations, as no MPI communication information is provided."
+                "Did you use the correct constructor to construct the FEMVector?");
+        }
+
         using memory_space = typename Kokkos::View<size_t*>::memory_space;
         // List of MPI requests which we send
         std::vector<MPI_Request> requests(boundaryInfo_m->neighbors_m.size());
@@ -115,12 +144,20 @@ namespace ippl{
 
 
     template <typename T>
-    void FEMVector<T>::clearHalo(T clearValue) {
+    void FEMVector<T>::setHalo(T setValue) {
+        // check that we have halo information
+        if (!boundaryInfo_m) {
+            throw IpplException(
+                "FEMVector::setHalo()",
+                "Cannot do halo operations, as no MPI communication information is provided."
+                "Did you use the correct constructor to construct the FEMVector?");
+        }
+
         for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
             auto& view = boundaryInfo_m->recvIdxs_m[i];
-            Kokkos::parallel_for("FEMVector::clearHalo()",view.extent(0),
+            Kokkos::parallel_for("FEMVector::setHalo()",view.extent(0),
                 KOKKOS_CLASS_LAMBDA(const size_t& j){
-                    data_m[view(j)] = clearValue;
+                    data_m[view(j)] = setValue;
                 }
             );
         }
@@ -128,25 +165,39 @@ namespace ippl{
 
 
     template <typename T>
-    void FEMVector<T>::operator= (T value) {
+    FEMVector<T>& FEMVector<T>::operator= (T value) {
         Kokkos::parallel_for("FEMVector::operator=(T value)", data_m.extent(0),
             KOKKOS_CLASS_LAMBDA(const size_t& i){
                 data_m[i] = value;
             }
         );
+        return *this;
     }
 
 
     template <typename T>
     template <typename E, size_t N>
-    void FEMVector<T>::operator= (const detail::Expression<E, N>& expr) {
+    FEMVector<T>& FEMVector<T>::operator= (const detail::Expression<E, N>& expr) {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
-        Kokkos::parallel_for("FEMVector::operator=(FEMVector)", data_m.extent(0),
+        Kokkos::parallel_for("FEMVector::operator=(Expression)", data_m.extent(0),
             KOKKOS_CLASS_LAMBDA(const size_t& i){
                 data_m[i] = expr_(i);
             }
         );
+        return *this;
+    }
+
+
+    template <typename T>
+    FEMVector<T>& FEMVector<T>::operator= (const FEMVector<T>& v) {
+        auto view = v.getView();
+        Kokkos::parallel_for("FEMVector::operator=(FEMVector)", data_m.extent(0),
+            KOKKOS_CLASS_LAMBDA(const size_t& i){
+                data_m[i] = view(i);
+            }
+        );
+        return *this;
     }
 
 
@@ -173,9 +224,49 @@ namespace ippl{
         return T();
     }
 
+    
+    template <typename T>
+    size_t FEMVector<T>::size() const {
+        return data_m.extent(0);
+    }
+
+    template <typename T>
+    FEMVector<T> FEMVector<T>::deepCopy() const {
+        // the neighbor_m can be simply passed to the new vector, the sendIdxs_m
+        // and recvIdxs_m need to be explicitly copied.
+        std::vector< Kokkos::View<size_t*> > newSendIdxs;
+        std::vector< Kokkos::View<size_t*> > newRecvIdxs;
+        
+        for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
+            newSendIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->sendIdxs_m[i].label(), 
+                                        boundaryInfo_m->sendIdxs_m[i].extent(0)));
+            Kokkos::deep_copy(newSendIdxs[i], boundaryInfo_m->sendIdxs_m[i]);
+            
+            newRecvIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->recvIdxs_m[i].label(), 
+                                        boundaryInfo_m->recvIdxs_m[i].extent(0)));
+        
+            Kokkos::deep_copy(newRecvIdxs[i], boundaryInfo_m->recvIdxs_m[i]);
+        }
+
+        // create the new FEMVector
+        FEMVector<T> newVector(size(), boundaryInfo_m->neighbors_m, newSendIdxs, newRecvIdxs);
+        // copy over the values 
+        newVector = *this;
+
+        return newVector;
+    }
+
 
     template <typename T>
     void FEMVector<T>::pack(const Kokkos::View<size_t*>& idxStore) {
+        // check that we have halo information
+        if (!boundaryInfo_m) {
+            throw IpplException(
+                "FEMVector::pack()",
+                "Cannot do halo operations, as no MPI communication information is provided."
+                "Did you use the correct constructor to construct the FEMVector?");
+        }
+
         size_t nIdxs = idxStore.extent(0);
         auto& bufferData = boundaryInfo_m->commBuffer_m.buffer;
 
@@ -195,7 +286,15 @@ namespace ippl{
 
     template <typename T>
     template <typename Op>
-    void FEMVector<T>::unpack<Op>(const Kokkos::View<size_t*>& idxStore) {
+    void FEMVector<T>::unpack(const Kokkos::View<size_t*>& idxStore) {
+        // check that we have halo information
+        if (!boundaryInfo_m) {
+            throw IpplException(
+                "FEMVector::unpack()",
+                "Cannot do halo operations, as no MPI communication information is provided."
+                "Did you use the correct constructor to construct the FEMVector?");
+        }
+
         size_t nIdxs = idxStore.extent(0);
         auto& bufferData = boundaryInfo_m->commBuffer_m.buffer;        
         if (bufferData.size() < nIdxs) {
