@@ -11,10 +11,6 @@ namespace ippl {
     DefaultBufferHandler<MemorySpace>::getBuffer(size_type size, double overallocation) {
         size_type requiredSize = static_cast<size_type>(size * overallocation);
 
-        // Round to nearest 2MiB
-        size_type pageSize = 2 * 1024 * 1024;
-        requiredSize = ((requiredSize + pageSize - 1) / pageSize) * pageSize;
-        
         auto freeBuffer = findFreeBuffer(requiredSize);
         if (freeBuffer != nullptr) {
             return getFreeBuffer(freeBuffer);
