@@ -83,32 +83,8 @@ namespace ippl {
 
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
-            //rhs.accumulateHalo();
             rhs.fillHalo();
             
-            int me = Comm->rank();
-            Comm->barrier();
-            if (me == 0) {
-                std::cout << "Rank 0, load vector" << std::endl;
-                rhs.write();
-            }
-            Comm->barrier();
-            if (me == 1) {
-                std::cout << "Rank 1, load vector" << std::endl;
-                rhs.write();
-            }
-            Comm->barrier();
-            if (me == 2) {
-                std::cout << "Rank 2, load vector" << std::endl;
-                rhs.write();
-            }
-            Comm->barrier();
-            if (me == 3) {
-                std::cout << "Rank 3, load vector" << std::endl;
-                rhs.write();
-            }
-            Comm->barrier();
-
             IpplTimings::stopTimer(init);
         }
 
@@ -153,7 +129,7 @@ namespace ippl {
             EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
                 DPhiInvT, absDetDPhi);
 
-            const auto algoOperator = [poissonEquationEval, this](lhs_type field) -> lhs_type {
+            const auto algoOperator = [poissonEquationEval, this](rhs_type field) -> lhs_type {
                 // start a timer
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
@@ -162,8 +138,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
-                //return_field.accumulateHalo();
-                
                 IpplTimings::stopTimer(opTimer);
 
                 return return_field;
@@ -174,29 +148,7 @@ namespace ippl {
             // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
             *(this->rhs_mp) = *(this->rhs_mp) -
                                 lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
-            int me = Comm->rank();
-            Comm->barrier();
-            if (me == 0) {
-                std::cout << "Rank 0, lifted b" << std::endl;
-                (this->rhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 1) {
-                std::cout << "Rank 1, lifted b" << std::endl;
-                (this->rhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 2) {
-                std::cout << "Rank 2, lifted b" << std::endl;
-                (this->rhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 3) {
-                std::cout << "Rank 3, lifted b" << std::endl;
-                (this->rhs_mp)->write();
-            }
-            Comm->barrier();
-            
+
             // start a timer
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
@@ -204,28 +156,6 @@ namespace ippl {
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
-
-            Comm->barrier();
-            if (me == 0) {
-                std::cout << "Rank 0, lhs" << std::endl;
-                (this->lhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 1) {
-                std::cout << "Rank 1, lhs" << std::endl;
-                (this->lhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 2) {
-                std::cout << "Rank 2, lhs" << std::endl;
-                (this->lhs_mp)->write();
-            }
-            Comm->barrier();
-            if (me == 3) {
-                std::cout << "Rank 3, lhs" << std::endl;
-                (this->lhs_mp)->write();
-            }
-            Comm->barrier();
 
             IpplTimings::stopTimer(pcgTimer);
 

@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 3; n <= 1 << 3; n = n << 1) {
+        for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
             testFEMSolver<T, 1>(n, 0.0, 1.0);
         }
 
