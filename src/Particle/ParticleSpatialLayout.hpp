@@ -31,7 +31,7 @@
 namespace ippl {
 
     /*!
-     * We need this struct since Kokkos parallel_scan only accects
+     * We need this struct since Kokkos parallel_scan only accepts
      * one variable of type ReturnType where to perform the reduction operation.
      * For more details, see
      * https://kokkos.github.io/kokkos-core-wiki/API/core/parallel-dispatch/parallel_scan.html.
@@ -114,7 +114,7 @@ namespace ippl {
         locate_type particleRanks("particles' MPI ranks", localnum);
 
         /* The indices are the indices of the particles,
-         * the boolean values describe wheather the particle has left the current rank 
+         * the boolean values describe whether the particle has left the current rank 
          * 0 --> particle valid (inside current rank)
          * 1 --> particle invalid (left rank)
          */
