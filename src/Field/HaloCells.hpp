@@ -21,6 +21,10 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view, Layout_t* layout, int nghost) {
+            exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
+        }
+        template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, Layout_t* layout) {
             exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO);
         }
@@ -28,7 +32,7 @@ namespace ippl {
         template <typename T, unsigned Dim, class... ViewArgs>
         template <class Op>
         void HaloCells<T, Dim, ViewArgs...>::exchangeBoundaries(view_type& view, Layout_t* layout,
-                                                                SendOrder order) {
+                                                                SendOrder order, int nghost) {
             using neighbor_list = typename Layout_t::neighbor_list;
             using range_list    = typename Layout_t::neighbor_range_list;
 
@@ -47,6 +51,12 @@ namespace ippl {
                 }
             }
 
+            // needed for the NOGHOST approach - we want to remove the ghost
+            // cells on the boundaries of the global domain from the halo
+            // exchange when we set HALO_TO_INTERNAL_NOGHOST
+            const auto domain = layout->getDomain();
+            const auto& ldomains = layout->getHostLocalDomains();
+            
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
                 totalRequests += componentNeighbors.size();
@@ -55,7 +65,6 @@ namespace ippl {
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
             std::vector<MPI_Request> requests(totalRequests);
-
             // sending loop
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
@@ -73,6 +82,18 @@ namespace ippl {
                          * range of INTERNAL_TO_HALO and vice versa
                          */
                         range = sendRanges[index][i];
+                    } else if (order == HALO_TO_INTERNAL_NOGHOST) {
+                        range = recvRanges[index][i];
+
+                        for (size_t i = 0; i < Dim; ++i) {
+                            bool isLower = ((range.lo[i] + ldomains[targetRank][i].first()
+                                            - nghost) == domain[i].min());
+                            bool isUpper = ((range.hi[i] - 1 + 
+                                            ldomains[targetRank][i].first() - nghost)
+                                            == domain[i].max());
+                            range.lo[i] += isLower * (nghost);
+                            range.hi[i] -= isUpper * (nghost);
+                        }
                     } else {
                         range = recvRanges[index][i];
                     }
@@ -87,6 +108,8 @@ namespace ippl {
                 }
             }
 
+            int me=Comm->rank();
+
             // receiving loop
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
@@ -97,6 +120,18 @@ namespace ippl {
                     bound_type range;
                     if (order == INTERNAL_TO_HALO) {
                         range = recvRanges[index][i];
+                    } else if (order == HALO_TO_INTERNAL_NOGHOST) {
+                        range = sendRanges[index][i];
+
+                        for (size_t i = 0; i < Dim; ++i) {
+                            bool isLower = ((range.lo[i] + ldomains[me][i].first()
+                                            - nghost) == domain[i].min());
+                            bool isUpper = ((range.hi[i] - 1 + 
+                                            ldomains[me][i].first() - nghost)
+                                            == domain[i].max());
+                            range.lo[i] += isLower * (nghost);
+                            range.hi[i] -= isUpper * (nghost);
+                        }
                     } else {
                         range = sendRanges[index][i];
                     }
