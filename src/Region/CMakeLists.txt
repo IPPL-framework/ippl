@@ -1,29 +1,24 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Region/CMakeLists.txt
+#
+# Adds region and region layout headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
-   NDRegion.h
-   NDRegion.hpp
-   PRegion.h
-   PRegion.hpp
-   RegionLayout.h
-   RegionLayout.hpp
-    )
+# Expose Region headers for use as <Region/...>
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+# Install Region-related headers
+install(FILES
+    NDRegion.h
+    NDRegion.hpp
+    PRegion.h
+    PRegion.hpp
+    RegionLayout.h
+    RegionLayout.hpp
+    DESTINATION include/Region
+)
 
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Region)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

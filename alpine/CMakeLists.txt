@@ -1,34 +1,36 @@
-file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding index test found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# alpine/CMakeLists.txt
+#
+# This module provides example physics applications using IPPL.
+# -----------------------------------------------------------------------------
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
+add_subdirectory(ExamplesWithoutPicManager)
+
+set(COMMON_LIBS
+    ippl
+    ${MPI_CXX_LIBRARIES}
 )
 
-link_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Kokkos_DIR}/..
+set(COMMON_FLAGS
+    ${OPAL_CXX_FLAGS}
 )
 
-add_subdirectory (ExamplesWithoutPicManager)
+function(add_alpine_example name)
+    add_executable(${name} ${name}.cpp)
 
-set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
-set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
+    target_compile_options(${name} PRIVATE ${COMMON_FLAGS})
 
-add_executable (PenningTrap PenningTrap.cpp)
-target_link_libraries (PenningTrap ${IPPL_LIBS})
+    target_link_libraries(${name}
+        PRIVATE ${COMMON_LIBS}
+    )
 
-add_executable (LandauDamping LandauDamping.cpp)
-target_link_libraries (LandauDamping ${IPPL_LIBS})
+    target_include_directories(${name}
+        PRIVATE
+            $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+            ${CMAKE_CURRENT_SOURCE_DIR}/..
+    )
+endfunction()
 
-add_executable (BumponTailInstability BumponTailInstability.cpp)
-target_link_libraries (BumponTailInstability ${IPPL_LIBS})
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
+add_alpine_example(PenningTrap)
+add_alpine_example(LandauDamping)
+add_alpine_example(BumponTailInstability)

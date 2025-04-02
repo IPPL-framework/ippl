@@ -57,7 +57,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(HaloTest, Tests);
+TYPED_TEST_SUITE(HaloTest, Tests);
 
 TYPED_TEST(HaloTest, CheckNeighbors) {
     int myRank = ippl::Comm->rank();

@@ -30,7 +30,7 @@ TEST(LogEntryTest, Serialize) {
     EXPECT_GT(buffer.size(), 0);
 }
 
-// Test to ensure LogEntry can be deserialized correctly
+// Test to ensure LogEntry can be deserialized correctly 
 TEST(LogEntryTest, Deserialize) {
     ippl::LogEntry logEntry = createSampleLogEntry();
 
