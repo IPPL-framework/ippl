@@ -482,19 +482,13 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        resultField.accumulateHalo();
+        resultField.accumulateHalo_noghost();
 
-        //if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
         if (bcType == PERIODIC_FACE) {
+            //resultField.setFieldBC(bcField);
             bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
-        /*
-        if (bcType == CONSTANT_FACE) {
-            bcField.apply(resultField);
-            bcField.assignPeriodicGhostToPhysical(resultField);
-        }
-        */
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
@@ -597,13 +591,16 @@ namespace ippl {
                             for (unsigned d = 0; d < Dim; ++d) {
                                 J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
                             }
-                            apply(resultView, I_nd) += A_K[i][j] * dirichletval_m;
+                            apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                             continue;
                         }
 
                     }
                 }
             });
+        // added this, to make correct multi-rank in 2d
+        resultField.accumulateHalo();
+
         return resultField;
     }
 
