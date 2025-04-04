@@ -4,8 +4,8 @@ namespace ippl{
     FEMVector<T>::FEMVector(size_t n, std::vector<size_t> neighbors,
             std::vector< Kokkos::View<size_t*> > sendIdxs,
             std::vector< Kokkos::View<size_t*> > recvIdxs) : 
-            data_m("FEMVector::data", n), boundaryInfo_m(new BoundaryInfo(std::move(neighbors), std::move(sendIdxs),
-            std::move(recvIdxs))) {
+                data_m("FEMVector::data", n), boundaryInfo_m(new BoundaryInfo(std::move(neighbors),
+                    std::move(sendIdxs), std::move(recvIdxs))) {
         
     }
 
@@ -60,7 +60,8 @@ namespace ippl{
             // ippl MPI communication which sends data to neighbors
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nsends);
-            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, requests[i], nsends);
+            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
+                requests[i], nsends);
             archive->resetWritePos();
         }
 
@@ -74,7 +75,8 @@ namespace ippl{
             // will put data into commBuffer_m
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nrecvs);
-            ippl::Comm->recv(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, nrecvs * sizeof(T), nrecvs);
+            ippl::Comm->recv(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
+                nrecvs * sizeof(T), nrecvs);
             archive->resetReadPos();
 
             // unpack recieved data, i.e., copy from commBuffer_m to data_m
@@ -115,7 +117,8 @@ namespace ippl{
             // ippl MPI communication which sends data to neighbors
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nsends);
-            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, requests[i], nsends);
+            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
+                requests[i], nsends);
             archive->resetWritePos();
         }
 
@@ -129,7 +132,8 @@ namespace ippl{
             // will put data into commBuffer_m
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nrecvs);
-            ippl::Comm->recv(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, nrecvs * sizeof(T), nrecvs);
+            ippl::Comm->recv(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
+                nrecvs * sizeof(T), nrecvs);
             archive->resetReadPos();
 
             // unpack recieved data, i.e., copy from commBuffer_m to data_m

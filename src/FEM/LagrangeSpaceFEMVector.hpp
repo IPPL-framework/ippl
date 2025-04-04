@@ -620,7 +620,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     FieldLHS LagrangeSpaceFEMVector<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-        FieldRHS>::interpolateToFEMVector(const FieldRHS& field, const Layout_t& layout) const {
+        FieldRHS>::interpolateToFEMVector(const FieldRHS& field) const {
         
         // The Kokkos view.
         auto view = field.getView();
@@ -639,8 +639,26 @@ namespace ippl {
                 v(j) *= view.extent(i-1);
             }
         }
+        /*
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "extents: " << view.extent(0) << "x" << view.extent(1)  << "\n";
+        }
+        */
+        auto& layout = field.getLayout();
+        auto ldom = layout.getLocalNDIndex();
+        /*
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "domain decomposition\n";
+        }
+        ippl::Comm->barrier();
 
-
+        for (size_t r = 0; r < ippl::Comm->size(); ++r) {
+            if (r == ippl::Comm->rank()) {
+                std::cout << r << ": " << ldom.first() << ", " << ldom.last() << "\n";
+            }
+            ippl::Comm->barrier();
+        }
+        */
 
         // Next up we need to create the neighbor thing and get all the indices
         auto neighbors = layout.getNeighbors();
@@ -651,7 +669,11 @@ namespace ippl {
         std::vector< Kokkos::View<size_t*> > recvIdxs;
         std::vector< std::vector<size_t> > sendIdxsTemp;
         std::vector< std::vector<size_t> > recvIdxsTemp;
-
+        /*
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "comm layout:\n";
+        }
+        */
         for (size_t i = 0; i < neighbors.size(); ++i) {
             const auto& componentNeighbors = neighbors[i];
             for (size_t j = 0; j < componentNeighbors.size(); ++j) {
@@ -668,7 +690,14 @@ namespace ippl {
 
 
                 typename Layout_t::bound_type sendRange = neighborSendRange[i][j];
-                
+                /*
+                if (ippl::Comm->rank() == 0) {
+                    std::cout << "s: 0->" << rank << ": [(" << sendRange.lo[0] << "," <<
+                                sendRange.lo[1] << "), (" <<
+                                sendRange.hi[0] << "," << sendRange.hi[1] << ")]\n";
+                }
+                */
+
                 if (Dim == 1) {
                     for (size_t x = sendRange.lo[0]; x < sendRange.hi[0]; x++) {
                         sendIdxsTemp[idx].push_back(x);
@@ -691,6 +720,13 @@ namespace ippl {
 
 
                 typename Layout_t::bound_type recvRange = neighborRecvRange[i][j];
+                /*
+                if (ippl::Comm->rank() == 0) {
+                    std::cout << "r: " << rank <<"->0" << ": [(" << recvRange.lo[0] << "," <<
+                                recvRange.lo[1] << "), (" <<
+                                recvRange.hi[0] << "," << recvRange.hi[1] << ")]\n";
+                }
+                */
 
                 if (Dim == 1) {
                     for (size_t x = recvRange.lo[0]; x < recvRange.hi[0]; x++) {
@@ -700,6 +736,12 @@ namespace ippl {
                     for (size_t x = recvRange.lo[0]; x < recvRange.hi[0]; x++) {
                         for (size_t y = recvRange.lo[1]; y < recvRange.hi[1]; y++) {
                             recvIdxsTemp[idx].push_back(x*v[0] + y*v[1]);
+                            /*
+                            if (ippl::Comm->rank() == 0) {
+                                std::cout << "adding: " << x*v[0] + y*v[1] << " to vec of size" <<
+                                            n << "\n";
+                            }
+                            */
                         }
                     }
                 } else if (Dim == 3) {

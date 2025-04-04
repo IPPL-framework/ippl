@@ -63,6 +63,7 @@ namespace ippl {
         // default constructor (compatibility with Alpine)
         FEMPoissonSolverFEMVector() 
             : Base()
+            , rhsVector_m(nullptr)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
@@ -71,6 +72,7 @@ namespace ippl {
 
         FEMPoissonSolverFEMVector(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
+            , rhsVector_m(nullptr)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
@@ -83,12 +85,20 @@ namespace ippl {
             
             rhs.fillHalo();
             
-            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(rhs, rhs.getLayout());
-            lagrangeSpace_m.evaluateLoadVector(rhsVector);
-            lagrangeSpace_m.reconstructToField(rhsVector, rhs);
-
-            rhs.accumulateHalo();
-            rhs.fillHalo();
+            // interpolate to the FEMVector
+            rhsVector_m = std::make_unique<FEMVector<Tlhs>>(
+                lagrangeSpace_m.interpolateToFEMVector(rhs));
+            
+            // evaluate the rhs, this will fill the FEMVector
+            lagrangeSpace_m.evaluateLoadVector(*rhsVector_m);
+            
+            // do some halo stuff
+            rhsVector_m->accumulateHalo();
+            rhsVector_m->fillHalo();
+            
+            // reconstruct to the ippl field, such that this is already
+            // accessible before calling solve
+            lagrangeSpace_m.reconstructToField(*rhsVector_m, rhs);
             
             IpplTimings::stopTimer(init);
         }
@@ -99,13 +109,21 @@ namespace ippl {
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
 
             rhs.fillHalo();
-
-            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(rhs, rhs.getLayout());
-            lagrangeSpace_m.evaluateLoadVector(rhsVector);
-            lagrangeSpace_m.reconstructToField(rhsVector, rhs);
-
-            rhs.accumulateHalo();
-            rhs.fillHalo();
+            
+            // interpolate to the FEMVector
+            rhsVector_m = std::make_unique<FEMVector<Tlhs>>(
+                lagrangeSpace_m.interpolateToFEMVector(rhs));
+            
+            // evaluate the rhs, this will fill the FEMVector
+            lagrangeSpace_m.evaluateLoadVector(*rhsVector_m);
+            
+            // do some halo stuff
+            rhsVector_m->accumulateHalo();
+            rhsVector_m->fillHalo();
+            
+            // reconstruct to the ippl field, such that this is already
+            // accessible before calling solve
+            lagrangeSpace_m.reconstructToField(*rhsVector_m, rhs);
         }
 
         /**
@@ -119,8 +137,8 @@ namespace ippl {
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
-            // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
-            // on translation
+            // We can pass the zeroNdIndex here, since the transformation
+            // jacobian does not depend on translation
             const auto firstElementVertexPoints =
                 lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
 
@@ -128,8 +146,8 @@ namespace ippl {
             const Vector<Tlhs, Dim> DPhiInvT =
                 refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
 
-            // Compute absolute value of the determinant of the transformation jacobian (|det D
-            // Phi_K|)
+            // Compute absolute value of the determinant of the transformation
+            // jacobian (|det D Phi_K|)
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
@@ -164,13 +182,10 @@ namespace ippl {
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
 
-            FEMVector<Tlhs> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp),
-                                                            this->lhs_mp->getLayout());
-            FEMVector<Tlhs> rhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->rhs_mp),
-                                                            this->rhs_mp->getLayout());
+            FEMVector<Tlhs> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp));
             
             try {
-                pcg_algo_m(lhsVector, rhsVector, this->params_m);
+                pcg_algo_m(lhsVector, *rhsVector_m, this->params_m);
             } catch (IpplException& e) {
                 std::cout << e.what() << "\n";
             }
@@ -181,7 +196,7 @@ namespace ippl {
 
             
             lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
-            lagrangeSpace_m.reconstructToField(rhsVector, *(this->rhs_mp));
+            lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
 
 
             IpplTimings::stopTimer(solve);
@@ -212,6 +227,7 @@ namespace ippl {
 
     protected:
         PCGSolverAlgorithm_t pcg_algo_m;
+        std::unique_ptr<FEMVector<Tlhs>> rhsVector_m;
 
         virtual void setDefaultParameters() override {
             this->params_m.add("max_iterations", 10);

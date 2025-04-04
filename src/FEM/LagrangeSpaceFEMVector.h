@@ -223,7 +223,7 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
         /// FEMVector conversion //////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
-        FieldLHS interpolateToFEMVector(const FieldRHS& field, const Layout_t& layout) const;
+        FieldLHS interpolateToFEMVector(const FieldRHS& field) const;
 
         void reconstructToField(const FEMVector<T>& vector, FieldRHS& field) const;
 
