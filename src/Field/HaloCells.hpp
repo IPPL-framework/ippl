@@ -56,11 +56,13 @@ namespace ippl {
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
             const auto domain = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
-            
+
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
                 totalRequests += componentNeighbors.size();
             }
+
+            int me=Comm->rank();
 
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
@@ -85,14 +87,14 @@ namespace ippl {
                     } else if (order == HALO_TO_INTERNAL_NOGHOST) {
                         range = recvRanges[index][i];
 
-                        for (size_t i = 0; i < Dim; ++i) {
-                            bool isLower = ((range.lo[i] + ldomains[targetRank][i].first()
-                                            - nghost) == domain[i].min());
-                            bool isUpper = ((range.hi[i] - 1 + 
-                                            ldomains[targetRank][i].first() - nghost)
-                                            == domain[i].max());
-                            range.lo[i] += isLower * (nghost);
-                            range.hi[i] -= isUpper * (nghost);
+                        for (size_t j = 0; j < Dim; ++j) {
+                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
+                                            - nghost) == domain[j].min());
+                            bool isUpper = ((range.hi[j] - 1 + 
+                                            ldomains[me][j].first() - nghost)
+                                            == domain[j].max());
+                            range.lo[j] += isLower * (nghost);
+                            range.hi[j] -= isUpper * (nghost);
                         }
                     } else {
                         range = recvRanges[index][i];
@@ -108,8 +110,6 @@ namespace ippl {
                 }
             }
 
-            int me=Comm->rank();
-
             // receiving loop
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
@@ -123,14 +123,14 @@ namespace ippl {
                     } else if (order == HALO_TO_INTERNAL_NOGHOST) {
                         range = sendRanges[index][i];
 
-                        for (size_t i = 0; i < Dim; ++i) {
-                            bool isLower = ((range.lo[i] + ldomains[me][i].first()
-                                            - nghost) == domain[i].min());
-                            bool isUpper = ((range.hi[i] - 1 + 
-                                            ldomains[me][i].first() - nghost)
-                                            == domain[i].max());
-                            range.lo[i] += isLower * (nghost);
-                            range.hi[i] -= isUpper * (nghost);
+                        for (size_t j = 0; j < Dim; ++j) {
+                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
+                                            - nghost) == domain[j].min());
+                            bool isUpper = ((range.hi[j] - 1 + 
+                                            ldomains[me][j].first() - nghost)
+                                            == domain[j].max());
+                            range.lo[j] += isLower * (nghost);
+                            range.hi[j] -= isUpper * (nghost);
                         }
                     } else {
                         range = sendRanges[index][i];
@@ -150,6 +150,7 @@ namespace ippl {
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
+            
             comm.freeAllBuffers();
         }
 
