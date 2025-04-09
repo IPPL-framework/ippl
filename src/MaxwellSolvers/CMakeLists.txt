@@ -1,15 +1,18 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/MaxwellSolvers/CMakeLists.txt
+#
+# Adds Maxwell solver header to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
-    Maxwell.h
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+# Install MaxwellSolvers header
+install(FILES
+    Maxwell.h
+    DESTINATION include/MaxwellSolvers
+)
 
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/MaxwellSolvers)

@@ -1,28 +1,23 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Types/CMakeLists.txt
+#
+# Adds core type definitions and traits to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+# Expose Types headers for use as <Types/...>
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install Types-related headers
+install(FILES
     Variant.h
     Vector.h
     Vector.hpp
     ViewTypes.h
     IpplTypes.h
-    )
+    DESTINATION include/Types
+)
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Types)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

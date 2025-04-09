@@ -1,67 +1,26 @@
 file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message (STATUS "Adding index test found in ${_relPath}")
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
+add_ippl_integration_test(TestLaplace 
+  LABELS integration field
+  ARGS 10 10 --info 10
 )
 
-link_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Kokkos_DIR}/..
+add_ippl_integration_test(TestFieldBC LABELS integration field)
+
+add_ippl_integration_test(TestHalo LABELS integration field)
+
+add_ippl_integration_test(TestCurl
+    LABELS integration field
+    ARGS 10 0 --info 10
 )
 
-set (IPPL_LIBS ippl)
-set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
+add_ippl_integration_test(TestHessian 
+    LABELS integration field
+    ARGS 10 0 --info 10
+)
 
-if ("${Kokkos_DEVICES}" MATCHES "CUDA" AND "${Kokkos_DEVICES}" MATCHES "OPENMP")
-    add_executable (TestMixedExec TestMixedExec.cpp)
-    target_link_libraries (
-        TestMixedExec
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-    )
+
+if("${Kokkos_DEVICES}" MATCHES "CUDA" AND "${Kokkos_DEVICES}" MATCHES "OPENMP")
+  add_ippl_integration_test(TestMixedExec LABELS integration field)
 endif()
-
-add_executable (TestLaplace TestLaplace.cpp)
-target_link_libraries (
-    TestLaplace
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestFieldBC TestFieldBC.cpp)
-target_link_libraries (
-    TestFieldBC
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestHalo TestHalo.cpp)
-target_link_libraries (
-    TestHalo
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestCurl TestCurl.cpp)
-target_link_libraries (
-    TestCurl
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestHessian TestHessian.cpp)
-target_link_libraries (
-    TestHessian
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

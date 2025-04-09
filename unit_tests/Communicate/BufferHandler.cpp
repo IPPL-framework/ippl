@@ -31,7 +31,7 @@ protected:
     std::unique_ptr<TestableBufferHandler> handler;
 };
 
-TYPED_TEST_CASE(TypedBufferHandlerTest, MemorySpaces);
+TYPED_TEST_SUITE(TypedBufferHandlerTest, MemorySpaces);
 
 // Test: Allocating a buffer when no free buffers are available
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {
@@ -182,8 +182,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
-// Test: Buffer size is correctly accounted for if a free buffer is available but we request a
-// larger one, thus reallocating this one
+// Test: Buffer size is correctly accounted for if a free buffer is available but we request a larger one, thus reallocating this one
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerThanAvailable) {
     auto smallBuffer = this->handler->getBuffer(50, 1.0);
     this->handler->freeBuffer(smallBuffer);

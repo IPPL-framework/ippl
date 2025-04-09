@@ -1,38 +1,51 @@
 file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message (STATUS "Adding index test found in ${_relPath}")
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
+set(COMMON_LIBS
+    ippl
+    ${MPI_CXX_LIBRARIES}
 )
 
-link_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Kokkos_DIR}/..
+set(COMMON_FLAGS
+    ${OPAL_CXX_FLAGS}
 )
 
-set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
-set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
-
-add_executable (UniformPlasmaTest UniformPlasmaTest.cpp)
-target_link_libraries (UniformPlasmaTest ${IPPL_LIBS})
-
-add_executable (LandauDampingMixedPrecision LandauDampingMixedPrecision.cpp)
-target_link_libraries (LandauDampingMixedPrecision ${IPPL_LIBS})
-
-add_executable (LandauDampingMixedExec LandauDampingMixedExec.cpp)
-target_link_libraries (LandauDampingMixedExec ${IPPL_LIBS})
+# Needed for threading
 find_package(Threads REQUIRED)
-target_link_libraries(LandauDampingMixedExec Threads::Threads)
 
+# Macro for adding example executables
+function(add_alpine_example name)
+    add_executable(${name} ${name}.cpp)
 
-add_executable (LandauDampingParameterList LandauDampingParameterList.cpp)
-target_link_libraries (LandauDampingParameterList ${IPPL_LIBS})
+    target_compile_options(${name} PRIVATE ${COMMON_FLAGS})
 
-# vi: set et ts=4 sw=4 sts=4:
+    target_link_libraries(${name}
+        PRIVATE
+            ${COMMON_LIBS}
+    )
 
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
+    target_include_directories(${name}
+        PRIVATE
+            $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+            ${CMAKE_CURRENT_SOURCE_DIR}/..
+    )
+endfunction()
+
+# === Add individual examples ===
+add_alpine_example(UniformPlasmaTest)
+add_alpine_example(LandauDampingMixedPrecision)
+add_alpine_example(LandauDampingParameterList)
+
+# LandauDampingMixedExec needs extra Threads lib
+add_executable(LandauDampingMixedExec LandauDampingMixedExec.cpp)
+target_compile_options(LandauDampingMixedExec PRIVATE ${COMMON_FLAGS})
+target_include_directories(LandauDampingMixedExec
+    PRIVATE
+        $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+target_link_libraries(LandauDampingMixedExec
+    PRIVATE
+        ${COMMON_LIBS}
+        Threads::Threads
+)

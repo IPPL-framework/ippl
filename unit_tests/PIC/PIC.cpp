@@ -108,7 +108,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(PICTest, Tests);
+TYPED_TEST_SUITE(PICTest, Tests);
 
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;

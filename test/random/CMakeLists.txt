@@ -1,58 +1,29 @@
-file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding index test found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# test/random/CMakeLists.txt
+#
+# Integration tests for the random sampling infrastructure in IPPL.
+# -----------------------------------------------------------------------------
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
+file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "🔧 Adding random integration tests from: ${_relPath}")
+
+add_ippl_integration_test(TestInverseTransformSamplingNormal
+    LABELS random integration
 )
 
-link_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Kokkos_DIR}/..
+add_ippl_integration_test(TestInverseTransformSamplingUpdateBounds
+    LABELS random integration
 )
 
-set (IPPL_LIBS ippl)
-set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
-
-add_executable (TestInverseTransformSamplingNormal TestInverseTransformSamplingNormal.cpp)
-target_link_libraries (
-    TestInverseTransformSamplingNormal
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
+add_ippl_integration_test(TestInverseTransformSamplingSpecificRange
+    LABELS random integration
 )
 
-add_executable (TestInverseTransformSamplingUpdateBounds TestInverseTransformSamplingUpdateBounds.cpp)
-target_link_libraries (
-    TestInverseTransformSamplingUpdateBounds
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
+add_ippl_integration_test(TestInverseTransformSamplingCustom
+    LABELS random integration
 )
 
-add_executable (TestInverseTransformSamplingSpecificRange TestInverseTransformSamplingSpecificRange.cpp)
-target_link_libraries (
-    TestInverseTransformSamplingSpecificRange
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
+add_ippl_integration_test(TestUnboundedNormal
+    LABELS random integration
 )
 
-add_executable (TestInverseTransformSamplingCustom TestInverseTransformSamplingCustom.cpp)
-target_link_libraries (
-    TestInverseTransformSamplingCustom
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestUnboundedNormal TestUnboundedNormal.cpp)
-target_link_libraries (
-    TestUnboundedNormal
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

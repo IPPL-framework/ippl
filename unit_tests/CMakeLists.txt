@@ -1,25 +1,31 @@
-macro(list_subdirectories retval curdir)
-  file(GLOB sub-dir RELATIVE ${curdir} *)
-  set(list_of_dirs "")
-  foreach(dir ${sub-dir})
-    if(IS_DIRECTORY ${curdir}/${dir})
-      set(list_of_dirs ${list_of_dirs} ${dir})
-    endif()
-  endforeach()
-  set(${retval} ${list_of_dirs})
-endmacro()
+# -----------------------------------------------------------------------------
+# unit_test/CMakeLists.txt
+#
+# Configures and adds unit tests. This file assumes IPPL_ENABLE_UNIT_TESTS is ON.
+# -----------------------------------------------------------------------------
 
-list_subdirectories("UNIT_TESTS" ${CMAKE_CURRENT_SOURCE_DIR})
-foreach (test ${UNIT_TESTS})
-  add_subdirectory (${test})
-endforeach()
+if(NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "Unit tests require IPPL_ENABLE_FFT to be ON. Please configure with -DIPPL_ENABLE_FFT=ON.")
+endif()
+
+if(NOT TARGET GTest::gtest)
+  message(FATAL_ERROR "❌ GoogleTest not found. Check Dependencies.cmake.")
+endif()
+
+include(GoogleTest)
+
+# The following line handles automatic test discovery
+file(GLOB TEST_SUBDIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(AddIpplTest)
 
 
-# vi: set et ts=4 sw=4 sts=4:
-  
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
+add_subdirectory(BareField)
+add_subdirectory(Communicate)
+add_subdirectory(FFT)
+add_subdirectory(Field)
+add_subdirectory(Meshes)
+add_subdirectory(Particle)
+add_subdirectory(PIC)
+add_subdirectory(Utility)

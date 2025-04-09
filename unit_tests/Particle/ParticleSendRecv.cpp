@@ -139,7 +139,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(ParticleSendRecv, Tests);
+TYPED_TEST_SUITE(ParticleSendRecv, Tests);
 
 TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     const auto nParticles = this->nParticles;

@@ -1,37 +1,16 @@
-file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding index test found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# test/region/CMakeLists.txt
+#
+# Integration tests for IPPL region classes (NDRegion, PRegion, etc.).
+# -----------------------------------------------------------------------------
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
+file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "🔧 Adding region integration tests from: ${_relPath}")
+
+add_ippl_integration_test(TestPRegion
+    LABELS region integration
 )
 
-link_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${Kokkos_DIR}/..
+add_ippl_integration_test(TestNDRegion
+    LABELS region integration
 )
-
-set (IPPL_LIBS ippl)
-set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
-
-add_executable (TestPRegion TestPRegion.cpp)
-target_link_libraries (
-    TestPRegion
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable (TestNDRegion TestNDRegion.cpp)
-target_link_libraries (
-    TestNDRegion
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-
-# vi: set et ts=4 sw=4 sts=4:
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
