@@ -17,7 +17,7 @@ if (IPPL_ENABLE_FFT)
     add_subdirectory(FFT)
 endif()
 
-if (ENABLE_SOLVERS)
+if (IPPL_ENABLE_SOLVERS)
     add_subdirectory(solver)
 endif()
 
