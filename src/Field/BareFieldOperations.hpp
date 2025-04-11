@@ -53,7 +53,7 @@ namespace ippl {
                 ippl::parallel_reduce(
                     "Field::norm(0)", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                        T myVal = std::abs(apply(view, args));
+                        T myVal = Kokkos::abs(apply(view, args));
                         if (myVal > val)
                             val = myVal;
                     },
@@ -66,7 +66,7 @@ namespace ippl {
                 ippl::parallel_reduce(
                     "Field::norm(int) general", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                        val += std::pow(std::abs(apply(view, args)), p);
+                        val += std::pow(Kokkos::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
                 T globalSum = 0;
