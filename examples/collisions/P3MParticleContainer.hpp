@@ -4,6 +4,8 @@
 #include <memory>
 #include "Manager/BaseManager.h"
 #include "datatypes.h"
+#include <initializer_list>
+#include <array>
 
 
 
@@ -20,7 +22,7 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
     using Device = Kokkos::DefaultExecutionSpace;
     using Host = Kokkos::DefaultHostExecutionSpace;
     using NList_t = Kokkos::View<unsigned int *, Device>;
-    using Offset_t = Kokkos::View<int [14*3], Device>;
+    using Offset_t = const std::array<std::array<int, Dim>, ippl::detail::countHypercubes(Dim) / 2 + 1>; // 14, 3 in 3 dimensions
 
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
     using Vector = ippl::Vector<T, Dim>;
@@ -34,12 +36,29 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
         // typename Base::particle_position_type F_sr; // short-range interaction force
 
     private:
-        PLayout_t<T, Dim> pl_m;     // Particle layout 
+        PLayout_t<T, Dim> pl_m;     // Particle layout
         NList_t nl_m;               // NeighborList
         bool nlValid_m;             // true if neighbor list was initialized
         bool *neighbors_m;
-        Offset_t offset_m;
+        // Offset_t offset_m;
 
+    public:
+        // only half of the offset because the other half is handled by due to pairwise interaction
+        // always using the offsets such that |offset| >= 0 would make it possible to generalize this do more dimensions
+        static constexpr Offset_t offset_m{{{1, 1, 1},
+                                            {0, 1, 1},
+                                            {-1, 1, 1},
+                                            {1, 0, 1},
+                                            {0, 0, 1},
+                                            {-1, 0, 1},
+                                            {1, -1, 1},
+                                            {0, -1, 1},
+                                            {-1, -1, 1},
+                                            {1, 1, 0},
+                                            {0, 1, 0},
+                                            {-1, 1, 0},
+                                            {1, 0, 0},
+                                            {0, 0, 0}}};
 
     public:
         P3MParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL) : pl_m(FL, mesh), nlValid_m(false) {
@@ -68,14 +87,6 @@ class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayo
             } else {
                 throw 0;
             }
-        }
-
-        void setOffset(Offset_t& offset) {
-            this->offset_m = offset;
-        }
-
-        Offset_t& getOffset() {
-            return offset_m;
         }
 
         void setNeighbors(bool *neighbors_) {

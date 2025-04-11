@@ -1161,26 +1161,6 @@ public:
     
         this->fcontainer_m->initializeFields("P3M");
 
-        Kokkos::View<int[14*3], Device> offset_device("offset_device");
-        Kokkos::View<int[14*3], Host> offset("offset");
-
-        int offset_arr[14][3] = {{ 1, 1, 1}, { 0, 1, 1}, {-1, 1, 1},
-            { 1, 0, 1}, { 0, 0, 1}, {-1, 0, 1},
-            { 1,-1, 1}, { 0,-1, 1}, {-1,-1, 1},
-            { 1, 1, 0}, { 0, 1, 0}, {-1, 1, 0},
-            { 1, 0, 0}, { 0, 0, 0}};
-
-        Kokkos::parallel_for("Fill offset array", Kokkos::RangePolicy<Host>(0, 14*3),
-            KOKKOS_LAMBDA(const int& ii){
-		        const int i = ii / 3;
-		        const int j = ii % 3;
-                offset(3 * i + j) = offset_arr[i][j];
-            }
-        );
-
-        Kokkos::deep_copy(offset_device, offset);
-        this->pcontainer_m->setOffset(offset_device);
-
         // initialize solver
         ippl::ParameterList sp;
         sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
@@ -1479,7 +1459,7 @@ public:
         auto R = this->pcontainer_m->R.getView();
         auto E = this->pcontainer_m->E.getView();
         auto P = this->pcontainer_m->P.getView();
-        auto offset = this->pcontainer_m->getOffset();
+        constexpr auto& offset = ParticleContainer_t::offset_m;
         auto Q = this->pcontainer_m->Q.getView();
 
         // get simulation specific data
@@ -1520,9 +1500,7 @@ public:
                     [=](const int& neighborIdx){
 
                         // get offset for neighbor cell
-                        const int offsetX = offset(neighborIdx * 3 + 0);
-                        const int offsetY = offset(neighborIdx * 3 + 1);
-                        const int offsetZ = offset(neighborIdx * 3 + 2);
+                        const auto [offsetX, offsetY, offsetZ] = offset[neighborIdx];
                     
                         // check if neighbor is within domain
                         if ((xIdx + offsetX < 0) || (xIdx + offsetX >= xCells) ||
@@ -1559,7 +1537,7 @@ public:
                                 // calculate and apply force
                                 Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
 				                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
-                                Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
+                                    Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
                      }
