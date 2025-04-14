@@ -307,8 +307,10 @@ public:
 
         // Read the file line by line
         std::string line;
+        int line_number = 0;
         while (std::getline(file, line)) {
             // New Line has begun
+            line_number++; 
             std::stringstream ss(line);
             std::string cell;
             int j = 0;  // column number
@@ -317,7 +319,24 @@ public:
             bool inDomain = true;
             while (inDomain == true && j < 6 && std::getline(ss, cell, ',')) {
                 if (j < 3) {
-                    double Pos = std::stod(cell);
+                    // double Pos = std::stod(cell);
+                    double Pos;
+                    try {
+                        Pos = std::stod(cell);
+                    } catch (const std::invalid_argument& e) {
+                        std::cerr << "==== DEBUG INFO ====" << std::endl;
+                        std::cerr << "MPI rank: " << ippl::Comm->rank() << std::endl;
+                        std::cerr << "Problem line: '" << line << "'" << std::endl;
+                        std::cerr << "Line number: " << line_number << std::endl;
+                        std::cerr << "At field index j = " << j << std::endl;
+                        std::cerr << "Invalid cell: '" << cell << "'\n";
+                        std::cerr << "Cell length: " << cell.size() << std::endl;
+                        for (char c : cell) {
+                            std::cerr << "Char: '" << c << "' ASCII: " << static_cast<int>(c) << std::endl;
+                        }
+                        std::cerr << "====================" << std::endl;
+                        throw;
+                    }
                     // Special case where particle lies on the edge
                     // To prevent instability in the sending process when a particle is exactly at
                     // the boundary, a small perturbation (0.01%) is applied to the particle
@@ -399,7 +418,9 @@ public:
     void advance() override {
         if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
-            savePositions(this->it_m); // Save particles at each step
+            if (this->it_m % 100 == 0) {
+                savePositions(this->it_m); // Save particles at each 100 steps
+            }
         } else {
             throw IpplException(TestName, "Step method is not set/recognized!");
         }
@@ -505,7 +526,9 @@ public:
         // Check if the file is opened successfully
         if (!file.is_open()) {
             std::cerr << "Error opening saving file!" << std::endl;
-            return;
+            std::cerr << "Filename attempted: " << filename << std::endl;
+            std::cerr << "Folder path" << this->folder << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
@@ -522,6 +545,7 @@ public:
         Kokkos::deep_copy(F_host, Fview);
 
         double a = this->a_m;
+        std::cout << "Rank " << ippl::Comm->rank() << " saving " << pc->getLocalNum() << " particles at step " << this->it_m << std::endl;
 
         // Write data to the file
         for (unsigned int i = 0; i < pc->getLocalNum(); ++i) {
