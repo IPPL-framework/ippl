@@ -2,14 +2,18 @@
 @page basic_index Basics: Index and NDIndex
  * @section index Introduction
  * ## Index
- * 
- * The Index class represents a strided range of indices, and it is used to define the index extent of Field objects on construction.
- * 
+ *
+ * The Index class represents a strided range of indices, and it is used to define the index extent
+of Field objects on construction.
+ *
  * **Constructors**:
  * - `Index()`: Creates a null interval with no elements.
- * - `Index(n)`: Instantiates an Index object representing the range of integers from 0 to n-1 inclusive, with implied stride 1.
- * - `Index(a,b)`: Instantiates an Index object representing the range of integers [a , b], with implied stride 1.
- * - `Index(a,b,s)`: Instantiates an Index object representing the range of integers [a , b], with stride s.
+ * - `Index(n)`: Instantiates an Index object representing the range of integers from 0 to n-1
+inclusive, with implied stride 1.
+ * - `Index(a,b)`: Instantiates an Index object representing the range of integers [a , b], with
+implied stride 1.
+ * - `Index(a,b,s)`: Instantiates an Index object representing the range of integers [a , b], with
+stride s.
  *
  * **Examples**:
  * ```cpp
@@ -26,12 +30,15 @@
  * I+j  : a+j+i*s     // For i in [0..n-1]
  * j-I  : j-a-i*s
  * j*I  : j*a + i*j*s
- * I/j  : a/j + i*s/j // Note: j/I is not defined due to non-uniform stride and fraction prohibition.
+ * I/j  : a/j + i*s/j // Note: j/I is not defined due to non-uniform stride and fraction
+prohibition.
  * ```
- * 
- * ## NDIndex 
- * 
- * NDIndex is a class that acts as a container for multiple Index instances. It simplifies operations such as intersections across N dimensions by forwarding requests to its contained Index objects.
+ *
+ * ## NDIndex
+ *
+ * NDIndex is a class that acts as a container for multiple Index instances. It simplifies
+operations such as intersections across N dimensions by forwarding requests to its contained Index
+objects.
  *
  @section Example Usage
 The following example demonstrates the use of Index and NDIndex classes.
@@ -47,7 +54,9 @@ isParallel.fill(true);
 
 ippl::FieldLayout<dim> layoutInput(MPI_COMM_WORLD, ownedInput, isParallel);
 @endcode
- * 
- * In this example, we define an NDIndex object `ownedInput` with three Index objects `Iinput`, `Jinput`, and `Kinput`. We then create a FieldLayout object `layoutInput` using the NDIndex object and a boolean array `isParallel` that specifies the parallel dimensions.
+ *
+ * In this example, we define an NDIndex object `ownedInput` with three Index objects `Iinput`,
+`Jinput`, and `Kinput`. We then create a FieldLayout object `layoutInput` using the NDIndex object
+and a boolean array `isParallel` that specifies the parallel dimensions.
  *
 */
