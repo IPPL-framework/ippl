@@ -6,5 +6,6 @@ var searchData=
   ['changephysical_5fm_3',['changePhysical_m',['../classippl_1_1detail_1_1BCondBase.html#acaa663521cccaba2389643dada0f9a71',1,'ippl::detail::BCondBase']]],
   ['comm_4',['comm',['../classippl_1_1FieldLayout.html#a8d3132b3d1fec40ab7ba76c23bc9104d',1,'ippl::FieldLayout']]],
   ['comm_5',['Comm',['../namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486',1,'ippl']]],
-  ['comm_5fm_6',['comm_m',['../classippl_1_1mpi_1_1Communicator.html#a6f7401cc8fe4de193f67aca1864c0bb7',1,'ippl::mpi::Communicator']]]
+  ['comm_5fm_6',['comm_m',['../classippl_1_1mpi_1_1Communicator.html#a6f7401cc8fe4de193f67aca1864c0bb7',1,'ippl::mpi::Communicator']]],
+  ['count_7',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type']]]
 ];

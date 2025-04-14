@@ -125,7 +125,7 @@ var searchData=
   ['copytootherspaces_122',['copyToOtherSpaces',['../classippl_1_1detail_1_1MultispaceContainer.html#ac57abd287748fdc36bc755228bcc58e1',1,'ippl::detail::MultispaceContainer']]],
   ['cos1transform_123',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
   ['costransform_124',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
-  ['count_125',['count',['../classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79',1,'ippl::mpi::Status']]],
+  ['count_125',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type::count()'],['../classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79',1,'ippl::mpi::Status::count()']]],
   ['countcubes_126',['countCubes',['../namespaceippl_1_1detail.html#ab2c8186ef61d35ead301d4fe0e8ef13e',1,'ippl::detail']]],
   ['counthypercubes_127',['countHypercubes',['../namespaceippl_1_1detail.html#a14d88ba251231705c149f273e636d06c',1,'ippl::detail']]],
   ['create_128',['create',['../classippl_1_1ParticleBase.html#a08f73fde7b16dec9ef5fb0c081c7c7bc',1,'ippl::ParticleBase::create()'],['../classippl_1_1detail_1_1ParticleAttribBase.html#a4f1a5faf43003db8179f5df24bb776b7',1,'ippl::detail::ParticleAttribBase::create()'],['../classippl_1_1ParticleAttrib.html#a245c7868a65cc159d2107c89be7d9728',1,'ippl::ParticleAttrib::create()'],['../classippl_1_1mpi_1_1rma_1_1Window.html#a9e7cbadc8cb432c31b2255b1a6e7c012',1,'ippl::mpi::rma::Window::create()']]],

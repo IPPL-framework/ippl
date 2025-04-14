@@ -35,10 +35,11 @@ var searchData=
   ['nptr_32',['NPtr',['../structippl_1_1detail_1_1NPtr.html',1,'ippl::detail']]],
   ['nptr_3c_20t_2c_201_20_3e_33',['NPtr&lt; T, 1 &gt;',['../structippl_1_1detail_1_1NPtr_3_01T_00_011_01_4.html',1,'ippl::detail']]],
   ['nr_5fm_34',['nr_m',['../classAlpineManager.html#a3f3c9399c4ea9cd717c573668b4b1209',1,'AlpineManager::nr_m()'],['../classChargedParticles.html#a2bad8aff03e78dca6bcd2e285d00c51e',1,'ChargedParticles::nr_m()']]],
-  ['nt_5fm_35',['nt_m',['../classAlpineManager.html#af6251805dae7f2b620ca3d116e90f2eb',1,'AlpineManager']]],
-  ['ntotal_5fm_36',['ntotal_m',['../classippl_1_1random_1_1InverseTransformSampling.html#ab7d79552108f7371162d915958c5e250',1,'ippl::random::InverseTransformSampling']]],
-  ['nullsolver_37',['NullSolver',['../classippl_1_1NullSolver.html',1,'ippl::NullSolver&lt; FieldLHS, FieldRHS &gt;'],['../classippl_1_1NullSolver.html#ad28cc10fe5af463f484f3592876062e4',1,'ippl::NullSolver::NullSolver(lhs_type &amp;lhs, rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#ad04075854a572c9c551a7e1e0468f499',1,'ippl::NullSolver::NullSolver(rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#a4330311bbf9e8bb31e471440af6e3e2e',1,'ippl::NullSolver::NullSolver()']]],
-  ['nullsolver_2eh_38',['NullSolver.h',['../NullSolver_8h.html',1,'']]],
-  ['nullsolver_5ft_39',['NullSolver_t',['../datatypes_8h.html#ace8fabc88f00df2e15d636f24772fcef',1,'datatypes.h']]],
-  ['numberofsends_40',['numberOfSends',['../classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15',1,'ippl::ParticleSpatialLayout']]]
+  ['nrecvs_5fm_35',['nRecvs_m',['../classippl_1_1ParticleSpatialLayout.html#a191ca9574bbe84ca56d8a4613abeb7ad',1,'ippl::ParticleSpatialLayout']]],
+  ['nt_5fm_36',['nt_m',['../classAlpineManager.html#af6251805dae7f2b620ca3d116e90f2eb',1,'AlpineManager']]],
+  ['ntotal_5fm_37',['ntotal_m',['../classippl_1_1random_1_1InverseTransformSampling.html#ab7d79552108f7371162d915958c5e250',1,'ippl::random::InverseTransformSampling']]],
+  ['nullsolver_38',['NullSolver',['../classippl_1_1NullSolver.html',1,'ippl::NullSolver&lt; FieldLHS, FieldRHS &gt;'],['../classippl_1_1NullSolver.html#ad28cc10fe5af463f484f3592876062e4',1,'ippl::NullSolver::NullSolver(lhs_type &amp;lhs, rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#ad04075854a572c9c551a7e1e0468f499',1,'ippl::NullSolver::NullSolver(rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#a4330311bbf9e8bb31e471440af6e3e2e',1,'ippl::NullSolver::NullSolver()']]],
+  ['nullsolver_2eh_39',['NullSolver.h',['../NullSolver_8h.html',1,'']]],
+  ['nullsolver_5ft_40',['NullSolver_t',['../datatypes_8h.html#ace8fabc88f00df2e15d636f24772fcef',1,'datatypes.h']]],
+  ['numberofsends_41',['numberOfSends',['../classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15',1,'ippl::ParticleSpatialLayout']]]
 ];
