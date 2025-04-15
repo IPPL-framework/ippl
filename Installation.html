@@ -103,9 +103,9 @@ Setup a build directory:</h3>
 </pre> <h3><a class="anchor" id="autotoc_md44"></a>
 Create build files</h3>
 <p >Choose from the following options based on your needs. If necessary, you can build multiple versions in separate directories.</p>
-<p ><b>Serial Version</b> (for single-node computing) </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=SERIAL -DENABLE_SOLVERS=ON -DENABLE_FFT=ON -DENABLE_ALPINE=ON
-</pre><p> <b>OpenMP Version</b> (for multi-threaded computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=OPENMP -DENABLE_SOLVERS=ON -DENABLE_FFT=ON -DENABLE_ALPINE=ON
-</pre><p> <b>Cuda Version</b> (for GPU computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=CUDA -DENABLE_SOLVERS=ON -DENABLE_FFT=ON -DENABLE_ALPINE=ON -DUSE_ALTERNATIVE_VARIANT=OFF -DKokkos_ARCH_[architecture]=ON
+<p ><b>Serial Version</b> (for single-node computing) </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=SERIAL -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON
+</pre><p> <b>OpenMP Version</b> (for multi-threaded computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=OPENMP -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON
+</pre><p> <b>Cuda Version</b> (for GPU computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=CUDA -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON -DUSE_ALTERNATIVE_VARIANT=OFF -DKokkos_ARCH_[architecture]=ON
 </pre><p> [architecture] should be the target architecture, e.g.</p>
 <ul>
 <li>PASCAL60</li>

@@ -114,16 +114,17 @@ None of the options have to be set explicitly, all have a default.</h4>
 <li>Currently, this is the only compatible commit of Heffte</li>
 </ul>
 </li>
-<li><code>ENABLE_SOLVERS</code>, default <code>OFF</code></li>
-<li><code>ENABLE_FFT</code>, default <code>OFF</code><ul>
-<li>If <code>ENABLE_FFT</code> is set, <code>Heffte_ENABLE_CUDA</code> will default to <code>ON</code> if <code>IPPL_PLATFORMS</code> contains <code>cuda</code></li>
+<li><code>IPPL_DYL</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_SOLVERS</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_FFT</code>, default <code>OFF</code><ul>
+<li>If <code>IPPL_ENABLE_FFT</code> is set, <code>Heffte_ENABLE_CUDA</code> will default to <code>ON</code> if <code>IPPL_PLATFORMS</code> contains <code>cuda</code></li>
 <li>Otherwise, <code>Heffte_ENABLE_AVX2</code> is enabled. FFTW has to be enabled explicitly.</li>
 </ul>
 </li>
 <li><code>Heffte_ENABLE_FFTW</code>, default <code>OFF</code></li>
-<li><code>ENABLE_TESTS</code>, default <code>OFF</code></li>
-<li><code>ENABLE_UNIT_TESTS</code>, default <code>OFF</code></li>
-<li><code>ENABLE_ALPINE</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_TESTS</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_UNIT_TESTS</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_ALPINE</code>, default <code>OFF</code></li>
 <li><code>USE_ALTERNATIVE_VARIANT</code>, default <code>OFF</code>. Can turned on for GPU builds where the use of the system-provided variant doesn't work. <br  />
 </li>
 </ul>
@@ -140,13 +141,34 @@ Examples</h3>
 <div class="line">cd build</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md7"></a>
 Serial debug build with tests and newest Kokkos</h4>
-<div class="fragment"><div class="line">cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DENABLE_TESTS=True -DKokkos_VERSION=4.2.00</div>
+<div class="fragment"><div class="line">cmake .. \ </div>
+<div class="line">    -DCMAKE_BUILD_TYPE=Debug \</div>
+<div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
+<div class="line">    -DIPPL_ENABLE_TESTS=True \</div>
+<div class="line">    -DKokkos_VERSION=4.2.00</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md8"></a>
 OpenMP release build with alpine and FFTW</h4>
-<div class="fragment"><div class="line">cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DENABLE_TESTS=ON -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True</div>
+<div class="fragment"><div class="line">cmake .. \</div>
+<div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
+<div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
+<div class="line">    -DIPPL_ENABLE_FFT=ON \</div>
+<div class="line">    -DIPPL_ENABLE_SOLVERS=ON \</div>
+<div class="line">    -DIPPL_ENABLE_ALPINE=True \</div>
+<div class="line">    -DIPPL_ENABLE_TESTS=ON \</div>
+<div class="line">    -DIPPL_PLATFORMS=openmp \</div>
+<div class="line">    -DHeffte_ENABLE_FFTW=True</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md9"></a>
 Cuda alpine release build</h4>
-<div class="fragment"><div class="line">cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_TESTS=ON -DUSE_ALTERNATIVE_VARIANT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DIPPL_PLATFORMS=cuda</div>
+<div class="fragment"><div class="line">cmake .. \ </div>
+<div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
+<div class="line">    -DKokkos_ARCH_[architecture]=ON \</div>
+<div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
+<div class="line">    -DIPPL_ENABLE_FFT=ON \</div>
+<div class="line">    -DIPPL_ENABLE_TESTS=ON \</div>
+<div class="line">    -DUSE_ALTERNATIVE_VARIANT=ON \</div>
+<div class="line">    -DIPPL_ENABLE_SOLVERS=ON \</div>
+<div class="line">    -DIPPL_ENABLE_ALPINE=True \</div>
+<div class="line">    -DIPPL_PLATFORMS=cuda</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md10"></a>
 HIP release build (LUMI)</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
@@ -162,10 +184,10 @@ HIP release build (LUMI)</h4>
 <div class="line">      -DKokkos_ARCH_AMD_GFX90A=ON \</div>
 <div class="line">      -DKokkos_ENABLE_HIP=ON \</div>
 <div class="line">      -DIPPL_PLATFORMS=&quot;HIP;OPENMP&quot; \</div>
-<div class="line">      -DENABLE_TESTS=ON \</div>
-<div class="line">      -DENABLE_FFT=ON  \</div>
-<div class="line">      -DENABLE_SOLVERS=ON \</div>
-<div class="line">      -DENABLE_ALPINE=OFF \</div>
+<div class="line">      -DIPPL_ENABLE_TESTS=ON \</div>
+<div class="line">      -DIPPL_ENABLE_FFT=ON  \</div>
+<div class="line">      -DIPPL_ENABLE_SOLVERS=ON \</div>
+<div class="line">      -DIPPL_ENABLE_ALPINE=OFF \</div>
 <div class="line">      -DHeffte_ENABLE_ROCM=ON\</div>
 <div class="line">      -DHeffte_ENABLE_GPU_AWARE_MPI=ON \</div>
 <div class="line">      -DCMAKE_EXE_LINKER_FLAGS=&quot;-L/opt/cray/pe/mpich/8.1.28/ofi/amd/5.0/lib -L/opt/cray/pe/mpich/8.1.28/gtl/lib -L/opt/cray/pe/libsci/24.03.0/AMD/5.0/x86_64/lib -L/opt/cray/pe/dsmml/0.3.0/dsmml</div>
