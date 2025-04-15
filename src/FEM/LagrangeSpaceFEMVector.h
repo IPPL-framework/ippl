@@ -173,7 +173,7 @@ namespace ippl {
          * @return T - The value of the shape function at the given point
          */
         KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
-                                                          const point_t& localPoint) const override;
+                                                          const point_t& localPoint) const;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
@@ -210,7 +210,7 @@ namespace ippl {
          *
          * @return FieldRHS - The RHS field containing b
          */
-        void evaluateLoadVector(FieldLHS& field) const override;
+        void evaluateLoadVector(FieldLHS& field) const;
 
 
         std::function<T(size_t,size_t,size_t)> diffusionOperator() const;

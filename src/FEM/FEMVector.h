@@ -220,6 +220,22 @@ namespace ippl {
         
 
         /**
+         * @brief Create a new \c FEMVector with different data type, but same
+         * size and boundary infromation.
+         * 
+         * This function is used to create a new \c FEMVector with same size and
+         * boundary infromation, but of different data type. The boundary 
+         * information is copied over via a deep copy fashion.
+         * 
+         * @tparam K The data type of the new vector.
+         * 
+         * @returns A vector of same structure but new data type.
+         */
+        template <typename K>
+        FEMVector<K> skeletonCopy() const;
+        
+
+        /**
          * @brief Pack data into \p BoundaryInfo::commBuffer_m for
          * MPI communication.
          * 

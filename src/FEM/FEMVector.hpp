@@ -39,7 +39,7 @@ namespace ippl{
         if (!boundaryInfo_m) {
             throw IpplException(
                 "FEMVector::fillHalo()",
-                "Cannot do halo operations, as no MPI communication information is provided."
+                "Cannot do halo operations, as no MPI communication information is provided. "
                 "Did you use the correct constructor to construct the FEMVector?");
         }
 
@@ -96,7 +96,7 @@ namespace ippl{
         if (!boundaryInfo_m) {
             throw IpplException(
                 "FEMVector::accumulateHalo()",
-                "Cannot do halo operations, as no MPI communication information is provided."
+                "Cannot do halo operations, as no MPI communication information is provided. "
                 "Did you use the correct constructor to construct the FEMVector?");
         }
 
@@ -151,9 +151,10 @@ namespace ippl{
     void FEMVector<T>::setHalo(T setValue) {
         // check that we have halo information
         if (!boundaryInfo_m) {
+            return;
             throw IpplException(
                 "FEMVector::setHalo()",
-                "Cannot do halo operations, as no MPI communication information is provided."
+                "Cannot do halo operations, as no MPI communication information is provided. "
                 "Did you use the correct constructor to construct the FEMVector?");
         }
 
@@ -236,28 +237,69 @@ namespace ippl{
 
     template <typename T>
     FEMVector<T> FEMVector<T>::deepCopy() const {
-        // the neighbor_m can be simply passed to the new vector, the sendIdxs_m
-        // and recvIdxs_m need to be explicitly copied.
-        std::vector< Kokkos::View<size_t*> > newSendIdxs;
-        std::vector< Kokkos::View<size_t*> > newRecvIdxs;
-        
-        for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
-            newSendIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->sendIdxs_m[i].label(), 
-                                        boundaryInfo_m->sendIdxs_m[i].extent(0)));
-            Kokkos::deep_copy(newSendIdxs[i], boundaryInfo_m->sendIdxs_m[i]);
+        // We have to check if we have boundary information or not
+        if (boundaryInfo_m) {
+            // The neighbor_m can be simply passed to the new vector, the sendIdxs_m
+            // and recvIdxs_m need to be explicitly copied.
+            std::vector< Kokkos::View<size_t*> > newSendIdxs;
+            std::vector< Kokkos::View<size_t*> > newRecvIdxs;
             
-            newRecvIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->recvIdxs_m[i].label(), 
-                                        boundaryInfo_m->recvIdxs_m[i].extent(0)));
-        
-            Kokkos::deep_copy(newRecvIdxs[i], boundaryInfo_m->recvIdxs_m[i]);
+            for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
+                newSendIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->sendIdxs_m[i].label(), 
+                                            boundaryInfo_m->sendIdxs_m[i].extent(0)));
+                Kokkos::deep_copy(newSendIdxs[i], boundaryInfo_m->sendIdxs_m[i]);
+                
+                newRecvIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->recvIdxs_m[i].label(), 
+                                            boundaryInfo_m->recvIdxs_m[i].extent(0)));
+            
+                Kokkos::deep_copy(newRecvIdxs[i], boundaryInfo_m->recvIdxs_m[i]);
+            }
+
+            // create the new FEMVector
+            FEMVector<T> newVector(size(), boundaryInfo_m->neighbors_m, newSendIdxs, newRecvIdxs);
+            // copy over the values 
+            newVector = *this;
+
+            return newVector;
+        } else {
+            FEMVector<T> newVector(size());
+            // copy over the values 
+            newVector = *this;
+
+            return newVector;
         }
+    }
 
-        // create the new FEMVector
-        FEMVector<T> newVector(size(), boundaryInfo_m->neighbors_m, newSendIdxs, newRecvIdxs);
-        // copy over the values 
-        newVector = *this;
+    template <typename T>
+    template <typename K>
+    FEMVector<K> FEMVector<T>::skeletonCopy() const {
+        // We have to check if we have boundary information or not
+        if (boundaryInfo_m) {
+            // The neighbor_m can be simply passed to the new vector, the sendIdxs_m
+            // and recvIdxs_m need to be explicitly copied.
+            std::vector< Kokkos::View<size_t*> > newSendIdxs;
+            std::vector< Kokkos::View<size_t*> > newRecvIdxs;
+            
+            for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
+                newSendIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->sendIdxs_m[i].label(), 
+                                            boundaryInfo_m->sendIdxs_m[i].extent(0)));
+                Kokkos::deep_copy(newSendIdxs[i], boundaryInfo_m->sendIdxs_m[i]);
+                
+                newRecvIdxs.emplace_back(Kokkos::View<size_t*>(boundaryInfo_m->recvIdxs_m[i].label(), 
+                                            boundaryInfo_m->recvIdxs_m[i].extent(0)));
+            
+                Kokkos::deep_copy(newRecvIdxs[i], boundaryInfo_m->recvIdxs_m[i]);
+            }
 
-        return newVector;
+            // create the new FEMVector
+            FEMVector<K> newVector(size(), boundaryInfo_m->neighbors_m, newSendIdxs, newRecvIdxs);
+
+            return newVector;
+        } else {
+            FEMVector<K> newVector(size());
+            
+            return newVector;
+        }
     }
 
 
@@ -267,7 +309,7 @@ namespace ippl{
         if (!boundaryInfo_m) {
             throw IpplException(
                 "FEMVector::pack()",
-                "Cannot do halo operations, as no MPI communication information is provided."
+                "Cannot do halo operations, as no MPI communication information is provided. "
                 "Did you use the correct constructor to construct the FEMVector?");
         }
 
@@ -295,7 +337,7 @@ namespace ippl{
         if (!boundaryInfo_m) {
             throw IpplException(
                 "FEMVector::unpack()",
-                "Cannot do halo operations, as no MPI communication information is provided."
+                "Cannot do halo operations, as no MPI communication information is provided. "
                 "Did you use the correct constructor to construct the FEMVector?");
         }
 

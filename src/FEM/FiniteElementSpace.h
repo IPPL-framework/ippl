@@ -232,8 +232,10 @@ namespace ippl {
          *
          * @return T - The value of the shape function at the given point
          */
-        KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(
-            const size_t& localDOF, const point_t& localPoint) const = 0;
+        // WE REMOVE THIS, BECAUSE FOR NÉDÉLEC SPACE WE DO NOT HAVE TYPE T, BUT
+        // A VECTOR.
+        //KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(
+        //    const size_t& localDOF, const point_t& localPoint) const = 0;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
@@ -260,7 +262,7 @@ namespace ippl {
          *
          * @return FieldRHS - The RHS field containing b
          */
-        virtual void evaluateLoadVector(FieldRHS& rhs_field) const = 0;
+        //virtual void evaluateLoadVector(FieldRHS& rhs_field) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Member variables //////////////////////////////////////////////////
