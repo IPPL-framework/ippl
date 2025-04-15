@@ -123,7 +123,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(ORBTest, Tests);
+TYPED_TEST_SUITE(ORBTest, Tests);
 
 TYPED_TEST(ORBTest, Volume) {
     constexpr unsigned Dim = TestFixture::dim;
