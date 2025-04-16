@@ -340,7 +340,7 @@ public:
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data_CG/FieldLandau_";
+            fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
