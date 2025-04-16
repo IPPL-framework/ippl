@@ -141,7 +141,7 @@ Examples</h3>
 <div class="line">cd build</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md7"></a>
 Serial debug build with tests and newest Kokkos</h4>
-<div class="fragment"><div class="line">cmake .. \ </div>
+<div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Debug \</div>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
 <div class="line">    -DIPPL_ENABLE_TESTS=True \</div>
@@ -159,7 +159,7 @@ OpenMP release build with alpine and FFTW</h4>
 <div class="line">    -DHeffte_ENABLE_FFTW=True</div>
 </div><!-- fragment --> <h4><a class="anchor" id="autotoc_md9"></a>
 Cuda alpine release build</h4>
-<div class="fragment"><div class="line">cmake .. \ </div>
+<div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
 <div class="line">    -DKokkos_ARCH_[architecture]=ON \</div>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
@@ -201,6 +201,7 @@ HIP release build (LUMI)</h4>
 <li><code>TURING75</code></li>
 <li><code>AMPERE80</code> (PSI GWENDOLEN machine)</li>
 <li><code>AMD_GFX90A</code> (LUMI machine)</li>
+<li><code>HOPPER90</code> (Merlin7 GPUs)</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md11"></a>
 Contributions</h1>
