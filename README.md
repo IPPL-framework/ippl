@@ -60,7 +60,7 @@ cd build
 ```
 #### Serial debug build with tests and newest Kokkos
 ```
-cmake .. \ 
+cmake .. \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_CXX_STANDARD=20 \
     -DIPPL_ENABLE_TESTS=True \
@@ -80,7 +80,7 @@ cmake .. \
 ```
 #### Cuda alpine release build 
 ```
-cmake .. \ 
+cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DKokkos_ARCH_[architecture]=ON \
     -DCMAKE_CXX_STANDARD=20 \
@@ -126,6 +126,7 @@ m-6.0.3/lib/llvm/lib"
 - `TURING75`
 - `AMPERE80` (PSI GWENDOLEN machine)
 - `AMD_GFX90A` (LUMI machine)
+- `HOPPER90` (Merlin7 GPUs)
 
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
