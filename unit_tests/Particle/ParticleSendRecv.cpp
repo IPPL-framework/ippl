@@ -66,8 +66,8 @@ public:
 
         layout  = flayout_type(MPI_COMM_WORLD, owned, isParallel);
         mesh    = mesh_type(owned, hx, origin);
-        playout = playout_type(layout, mesh);
-        bunch   = std::make_shared<bunch_type>(playout);
+        playout_ptr = std::make_shared<playout_type>(layout, mesh);
+        bunch = std::make_shared<bunch_type>(*playout_ptr);
 
         using BC = ippl::BC;
 
@@ -108,7 +108,7 @@ public:
         using size_type    = typename RegionLayout_t::view_type::size_type;
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecSpace>;
 
-        RegionLayout_t RLayout           = playout.getRegionLayout();
+        RegionLayout_t RLayout           = playout_ptr->getRegionLayout();
         auto& positions                  = bunch->R.getView();
         region_view Regions              = RLayout.getdLocalRegions();
         typename rank_type::view_type ER = bunch->expectedRank.getView();
@@ -132,7 +132,7 @@ public:
     const unsigned int nParticles = 128;
     std::array<size_t, Dim> nPoints;
     std::array<T, Dim> domain;
-    playout_type playout;
+    std::shared_ptr<playout_type> playout_ptr;
 
     flayout_type layout;
     mesh_type mesh;
