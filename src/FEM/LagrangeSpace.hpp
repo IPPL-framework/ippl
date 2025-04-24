@@ -479,7 +479,7 @@ namespace ippl {
 
         if (bcType == PERIODIC_FACE) {
             bcField.apply(resultField);
-            bcField.assignPeriodicGhostToPhysical(resultField);
+            bcField.assignGhostToPhysical(resultField);
         }
         IpplTimings::stopTimer(evalAx);
 
@@ -713,7 +713,7 @@ namespace ippl {
         temp_field.accumulateHalo();
         if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
             bcField.apply(temp_field);
-            bcField.assignPeriodicGhostToPhysical(temp_field);
+            bcField.assignGhostToPhysical(temp_field);
         }
         field = temp_field;
 

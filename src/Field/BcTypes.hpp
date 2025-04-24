@@ -344,7 +344,7 @@ namespace ippl {
     }
 
     template <typename Field>
-    void PeriodicFace<Field>::assignPeriodicGhostToPhysical(Field& field) {
+    void PeriodicFace<Field>::assignGhostToPhysical(Field& field) {
         unsigned int face               = this->face_m;
         unsigned int d                  = face / 2;
         typename Field::view_type& view = field.getView();
@@ -404,7 +404,7 @@ namespace ippl {
     }
 
     template <typename Field>
-    void ExtrapolateFace<Field>::assignPeriodicGhostToPhysical(Field& field) {
+    void ExtrapolateFace<Field>::assignGhostToPhysical(Field& field) {
         unsigned int face               = this->face_m;
         unsigned int d                  = face / 2;
         typename Field::view_type& view = field.getView();
@@ -431,23 +431,16 @@ namespace ippl {
             // For the axis along which BCs are being applied, iterate
             // through only the ghost cells. For all other axes, iterate
             // through all internal cells.
-            bool isCorner = false;
             for (size_t i = 0; i < Dim; ++i) {
-                // the corner cell should not be accounted for twice
-                // so if d != 0, we check for upper and lower corners
-                // and then start/end indexing 1 cell after/before
-                bool isUpper = (ldom[i].max() == domain[i].max());
-                bool isLower = (ldom[i].min() == domain[i].min());
-
-                end[i]   = view.extent(i) - nghost - ((isCorner) * (isUpper));
-                begin[i] = nghost + ((isCorner) * (isLower));
+                end[i]   = view.extent(i) - nghost;
+                begin[i] = nghost;
             }
             begin[d] = ((0 + nghost - 1) * (1 - upperFace)) + (N * upperFace);
             end[d]   = begin[d] + 1;
 
             using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_for(
-                "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
+                "Assign field BC", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
                     // The ghosts are filled starting from the inside of
                     // the domain proceeding outwards for both lower and
