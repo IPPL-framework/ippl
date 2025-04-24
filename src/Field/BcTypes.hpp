@@ -431,7 +431,7 @@ namespace ippl {
             // For the axis along which BCs are being applied, iterate
             // through only the ghost cells. For all other axes, iterate
             // through all internal cells.
-            bool isCorner = (d != 0);
+            bool isCorner = false;
             for (size_t i = 0; i < Dim; ++i) {
                 // the corner cell should not be accounted for twice
                 // so if d != 0, we check for upper and lower corners
@@ -464,7 +464,7 @@ namespace ippl {
 
                     coords[d] += shift;
 
-                    apply(view, coords) += right;
+                    apply(view, coords) = right;
             });
         }
     }
