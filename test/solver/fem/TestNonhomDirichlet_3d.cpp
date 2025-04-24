@@ -100,8 +100,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    const T dirichlet = 8.0;
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs, dirichlet);
+    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // set the parameters
     ippl::ParameterList params;
