@@ -446,7 +446,7 @@ namespace ippl {
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if (bcType == ZERO_FACE) {
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -592,7 +592,6 @@ namespace ippl {
                     }
                 }
             });
-        // added this, to make correct multi-rank in 2d
         resultField.accumulateHalo();
 
         return resultField;

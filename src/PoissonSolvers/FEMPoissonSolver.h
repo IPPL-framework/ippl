@@ -129,10 +129,17 @@ namespace ippl {
             EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
                 DPhiInvT, absDetDPhi);
 
-            const auto algoOperator = [poissonEquationEval, this](rhs_type field) -> lhs_type {
+            // get BC type of our RHS
+            BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
+            FieldBC bcType = bcField[0]->getBCType();
+
+            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
                 // start a timer
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
+
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
 
                 field.fillHalo();
 
@@ -146,8 +153,10 @@ namespace ippl {
             pcg_algo_m.setOperator(algoOperator);
 
             // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
-            *(this->rhs_mp) = *(this->rhs_mp) -
-                                lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
+            if (bcType == CONSTANT_FACE) {
+                *(this->rhs_mp) = *(this->rhs_mp) -
+                    lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
+            }
 
             // start a timer
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
