@@ -81,7 +81,7 @@ namespace ippl {
          * @param layout Reference to the field layout
          */
         LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature, const Layout_t& layout, T dirichlet_val = 0.0);
+                      const QuadratureType& quadrature, const Layout_t& layout);
 
         /**
          * @brief Construct a new LagrangeSpace object (without layout)
@@ -270,7 +270,6 @@ namespace ippl {
             return false;
         }
 
-        T dirichletval_m;
         Kokkos::View<size_t*> elementIndices;
     };
 

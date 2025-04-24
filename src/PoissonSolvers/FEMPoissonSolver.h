@@ -67,11 +67,11 @@ namespace ippl {
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs, Tlhs dirichlet_val = 0.0)
+        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout(), dirichlet_val) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
 

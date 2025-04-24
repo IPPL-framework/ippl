@@ -7,14 +7,12 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
         UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
-        const Layout_t& layout, T dirichlet_val)
+        const Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                              QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
         static_assert(Dim >= 1 && Dim <= 3,
                       "Finite Element space only supports 1D, 2D and 3D meshes");
-
-        dirichletval_m = dirichlet_val;
 
         // Initialize the elementIndices view
         initializeElementIndices(layout);
@@ -439,17 +437,16 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I_nd = global_dof_ndindices[i];
 
-                    // Skip boundary DOFs (Zero Dirichlet BCs)
-                    /*
-                    if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
-                        continue;
-                    }
-                    */
-                    if (this->isDOFOnBoundary(I_nd)) {
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
+                        continue;
+                    } else if (bcType == ZERO_FACE) {
                         continue;
                     }
 
@@ -461,13 +458,9 @@ namespace ippl {
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         J_nd = global_dof_ndindices[j];
 
-                        // Skip boundary DOFs (Zero Dirichlet BCs)
-                        /*
-                        if ((bcType == ZERO_FACE) && this->isDOFOnBoundary(J_nd)) {
-                            continue;
-                        }
-                        */
-                        if (this->isDOFOnBoundary(J_nd)) {
+                        // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                            && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
 
@@ -485,7 +478,6 @@ namespace ippl {
         resultField.accumulateHalo_noghost();
 
         if (bcType == PERIODIC_FACE) {
-            //resultField.setFieldBC(bcField);
             bcField.apply(resultField);
             bcField.assignPeriodicGhostToPhysical(resultField);
         }
@@ -574,6 +566,7 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I_nd = global_dof_ndindices[i];
 
+                    // Skip if on a row of the matrix
                     if (this->isDOFOnBoundary(I_nd)) {
                         continue;
                     }
@@ -586,6 +579,7 @@ namespace ippl {
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         J_nd = global_dof_ndindices[j];
 
+                        // Contribute to lifting only if on a boundary DOF
                         if (this->isDOFOnBoundary(J_nd)) {
                             // get the appropriate index for the Kokkos view of the field
                             for (unsigned d = 0; d < Dim; ++d) {
@@ -679,19 +673,9 @@ namespace ippl {
                     // TODO fix for higher order
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
-                    /*
-                    if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(dof_ndindex_I))) {
-                        continue;
-                    }
-                    */
-                    if (this->isDOFOnBoundary(dof_ndindex_I)) {
-                        // get the appropriate index for the Kokkos view of the field
-                        /*
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
-                        }
-                        apply(atomic_view, dof_ndindex_I) = dirichletval_m;
-                        */
+                    // Skip boundary DOFs (Zero and Constant Dirichlet BCs)
+                    if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
+                        && (this->isDOFOnBoundary(dof_ndindex_I))) {
                         continue;
                     }
 
@@ -726,8 +710,6 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        // with this change, 1D converges for single and multi-rank
-        // with this change, 2D converges for single rank; multi-rank only 1st order conv
         temp_field.accumulateHalo();
         if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
             bcField.apply(temp_field);
