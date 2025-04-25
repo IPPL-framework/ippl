@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "Manager/BaseManager.h"
-#include "PoissonSolvers/FEMPoissonSolver.h"
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/P3MSolver.h"
@@ -46,9 +45,6 @@ using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 template <typename T, unsigned Dim>
 using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
 
-template <typename T, unsigned Dim>
-using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>;
-
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T, unsigned Dim>
@@ -65,7 +61,7 @@ using OpenSolver_t =
 template <typename T, unsigned Dim>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
                                              P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
-                                             NullSolver_t<T, Dim>, FEMSolver_t<T, Dim>>;
+                                             NullSolver_t<T, Dim>>;
 
 // Define the FieldSolverBase class
 namespace ippl {
