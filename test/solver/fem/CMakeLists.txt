@@ -47,12 +47,41 @@ target_link_libraries(
     ${MPI_CXX_LIBRARIES}
 )
 
+add_executable(TestNonhomDirichlet_1d TestNonhomDirichlet_1d.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_1d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestNonhomDirichlet_2d TestNonhomDirichlet_2d.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_2d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestNonhomDirichlet_3d TestNonhomDirichlet_3d.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_3d
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
+add_executable(TestNonhomDirichlet_1dcos TestNonhomDirichlet_1dcos.cpp)
+target_link_libraries(
+    TestNonhomDirichlet_1dcos
+    ${IPPL_LIBS}
+    ${MPI_CXX_LIBRARIES}
+)
+
 add_executable(TestScaling_ZeroBC_sin TestScaling_ZeroBC_sin.cpp)
 target_link_libraries(
     TestScaling_ZeroBC_sin
     ${IPPL_LIBS}
     ${MPI_CXX_LIBRARIES}
 )
+
 add_executable(TestScaling_PeriodicBC_sinsin TestScaling_PeriodicBC_sinsin.cpp)
 target_link_libraries(
     TestScaling_PeriodicBC_sinsin
