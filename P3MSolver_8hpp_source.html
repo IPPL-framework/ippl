@@ -309,7 +309,7 @@ $(function() {
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            <span class="comment">// Compute gradient in Fourier space and then</span></div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            <span class="comment">// take inverse FFT.</span></div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <span class="keyword">const</span> Trhs <a class="code hl_variable" href="datatypes_8h.html#a43016d873124d39034edb8cd164794db">pi</a>              = Kokkos::numbers::pi_v&lt;Trhs&gt;;</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <span class="keyword">const</span> Trhs <a class="code hl_variable" href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a>              = Kokkos::numbers::pi_v&lt;Trhs&gt;;</div>
 <div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            Kokkos::complex&lt;Trhs&gt; imag = {0.0, 1.0};</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>            <span class="keyword">auto</span> view               = rhotr_m.getView();</div>
@@ -343,7 +343,7 @@ $(function() {
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                            <span class="keywordtype">bool</span> notMid    = (iVec[d] != (N[d] / 2));</div>
 <div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                            <span class="comment">// For the noMid part see</span></div>
 <div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                            <span class="comment">// https://math.mit.edu/~stevenj/fft-deriv.pdf Algorithm 1</span></div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                            kVec[d] = notMid * 2 * <a class="code hl_variable" href="datatypes_8h.html#a43016d873124d39034edb8cd164794db">pi</a> / Len * (iVec[d] - shift * N[d]);</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                            kVec[d] = notMid * 2 * <a class="code hl_variable" href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a> / Len * (iVec[d] - shift * N[d]);</div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                        }</div>
 <div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span> </div>
 <div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                        Trhs Dr = 0;</div>
@@ -391,7 +391,7 @@ $(function() {
 <div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>        grn_m = 0.0;</div>
 <div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span> </div>
 <div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>        <span class="comment">// define pi</span></div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        Trhs <a class="code hl_variable" href="datatypes_8h.html#a43016d873124d39034edb8cd164794db">pi</a> = Kokkos::numbers::pi_v&lt;Trhs&gt;;</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        Trhs <a class="code hl_variable" href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a> = Kokkos::numbers::pi_v&lt;Trhs&gt;;</div>
 <div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
 <div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        <span class="comment">// This alpha parameter is a choice for the Green&#39;s function</span></div>
 <div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>        <span class="comment">// it controls the &quot;range&quot; of the Green&#39;s function (e.g.</span></div>
@@ -424,7 +424,7 @@ $(function() {
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>                <span class="keyword">const</span> <span class="keywordtype">bool</span> isOrig = (ig == 0 &amp;&amp; jg == 0 &amp;&amp; kg == 0);</div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
 <div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>                Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * <a class="code hl_variable" href="datatypes_8h.html#a43016d873124d39034edb8cd164794db">pi</a>)) * (Kokkos::erf(alpha * r) / r);</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * <a class="code hl_variable" href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a>)) * (Kokkos::erf(alpha * r) / r);</div>
 <div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>            });</div>
 <div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span> </div>
 <div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>        <span class="comment">// perform the FFT of the Green&#39;s function for the convolution</span></div>
@@ -433,6 +433,7 @@ $(function() {
 <div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span> </div>
 <div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>}  <span class="comment">// namespace ippl</span></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
+<div class="ttc" id="aChargedParticles_8hpp_html_a43016d873124d39034edb8cd164794db"><div class="ttname"><a href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a></div><div class="ttdeci">const double pi</div><div class="ttdef"><b>Definition:</b> ChargedParticles.hpp:76</div></div>
 <div class="ttc" id="aclassippl_1_1Field_html_af5d33627f142e8ec6e532828e1616fad"><div class="ttname"><a href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">ippl::Field&lt; T, Dim, Mesh_t&lt; Dim &gt;, Centering_t&lt; Dim &gt;, ViewArgs... &gt;::view_type</a></div><div class="ttdeci">typename BareField_t::view_type view_type</div><div class="ttdef"><b>Definition:</b> Field.h:27</div></div>
 <div class="ttc" id="aclassippl_1_1Index_html"><div class="ttname"><a href="classippl_1_1Index.html">ippl::Index</a></div><div class="ttdef"><b>Definition:</b> Index.h:40</div></div>
 <div class="ttc" id="aclassippl_1_1P3MSolver_html_a214d26178402294f989a815f50030840"><div class="ttname"><a href="classippl_1_1P3MSolver.html#a214d26178402294f989a815f50030840">ippl::P3MSolver::setDefaultParameters</a></div><div class="ttdeci">virtual void setDefaultParameters() override</div><div class="ttdef"><b>Definition:</b> P3MSolver.h:103</div></div>
@@ -452,7 +453,6 @@ $(function() {
 <div class="ttc" id="aclassippl_1_1Poisson_html_afb9803ccc30ca00408107714a1f7ab41"><div class="ttname"><a href="classippl_1_1Poisson.html#afb9803ccc30ca00408107714a1f7ab41">ippl::Poisson::lhs_type</a></div><div class="ttdeci">FieldLHS lhs_type</div><div class="ttdef"><b>Definition:</b> Poisson.h:24</div></div>
 <div class="ttc" id="aclassippl_1_1Vector_html"><div class="ttname"><a href="classippl_1_1Vector.html">ippl::Vector&lt; Trhs, Dim &gt;</a></div></div>
 <div class="ttc" id="aclassippl_1_1mpi_1_1Communicator_html"><div class="ttname"><a href="classippl_1_1mpi_1_1Communicator.html">ippl::mpi::Communicator</a></div><div class="ttdef"><b>Definition:</b> Communicator.h:31</div></div>
-<div class="ttc" id="adatatypes_8h_html_a43016d873124d39034edb8cd164794db"><div class="ttname"><a href="datatypes_8h.html#a43016d873124d39034edb8cd164794db">pi</a></div><div class="ttdeci">const double pi</div><div class="ttdef"><b>Definition:</b> datatypes.h:70</div></div>
 <div class="ttc" id="adatatypes_8h_html_a62775f861ae59098011e0a07b912f0e5"><div class="ttname"><a href="datatypes_8h.html#a62775f861ae59098011e0a07b912f0e5">FieldLayout_t</a></div><div class="ttdeci">ippl::FieldLayout&lt; Dim &gt; FieldLayout_t</div><div class="ttdef"><b>Definition:</b> datatypes.h:21</div></div>
 <div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:20</div></div>
 <div class="ttc" id="anamespaceippl_html_a12b1fb701e417c82f2d2249c31e30b02a94a1c1d486fcecd6f86646b8ace721eb"><div class="ttname"><a href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02a94a1c1d486fcecd6f86646b8ace721eb">ippl::FORWARD</a></div><div class="ttdeci">@ FORWARD</div><div class="ttdef"><b>Definition:</b> FFT.h:63</div></div>

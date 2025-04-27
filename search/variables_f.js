@@ -7,7 +7,7 @@ var searchData=
   ['pcontainer_5fm_4',['pcontainer_m',['../classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6',1,'ippl::PicManager']]],
   ['pdf_5fm_5',['pdf_m',['../classippl_1_1random_1_1Distribution.html#af8b5d39981a5352c7ddd61946335a9f4',1,'ippl::random::Distribution']]],
   ['phi_5fm_6',['phi_m',['../classChargedParticles.html#a3b5db5a63a8fc61daf1b5fbef69ee5bb',1,'ChargedParticles']]],
-  ['pi_7',['pi',['../structNewton1D.html#a864f14c686710274cb204576b6776dce',1,'Newton1D::pi()'],['../ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db',1,'pi():&#160;ChargedParticles.hpp'],['../datatypes_8h.html#a43016d873124d39034edb8cd164794db',1,'pi():&#160;datatypes.h'],['../structNewton1D.html#a7f450be3f2f7a16b87337a7e9b7fb64a',1,'Newton1D::pi()']]],
+  ['pi_7',['pi',['../structNewton1D.html#a864f14c686710274cb204576b6776dce',1,'Newton1D::pi()'],['../structNewton1D.html#a7f450be3f2f7a16b87337a7e9b7fb64a',1,'Newton1D::pi()'],['../ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db',1,'pi():&#160;ChargedParticles.hpp']]],
   ['pool_5fm_8',['pool_m',['../structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ab279e507ff4961cbf4ddb82c7305a004',1,'ippl::random::InverseTransformSampling::fill_random']]],
   ['preconditioner_5fm_9',['preconditioner_m',['../classippl_1_1PCG.html#aebbe17a4e11e48c98dcaeab46f6b4d2b',1,'ippl::PCG']]],
   ['preconditioner_5fparams_5fm_10',['preconditioner_params_m',['../classAlpineManager.html#a53b8714f505f7825b2b6cfb5d306c2e3',1,'AlpineManager']]],
