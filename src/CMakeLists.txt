@@ -36,7 +36,7 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
-add_library(ippl ${IPPL_LIB_TYPE})
+add_library(ippl)
 
 target_sources(ippl
     PRIVATE
@@ -86,10 +86,8 @@ target_link_libraries(ippl
         Kokkos::kokkos
 )
 
-if(IPPL_ENABLE_FFT AND TARGET Heffte::heffte)
-    target_link_libraries(ippl PUBLIC Heffte::heffte)
-else()
-    message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
+if(IPPL_ENABLE_FFT)
+    target_link_libraries(ippl PUBLIC Heffte::Heffte)
 endif()
 
 set(IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
