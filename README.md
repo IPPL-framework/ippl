@@ -44,7 +44,8 @@ The relevant options of IPPL are
 - `IPPL_ENABLE_UNIT_TESTS`, default `OFF`
 - `IPPL_ENABLE_ALPINE`, default `OFF`
 - `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can turned on for GPU builds where the use of the system-provided variant doesn't work.  
-
+- `IPPL_ENABLE_SANITIZER, default `OFF`
+- 
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
 - `Release` for optimized builds
 - `RelWithDebInfo` for optimized builds with debug info (default)
