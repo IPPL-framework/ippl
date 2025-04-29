@@ -66,9 +66,9 @@ public:
 
         field = std::make_unique<field_type>(mesh, layout);
 
-        playout = playout_type(layout, mesh);
+        playout_ptr = std::make_shared<playout_type>(layout,mesh);
 
-        bunch = std::make_unique<bunch_type>(playout);
+        bunch = std::make_shared<bunch_type>(*playout_ptr);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -101,14 +101,14 @@ public:
     size_t nParticles = 32;
     std::array<size_t, Dim> nPoints;
     std::array<double, Dim> domain;
-    playout_type playout;
 
+    std::shared_ptr<playout_type> playout_ptr;
     flayout_type layout;
     mesh_type mesh;
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(PICTest, Tests);
+TYPED_TEST_SUITE(PICTest, Tests);
 
 TYPED_TEST(PICTest, Scatter) {
     auto& field      = this->field;

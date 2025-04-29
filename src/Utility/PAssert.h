@@ -108,12 +108,17 @@ void insist(const char* cond, const char* msg, const char* file, int line);
 #define PAssert_GT(a, b)
 #define PAssert_GE(a, b)
 #else
+#ifdef __HIP_PLATFORM_AMD__      // toss_cookies are not supported so just do a no-operation
+#define PAssert(c)
+#define PAssert_CMP(cmp, a, b)
+#else
 #define PAssert(c) \
     if (!(c))      \
         toss_cookies(#c, __FILE__, __LINE__);
 #define PAssert_CMP(cmp, a, b) \
     if (!(cmp))                \
         toss_cookies(#cmp, #a, #b, a, b, __FILE__, __LINE__);
+#endif
 #define PAssert_EQ(a, b) PAssert_CMP(a == b, a, b)
 #define PAssert_NE(a, b) PAssert_CMP(a != b, a, b)
 #define PAssert_LT(a, b) PAssert_CMP(a < b, a, b)

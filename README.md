@@ -34,16 +34,18 @@ The relevant options of IPPL are
 - `Heffte_VERSION`, default `MASTER`
   - If set to `MASTER`, an additional flag `Heffte_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
   - Currently, this is the only compatible commit of Heffte
-- `ENABLE_SOLVERS`, default `OFF`
-- `ENABLE_FFT`, default `OFF`
-  - If `ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
+- `IPPL_DYL`, default `OFF`
+- `IPPL_ENABLE_SOLVERS`, default `OFF`
+- `IPPL_ENABLE_FFT`, default `OFF`
+  - If `IPPL_ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
   - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enabled explicitly.
 - `Heffte_ENABLE_FFTW`, default `OFF` 
-- `ENABLE_TESTS`, default `OFF`
-- `ENABLE_UNIT_TESTS`, default `OFF`
-- `ENABLE_ALPINE`, default `OFF`
+- `IPPL_ENABLE_TESTS`, default `OFF`
+- `IPPL_ENABLE_UNIT_TESTS`, default `OFF`
+- `IPPL_ENABLE_ALPINE`, default `OFF`
 - `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can turned on for GPU builds where the use of the system-provided variant doesn't work.  
-
+- `IPPL_ENABLE_SANITIZER, default `OFF`
+- 
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
 - `Release` for optimized builds
 - `RelWithDebInfo` for optimized builds with debug info (default)
@@ -59,15 +61,36 @@ cd build
 ```
 #### Serial debug build with tests and newest Kokkos
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DENABLE_TESTS=True -DKokkos_VERSION=4.2.00
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_TESTS=True \
+    -DKokkos_VERSION=4.2.00
 ```
 #### OpenMP release build with alpine and FFTW
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DENABLE_TESTS=ON -DIPPL_PLATFORMS=openmp -DHeffte_ENABLE_FFTW=True
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_FFT=ON \
+    -DIPPL_ENABLE_SOLVERS=ON \
+    -DIPPL_ENABLE_ALPINE=True \
+    -DIPPL_ENABLE_TESTS=ON \
+    -DIPPL_PLATFORMS=openmp \
+    -DHeffte_ENABLE_FFTW=True
 ```
 #### Cuda alpine release build 
 ```
-cmake .. -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_[architecture]=ON -DCMAKE_CXX_STANDARD=20 -DENABLE_FFT=ON -DENABLE_TESTS=ON -DUSE_ALTERNATIVE_VARIANT=ON -DENABLE_SOLVERS=ON -DENABLE_ALPINE=True -DIPPL_PLATFORMS=cuda
+cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DKokkos_ARCH_[architecture]=ON \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DIPPL_ENABLE_FFT=ON \
+    -DIPPL_ENABLE_TESTS=ON \
+    -DUSE_ALTERNATIVE_VARIANT=ON \
+    -DIPPL_ENABLE_SOLVERS=ON \
+    -DIPPL_ENABLE_ALPINE=True \
+    -DIPPL_PLATFORMS=cuda
 ```
 #### HIP release build (LUMI) 
 ```
@@ -84,10 +107,10 @@ cmake .. \
       -DKokkos_ARCH_AMD_GFX90A=ON \
       -DKokkos_ENABLE_HIP=ON \
       -DIPPL_PLATFORMS="HIP;OPENMP" \
-      -DENABLE_TESTS=ON \
-      -DENABLE_FFT=ON  \
-      -DENABLE_SOLVERS=ON \
-      -DENABLE_ALPINE=OFF \
+      -DIPPL_ENABLE_TESTS=ON \
+      -DIPPL_ENABLE_FFT=ON  \
+      -DIPPL_ENABLE_SOLVERS=ON \
+      -DIPPL_ENABLE_ALPINE=OFF \
       -DHeffte_ENABLE_ROCM=ON\
       -DHeffte_ENABLE_GPU_AWARE_MPI=ON \
       -DCMAKE_EXE_LINKER_FLAGS="-L/opt/cray/pe/mpich/8.1.28/ofi/amd/5.0/lib -L/opt/cray/pe/mpich/8.1.28/gtl/lib -L/opt/cray/pe/libsci/24.03.0/AMD/5.0/x86_64/lib -L/opt/cray/pe/dsmml/0.3.0/dsmml
@@ -104,6 +127,7 @@ m-6.0.3/lib/llvm/lib"
 - `TURING75`
 - `AMPERE80` (PSI GWENDOLEN machine)
 - `AMD_GFX90A` (LUMI machine)
+- `HOPPER90` (Merlin7 GPUs)
 
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.

@@ -21,7 +21,7 @@
 
 #include "FieldLayout/FieldLayout.h"
 
-#ifdef ENABLE_FFT
+#ifdef IPPL_ENABLE_FFT
 #include "FFT/FFT.h"
 #endif
 

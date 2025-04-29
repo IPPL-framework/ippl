@@ -1,27 +1,21 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Index/CMakeLists.txt
+#
+# Adds multi-dimensional index headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install Index-related headers
+install(FILES
     Index.h
     Index.hpp
     NDIndex.h
     NDIndex.hpp
-    )
+    DESTINATION include/Index
+)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-ADD_IPPL_SOURCES (${_SRCS})
-ADD_IPPL_HEADERS (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Index)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
