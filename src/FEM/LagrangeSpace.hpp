@@ -887,4 +887,84 @@ namespace ippl {
         return global_error;
     }
 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeAvg(
+        const FieldLHS& u_h) const {
+        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
+            // throw exception
+            throw IpplException(
+                "LagrangeSpace::computeAvg()",
+                "Order of quadrature rule for error computation should be > 2*p + 1");
+        }
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Variable to sum the error to
+        T avg = 0;
+
+        // Get domain information and ghost cells
+        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost = u_h.getNghost();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_reduce(
+            "Compute average over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                // contribution of this element to the error
+                T contrib = 0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    T val_u_h = 0;
+                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                        // get field index corresponding to this DOF
+                        size_t I           = global_dofs[i];
+                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                        }
+
+                        // get field value at DOF and interpolate to q_k
+                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
+                    }
+
+                    contrib += w[k] * val_u_h * absDetDPhi;
+                }
+                local += contrib;
+            },
+            Kokkos::Sum<double>(avg));
+
+        // MPI reduce
+        T global_avg = 0.0;
+        Comm->allreduce(avg, global_avg, 1, std::plus<T>());
+
+        return global_avg;
+    }
+
 }  // namespace ippl

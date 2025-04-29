@@ -199,6 +199,23 @@ namespace ippl {
             return error_norm;
         }
 
+        /**
+         * Query the average of the solution
+         * @param vol Boolean indicating whether we divide by volume or not
+         * @return avg (offset for null space test cases if divided by volume)
+         */
+        Tlhs getAvg(bool Vol = false) {
+            Tlhs avg = this->lagrangeSpace_m.computeAvg(*(this->lhs_mp));
+            if (Vol) {
+                lhs_type unit((this->lhs_mp)->get_mesh(), (this->lhs_mp)->getLayout());
+                unit = 1.0;
+                Tlhs vol = this->lagrangeSpace_m.computeAvg(unit);
+                return avg/vol;
+            } else {
+                return avg;
+            }
+        }
+
     protected:
         PCGSolverAlgorithm_t pcg_algo_m;
 
