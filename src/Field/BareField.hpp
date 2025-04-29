@@ -162,6 +162,13 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
+    void BareField<T, Dim, ViewArgs...>::accumulateHalo_noghost(int nghost) {
+        if (layout_m->comm.size() > 1) {
+            halo_m.accumulateHalo_noghost(dview_m, layout_m, nghost);
+        }
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...>& BareField<T, Dim, ViewArgs...>::operator=(T x) {
         using index_array_type = typename RangePolicy<Dim, execution_space>::index_array_type;
         ippl::parallel_for(

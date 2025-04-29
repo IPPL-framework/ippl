@@ -69,6 +69,7 @@ add_subdirectory (Utility)
 add_subdirectory (Expression)
 add_subdirectory (Types)
 add_subdirectory (Partition)
+add_subdirectory (FEM)
 add_subdirectory (Random)
 
 if (IPPL_ENABLE_SOLVERS)

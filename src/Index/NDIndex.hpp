@@ -23,6 +23,13 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    KOKKOS_FUNCTION NDIndex<Dim>::NDIndex(const Vector<unsigned, Dim>& sizes) {
+        for (unsigned int d = 0; d < Dim; ++d) {
+            indices_m[d] = Index(sizes[d]);
+        }
+    }
+
+    template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION const Index& NDIndex<Dim>::operator[](unsigned d) const noexcept {
         return indices_m[d];
     }

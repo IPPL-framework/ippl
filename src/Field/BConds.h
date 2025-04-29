@@ -32,6 +32,7 @@ namespace ippl {
 
         void findBCNeighbors(Field& field);
         void apply(Field& field);
+        void assignGhostToPhysical(Field& field);
 
         bool changesPhysicalCells() const;
         virtual void write(std::ostream&) const;

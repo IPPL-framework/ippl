@@ -119,7 +119,8 @@ namespace ippl {
             lhs_type q(mesh, layout);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                q       = op_m(d);
+                q = op_m(d);
+
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
@@ -204,7 +205,6 @@ namespace ippl {
             // parameter should be set in main
             // default = pi/2 as this was found optimal during hyperparameter scan for test case 
             // (see https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
-                                        
             ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -297,7 +297,7 @@ namespace ippl {
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            this->residueNorm = std::sqrt(std::abs(delta1));
+            this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * delta1;
 
             while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
@@ -319,7 +319,7 @@ namespace ippl {
                 delta1 = innerProduct(r, s);
 
                 T beta            = delta1 / delta0;
-                this->residueNorm = std::sqrt(std::abs(delta1));
+                this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
 
                 d = s + beta * d;
                 ++this->iterations_m;
