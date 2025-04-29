@@ -5,7 +5,6 @@
 #ifndef IPPL_FEMPOISSONSOLVER_H
 #define IPPL_FEMPOISSONSOLVER_H
 
-// #include "FEM/FiniteElementSpace.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 
@@ -97,7 +96,6 @@ namespace ippl {
 
             lagrangeSpace_m.evaluateLoadVector(rhs);
 
-            rhs.accumulateHalo();
             rhs.fillHalo();
         }
 
