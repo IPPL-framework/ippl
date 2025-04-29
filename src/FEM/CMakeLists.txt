@@ -1,13 +1,18 @@
-set (_SRCS
-    # no source files
+# -----------------------------------------------------------------------------
+# src/Field/CMakeLists.txt
+#
+# Adds core Field data structure headers to the IPPL target.
+# -----------------------------------------------------------------------------
+
+# Add this directory to public include path
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
 )
 
-# file (GLOB_RECURSE _HDRS
-#     "*.h"
-#     "*.hpp"
-# )
-
-set (_HDRS
+# Install Field-related headers
+install(FILES
     # Elements
     Elements/Element.h
     Elements/HexahedralElement.h
@@ -30,22 +35,7 @@ set (_HDRS
     FiniteElementSpace.hpp
     LagrangeSpace.h
     LagrangeSpace.hpp
+
+    DESTINATION include/FEM
 )
 
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/FEM)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
