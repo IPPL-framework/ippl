@@ -374,8 +374,10 @@ namespace ippl {
             // through all internal cells.
             bool isCorner = (d != 0);
             for (size_t i = 0; i < Dim; ++i) {
-                end[i]   = view.extent(i) - nghost - (isCorner);
-                begin[i] = nghost + (isCorner);
+                bool upperFace_i = (ldom[i].max() == domain[i].max());
+                bool lowerFace_i = (ldom[i].min() == domain[i].min());
+                end[i]   = view.extent(i) - nghost - (upperFace_i)*(isCorner);
+                begin[i] = nghost + (lowerFace_i)*(isCorner);
             }
             begin[d] = ((0 + nghost - 1) * (1 - upperFace)) + (N * upperFace);
             end[d]   = begin[d] + 1;

@@ -475,12 +475,14 @@ namespace ippl {
             });
         IpplTimings::stopTimer(outer_loop);
 
-        resultField.accumulateHalo_noghost();
-
         if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
             bcField.apply(resultField);
             bcField.assignGhostToPhysical(resultField);
+        } else if (bcType == CONSTANT_FACE) {
+            resultField.accumulateHalo_noghost();
         }
+
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
@@ -710,10 +712,12 @@ namespace ippl {
         IpplTimings::stopTimer(outer_loop);
 
         temp_field.accumulateHalo();
+
         if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
             bcField.apply(temp_field);
             bcField.assignGhostToPhysical(temp_field);
         }
+
         field = temp_field;
 
         IpplTimings::stopTimer(evalLoadV);
