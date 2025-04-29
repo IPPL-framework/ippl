@@ -126,6 +126,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // solve the problem
     solver.solve();
 
+    // average to 0 since constant null space (there can be any additive constant)
+    lhs = lhs - solver.getAvg(true);
+
     // start the timer
     static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
     IpplTimings::startTimer(errorTimer);
