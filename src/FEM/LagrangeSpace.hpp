@@ -479,7 +479,7 @@ namespace ippl {
             resultField.accumulateHalo();
             bcField.apply(resultField);
             bcField.assignGhostToPhysical(resultField);
-        } else if (bcType == CONSTANT_FACE) {
+        } else {
             resultField.accumulateHalo_noghost();
         }
 
