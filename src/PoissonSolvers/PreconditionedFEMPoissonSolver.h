@@ -1,11 +1,12 @@
 // Class FEMPoissonSolver
 //   Solves the poisson equation using finite element methods and Conjugate
-//   Gradient
+//   Gradient + a Preconditioner.
 
-#ifndef IPPL_FEMPOISSONSOLVER_H
-#define IPPL_FEMPOISSONSOLVER_H
+#ifndef IPPL_PRECONFEMPOISSONSOLVER_H
+#define IPPL_PRECONFEMPOISSONSOLVER_H
 
 // #include "FEM/FiniteElementSpace.h"
+#include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 
@@ -35,7 +36,7 @@ namespace ippl {
      * @tparam FieldRHS field type for the right hand side
      */
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
-    class FEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
+    class PreconditionedFEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
 
@@ -46,7 +47,7 @@ namespace ippl {
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
         using PCGSolverAlgorithm_t =
-            CG<lhs_type, lhs_type, lhs_type, lhs_type, lhs_type, FieldLHS, FieldRHS>;
+            PCG<lhs_type, lhs_type, lhs_type, lhs_type, lhs_type, FieldLHS, FieldRHS>;
 
         // FEM Space types
         using ElementType =
@@ -59,7 +60,7 @@ namespace ippl {
         using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
         // default constructor (compatibility with Alpine)
-        FEMPoissonSolver() 
+        PreconditionedFEMPoissonSolver() 
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
@@ -67,7 +68,7 @@ namespace ippl {
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
+        PreconditionedFEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
@@ -133,10 +134,6 @@ namespace ippl {
             FieldBC bcType = bcField[0]->getBCType();
 
             const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
-                // start a timer
-                static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
-                IpplTimings::startTimer(opTimer);
-
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -144,10 +141,78 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
-                IpplTimings::stopTimer(opTimer);
+                return return_field;
+            };
+
+            const auto algoOperatorL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
+
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx_lower(field, poissonEquationEval);
 
                 return return_field;
             };
+
+            const auto algoOperatorU = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
+
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx_upper(field, poissonEquationEval);
+
+                return return_field;
+            };
+
+            const auto algoOperatorUL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
+
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx_upperlower(field, poissonEquationEval);
+
+                return return_field;
+            };
+
+            const auto algoOperatorInvD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
+
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx_inversediag(field, poissonEquationEval);
+
+                return return_field;
+            };
+
+            const auto algoOperatorD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+                // set appropriate BCs for the field as the info gets lost in the CG iteration
+                field.setFieldBC(bcField);
+
+                field.fillHalo();
+
+                auto return_field = lagrangeSpace_m.evaluateAx_diag(field, poissonEquationEval);
+
+                return return_field;
+            };
+
+            // set preconditioner for PCG
+            std::string preconditioner_type =
+                this->params_m.template get<std::string>("preconditioner_type");
+            int level    = this->params_m.template get<int>("newton_level");
+            int degree   = this->params_m.template get<int>("chebyshev_degree");
+            int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
+            int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
+            double omega = this->params_m.template get<double>("ssor_omega");
+            int richardson_iterations =
+                this->params_m.template get<int>("richardson_iterations");
+
+            pcg_algo_m.setPreconditioner(algoOperator, algoOperatorL, algoOperatorU, algoOperatorUL,
+                                     algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
+                                     level, degree, richardson_iterations, inner, outer, omega);
 
             pcg_algo_m.setOperator(algoOperator);
 
@@ -161,6 +226,7 @@ namespace ippl {
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
 
+            // run PCG -> lhs contains solution
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
