@@ -3,7 +3,14 @@
 // -Laplacian(u) = pi^2 * sin(pi * x), x in [-1,1]
 // u(-1) = u(1) = 0
 //
-// Exact solution is u(x) = sin(pi * x)
+// Exact solution is u(x) = sin(pi * x).
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
+//
+// The test is available in 1D (problem above),
+// as well as 2D and 3D with analogous test cases.
 //
 // Here we use periodic BCs, so this should work
 // for other domains too as long as the domain 

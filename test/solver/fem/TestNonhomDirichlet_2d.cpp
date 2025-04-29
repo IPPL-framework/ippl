@@ -1,5 +1,16 @@
-// Tests the FEM Poisson solver with a Gaussian source
-// and homogeneous Dirichlet boundaries
+// Tests the FEM Poisson solver by solving the problem:
+//
+// -Laplacian(u) = f(x, y),
+// where x,y in [0,1]^2 and u(boundaries) = 1.56, 
+// and f(x,y) is such that the exact solution is 
+// u(x,y) = x^2(1 - x^2) + y^2(1 - y^2) + 1.56.
+//
+// BCs: Dirichlet BCs (Constant Face = 1.56).
+// This is only 2D!
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
 //
 // Usage:
 //     ./TestNonHomDirichlet_2d --info 5

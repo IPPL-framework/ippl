@@ -1,5 +1,16 @@
-// Tests the FEM Poisson solver with a Gaussian source
-// and homogeneous Dirichlet boundaries
+// Tests the FEM Poisson solver by solving the problem:
+//
+// -Laplacian(u) = f(x, y, z),
+// where x,y,z in [0,2]^3 and u(boundaries) = 8, 
+// and f(x,y,z) is such that the exact solution is 
+// u(x,y,z) = -x^2(4 - x^2)*y^2(4 - y^2)*z^2(4 - z^2) + 8.
+//
+// BCs: Dirichlet BCs (Constant Face = 8.0).
+// This is only 3D!
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
 //
 // Usage:
 //     ./TestNonHomDirichlet_3d --info 5
@@ -152,7 +163,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 5; n = n << 1) {
+        for (unsigned n = 1 << 3; n <= 1 << 7; n = n << 1) {
             testFEMSolver<T, 3>(n, 0.0, 2.0);
         }
 

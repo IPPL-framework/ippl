@@ -1,5 +1,16 @@
-// Tests the FEM Poisson solver with a Gaussian source
-// and homogeneous Dirichlet boundaries
+// Tests the FEM Poisson solver by solving the problem:
+//
+// -Laplacian(u) = pi^2 * cos(pi * x),
+// where x in [-1,1] and u(-1) = u(1) = -1. 
+//
+// The exact solution is u(x) = cos(pi * x).
+//
+// BCs: Dirichlet BCs (Constant Face = -1).
+// This is only 1D!
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
 //
 // Usage:
 //     ./TestNonHomDirichlet_1dcos --info 5
