@@ -252,6 +252,15 @@ namespace ippl {
         template <typename F>
         T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
 
+        /**
+         * @brief Given a field, compute the average
+         *
+         * @param u_h The numerical solution found using FEM
+         *
+         * @return avg The average of the field on the domain
+         */
+        T computeAvg(const FieldLHS& u_h) const;
+
     private:
         /**
          * @brief Check if a DOF is on the boundary of the mesh
