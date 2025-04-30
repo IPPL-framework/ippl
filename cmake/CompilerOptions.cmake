@@ -55,7 +55,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_G
 endif()
 
 # === Debug-specific sanitizers ===
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND IPPL_ENABLE_SANITIZER)
     message(STATUS "✅ Enabling AddressSanitizer and UBSan for Debug build")
     add_compile_options(-fsanitize=address,undefined)
     add_link_options(-fsanitize=address,undefined)
