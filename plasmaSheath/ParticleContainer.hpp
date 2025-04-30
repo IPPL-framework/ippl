@@ -12,6 +12,7 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
 public:
     ippl::ParticleAttrib<double> q;           // charge
+    ippl::ParticleAttrib<double> m;           // mass
     typename Base::particle_position_type P;  // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 private:
@@ -33,13 +34,14 @@ public:
     void registerAttributes() {
         // register the particle attributes
         this->addAttribute(q);
+        this->addAttribute(m);
         this->addAttribute(P);
         this->addAttribute(E);
     }
-    void setupBCs() { setBCAllPeriodic(); }
+    void setupBCs() { setNoBCs(); }
 
 private:
-    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
+    void setNoBCs() { this->setParticleBC(ippl::BC::NO); }
 };
 
 #endif

@@ -26,16 +26,6 @@ public:
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
     using Base                = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
 
-protected:
-    size_type totalP_m;
-    int nt_m;
-    Vector_t<int, Dim> nr_m;
-    double lbt_m;
-    std::string solver_m;
-    std::string stepMethod_m;
-    std::vector<std::string> preconditioner_params_m;
-
-public:
     AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                   std::string& solver_, std::string& stepMethod_,
                   std::vector<std::string> preconditioner_params = {})
@@ -50,24 +40,6 @@ public:
         , preconditioner_params_m(preconditioner_params) {}
     ~AlpineManager() {}
 
-protected:
-    double time_m;
-    double dt_m;
-    int it_m;
-    Vector_t<double, Dim> kw_m;
-    double alpha_m;
-    Vector_t<double, Dim> rmin_m;
-    Vector_t<double, Dim> rmax_m;
-    Vector_t<double, Dim> hr_m;
-    double Q_m;
-    Vector_t<double, Dim> origin_m;
-    bool isAllPeriodic_m;
-    bool isFirstRepartition_m;
-    ippl::NDIndex<Dim> domain_m;
-    std::array<bool, Dim> decomp_m;
-    double rhoNorm_m;
-
-public:
     size_type getTotalP() const { return totalP_m; }
 
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
@@ -160,15 +132,30 @@ public:
         (*rho)            = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
-
-        // rho = rho_e - rho_i (only if periodic BCs)
-        if (this->fsolver_m->getStype() != "OPEN") {
-            double size = 1;
-            for (unsigned d = 0; d < Dim; d++) {
-                size *= rmax[d] - rmin[d];
-            }
-            *rho = *rho - (Q / size);
-        }
     }
+
+protected:
+    size_type totalP_m;
+    int nt_m;
+    Vector_t<int, Dim> nr_m;
+    double lbt_m;
+    std::string solver_m;
+    std::string stepMethod_m;
+    std::vector<std::string> preconditioner_params_m;
+
+    double time_m;
+    double dt_m;
+    int it_m;
+    Vector_t<double, Dim> rmin_m;
+    Vector_t<double, Dim> rmax_m;
+    Vector_t<double, Dim> hr_m;
+    double Q_m;
+    Vector_t<double, Dim> origin_m;
+    bool isFirstRepartition_m;
+    ippl::NDIndex<Dim> domain_m;
+    std::array<bool, Dim> decomp_m;
+    double rhoNorm_m;
+    Vector_t<double, Dim> Bext_m;
+    double phiWall_m;
 };
 #endif

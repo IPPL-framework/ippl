@@ -65,8 +65,6 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
-        const double pi = Kokkos::numbers::pi_v<T>;
-
         if (this->solver_m == "OPEN") {
             throw IpplException("PlasmaSheath",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -77,12 +75,10 @@ public:
         }
 
         this->decomp_m.fill(true);
-        this->kw_m    = 0.5;
-        this->alpha_m = 0.05;
         this->rmin_m  = 0.0;
-        this->rmax_m  = 2 * pi / this->kw_m;
-
+        this->rmax_m  = 2.0; // L = size of domain
         this->hr_m = this->rmax_m / this->nr_m;
+
         // Q = -\int\int f dx dv
         this->Q_m =
             std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
@@ -91,14 +87,15 @@ public:
         this->it_m   = 0;
         this->time_m = 0.0;
 
+        this->phiWall_m = 2.0; // Dirichlet BC for phi at wall
+        this->Bext_m = {0.0, 0.0, 0.0}; // External magnetic field
+
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
-        this->isAllPeriodic_m = true;
-
         this->setFieldContainer(std::make_shared<FieldContainer_t>(
             this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
-            this->isAllPeriodic_m));
+            this->phiWall_m));
 
         this->setParticleContainer(std::make_shared<ParticleContainer_t>(
             this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
@@ -108,11 +105,12 @@ public:
         if (this->getSolver() == "PCG") {
             this->setFieldSolver(std::make_shared<FieldSolver_t>(
                 this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
-                &this->fcontainer_m->getPhi(), this->preconditioner_params_m));
+                &this->fcontainer_m->getPhi(), this->fcontainer_m->getPhiWall(),
+                this->preconditioner_params_m));
         } else {
             this->setFieldSolver(std::make_shared<FieldSolver_t>(
                 this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
-                &this->fcontainer_m->getPhi()));
+                &this->fcontainer_m->getPhi(), this->fcontainer_m->getPhiWall()));
         }
 
         this->fsolver_m->initSolver();
@@ -156,12 +154,11 @@ public:
             ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
         double parR[2 * Dim];
         for (unsigned int i = 0; i < Dim; i++) {
-            parR[i * 2]     = this->alpha_m;
-            parR[i * 2 + 1] = this->kw_m[i];
+            parR[i * 2]     = 0.05;
+            parR[i * 2 + 1] = 0.5;
         }
         DistR_t distR(parR);
 
-        Vector_t<double, Dim> kw                         = this->kw_m;
         Vector_t<double, Dim> hr                         = this->hr_m;
         Vector_t<double, Dim> origin                     = this->origin_m;
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");

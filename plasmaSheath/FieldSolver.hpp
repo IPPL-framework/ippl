@@ -13,15 +13,17 @@ private:
     Field_t<Dim>* rho_m;
     VField_t<T, Dim>* E_m;
     Field<T, Dim>* phi_m;
+    T phiWall_m; // Dirichlet BC at wall
     std::vector<std::string> preconditioner_params_m;
 
 public:
     FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* E, Field<T, Dim>* phi,
-                std::vector<std::string> preconditioner_params = {})
+                T phiWall, std::vector<std::string> preconditioner_params = {})
         : ippl::FieldSolverBase<T, Dim>(solver)
         , rho_m(rho)
         , E_m(E)
         , phi_m(phi)
+        , phiWall_m(phiWall)
         , preconditioner_params_m(preconditioner_params) {
         setPotentialBCs();
     }
@@ -37,34 +39,34 @@ public:
     Field<T, Dim>* getPhi() const { return phi_m; }
     void setPhi(Field<T, Dim>* phi) { phi_m = phi; }
 
+    void setPhiWall(T phiWall) { phiWall_m = phiWall; }
+
     void initSolver() override {
         Inform m("solver ");
-        if (this->getStype() == "FFT") {
-            initFFTSolver();
-        } else if (this->getStype() == "CG") {
+        if (this->getStype() == "CG") {
             initCGSolver();
         } else if (this->getStype() == "PCG") {
             initPCGSolver();
-        } else if (this->getStype() == "P3M") {
-            initP3MSolver();
-        } else if (this->getStype() == "OPEN") {
-            initOpenSolver();
         } else {
-            m << "No solver matches the argument" << endl;
+            m << "Only CG or PCG supported" << endl;
         }
     }
 
     void setPotentialBCs() {
-        // CG requires explicit periodic boundary conditions while the periodic Poisson solver
-        // simply assumes them
-        if (this->getStype() == "CG" || this->getStype() == "PCG") {
-            typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-            bc_type allPeriodic;
-            for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+        // we are setting Dirichlet BCs for phi
+        // phi = 0 at x = 0
+        // phi = phi_wall at x = L
+
+        typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
+        bc_type dirichlet;
+        for (unsigned int i = 0; i < 2 * Dim; ++i) {
+            if (i & 1) {
+                dirichlet[i] = std::make_shared<ippl::ConstantFace<Field<T, Dim>>>(i, phiWall_m);
+            } else {
+                dirichlet[i] = std::make_shared<ippl::ConstantFace<Field<T, Dim>>>(i, 0.0);
             }
-            phi_m->setFieldBC(allPeriodic);
         }
+        phi_m->setFieldBC(dirichlet);
     }
 
     void runSolver() override {
@@ -98,18 +100,6 @@ public:
                 }
             }
             ippl::Comm->barrier();
-        } else if (this->getStype() == "FFT") {
-            if constexpr (Dim == 2 || Dim == 3) {
-                std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
-            }
-        } else if (this->getStype() == "P3M") {
-            if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<T, Dim>>(this->getSolver()).solve();
-            }
-        } else if (this->getStype() == "OPEN") {
-            if constexpr (Dim == 3) {
-                std::get<OpenSolver_t<T, Dim>>(this->getSolver()).solve();
-            }
         } else {
             throw std::runtime_error("Unknown solver type");
         }
@@ -124,33 +114,10 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
-            // The CG solver computes the potential directly and
-            // uses this to get the electric field
-            solver.setLhs(*phi_m);
-            solver.setGradient(*E_m);
-        } else {
-            // The periodic Poisson solver, Open boundaries solver,
-            // and the P3M solver compute the electric field directly
-            solver.setLhs(*E_m);
-        }
-    }
-
-    void initFFTSolver() {
-        if constexpr (Dim == 2 || Dim == 3) {
-            ippl::ParameterList sp;
-            sp.add("output_type", FFTSolver_t<T, Dim>::GRAD);
-            sp.add("use_heffte_defaults", false);
-            sp.add("use_pencils", true);
-            sp.add("use_reorder", false);
-            sp.add("use_gpu_aware", true);
-            sp.add("comm", ippl::p2p_pl);
-            sp.add("r2c_direction", 0);
-
-            initSolverWithParams<FFTSolver_t<T, Dim>>(sp);
-        } else {
-            throw std::runtime_error("Unsupported dimensionality for FFT solver");
-        }
+        // The CG solver computes the potential directly and
+        // uses this to get the electric field
+        solver.setLhs(*phi_m);
+        solver.setGradient(*E_m);
     }
 
     void initCGSolver() {
@@ -208,41 +175,6 @@ public:
         sp.add("ssor_omega", ssor_omega);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
-    }
-
-    void initP3MSolver() {
-        if constexpr (Dim == 3) {
-            ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
-            sp.add("use_heffte_defaults", false);
-            sp.add("use_pencils", true);
-            sp.add("use_reorder", false);
-            sp.add("use_gpu_aware", true);
-            sp.add("comm", ippl::p2p_pl);
-            sp.add("r2c_direction", 0);
-
-            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
-        } else {
-            throw std::runtime_error("Unsupported dimensionality for P3M solver");
-        }
-    }
-
-    void initOpenSolver() {
-        if constexpr (Dim == 3) {
-            ippl::ParameterList sp;
-            sp.add("output_type", OpenSolver_t<T, Dim>::GRAD);
-            sp.add("use_heffte_defaults", false);
-            sp.add("use_pencils", true);
-            sp.add("use_reorder", false);
-            sp.add("use_gpu_aware", true);
-            sp.add("comm", ippl::p2p_pl);
-            sp.add("r2c_direction", 0);
-            sp.add("algorithm", OpenSolver_t<T, Dim>::HOCKNEY);
-
-            initSolverWithParams<OpenSolver_t<T, Dim>>(sp);
-        } else {
-            throw std::runtime_error("Unsupported dimensionality for OPEN solver");
-        }
     }
 };
 #endif
