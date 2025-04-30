@@ -18,7 +18,7 @@
 //     Example:
 //     srun ./PlasmaSheath 128 10000 10 CG 0.01 Boris --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 1;
+constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "PlasmaSheath";
 

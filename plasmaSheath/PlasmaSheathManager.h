@@ -65,6 +65,8 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
+        const double pi = Kokkos::numbers::pi_v<T>;
+
         if (this->solver_m == "OPEN") {
             throw IpplException("PlasmaSheath",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -360,10 +362,14 @@ public:
         // TODO add a B-field in the particle container OR external B-field?
         // rotation
         IpplTimings::startTimer(BTimer);
-        Vector_t<double, 3> const t = 0.5 * dt * (-1.0) * 0.0; // B_ext;
-        Vector_t<double, 3> const w = pc->P + cross(pc->P, t);
-        Vector_t<double, 3> const s = (2.0 / (1 + dot(t, t))) * t;
-        pc->P = pc->P + cross(w, s);
+        view_type Pview = this->pcontainer_m->P.getView();
+        Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+                Vector_t<double, 3> const t = 0.5 * dt * (-1.0) * (0.0);
+                Vector_t<double, 3> const w = Pview(i) + cross(Pview(i), t);
+                Vector_t<double, 3> const s = (2.0 / (1 + dot(t, t))) * t;
+                Pview(i) = Pview(i) + cross(w, s);
+            });
         IpplTimings::stopTimer(BTimer);
 
         // half acceleration
