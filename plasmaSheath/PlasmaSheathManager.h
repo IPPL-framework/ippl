@@ -366,8 +366,8 @@ public:
         Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
                 Vector_t<double, 3> const t = 0.5 * dt * (-1.0) * (0.0);
-                Vector_t<double, 3> const w = Pview(i) + cross(Pview(i), t);
-                Vector_t<double, 3> const s = (2.0 / (1 + dot(t, t))) * t;
+                Vector_t<double, 3> const w = Pview(i) + cross(Pview(i), t).apply();
+                Vector_t<double, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
                 Pview(i) = Pview(i) + cross(w, s);
             });
         IpplTimings::stopTimer(BTimer);
