@@ -207,11 +207,11 @@ public:
 			     rand_pool.free_state(state);
 			   }
 			 });
-            
+
       // Store delta(k) for reuse 
-      auto delta_k = cfield_m; 
-      typename CField_t::view_type& viewdk = delta_k.getView();
-            
+      auto tmpcfield = cfield_m; 
+      typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
+                  
       // 2–4. Loop over displacement components x(0), y(1), z(2)
       for (int dim = 0; dim < 3; ++dim) {
 	// Compute displacement component in k-space
@@ -231,7 +231,7 @@ public:
 			     double kz = 2.0 * pi * kz_i / Lz;
 			     double k2 = kx * kx + ky * ky + kz * kz;
 			     
-			     Kokkos::complex<double> delta = ippl::apply(viewdk, idx);
+			     Kokkos::complex<double> delta = ippl::apply(viewtmpcfield, idx);
 			     Kokkos::complex<double> I(0.0, 1.0);
 			     double k_comp = (dim == 0) ? kx : (dim == 1) ? ky : kz;
 			     Kokkos::complex<double> result = (k2 == 0.0) ? Kokkos::complex<double>(0.0, 0.0)
@@ -242,12 +242,8 @@ public:
 	// Inverse FFT to real space
 	fft_m->transform(ippl::BACKWARD, cfield_m);
 	
-	// Apply displacement to particles directly
-	auto dispView = cfield_m.getView();
-
 	const unsigned int nx = lDom[0].length();
 	const unsigned int ny = lDom[1].length();
-
 	const Vector_t hr = hr_m;
 	
 	Kokkos::parallel_for("ComputeWorldCoordinates", lgridsize, KOKKOS_LAMBDA(const index_type n) {
@@ -255,24 +251,12 @@ public:
 	    const unsigned int i = n % nx;
 	    const unsigned int j = (n / nx) % ny;
 	    const unsigned int k = n / (nx * ny);
-	    // Compute world coordinates
-	    double disp = dispView(i, j, k).real();
-	    if (dim==0) {
-	      rView(n)[dim] = ((i + 0.5) * hr[dim]) + disp;  // x-coordinate
-	      vView(n)[dim] = disp;
-	    }
-	    if (dim==1) {
-	      rView(n)[dim] = ((j + 0.5) * hr[dim]) + disp;  // y-coordinate
-	      vView(n)[dim] = disp;
-	    }
-	    if (dim==2) { 
-	      rView(n)[dim] = ((k + 0.5) * hr[dim]) + disp;  // z-coordinate
-	      vView(n)[dim] = disp;
-	    }
+	    double disp = view(i, j, k).real();
+	    unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
+	    rView(n)[dim] = ((idx + 0.5) * hr[dim]) + disp;
+	    vView(n)[dim] = disp;
 	  });
       }	        
-      Kokkos::deep_copy(this->R.getView(), rView);
-      Kokkos::deep_copy(this->V.getView(), vView);
 }
   
 private:
