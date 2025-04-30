@@ -35,3 +35,8 @@ add_ippl_integration_test(zeldo-test1
   LABELS integration particle
   ARGS 128 128 128 10000 10 --info 10
 )
+
+add_ippl_integration_test(zeldo-test-mp1
+  LABELS integration particle
+  ARGS 128 128 128 10000 10 --info 10
+)
