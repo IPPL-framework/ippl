@@ -1,18 +1,12 @@
-// Test PICnd
-//   This test program sets up a simple sine-wave electric field in N dimensions,
-//   creates a population of particles with random positions and and velocities,
-//   and then tracks their motions in the static
-//   electric field using cloud-in-cell interpolation and periodic particle BCs.
+// Test zeldo-test1
+//   This test program has the following assumptions
+//   box size [0...1]^3 and Pk = 1 and const.
+//   Purpose:
+//   . creates a random gaussian field in k-space (InitDeltaField) 
+//   . compute per dimension the displacement in k-space (ComputeDisplacementComponentK) 
+//   . FFT^-1 
+//   . apply the displacement to particle coordinated and initialize verlocity field (ComputeWorldCoordinates)
 //
-
-//   Usage:
-//     srun ./univ-2 128 128 128 --info 10
-//
-// Copyright (c) 2020, Sriramkrishnan Muralikrishnan,
-// Paul Scherrer Institut, Villigen PSI, Switzerland
-// All rights reserved
-//
-// This file is part of IPPL.
 //
 // IPPL is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,10 +16,10 @@
 // You should have received a copy of the GNU General Public License
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
-/*
 
+/*
 salloc --nodes=64  --partition=standard-g --time=00:30:00 --account=project_465001705 --gres=gpu:8 --ntasks-per-node=8 --gpus-per-node=8
-srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./univ-2 4096 4096 4096  --info 5
+srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./zeldo-test1 4096 4096 4096  --info 5
 */
 
 #include "Ippl.h"
