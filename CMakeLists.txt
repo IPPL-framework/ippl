@@ -47,5 +47,9 @@ if(IPPL_ENABLE_ALPINE)
 endif()
 
 if(IPPL_ENABLE_COSMOLOGY)
-    add_subdirectory(cosmology)
+    add_subdirectory(cosmology-new)
 endif()
+
+#if(IPPL_ENABLE_COSMOLOGY)
+#    add_subdirectory(cosmology)
+#endif()
