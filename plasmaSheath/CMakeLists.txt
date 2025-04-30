@@ -4,8 +4,6 @@
 # This module provides example physics applications using IPPL.
 # -----------------------------------------------------------------------------
 
-add_subdirectory(ExamplesWithoutPicManager)
-
 set(COMMON_LIBS
     ippl
     ${MPI_CXX_LIBRARIES}
