@@ -304,7 +304,11 @@ namespace ippl {
             for (unsigned int j = 0; j < innerloops_m; ++j) {
                 ULg_m = upper_and_lower_m(g);
                 g     = r - ULg_m;
-                g     = inverse_diagonal_m(g) * g;
+                if constexpr (std::is_same_v<InvDiagF, double>) {
+                    g = inverse_diagonal_m(g) * g;
+                } else {
+                    g = inverse_diagonal_m(g);
+                }
             }
             return g;
         }
@@ -356,14 +360,22 @@ namespace ippl {
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
                     UL_m = lower_m(x);
                     x    = r_m - UL_m;
-                    x    = inverse_diagonal_m(x) * x;
+                    if constexpr (std::is_same_v<InvDiagF, double>) {
+                        x = inverse_diagonal_m(x) * x;
+                    } else {
+                        x = inverse_diagonal_m(x);
+                    }
                 }
                 UL_m = lower_m(x);
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
                     UL_m = upper_m(x);
                     x    = r_m - UL_m;
-                    x    = inverse_diagonal_m(x) * x;
+                    if constexpr (std::is_same_v<InvDiagF, double>) {
+                        x = inverse_diagonal_m(x) * x;
+                    } else {
+                        x = inverse_diagonal_m(x);
+                    }
                 }
             }
             return x;
@@ -428,22 +440,40 @@ namespace ippl {
             IpplTimings::startTimer(loopTimer);
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                UL_m = upper_m(x);
-                D    = diagonal_m(x);
-                r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
-
-                for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = lower_m(x);
-                    x    = r_m - omega_m * UL_m;
-                    x    = inverse_diagonal_m(x) * x;
-                }
-                UL_m = lower_m(x);
-                D    = diagonal_m(x);
-                r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
-                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                if constexpr (std::is_same_v<DiagF, double>) {
                     UL_m = upper_m(x);
-                    x    = r_m - omega_m * UL_m;
-                    x    = inverse_diagonal_m(x) * x;
+                    D    = diagonal_m(x);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
+
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m = lower_m(x);
+                        x    = r_m - omega_m * UL_m;
+                        x    = inverse_diagonal_m(x) * x;
+                    }
+                    UL_m = lower_m(x);
+                    D    = diagonal_m(x);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m = upper_m(x);
+                        x    = r_m - omega_m * UL_m;
+                        x    = inverse_diagonal_m(x) * x;
+                    }
+                } else {
+                    UL_m = upper_m(x);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * diagonal_m(x);
+
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m = lower_m(x);
+                        x    = r_m - omega_m * UL_m;
+                        x    = inverse_diagonal_m(x);
+                    }
+                    UL_m = lower_m(x);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * diagonal_m(x);
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m = upper_m(x);
+                        x    = r_m - omega_m * UL_m;
+                        x    = inverse_diagonal_m(x);
+                    }
                 }
             }
             IpplTimings::stopTimer(loopTimer);
