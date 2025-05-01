@@ -385,16 +385,19 @@ public:
      */
 
   void createParticles() {
+    
+    Inform m2a("createParticles ",INFORM_ALL_NODES);
+    Inform msg("createParticles ");
+
     size_type nloc = this->totalP_m / ippl::Comm->size();
     std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
     pc->create(nloc);
     pc->m = this->M_m / this->totalP_m;
-    
+
     /** 
 	Pk_m is constructed
      */
     initPwrSpec();
-
 
     /**
        the following code can be found
@@ -402,7 +405,20 @@ public:
      */
     LinearZeldoInitMP();
 
+    // Load Balancer Initialisation
+    auto* mesh = &this->fcontainer_m->getMesh();
+    auto* FL   = &this->fcontainer_m->getFL();
+    if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
+      this->isFirstRepartition_m = true;
+      this->loadbalancer_m->initializeORB(FL, mesh);
+      this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
+    }
 
+    pc->update();
+    m2a << "local number of galaxies after initializer " << pc->getLocalNum() << endl;
+
+
+    
     /*  this was the old way of ding it i.e. mc4
     indens();
 
