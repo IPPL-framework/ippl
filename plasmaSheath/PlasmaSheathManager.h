@@ -10,38 +10,12 @@
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
-#include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
-using view_type   = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using view_type3D = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
-
-// define functions used in sampling particles
-struct CustomDistributionFunctions {
-    struct CDF {
-        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d,
-                                                 const double* params_p) const {
-            return x
-                   + (params_p[d * 2 + 0] / params_p[d * 2 + 1])
-                         * Kokkos::sin(params_p[d * 2 + 1] * x);
-        }
-    };
-
-    struct PDF {
-        KOKKOS_INLINE_FUNCTION double operator()(double x, unsigned int d,
-                                                 double const* params_p) const {
-            return 1.0 + params_p[d * 2 + 0] * Kokkos::cos(params_p[d * 2 + 1] * x);
-        }
-    };
-
-    struct Estimate {
-        KOKKOS_INLINE_FUNCTION double operator()(double u, unsigned int d,
-                                                 double const* params_p) const {
-            return u + params_p[d] * 0.;
-        }
-    };
-};
+using view_typeR = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+using view_typeP = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
+using view_typeQ = typename ippl::detail::ViewType<double, 1>::view_type;
 
 template <typename T, unsigned Dim>
 class PlasmaSheathManager : public AlpineManager<T, Dim> {
@@ -53,7 +27,7 @@ public:
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_,
-                         double L = 1, double phiWall = 1, Vector_t<double, 3> Bext = {0,0,0})
+                         double L = 1, T phiWall = 1, Vector_t<T, 3> Bext = {0,0,0})
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
             setup(L, phiWall, Bext);
         }
@@ -61,7 +35,7 @@ public:
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_,
                          std::vector<std::string> preconditioner_params_, 
-                         double L = 1, double phiWall = 1, Vector_t<double, 3> Bext = {0,0,0})
+                         double L = 1, T phiWall = 1, Vector_t<T, 3> Bext = {0,0,0})
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
                                 preconditioner_params_) {
             setup(L, phiWall, Bext);
@@ -69,7 +43,7 @@ public:
 
     ~PlasmaSheathManager() {}
 
-    void setup(double L, double phiWall, Vector_t<double, 3> Bext) {
+    void setup(T L, T phiWall, Vector_t<T, 3> Bext) {
         Inform m("Setup");
 
         if ((this->solver_m != "CG") || (this->solver_m != "PCG")) {
@@ -95,9 +69,7 @@ public:
         this->it_m   = 0;
         this->time_m = 0.0;
 
-        // Q = -\int\int f dx dv
-        this->Q_m =
-            std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
+        this->Q_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
@@ -160,64 +132,90 @@ public:
 
     void initializeParticles() {
         Inform m("Initialize Particles");
+        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particleCreation");
 
-        // TODO change to correct distribution function here
-
-        auto* mesh = &this->fcontainer_m->getMesh();
-        auto* FL   = &this->fcontainer_m->getFL();
-
-        Vector_t<double, Dim> hr                         = this->hr_m;
-        Vector_t<double, Dim> origin                     = this->origin_m;
-
-        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
         IpplTimings::startTimer(particleCreation);
 
-        // Sample particle positions:
-        ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh);
-
-        // unsigned int
+        // divide particles equally among ranks
         size_type totalP = this->totalP_m;
-        int seed         = 42;
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+        size_type nlocal = totalP / ippl::Comm->size();
+        int rest = (int)(totalP - nlocal * ippl::Comm->size());
+        if (ippl::Comm->rank() < rest)
+            ++nlocal;
 
-        using DistR_t =
-            ippl::random::Distribution<double, Dim, 2 * Dim, CustomDistributionFunctions>;
-        double parR[2 * Dim];
-        for (unsigned int i = 0; i < Dim; i++) {
-            parR[i * 2]     = 0.5;
-            parR[i * 2 + 1] = 0.5;
-        }
-
-        DistR_t distR(parR);
-        using samplingR_t =
-            ippl::random::InverseTransformSampling<double, Dim, Kokkos::DefaultExecutionSpace,
-                                                   DistR_t>;
-        Vector_t<double, Dim> rmin = this->rmin_m;
-        Vector_t<double, Dim> rmax = this->rmax_m;
-        samplingR_t samplingR(distR, rmax, rmin, rlayout, totalP);
-        size_type nlocal = samplingR.getLocalSamplesNum();
-
+        // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        view_type* R = &(this->pcontainer_m->R.getView());
-        samplingR.generate(*R, rand_pool64);
+        // initialize the charge and mass appropriately
+        // we have both ions and electrons
+        double q_i = 1.0; // ion charge
+        double q_e = -1.0; // electron charge
+        T m_i = 1000; // ion mass
+        T m_e = 1; // electron mass
+        
+        // half the particles are ions, half are electrons
+        // we do this approximate division by checking whether even or odd ID
+        view_typeQ Qview = this->pcontainer_m->q.getView();
+        view_typeQ Mview = this->pcontainer_m->m.getView();
+        Kokkos::parallel_for("Set charge and mass", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+                bool odd = (i % 2);
+                Qview(i) = ((!odd) * q_e) + (odd * q_i);
+                Mview(i) = ((!odd) * m_e) + (odd * m_i);
+            });
+        
+        // particles are initially sampled at x=0 (bulk plasma)
+        this->pcontainer_m->R = 0;
 
-        view_type3D* P = &(this->pcontainer_m->P.getView());
+        // particle velocity is sampled from distribution functions
+        const double pi = Kokkos::numbers::pi_v<T>;
 
-        double mu[3];
-        double sd[3];
-        for (unsigned int i = 0; i < 3; i++) {
-            mu[i] = 0.0;
-            sd[i] = 1.0;
-        }
-        Kokkos::parallel_for(nlocal, ippl::random::randn<double, 3>(*P, rand_pool64, mu, sd));
+        // TODO
+        // figure out how to generate from two different distributions
+        // and assign velocity to only half the particles
+        // and also figure out how to account for the prefactor
+        // (which is also species dependant)
+        
+        int electrons = nlocal/2;
+        int ions = nlocal - electrons;
+    
+        // electrons
+        Vector_t<double, 3> v0 = {0.0, 0.0, 0.0}; // avg velocity
+        double T_e = 1; // temperature
+        double n_e = 1; // n_e
+
+        double prefactor_e = n_e * m_e / (2 * pi * T_e);
+        double stdeviation_e = Kokkos::sqrt(T_e/m_e); 
+
+        double muE[3] = {v0[0], v0[1], v0[2]};
+        double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
+
+        int seed = 42;
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+
+        view_typeP* P = &(this->pcontainer_m->P.getView());
+        Kokkos::parallel_for(electrons, ippl::random::randn<double, 3>(*P, rand_pool64, muE, sdE));
+
+        // ions 
+        double parallel_v = 1; // v_parallel
+        double v_thi = 1; // thermal velocity of ions
+        double K = 1; // constant K
+
+        double prefactor_i = K * Kokkos::sqrt(2 * pi) * parallel_v * parallel_v / v_thi;
+        double stdeviation_i = v_thi; 
+
+        double muI[3] = {0.0, 0.0, 0.0};
+        double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
+
+        Kokkos::parallel_for(ions, ippl::random::randn<double, 3>(*P, rand_pool64, muI, sdI));
+
         Kokkos::fence();
         ippl::Comm->barrier();
 
         IpplTimings::stopTimer(particleCreation);
 
-        this->pcontainer_m->q = this->Q_m / totalP;
+        this->dump();
+
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -289,14 +287,16 @@ public:
 
         // rotation
         IpplTimings::startTimer(BTimer);
-        Vector_t<double, 3> Bext = this->Bext_m;
-        view_type3D Pview = this->pcontainer_m->P.getView();
+
+        Vector_t<T, 3> Bext = this->Bext_m;
+        view_typeP Pview = this->pcontainer_m->P.getView();
+
         Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
                 // TODO change the -1.0 factor to q/m for each particle (2 species here)
-                Vector_t<double, 3> const t = 0.5 * dt * (-1.0) * Bext;
-                Vector_t<double, 3> const w = Pview(i) + cross(Pview(i), t).apply();
-                Vector_t<double, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
+                Vector_t<T, 3> const t = 0.5 * dt * (-1.0) * Bext;
+                Vector_t<T, 3> const w = Pview(i) + cross(Pview(i), t).apply();
+                Vector_t<T, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
                 Pview(i) = Pview(i) + cross(w, s);
             });
         IpplTimings::stopTimer(BTimer);
@@ -323,8 +323,46 @@ public:
         IpplTimings::startTimer(dumpDataTimer);
 
         // dump for each particle the particles attributes (q, m, R, P)
+        dumpParticleData();
 
         IpplTimings::stopTimer(dumpDataTimer);
+    }
+
+    void dumpParticleData() {
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->pcontainer_m->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, 3>>::HostMirror P_host = this->pcontainer_m->P.getHostMirror();
+        typename ParticleAttrib<double>::HostMirror q_host = this->pcontainer_m->q.getHostMirror();
+        typename ParticleAttrib<T>::HostMirror m_host = this->pcontainer_m->m.getHostMirror();
+
+        Kokkos::deep_copy(R_host, this->pcontainer_m->R.getView());
+        Kokkos::deep_copy(P_host, this->pcontainer_m->P.getView());
+        Kokkos::deep_copy(q_host, this->pcontainer_m->q.getView());
+        Kokkos::deep_copy(m_host, this->pcontainer_m->m.getView());
+
+        std::stringstream pname;
+        pname << "data/ParticleIC_";
+        pname << ippl::Comm->rank();
+        pname << ".csv";
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
+        pcsvout.precision(10);
+        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+
+        pcsvout << "q, m, R_x, V_x, V_y, V_z" << endl;
+
+        for (size_type i = 0; i < this->pcontainer_m->getLocalNum(); i++) {
+            pcsvout << q_host(i) << " ";
+            pcsvout << m_host(i) << " ";
+
+            for (unsigned d = 0; d < Dim; d++) {
+                pcsvout << R_host(i)[d] << " ";
+            }
+
+            for (unsigned d = 0; d < 3; d++) {
+                pcsvout << P_host(i)[d] << " ";
+            }
+            pcsvout << endl;
+        }
+        ippl::Comm->barrier();
     }
 };
 #endif

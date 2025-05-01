@@ -13,7 +13,7 @@ class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<
 
 public:
     ippl::ParticleAttrib<double> q;           // charge
-    ippl::ParticleAttrib<double> m;           // mass
+    ippl::ParticleAttrib<T> m;                // mass
     particle_velocity_type P;                 // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 private:
