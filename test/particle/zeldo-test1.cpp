@@ -40,7 +40,7 @@ srun -N64 --ntasks-per-node=8 --gpus-per-node=8 ./zeldo-test1 4096 4096 4096  --
 // dimension of our positions
 #define DIM     3
 constexpr unsigned Dim          = DIM;
-constexpr const char* PROG_NAME = "univ-2-" xstr(DIM) "d";
+constexpr const char* PROG_NAME = "zeldo1-" xstr(DIM) "d";
 
 // some typedefs
 typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
@@ -63,7 +63,6 @@ typedef Field<Vector_t, Dim> VField_t;
 typedef Field<Kokkos::complex<double>, Dim> CField_t;
 
 double pi = Kokkos::numbers::pi_v<double>;
-
 
 typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t, Centering_t> field_type;
 
