@@ -6,14 +6,15 @@
 #include "Manager/BaseManager.h"
 
 // Define the ParticlesContainer class
-template <typename T, unsigned Dim = 3>
+template <typename T, unsigned Dim = 1>
 class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>> {
     using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using particle_velocity_type = ParticleAttrib<Vector_t<T, 3>>;
 
 public:
     ippl::ParticleAttrib<double> q;           // charge
     ippl::ParticleAttrib<double> m;           // mass
-    typename Base::particle_position_type P;  // particle velocity
+    particle_velocity_type P;                 // particle velocity
     typename Base::particle_position_type E;  // electric field at particle position
 private:
     PLayout_t<T, Dim> pl_m;

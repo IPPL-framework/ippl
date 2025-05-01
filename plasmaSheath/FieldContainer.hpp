@@ -6,7 +6,7 @@
 #include "Manager/BaseManager.h"
 
 // Define the FieldsContainer class
-template <typename T, unsigned Dim = 3>
+template <typename T, unsigned Dim = 1>
 class FieldContainer {
 public:
     FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin, Vector_t<T, Dim>& rmax,

@@ -155,7 +155,7 @@ protected:
     ippl::NDIndex<Dim> domain_m;
     std::array<bool, Dim> decomp_m;
     double rhoNorm_m;
-    Vector_t<double, Dim> Bext_m;
+    Vector_t<double, 3> Bext_m;
     double phiWall_m;
 };
 #endif

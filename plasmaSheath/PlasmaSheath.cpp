@@ -18,7 +18,7 @@
 //     Example:
 //     srun ./PlasmaSheath 128 10000 10 CG 0.01 Boris --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 3;
+constexpr unsigned Dim = 1;
 using T                = double;
 const char* TestName   = "PlasmaSheath";
 
@@ -75,8 +75,13 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // physical parameters which can be changed by user
+        double L                 = 2.0; // length of plasma sheath
+        double phiWall           = 2.0; // potential drop across plasma sheath
+        Vector_t<double, 3> Bext = {0.0, 0.0, 0.0}; // magnetic field
+
         PlasmaSheathManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
-                                            preconditioner_params);
+                                            preconditioner_params, L, phiWall, Bext);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
