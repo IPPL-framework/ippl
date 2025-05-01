@@ -25,13 +25,13 @@
 //                 values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
 //     srun StructureFormation input.par tf.dat out.data datadir FFT 1.0 LeapFrog --overallocate 1.0 --info 5
+//
+//     more stuff and todos at: https://docs.google.com/document/d/1PhQ2Wo6QhdeS7U3lN1q2TEaJm2XjD4eXdjGCMKfPac4/edit?usp=sharing
 
-/*  Example of input file
+/*  Example of an input file
 
-// Run:
-
-np=3
-nt=1
+np=128
+nt=0
 box_size=64.0   // In Mpc/h
 seed=9854373
 z_in=50.0
@@ -56,6 +56,10 @@ PrintFormat=0
 
 // new
 Omega_L=0.7  
+
+// Read from file (0) or create (1)
+ReadInParticles=1
+
 
 */
 
