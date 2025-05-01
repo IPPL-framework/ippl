@@ -28,8 +28,8 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 
 typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t<Dim>, Mesh_t<Dim>::DefaultCentering> field_type;
 typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
-typedef Field<Kokkos::complex<double>, Dim> Cfield_t;
-typedef Field<double, Dim> Rfield_t; 
+typedef Field<Kokkos::complex<double>, Dim> CField_t;
+typedef Field<double, Dim> RField_t; 
 
 /**
  * @brief Construct a new StructureFormationManager object.
@@ -41,6 +41,8 @@ typedef Field<double, Dim> Rfield_t;
  * @param solver_ Solver method.
  * @param stepMethod_ Time stepping method.
  * @param par_ the parser to read the input file
+ * @param tfname_ filename for transfer function
+ * @param readICs_ read or create initial conditions
  */
 template <typename T, unsigned Dim>
 class StructureFormationManager : public GravityManager<T, Dim> {
@@ -48,9 +50,12 @@ private:
 
   /// all for the initializer
   std::unique_ptr<CFFT_type> Cfft_m;
-  Cfield_t cfield_m;
-  Rfield_t Pk_m;
+  CField_t cfield_m;
+  RField_t Pk_m;
+  bool readICs_m;
 
+  initializer::CosmoClass cosmo_m;
+  
 public:
   using ParticleContainer_t = ParticleContainer<T, Dim>;
   using FieldContainer_t    = FieldContainer<T, Dim>;
@@ -58,15 +63,15 @@ public:
   using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
   using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+  using index_type       = typename ippl::RangePolicy<Dim>::index_type;
   
-  initializer::CosmoClass cosmo_m;  
-
   StructureFormationManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
 			    std::string& solver_, std::string& stepMethod_,	
-			    initializer::InputParser par_, std::string tfname)
-    : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, par_)
+			    initializer::InputParser par_, std::string tfname_, bool readICs_)
+    : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, par_),
+      readICs_m(readICs_)
   {
-    cosmo_m.SetParameters(initializer::GlobalStuff::instance(), tfname.c_str()); 
+    cosmo_m.SetParameters(initializer::GlobalStuff::instance(), tfname_.c_str()); 
   }
 
     /**
@@ -176,8 +181,7 @@ public:
         this->setLoadBalancer(std::make_shared<LoadBalancer_t>(
             this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m));
 
-	bool readIn=false;
-	if (readIn) {
+	if (readICs_m) {
 	  readParticlesDomain();  // defines particle positions, velocities
 
 	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
@@ -209,22 +213,197 @@ public:
         mes << "Done";
     }
 
+
+  /**
+     * @brief 
+     */
+  
+  void LinearZeldoInitMP() {
+    // After creating the field layout (cfield_m) and determining global grid sizes Nx, Ny, Nz:
+    Inform msg("LinearZeldoInitMP ");
+    
+    typename CField_t::view_type& view = cfield_m.getView();
+    typename RField_t::view_type& pkview = Pk_m.getView();
+      
+    auto rView = this->pcontainer_m->R.getView();
+    auto vView = this->pcontainer_m->V.getView();
+
+    const int ngh = cfield_m.getNghost();
+    const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
+
+    index_type lgridsize = 1;
+    for (unsigned d = 0; d < Dim; d++) {
+      lgridsize *= lDom[d].length();
+    }
+    const uint64_t global_seed = 12345ULL;  // Shared global seed for reproducibility
+
+    const int Nx = this->nr_m[0];
+    const int Ny = this->nr_m[1];
+    const int Nz = this->nr_m[2];
+    const double Lx = this->rmax_m[0];
+    const double Ly = this->rmax_m[1];
+    const double Lz = this->rmax_m[2];
+
+    static IpplTimings::TimerRef fourDenTimer = IpplTimings::getTimer("Fourier Density");
+    IpplTimings::startTimer(fourDenTimer);
+    // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
+    ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(view, ngh),
+		       KOKKOS_LAMBDA(const index_array_type& idx) {
+			 const double pi = Kokkos::numbers::pi_v<double>;
+			 // Compute global coordinates (i,j,k) for this local index
+			 int i = idx[0] - ngh + lDom[0].first();
+			 int j = idx[1] - ngh + lDom[1].first();
+			 int k = idx[2] - ngh + lDom[2].first();
+
+			 // DC mode (k=0 vector) set to 0 (no DC offset)
+			 if (i == 0 && j == 0 && k == 0) {
+			   ippl::apply(view, idx) = Kokkos::complex<double>(0.0, 0.0);
+			 } else {
+			   // Compute the global “negative” indices for Hermitian pair
+			   int i_neg = (i == 0 ? 0 : Nx - i);
+			   int j_neg = (j == 0 ? 0 : Ny - j);
+			   int k_neg = (k == 0 ? 0 : Nz - k);
+			   
+			   // Determine if this index is its own conjugate (self-Hermitian case)
+			   bool self = (i_neg == i && j_neg == j && k_neg == k);
+			   // Determine lexicographically which of (i,j,k) and its negative is smaller
+			   bool is_conjugate = (!self && 
+						(i_neg < i || (i_neg == i && j_neg < j) || 
+						 (i_neg == i && j_neg == j && k_neg < k)));
+			   // Choose the "key" coordinates (the global smaller of the pair) for random generation
+			   int key_i = is_conjugate ? i_neg : i;
+			   int key_j = is_conjugate ? j_neg : j;
+			   int key_k = is_conjugate ? k_neg : k;
+
+			   // Deterministically generate two uniform [0,1) random numbers from the key
+			   uint64_t key_index = ((uint64_t)key_i * Ny + key_j) * Nz + key_k;
+			   uint64_t x = key_index ^ global_seed;
+			   if (x == 0ull) x = 1ull;  // avoid zero state
+			   // XorShift64 steps to produce pseudorandom 64-bit values
+			   x ^= x << 13;  x ^= x >> 7;  x ^= x << 17;
+			   uint64_t r1 = x;
+			   x ^= x << 13;  x ^= x >> 7;  x ^= x << 17;
+			   uint64_t r2 = x;
+			   // Map the 53 most significant bits of r1,r2 to double in [0,1)
+			   const double norm = 1.0 / 9007199254740992.0;  // 1/2^53
+			   double u1 = (double)(r1 >> 11) * norm;
+			   double u2 = (double)(r2 >> 11) * norm;
+			   
+			   // Convert uniforms to Gaussian via Box-Muller
+			   double R     = Kokkos::sqrt(-2.0 * Kokkos::log(u1));
+			   double theta = 2.0 * pi * u2;
+			   double gauss_re = R * Kokkos::cos(theta);   // Gaussian(0,1) for real part
+			   double gauss_im = R * Kokkos::sin(theta);   // Gaussian(0,1) for imaginary part
+			   double Pk = ippl::apply(pkview, idx);       // power spectrum P(k) 
+			   // Set amplitude: for self-conjugate modes use sqrt(Pk), otherwise sqrt(Pk/2)
+			   double amp = self ? Kokkos::sqrt(Pk) : Kokkos::sqrt(Pk / 2.0);
+			   double val_re = amp * gauss_re;
+			   double val_im = amp * gauss_im;
+			   if (self) {
+			     // For self-conjugate (Nyquist) modes, enforce the mode is real
+			     val_im = 0.0;
+			   } else if (is_conjugate) {
+			     // If this index is the "conjugate partner" (lexicographically larger), flip the imaginary sign
+			     val_im = -val_im;
+			   }
+			   // Assign the complex value to this local mode
+			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
+			 }
+		       });
+
+    IpplTimings::stopTimer(fourDenTimer);
+    
+    static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
+    
+    // Store delta(k) for reuse 
+    auto tmpcfield = cfield_m; 
+    typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
+
+    /*
+      Now we can delete Pk and allocate the particles
+      
+    */
+    
+    const unsigned int nx = lDom[0].length();
+    const unsigned int ny = lDom[1].length();
+    const Vector_t<double,3> hr = this->hr_m;
+    
+    // 2–4. Loop over displacement components x(0), y(1), z(2)
+    for (int dim = 0; dim < 3; ++dim) {
+      IpplTimings::startTimer(fourDisplTimer);
+      // Compute displacement component in k-space
+      ippl::parallel_for("ComputeDisplacementComponentK", ippl::getRangePolicy(view, ngh),
+			 KOKKOS_LAMBDA(const index_array_type& idx) {
+			   const double pi = Kokkos::numbers::pi_v<double>;
+			   int i = idx[0] - ngh + lDom[0].first();
+			   int j = idx[1] - ngh + lDom[1].first();
+			   int k = idx[2] - ngh + lDom[2].first();
+			   
+			   int kx_i = (i <= Nx / 2) ? i : i - Nx;
+			   int ky_i = (j <= Ny / 2) ? j : j - Ny;
+			   int kz_i = (k <= Nz / 2) ? k : k - Nz;
+			   
+			   double kx = 2.0 * pi * kx_i / Lx;
+			   double ky = 2.0 * pi * ky_i / Ly;
+			   double kz = 2.0 * pi * kz_i / Lz;
+			   double k2 = kx * kx + ky * ky + kz * kz;
+			   
+			   Kokkos::complex<double> delta = ippl::apply(viewtmpcfield, idx);
+			   Kokkos::complex<double> I(0.0, 1.0);
+			   double k_comp = (dim == 0) ? kx : (dim == 1) ? ky : kz;
+			   Kokkos::complex<double> result = (k2 == 0.0) ? Kokkos::complex<double>(0.0, 0.0)
+			     : I * (k_comp / k2) * delta;
+			   ippl::apply(view, idx) = result;
+			 });
+	
+	// Inverse FFT to real space
+	Cfft_m->transform(ippl::BACKWARD, cfield_m);
+	IpplTimings::stopTimer(fourDisplTimer);
+
+	static IpplTimings::TimerRef posvelInitTimer = IpplTimings::getTimer("Position/Velocity init");
+	IpplTimings::startTimer(posvelInitTimer);
+
+	Kokkos::parallel_for("ComputeWorldCoordinates",lgridsize,
+			     KOKKOS_LAMBDA(const index_type n) {
+			       // Convert 1D index n back to 3D indices (i, j, k)
+			       const unsigned int i = n % nx;
+			       const unsigned int j = (n / nx) % ny;
+			       const unsigned int k = n / (nx * ny);
+			       double disp = view(i, j, k).real();
+			       unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
+			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) + disp;
+			       vView(n)[dim] = disp;
+			     });
+	
+	IpplTimings::stopTimer(posvelInitTimer);
+    }	        
+  }
+  
+  
   /**
      * @brief Create particles using Zarijas initializer
      */
 
   void createParticles() {
-    Inform msg("Creating Particles ");
-
     size_type nloc = this->totalP_m / ippl::Comm->size();
-    msg << "Local number of particles: " << nloc << endl;
     std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
     pc->create(nloc);
     pc->m = this->M_m / this->totalP_m;
-    msg << "Empty PC created" << endl;
+    
+    /** 
+	Pk_m is constructed
+     */
+    initPwrSpec();
 
-    initspec();
 
+    /**
+       the following code can be found
+       as standalone test in test/particles/zeldo-test-mp1.cpp
+     */
+    LinearZeldoInitMP();
+
+
+    /*  this was the old way of ding it i.e. mc4
     indens();
 
     test_reality();
@@ -232,7 +411,10 @@ public:
     gravity_potential();
 
     set_particles();
-  }
+    */  
+
+
+}
 
   /**
      hu_sugiyama hardcoded TFFLAG==2
@@ -267,7 +449,7 @@ public:
    return Kokkos::log(1.0+2.34*qkh)/(2.34*qkh) * Kokkos::pow(1.0+3.89*qkh+Kokkos::pow(16.1*qkh,2.0)+Kokkos::pow(5.46*qkh,3.0)+Kokkos::pow(6.71*qkh,4.0), -0.25);
   }
 
-  void initspec() {
+  void initPwrSpec() {
     Inform msg("initspec ");
 
     constexpr auto tpi = 2*Kokkos::numbers::pi_v<double>;
@@ -306,26 +488,30 @@ public:
 			 int k_j    = args[1] - nghost + ldom[1].first();
 			 int k_k    = args[2] - nghost + ldom[2].first();
 			 
-			 //if (k_k >= nq) {
+			 /*
+			  * we do not use symmetry
+			  */
+			 // if (k_k >= nq) {
 			 //  k_k = -MOD(ngrid-k_k,ngrid);
 			 //}
-			 
+			 // without if but not sure if that is correct! 
 			 // k_k -= (k_k >= nq) * ngrid;
-
-			 int index = (k_i)
-                           + (k_j) * ldom[0].length()
-			   + (k_k) * ldom[0].length() * ldom[1].length();
 			 
 			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);
 			 double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
 			 double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
-
+			 ippl::apply(pkview, args) = val;
+			 
+			 /* for debugging 
+			 int index = (k_i)
+			 + (k_j) * ldom[0].length()
+			 + (k_k) * ldom[0].length() * ldom[1].length();
+			 
 			 if ((k_i==0) && (k_j==0) && (k_k==0))
 			   printf("i \t j \t k \t index \t kk \t transf \t Pk \n");
- 			 //if ((k_i<2) && (k_j<2) && (k_k<2))
-			 printf("%d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
-
-			 ippl::apply(pkview, args) = val;
+			   if ((k_i<2) && (k_j<2) && (k_k<2))
+			   printf("%d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
+			 */
 		       });
 
     msg << "Pk created using hu_sugiyama TFFlag ==2" << endl;
@@ -368,7 +554,6 @@ public:
     auto pkview = Pk_m.getView();
     
     Kokkos::Random_XorShift64_Pool<> rand_pool(12345); // Seed for reproducibility
-    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 
     ippl::parallel_for("random gauss field", ippl::getRangePolicy(cfview),
 		       KOKKOS_LAMBDA(const index_array_type& args) {
@@ -410,7 +595,6 @@ public:
     Inform msg ("test_reality ");
     
     auto cfview = cfield_m.getView();  
-    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
     auto* FL   = &this->fcontainer_m->getFL();
     const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();  // local processor domain coordinates
 
@@ -502,7 +686,7 @@ public:
 void gravity_potential(){
   Inform msg ("gravity_potential ");
   constexpr auto tpi             = 2*Kokkos::numbers::pi_v<double>;
-  using index_array_type         = typename ippl::RangePolicy<Dim>::index_array_type;
+
   auto* FL                       = &this->fcontainer_m->getFL();
   const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();  // local processor domain coordinates
   auto cfview                    = cfield_m.getView();
@@ -565,8 +749,6 @@ void gravity_potential(){
     float d_z, ddot;
     float z_in; 
 
-    using index_array_type         = typename ippl::RangePolicy<Dim>::index_array_type;
-    using index_type               = typename ippl::RangePolicy<Dim>::index_type;
     auto* FL                       = &this->fcontainer_m->getFL();
     //std::shared_ptr<ParticleContainer_t>
     auto  pc                       = this->pcontainer_m;
@@ -735,7 +917,7 @@ void gravity_potential(){
 
         bool isFirstRepartition              = false;
         std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-        if (this->loadbalancer_m->balance(this->totalP_m, this->it_m)) {
+        if (this->loadbalancer_m->balance(this->totalP_m)) {
             auto* mesh = &fc->getRho().get_mesh();
             auto* FL   = &fc->getFL();
             this->loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
@@ -864,7 +1046,7 @@ void gravity_potential(){
 
         bool isFirstRepartition              = false;
         std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
-        if (this->loadbalancer_m->balance(this->totalP_m, this->it_m)) {
+        if (this->loadbalancer_m->balance(this->totalP_m)) {
             auto* mesh = &fc->getRho().get_mesh();
             auto* FL   = &fc->getFL();
             this->loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
@@ -932,9 +1114,8 @@ void gravity_potential(){
         IpplTimings::stopTimer(updateTimer);
 
         size_type totalP        = this->totalP_m;
-        int it                  = this->it_m;
         bool isFirstRepartition = false;
-        if (this->loadbalancer_m->balance(totalP, it + 1)) {
+        if (this->loadbalancer_m->balance(totalP)) {
             IpplTimings::startTimer(domainDecomposition);
             auto* mesh = &fc->getRho().get_mesh();
             auto* FL   = &fc->getFL();
@@ -1047,7 +1228,6 @@ void gravity_potential(){
     void dumpStructure(const View& Fview) {
         const int nghostF = this->fcontainer_m->getF().getNghost();
 
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double localEx2 = 0, localExNorm = 0;
         ippl::parallel_reduce(
             "Ex stats", ippl::getRangePolicy(Fview, nghostF),

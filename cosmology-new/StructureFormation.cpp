@@ -119,6 +119,10 @@ int main(int argc, char* argv[]) {
         int nt = 0;
 	par.getByName("nt", nt);
 
+	int readInParticles = 0;
+	par.getByName("ReadInParticles", readInParticles);
+	bool readICs = (readInParticles == 0);
+	
         // Solver method
         std::string solver = argv[arg++];
         // Check if the solver type is valid
@@ -131,7 +135,7 @@ int main(int argc, char* argv[]) {
         std::string step_method = argv[arg++];
 
         // Create an instance of a manager for the considered application
-        StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par, tfName);
+        StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par, tfName, readICs);
 
         // set initial conditions folder
         manager.setIC(ic_folder);

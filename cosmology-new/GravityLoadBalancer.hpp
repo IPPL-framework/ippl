@@ -140,10 +140,9 @@ public:
      * @brief Perform load balancing
      *
      * @param totalP Total number of particles
-     * @param nstep Current step number
      * @return true if load balancing is needed, false otherwise
      */
-    bool balance(size_type totalP, const unsigned int nstep) {
+     bool balance(size_type totalP ) {
         if (ippl::Comm->size() < 2) {
             return false;
         }
