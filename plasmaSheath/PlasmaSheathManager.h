@@ -46,7 +46,7 @@ public:
     void setup(T L, T phiWall, Vector_t<T, 3> Bext) {
         Inform m("Setup");
 
-        if ((this->solver_m != "CG") || (this->solver_m != "PCG")) {
+        if ((this->solver_m != "CG") && (this->solver_m != "PCG")) {
             throw IpplException("PlasmaSheath",
                                 "Open boundaries solver incompatible with this simulation!");
         }
@@ -68,8 +68,6 @@ public:
         this->dt_m = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m   = 0;
         this->time_m = 0.0;
-
-        this->Q_m = 0.0;
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
