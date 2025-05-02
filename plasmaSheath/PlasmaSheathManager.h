@@ -136,6 +136,8 @@ public:
 
         IpplTimings::startTimer(particleCreation);
 
+        const double pi = Kokkos::numbers::pi_v<T>;
+
         // divide particles equally among ranks
         size_type totalP = this->totalP_m;
         size_type nlocal = totalP / ippl::Comm->size();
@@ -146,40 +148,13 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        // initialize the charge and mass appropriately
-        // we have both ions and electrons
+        // there are two species: electrons and ions
         double q_i = 1.0; // ion charge
         double q_e = -1.0; // electron charge
         T m_i = 1000; // ion mass
         T m_e = 1; // electron mass
         
-        // half the particles are ions, half are electrons
-        // we do this approximate division by checking whether even or odd ID
-        view_typeQ Qview = this->pcontainer_m->q.getView();
-        view_typeQ Mview = this->pcontainer_m->m.getView();
-        Kokkos::parallel_for("Set charge and mass", this->pcontainer_m->getLocalNum(),
-            KOKKOS_LAMBDA(const int i) {
-                bool odd = (i % 2);
-                Qview(i) = ((!odd) * q_e) + (odd * q_i);
-                Mview(i) = ((!odd) * m_e) + (odd * m_i);
-            });
-        
-        // particles are initially sampled at x=0 (bulk plasma)
-        this->pcontainer_m->R = 0;
-
-        // particle velocity is sampled from distribution functions
-        const double pi = Kokkos::numbers::pi_v<T>;
-
-        // TODO
-        // figure out how to generate from two different distributions
-        // and assign velocity to only half the particles
-        // and also figure out how to account for the prefactor
-        // (which is also species dependant)
-        
-        int electrons = nlocal/2;
-        int ions = nlocal - electrons;
-    
-        // electrons
+        // electron distribution: Maxwellian (normal distribution)
         Vector_t<double, 3> v0 = {0.0, 0.0, 0.0}; // avg velocity
         double T_e = 1; // temperature
         double n_e = 1; // n_e
@@ -190,13 +165,7 @@ public:
         double muE[3] = {v0[0], v0[1], v0[2]};
         double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
 
-        int seed = 42;
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-
-        view_typeP* P = &(this->pcontainer_m->P.getView());
-        Kokkos::parallel_for(electrons, ippl::random::randn<double, 3>(*P, rand_pool64, muE, sdE));
-
-        // ions 
+        // ion distribution: (normal distribution)
         double parallel_v = 1; // v_parallel
         double v_thi = 1; // thermal velocity of ions
         double K = 1; // constant K
@@ -207,8 +176,39 @@ public:
         double muI[3] = {0.0, 0.0, 0.0};
         double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
 
-        Kokkos::parallel_for(ions, ippl::random::randn<double, 3>(*P, rand_pool64, muI, sdI));
+        // assign the particle attributes
 
+        // particles are initially sampled at x=0 (bulk plasma)
+        this->pcontainer_m->R = 0;
+
+        // charge and mass are species dependent
+        view_typeQ Qview = this->pcontainer_m->q.getView();
+        view_typeQ Mview = this->pcontainer_m->m.getView();
+
+        // velocity is sampled from the species' respective distribution
+        view_typeP Pview = this->pcontainer_m->P.getView();
+
+        int seed = 42;
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+
+        // half the particles are ions, half are electrons
+        // we do this approximate division by checking whether even or odd ID
+        Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+                bool odd = (i % 2);
+                
+                Qview(i) = ((!odd) * q_e) + (odd * q_i);
+                Mview(i) = ((!odd) * m_e) + (odd * m_i);
+
+                auto rand_gen = rand_pool64.get_state();
+
+                for (unsigned d = 0; d < 3; ++d) {
+                    Pview(i)[d] = (!odd) * prefactor_e * (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0))
+                                  + odd * prefactor_i * (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
+                }
+
+                rand_pool64.free_state(rand_gen);
+            });
         Kokkos::fence();
         ippl::Comm->barrier();
 
