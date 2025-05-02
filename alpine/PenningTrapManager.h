@@ -15,8 +15,11 @@
 #include "Random/Randn.h"
 
 #ifdef ENABLE_CATALYST
-#include <optional>
-#include "Stream/InSitu/CatalystAdaptor.h"
+#include "CatalystAdaptor.h"
+#endif
+
+#ifdef ENABLE_ASCENT
+#include "AscentAdaptor.h"
 #endif
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
@@ -28,10 +31,11 @@ public:
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
+    double scaleFactor;
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_,
                        double lbt_, std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),scaleFactor(30){}
 
     ~PenningTrapManager(){}
 
@@ -229,7 +233,7 @@ public:
         double alpha = this->alpha_m;
         double Bext = this->Bext_m;
         double DrInv = this->DrInv_m;
-        double V0  = 30 * this->length_m[2];
+        double V0  = scaleFactor * this->length_m[2];
         Vector_t<double, Dim> length = this->length_m;
         Vector_t<double, Dim> origin = this->origin_m;
         double dt = this->dt_m;
@@ -284,14 +288,31 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
+
 #ifdef ENABLE_CATALYST
-        std::optional<conduit_cpp::Node> node = std::nullopt;
-        //CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
-        auto *rho               = &this->fcontainer_m->getRho();
-        CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
-        //auto *E               = &this->fcontainer_m->getE();
-        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
-        //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
+        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields = {
+            {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            //{"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields, scaleFactor);
+#endif
+
+#ifdef ENABLE_ASCENT
+
+        std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<AscentAdaptor::FieldPair<T, Dim>> fields = {
+            {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            //{"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        AscentAdaptor::Execute(it, this->time_m ,  particles, fields);
+
 #endif
 
         // Field solve
