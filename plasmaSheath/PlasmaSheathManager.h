@@ -150,6 +150,7 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
+        // TODO: put correct physical values
         // there are two species: electrons and ions
         double q_i = 1.0; // ion charge
         double q_e = -1.0; // electron charge
@@ -288,10 +289,9 @@ public:
 
         // kick (velocity update)
 
-        // TODO change the -1.0 factor to q/m for each particle (2 species here)
         // half acceleration
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * (-1.0) * pc->E;
+        pc->P = pc->P + 0.5 * dt * (pc->q/pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // rotation
@@ -299,21 +299,21 @@ public:
 
         Vector_t<T, 3> Bext = this->Bext_m;
         view_typeP Pview = this->pcontainer_m->P.getView();
+        view_typeQ Qview = this->pcontainer_m->q.getView();
+        view_typeQ Mview = this->pcontainer_m->m.getView();
 
         Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
-                // TODO change the -1.0 factor to q/m for each particle (2 species here)
-                Vector_t<T, 3> const t = 0.5 * dt * (-1.0) * Bext;
+                Vector_t<T, 3> const t = 0.5 * dt * (Qview(i)/Mview(i)) * Bext;
                 Vector_t<T, 3> const w = Pview(i) + cross(Pview(i), t).apply();
                 Vector_t<T, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
                 Pview(i) = Pview(i) + cross(w, s);
             });
         IpplTimings::stopTimer(BTimer);
 
-        // TODO change the -1.0 factor to q/m for each particle (2 species here)
         // half acceleration
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * (-1.0) * pc->E;
+        pc->P = pc->P + 0.5 * dt * (pc->q/pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // push position (half step)
