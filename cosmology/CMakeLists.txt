@@ -18,7 +18,7 @@ set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (StructureFormation StructureFormation.cpp)
 target_link_libraries (StructureFormation ${IPPL_LIBS})
-
+add_subdirectory(test)
 
 # vi: set et ts=4 sw=4 sts=4:
 
