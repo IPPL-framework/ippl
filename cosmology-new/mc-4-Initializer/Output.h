@@ -28,12 +28,12 @@ public:
                            int Npart, string outBase);
    void write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z, 	 
                             real *vel_x, real *vel_y, real *vel_z, 	 
-                            integer *id, int Npart, string outBase);
+                            int *id, int Npart, string outBase);
    void write_hcosmo_parallel(real *pos_x, real *pos_y, real *pos_z, 	 
                               real *vel_x, real *vel_y, real *vel_z, 	 
-                              integer *id, int Npart, string outBase);
+                              int *id, int Npart, string outBase);
    void write_gadget(InputParser& par, real *pos_x, real *pos_y, real *pos_z,
-                     real *vel_x, real *vel_y, real *vel_z, integer *id, 
+                     real *vel_x, real *vel_y, real *vel_z, int *id, 
                      int Npart, string outBase);
 
 private:

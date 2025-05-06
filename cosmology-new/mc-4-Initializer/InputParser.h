@@ -18,13 +18,13 @@ class InputParser {
 public:
 
     InputParser(std::string filename);
-    bool getByName(std::string name, integer &param);
+    bool getByName(std::string name, int &param);
     bool getByName(std::string name, real &param);
 
 private:
 
     std::map<std::string, real> RealDict_m;
-    std::map<std::string, integer> IntDict_m;
+    std::map<std::string, int> IntDict_m;
     std::string filename_m;
 
     void parseFile();

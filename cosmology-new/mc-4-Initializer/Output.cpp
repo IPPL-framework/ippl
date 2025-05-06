@@ -46,7 +46,7 @@ void Output::grid2phys(real *pos_x, real *pos_y, real *pos_z,
    
 void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z, 	 
                   real *vel_x, real *vel_y, real *vel_z, 	 
-                  integer *id, int Npart, string outBase) { 	 
+                  int *id, int Npart, string outBase) { 	 
    FILE *outFile;
    ostringstream outName;
    long i;
@@ -67,7 +67,7 @@ void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z,
          fwrite(&vel_y[i], sizeof(real), 1, outFile); 	 
          fwrite(&pos_z[i], sizeof(real), 1, outFile); 	 
          fwrite(&vel_z[i], sizeof(real), 1, outFile); 	 
-         fwrite(&id[i], sizeof(integer), 1, outFile); 	 
+         fwrite(&id[i], sizeof(int), 1, outFile); 	 
       }
       for (proc=0; proc<NumPEs; ++proc){  // Get data from other processors:
          if (proc == MasterPE) continue;
@@ -77,7 +77,7 @@ void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z,
          MPI_Recv(vel_x, Npart, MY_MPI_REAL, proc, 104, MPI_COMM_WORLD, &status);
          MPI_Recv(vel_y, Npart, MY_MPI_REAL, proc, 105, MPI_COMM_WORLD, &status);
          MPI_Recv(vel_z, Npart, MY_MPI_REAL, proc, 106, MPI_COMM_WORLD, &status);
-         MPI_Recv(id, Npart, MY_MPI_INTEGER, proc, 107, MPI_COMM_WORLD, &status);
+         MPI_Recv(id, Npart, MY_MPI_INT, proc, 107, MPI_COMM_WORLD, &status);
          for (i=0; i<Npart; ++i) {
             fwrite(&pos_x[i], sizeof(real), 1, outFile); 	 
             fwrite(&vel_x[i], sizeof(real), 1, outFile); 	 
@@ -85,7 +85,7 @@ void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z,
             fwrite(&vel_y[i], sizeof(real), 1, outFile); 	 
             fwrite(&pos_z[i], sizeof(real), 1, outFile); 	 
             fwrite(&vel_z[i], sizeof(real), 1, outFile); 	 
-            fwrite(&id[i], sizeof(integer), 1, outFile);
+            fwrite(&id[i], sizeof(int), 1, outFile);
          }
       }
       fclose(outFile);
@@ -97,7 +97,7 @@ void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z,
       MPI_Send(vel_x, Npart, MY_MPI_REAL, MasterPE, 104, MPI_COMM_WORLD);
       MPI_Send(vel_y, Npart, MY_MPI_REAL, MasterPE, 105, MPI_COMM_WORLD);
       MPI_Send(vel_z, Npart, MY_MPI_REAL, MasterPE, 106, MPI_COMM_WORLD);
-      MPI_Send(id, Npart, MY_MPI_INTEGER, MasterPE, 107, MPI_COMM_WORLD);
+      MPI_Send(id, Npart, MY_MPI_INT, MasterPE, 107, MPI_COMM_WORLD);
    }
    
    return; 	 
@@ -106,7 +106,7 @@ void Output::write_hcosmo_serial(real *pos_x, real *pos_y, real *pos_z,
    
 void Output::write_hcosmo_parallel(real *pos_x, real *pos_y, real *pos_z, 	 
                                    real *vel_x, real *vel_y, real *vel_z, 	 
-                                   integer *id, int Npart, string outBase) { 	 
+                                   int *id, int Npart, string outBase) { 	 
    FILE *outFile;
    ostringstream outName;
    long i;
@@ -123,7 +123,7 @@ void Output::write_hcosmo_parallel(real *pos_x, real *pos_y, real *pos_z,
       fwrite(&vel_y[i], sizeof(real), 1, outFile); 	 
       fwrite(&pos_z[i], sizeof(real), 1, outFile); 	 
       fwrite(&vel_z[i], sizeof(real), 1, outFile); 	 
-      fwrite(&id[i], sizeof(integer), 1, outFile); 	 
+      fwrite(&id[i], sizeof(int), 1, outFile); 	 
    }
    fclose(outFile); 	 
    
@@ -189,7 +189,7 @@ void Output::write_hcosmo_ascii(real *pos_x, real *pos_y, real *pos_z,
 
 
 void Output::write_gadget(InputParser& par, real *pos_x, real *pos_y, real *pos_z,
-                           real *vel_x, real *vel_y, real *vel_z, integer *id, 
+                           real *vel_x, real *vel_y, real *vel_z, int *id, 
                            int Npart, string outBase) {
    FILE *outFile;
    ostringstream outName;
@@ -319,7 +319,7 @@ void Output::write_gadget(InputParser& par, real *pos_x, real *pos_y, real *pos_
       }
       for (proc=0; proc<NumPEs; ++proc){  // Get data from other processors:
          if (proc == MasterPE) continue;
-         MPI_Recv(id, Npart, MY_MPI_INTEGER, proc, 107, MPI_COMM_WORLD, &status);
+         MPI_Recv(id, Npart, MY_MPI_INT, proc, 107, MPI_COMM_WORLD, &status);
          for (i=0; i<Npart; ++i) {
             gID = (int)id[i];
             fwrite(&gID, sizeof(int), 1, outFile);
@@ -329,7 +329,7 @@ void Output::write_gadget(InputParser& par, real *pos_x, real *pos_y, real *pos_
       fclose(outFile);
    }
    else {  // Send data to master processor:
-      MPI_Send(id, Npart, MY_MPI_INTEGER, MasterPE, 107, MPI_COMM_WORLD);
+      MPI_Send(id, Npart, MY_MPI_INT, MasterPE, 107, MPI_COMM_WORLD);
    }
    
    return;

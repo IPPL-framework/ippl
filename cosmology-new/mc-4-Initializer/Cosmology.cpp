@@ -49,14 +49,15 @@ namespace initializer {
 
 void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
    std::ifstream inputFile;
-   integer i, ln;
+   int i, ln;
    real tmp, tfcdm, tfbar, norm;
    real akh1, akh2, alpha;
    real file_kmax = M_PI/DataBase.box_size * DataBase.ngrid;
       
    Omega_m = DataBase.Omega_m;
    Omega_bar = DataBase.Omega_bar;
-   Omega_nu = DataBase.Omega_nu;
+   Omega_nu  = DataBase.Omega_nu;
+   Omega_r   = DataBase.Omega_r;
    h = DataBase.Hubble;
    n_s = DataBase.n_s;
    TFFlag = DataBase.TFFlag;
@@ -76,8 +77,7 @@ void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
       }
       ln = 0;
       while (! inputFile.eof()) {
-         inputFile >> tmp >> tfcdm >> tfbar >> tmp >> tmp;
-                        //std::cout << tfcdm << " " << tfbar << std::endl;
+         inputFile >> tmp >> tfcdm >> tfbar >> tmp >> tmp >> tmp >> tmp;
          ++ln;
       }
       table_size = ln-1; // It also reads newline...
@@ -85,15 +85,13 @@ void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
       table_tf = (real *)malloc(table_size*sizeof(real));
       inputFile.close();
       
-      //inputFile.open("cmb.tf", std::ios::in);
       inputFile.open(tfName, std::ios::in);
-      //inputFile.seekg(0, std::ios::beg);
-      inputFile >> table_kk[0] >> tfcdm >> tfbar >> tmp >> tmp;
+      inputFile >> table_kk[0] >> tfcdm >> tfbar >> tmp >> tmp >> tmp >> tmp;
       table_tf[0] = tfbar*Omega_bar/Omega_m + 
             tfcdm*(Omega_m-Omega_bar)/Omega_m;
       norm = table_tf[0];
       for (i=1; i<table_size; ++i){
-         inputFile >> table_kk[i] >> tfcdm >> tfbar >> tmp >> tmp;
+         inputFile >> table_kk[i] >> tfcdm >> tfbar >> tmp >> tmp >> tmp >> tmp;
          table_tf[i] = tfbar*Omega_bar/Omega_m + 
                tfcdm*(Omega_m-Omega_bar)/Omega_m;
          table_tf[i] = table_tf[i]/norm; // Normalization
@@ -178,7 +176,7 @@ void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
       last_k = 10.0;
    }
    else{
-      printf("Cosmology::SetParameters: TFFlag has to be 0, 1, 2, 3 or 4!\n");
+      printf("Cosmology::SetParameters: TFFlag has to be 0, 1, 2, 3, 4, or 5!\n");
       abort();
    }
       
@@ -412,7 +410,7 @@ real CosmoClass::Maxwell(real vv)
 
  void CosmoClass::growths(real a, real y[], real dydx[]){
    real H;
-   H = sqrt(Omega_m/(a*a*a) + (1.0-Omega_m)*pow(a, -3.0*(1.0+w_de)));
+   H = sqrt(Omega_r/(a*a*a*a) + Omega_m/(a*a*a) + (1.0-Omega_m-Omega_r)*pow(a, -3.0*(1.0+w_de)));
    dydx[0] = y[1]/(a*H);
    dydx[1] = -2.0*y[1]/a + 1.5*Omega_m*y[0]/(H*pow(a, 4.0));
    return;
@@ -589,11 +587,11 @@ truncation error for adjusting the stepsize. */
 
 #define FUNC(x) ((this->*func)(x))
 real CosmoClass::midpoint(real (CosmoClass::*func)(real), 
-                          real a, real b, integer n)
+                          real a, real b, int n)
 {
    real x,tnm,sum,del,ddel;
    static real s;
-   integer it,j;
+   int it,j;
       
    if (n == 1) {
       return (s=(b-a)*FUNC(0.5*(a+b)));
@@ -623,7 +621,7 @@ real CosmoClass::midpoint(real (CosmoClass::*func)(real),
 #define JMIN 5
 real CosmoClass::integrate(real (CosmoClass::*func)(real), real a, real b){
    real sol, old;
-   integer j;
+   int j;
 
    sol = 0.0;
    old = -1.0e26;

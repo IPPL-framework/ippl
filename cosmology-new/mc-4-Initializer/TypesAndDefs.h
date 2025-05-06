@@ -26,8 +26,8 @@ typedef float real;
 typedef long integer;
 #define MY_MPI_INTEGER MPI_DOUBLE
 #else
-typedef int integer;
-#define MY_MPI_INTEGER MPI_INT
+  // typedef int integer;
+  // #define MY_MPI_INTEGER MPI_INT
 #endif
 
 typedef struct{
@@ -35,7 +35,7 @@ typedef struct{
 	double im;
 } my_fftw_complex;
 
-inline int MOD(int x, int y) { return (x - y*(integer)(x/y));}
+inline int MOD(int x, int y) { return (x - y*(int)(x/y));}
 
 #ifdef USENAMESPACE
 }

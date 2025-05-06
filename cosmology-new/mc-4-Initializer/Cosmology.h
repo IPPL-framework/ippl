@@ -35,9 +35,9 @@ class CosmoClass{
       
    private :
       real cobe_temp, tt;
-      real Omega_m, Omega_bar, Omega_nu, h, n_s, w_de, z_in;
+      real Omega_m, Omega_bar, Omega_nu, Omega_r, h, n_s, w_de, z_in;
       real sound_horizon, alpha_nu, beta_c, f_nu, N_nu;
-      integer TFFlag;
+      int TFFlag;
       real *table_kk, *table_tf;
       unsigned long table_size;
 
@@ -52,7 +52,7 @@ class CosmoClass{
       
       real (CosmoClass::*tan_f)(real k);
       real integrate(real (CosmoClass::*func)(real), real a, real b);
-      real midpoint(real (CosmoClass::*func)(real), real a, real b, integer n);
+      real midpoint(real (CosmoClass::*func)(real), real a, real b, int n);
       real interpolate(real xx[], real yy[], unsigned long n, real x);
       void locate(real xx[], unsigned long n, real x, unsigned long *j);
       void hunt(real xx[], unsigned long n, real x, unsigned long *jlo);

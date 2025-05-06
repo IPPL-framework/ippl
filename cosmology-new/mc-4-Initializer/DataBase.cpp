@@ -62,14 +62,12 @@ namespace initializer {
    if(!par.getByName("hubble", Hubble))
        msg << "Error: hubble not found!" << endl;
 
-   if(!par.getByName("Omega_m", Omega_m))
-       msg << "Error: Omega_m not found!" << endl;
-
    if(!par.getByName("Omega_bar", Omega_bar))
        msg << "Error: Omega_bar not found!" << endl;
 
-   if(!par.getByName("Omega_nu", Omega_nu))
-       msg << "Error: Omega_nu not found!" << endl;
+   Omega_r = 0.0;
+   if(!par.getByName("Omega_r", Omega_r))
+       msg << "Warning: Omega_r not found, assuming it is zero!" << endl;
 
    if(!par.getByName("Sigma_8", Sigma_8))
        msg << "Error: Sigma_8 not found!" << endl;
