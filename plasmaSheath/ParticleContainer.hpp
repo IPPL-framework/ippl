@@ -39,10 +39,10 @@ public:
         this->addAttribute(P);
         this->addAttribute(E);
     }
-    void setupBCs() { setNoBCs(); }
+    void setupBCs() { setSinkBCs(); }
 
 private:
-    void setNoBCs() { this->setParticleBC(ippl::BC::NO); }
+    void setSinkBCs() { this->setParticleBC(ippl::BC::SINK); }
 };
 
 #endif
