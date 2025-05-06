@@ -77,7 +77,7 @@ public:
             if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
                 if (this->getStype() == "CG") {
-                    fname << "data_CG/CG_";
+                    fname << "data/CG_";
                 } else {
                     fname << "data_";
                     fname << preconditioner_params_m[0];
