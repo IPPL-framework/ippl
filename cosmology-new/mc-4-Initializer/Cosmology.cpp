@@ -52,12 +52,12 @@ void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
    int i, ln;
    real tmp, tfcdm, tfbar, norm;
    real akh1, akh2, alpha;
-   real file_kmax = M_PI/DataBase.box_size * DataBase.ngrid;
+   // real file_kmax = M_PI/DataBase.box_size * DataBase.ngrid;
       
    Omega_m = DataBase.Omega_m;
    Omega_bar = DataBase.Omega_bar;
    Omega_nu  = DataBase.Omega_nu;
-   Omega_r   = DataBase.Omega_r;
+   Omega_r   = 0.0; //DataBase.Omega_r;
    h = DataBase.Hubble;
    n_s = DataBase.n_s;
    TFFlag = DataBase.TFFlag;
@@ -354,12 +354,11 @@ real CosmoClass::Maxwell(real vv)
 
  void CosmoClass::FDVelocity(real &x, real &y, real &z) 
 {
-    real aran, bran, cran, pp, mu, phi;
+    real aran, bran, pp, mu, phi;
     Kokkos::Random_XorShift64_Pool<> rand_pool(12345);
     auto rand_gen = rand_pool.get_state();
     aran = rand_gen.drand(); 
     bran = rand_gen.drand(); 
-    cran = rand_gen.drand(); 
     rand_pool.free_state(rand_gen);
  
     pp = interpolate(neut_c, neut_p, neut_nmax, aran);
@@ -378,7 +377,7 @@ real CosmoClass::Maxwell(real vv)
 
  void CosmoClass::GrowthFactor(real z, real *gf, real *g_dot){
    real x1, x2, dplus, ddot;
-   const float redshift=200.0;
+   //   const float redshift=200.0;
    real *ystart;
    
    x1 = 1.0/(1.0+100000.0);

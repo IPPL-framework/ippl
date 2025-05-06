@@ -41,7 +41,7 @@ class CosmoClass{
       real *table_kk, *table_tf;
       unsigned long table_size;
 
-      real kh_tmp, R_M, Pk_norm, gf_tmp_x, last_k;
+      real kh_tmp, R_M, Pk_norm, last_k;
       
       //neutrino stuff
       real *neut_p, *neut_c;
