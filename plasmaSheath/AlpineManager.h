@@ -109,9 +109,9 @@ public:
         Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q - (*rho).sum()) / Q);
+        double absError = std::fabs((Q - (*rho).sum()));
 
-        m << relError << endl;
+        m << absError << endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
@@ -123,7 +123,7 @@ public:
                 m << "Time step: " << it_m << endl;
                 m << "Total particles in the sim. " << totalP_m << " "
                   << "after update: " << TotalParticles << endl;
-                m << "Rel. error in charge conservation: " << relError << endl;
+                m << "Abs. error in charge conservation: " << absError << endl;
                 ippl::Comm->abort();
             }
         }
