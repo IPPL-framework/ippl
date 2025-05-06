@@ -69,6 +69,10 @@ public:
         this->it_m   = 0;
         this->time_m = 0.0;
 
+        // total charge is 0 since quasineutral; 
+        // if total no. of particles is odd, will have 1 electron more
+        this->Q_m = 0.0 - (this->totalP_m % 2);
+
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
           << " dt=" << this->dt_m << endl;
@@ -149,7 +153,7 @@ public:
         // there are two species: electrons and ions
         double q_i = 1.0; // ion charge
         double q_e = -1.0; // electron charge
-        T m_i = 1000; // ion mass
+        T m_i = 1836; // ion mass
         T m_e = 1; // electron mass
         
         // electron distribution: Maxwellian (normal distribution)
@@ -200,7 +204,14 @@ public:
 
                 auto rand_gen = rand_pool64.get_state();
 
-                for (unsigned d = 0; d < 3; ++d) {
+                // accept only those which have velocity_x > 0 (moving towards wall)
+                double v_x = 0.0;
+                while (v_x <= 0.0) {
+                    v_x = (!odd) * prefactor_e * (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0))
+                          + odd * prefactor_i * (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                }
+                Pview(i)[0] = v_x;
+                for (unsigned d = 1; d < 3; ++d) {
                     Pview(i)[d] = (!odd) * prefactor_e * (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0))
                                   + odd * prefactor_i * (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
                 }
