@@ -123,7 +123,7 @@ namespace ippl {
 #endif
 #endif
 
-#if !defined(KOKKOS_ENABLE_CUDA) && !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW) && !defined(Heffte_ENABLE_ROCM)
+#if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
          * vendor specific or optimized backend is found
