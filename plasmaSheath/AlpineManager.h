@@ -109,7 +109,10 @@ public:
         Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
-        double absError = std::fabs((Q - (*rho).sum()));
+
+        // remove division by Q since quasi-neutral
+        // need to account for ghost cell as some charge gets deposited there
+        double absError = std::fabs((Q - (*rho).sum(1)));
 
         m << absError << endl;
 
@@ -117,6 +120,9 @@ public:
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
+
+        m << "Total particles in the sim. " << totalP_m << " "
+          << "after update: " << TotalParticles << endl;
 
         if (ippl::Comm->rank() == 0) {
             if (TotalParticles != totalP_m || absError > 1e-10) {
