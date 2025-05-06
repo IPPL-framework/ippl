@@ -644,7 +644,10 @@ namespace ippl {
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         A_K[i][j] = 0.0;
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k]);
+                            size_t I = global_dofs[i];
+                            size_t J = global_dofs[j];
+                            bool onBoundary = this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J);
+                            A_K[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k], onBoundary);
                         }
                     }
                 }
@@ -657,9 +660,12 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
+                    
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
+                    
+                    
 
                     // get the appropriate index for the Kokkos view of the
                     // field
@@ -668,9 +674,12 @@ namespace ippl {
                         J = global_dofs[j];
 
                         // Skip boundary DOFs (Zero Dirichlet BCs)
+                        
                         if (this->isDOFOnBoundary(J)) {
                             continue;
                         }
+                        
+                    
 
                         // get the appropriate index for the Kokkos view of the
                         // field
@@ -769,10 +778,12 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I = global_dofs[i];
 
-
+                    
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
+                    
+                        
 
                     // calculate the contribution of this element
                     T contrib = 0;
@@ -792,7 +803,116 @@ namespace ippl {
                         }
                         interpolatedVal /= distSum;
 
-                        contrib += w[k] * basis_q[k][i].dot(interpolatedVal);// * absDetDPhi;
+                        contrib += w[k] * basis_q[k][i].dot(interpolatedVal) * absDetDPhi;
+                    }
+
+                    // add the contribution of the element to the field
+                    atomic_view(I) += contrib;
+
+                }
+            });
+
+        IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalLoadV);
+        
+        return resultVector;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+                typename QuadratureType, typename FieldType>
+    template <typename F>
+    FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                            ::evaluateLoadVectorFunctor(const FEMVector<NedelecSpace<T, Dim, Order, ElementType,
+                                QuadratureType, FieldType>::point_t>& model, const F& f) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
+        IpplTimings::startTimer(evalLoadV);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        Vector<point_t, QuadratureType::numElementNodes> rhsValues;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            rhsValues[k] = f(q[k]);
+        }
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Get domain information and ghost cells
+        auto ldom        = layout_m.getLocalNDIndex();
+
+
+        // Get boundary conditions from field
+        FEMVector<T> resultVector = model.template skeletonCopy<T>();
+        resultVector = 0;
+
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        // We work with a temporary field since we need to use field
+        // to evaluate the load vector; then we assign temp to RHS field
+        AtomicViewType atomic_view = resultVector.getView();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop =
+            IpplTimings::getTimer("evaluateLoadVec: outer loop");
+        IpplTimings::startTimer(outer_loop);
+        
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
+                const size_t elementIndex                              = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                size_t i, I;
+
+                // 1. Compute b_K
+                for (i = 0; i < this->numElementDOFs; ++i) {
+                    I = global_dofs[i];
+
+
+                    if (this->isDOFOnBoundary(I)) {
+                        continue;
+                    }
+                        
+
+                    // calculate the contribution of this element
+                    T contrib = 0;
+                    for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        // We now have to interpolate the value of the field
+                        // given at the DOF positions to the quadrature point
+                        point_t pos = this->ref_element_m.localToGlobal(
+                            this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
+                            q[k]); 
+
+                        point_t interpolatedVal = f(pos);
+
+                        contrib += w[k] * basis_q[k][i].dot(interpolatedVal) * absDetDPhi;
                     }
 
                     // add the contribution of the element to the field
@@ -1174,7 +1294,7 @@ namespace ippl {
               typename QuadratureType, typename FieldType>
     template <typename F>
     T NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                                ::computeError(const FieldType& u_h, const F& u_sol) const {
+                                ::computeError(const FEMVector<Vector<T,Dim> >& u_h, const F& u_sol) const {
         
         if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
             // throw exception
@@ -1191,10 +1311,20 @@ namespace ippl {
             this->quadrature_m.getIntegrationNodesForRefElement();
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < this->numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> 
+            quadratureDOFDistances;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                point_t dofPos = getLocalDOFPosition(i);
+                point_t d = dofPos - q[k];
+                quadratureDOFDistances[k][i] = Kokkos::sqrt(d.dot(d));
             }
         }
 
@@ -1208,11 +1338,12 @@ namespace ippl {
         T error = 0;
 
         // Get domain information and ghost cells
-        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
-        const int nghost = u_h.getNghost();
+        auto ldom        = layout_m.getLocalNDIndex();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        auto view = u_h.getView();
 
         // Loop over elements to compute contributions
         Kokkos::parallel_reduce("Compute error over elements",
@@ -1225,24 +1356,131 @@ namespace ippl {
                 // contribution of this element to the error
                 T contrib = 0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    T val_u_sol = u_sol(this->ref_element_m.localToGlobal(
+                    point_t val_u_sol = u_sol(this->ref_element_m.localToGlobal(
                         this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
                             q[k]));
 
-                    T val_u_h = 0;
-                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                    point_t val_u_h = 0;
+                    T distSum = 0;
+                    for (size_t j = 0; j < this->numElementDOFs; ++j) {
                         // get field index corresponding to this DOF
-                        size_t I           = global_dofs[i];
-                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
-                        }
+                        size_t J = global_dofs[j];
+                        T dist = quadratureDOFDistances[k][j];
+                        distSum += 1./dist;
 
                         // get field value at DOF and interpolate to q_k
-                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
+                        val_u_h += 1./dist * view(J);
                     }
+                    val_u_h /= distSum;
 
-                    contrib += w[k] * Kokkos::pow(val_u_sol - val_u_h, 2) * absDetDPhi;
+                    point_t dif = (val_u_sol -  val_u_h) ;
+                    T x = dif.dot(dif);
+                    contrib += w[k] * x * absDetDPhi;
+                }
+                local += contrib;
+            },
+            Kokkos::Sum<double>(error)
+        );
+
+        // MPI reduce
+        T global_error = 0.0;
+        Comm->allreduce(error, global_error, 1, std::plus<T>());
+
+        return Kokkos::sqrt(global_error);
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    template <typename F>
+    T NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::computeErrorCoeff(const FEMVector<T>& u_h, const F& u_sol) const {
+        
+        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
+            // throw exception
+            throw IpplException( "NedelecSpace::computeError()",
+                "Order of quadrature rule for error computation should be > 2*p + 1");
+        }
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> 
+            quadratureDOFDistances;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                point_t dofPos = getLocalDOFPosition(i);
+                point_t d = dofPos - q[k];
+                quadratureDOFDistances[k][i] = d;
+            }
+        }
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m
+            .getDeterminantOfTransformationJacobian(this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Variable to sum the error to
+        T error = 0;
+
+        // Get domain information and ghost cells
+        auto ldom        = layout_m.getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        auto view = u_h.getView();
+
+    
+        size_t nx = this->nr_m[0];
+        // Loop over elements to compute contributions
+        Kokkos::parallel_reduce("Compute error over elements",
+            policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                // contribution of this element to the error
+                T contrib = 0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    point_t val_u_sol = u_sol(this->ref_element_m.localToGlobal(
+                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
+                            q[k]));
+
+                    point_t val_u_h = 0;
+                    point_t distSum = 0;
+                    for (size_t j = 0; j < this->numElementDOFs; ++j) {
+                        // get field index corresponding to this DOF
+                        bool onXAxis = j == 0 || j == 2;
+                        size_t J = global_dofs[j];
+                        point_t dist = quadratureDOFDistances[k][j];
+
+                        // get field value at DOF and interpolate to q_k
+                        if (onXAxis) {
+                            val_u_h(0) += (1-Kokkos::abs(dist[1])) * view(J);
+                        }else {
+                            val_u_h(1) += (1-Kokkos::abs(dist[0])) * view(J);
+                        }
+                    }
+                    //val_u_h /= distSum;
+
+                    point_t dif = (val_u_sol -  val_u_h) ;
+                    T x = dif.dot(dif);
+                    contrib += w[k] * x * absDetDPhi;
                 }
                 local += contrib;
             },

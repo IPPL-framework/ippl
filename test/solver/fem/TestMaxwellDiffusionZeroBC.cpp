@@ -1,9 +1,9 @@
 // Tests the FEM Poisson solver by solving the 2d problem:
 //
-// curl(curl(E)) + E = {sin(k*y),sin(k*x)} in [-1,1]^2
+// curl(curl(E)) + E = {(1+k^2)sin(k*y), (1+k^2)sin(k*x)} in [-1,1]^2
 // n x E = 0 on boundary 
 //
-// Exact solution is E = {(1-k^2)sin(k*y), (1-k^2)sin(k*x)}
+// Exact solution is E = {sin(k*y),sin(k*x)}
 //
 // BCs: Zero dirichlet bc.
 //
@@ -94,6 +94,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<ippl::Vector<T,Dim>, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
+    using point_t =  ippl::Vector<T, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
@@ -130,7 +131,21 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::FEMVector<ippl::Vector<T,Dim> > solutionVector(nx*(ny-1) + ny*(nx-1));
     auto viewSolution = solutionVector.getView();
 
-    T k = 2;
+    T k = 3.14159265359;
+
+    auto rhsFunc = [k](const point_t& pos) -> point_t {
+        point_t sol(0);
+        sol[0] = (1. + k*k)*Kokkos::sin(k*pos[1]);
+        sol[1] = (1. + k*k)*Kokkos::sin(k*pos[0]);
+        return sol;
+    };
+
+    auto analytical = [k](const point_t& pos) -> point_t {
+        point_t sol(0);
+        sol[0] = Kokkos::sin(k*pos[1]);
+        sol[1] = Kokkos::sin(k*pos[0]);
+        return sol;
+    };
 
     Kokkos::parallel_for("Assign RHS", rhsVector.size(),
         KOKKOS_LAMBDA(size_t i) {
@@ -149,12 +164,12 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
             }
             x += origin[0];
             y += origin[1];
+            
+            viewRhs(i)[0] = (1. + k*k)*Kokkos::sin(k*y);
+            viewRhs(i)[1] = (1. + k*k)*Kokkos::sin(k*x);
 
-            viewRhs(i)[0] = Kokkos::sin(k*y);
-            viewRhs(i)[1] = Kokkos::sin(k*x);
-
-            viewSolution(i)[0] = (1.-k*k)*Kokkos::sin(k*y);
-            viewSolution(i)[1] = (1.-k*k)*Kokkos::sin(k*x);
+            viewSolution(i)[0] = Kokkos::sin(k*y);
+            viewSolution(i)[1] = Kokkos::sin(k*x);
         }
     );
 
@@ -163,10 +178,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     IpplTimings::stopTimer(initTimer);
 
-    
-    
+
     // initialize the solver
-    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector);
+    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector, rhsFunc);
 
     // set the parameters
     ippl::ParameterList params;
@@ -176,8 +190,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     // solve the problem
     ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
+    ippl::FEMVector<ippl::Vector<T,Dim> > diff = result.template skeletonCopy<ippl::Vector<T,Dim>>();
+    diff  = result - solutionVector;
     saveToFile(nx, ny, cellSpacing, origin, result, "result.csv");
+    saveToFile(nx, ny, cellSpacing, origin, diff, "diff.csv");
     saveToFile(nx, ny, cellSpacing, origin, *(solver.rhsVector_m), "solver_rhs.csv");
+    saveToFile(nx, ny, cellSpacing, origin, *(solver.lhsVector_m), "solver_lhs.csv");
+
+    ippl::FEMVector<ippl::Vector<T,Dim> > dummy = result.template skeletonCopy<ippl::Vector<T,Dim>>(); 
 
     auto resultView = result.getView();
     auto solutionView = solutionVector.getView();
@@ -192,15 +212,22 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
         s += dot(a,a).apply();
     }
 
-    s = Kokkos::sqrt(s)/(Dim*result.size());
+    s = Kokkos::sqrt(s)/(Dim*nx);
+    
+    T error = solver.getL2Error(result, analytical);
+    T coefError = solver.getL2ErrorCoeff(*(solver.lhsVector_m), analytical);
     
     if (ippl::Comm->rank() == 0) {
         std::cout << std::setw(10) << "num nodes" << std::setw(25) << "cell spacing"
-                  << std::setw(25) << "error" << std::setw(25) << "solver residue"
+                  << std::setw(25) << "value error" << std::setw(25) << "interp error"
+                  << std::setw(25) << "interp error coef"
+                  << std::setw(25) << "solver residue"
                   << std::setw(15) << "num it\n";
         std::cout << std::setw(10) << numNodesPerDim;
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
         std::cout << std::setw(25) << std::setprecision(16) << s;
+        std::cout << std::setw(25) << std::setprecision(16) << error;
+        std::cout << std::setw(25) << std::setprecision(16) << coefError;
         std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
         std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
         std::cout << "\n";
@@ -271,9 +298,16 @@ int main(int argc, char* argv[]) {
             }
         }
         */
-       for (unsigned n = 1 << 5; n <= 1 << 12; n = n << 1) {
+        
+        
+        for (unsigned n = 1 << 5; n <= 1 << 8; n = n << 1) {
             testFEMSolver<T, 2>(n, 1.0, 3.0);
         }
+            
+         
+        
+        
+        //testFEMSolver<T, 2>(100, 0.0, 3.0);
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);

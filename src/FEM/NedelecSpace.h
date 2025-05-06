@@ -274,6 +274,11 @@ namespace ippl {
          * @return The resulting rhs b of the Galerkin discretization.
          */
         FEMVector<T> evaluateLoadVector(const FEMVector<point_t>& f) const;
+        
+        template <typename F>
+        FEMVector<T> evaluateLoadVectorFunctor(const FEMVector<NedelecSpace<T, Dim, Order, ElementType,
+            QuadratureType, FieldType>::point_t>& model, const F& f) const;
+
 
 
         ///////////////////////////////////////////////////////////////////////
@@ -355,7 +360,9 @@ namespace ippl {
          *
          * @return error - The error ||u_h - u_sol||_L2
          */
-        template <typename F> T computeError(const FieldType& u_h, const F& u_sol) const;
+        template <typename F> T computeError(const FEMVector<Vector<T,Dim> >& u_h, const F& u_sol) const;
+
+        template <typename F> T computeErrorCoeff(const FEMVector<T>& u_h, const F& u_sol) const;
 
         /**
          * @brief Given two fields, compute the L-infinity error

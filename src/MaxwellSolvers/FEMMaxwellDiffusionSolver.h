@@ -24,11 +24,15 @@ namespace ippl {
 
         KOKKOS_FUNCTION const auto operator()(size_t i, size_t j,
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
-            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
-
-            return (dot(DPhiInvT * curl_b_q_k[j], DPhiInvT * curl_b_q_k[i]).apply() 
-                        + dot(DPhiInvT * val_b_q_k[j], DPhiInvT * val_b_q_k[i]).apply())
-                    * absDetDPhi;
+            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k, bool onBoundary) const {
+            
+            //std::cout << "curl_val: " << dot(curl_b_q_k[j], curl_b_q_k[i]).apply() << "\n";
+            //std::cout << "non curl val: " << dot(DPhiInvT*val_b_q_k[j], DPhiInvT*val_b_q_k[i]).apply() << "\n";
+            //std::cout << absDetDPhi << "\n";
+            // 
+            T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
+            T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
+            return (curlTerm + massTerm)*absDetDPhi;
         }
     };
 
@@ -74,8 +78,9 @@ namespace ippl {
                                 Vector<T, Dim>(0))), refElement_m, quadrature_m)
         {}
 
+        template <typename F>
         FEMMaxwellDiffusionSolver(FieldType& lhs, FieldType& rhs,
-            FEMVector<ippl::Vector<T,Dim>> rhsVectorField)
+            FEMVector<ippl::Vector<T,Dim>> rhsVectorField, const F& functor)
             : Base(lhs, lhs, rhs)
             , rhsVector_m(nullptr)
             , refElement_m()
@@ -89,7 +94,8 @@ namespace ippl {
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
             rhsVector_m =
-                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVectorField));
+                //std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVectorField));
+                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(rhsVectorField, functor));
             /*
             rhs.fillHalo();
             
@@ -173,8 +179,7 @@ namespace ippl {
 
                 //vector.fillHalo();
 
-                FEMVector<T> return_vector = nedelecSpace_m.evaluateAx(vector,
-                    maxwellDiffusionEval);
+                FEMVector<T> return_vector = nedelecSpace_m.evaluateAx(vector,maxwellDiffusionEval);
 
                 //return_vector.accumulateHalo();
                 
@@ -194,7 +199,7 @@ namespace ippl {
             IpplTimings::startTimer(pcgTimer);
 
             //FEMVector<T> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp));
-            FEMVector<T> lhsVector = rhsVector_m->template skeletonCopy<T>();
+            FEMVector<T> lhsVector = rhsVector_m->deepCopy();
             
             try {
                 pcg_algo_m(lhsVector, *rhsVector_m, this->params_m);
@@ -213,6 +218,7 @@ namespace ippl {
             //lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
 
             IpplTimings::stopTimer(solve);
+            lhsVector_m = std::make_unique<FEMVector<T>>(lhsVector);
             return nedelecSpace_m.reconstructBasis(lhsVector);
         }
 
@@ -234,13 +240,20 @@ namespace ippl {
          * @return L2 error after last solve
          */
         template <typename F>
-        T getL2Error(const F& analytic) {
-            T error_norm = this->nedelecSpace_m.computeError(*(this->lhs_mp), analytic);
+        T getL2Error(const FEMVector<Vector<T,Dim>>& u, const F& analytic) {
+            T error_norm = this->nedelecSpace_m.computeError(u, analytic);
+            return error_norm;
+        }
+
+        template <typename F>
+        T getL2ErrorCoeff(const FEMVector<T>& u, const F& analytic) {
+            T error_norm = this->nedelecSpace_m.computeErrorCoeff(u, analytic);
             return error_norm;
         }
 
 
         std::unique_ptr<FEMVector<T>> rhsVector_m;
+        std::unique_ptr<FEMVector<T>> lhsVector_m;
     protected:
         PCGSolverAlgorithm_t pcg_algo_m;
         
