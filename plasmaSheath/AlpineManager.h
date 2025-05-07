@@ -104,15 +104,16 @@ public:
         typename Base::particle_position_type* R = &this->pcontainer_m->R;
         Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
         double Q                                 = Q_m;
-        Vector_t<double, Dim> rmin               = rmin_m;
-        Vector_t<double, Dim> rmax               = rmax_m;
         Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
 
+        std::cout << "rho = " << std::endl;
+        rho->write();
+
         // remove division by Q since quasi-neutral
         // need to account for ghost cell as some charge gets deposited there
-        double absError = std::fabs((Q - (*rho).sum(1)));
+        double absError = std::fabs((Q - (*rho).sum()));
 
         m << absError << endl;
 

@@ -57,14 +57,14 @@ public:
 
         this->decomp_m.fill(true);
 
-        this->rmin_m   = 0.0;
+        this->hr_m     = L / this->nr_m;
+        this->rmax_m   = L - (this->hr_m); // L = size of domain
+        this->rmin_m   = - 0.5 * (this->hr_m);
         this->origin_m = this->rmin_m;
-        this->rmax_m   = L; // L = size of domain
 
         this->phiWall_m = phiWall; // Dirichlet BC for phi at wall
         this->Bext_m = Bext; // External magnetic field
 
-        this->hr_m = this->rmax_m / this->nr_m;
         this->dt_m = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
         this->it_m   = 0;
         this->time_m = 0.0;
@@ -224,8 +224,6 @@ public:
 
         IpplTimings::stopTimer(particleCreation);
 
-        this->dump();
-
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -260,10 +258,82 @@ public:
         pc->R = pc->R + (0.5 * dt * pc->P);
         IpplTimings::stopTimer(RTimer);
 
+        // remove particles which have hit the wall
+        // and resample to insert them from plasma boundary
+        
+        // TODO: put correct physical values
+        const double pi = Kokkos::numbers::pi_v<T>;
+        T m_e = 1; // electron mass
+        
+        // electron distribution: Maxwellian (normal distribution)
+        Vector_t<double, 3> v0 = {0.0, 0.0, 0.0}; // avg velocity
+        double T_e = 1; // temperature
+        double n_e = 1; // n_e
+
+        double prefactor_e = n_e * m_e / (2 * pi * T_e);
+        double stdeviation_e = Kokkos::sqrt(T_e/m_e); 
+
+        double muE[3] = {v0[0], v0[1], v0[2]};
+        double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
+
+        // ion distribution: (normal distribution)
+        double parallel_v = 1; // v_parallel
+        double v_thi = 1; // thermal velocity of ions
+        double K = 1; // constant K
+
+        double prefactor_i = K * Kokkos::sqrt(2 * pi) * parallel_v * parallel_v / v_thi;
+        double stdeviation_i = v_thi; 
+
+        double muI[3] = {0.0, 0.0, 0.0};
+        double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
+
+        auto rmax = this->rmax_m;
+
+        view_typeR Rview = this->pcontainer_m->R.getView();
+        view_typeP Pview = this->pcontainer_m->P.getView();
+
+        int seed = 42;
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
+
+        Kokkos::parallel_for("Remove particle", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+                bool outside = false;
+
+                for (unsigned int d = 0; d < Dim; ++d) {
+                    if (Rview(i)[d] > rmax[d]) {
+                        outside = true;
+                    }
+                }
+
+                if (outside) {
+                    Rview(i) = 0;
+                    bool odd = (i % 2);
+                    auto rand_gen = rand_pool64.get_state();
+
+                    // accept only those which have velocity_x > 0 (moving towards wall)
+                    double v_x = 0.0;
+                    while (v_x <= 0.0) {
+                        v_x = (!odd) * prefactor_e * (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0))
+                              + odd * prefactor_i * (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                    }
+                    Pview(i)[0] = v_x;
+                    for (unsigned d = 1; d < 3; ++d) {
+                        Pview(i)[d] = (!odd) * prefactor_e * (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0))
+                                      + odd * prefactor_i * (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
+                    }
+
+                    rand_pool64.free_state(rand_gen);
+                }
+            });
+        Kokkos::fence();
+        ippl::Comm->barrier();
+
         // Since the particles have moved spatially update them to correct processors
         IpplTimings::startTimer(updateTimer);
         pc->update();
         IpplTimings::stopTimer(updateTimer);
+
+        this->dump();
 
         size_type totalP        = this->totalP_m;
         int it                  = this->it_m;
@@ -298,7 +368,6 @@ public:
         IpplTimings::startTimer(BTimer);
 
         Vector_t<T, 3> Bext = this->Bext_m;
-        view_typeP Pview = this->pcontainer_m->P.getView();
         view_typeQ Qview = this->pcontainer_m->q.getView();
         view_typeQ Mview = this->pcontainer_m->m.getView();
 
@@ -321,7 +390,7 @@ public:
         pc->R = pc->R + (0.5 * dt * pc->P);
         IpplTimings::stopTimer(RTimer);
 
-        // Since the particles have moved spatially update them to correct processors
+        // since the particles have moved spatially update them to correct processors
         IpplTimings::startTimer(updateTimer);
         pc->update();
         IpplTimings::stopTimer(updateTimer);
@@ -352,7 +421,7 @@ public:
         pname << "data/ParticleIC_";
         pname << ippl::Comm->rank();
         pname << ".csv";
-        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::APPEND, ippl::Comm->rank());
         pcsvout.precision(10);
         pcsvout.setf(std::ios::scientific, std::ios::floatfield);
 
