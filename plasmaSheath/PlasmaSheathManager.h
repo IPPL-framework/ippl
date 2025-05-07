@@ -252,8 +252,6 @@ public:
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
-        // TODO check whether this is doing the correct thing (adding only P_x to the 1-dimensional
-        // position R i.e. taking only first component of 3D vector P).
         // push position (half step)
         IpplTimings::startTimer(RTimer);
         pc->R = pc->R + (0.5 * dt * pc->P);
