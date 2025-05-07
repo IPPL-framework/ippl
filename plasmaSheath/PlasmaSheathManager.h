@@ -259,7 +259,7 @@ public:
         pc->R = pc->R + (0.5 * dt * pc->P);
         IpplTimings::stopTimer(RTimer);
 
-        // remove particles which have hit the wall
+        // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
         
         // TODO: put correct physical values
@@ -301,7 +301,7 @@ public:
                 bool outside = false;
 
                 for (unsigned int d = 0; d < Dim; ++d) {
-                    if (Rview(i)[d] > rmax[d]) {
+                    if ((Rview(i)[d] > rmax[d]) || (Rview(i)[d] < 0.0)) {
                         outside = true;
                     }
                 }
