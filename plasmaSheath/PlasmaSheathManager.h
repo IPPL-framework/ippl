@@ -225,6 +225,7 @@ public:
         IpplTimings::stopTimer(particleCreation);
 
         m << "particles created and initial conditions assigned " << endl;
+        this->dump();
     }
 
     void advance() override {
@@ -333,8 +334,6 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        this->dump();
-
         size_type totalP        = this->totalP_m;
         int it                  = this->it_m;
         bool isFirstRepartition = false;
@@ -394,6 +393,8 @@ public:
         IpplTimings::startTimer(updateTimer);
         pc->update();
         IpplTimings::stopTimer(updateTimer);
+
+        this->dump();
     }
 
     void dump() override {
