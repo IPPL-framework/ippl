@@ -1028,7 +1028,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = 1.0;
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
