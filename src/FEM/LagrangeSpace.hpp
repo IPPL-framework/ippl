@@ -1064,7 +1064,7 @@ namespace ippl {
         // apply the inverse diagonal after already summed all contributions from element matrices
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         Kokkos::parallel_for("Loop over result view to apply inverse", field.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const index_array_type& args) {
+            KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
                 if (apply(resultView, args) != 0.0) {
                     apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
                 }
