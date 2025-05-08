@@ -1054,9 +1054,19 @@ namespace ippl {
                                 J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
                             }
 
-                            apply(resultView, I_nd) += (1.0 / A_K[i][j]) * apply(view, J_nd);
+                            // sum up all contributions of element matrix
+                            apply(resultView, I_nd) += A_K[i][j];
                         }
                     }
+                }
+            });
+
+        // apply the inverse diagonal after already summed all contributions from element matrices
+        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
+        Kokkos::parallel_for("Loop over result view to apply inverse", field.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                if (apply(resultView, args) != 0.0) {
+                    apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
                 }
             });
         IpplTimings::stopTimer(outer_loop);
