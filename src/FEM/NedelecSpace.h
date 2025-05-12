@@ -397,7 +397,7 @@ namespace ippl {
             // West
             onBoundary = onBoundary || ((dofIdx - (nx-1)) % (2*nx - 1) == 0);
             // East
-            onBoundary = onBoundary || ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0);
+            onBoundary = onBoundary || ((dofIdx >= 2*nx-2) && ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0));
 
             return onBoundary;
         }
@@ -421,7 +421,7 @@ namespace ippl {
             // North
             if (dofIdx > nx*(ny-1) + ny*(nx-1) - nx) return 2;
             // East
-            if ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
+            if ((dofIdx >= 2*nx-2) && (dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
 
             return -1;
         }

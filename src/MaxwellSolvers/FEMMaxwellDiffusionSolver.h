@@ -30,9 +30,10 @@ namespace ippl {
             //std::cout << "non curl val: " << dot(DPhiInvT*val_b_q_k[j], DPhiInvT*val_b_q_k[i]).apply() << "\n";
             //std::cout << absDetDPhi << "\n";
             // 
-            T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
+            T curlTerm = onBoundary ? 0 : dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
+            //T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
             T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
-            return (curlTerm + massTerm)*absDetDPhi;
+            return (curlTerm + massTerm)*absDetDPhi*(!onBoundary);
         }
     };
 
@@ -215,6 +216,7 @@ namespace ippl {
 
             
             //lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
+            nedelecSpace_m.reconstructSolution(lhsVector, *(this->En_mp));
             //lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
 
             IpplTimings::stopTimer(solve);

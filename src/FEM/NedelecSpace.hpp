@@ -56,7 +56,7 @@ namespace ippl {
                             ::initializeElementIndices(const Layout_t& layout) {
         
         size_t nx = this->nr_m[0];
-        size_t ny = this->nr_m[0];
+        size_t ny = this->nr_m[1];
         size_t n = (nx-1) * (ny-1);
         elementIndices = Kokkos::View<size_t*>("elementIndices", n);
         Kokkos::parallel_for("ComputeElementIndices",n,
@@ -441,9 +441,6 @@ namespace ippl {
             case 1: position(1) = 0.5; break;
             case 2: position(0) = 0.5; position(1) = 1;   break;
             case 3: position(0) = 1;   position(1) = 0.5; break;
-            default: throw(IpplException("geLocalDOFPosition", "DOF with index "
-                        + std::to_string(localDOFIndex) 
-                        + " does not exist for space of dimension " + std::to_string(Dim))); break;
         }
 
         return position;
@@ -646,7 +643,7 @@ namespace ippl {
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             size_t I = global_dofs[i];
                             size_t J = global_dofs[j];
-                            bool onBoundary = this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J);
+                            bool onBoundary = this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J); //this->isDOFOnBoundary(I) && this->isDOFOnBoundary(J) && I == J;
                             A_K[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k], onBoundary);
                         }
                     }
@@ -660,10 +657,12 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    
+                    /*
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
+                        */
+                        
                     
                     
 
@@ -674,10 +673,12 @@ namespace ippl {
                         J = global_dofs[j];
 
                         // Skip boundary DOFs (Zero Dirichlet BCs)
-                        
+                        /*
                         if (this->isDOFOnBoundary(J)) {
                             continue;
                         }
+                            */
+                            
                         
                     
 
@@ -895,10 +896,14 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I = global_dofs[i];
 
-
+                    
                     if (this->isDOFOnBoundary(I)) {
+                        //int side  = getBoundarySide(I);
+                        //atomic_view(I) = -10*(side+1);
                         continue;
                     }
+                        
+                        
                         
 
                     // calculate the contribution of this element
@@ -906,10 +911,11 @@ namespace ippl {
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         // We now have to interpolate the value of the field
                         // given at the DOF positions to the quadrature point
+                        
                         point_t pos = this->ref_element_m.localToGlobal(
                             this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
                             q[k]); 
-
+                        
                         point_t interpolatedVal = f(pos);
 
                         contrib += w[k] * basis_q[k][i].dot(interpolatedVal) * absDetDPhi;
@@ -917,9 +923,10 @@ namespace ippl {
 
                     // add the contribution of the element to the field
                     atomic_view(I) += contrib;
-
-                }
+                
+                }    
             });
+            
 
         IpplTimings::stopTimer(outer_loop);
         IpplTimings::stopTimer(evalLoadV);
@@ -1286,7 +1293,51 @@ namespace ippl {
     void NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::reconstructSolution(const FEMVector<T>& x,
                                     FieldType& field) const {
+        
+        
+        // Loop over all the global degrees of freedom
+        size_t nx = this->nr_m[0];
+        size_t ny = this->nr_m[1];
 
+        auto coefView = x.getView();
+        auto outView = field.getView();
+        
+        size_t n = x.size();
+        Kokkos::parallel_for("reconstructBasis", n,
+            KOKKOS_CLASS_LAMBDA(size_t i){
+                // In order to do this we need to figure out to which axis we
+                // are parallel
+                size_t y = i / (2*nx - 1);
+                bool onXAxis = i - (2*nx-1) * y < (nx-1);
+                if (onXAxis) {
+                    size_t fieldIdx1 = i - y*(nx-1);
+                    auto fieldNDIdx1 = this->getMeshVertexNDIndex(fieldIdx1);
+                    size_t fieldIdx2 = i + 1 - y*(nx-1);
+                    auto fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
+                    
+                    T factor = fieldNDIdx1[0] == 0 || fieldNDIdx1[0] == nx-1 ? 1.0 : 1.0;//0.5;
+                    apply(outView,fieldNDIdx1)[0] = factor*coefView(i);
+
+                    factor = fieldNDIdx2[0] == 0 || fieldNDIdx2[0] == nx-1 ? 1.0 : 1.0;//0.5;
+                    apply(outView,fieldNDIdx2)[0] = factor*coefView(i);
+
+                } else {
+                    size_t fieldIdx1 = i - (y+1)*(nx-1);
+                    size_t fieldIdx2 = i + 1 - y*(nx-1);
+                    
+                    auto fieldNDIdx1 = this->getMeshVertexNDIndex(fieldIdx1);
+                    auto fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
+                    
+                    T factor = fieldNDIdx1[1] == 0 || fieldNDIdx1[1] == ny-1 ? 1.0 : 1.0;//0.5;
+                    apply(outView,fieldNDIdx1)[1] = factor*coefView(i);
+
+                    factor = fieldNDIdx2[1] == 0 || fieldNDIdx2[1] == ny-1 ? 1.0 : 1.0;//0.5;
+                    apply(outView,fieldNDIdx2)[1] = factor*coefView(i);
+                }
+                
+                
+            }
+        );
                                     
     }
 

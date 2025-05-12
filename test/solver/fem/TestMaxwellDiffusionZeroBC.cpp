@@ -80,6 +80,43 @@ void saveToFile(size_t nx, size_t ny, ippl::Vector<T,2> cellSpacing, ippl::Vecto
     file.close();
 }
 
+template <typename T, unsigned Dim>
+void saveToFile(size_t nx, size_t ny, ippl::Vector<T,2> cellSpacing, ippl::Vector<T,2> origin,
+    ippl::Field<ippl::Vector<T,Dim>, Dim, ippl::UniformCartesian<T, Dim>, Cell> data, const std::string& filename) {
+    
+    auto view = data.getView();
+    auto hView = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(hView, view);
+    
+    std::ofstream file(filename);
+    file << "x,y,z,vx,vy,vz\n";
+    for (size_t i = 0; i < hView.extent(0); ++i) {
+        T x = i*cellSpacing[0] + origin[0];
+        for (size_t j = 0; j < hView.extent(1); ++j) {
+            T y = j*cellSpacing[1] + origin[1];
+            file << x << "," << y << ",0," << hView(i,j)[0] << "," << hView(i,j)[1] << ",0\n";
+        }
+        
+    }
+
+    file.close();
+}
+
+template <typename T, unsigned Dim>
+struct Analytical{
+    using point_t =  ippl::Vector<T, Dim>;
+
+    T k;
+    Analytical(T k) : k(k) {}
+
+    KOKKOS_FUNCTION const point_t operator() (const point_t& pos) const{
+        point_t sol(0);
+        sol[0] = Kokkos::sin(k*pos[1]);
+        sol[1] = Kokkos::sin(k*pos[0]);
+        return sol;
+    }
+};
+
 
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
@@ -97,7 +134,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     using point_t =  ippl::Vector<T, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
-    const unsigned numGhosts      = 1;
+    const unsigned numGhosts      = 0;
 
     // Domain: [-1, 1]
     const ippl::Vector<unsigned, Dim> nodesPerDimVec(numNodesPerDim);
@@ -122,6 +159,10 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
 
+
+    T k = 3.14159265359;
+
+
     // Generate the rhs FEMVector
     size_t nx = numNodesPerDim;
     size_t ny = numNodesPerDim;
@@ -131,21 +172,30 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::FEMVector<ippl::Vector<T,Dim> > solutionVector(nx*(ny-1) + ny*(nx-1));
     auto viewSolution = solutionVector.getView();
 
-    T k = 3.14159265359;
+    Field_t fieldSolution(mesh, layout, 0);
+    auto fieldView = fieldSolution.getView();
+    using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+    ippl::parallel_for("Assign solution field", fieldSolution.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const index_array_type& args) {
+            T x = args[0]*cellSpacing[0] + origin[0];
+            T y = args[1]*cellSpacing[1] + origin[1];
 
-    auto rhsFunc = [k](const point_t& pos) -> point_t {
+            apply(fieldView, args)[0] = Kokkos::sin(k*y);
+            apply(fieldView, args)[1] = Kokkos::sin(k*x);
+            
+        }
+    );
+
+    
+
+    auto rhsFunc = KOKKOS_LAMBDA(const point_t& pos) -> point_t {
         point_t sol(0);
         sol[0] = (1. + k*k)*Kokkos::sin(k*pos[1]);
         sol[1] = (1. + k*k)*Kokkos::sin(k*pos[0]);
         return sol;
     };
 
-    auto analytical = [k](const point_t& pos) -> point_t {
-        point_t sol(0);
-        sol[0] = Kokkos::sin(k*pos[1]);
-        sol[1] = Kokkos::sin(k*pos[0]);
-        return sol;
-    };
+
 
     Kokkos::parallel_for("Assign RHS", rhsVector.size(),
         KOKKOS_LAMBDA(size_t i) {
@@ -185,7 +235,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
-    params.add("max_iterations", 2000);
+    params.add("max_iterations", 10000);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -196,6 +246,23 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     saveToFile(nx, ny, cellSpacing, origin, diff, "diff.csv");
     saveToFile(nx, ny, cellSpacing, origin, *(solver.rhsVector_m), "solver_rhs.csv");
     saveToFile(nx, ny, cellSpacing, origin, *(solver.lhsVector_m), "solver_lhs.csv");
+
+    saveToFile(nx, ny, cellSpacing, origin, lhs, "field_result.csv");
+    saveToFile(nx, ny, cellSpacing, origin, fieldSolution, "field_solution.csv");
+    fieldSolution = lhs - fieldSolution;
+    saveToFile(nx, ny, cellSpacing, origin, fieldSolution, "field_diff.csv");
+
+    auto fieldDifView = fieldSolution.getView();
+    auto hFieldDifView = Kokkos::create_mirror_view(fieldDifView);
+    Kokkos::deep_copy(hFieldDifView, fieldDifView);
+    T difError = 0;
+    for (size_t i = 0; i < hFieldDifView.extent(0); ++i) {
+        for (size_t j = 0; j < hFieldDifView.extent(1); ++j) {
+            difError += Kokkos::sqrt(hFieldDifView(i,j).dot(hFieldDifView(i,j)));
+        }
+    }
+    difError /= hFieldDifView.extent(0);
+
 
     ippl::FEMVector<ippl::Vector<T,Dim> > dummy = result.template skeletonCopy<ippl::Vector<T,Dim>>(); 
 
@@ -214,18 +281,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     s = Kokkos::sqrt(s)/(Dim*nx);
     
-    T error = solver.getL2Error(result, analytical);
-    T coefError = solver.getL2ErrorCoeff(*(solver.lhsVector_m), analytical);
+    T error = solver.getL2Error(result, Analytical<T, Dim>(k));
+    T coefError = solver.getL2ErrorCoeff(*(solver.lhsVector_m), Analytical<T, Dim>(k));
     
     if (ippl::Comm->rank() == 0) {
-        std::cout << std::setw(10) << "num nodes" << std::setw(25) << "cell spacing"
-                  << std::setw(25) << "value error" << std::setw(25) << "interp error"
-                  << std::setw(25) << "interp error coef"
-                  << std::setw(25) << "solver residue"
-                  << std::setw(15) << "num it\n";
         std::cout << std::setw(10) << numNodesPerDim;
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
-        std::cout << std::setw(25) << std::setprecision(16) << s;
+        std::cout << std::setw(25) << std::setprecision(16) << difError;
         std::cout << std::setw(25) << std::setprecision(16) << error;
         std::cout << std::setw(25) << std::setprecision(16) << coefError;
         std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
@@ -280,6 +342,13 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
+        std::cout << std::setw(10) << "num_nodes"
+        << std::setw(25) << "cell_spacing"
+        << std::setw(25) << "value_error"
+        << std::setw(25) << "interp_error"
+        << std::setw(25) << "interp_error_coef"
+        << std::setw(25) << "solver_residue"
+        << std::setw(15) << "num_it\n";
         /*
         if (dim == 1) {
             // 1D Sinusoidal
@@ -299,15 +368,18 @@ int main(int argc, char* argv[]) {
         }
         */
         
-        
-        for (unsigned n = 1 << 5; n <= 1 << 8; n = n << 1) {
-            testFEMSolver<T, 2>(n, 1.0, 3.0);
+        for (unsigned n = 8; n <= 200; n += 1) {
+            testFEMSolver<T, 2>(n, 0.0, 3.0);
         }
+        
+            
+        
+        
             
          
         
-        
-        //testFEMSolver<T, 2>(100, 0.0, 3.0);
+        // offending sizes: 103, 18, 34, 43
+        //testFEMSolver<T, 2>(103, 1.0, 3.0);
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
