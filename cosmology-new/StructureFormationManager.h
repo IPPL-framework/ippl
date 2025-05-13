@@ -315,7 +315,7 @@ public:
     IpplTimings::stopTimer(fourDenTimer);
     
     // Check whether the generated density field is Hermitian before proceeding
-    if (isHermitian()) {
+    if (isHermitianParallel()) {
       msg << "Fourier density field is Hermitian." << endl;
     } else {
       std::cerr << "Fourier density field is NOT Hermitian!";
@@ -387,7 +387,7 @@ public:
     }	        
   }
 
-  /**
+ /**
      * @brief Check whether the complex density field delta(k) is Hermitian
      *
      * A real‑space density field requires its Fourier coefficients
@@ -413,16 +413,15 @@ public:
     const int ngh = cfield_m.getNghost();
     const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
 
-    // set the tolerance for comparison based on the value type
-    const double tol = std::numeric_limits<double>::epsilon();
 
-    bool hermitian = true;
+    // flag to track result on current rank
+    int localHermitian = 1; 
 
     // Iterate over the field indices and check whether each fourier coefficient is Hermitian
     // TODO: Right now the code assumes that the negative index can be found on the same rank.
     //       To make the code parallelizable for multi-ranks, this needs to be accounted for.
-    ippl::parallel_for("isHermitian", ippl::getRangePolicy(field, ngh),
-                       KOKKOS_LAMBDA(const index_array_type& idx) {
+    ippl::parallel_reduce("isHermitian", ippl::getRangePolicy(field, ngh),
+                       KOKKOS_LAMBDA(const index_array_type& idx, int& isHermitian) {
 
                          // Converts the local idx into the global coordinate in the FFT grid.
                          int i = idx[0] - ngh + lDom[0].first();
@@ -445,6 +444,10 @@ public:
                          Kokkos::complex<double> delta_k = ippl::apply(field, idx);
                          Kokkos::complex<double> delta_minus_k = ippl::apply(field, neg_idx);
                          Kokkos::complex<double> conjugate_delta_k = Kokkos::conj(delta_k);
+                         
+                         // set the tolerance for comparison based on the value type
+                         const double tol = std::numeric_limits<double>::epsilon();
+
 
                          // uncomment for debugging
                          /*
@@ -459,18 +462,20 @@ public:
                          */
 
                          // If delta(-k) != conj[delta(k)], field is not hermitian
-                         if (std::abs(delta_minus_k.real() - conjugate_delta_k.real()) > tol ||
-                             std::abs(delta_minus_k.imag() - conjugate_delta_k.imag()) > tol) {
-                           // printf(">>> Hermitian symmetry violated at (%d,%d,%d)\n", i, j, k);
-                           // hermitian = false;
-                           // TODO: if we want to strictly return a boolean, then we must implement
-                           // a boolean in a way that is compatible with Kokkos for loop. At the moment,
-                           // the loop does not have access to the 'hermitian' variable set outside the loop.
-                           Kokkos::abort("Fourier density field is NOT Hermitian!");
-                         } 
-                     });
+                         bool hermitian =
+                              std::abs(delta_minus_k.real() - conjugate_delta_k.real()) <= tol &&
+                              std::abs(delta_minus_k.imag() - conjugate_delta_k.imag()) <= tol;
 
-    return hermitian;
+                         if (!hermitian)
+                              isHermitian = 0; 
+                     }, 
+                     Kokkos::Min<int>(localHermitian)); // if any value becomes 0, final result is 0 on this rank
+
+    // Then do the global MPI reduction across ranks
+    int globalHermitian = 0;
+    MPI_Allreduce(&localHermitian, &globalHermitian, 1, MPI_INT, MPI_MIN, ippl::Comm->getCommunicator());
+
+    return globalHermitian != 0;
   }
   
   /**
