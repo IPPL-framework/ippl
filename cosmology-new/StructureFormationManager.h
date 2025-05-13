@@ -315,7 +315,7 @@ public:
     IpplTimings::stopTimer(fourDenTimer);
     
     // Check whether the generated density field is Hermitian before proceeding
-    if (isHermitianParallel()) {
+    if (isHermitian()) {
       msg << "Fourier density field is Hermitian." << endl;
     } else {
       std::cerr << "Fourier density field is NOT Hermitian!";
