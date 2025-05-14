@@ -237,10 +237,7 @@ public:
     }
 
     void BorisStep() {
-        // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
-        // Here, we assume a constant charge-to-mass ratio of -1 for
-        // all the particles hence eliminating the need to store mass as
-        // an attribute
+        // Boris pusher: half-step, kick, rotation, half-step
         static IpplTimings::TimerRef ETimer              = IpplTimings::getTimer("kickVelocity");
         static IpplTimings::TimerRef BTimer              = IpplTimings::getTimer("rotateVelocity");
         static IpplTimings::TimerRef RTimer              = IpplTimings::getTimer("pushPosition");
