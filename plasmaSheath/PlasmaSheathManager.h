@@ -57,10 +57,10 @@ public:
 
         this->decomp_m.fill(true);
 
-        this->hr_m     = L / this->nr_m;
-        this->rmax_m   = L - (this->hr_m); // L = size of domain
-        this->rmin_m   = - 0.5 * (this->hr_m);
+        this->rmin_m   = 0.0;
+        this->rmax_m   = L; // L = size of domain
         this->origin_m = this->rmin_m;
+        this->hr_m     = L / this->nr_m;
 
         this->phiWall_m = phiWall; // Dirichlet BC for phi at wall
         this->Bext_m = Bext; // External magnetic field
@@ -283,6 +283,7 @@ public:
         double muI[3] = {0.0, 0.0, 0.0};
         double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
 
+        auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;
 
         view_typeR Rview = this->pcontainer_m->R.getView();
@@ -296,7 +297,7 @@ public:
                 bool outside = false;
 
                 for (unsigned int d = 0; d < Dim; ++d) {
-                    if ((Rview(i)[d] > rmax[d]) || (Rview(i)[d] < 0.0)) {
+                    if ((Rview(i)[d] > rmax[d]) || (Rview(i)[d] < rmin[d])) {
                         outside = true;
                     }
                 }

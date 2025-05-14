@@ -108,9 +108,58 @@ public:
 
         scatter(*q, *rho, *R);
 
+        // account for ghost cells only on physical domain boundaries
+        // we need to do this because the cell-centered approach makes the charges
+        // deposit also on ghost cells -- add this to the rho.sum()
+        const auto& layout = this->fcontainer_m->getFL();
+        const auto gdom    = layout.getDomain();
+        const auto& ldom   = layout.getLocalNDIndex();
+        const int nghost   = rho->getNghost();
+        auto view          = rho->getView();
+
+        using exec_space = typename Field_t<Dim>::execution_space;
+        using index_type = typename ippl::RangePolicy<Dim, exec_space>::index_type;
+        using index_array_type = typename ippl::RangePolicy<Dim, exec_space>::index_array_type;
+        Kokkos::Array<index_type, Dim> begin, end, begin_ghost, end_ghost;
+
+        bool addGhosts_upper = false;
+        bool addGhosts_lower = false;
+        for (unsigned int d = 0; d < Dim; ++d) {
+            begin[d] = view.extent(d) - nghost;
+            end[d] = nghost;
+            if (ldom[d].max() == gdom[d].max()) {
+                end_ghost[d]    = view.extent(d);
+                addGhosts_upper = true;
+            }
+            if (ldom[d].min() == gdom[d].min()) {
+                begin_ghost[d]  = 0;
+                addGhosts_lower = true;
+            }
+        }
+
+        T sum = 0;
+        if (addGhosts_upper) {
+            ippl::parallel_reduce(
+                "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin, end_ghost),
+                KOKKOS_LAMBDA(index_array_type & args, T& val) {
+                    val += ippl::apply(view, args);
+            }, Kokkos::Sum<T>(sum));
+        }
+        if (addGhosts_lower) {
+            ippl::parallel_reduce(
+                "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin_ghost, end),
+                KOKKOS_LAMBDA(index_array_type & args, T& val) {
+                    val += ippl::apply(view, args);
+            }, Kokkos::Sum<T>(sum));
+        }
+        T globalSum = 0;
+        ippl::Comm->allreduce(sum, globalSum, 1, std::plus<T>());
+
+        T rhoSum = (*rho).sum();
+        rhoSum += globalSum;
+
         // remove division by Q since quasi-neutral
-        // need to account for ghost cell as some charge gets deposited there
-        double absError = std::fabs((Q - (*rho).sum()));
+        double absError = std::fabs(Q - rhoSum);
 
         m << absError << endl;
 
