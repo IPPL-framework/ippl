@@ -137,26 +137,29 @@ public:
             }
         }
 
-        T sum = 0;
+        T sum_upper = 0;
+        T sum_lower = 0;
         if (addGhosts_upper) {
             ippl::parallel_reduce(
                 "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin, end_ghost),
                 KOKKOS_LAMBDA(index_array_type & args, T& val) {
                     val += ippl::apply(view, args);
-            }, Kokkos::Sum<T>(sum));
+            }, Kokkos::Sum<T>(sum_upper));
         }
         if (addGhosts_lower) {
             ippl::parallel_reduce(
                 "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin_ghost, end),
                 KOKKOS_LAMBDA(index_array_type & args, T& val) {
                     val += ippl::apply(view, args);
-            }, Kokkos::Sum<T>(sum));
+            }, Kokkos::Sum<T>(sum_lower));
         }
-        T globalSum = 0;
-        ippl::Comm->allreduce(sum, globalSum, 1, std::plus<T>());
+        T globalSum_upper = 0;
+        T globalSum_lower = 0;
+        ippl::Comm->allreduce(sum_upper, globalSum_upper, 1, std::plus<T>());
+        ippl::Comm->allreduce(sum_lower, globalSum_lower, 1, std::plus<T>());
 
         T rhoSum = (*rho).sum();
-        rhoSum += globalSum;
+        rhoSum += globalSum_upper + globalSum_lower;
 
         // remove division by Q since quasi-neutral
         double absError = std::fabs(Q - rhoSum);
