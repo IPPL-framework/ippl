@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
         double lbt              = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
 
-        std::cout << "nr=" << nr << ", Np=" << totalP << ", nt=" << nt << ", solver=" << solver << std::endl;
+        msg << "nr=" << nr << ", Np=" << totalP << ", nt=" << nt << ", solver=" << solver << endl;
 
         std::vector<std::string> preconditioner_params;
 
