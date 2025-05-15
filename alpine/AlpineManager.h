@@ -34,7 +34,6 @@ protected:
     std::string solver_m;
     std::string stepMethod_m;
     std::vector<std::string> preconditioner_params_m;
-
 public:
     AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                   std::string& solver_, std::string& stepMethod_,
