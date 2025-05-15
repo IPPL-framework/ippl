@@ -19,10 +19,12 @@ endif()
 
 if (IPPL_ENABLE_SOLVERS)
     add_subdirectory(solver)
+    add_subdirectory(solver/fem)
 endif()
 
 add_subdirectory(particle)
 add_subdirectory(region)
 add_subdirectory(random)
 add_subdirectory(serialization)
+add_subdirectory(FEM)
 

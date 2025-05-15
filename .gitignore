@@ -12,3 +12,8 @@ build*/
 *~
 *.~
 
+# ignore build directories
+build*/
+
+# ignore .vscode directory
+.vscode
