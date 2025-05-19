@@ -7,6 +7,8 @@
 
 namespace ippl {
 
+    // this is the basic 1D element with 2 vertices
+    // N.B. to not be confused with Nédélec edge elements
     template <typename T>
     class EdgeElement : public Element1D<T, 2> {
     public:

@@ -386,9 +386,8 @@ namespace ippl {
             ippl::parallel_for(
                 "Assign periodic field BC", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
-                    // The ghosts are filled starting from the inside of
-                    // the domain proceeding outwards for both lower and
-                    // upper faces.
+                    // we add the ghost cell values to the appropriate
+                    // neighbouring physical boundary cell
 
                     // to avoid ambiguity with the member function
                     using ippl::apply;
@@ -444,9 +443,8 @@ namespace ippl {
             ippl::parallel_for(
                 "Assign field BC", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_CLASS_LAMBDA(index_array_type & coords) {
-                    // The ghosts are filled starting from the inside of
-                    // the domain proceeding outwards for both lower and
-                    // upper faces.
+                    // we assign the ghost cell values to the appropriate
+                    // neighbouring physical boundary cell
 
                     // to avoid ambiguity with the member function
                     using ippl::apply;

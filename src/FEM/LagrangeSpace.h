@@ -198,6 +198,7 @@ namespace ippl {
          * @brief Assemble the left stiffness matrix A of the system Ax = b
          *
          * @param field The field to assemble the matrix for
+         * @param evalFunction The lambda telling us the form which A takes
          *
          * @return FieldLHS - The LHS field containing A*x
          */
@@ -210,6 +211,7 @@ namespace ippl {
          * subtracted from the RHS for treatment of Dirichlet BCs
          *
          * @param field The field to assemble the matrix for
+         * @param evalFunction The lambda telling us the form which A takes
          *
          * @return FieldLHS - The LHS field containing A*x
          */
@@ -220,7 +222,6 @@ namespace ippl {
          * @brief Assemble the load vector b of the system Ax = b
          *
          * @param rhs_field The field to set with the load vector
-         * @param f The source function (charge density field)
          *
          * @return FieldRHS - The RHS field containing b
          */
@@ -239,18 +240,7 @@ namespace ippl {
          * @return error - The error ||u_h - u_sol||_L2
          */
         template <typename F>
-        T computeError(const FieldLHS& u_h, const F& u_sol) const;
-
-        /**
-         * @brief Given two fields, compute the L-infinity error
-         *
-         * @param u_h The numerical solution found using FEM
-         * @param u_sol The analytical solution (functor)
-         *
-         * @return error - The error ||u_h - u_sol||_Linf
-         */
-        template <typename F>
-        T computeErrorInf(const FieldLHS& u_h, const F& u_sol) const;
+        T computeErrorL2(const FieldLHS& u_h, const F& u_sol) const;
 
         /**
          * @brief Given a field, compute the average
@@ -265,7 +255,7 @@ namespace ippl {
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *
-         * @param ndindex The NDIndex of the DOF
+         * @param ndindex The NDIndex of the global DOF
          *
          * @return true - If the DOF is on the boundary
          * @return false - If the DOF is not on the boundary
