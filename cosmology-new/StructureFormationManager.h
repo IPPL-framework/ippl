@@ -318,7 +318,7 @@ public:
     if (isHermitian()) {
       msg << "Fourier density field is Hermitian." << endl;
     } else {
-      std::cerr << "Fourier density field is NOT Hermitian!";
+      std::cerr << "Fourier density field is NOT Hermitian!" << endl;
     }
 
     static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
