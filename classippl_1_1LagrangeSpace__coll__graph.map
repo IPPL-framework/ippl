@@ -1,0 +1,8 @@
+<map id="ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;" name="ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;">
+<area shape="rect" id="node1" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="43,844,287,1148"/>
+<area shape="rect" id="node2" href="$classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="39,461,292,795"/>
+<area shape="rect" id="node3" href="$classippl_1_1Vector.html" title=" " alt="" coords="25,139,149,384"/>
+<area shape="rect" id="node4" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
+<area shape="rect" id="node5" href="$classippl_1_1Vector.html" title=" " alt="" coords="182,139,325,384"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+</map>

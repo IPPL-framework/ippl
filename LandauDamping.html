@@ -83,7 +83,8 @@ $(function() {
 <div class="textblock"><p >This is an example demonstrating the setup and execution of a Landau damping simulation using the IPPL framework.</p>
 <h3><a class="anchor" id="autotoc_md35"></a>
 Usage</h3>
-<p >The executable can be run with the following command-line arguments: </p><div class="fragment"><div class="line">srun ./LandauDamping &lt;nx&gt; [&lt;ny&gt;...] &lt;Np&gt; &lt;Nt&gt; &lt;stype&gt; &lt;lbthres&gt; &lt;tintegr&gt; --overallocate &lt;ovfactor&gt; --info 10</div>
+<p >The executable can be run with the following command-line arguments: </p><div class="fragment"><div class="line">   srun ./LandauDamping &lt;nx&gt; [&lt;ny&gt;...] &lt;Np&gt; &lt;Nt&gt; &lt;stype&gt; &lt;lbthres&gt; &lt;tintegr&gt; --overallocate</div>
+<div class="line">&lt;ovfactor&gt; --info 10</div>
 </div><!-- fragment --><ul>
 <li><b>nx</b>: Number of cell-centered points in the x-direction.</li>
 <li><b>ny...</b>: Number of cell-centered points in the y-, z-, ...-direction.</li>
@@ -104,6 +105,8 @@ Implementation Detail</h3>
 <div class="line"><span class="keyword">using </span><a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> = double;</div>
 <div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code hl_variable" href="datatypes_8h.html#a17a8b6df8e098aa2526217331771b090">TestName</a> = <span class="stringliteral">&quot;LandauDamping&quot;</span>;</div>
 <div class="line"> </div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Ippl_8h.html">Ippl.h</a>&quot;</span></div>
+<div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;Kokkos_MathematicalConstants.hpp&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;Kokkos_MathematicalFunctions.hpp&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;Kokkos_Random.hpp&gt;</span></div>
@@ -114,11 +117,12 @@ Implementation Detail</h3>
 <div class="line"><span class="preprocessor">#include &lt;string&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Ippl_8h.html">Ippl.h</a>&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="IpplTimings_8h.html">Utility/IpplTimings.h</a>&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="PicManager_8h.html">Manager/PicManager.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="datatypes_8h.html">datatypes.h</a>&quot;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="IpplTimings_8h.html">Utility/IpplTimings.h</a>&quot;</span></div>
+<div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="LandauDampingManager_8h.html">LandauDampingManager.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="PicManager_8h.html">Manager/PicManager.h</a>&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="BumponTailInstability_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[]) {</div>
 <div class="line">    <a class="code hl_function" href="namespaceippl.html#a0c7376f5476bb172361c963569a0c546">ippl::initialize</a>(argc, argv);</div>
@@ -135,7 +139,7 @@ Implementation Detail</h3>
 <div class="line"><span class="comment">// assigning each parameter to the corresponding variable. These parameters define the</span></div>
 <div class="line"><span class="comment">// simulation&#39;s grid size, number of particles, number of time steps, solver type, load balancing</span></div>
 <div class="line"><span class="comment">// threshold, and overallocation factor.</span></div>
-<div class="line"><span class="comment">// </span></div>
+<div class="line"><span class="comment">//</span></div>
 <div class="line">        <span class="keywordtype">int</span> arg = 1;</div>
 <div class="line">        <a class="code hl_class" href="classippl_1_1Vector.html">Vector_t&lt;int, Dim&gt;</a> nr;</div>
 <div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> d = 0; d &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; d++) {</div>

@@ -105,7 +105,7 @@ $(function() {
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>        vector_type vectors[<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>];</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> d = 0; d &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; d++) {</div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>            vectors[d]    = 0;</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>            vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>            vectors[d][d] = 0.5 / mesh.<a class="code hl_function" href="classippl_1_1Mesh.html#ab1e208ebe7e6b29b6362463c9f4a6752">getMeshSpacing</a>(d);</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>        }</div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>        <span class="keywordflow">return</span> <a class="code hl_struct" href="structippl_1_1detail_1_1meta__grad.html">detail::meta_grad&lt;Field&gt;</a>(u, vectors);</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    }</div>
@@ -125,7 +125,7 @@ $(function() {
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        vector_type vectors[<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>];</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> d = 0; d &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; d++) {</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>            vectors[d]    = 0;</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            vectors[d][d] = 0.5 / mesh.<a class="code hl_function" href="classippl_1_1Mesh.html#ab1e208ebe7e6b29b6362463c9f4a6752">getMeshSpacing</a>(d);</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        }</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <span class="keywordflow">return</span> <a class="code hl_struct" href="structippl_1_1detail_1_1meta__div.html">detail::meta_div&lt;Field&gt;</a>(u, vectors);</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    }</div>
@@ -185,7 +185,7 @@ $(function() {
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            vectors[d]    = 0;</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            vectors[d][d] = 1;</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        }</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keyword">auto</span> hvector = mesh.getMeshSpacing();</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keyword">auto</span> hvector = mesh.<a class="code hl_function" href="classippl_1_1Mesh.html#ab1e208ebe7e6b29b6362463c9f4a6752">getMeshSpacing</a>();</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordflow">return</span> <a class="code hl_struct" href="structippl_1_1detail_1_1meta__hess.html">detail::meta_hess&lt;Field&gt;</a>(u, vectors, hvector);</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    }</div>
@@ -198,6 +198,7 @@ $(function() {
 <div class="ttc" id="aclassippl_1_1Field_html_a5214091d2fb7314226f26319bb5b764b"><div class="ttname"><a href="classippl_1_1Field.html#a5214091d2fb7314226f26319bb5b764b">ippl::Field&lt; T, Dim, Mesh_t&lt; Dim &gt;, Centering_t&lt; Dim &gt;, ViewArgs... &gt;::Mesh_t</a></div><div class="ttdeci">Mesh_t&lt; Dim &gt; Mesh_t</div><div class="ttdef"><b>Definition:</b> Field.h:23</div></div>
 <div class="ttc" id="aclassippl_1_1Field_html_abea4a038e36f4d8d55107df74356efb7"><div class="ttname"><a href="classippl_1_1Field.html#abea4a038e36f4d8d55107df74356efb7">ippl::Field::get_mesh</a></div><div class="ttdeci">KOKKOS_INLINE_FUNCTION Mesh_t &amp; get_mesh() const</div><div class="ttdef"><b>Definition:</b> Field.h:64</div></div>
 <div class="ttc" id="aclassippl_1_1Field_html_ac427d93f24345c931509fd83f99c01e7"><div class="ttname"><a href="classippl_1_1Field.html#ac427d93f24345c931509fd83f99c01e7">ippl::Field::getFieldBC</a></div><div class="ttdeci">BConds_t &amp; getFieldBC()</div><div class="ttdef"><b>Definition:</b> Field.h:78</div></div>
+<div class="ttc" id="aclassippl_1_1Mesh_html_ab1e208ebe7e6b29b6362463c9f4a6752"><div class="ttname"><a href="classippl_1_1Mesh.html#ab1e208ebe7e6b29b6362463c9f4a6752">ippl::Mesh::getMeshSpacing</a></div><div class="ttdeci">virtual KOKKOS_INLINE_FUNCTION const vector_type &amp; getMeshSpacing() const =0</div></div>
 <div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:20</div></div>
 <div class="ttc" id="anamespaceippl_html_a0f1f867504e019b7989402e658630180"><div class="ttname"><a href="namespaceippl.html#a0f1f867504e019b7989402e658630180">ippl::div</a></div><div class="ttdeci">detail::meta_div&lt; Field &gt; div(Field &amp;u)</div><div class="ttdef"><b>Definition:</b> FieldOperations.hpp:36</div></div>
 <div class="ttc" id="anamespaceippl_html_a11ff45c57f3554335a46ec1e78fb7c31"><div class="ttname"><a href="namespaceippl.html#a11ff45c57f3554335a46ec1e78fb7c31">ippl::hess</a></div><div class="ttdeci">detail::meta_hess&lt; Field &gt; hess(Field &amp;u)</div><div class="ttdef"><b>Definition:</b> FieldOperations.hpp:106</div></div>
@@ -205,11 +206,11 @@ $(function() {
 <div class="ttc" id="anamespaceippl_html_a915624287dee5b9e36d736b23a3725e8"><div class="ttname"><a href="namespaceippl.html#a915624287dee5b9e36d736b23a3725e8">ippl::curl</a></div><div class="ttdeci">detail::meta_curl&lt; Field &gt; curl(Field &amp;u)</div><div class="ttdef"><b>Definition:</b> FieldOperations.hpp:81</div></div>
 <div class="ttc" id="anamespaceippl_html_a91a21e9020f6a5fb0b9cada900824651"><div class="ttname"><a href="namespaceippl.html#a91a21e9020f6a5fb0b9cada900824651">ippl::laplace</a></div><div class="ttdeci">detail::meta_laplace&lt; Field &gt; laplace(Field &amp;u)</div><div class="ttdef"><b>Definition:</b> FieldOperations.hpp:60</div></div>
 <div class="ttc" id="astructippl_1_1detail_1_1Expression_html_af8ae99c70daf0572b403dcd1bf832d72"><div class="ttname"><a href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">ippl::detail::Expression&lt; BareField&lt; T, Dim, ViewArgs... &gt;, sizeof(detail::ViewType&lt; T, Dim, ViewArgs... &gt;::view_type)&gt;::dim</a></div><div class="ttdeci">static constexpr unsigned dim</div><div class="ttdef"><b>Definition:</b> IpplExpressions.h:27</div></div>
-<div class="ttc" id="astructippl_1_1detail_1_1meta__curl_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__curl.html">ippl::detail::meta_curl</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:468</div></div>
-<div class="ttc" id="astructippl_1_1detail_1_1meta__div_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__div.html">ippl::detail::meta_div</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:362</div></div>
-<div class="ttc" id="astructippl_1_1detail_1_1meta__grad_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:305</div></div>
-<div class="ttc" id="astructippl_1_1detail_1_1meta__hess_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:518</div></div>
-<div class="ttc" id="astructippl_1_1detail_1_1meta__laplace_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__laplace.html">ippl::detail::meta_laplace</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:414</div></div>
+<div class="ttc" id="astructippl_1_1detail_1_1meta__curl_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__curl.html">ippl::detail::meta_curl</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:472</div></div>
+<div class="ttc" id="astructippl_1_1detail_1_1meta__div_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__div.html">ippl::detail::meta_div</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:365</div></div>
+<div class="ttc" id="astructippl_1_1detail_1_1meta__grad_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:307</div></div>
+<div class="ttc" id="astructippl_1_1detail_1_1meta__hess_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:522</div></div>
+<div class="ttc" id="astructippl_1_1detail_1_1meta__laplace_html"><div class="ttname"><a href="structippl_1_1detail_1_1meta__laplace.html">ippl::detail::meta_laplace</a></div><div class="ttdef"><b>Definition:</b> IpplOperations.h:417</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

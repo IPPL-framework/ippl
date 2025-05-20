@@ -1,0 +1,6 @@
+<map id="ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt;" name="ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt;">
+<area shape="rect" id="node1" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="128,372,351,471"/>
+<area shape="rect" id="node3" href="$classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="5,519,228,588"/>
+<area shape="rect" id="node4" href="$classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="252,519,475,588"/>
+<area shape="rect" id="node2" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="139,5,339,324"/>
+</map>

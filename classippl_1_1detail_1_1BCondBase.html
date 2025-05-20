@@ -96,12 +96,12 @@ Inheritance diagram for ippl::detail::BCondBase&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1BCondBase__inherit__graph.png" border="0" usemap="#aippl_1_1detail_1_1BCondBase_3_01Field_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1detail_1_1BCondBase_3_01Field_01_4_inherit__map" id="aippl_1_1detail_1_1BCondBase_3_01Field_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="179,5,347,207"/>
-<area shape="rect" href="classippl_1_1ExtrapolateFace.html" title=" " alt="" coords="11,255,157,456"/>
-<area shape="rect" href="classippl_1_1NoBcFace.html" title=" " alt="" coords="181,306,345,405"/>
-<area shape="rect" href="classippl_1_1PeriodicFace.html" title=" " alt="" coords="369,291,508,419"/>
-<area shape="rect" href="classippl_1_1ConstantFace.html" title=" " alt="" coords="17,504,151,603"/>
-<area shape="rect" href="classippl_1_1ZeroFace.html" title=" " alt="" coords="5,651,163,735"/>
+<area shape="rect" title=" " alt="" coords="208,5,387,221"/>
+<area shape="rect" href="classippl_1_1ExtrapolateFace.html" title=" " alt="" coords="5,269,184,485"/>
+<area shape="rect" href="classippl_1_1NoBcFace.html" title=" " alt="" coords="208,321,387,434"/>
+<area shape="rect" href="classippl_1_1PeriodicFace.html" title=" " alt="" coords="411,306,589,449"/>
+<area shape="rect" href="classippl_1_1ConstantFace.html" title=" " alt="" coords="28,533,161,632"/>
+<area shape="rect" href="classippl_1_1ZeroFace.html" title=" " alt="" coords="16,680,173,764"/>
 </map>
 </div>
 <div class="dynheader">
@@ -109,7 +109,7 @@ Collaboration diagram for ippl::detail::BCondBase&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1BCondBase__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1BCondBase_3_01Field_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1BCondBase_3_01Field_01_4_coll__map" id="aippl_1_1detail_1_1BCondBase_3_01Field_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,173,207"/>
+<area shape="rect" title=" " alt="" coords="5,5,184,221"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -130,6 +130,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a372396d87a371dff1eea97f63b564dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54fa37c2de5f63358702ffc5c992e4dc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#a54fa37c2de5f63358702ffc5c992e4dc">apply</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;field)=0</td></tr>
 <tr class="separator:a54fa37c2de5f63358702ffc5c992e4dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0dbb36c67ac130d3a464c7897a34e267"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#a0dbb36c67ac130d3a464c7897a34e267">assignGhostToPhysical</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;field)=0</td></tr>
+<tr class="separator:a0dbb36c67ac130d3a464c7897a34e267"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff7d1017c4d6a4c2b90509ac26cf7245"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#aff7d1017c4d6a4c2b90509ac26cf7245">write</a> (std::ostream &amp;) const =0</td></tr>
 <tr class="separator:aff7d1017c4d6a4c2b90509ac26cf7245"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28cb9fa9595958296aa32120bbc26d6b"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#a28cb9fa9595958296aa32120bbc26d6b">getFace</a> () const</td></tr>
@@ -237,6 +239,36 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classippl_1_1NoBcFace.html#a9ea1f9dc57625eb76403023d6b18abf3">ippl::NoBcFace&lt; Field &gt;</a>, <a class="el" href="classippl_1_1ExtrapolateFace.html#a9989b0a6056f32fdeb1e4023afac538c">ippl::ExtrapolateFace&lt; Field &gt;</a>, and <a class="el" href="classippl_1_1PeriodicFace.html#aa55bb81d6e43a140ad6c6dbebdde5c4c">ippl::PeriodicFace&lt; Field &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a0dbb36c67ac130d3a464c7897a34e267" name="a0dbb36c67ac130d3a464c7897a34e267"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0dbb36c67ac130d3a464c7897a34e267">&#9670;&#160;</a></span>assignGhostToPhysical()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1BCondBase.html">ippl::detail::BCondBase</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::assignGhostToPhysical </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>field</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classippl_1_1NoBcFace.html#a63fd32467518efc480ed884255924031">ippl::NoBcFace&lt; Field &gt;</a>, <a class="el" href="classippl_1_1ExtrapolateFace.html#a25bdce42d7fea2659252baf5aa96ec63">ippl::ExtrapolateFace&lt; Field &gt;</a>, and <a class="el" href="classippl_1_1PeriodicFace.html#ac27327da2be6aa2f0d3eaa4c048ccfa3">ippl::PeriodicFace&lt; Field &gt;</a>.</p>
 
 </div>
 </div>

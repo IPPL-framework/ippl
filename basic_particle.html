@@ -133,7 +133,7 @@ Example: Defining a Particle Bunch</h2>
 <div class="line">    <a class="code hl_class" href="classippl_1_1ParticleAttrib.html">ParticleAttrib&lt;Vector&lt;double&gt;</a>&gt; R, V;</div>
 <div class="line"> </div>
 <div class="line">    Bunch(PLayout&amp; layout) : <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase</a>&lt;PLayout&gt;(layout) {</div>
-<div class="line">        <span class="comment">// add your own application attributes ! </span></div>
+<div class="line">        <span class="comment">// add your own application attributes !</span></div>
 <div class="line">        this-&gt;addAttribute(mass);</div>
 <div class="line">        this-&gt;addAttribute(charge);</div>
 <div class="line">        this-&gt;addAttribute(R);</div>
@@ -142,7 +142,7 @@ Example: Defining a Particle Bunch</h2>
 <div class="line">   ~Bunch() = <span class="keywordflow">default</span>;</div>
 <div class="line">};</div>
 <div class="line"><span class="comment">// Compiled to single Kokkos Kernel</span></div>
-<div class="line">bunch-&gt;R = bunch-&gt;R + dt * bunch-&gt;V; </div>
+<div class="line">bunch-&gt;R = bunch-&gt;R + dt * bunch-&gt;V;</div>
 <div class="ttc" id="aclassippl_1_1ParticleAttrib_html"><div class="ttname"><a href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a></div><div class="ttdef"><b>Definition:</b> ParticleAttrib.h:31</div></div>
 <div class="ttc" id="aclassippl_1_1ParticleBase_html"><div class="ttname"><a href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a></div><div class="ttdef"><b>Definition:</b> ParticleBase.h:75</div></div>
 <div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:20</div></div>
@@ -152,26 +152,27 @@ Useful Particle Functions</h2>
 <p >Consider bunch a pointer to a derived class 'Bunch' from 'ParticleBase' and has attributes 'R', 'V', 'mass', 'charge' </p>
 <h3><a class="anchor" id="helper_particle_functions"></a>
 Helper Functions</h3>
-<p >A collection of essential functions for particle manipulation and attribute management, such as creation, deletion, and data operations. </p><div class="fragment"><div class="line"><span class="comment">// Creates nParticles locally by a core or GPU ( not the total no . of particles )</span></div>
-<div class="line">bunch-&gt;create( nParticles );</div>
+<p >A collection of essential functions for particle manipulation and attribute management, such as creation, deletion, and data operations. </p><div class="fragment"><div class="line">    <span class="comment">// Creates nParticles locally by a core or GPU ( not the total no . of particles )</span></div>
+<div class="line">    bunch-&gt;create( nParticles );</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// Get the local number of particles in that rank ( in ippl there is a one - one correspondence between</span></div>
-<div class="line"><span class="comment">// MPI ranks and GPUs</span></div>
-<div class="line"><span class="keywordtype">size_t</span> localnum = bunch-&gt;getLocalNum ();</div>
+<div class="line">    <span class="comment">// Get the local number of particles in that rank ( in ippl there is a one - one correspondence</span></div>
+<div class="line">between</div>
+<div class="line">    <span class="comment">// MPI ranks and GPUs</span></div>
+<div class="line">    <span class="keywordtype">size_t</span> localnum = bunch-&gt;getLocalNum ();</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// Particle deletion Function . invalid is a boolean View</span></div>
-<div class="line"><span class="comment">// marking which indices are invalid . destroyNum is the</span></div>
-<div class="line"><span class="comment">// total number of invalid particles</span></div>
-<div class="line">bunch-&gt;destroy(invalid, destroyNum );</div>
+<div class="line">    <span class="comment">// Particle deletion Function . invalid is a boolean View</span></div>
+<div class="line">    <span class="comment">// marking which indices are invalid . destroyNum is the</span></div>
+<div class="line">    <span class="comment">// total number of invalid particles</span></div>
+<div class="line">    bunch-&gt;destroy(invalid, destroyNum );</div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// Device and host views and the deep copy operations between them</span></div>
-<div class="line"><span class="comment">// similar to fields</span></div>
-<div class="line">Kokkos::deep_copy(bunch-&gt;R.getHostMirror(), bunch-&gt;R.getView ()); <span class="comment">// device to host</span></div>
-<div class="line">Kokkos::deep_copy(bunch-&gt;R.getView()      , bunch-&gt;R.getHostMirror()); <span class="comment">// host to device</span></div>
+<div class="line">    <span class="comment">// Device and host views and the deep copy operations between them</span></div>
+<div class="line">    <span class="comment">// similar to fields</span></div>
+<div class="line">    Kokkos::deep_copy(bunch-&gt;R.getHostMirror(), bunch-&gt;R.getView ()); <span class="comment">// device to host</span></div>
+<div class="line">    Kokkos::deep_copy(bunch-&gt;R.getView()      , bunch-&gt;R.getHostMirror()); <span class="comment">// host to device</span></div>
 <div class="line"> </div>
-<div class="line"><span class="comment">// sum () , prod () , min () and max () functions available for</span></div>
-<div class="line"><span class="comment">// particle attributes similar to fields</span></div>
-<div class="line"><span class="keyword">auto</span> Rsum = bunch-&gt;R.sum ();</div>
+<div class="line">    <span class="comment">// sum () , prod () , min () and max () functions available for</span></div>
+<div class="line">    <span class="comment">// particle attributes similar to fields</span></div>
+<div class="line">    <span class="keyword">auto</span> Rsum = bunch-&gt;R.sum ();</div>
 </div><!-- fragment --> <h3><a class="anchor" id="bdry_condition_particles"></a>
 Boundary Conditions for Particles</h3>
 <p >Setting up boundary conditions (e.g., periodic, reflective) for particle simulations. </p><div class="fragment"><div class="line"><span class="comment">// Types of BCs : PERIODIC , SINK , RFELECTIVE , NO</span></div>

@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structIpplCTAssert_3_01true_01_4.html" title=" " alt="" coords="5,5,148,31"/>
+<area shape="rect" id="node1" href="$classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="5,113,168,153"/>
+<area shape="rect" id="node2" href="$classippl_1_1CG.html" title=" " alt="" coords="216,5,432,75"/>
+<area shape="rect" id="node3" href="$classippl_1_1CG.html" title=" " alt="" coords="247,99,401,168"/>
+<area shape="rect" id="node4" href="$classippl_1_1CG.html" title=" " alt="" coords="216,192,432,261"/>
+<area shape="rect" id="node5" href="$classippl_1_1PCG.html" title=" " alt="" coords="480,192,701,261"/>
 </map>

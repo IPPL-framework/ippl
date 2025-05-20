@@ -97,12 +97,13 @@ Inheritance diagram for ippl::Poisson&lt; FieldLHS, FieldRHS &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Poisson__inherit__graph.png" border="0" usemap="#aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="455,5,624,295"/>
-<area shape="rect" href="classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="5,343,196,588"/>
-<area shape="rect" href="classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="221,401,423,529"/>
-<area shape="rect" href="classippl_1_1NullSolver.html" title=" " alt="" coords="448,409,631,522"/>
-<area shape="rect" href="classippl_1_1P3MSolver.html" title=" " alt="" coords="655,372,842,559"/>
-<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="867,372,1055,559"/>
+<area shape="rect" title=" " alt="" coords="541,5,711,295"/>
+<area shape="rect" href="classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,343,177,603"/>
+<area shape="rect" href="classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="201,350,392,595"/>
+<area shape="rect" href="classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="417,409,619,537"/>
+<area shape="rect" href="classippl_1_1NullSolver.html" title=" " alt="" coords="644,416,827,529"/>
+<area shape="rect" href="classippl_1_1P3MSolver.html" title=" " alt="" coords="851,379,1038,566"/>
+<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="1063,379,1251,566"/>
 </map>
 </div>
 <div class="dynheader">
@@ -467,7 +468,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 <p >Utility function for initializing a solver's default parameters (to be overridden for each base class) </p>
 
-<p>Reimplemented in <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7cf24b48678075a176d6350894af37ca">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#a10bb7ff4e0958b23c147802c6275e412">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1P3MSolver.html#a214d26178402294f989a815f50030840">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1PoissonCG.html#a8a68e4e0b1cdff8f46fc52d8a70cabf3">ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classippl_1_1FEMPoissonSolver.html#a25a900f543ccb4e5cd02832b8e858a8a">ippl::FEMPoissonSolver&lt; FieldLHS, FieldRHS, Order, QuadNumNodes &gt;</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7cf24b48678075a176d6350894af37ca">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#a10bb7ff4e0958b23c147802c6275e412">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1P3MSolver.html#a214d26178402294f989a815f50030840">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1PoissonCG.html#a8a68e4e0b1cdff8f46fc52d8a70cabf3">ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>
@@ -571,7 +572,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aab56895874fd8584c87c053c0feb2dc7">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#a93b0c5a18bd3b2e330a83b7d82bd43dd">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1P3MSolver.html#ac1fd71465c753dd6c210ab93cede1abc">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>.</p>
+<p>Reimplemented in <a class="el" href="classippl_1_1FEMPoissonSolver.html#a247a51a4e51fad271998c0797ea459ab">ippl::FEMPoissonSolver&lt; FieldLHS, FieldRHS, Order, QuadNumNodes &gt;</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aab56895874fd8584c87c053c0feb2dc7">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#a93b0c5a18bd3b2e330a83b7d82bd43dd">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1P3MSolver.html#ac1fd71465c753dd6c210ab93cede1abc">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>
@@ -601,7 +602,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 <p >Solve the <a class="el" href="classippl_1_1Poisson.html">Poisson</a> problem described by -laplace(lhs) = rhs </p>
 
-<p>Implemented in <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#ac9111290c39807126eeae4a08cbc7b8d">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1NullSolver.html#afb801dd11a1c18eeb6795fb517cc395b">ippl::NullSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1P3MSolver.html#ad7b6e455f2d5580f9a2f2f4b639ff089">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1PoissonCG.html#a42b6fffbee5bea392131231f4bc089c4">ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1FEMPoissonSolver.html#ae882df850733a4dd6f2fbdacad387ba3">ippl::FEMPoissonSolver&lt; FieldLHS, FieldRHS, Order, QuadNumNodes &gt;</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1FFTPeriodicPoissonSolver.html#ac9111290c39807126eeae4a08cbc7b8d">ippl::FFTPeriodicPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1NullSolver.html#afb801dd11a1c18eeb6795fb517cc395b">ippl::NullSolver&lt; FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1P3MSolver.html#ad7b6e455f2d5580f9a2f2f4b639ff089">ippl::P3MSolver&lt; FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1PoissonCG.html#a42b6fffbee5bea392131231f4bc089c4">ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>

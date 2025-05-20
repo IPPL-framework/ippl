@@ -1,3 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1random_1_1normal__cdf.html" title="Functor to calculate the cumulative distribution function (CDF) for a normal distribution." alt="" coords="5,5,141,45"/>
+<area shape="rect" id="node1" href="$classippl_1_1Poisson.html" title=" " alt="" coords="5,181,171,221"/>
+<area shape="rect" id="node2" href="$classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="232,5,404,60"/>
+<area shape="rect" id="node3" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="225,85,411,125"/>
+<area shape="rect" id="node4" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="219,149,417,189"/>
+<area shape="rect" id="node5" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="229,213,407,253"/>
+<area shape="rect" id="node6" href="$classippl_1_1P3MSolver.html" title=" " alt="" coords="227,277,409,317"/>
+<area shape="rect" id="node7" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="226,341,410,381"/>
 </map>

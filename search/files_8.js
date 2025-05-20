@@ -1,15 +1,20 @@
 var searchData=
 [
-  ['landaudamping_2ecpp_0',['LandauDamping.cpp',['../LandauDamping_8cpp.html',1,'']]],
-  ['landaudampingex_2ehpp_1',['LandauDampingEx.hpp',['../LandauDampingEx_8hpp.html',1,'']]],
-  ['landaudampingmanager_2eh_2',['LandauDampingManager.h',['../LandauDampingManager_8h.html',1,'']]],
-  ['landaudampingmixedexec_2ecpp_3',['LandauDampingMixedExec.cpp',['../LandauDampingMixedExec_8cpp.html',1,'']]],
-  ['landaudampingmixedprecision_2ecpp_4',['LandauDampingMixedPrecision.cpp',['../LandauDampingMixedPrecision_8cpp.html',1,'']]],
-  ['landaudampingparameterlist_2ecpp_5',['LandauDampingParameterList.cpp',['../LandauDampingParameterList_8cpp.html',1,'']]],
-  ['laplacehelpers_2eh_6',['LaplaceHelpers.h',['../LaplaceHelpers_8h.html',1,'']]],
-  ['loadbalancer_2ehpp_7',['LoadBalancer.hpp',['../LoadBalancer_8hpp.html',1,'']]],
-  ['logentry_2ecpp_8',['LogEntry.cpp',['../LogEntry_8cpp.html',1,'']]],
-  ['logentry_2eh_9',['LogEntry.h',['../LogEntry_8h.html',1,'']]],
-  ['loggingbufferhandler_2eh_10',['LoggingBufferHandler.h',['../LoggingBufferHandler_8h.html',1,'']]],
-  ['loggingbufferhandler_2ehpp_11',['LoggingBufferHandler.hpp',['../LoggingBufferHandler_8hpp.html',1,'']]]
+  ['index_2eh_0',['Index.h',['../Index_8h.html',1,'']]],
+  ['index_2ehpp_1',['Index.hpp',['../Index_8hpp.html',1,'']]],
+  ['inform_2ecpp_2',['Inform.cpp',['../Inform_8cpp.html',1,'']]],
+  ['inform_2eh_3',['Inform.h',['../Inform_8h.html',1,'']]],
+  ['inversetransformsampling_2eh_4',['InverseTransformSampling.h',['../InverseTransformSampling_8h.html',1,'']]],
+  ['ippl_2ecpp_5',['Ippl.cpp',['../Ippl_8cpp.html',1,'']]],
+  ['ippl_2eh_6',['Ippl.h',['../Ippl_8h.html',1,'']]],
+  ['ipplcore_2eh_7',['IpplCore.h',['../IpplCore_8h.html',1,'']]],
+  ['ipplexception_2eh_8',['IpplException.h',['../IpplException_8h.html',1,'']]],
+  ['ipplexpressions_2eh_9',['IpplExpressions.h',['../IpplExpressions_8h.html',1,'']]],
+  ['ipplinfo_2ecpp_10',['IpplInfo.cpp',['../IpplInfo_8cpp.html',1,'']]],
+  ['ipplinfo_2eh_11',['IpplInfo.h',['../IpplInfo_8h.html',1,'']]],
+  ['ipploneuler_2emd_12',['IPPLonEULER.md',['../IPPLonEULER_8md.html',1,'']]],
+  ['ipploperations_2eh_13',['IpplOperations.h',['../IpplOperations_8h.html',1,'']]],
+  ['ippltimings_2ecpp_14',['IpplTimings.cpp',['../IpplTimings_8cpp.html',1,'']]],
+  ['ippltimings_2eh_15',['IpplTimings.h',['../IpplTimings_8h.html',1,'']]],
+  ['ippltypes_2eh_16',['IpplTypes.h',['../IpplTypes_8h.html',1,'']]]
 ];

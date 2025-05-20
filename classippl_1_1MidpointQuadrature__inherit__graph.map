@@ -1,0 +1,4 @@
+<map id="ippl::MidpointQuadrature&lt; T, NumNodes1D, ElementType &gt;" name="ippl::MidpointQuadrature&lt; T, NumNodes1D, ElementType &gt;">
+<area shape="rect" id="node1" title="This is a class representing the midpoint quadrature rule." alt="" coords="5,372,228,456"/>
+<area shape="rect" id="node2" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="17,5,217,324"/>
+</map>

@@ -1,7 +1,7 @@
 var searchData=
 [
   ['name_0',['name',['../classippl_1_1Communicate.html#a1f662b6eef58bda6817549a7191c2ed4',1,'ippl::Communicate']]],
-  ['ndindex_1',['NDIndex',['../classippl_1_1NDIndex.html#a8ca5ffdd9829db26ba48f499fcac4877',1,'ippl::NDIndex::NDIndex()'],['../classippl_1_1NDIndex.html#a1a7b0eeac23ce62f8a38d30d9ee36e69',1,'ippl::NDIndex::NDIndex(const Args &amp;... args)']]],
+  ['ndindex_1',['NDIndex',['../classippl_1_1NDIndex.html#a8ca5ffdd9829db26ba48f499fcac4877',1,'ippl::NDIndex::NDIndex()'],['../classippl_1_1NDIndex.html#a1a7b0eeac23ce62f8a38d30d9ee36e69',1,'ippl::NDIndex::NDIndex(const Args &amp;... args)'],['../classippl_1_1NDIndex.html#a91603046eb4f271f99e1e0d9c3cea9b0',1,'ippl::NDIndex::NDIndex(const Vector&lt; unsigned, Dim &gt; &amp;sizes)']]],
   ['ndregion_2',['NDRegion',['../classippl_1_1NDRegion.html#aae2618a2bd5fbfb8ca4888cf36e2bddc',1,'ippl::NDRegion::NDRegion()'],['../classippl_1_1NDRegion.html#a764f6a5cb8e598e5c293675e10b7eed7',1,'ippl::NDRegion::NDRegion(const Args &amp;... args)'],['../classippl_1_1NDRegion.html#ad3fc7da5dc53a19d598dc6936d129f59',1,'ippl::NDRegion::NDRegion(const NDRegion&lt; T, Dim &gt; &amp;nr)']]],
   ['negative_5finverse_5fdiagonal_5flaplace_3',['negative_inverse_diagonal_laplace',['../namespaceippl.html#a71361c359de8a7d79bc92a57351abc34',1,'ippl']]],
   ['nestedloop_4',['nestedLoop',['../namespaceippl_1_1detail.html#afb03cdea17d9979f149b65b3a4def1bd',1,'ippl::detail']]],
@@ -15,6 +15,9 @@ var searchData=
   ['normal_5festimate_5ffunc_12',['normal_estimate_func',['../namespaceippl_1_1random.html#a0e3d97db043ee38b5e1a1c91e942fa30',1,'ippl::random']]],
   ['normal_5fpdf_5ffunc_13',['normal_pdf_func',['../namespaceippl_1_1random.html#a389aabc4bd9f4d7cfff85b838cb237d8',1,'ippl::random']]],
   ['normaldistribution_14',['NormalDistribution',['../classippl_1_1random_1_1NormalDistribution.html#ad91e107ec6fd59216f4a2df6794ebb67',1,'ippl::random::NormalDistribution']]],
-  ['nullsolver_15',['NullSolver',['../classippl_1_1NullSolver.html#ad04075854a572c9c551a7e1e0468f499',1,'ippl::NullSolver::NullSolver(rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#ad28cc10fe5af463f484f3592876062e4',1,'ippl::NullSolver::NullSolver(lhs_type &amp;lhs, rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#a4330311bbf9e8bb31e471440af6e3e2e',1,'ippl::NullSolver::NullSolver()']]],
-  ['numberofsends_16',['numberOfSends',['../classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15',1,'ippl::ParticleSpatialLayout']]]
+  ['nullsolver_15',['NullSolver',['../classippl_1_1NullSolver.html#ad28cc10fe5af463f484f3592876062e4',1,'ippl::NullSolver::NullSolver(lhs_type &amp;lhs, rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#ad04075854a572c9c551a7e1e0468f499',1,'ippl::NullSolver::NullSolver(rhs_type &amp;rhs)'],['../classippl_1_1NullSolver.html#a4330311bbf9e8bb31e471440af6e3e2e',1,'ippl::NullSolver::NullSolver()']]],
+  ['numberofsends_16',['numberOfSends',['../classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15',1,'ippl::ParticleSpatialLayout']]],
+  ['numelements_17',['numElements',['../classippl_1_1FiniteElementSpace.html#ae8d61e8ec1b4c3f2f9703d3526e92fca',1,'ippl::FiniteElementSpace']]],
+  ['numelementsindim_18',['numElementsInDim',['../classippl_1_1FiniteElementSpace.html#a75970c67f641d8da4c3580c04b752ecc',1,'ippl::FiniteElementSpace']]],
+  ['numglobaldofs_19',['numGlobalDOFs',['../classippl_1_1FiniteElementSpace.html#a0235d95f9a425eab29a9f8d378463ffb',1,'ippl::FiniteElementSpace::numGlobalDOFs()'],['../classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5',1,'ippl::LagrangeSpace::numGlobalDOFs()']]]
 ];
