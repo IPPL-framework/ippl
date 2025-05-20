@@ -45,7 +45,7 @@ namespace ippl {
         initializeElementIndices(layout);
     }
 
-    // Initialize element indices Kokkos View
+    // Initialize element indices Kokkos View by distributing elements among MPI ranks.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
@@ -62,7 +62,9 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        Kokkos::View<size_t*> points("ComputeMapping", npoints);
+        // We iterate over the local domain points, getting the corresponding elements, 
+        // while tagging upper boundary points such that they can be removed after.
+        Kokkos::View<size_t*> points("npoints", npoints);
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -83,6 +85,8 @@ namespace ippl {
             Kokkos::Sum<int>(upperBoundaryPoints));
         Kokkos::fence();
 
+        // The elementIndices will be the same array as computed above,
+        // with the tagged upper boundary points removed.
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");

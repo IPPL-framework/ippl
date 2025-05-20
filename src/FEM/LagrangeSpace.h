@@ -105,7 +105,8 @@ namespace ippl {
 
         ///////////////////////////////////////////////////////////////////////
         /**
-         * @brief Initialize a Kokkos view containing the element indices
+         * @brief Initialize a Kokkos view containing the element indices.
+         * This distributes the elements among MPI ranks.
          */
         void initializeElementIndices(const Layout_t& layout);
 
