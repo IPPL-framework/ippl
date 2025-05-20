@@ -315,7 +315,7 @@ public:
     IpplTimings::stopTimer(fourDenTimer);
     
     // Check whether the generated density field is Hermitian before proceeding
-    if (isHermitian()) {
+    if (isHermitianMultiRank()) {
       msg << "Fourier density field is Hermitian." << endl;
     } else {
       std::cerr << "Fourier density field is NOT Hermitian!" << std::endl;
@@ -386,6 +386,203 @@ public:
 	IpplTimings::stopTimer(posvelInitTimer);
     }	        
   }
+
+/**
+     * @brief Check whether the complex density field delta(k) is Hermitian
+     *        Compatible with multiple CPU Ranks
+     *
+     * A real‑space density field requires its Fourier coefficients
+     * to be Hermitian, satisfying
+     * \f[
+     *     \delta(-\mathbf k) = \delta^*(\mathbf k) ,
+     * \f]
+     * where the asterisk denotes complex conjugation.
+     *
+     * This function loops through the indices of the complex field accessed as
+     * a Kokkos view holding the complex Fourier amplitudes and returns false
+     * in the case that any of the fourier modes are not Hermitian.
+     *
+     * @return true if the complex density field is Hermitian, false otherwise
+     */
+
+  bool isHermitianMultiRank() const {
+    const auto& field = cfield_m.getView(); // Complex FFT field
+    const int Nx = this->nr_m[0];
+    const int Ny = this->nr_m[1];
+    const int Nz = this->nr_m[2];
+    const int ngh = cfield_m.getNghost();
+    const auto& layout = this->fcontainer_m->getFL();
+    const ippl::NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+    
+    const double tol = std::numeric_limits<double>::epsilon();
+
+    std::map<int,std::vector<std::pair<std::array<int, 3>, Kokkos::complex<double>>>> sends_by_rank;
+    std::map<int, std::vector<std::array<int, 3>>> requests_by_rank;
+    std::map<std::array<int, 3>, Kokkos::complex<double>> local_values;
+    
+    bool localHermitian = true;
+    
+    // construct a map of the global field layout & which indices are contained
+    const auto& domains = layout.getHostLocalDomains();
+    std::map<int, ippl::NDIndex<Dim>> global_domains;
+    for (size_t rank = 0; rank < domains.size(); ++rank) {
+        const auto& d = domains[rank];
+        ippl::NDIndex<Dim> domain(
+          ippl::Index(d[0].first(), d[0].last()),
+          ippl::Index(d[1].first(), d[1].last()),
+          ippl::Index(d[2].first(), d[2].last())
+        );
+        global_domains[rank] = domain;        
+    }
+
+
+    // Loop over all local indices and store negative pairs found on other ranks
+    for (int i = lDom[0].first(); i <= lDom[0].last(); ++i) {
+        for (int j = lDom[1].first(); j <= lDom[1].last(); ++j) {
+            for (int k = lDom[2].first(); k <= lDom[2].last(); ++k) {
+
+                if (i == 0 && j == 0 && k == 0)
+                    continue;
+
+                std::array<int, 3> global_k  = {i, j, k};
+                std::array<int, 3> global_neg_k = {
+                    (i == 0 ? 0 : Nx - i),
+                    (j == 0 ? 0 : Ny - j),
+                    (k == 0 ? 0 : Nz - k)
+                };
+
+                // Map global to local for the +k mode
+                index_array_type local_idx = {
+                    i - lDom[0].first() + ngh,
+                    j - lDom[1].first() + ngh,
+                    k - lDom[2].first() + ngh
+                };
+
+                Kokkos::complex<double> delta_k = ippl::apply(field, local_idx);
+
+               	// which rank owns the negative indices
+                int neg_k_owner; 
+                for (const auto& [rank, domain] : global_domains) {
+                    if ((domain[0].first() <= global_neg_k[0] && global_neg_k[0] <= domain[0].last() &&
+                        domain[1].first() <= global_neg_k[1] && global_neg_k[1] <= domain[1].last() &&
+                        domain[2].first() <= global_neg_k[2] && global_neg_k[2] <= domain[2].last())) {
+                        neg_k_owner = rank;
+                    }
+                }
+                
+                if (neg_k_owner == ippl::Comm->rank()) {
+                    // nk is local — compare directly
+                    index_array_type local_neg_k_idx = {
+                        global_neg_k[0] - lDom[0].first() + ngh,
+                        global_neg_k[1] - lDom[1].first() + ngh,
+                        global_neg_k[2] - lDom[2].first() + ngh
+                    };
+
+                    Kokkos::complex<double> delta_neg_k = ippl::apply(field, local_neg_k_idx);
+                    Kokkos::complex<double> conj_delta_k = Kokkos::conj(delta_k);
+
+                    if (std::abs(delta_neg_k.real() - conj_delta_k.real()) > tol ||
+                        std::abs(delta_neg_k.imag() - conj_delta_k.imag()) > tol) {
+                        localHermitian = false;
+                    }
+                } else {
+                    // make a key of :
+                    //     requests from rank : negative k values
+                    //          sends to rank : k values, delta(k) field values
+                    //    exists on this rank : delta_k, for hermiticity check
+                    requests_by_rank[neg_k_owner].push_back(global_neg_k); 
+                    sends_by_rank[neg_k_owner].emplace_back(global_k,delta_k);
+                    local_values[global_k] = delta_k; 
+                }
+            }
+	}
+    }
+
+    
+    std::vector<MPI_Request> requests;
+    std::vector<std::vector<double>> send_buffers;
+    std::vector<std::vector<double>> recv_buffers;
+    
+    // Communication: make space to receive corresponding values
+    for (const auto& [sender_rank, neg_k_list] : requests_by_rank) {
+        for (size_t i = 0; i < neg_k_list.size(); ++i) {
+            std::vector<double> recv_payload(5, 0.0);
+            recv_buffers.emplace_back(std::move(recv_payload));
+
+            MPI_Request req;
+            MPI_Irecv(recv_buffers.back().data(), 5, MPI_DOUBLE, sender_rank, 0,
+                      ippl::Comm->getCommunicator(), &req);
+            requests.push_back(req);
+        }
+    }
+    
+    // Communication: send values
+    for (const auto& [receiver_rank, send_list] : sends_by_rank) {
+        for (const auto& [global_k, delta_k_val] : send_list) {
+            std::vector<double> send_payload = {
+                static_cast<double>(global_k[0]),
+                static_cast<double>(global_k[1]),
+                static_cast<double>(global_k[2]),
+                delta_k_val.real(),
+                delta_k_val.imag()
+            };
+            
+            send_buffers.emplace_back(send_payload); // store to preserve buffer lifetime
+
+            MPI_Request req;
+            MPI_Isend(send_buffers.back().data(), 5, MPI_DOUBLE, receiver_rank, 0,
+                      ippl::Comm->getCommunicator(), &req);
+            requests.push_back(req);
+        }
+        
+    }
+
+    MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    
+    // unpack the received values
+    std::map<std::array<int, 3>, Kokkos::complex<double>> values_received;
+    
+    for (const auto& buffer : recv_buffers) {
+        if (buffer.size() != 5) {
+            std::cerr << "Rank " << ippl::Comm->rank() << " received malformed buffer of size "
+                      << buffer.size() << std::endl;
+            continue;
+        }
+        std::array<int, 3> neg_k = {
+            static_cast<int>(buffer[0]),
+            static_cast<int>(buffer[1]),
+            static_cast<int>(buffer[2])
+        };
+        Kokkos::complex<double> delta_val(buffer[3], buffer[4]);
+        values_received[neg_k] = delta_val;
+    }
+
+    // Check hermiticity of remaining
+    for (const auto& [k_coords, delta_k] : local_values) {
+        std::array<int, 3> neg_k = {
+            (k_coords[0] == 0 ? 0 : Nx - k_coords[0]),
+            (k_coords[1] == 0 ? 0 : Ny - k_coords[1]),
+            (k_coords[2] == 0 ? 0 : Nz - k_coords[2])
+        };
+
+        Kokkos::complex<double> delta_neg_k = values_received[neg_k];
+        Kokkos::complex<double> delta_conj_k = Kokkos::conj(delta_k);
+
+        if (std::abs(delta_neg_k.real() - delta_conj_k.real()) > tol ||
+            std::abs(delta_neg_k.imag() - delta_conj_k.imag()) > tol) {
+            localHermitian = false;
+        }
+    }
+
+    std::cout << "Rank : " << ippl::Comm->rank() << " Finished check, local result = " << localHermitian << std::endl;
+    // Global check
+    int localResult = localHermitian ? 1 : 0;
+    int globalResult = 0;
+    MPI_Allreduce(&localResult, &globalResult, 1, MPI_INT, MPI_MIN, ippl::Comm->getCommunicator());
+    std::cout << "Rank : " << ippl::Comm->rank() << "Global result = " << globalResult << "Leaving function" << std::endl;
+    return globalResult != 0;
+  }
+ 
 
  /**
      * @brief Check whether the complex density field delta(k) is Hermitian
