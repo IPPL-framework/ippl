@@ -6,6 +6,9 @@ Independent Parallel Particle Layer (IPPL) is a performance portable C++ library
 
 All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the `variant` header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the [GNU Standard Library](https://github.com/gcc-mirror/gcc); note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.
 
+# CI/CD (under construction)
+Check out the latest [results](https://ippl-bc4558.pages.jsc.fz-juelich.de/)
+
 # Installing IPPL and its dependencies
 
 All the new developments of IPPL are merged into the `master` branch which can make it potentially unstable from time to time. So if you want a stable and more tested version
