@@ -45,7 +45,7 @@ namespace ippl {
         initializeElementIndices(layout);
     }
 
-    // Initialize element indices Kokkos View
+    // Initialize element indices Kokkos View by distributing elements among MPI ranks.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
@@ -62,7 +62,9 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        Kokkos::View<size_t*> points("ComputeMapping", npoints);
+        // We iterate over the local domain points, getting the corresponding elements, 
+        // while tagging upper boundary points such that they can be removed after.
+        Kokkos::View<size_t*> points("npoints", npoints);
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -83,6 +85,8 @@ namespace ippl {
             Kokkos::Sum<int>(upperBoundaryPoints));
         Kokkos::fence();
 
+        // The elementIndices will be the same array as computed above,
+        // with the tagged upper boundary points removed.
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");
@@ -726,12 +730,12 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeError(
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorL2(
         const FieldLHS& u_h, const F& u_sol) const {
         if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
             // throw exception
             throw IpplException(
-                "LagrangeSpace::computeError()",
+                "LagrangeSpace::computeErrorL2()",
                 "Order of quadrature rule for error computation should be > 2*p + 1");
         }
 
@@ -806,85 +810,6 @@ namespace ippl {
         Comm->allreduce(error, global_error, 1, std::plus<T>());
 
         return Kokkos::sqrt(global_error);
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
-              typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    template <typename F>
-    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                    FieldRHS>::computeErrorInf(const FieldLHS& u_h, const F& u_sol) const {
-        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
-            // throw exception
-            throw IpplException(
-                "LagrangeSpace::computeError()",
-                "Order of quadrature rule for error computation should be > 2*p + 1");
-        }
-
-        // List of quadrature weights
-        const Vector<T, QuadratureType::numElementNodes> w =
-            this->quadrature_m.getWeightsForRefElement();
-
-        // List of quadrature nodes
-        const Vector<point_t, QuadratureType::numElementNodes> q =
-            this->quadrature_m.getIntegrationNodesForRefElement();
-
-        // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
-        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
-            }
-        }
-
-        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
-
-        // Variable to sum the error to
-        T error = 0;
-
-        // Get domain information and ghost cells
-        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
-        const int nghost = u_h.getNghost();
-
-        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // Loop over elements to compute contributions
-        Kokkos::parallel_reduce(
-            "Compute error over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index, double& local_max) {
-                const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
-                auto dof_points =
-                    this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
-
-                for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                    size_t I           = global_dofs[i];
-                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
-                    }
-
-                    // computed field value at DOF
-                    T val_u_h = apply(u_h, dof_ndindex_I);
-
-                    // solution field value at DOF
-                    T val_u_sol = u_sol(dof_points[i]);
-
-                    T local_norm = Kokkos::abs(val_u_h - val_u_sol);
-
-                    if (local_norm > local_max) {
-                        local_max = local_norm;
-                    }
-                }
-            },
-            Kokkos::Max<double>(error));
-
-        // MPI reduce
-        T global_error = 0.0;
-        Comm->allreduce(error, global_error, 1, std::greater<T>());
-
-        return global_error;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,

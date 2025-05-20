@@ -17,11 +17,11 @@
 #include "FEM/Quadrature/Quadrature.h"
 #include "Meshes/UniformCartesian.h"
 
-constexpr unsigned calculateNumElementVertices(unsigned Dim) {
-    return 1 << Dim;  // 2^Dim
-}
-
 namespace ippl {
+
+    constexpr unsigned calculateNumElementVertices(unsigned Dim) {
+        return 1 << Dim;  // 2^Dim
+    }
 
     /**
      * @brief The FiniteElementSpace class handles the mesh index mapping to vertices and elements

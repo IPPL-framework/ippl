@@ -33,7 +33,7 @@ namespace ippl {
      * @tparam FieldLHS field type for the left hand side
      * @tparam FieldRHS field type for the right hand side
      */
-    template <typename FieldLHS, typename FieldRHS = FieldLHS>
+    template <typename FieldLHS, typename FieldRHS = FieldLHS, unsigned Order = 1, unsigned QuadNumNodes = 5>
     class FEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
@@ -53,9 +53,9 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
+        using QuadratureType = GaussJacobiQuadrature<Tlhs, QuadNumNodes, ElementType>;
 
-        using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
+        using LagrangeType = LagrangeSpace<Tlhs, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
         // default constructor (compatibility with Alpine)
         FEMPoissonSolver() 
@@ -193,7 +193,7 @@ namespace ippl {
          */
         template <typename F>
         Tlhs getL2Error(const F& analytic) {
-            Tlhs error_norm = this->lagrangeSpace_m.computeError(*(this->lhs_mp), analytic);
+            Tlhs error_norm = this->lagrangeSpace_m.computeErrorL2(*(this->lhs_mp), analytic);
             return error_norm;
         }
 

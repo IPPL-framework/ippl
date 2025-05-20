@@ -60,8 +60,8 @@ namespace ippl {
             void accumulateHalo(view_type& view, Layout_t* layout);
 
             /*!
-             * Send halo data to internal cells for only the physical cells.
-             * Ghost cells from other dimensions are not sent.
+             * Send halo data to internal cells for only the physical cells
+             * along that dimension. The halo cells on the corners are not sent.
              * This operation uses assign_plus functor to assign the data.
              * @param view the original field data
              * @param layout the field layout storing the domain decomposition
