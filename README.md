@@ -259,3 +259,14 @@ If you application has been correctly instrumented, you will see that mpiP has b
 `Storing mpiP output in ...`
 
 Happy profiling!
+
+# Build Instructions
+Here we compile links to recipies for easy build on various HPC systems. 
+
+## MERLIN 7 (PSI)
+[IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
+
+## ALPS (CSCS)
+comming soon
+
+Happy building!
