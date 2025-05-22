@@ -43,9 +43,9 @@ namespace ippl {
                 for (unsigned d = 0; d < Dim; ++d) {
                     dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                 }
-                val += b_q_k[i] * apply(phi_prev, dof_ndindex);
+                val += b_q_k[i] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
             }
-            return Kokkos::exp(e_Te * (val - phi:inf));
+            return val;
         }
 
 
@@ -121,9 +121,9 @@ namespace ippl {
                 for (unsigned d = 0; d < Dim; ++d) {
                     dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                 }
-                val += b_q_k[i] * apply(phi_prev, dof_ndindex);
+                val += b_q_k[i] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
             }
-            return Kokkos::exp(e_Te * (val - phi:inf));
+            return val;
         }
 
         KOKKOS_FUNCTION const auto operator()(
