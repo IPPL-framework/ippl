@@ -258,6 +258,10 @@ To pass any options to mpiP, you can export the variable MPIP with the options y
 If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics:
 `Storing mpiP output in ...`
 
+To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form:
+`python3 mpiP.py [path/to/directory]`
+where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.
+
 Happy profiling!
 
 # Build Instructions
