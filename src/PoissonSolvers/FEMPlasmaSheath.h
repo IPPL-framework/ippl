@@ -41,18 +41,18 @@ namespace ippl {
 
         // structs used for matrix-free evaluation of A and b (matrix, load vector)
         
-        template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
+        template <unsigned numElemDOFs>
         struct EvalFunctor {
             const Vector<Tlhs, Dim> DPhiInvT;
             const Tlhs absDetDPhi;
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf; // phi_infty
-            FieldLHS& phi_prev; // (phi_(it -1))
+            FieldLHS* phi_prev; // (phi_(it -1))
             LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
 
             EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf,
-                        Tlhs phi_inf, FieldLHS& phi_prev, LagrangeType* lagrangeSpace)
+                        Tlhs phi_inf, FieldLHS* phi_prev, LagrangeType* lagrangeSpace)
                 : DPhiInvT(DPhiInvT)
                 , absDetDPhi(absDetDPhi)
                 , e_Te(e_Te), n_inf(n_inf)
@@ -65,16 +65,16 @@ namespace ippl {
                 const Vector<size_t, numElemDOFs> global_dofs =
                         lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
-                auto ldom = (phi_prev.getLayout()).getLocalNDIndex();
-                const int nghost = phi_prev.getNghost();
+                auto ldom = (phi_prev->getLayout()).getLocalNDIndex();
+                const int nghost = phi_prev->getNghost();
 
-                T val = 0;
+                Tlhs val = 0;
                 for (size_t i = 0; i < numElemDOFs; ++i) {
                     auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                     }
-                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
+                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(*phi_prev, dof_ndindex) - phi_inf));
                 }
                 return val;
             }
@@ -97,18 +97,18 @@ namespace ippl {
             }
         };
 
-        template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
+        template <unsigned numElemDOFs>
         struct RHSFunctor {
             const Tlhs absDetDPhi;
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf;  // phi_infty
-            FieldRHS& rho;      // (q_i * n_i - e * n_e)
-            FieldLHS& phi_prev; // (phi_(it -1))
+            FieldRHS* rho;      // (q_i * n_i - e * n_e)
+            FieldLHS* phi_prev; // (phi_(it -1))
             LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
 
             RHSFunctor(Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf, Tlhs phi_inf, 
-                        FieldRHS& rho, FieldLHS& phi_prev, LagrangeType* lagrangeSpace)
+                        FieldRHS* rho, FieldLHS* phi_prev, LagrangeType* lagrangeSpace)
                 : absDetDPhi(absDetDPhi), e_Te(e_Te)
                 , n_inf(n_inf), phi_inf(phi_inf), rho(rho)
                 , phi_prev(phi_prev), lagrangeSpace_ptr(lagrangeSpace)
@@ -121,16 +121,16 @@ namespace ippl {
                 const Vector<size_t, numElemDOFs> global_dofs =
                         lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
-                auto ldom = (rho.getLayout()).getLocalNDIndex();
-                const int nghost = rho.getNghost();
+                auto ldom = (rho->getLayout()).getLocalNDIndex();
+                const int nghost = rho->getNghost();
 
                 for (size_t i = 0; i < numElemDOFs; ++i) {
                     auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                     }
-                    rho_local[i] = apply(rho_local, dof_ndindex);
-                    phi_prev_local[i] = apply(phi_prev, dof_ndindex);
+                    rho_local[i] = apply(*rho_local, dof_ndindex);
+                    phi_prev_local[i] = apply(*phi_prev, dof_ndindex);
                 }
 
                 return {rho_local, phi_prev_local};
@@ -213,8 +213,8 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             // initialize the RHSFunctor struct to pass to Load vector creation
-            RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                absDetDPhi, e_Te, n_inf, phi_inf, rhs, lhs, this->lagrangeSpace_m);
+            RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+                absDetDPhi, e_Te, n_inf, phi_inf, this->rhs_mp, this->lhs_mp, &(this->lagrangeSpace_m));
 
             rhs.fillHalo();
 
@@ -248,8 +248,8 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             // initialize the RHSFunctor struct to pass to Load vector creation
-            RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                absDetDPhi, e_Te, n_inf, phi_inf, rhs, this->lhs_mp, this->lagrangeSpace_m);
+            RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+                absDetDPhi, e_Te, n_inf, phi_inf, this->rhs_mp, this->lhs_mp, &(this->lagrangeSpace_m));
 
             rhs.fillHalo();
 
@@ -283,8 +283,8 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonEval(
-                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, this->lhs_mp, this->lagrangeSpace_m);
+            EvalFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonEval(
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, this->lhs_mp, &(this->lagrangeSpace_m));
 
             // get BC type of our RHS
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
