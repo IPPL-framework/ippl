@@ -18,7 +18,6 @@ namespace ippl {
         FieldLHS& phi_prev; // (phi_(it -1))
         LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
 
-        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf)
         EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf,
                     Tlhs phi_inf, FieldLHS& phi_prev, LagrangeType* lagrangeSpace)
             : DPhiInvT(DPhiInvT)
@@ -150,7 +149,7 @@ namespace ippl {
      * @tparam FieldRHS field type for the right hand side
      */
     template <typename FieldLHS, typename FieldRHS = FieldLHS, unsigned Order = 1, unsigned QuadNumNodes = 5>
-    class FEMPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
+    class FEMPlasmaSheath : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Tlhs                    = typename FieldLHS::value_type;
 
@@ -174,29 +173,56 @@ namespace ippl {
         using LagrangeType = LagrangeSpace<Tlhs, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
         // default constructor (compatibility with Alpine)
-        FEMPoissonSolver() 
+        FEMPlasmaSheath() 
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
+            , e_Te(0.0), n_inf(0.0), phi_inf(0.0);
         {}
 
-        FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
+        FEMPlasmaSheath(lhs_type& lhs, rhs_type& rhs, Tlhs e_Te, Tlhs n_inf, Tlhs phi_inf)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout())
+            , e_Te(e_Te), n_inf(n_inf), phi_inf(phi_inf)
+        {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
+
+            // need to pass rho = q_i*n_i - q_e*n_e as rhs
+            // and phi_prev as lhs
+
             setDefaultParameters();
 
             // start a timer
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
             
+            const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
+
+            // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
+            // on translation
+            const auto firstElementVertexPoints =
+                lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
+
+            // Compute Inverse Transpose Transformation Jacobian ()
+            const Vector<Tlhs, Dim> DPhiInvT =
+                refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+            // Compute absolute value of the determinant of the transformation jacobian (|det D
+            // Phi_K|)
+            const Tlhs absDetDPhi = Kokkos::abs(
+                refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
+
+            // initialize the RHSFunctor struct to pass to Load vector creation
+            RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, rhs, lhs, this->lagrangeSpace_m);
+
             rhs.fillHalo();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs);
+            lagrangeSpace_m.evaluateLoadVector(rhs, modifiedPoissonRHS);
 
             rhs.fillHalo();
             
@@ -206,11 +232,37 @@ namespace ippl {
         void setRhs(rhs_type& rhs) override {
             Base::setRhs(rhs);
 
+            if (this->lhs_mp = NULL) {
+                throw IpplException("FEMPlasmaSheath::setRhs(rhs_type&)", 
+                "No Lhs set! Please set the Lhs before calling setRhs");
+            }
+
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
+
+            const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
+
+            // We can pass the zeroNdIndex here, since the transformation jacobian does not depend
+            // on translation
+            const auto firstElementVertexPoints =
+                lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
+
+            // Compute Inverse Transpose Transformation Jacobian ()
+            const Vector<Tlhs, Dim> DPhiInvT =
+                refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+            // Compute absolute value of the determinant of the transformation jacobian (|det D
+            // Phi_K|)
+            const Tlhs absDetDPhi = Kokkos::abs(
+                refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
+
+            // TODO how to deal with lhs here in setRhs ? 
+            // initialize the RHSFunctor struct to pass to Load vector creation
+            RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, rhs, this->lhs_mp, this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs);
+            lagrangeSpace_m.evaluateLoadVector(rhs, modifiedPoissonRHS);
 
             rhs.fillHalo();
         }
@@ -240,14 +292,14 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
-                DPhiInvT, absDetDPhi);
+            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonEval(
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, this->lhs_mp, this->lagrangeSpace_m);
 
             // get BC type of our RHS
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
             FieldBC bcType = bcField[0]->getBCType();
 
-            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
+            const auto algoOperator = [modifiedPoissonEval, &bcField, this](rhs_type field) -> lhs_type {
                 // start a timer
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
@@ -257,7 +309,7 @@ namespace ippl {
 
                 field.fillHalo();
 
-                auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
+                auto return_field = lagrangeSpace_m.evaluateAx(field, modifiedPoissonEval);
 
                 IpplTimings::stopTimer(opTimer);
 
@@ -341,6 +393,10 @@ namespace ippl {
         ElementType refElement_m;
         QuadratureType quadrature_m;
         LagrangeType lagrangeSpace_m;
+
+        Tlhs e_Te;
+        Tlhs n_inf;
+        Tlhs phi_inf:
     };
 
 }  // namespace ippl
