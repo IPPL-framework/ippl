@@ -238,7 +238,7 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         template <typename F>
-        void evaluateLoadVector(FieldRHS& field, F& evalFunction) const override;
+        void evaluateLoadVector(FieldRHS& field, F& evalFunction) const;
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////

@@ -61,7 +61,7 @@ namespace ippl {
                 {}
 
             KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
-                const Vector<Tlhs, numElemDOFs>& b_q_k) {
+                const Vector<Tlhs, numElemDOFs>& b_q_k) const {
                 const Vector<size_t, numElemDOFs> global_dofs =
                         lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
@@ -82,7 +82,7 @@ namespace ippl {
 
             KOKKOS_FUNCTION const auto operator()(
                 const size_t& i, const size_t& j, const Vector<Tlhs, numElemDOFs>& b_q_k,
-                const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k, int elemId, int elemIdx) const {
+                const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k, int elemIdx) const {
 
                     // get wB value (with interpolated phi_prev)
                     Tlhs val_w_k = getInterpolated_wB(elemIdx, b_q_k);
@@ -114,7 +114,7 @@ namespace ippl {
                 , phi_prev(phi_prev), lagrangeSpace_ptr(lagrangeSpace)
                 {}
 
-            KOKKOS_FUNCTION const auto getLocal(unsigned int elemIdx) {
+            KOKKOS_FUNCTION const auto getLocal(unsigned int elemIdx) const {
                 Vector<Tlhs, numElemDOFs> rho_local;
                 Vector<Tlhs, numElemDOFs> phi_prev_local;
 
@@ -129,20 +129,20 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                     }
-                    rho_local[i] = apply(*rho_local, dof_ndindex);
+                    rho_local[i] = apply(*rho, dof_ndindex);
                     phi_prev_local[i] = apply(*phi_prev, dof_ndindex);
                 }
 
-                return {rho_local, phi_prev_local};
+                return std::pair{rho_local, phi_prev_local};
             }
             
             KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
-                const Vector<Tlhs, numElemDOFs>& b_q_k) {
+                const Vector<Tlhs, numElemDOFs>& b_q_k) const {
                 const Vector<size_t, numElemDOFs> global_dofs =
                         lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
-                auto ldom = (phi_prev.getLayout()).getLocalNDIndex();
-                const int nghost = phi_prev.getNghost();
+                auto ldom = (phi_prev->getLayout()).getLocalNDIndex();
+                const int nghost = phi_prev->getNghost();
 
                 Tlhs val = 0;
                 for (size_t i = 0; i < numElemDOFs; ++i) {
@@ -150,7 +150,7 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                     }
-                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
+                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(*phi_prev, dof_ndindex) - phi_inf));
                 }
                 return val;
             }
@@ -162,7 +162,7 @@ namespace ippl {
                     Vector<Tlhs, numElemDOFs> phi_prev_local = getLocal(elemIdx).second;
                     Tlhs val_w_k = getInterpolated_wB(elemIdx, b_q_k);
 
-                    Tlhs val;
+                    Tlhs val = 0;
                     for (size_t j = 0; j < numElemDOFs; ++j) {
                         val += b_q_k[i] * b_q_k[j] * rho_local[j]
                                + n_inf * e_Te * phi_prev_local[j] * val_w_k;
