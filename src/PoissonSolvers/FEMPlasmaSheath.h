@@ -14,7 +14,7 @@ namespace ippl {
         const Tlhs absDetDPhi;
         const Tlhs e_Te;   // e / T_e
         const Tlhs n_inf;  // n_infty
-        const Tlhs n_inf;  // n_infty
+        const Tlhs phi_inf; // phi_infty
         FieldLHS& phi_prev; // (phi_(it -1))
         LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
 
@@ -27,18 +27,17 @@ namespace ippl {
             , lagrangeSpace_ptr(lagrangeSpace)
             {}
 
-        // TODO: figure out how to pass w^B and interpolate to q_k
         KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
             const Vector<Tlhs, numElemDOFs>& b_q_k) {
-            const Vector<size_t, numElementDOFs> global_dofs =
-                    lagrangeSpace_ptr->getGlobalDOFIndices(elementIndex);
+            const Vector<size_t, numElemDOFs> global_dofs =
+                    lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
             auto ldom = (phi_prev.getLayout()).getLocalNDIndex();
             const int nghost = phi_prev.getNghost();
 
             T val = 0;
             for (size_t i = 0; i < numElemDOFs; ++i) {
-                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(gobal_dofs[i]);
+                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
                 for (unsigned d = 0; d < Dim; ++d) {
                     dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                 }
@@ -82,20 +81,18 @@ namespace ippl {
             , phi_prev(phi_prev), lagrangeSpace_ptr(lagrangeSpace)
             {}
 
-        // TODO: figure out how to pass w^B and interpolate to q_k
-        
         KOKKOS_FUNCTION const auto getLocal(unsigned int elemIdx) {
             Vector<Tlhs, numElemDOFs> rho_local;
             Vector<Tlhs, numElemDOFs> phi_prev_local;
 
-            const Vector<size_t, numElementDOFs> global_dofs =
-                    lagrangeSpace_ptr->getGlobalDOFIndices(elementIndex);
+            const Vector<size_t, numElemDOFs> global_dofs =
+                    lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
             auto ldom = (rho.getLayout()).getLocalNDIndex();
             const int nghost = rho.getNghost();
 
             for (size_t i = 0; i < numElemDOFs; ++i) {
-                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(gobal_dofs[i]);
+                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
                 for (unsigned d = 0; d < Dim; ++d) {
                     dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                 }
@@ -108,15 +105,15 @@ namespace ippl {
         
         KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
             const Vector<Tlhs, numElemDOFs>& b_q_k) {
-            const Vector<size_t, numElementDOFs> global_dofs =
-                    lagrangeSpace_ptr->getGlobalDOFIndices(elementIndex);
+            const Vector<size_t, numElemDOFs> global_dofs =
+                    lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
 
             auto ldom = (phi_prev.getLayout()).getLocalNDIndex();
             const int nghost = phi_prev.getNghost();
 
             T val = 0;
             for (size_t i = 0; i < numElemDOFs; ++i) {
-                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(gobal_dofs[i]);
+                auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
                 for (unsigned d = 0; d < Dim; ++d) {
                     dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
                 }
@@ -207,10 +204,6 @@ namespace ippl {
             const auto firstElementVertexPoints =
                 lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
 
-            // Compute Inverse Transpose Transformation Jacobian ()
-            const Vector<Tlhs, Dim> DPhiInvT =
-                refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
-
             // Compute absolute value of the determinant of the transformation jacobian (|det D
             // Phi_K|)
             const Tlhs absDetDPhi = Kokkos::abs(
@@ -218,7 +211,7 @@ namespace ippl {
 
             // initialize the RHSFunctor struct to pass to Load vector creation
             RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, rhs, lhs, this->lagrangeSpace_m);
+                absDetDPhi, e_Te, n_inf, phi_inf, rhs, lhs, this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
@@ -232,7 +225,7 @@ namespace ippl {
         void setRhs(rhs_type& rhs) override {
             Base::setRhs(rhs);
 
-            if (this->lhs_mp = NULL) {
+            if (this->lhs_mp == NULL) {
                 throw IpplException("FEMPlasmaSheath::setRhs(rhs_type&)", 
                 "No Lhs set! Please set the Lhs before calling setRhs");
             }
@@ -246,19 +239,14 @@ namespace ippl {
             const auto firstElementVertexPoints =
                 lagrangeSpace_m.getElementMeshVertexPoints(zeroNdIndex);
 
-            // Compute Inverse Transpose Transformation Jacobian ()
-            const Vector<Tlhs, Dim> DPhiInvT =
-                refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
-
             // Compute absolute value of the determinant of the transformation jacobian (|det D
             // Phi_K|)
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            // TODO how to deal with lhs here in setRhs ? 
             // initialize the RHSFunctor struct to pass to Load vector creation
             RHSFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, rhs, this->lhs_mp, this->lagrangeSpace_m);
+                absDetDPhi, e_Te, n_inf, phi_inf, rhs, this->lhs_mp, this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
@@ -396,7 +384,7 @@ namespace ippl {
 
         Tlhs e_Te;
         Tlhs n_inf;
-        Tlhs phi_inf:
+        Tlhs phi_inf;
     };
 
 }  // namespace ippl
