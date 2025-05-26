@@ -72,25 +72,17 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     params.add("max_iterations", 2000);
     solver.mergeParameters(params);
 
+    m << "rho" << endl;
+    rhs.write();
+
+    m << "phi_prev" << endl;
+    lhs.write();
+
     // solve the problem
     solver.solve();
 
-    // start the timer
-    static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
-    IpplTimings::startTimer(errorTimer);
-
-    // Compute the error
-    AnalyticSol<T, Dim> analytic;
-    const T relError = solver.getL2Error(analytic);
-
-    m << std::setw(10) << numNodesPerDim;
-    m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
-    m << std::setw(25) << std::setprecision(16) << relError;
-    m << std::setw(25) << std::setprecision(16) << solver.getResidue();
-    m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
-    m << endl;
-
-    IpplTimings::stopTimer(errorTimer);
+    m << "solution phi" << endl;
+    lhs.write();
 }
 
 int main(int argc, char* argv[]) {
@@ -104,16 +96,11 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
-        msg << std::setw(10) << "Size";
-        msg << std::setw(25) << "Spacing";
-        msg << std::setw(25) << "Relative Error";
-        msg << std::setw(25) << "Residue";
-        msg << std::setw(15) << "Iterations";
-        msg << endl;
-
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
-            testFEMSolver<T, 1>(n, -1.0, 1.0);
-        }
+        // first argument is the number of splines
+        // which here is confounded with the degrees of freedom,
+        // second and third arguments are domain_start and
+        // domain_end respectively
+        testFEMSolver<T, 1>(2, 0.0, 1.0);
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);

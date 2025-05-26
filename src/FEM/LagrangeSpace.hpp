@@ -579,6 +579,8 @@ namespace ippl {
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, basis_q[k], 
                                          grad_b_q[k], elementIndex);
+                            std::cout << "A_" << elementIndex << "(" << i << "," << j;
+                            std::cout << ")=" << A_K[i][j] << std::endl;
                         }
                     }
                 }
@@ -779,6 +781,10 @@ namespace ippl {
         const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
             this->getElementMeshVertexPoints(zeroNdIndex)));
 
+        m << "weights = " << w << endl;
+        m << "nodes = " << q << endl;
+        m << "detJ = " << absDetDPhi << endl;
+
         // Get domain information and ghost cells
         auto ldom        = (field.getLayout()).getLocalNDIndex();
         const int nghost = field.getNghost();
@@ -854,6 +860,9 @@ namespace ippl {
         }
 
         field = temp_field;
+
+        m << "load vector" << endl;
+        field.write();
 
         IpplTimings::stopTimer(evalLoadV);
     }
