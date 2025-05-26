@@ -30,10 +30,9 @@ namespace ippl {
             //std::cout << "non curl val: " << dot(DPhiInvT*val_b_q_k[j], DPhiInvT*val_b_q_k[i]).apply() << "\n";
             //std::cout << absDetDPhi << "\n";
             // 
-            T curlTerm = onBoundary ? 0 : dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
-            //T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
+            T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
             T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
-            return (curlTerm + massTerm)*absDetDPhi*(!onBoundary);
+            return (curlTerm + massTerm)*absDetDPhi;
         }
     };
 
@@ -97,6 +96,8 @@ namespace ippl {
             rhsVector_m =
                 //std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVectorField));
                 std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(rhsVectorField, functor));
+            rhsVector_m->accumulateHalo();
+            rhsVector_m->fillHalo();
             /*
             rhs.fillHalo();
             
@@ -178,11 +179,11 @@ namespace ippl {
                 static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
                 IpplTimings::startTimer(opTimer);
 
-                //vector.fillHalo();
+                vector.fillHalo();
 
                 FEMVector<T> return_vector = nedelecSpace_m.evaluateAx(vector,maxwellDiffusionEval);
 
-                //return_vector.accumulateHalo();
+                return_vector.accumulateHalo();
                 
                 IpplTimings::stopTimer(opTimer);
 
@@ -210,7 +211,9 @@ namespace ippl {
                 exit(-1);
             }
             
-            //lhsVector.fillHalo();
+            lhsVector.fillHalo();
+
+            // set the boundary values to the correct values.
 
             IpplTimings::stopTimer(pcgTimer);
 

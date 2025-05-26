@@ -1,4 +1,5 @@
 
+#define IORANK 1
 namespace ippl {
 
     // NedelecSpace constructor, which calls the FiniteElementSpace constructor,
@@ -55,16 +56,6 @@ namespace ippl {
     void NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                             ::initializeElementIndices(const Layout_t& layout) {
         
-        size_t nx = this->nr_m[0];
-        size_t ny = this->nr_m[1];
-        size_t n = (nx-1) * (ny-1);
-        elementIndices = Kokkos::View<size_t*>("elementIndices", n);
-        Kokkos::parallel_for("ComputeElementIndices",n,
-            KOKKOS_CLASS_LAMBDA(size_t i){
-                elementIndices(i) = i;
-            }
-        );
-        /*
         layout_m = layout;
         const auto& ldom = layout.getLocalNDIndex();
         int npoints      = ldom.size();
@@ -79,7 +70,8 @@ namespace ippl {
         int upperBoundaryPoints = -1;
 
         Kokkos::View<size_t*> points("ComputeMapping", npoints);
-        Kokkos::parallel_reduce("ComputePoints", npoints,
+        Kokkos::parallel_reduce(
+            "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
                 int idx = i;
                 indices_t val;
@@ -95,22 +87,48 @@ namespace ippl {
                 points(i) = (!isBoundary) * (this->getElementIndex(val));
                 local += isBoundary;
             },
-            Kokkos::Sum<int>(upperBoundaryPoints)
-        );
-
+            Kokkos::Sum<int>(upperBoundaryPoints));
         Kokkos::fence();
 
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");
 
-        Kokkos::parallel_for("RemoveNaNs", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+        Kokkos::parallel_for(
+            "RemoveNaNs", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
                 if ((points(i) != 0) || (i == 0)) {
                     const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
                     elementIndices(idx) = points(i);
                 }
-            });
-        */
+            }
+        );
+
+        auto hView = Kokkos::create_mirror_view(elementIndices);
+        Kokkos::deep_copy(hView, elementIndices);
+        for (int r = 0; r < ippl::Comm->size(); ++r) {
+
+            if (r == ippl::Comm->rank()) {
+                std::ofstream file;
+                if (r == 0) {
+                    file.open("elementIndices.csv");
+                    file << "x,y,z,rank\n";
+                }else {
+                    file.open("elementIndices.csv", std::ios::app);
+                }
+                
+                for (size_t i = 0; i < hView.extent(0); ++i) {
+                    // std::cout << "rank " << r << ": " << hView(i) << "\n";
+                    // std::cout << "rank " << r << ": " << hView(i) << "\n";
+                    size_t f = bounds[0];
+                    size_t x = hView(i) % (size_t)f;
+                    size_t y = hView(i) / f;
+                    file << x << "," << y << ",0," << ippl::Comm->rank() << "\n";
+                }
+                file.close();
+
+            }
+            ippl::Comm->barrier();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -238,6 +256,72 @@ namespace ippl {
         
 
         return globalDOFs;
+    }
+
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
+                        QuadratureType, FieldType>::numElementDOFs>
+                    NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                            ::getFEMVectorDOFIndices(const size_t& elementIndex) const {
+
+        Vector<size_t, this->numElementDOFs> FEMVectorDOFs(0);
+        
+        // Fiest get the global element position
+        indices_t elementPos = this->getElementNDIndex(elementIndex);
+        // Then we can subtract from it the starting position and add the ghost
+        // things
+        const auto& ldom = layout_m.getLocalNDIndex();
+        elementPos -= ldom.first();
+        elementPos += 1;
+        /*
+        if (ippl::Comm->rank() == IORANK) {
+            std::cout << elementIndex << "->" << elementPos << "\n";
+        }
+        */
+        
+        indices_t dif(0);
+        dif = ldom.last() - ldom.first();
+        dif += 1 + 2; // plus 1 for last still being in +2 for ghosts.
+        /*
+        if (ippl::Comm->rank() == IORANK) {
+            std::cout << dif << "\n";
+        }
+        */
+
+        Vector<size_t, Dim> v(1);
+        if constexpr (Dim == 2) {
+            size_t nx = dif[0];
+            v(1) = 2*nx-1;
+        } else if constexpr (Dim == 3) {
+            size_t nx = dif[0];
+            size_t ny = dif[1];
+            v(1) = 2*nx -1;
+            v(2) = 3*nx*ny - nx - ny;
+        }
+
+        size_t nx = dif[0];
+        FEMVectorDOFs(0) = v.dot(elementPos);
+        FEMVectorDOFs(1) = FEMVectorDOFs(0) + nx - 1;
+        FEMVectorDOFs(2) = FEMVectorDOFs(1) + nx;
+        FEMVectorDOFs(3) = FEMVectorDOFs(1) + 1;
+
+        if constexpr (Dim == 3) {
+            size_t ny = dif[1];
+
+            FEMVectorDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny;
+            FEMVectorDOFs(5) = FEMVectorDOFs(4) + 1;
+            FEMVectorDOFs(6) = FEMVectorDOFs(4) + nx;
+            FEMVectorDOFs(7) = FEMVectorDOFs(4) + nx + 1;
+            FEMVectorDOFs(8) = FEMVectorDOFs(0) + 3*nx*ny - nx - ny;
+            FEMVectorDOFs(9) = FEMVectorDOFs(8) + nx - 1;
+            FEMVectorDOFs(10) = FEMVectorDOFs(9) + nx;
+            FEMVectorDOFs(11) = FEMVectorDOFs(9) + 1;
+        }
+        
+
+        return FEMVectorDOFs;
     }
 
 
@@ -629,6 +713,10 @@ namespace ippl {
                 const Vector<size_t, this->numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, this->numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
+                
+                const Vector<size_t, this->numElementDOFs> vectorIndices =
+                    this->getFEMVectorDOFIndices(elementIndex);
+                
 
                 // local DOF indices
                 size_t i, j;
@@ -640,10 +728,10 @@ namespace ippl {
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         A_K[i][j] = 0.0;
+                        size_t I = global_dofs[i];
+                        size_t J = global_dofs[j];
+                        bool onBoundary = false;//this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J);
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            size_t I = global_dofs[i];
-                            size_t J = global_dofs[j];
-                            bool onBoundary = this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J); //this->isDOFOnBoundary(I) && this->isDOFOnBoundary(J) && I == J;
                             A_K[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k], onBoundary);
                         }
                     }
@@ -657,14 +745,10 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    /*
+                    
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
-                        */
-                        
-                    
-                    
 
                     // get the appropriate index for the Kokkos view of the
                     // field
@@ -673,18 +757,14 @@ namespace ippl {
                         J = global_dofs[j];
 
                         // Skip boundary DOFs (Zero Dirichlet BCs)
-                        /*
+                        
                         if (this->isDOFOnBoundary(J)) {
                             continue;
                         }
-                            */
-                            
-                        
-                    
 
                         // get the appropriate index for the Kokkos view of the
                         // field
-                        resultView(I) += A_K[i][j] * view(J);
+                        resultView(vectorIndices[i]) += A_K[i][j] * view(vectorIndices[j]);
                     }
                 }
             });
@@ -889,6 +969,19 @@ namespace ippl {
                 const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<size_t, this->numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
+                
+                const Vector<size_t, this->numElementDOFs> vectorIndices =
+                    this->getFEMVectorDOFIndices(elementIndex);
+
+                /*
+                if (ippl::Comm->rank() == IORANK) {
+                    std::cout << elementIndex << ":\n";
+                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                        std::cout << vectorIndices[i] << " ";
+                    }
+                    std::cout << "\n";
+                }
+                    */
 
                 size_t i, I;
 
@@ -899,13 +992,10 @@ namespace ippl {
                     
                     if (this->isDOFOnBoundary(I)) {
                         //int side  = getBoundarySide(I);
-                        //atomic_view(I) = -10*(side+1);
+                        //atomic_view(vectorIndices[i]) = -10;
                         continue;
                     }
-                        
-                        
-                        
-
+                    
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
@@ -922,7 +1012,13 @@ namespace ippl {
                     }
 
                     // add the contribution of the element to the field
-                    atomic_view(I) += contrib;
+                    /*
+                    if (this->isDOFOnBoundary(I)) {
+                        std::cout << "dof contrib: " << contrib << "\n";
+                        contrib = 0;
+                    }
+                    */
+                    atomic_view(vectorIndices[i]) += contrib;
                 
                 }    
             });
@@ -1211,7 +1307,13 @@ namespace ippl {
         
         // Loop over all the global degrees of freedom
         FEMVector<Vector<T,Dim>> outVector = coef.template skeletonCopy<Vector<T,Dim>>();
-        size_t nx = this->nr_m[0];
+
+        const auto& ldom = layout_m.getLocalNDIndex();
+
+        indices_t extents(0);
+        extents = ldom.last() - ldom.first();
+        extents += 3;
+        size_t nx = extents[0];
 
         auto coefView = coef.getView();
         auto outView = outVector.getView();
@@ -1296,8 +1398,11 @@ namespace ippl {
         
         
         // Loop over all the global degrees of freedom
-        size_t nx = this->nr_m[0];
-        size_t ny = this->nr_m[1];
+        const auto& ldom = layout_m.getLocalNDIndex();
+        indices_t extents(0);
+        extents = ldom.last() - ldom.first();
+        extents += 3;
+        size_t nx = extents[0];
 
         auto coefView = x.getView();
         auto outView = field.getView();
@@ -1311,28 +1416,33 @@ namespace ippl {
                 bool onXAxis = i - (2*nx-1) * y < (nx-1);
                 if (onXAxis) {
                     size_t fieldIdx1 = i - y*(nx-1);
-                    auto fieldNDIdx1 = this->getMeshVertexNDIndex(fieldIdx1);
                     size_t fieldIdx2 = i + 1 - y*(nx-1);
-                    auto fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
-                    
-                    T factor = fieldNDIdx1[0] == 0 || fieldNDIdx1[0] == nx-1 ? 1.0 : 1.0;//0.5;
-                    apply(outView,fieldNDIdx1)[0] = factor*coefView(i);
 
-                    factor = fieldNDIdx2[0] == 0 || fieldNDIdx2[0] == nx-1 ? 1.0 : 1.0;//0.5;
-                    apply(outView,fieldNDIdx2)[0] = factor*coefView(i);
+                    indices_t fieldNDIdx1(0);
+                    fieldNDIdx1[0] = fieldIdx1 % nx;
+                    fieldNDIdx1[1] = fieldIdx1 / nx;
+
+                    indices_t fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
+                    fieldNDIdx2[0] = fieldIdx2 % nx;
+                    fieldNDIdx2[1] = fieldIdx2 / nx;
+                    
+                    apply(outView,fieldNDIdx1)[0] = coefView(i);
+                    apply(outView,fieldNDIdx2)[0] = coefView(i);
 
                 } else {
                     size_t fieldIdx1 = i - (y+1)*(nx-1);
                     size_t fieldIdx2 = i + 1 - y*(nx-1);
                     
-                    auto fieldNDIdx1 = this->getMeshVertexNDIndex(fieldIdx1);
-                    auto fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
-                    
-                    T factor = fieldNDIdx1[1] == 0 || fieldNDIdx1[1] == ny-1 ? 1.0 : 1.0;//0.5;
-                    apply(outView,fieldNDIdx1)[1] = factor*coefView(i);
+                    indices_t fieldNDIdx1(0);
+                    fieldNDIdx1[0] = fieldIdx1 % nx;
+                    fieldNDIdx1[1] = fieldIdx1 / nx;
 
-                    factor = fieldNDIdx2[1] == 0 || fieldNDIdx2[1] == ny-1 ? 1.0 : 1.0;//0.5;
-                    apply(outView,fieldNDIdx2)[1] = factor*coefView(i);
+                    indices_t fieldNDIdx2(0);
+                    fieldNDIdx2[0] = fieldIdx2 % nx;
+                    fieldNDIdx2[1] = fieldIdx2 / nx;
+                    
+                    apply(outView,fieldNDIdx1)[1] = coefView(i);
+                    apply(outView,fieldNDIdx2)[1] = coefView(i);
                 }
                 
                 
@@ -1496,7 +1606,6 @@ namespace ippl {
         auto view = u_h.getView();
 
     
-        size_t nx = this->nr_m[0];
         // Loop over elements to compute contributions
         Kokkos::parallel_reduce("Compute error over elements",
             policy_type(0, elementIndices.extent(0)),
@@ -1504,6 +1613,10 @@ namespace ippl {
                 const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, this->numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
+                
+                const Vector<size_t, this->numElementDOFs> vectorIndices =
+                    this->getFEMVectorDOFIndices(elementIndex);
+
 
                 // contribution of this element to the error
                 T contrib = 0;
@@ -1513,7 +1626,6 @@ namespace ippl {
                             q[k]));
 
                     point_t val_u_h = 0;
-                    point_t distSum = 0;
                     for (size_t j = 0; j < this->numElementDOFs; ++j) {
                         // get field index corresponding to this DOF
                         bool onXAxis = j == 0 || j == 2;
@@ -1522,14 +1634,13 @@ namespace ippl {
 
                         // get field value at DOF and interpolate to q_k
                         if (onXAxis) {
-                            val_u_h(0) += (1-Kokkos::abs(dist[1])) * view(J);
+                            val_u_h(0) += (1-Kokkos::abs(dist[1])) * view(vectorIndices[j]);
                         }else {
-                            val_u_h(1) += (1-Kokkos::abs(dist[0])) * view(J);
+                            val_u_h(1) += (1-Kokkos::abs(dist[0])) * view(vectorIndices[j]);
                         }
                     }
-                    //val_u_h /= distSum;
 
-                    point_t dif = (val_u_sol -  val_u_h) ;
+                    point_t dif = (val_u_sol -  val_u_h);
                     T x = dif.dot(dif);
                     contrib += w[k] * x * absDetDPhi;
                 }

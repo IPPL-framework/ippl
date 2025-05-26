@@ -166,6 +166,18 @@ namespace ippl {
 
         
         /**
+         * @brief Get the DOF indices (vector of indices) corresponding to the
+         * position inside the FEMVector of an element
+         *
+         * @param elementIndex size_t - The index of the element
+         *
+         * @return Vector<size_t, NumElementDOFs> - The DOF indices
+         */
+        KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
+                                    const size_t& element_index) const;
+
+        
+        /**
          * @brief Get the cartesion position of a local DOF in the reference
          * element.
          * 
