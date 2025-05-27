@@ -164,8 +164,8 @@ namespace ippl {
 
                     Tlhs val = 0;
                     for (size_t j = 0; j < numElemDOFs; ++j) {
-                        val += b_q_k[i] * b_q_k[j] * rho_local[j]
-                               + n_inf * e_Te * phi_prev_local[j] * val_w_k;
+                        val += b_q_k[i] * b_q_k[j] * (rho_local[j]
+                               + n_inf * e_Te * phi_prev_local[j] * val_w_k);
                     }
                     return val * absDetDPhi;
             }
@@ -221,7 +221,7 @@ namespace ippl {
             lagrangeSpace_m.evaluateLoadVector(rhs, modifiedPoissonRHS);
 
             rhs.fillHalo();
-            
+
             IpplTimings::stopTimer(init);
         }
 
