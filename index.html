@@ -253,6 +253,7 @@ Profiling IPPL MPI calls</h1>
 <p >If the installation was successful, you should have the library <code>libmpip.so</code> in the mpiP directory.</p>
 <p >To instument your application with the mpiP library, add the following line to your jobscript (or run it in your command line if you are running locally/on an interactive node): <code>export LD_PRELOAD=$[path to mpip directory]/libmpiP.so</code> To pass any options to mpiP, you can export the variable MPIP with the options you want. For example, if you would like to get a histogram of the data sent by MPI calls (option <code>-y</code>), you would need to add the following line to your jobscript: <code>export MPIP="-y"</code></p>
 <p >If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics: <code>Storing mpiP output in ...</code></p>
+<p >To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form: <code>python3 mpiP.py [path/to/directory]</code> where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.</p>
 <p >Happy profiling!</p>
 <h1><a class="anchor" id="autotoc_md18"></a>
 Build Instructions</h1>
