@@ -103,6 +103,7 @@ namespace ippl {
             }
         );
 
+        /*
         auto hView = Kokkos::create_mirror_view(elementIndices);
         Kokkos::deep_copy(hView, elementIndices);
         for (int r = 0; r < ippl::Comm->size(); ++r) {
@@ -129,6 +130,7 @@ namespace ippl {
             }
             ippl::Comm->barrier();
         }
+            */
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -264,31 +266,20 @@ namespace ippl {
     KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
                         QuadratureType, FieldType>::numElementDOFs>
                     NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                            ::getFEMVectorDOFIndices(const size_t& elementIndex) const {
+                            ::getFEMVectorDOFIndices(const size_t& elementIndex, NDIndex<Dim> ldom) const {
 
         Vector<size_t, this->numElementDOFs> FEMVectorDOFs(0);
         
-        // Fiest get the global element position
+        // First get the global element position
         indices_t elementPos = this->getElementNDIndex(elementIndex);
         // Then we can subtract from it the starting position and add the ghost
         // things
-        const auto& ldom = layout_m.getLocalNDIndex();
         elementPos -= ldom.first();
         elementPos += 1;
-        /*
-        if (ippl::Comm->rank() == IORANK) {
-            std::cout << elementIndex << "->" << elementPos << "\n";
-        }
-        */
         
         indices_t dif(0);
         dif = ldom.last() - ldom.first();
         dif += 1 + 2; // plus 1 for last still being in +2 for ghosts.
-        /*
-        if (ippl::Comm->rank() == IORANK) {
-            std::cout << dif << "\n";
-        }
-        */
 
         Vector<size_t, Dim> v(1);
         if constexpr (Dim == 2) {
@@ -320,7 +311,7 @@ namespace ippl {
             FEMVectorDOFs(11) = FEMVectorDOFs(9) + 1;
         }
         
-
+        
         return FEMVectorDOFs;
     }
 
@@ -715,7 +706,7 @@ namespace ippl {
                     this->getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, this->numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex);
+                    this->getFEMVectorDOFIndices(elementIndex, ldom);
                 
 
                 // local DOF indices
@@ -971,17 +962,8 @@ namespace ippl {
                     this->getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, this->numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex);
-
-                /*
-                if (ippl::Comm->rank() == IORANK) {
-                    std::cout << elementIndex << ":\n";
-                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                        std::cout << vectorIndices[i] << " ";
-                    }
-                    std::cout << "\n";
-                }
-                    */
+                    this->getFEMVectorDOFIndices(elementIndex, ldom);
+                
 
                 size_t i, I;
 
@@ -1012,12 +994,6 @@ namespace ippl {
                     }
 
                     // add the contribution of the element to the field
-                    /*
-                    if (this->isDOFOnBoundary(I)) {
-                        std::cout << "dof contrib: " << contrib << "\n";
-                        contrib = 0;
-                    }
-                    */
                     atomic_view(vectorIndices[i]) += contrib;
                 
                 }    
@@ -1615,7 +1591,7 @@ namespace ippl {
                     this->getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, this->numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex);
+                    this->getFEMVectorDOFIndices(elementIndex, ldom);
 
 
                 // contribution of this element to the error

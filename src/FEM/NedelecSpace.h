@@ -174,7 +174,7 @@ namespace ippl {
          * @return Vector<size_t, NumElementDOFs> - The DOF indices
          */
         KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
-                                    const size_t& element_index) const;
+                                    const size_t& element_index, NDIndex<Dim> ldom) const;
 
         
         /**

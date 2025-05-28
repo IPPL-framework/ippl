@@ -264,7 +264,7 @@ void saveMPILayout(ippl::Vector<T,2> cellSpacing, ippl::Vector<T,2> origin,
 
 
 template <typename T, unsigned Dim, typename Field>
-ippl::FEMVector<T> createFEMVector(const Field& field) {
+ippl::FEMVector<T> createFEMVector_(const Field& field) {
     using Layout_t = ippl::FieldLayout<Dim>;
     auto view = field.getView();
 
@@ -741,6 +741,271 @@ ippl::FEMVector<T> createFEMVector(const Field& field) {
     return vec;
 }
 
+template <typename T, unsigned Dim, typename Layout>
+ippl::FEMVector<T> createFEMVector(const Layout& layout) {
+    using indices_t = ippl::Vector<int, Dim>;
+
+    auto ldom = layout.getLocalNDIndex();
+    auto doms = layout.getHostLocalDomains();
+    //std::cout << "rank " << ippl::Comm->rank() << ": " << ldom.first() << "-" << ldom.last() << "\n";
+
+
+    auto getDOFIndices = [&](indices_t elementPos) {
+        ippl::Vector<size_t, 4> FEMVectorDOFs(0);
+        
+        // Then we can subtract from it the starting position and add the ghost
+        // things
+        const auto& ldom = layout.getLocalNDIndex();
+        elementPos -= ldom.first();
+        elementPos += 1;
+        
+        indices_t dif(0);
+        dif = ldom.last() - ldom.first();
+        dif += 1 + 2; // plus 1 for last still being in +2 for ghosts.
+
+        ippl::Vector<size_t, Dim> v(1);
+        if constexpr (Dim == 2) {
+            size_t nx = dif[0];
+            v(1) = 2*nx-1;
+        } else if constexpr (Dim == 3) {
+            size_t nx = dif[0];
+            size_t ny = dif[1];
+            v(1) = 2*nx -1;
+            v(2) = 3*nx*ny - nx - ny;
+        }
+
+        size_t nx = dif[0];
+        FEMVectorDOFs(0) = v.dot(elementPos);
+        FEMVectorDOFs(1) = FEMVectorDOFs(0) + nx - 1;
+        FEMVectorDOFs(2) = FEMVectorDOFs(1) + nx;
+        FEMVectorDOFs(3) = FEMVectorDOFs(1) + 1;
+
+        if constexpr (Dim == 3) {
+            size_t ny = dif[1];
+
+            FEMVectorDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny;
+            FEMVectorDOFs(5) = FEMVectorDOFs(4) + 1;
+            FEMVectorDOFs(6) = FEMVectorDOFs(4) + nx;
+            FEMVectorDOFs(7) = FEMVectorDOFs(4) + nx + 1;
+            FEMVectorDOFs(8) = FEMVectorDOFs(0) + 3*nx*ny - nx - ny;
+            FEMVectorDOFs(9) = FEMVectorDOFs(8) + nx - 1;
+            FEMVectorDOFs(10) = FEMVectorDOFs(9) + nx;
+            FEMVectorDOFs(11) = FEMVectorDOFs(9) + 1;
+        }
+        
+
+        return FEMVectorDOFs;
+    };
+
+    // Create the temporaries and so on which will store the MPI information.
+    std::vector<size_t> neighbors;
+    std::vector< Kokkos::View<size_t*> > sendIdxs;
+    std::vector< Kokkos::View<size_t*> > recvIdxs;
+    std::vector< std::vector<size_t> > sendIdxsTemp;
+    std::vector< std::vector<size_t> > recvIdxsTemp;
+
+    // Here we loop thought all the domains to figure out how we are related to
+    // them and if we have to do any kind of exchange.
+    for (size_t i = 0; i < doms.extent(0); ++i) {
+        if (i == ippl::Comm->rank()) {
+            // We are looking at ourself
+            continue;
+        }
+        auto odom = doms(i);
+
+        // East boundary
+        if (ldom.last()[0] == odom.first()[0]-1 &&
+                !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+            // Extract the range of the boundary.
+            int begin = std::max(odom.first()[1], ldom.first()[1]);
+            int end = std::min(odom.last()[1], ldom.last()[1]);
+            int pos = ldom.last()[0];
+            
+            // Add this to the neighbour list.
+            neighbors.push_back(i);
+            sendIdxsTemp.push_back(std::vector<size_t>());
+            recvIdxsTemp.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+            
+            // Add all the halo
+            indices_t elementPosHalo(0);
+            elementPosHalo(0) = pos;
+            indices_t elementPosSend(0);
+            elementPosSend(0) = pos;
+            for (int k = begin; k <= end; ++k) {
+                elementPosHalo(1) = k;
+                elementPosSend(1) = k;
+                
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[3]);
+
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+            }
+            // Check if on very north
+            if (end == layout.getDomain().last()[1] || ldom.last()[1] > odom.last()[1]) {
+                elementPosSend(1) = end;
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                // also have to add dof 2
+                sendIdxsTemp[idx].push_back(dofIndicesSend[2]);
+            }
+        }
+
+        // West boundary
+        if (ldom.first()[0] == odom.last()[0]+1 &&
+                !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+            // Extract the range of the boundary.
+            int begin = std::max(odom.first()[1], ldom.first()[1]);
+            int end = std::min(odom.last()[1], ldom.last()[1]);
+            int pos = ldom.first()[0];
+            
+            // Add this to the neighbour list.
+            neighbors.push_back(i);
+            sendIdxsTemp.push_back(std::vector<size_t>());
+            recvIdxsTemp.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+            
+            // Add all the halo
+            indices_t elementPosHalo(0);
+            elementPosHalo(0) = pos-1;
+            indices_t elementPosSend(0);
+            elementPosSend(0) = pos;
+            for (int k = begin; k <= end; ++k) {
+                elementPosHalo(1) = k;
+                elementPosSend(1) = k;
+                
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[0]);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[1]);
+
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+            }
+            // Check if on very north
+            if (end == layout.getDomain().last()[1] || odom.last()[1] > ldom.last()[1]) {
+                elementPosHalo(1) = end;
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                // also have to add dof 2
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[2]);
+            }
+        }
+
+        // North boundary
+        if (ldom.last()[1] == odom.first()[1]-1 &&
+                !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+            // Extract the range of the boundary.
+            int begin = std::max(odom.first()[0], ldom.first()[0]);
+            int end = std::min(odom.last()[0], ldom.last()[0]);
+            int pos = ldom.last()[1];
+            
+            // Add this to the neighbour list.
+            neighbors.push_back(i);
+            sendIdxsTemp.push_back(std::vector<size_t>());
+            recvIdxsTemp.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+            
+            // Add all the halo
+            indices_t elementPosHalo(0);
+            elementPosHalo(1) = pos;
+            indices_t elementPosSend(0);
+            elementPosSend(1) = pos;
+            for (int k = begin; k <= end; ++k) {
+                elementPosHalo(0) = k;
+                elementPosSend(0) = k;
+                
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[2]);
+
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+            }
+            // Check if on very east
+            if (end == layout.getDomain().last()[0] || ldom.last()[0] > odom.last()[0]) {
+                elementPosSend(0) = end;
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                // also have to add dof 3
+                sendIdxsTemp[idx].push_back(dofIndicesSend[3]);
+            }
+        }
+
+        // South boundary
+        if (ldom.first()[1] == odom.last()[1]+1 &&
+                !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+            // Extract the range of the boundary.
+            int begin = std::max(odom.first()[0], ldom.first()[0]);
+            int end = std::min(odom.last()[0], ldom.last()[0]);
+            int pos = ldom.first()[1];
+            
+            // Add this to the neighbour list.
+            neighbors.push_back(i);
+            sendIdxsTemp.push_back(std::vector<size_t>());
+            recvIdxsTemp.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+            
+            // Add all the halo
+            indices_t elementPosHalo(0);
+            elementPosHalo(1) = pos-1;
+            indices_t elementPosSend(0);
+            elementPosSend(1) = pos;
+            for (int k = begin; k <= end; ++k) {
+                elementPosHalo(0) = k;
+                elementPosSend(0) = k;
+                
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[0]);
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[1]);
+
+                auto dofIndicesSend = getDOFIndices(elementPosSend);
+                sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+            }
+            // Check if on very east
+            if (end == layout.getDomain().last()[0] || odom.last()[0] > ldom.last()[0]) {
+                elementPosHalo(0) = end;
+                auto dofIndicesHalo = getDOFIndices(elementPosHalo);
+                // also have to add dof 3
+                recvIdxsTemp[idx].push_back(dofIndicesHalo[3]);
+            }
+        }
+    }
+
+
+
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+        sendIdxs.push_back(Kokkos::View<size_t*>("FEMvector::sendIdxs[" + std::to_string(i) +
+                                                    "]", sendIdxsTemp[i].size()));
+        recvIdxs.push_back(Kokkos::View<size_t*>("FEMvector::recvIdxs[" + std::to_string(i) +
+                                                    "]", recvIdxsTemp[i].size()));
+        auto sendView = sendIdxs[i];
+        auto recvView = recvIdxs[i];
+        auto hSendView = Kokkos::create_mirror_view(sendView);
+        auto hRecvView = Kokkos::create_mirror_view(recvView);
+
+        for (size_t j = 0; j < sendIdxsTemp[i].size(); ++j) {
+            hSendView(j) = sendIdxsTemp[i][j];
+        }
+
+        for (size_t j = 0; j < recvIdxsTemp[i].size(); ++j) {
+            hRecvView(j) = recvIdxsTemp[i][j];
+        }
+
+        Kokkos::deep_copy(sendView, hSendView);
+        Kokkos::deep_copy(recvView, hRecvView);
+    }
+    
+
+    
+    // Now finaly create the FEMVector
+    indices_t extents(0);
+    extents = (ldom.last() - ldom.first()) + 3;
+    size_t nx = extents(0);
+    size_t ny = extents(1);
+    size_t n = nx*(ny-1) + ny*(nx-1);
+    ippl::FEMVector<T> vec(n, neighbors, sendIdxs, recvIdxs);
+    
+    return vec;
+}
 
 template <typename T, unsigned Dim>
 struct Analytical{
@@ -799,8 +1064,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
 
-    auto vec = createFEMVector<T,Dim, Field_t>(lhs);
-
+    //auto vec = createFEMVector<T,Dim, ippl::FieldLayout<Dim>>(layout);
 
     
     T k = 3.14159265359;
@@ -812,12 +1076,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     size_t nx = d[0] + 1 + 2;
     size_t ny = d[1] + 1 + 2;
 
-    saveMPILayout<T,ippl::FieldLayout<Dim>,Dim>(cellSpacing, origin, vec, layout);
- 
-    ippl::FEMVector<ippl::Vector<T,Dim> > rhsVector = createFEMVector<ippl::Vector<T,Dim>,Dim, Field_t>(lhs);
+    //saveMPILayout<T,ippl::FieldLayout<Dim>,Dim>(cellSpacing, origin, vec, layout);
+    
+    ippl::FEMVector<ippl::Vector<T,Dim> > rhsVector =
+        createFEMVector<ippl::Vector<T,Dim>,Dim, ippl::FieldLayout<Dim>>(layout);
     auto viewRhs = rhsVector.getView();
 
-    ippl::FEMVector<ippl::Vector<T,Dim> > solutionVector = createFEMVector<ippl::Vector<T,Dim>,Dim, Field_t>(lhs);
+    ippl::FEMVector<ippl::Vector<T,Dim> > solutionVector =
+        rhsVector.template skeletonCopy<ippl::Vector<T,Dim>>();
     auto viewSolution = solutionVector.getView();
 
     Field_t fieldSolution(mesh, layout, 0);
@@ -878,14 +1144,14 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
         }
     );
 
-    saveToFile(cellSpacing, origin, layout, rhsVector, "rhs.csv");
-    saveToFile(cellSpacing, origin, layout, solutionVector, "solution.csv");
+    //saveToFile(cellSpacing, origin, layout, rhsVector, "rhs.csv");
+    //saveToFile(cellSpacing, origin, layout, solutionVector, "solution.csv");
 
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
     ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector, rhsFunc);
-    saveToFile(cellSpacing, origin,layout, *(solver.rhsVector_m), "solver_rhs.csv");
+    //saveToFile(cellSpacing, origin,layout, *(solver.rhsVector_m), "solver_rhs.csv");
 
     // set the parameters
     ippl::ParameterList params;
@@ -897,12 +1163,12 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
     ippl::FEMVector<ippl::Vector<T,Dim> > diff = result.template skeletonCopy<ippl::Vector<T,Dim>>();
     diff  = result - solutionVector;
-    saveToFile(cellSpacing, origin, layout, result, "result.csv");
+    //saveToFile(cellSpacing, origin, layout, result, "result.csv");
     //saveToFile(nx, ny, cellSpacing, origin, diff, "diff.csv");
  
-    saveToFile(cellSpacing, origin, layout, *(solver.lhsVector_m), "solver_lhs.csv");
+    //saveToFile(cellSpacing, origin, layout, *(solver.lhsVector_m), "solver_lhs.csv");
 
-    saveToFile(cellSpacing, origin, layout, lhs, "field_result.csv");
+    //saveToFile(cellSpacing, origin, layout, lhs, "field_result.csv");
     //saveToFile(nx, ny, cellSpacing, origin, fieldSolution, "field_solution.csv");
     //fieldSolution = lhs - fieldSolution;
     //saveToFile(nx, ny, cellSpacing, origin, fieldSolution, "field_diff.csv");
@@ -938,7 +1204,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     
     //T error = solver.getL2Error(result, Analytical<T, Dim>(k));
     T coefError = solver.getL2ErrorCoeff(*(solver.lhsVector_m), Analytical<T, Dim>(k));
-    
     if (ippl::Comm->rank() == 0) {
         std::cout << std::setw(10) << numNodesPerDim;
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
@@ -1027,16 +1292,17 @@ int main(int argc, char* argv[]) {
         */
         
         
-        /*
-        for (unsigned n = 8; n <= 256; n *= 2) {
+        
+        for (unsigned n = 16; n <= 512; n += 1) {
             testFEMSolver<T, 2>(n, 0, 3.0);
         }
-            */
+        
+            
         
         
           
         
-        testFEMSolver<T, 2>(103, 1.0, 3.0);
+        //testFEMSolver<T, 2>(7, 1.0, 3.0);
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
