@@ -42,6 +42,7 @@ hubble=0.7
 Omega_m=0.25   // Total matter content; 1-this will be DE
 Omega_nu=0.0
 Omega_bar=0.04
+Omega_r=0.0
 
 Sigma_8=0.8
 n_s=0.9

@@ -433,6 +433,22 @@ public:
 }
 
   /**
+     bbks  hardcoded TFFLAG==4
+
+   */
+
+  KOKKOS_FUNCTION static double bbks(double k, double kh_tmp) {
+    double qkh, t_f;
+   
+   if (k == 0.0) return(0.0);
+   qkh = k/kh_tmp;
+   t_f = Kokkos::log(1.0+2.34*qkh)/(2.34*qkh) * Kokkos::pow(1.0+3.89*qkh+
+	 Kokkos::pow(16.1*qkh, 2.0) + Kokkos::pow(5.46*qkh, 3.0) + Kokkos::pow(6.71*qkh, 4.0), -0.25);
+   return(t_f);
+
+  }
+
+  /**
      hu_sugiyama hardcoded TFFLAG==2
 
    */
@@ -476,7 +492,7 @@ public:
     const int nq=ngrid/2;
     const double tpiL=tpi/initializer::GlobalStuff::instance().box_size; // k0, physical units
 
-    // TFFlag == 2) Hu-Sugiyama transfer function
+/* TFFlag == 2) Hu-Sugiyama transfer function
     const double Omega_m = initializer::GlobalStuff::instance().Omega_m;
     const double Omega_bar = initializer::GlobalStuff::instance().Omega_bar;
     const double h = initializer::GlobalStuff::instance().Hubble;
@@ -484,13 +500,19 @@ public:
     const double akh2=pow(12.0*Omega_m*h*h, 0.424)*(1.0+pow(45.0*Omega_m*h*h, -0.582));
     const double alpha=pow(akh1, -1.0*Omega_bar/Omega_m)*pow(akh2, pow(-1.0*Omega_bar/Omega_m, 3.0));
     const double kh_tmp = Omega_m*h*Kokkos::sqrt(alpha);
+*/
+    // TFFlag == 4 BBKS  transfer function
+
+    const double Omega_m = initializer::GlobalStuff::instance().Omega_m;
+    const double h       = initializer::GlobalStuff::instance().Hubble;    
+    double kh_tmp        = Omega_m*h;
     
     /* Set P(k)=T^2*k^n array.
        Linear array, taking care of the mirror symmetry
        (reality condition for the density field). 
     */
     
-    msg << "Pulled all needed phyice quantities" << endl;
+    msg << "Pulled all needed physics quantities" << endl;
     msg << "kh_tmp= " << kh_tmp << " n_s= " << n_s << " tpiL= " << tpiL << endl;
     
     auto pkview                    = Pk_m.getView();
@@ -513,8 +535,8 @@ public:
 			 // without if but not sure if that is correct! 
 			 // k_k -= (k_k >= nq) * ngrid;
 			 
-			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);
-			 double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
+			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);			
+			 double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp); // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
 			 double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
 			 ippl::apply(pkview, args) = val;
 			 
@@ -530,7 +552,7 @@ public:
 			 */
 		       });
 
-    msg << "Pk created using hu_sugiyama TFFlag ==2" << endl;
+    msg << "Pk created using BBKS TFFlag ==4" << endl;
     
     double s8 = cosmo_m.Sigma_r(8.0, 1.0);                                                    
     const double norm = sigma8*sigma8/(s8*s8);                                                     

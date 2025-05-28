@@ -54,16 +54,17 @@ void CosmoClass::SetParameters(GlobalStuff& DataBase, const char *tfName){
    real akh1, akh2, alpha;
    // real file_kmax = M_PI/DataBase.box_size * DataBase.ngrid;
       
-   Omega_m = DataBase.Omega_m;
+   Omega_m   = DataBase.Omega_m;
    Omega_bar = DataBase.Omega_bar;
    Omega_nu  = DataBase.Omega_nu;
-   Omega_r   = 0.0; //DataBase.Omega_r;
-   h = DataBase.Hubble;
-   n_s = DataBase.n_s;
-   TFFlag = DataBase.TFFlag;
-   w_de = DataBase.w_de;
-   N_nu = DataBase.N_nu;
-   z_in = DataBase.z_in;
+   Omega_r   = DataBase.Omega_r;
+
+   h         = DataBase.Hubble;
+   n_s       = DataBase.n_s;
+   TFFlag    = DataBase.TFFlag;
+   w_de      = DataBase.w_de;
+   N_nu      = DataBase.N_nu;
+   z_in      = DataBase.z_in;
       
    cobe_temp=2.728;  // COBE/FIRAS CMB temperature in K
    tt=cobe_temp/2.7 * cobe_temp/2.7;
