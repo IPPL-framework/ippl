@@ -29,7 +29,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
-    using BConds_t = ippl::BConds<Field_t, Dim>;
+    //using BConds_t = ippl::BConds<Field_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
@@ -50,13 +50,15 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
 
     // Define boundary conditions
+    /*
     BConds_t bcField;
     for (unsigned int i = 0; i < 2 * Dim; ++i) {
         bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
     }
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
-
+    */
+    
     // set rhs
     rhs = 2.0;
     lhs = 1.0; // phi_init to be given as phi at t_0-1
@@ -64,19 +66,20 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    ippl::FEMPlasmaSheath<Field_t, Field_t> solver(lhs, rhs, 1.0, 1.0, 1.0);
+    
+    m << "rho" << endl;
+    rhs.write();
+
+    m << "phi_prev" << endl;
+    lhs.write();
+
+    ippl::FEMPlasmaSheath<Field_t, Field_t, 1, 2> solver(lhs, rhs, 1.0, 1.0, 1.0);
 
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 2000);
     solver.mergeParameters(params);
-
-    m << "rho" << endl;
-    rhs.write();
-
-    m << "phi_prev" << endl;
-    lhs.write();
 
     // solve the problem
     solver.solve();
