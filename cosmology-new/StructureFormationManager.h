@@ -294,7 +294,8 @@ public:
 			   double theta = 2.0 * pi * u2;
 			   double gauss_re = R * Kokkos::cos(theta);   // Gaussian(0,1) for real part
 			   double gauss_im = R * Kokkos::sin(theta);   // Gaussian(0,1) for imaginary part
-			   double Pk = ippl::apply(pkview, idx);       // power spectrum P(k) 
+			   double Pk = 1;
+                           // double Pk = ippl::apply(pkview, idx);       // power spectrum P(k) 
 			   // Set amplitude: for self-conjugate modes use sqrt(Pk), otherwise sqrt(Pk/2)
 			   double amp = self ? Kokkos::sqrt(Pk) : Kokkos::sqrt(Pk / 2.0);
 			   double val_re = amp * gauss_re;
@@ -308,11 +309,18 @@ public:
 			   }
 			   // Assign the complex value to this local mode
 			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
-			 }
+                           }
 		       });
 
     IpplTimings::stopTimer(fourDenTimer);
     
+    // Check whether the generated density field is Hermitian before proceeding
+    if (isHermitian()) {
+      msg << "Fourier density field is Hermitian." << endl;
+    } else {
+      std::cerr << "Fourier density field is NOT Hermitian!" << endl;
+    }
+
     static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
     
     // Store delta(k) for reuse 
@@ -378,7 +386,97 @@ public:
 	IpplTimings::stopTimer(posvelInitTimer);
     }	        
   }
-  
+
+ /**
+     * @brief Check whether the complex density field delta(k) is Hermitian
+     *
+     * A real‑space density field requires its Fourier coefficients
+     * to be Hermitian, satisfying
+     * \f[
+     *     \delta(-\mathbf k) = \delta^*(\mathbf k) ,
+     * \f]
+     * where the asterisk denotes complex conjugation.
+     *
+     * This function loops through the indices of the complex field accessed as
+     * a Kokkos view holding the complex Fourier amplitudes and returns false
+     * in the case that any of the fourier modes are not Hermitian.
+     *
+     * @return true if the complex density field is Hermitian, false otherwise
+     */
+
+  bool isHermitian() const {
+
+    const auto& field = cfield_m.getView(); // Complex density field view
+    const int Nx = this->nr_m[0];
+    const int Ny = this->nr_m[1];
+    const int Nz = this->nr_m[2];
+    const int ngh = cfield_m.getNghost();
+    const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
+
+
+    // flag to track result on current rank
+    int localHermitian = 1; 
+
+    // Iterate over the field indices and check whether each fourier coefficient is Hermitian
+    // TODO: Right now the code assumes that the negative index can be found on the same rank.
+    //       To make the code parallelizable for multi-ranks, this needs to be accounted for.
+    ippl::parallel_reduce("isHermitian", ippl::getRangePolicy(field, ngh),
+                       KOKKOS_LAMBDA(const index_array_type& idx, int& isHermitian) {
+
+                         // Converts the local idx into the global coordinate in the FFT grid.
+                         int i = idx[0] - ngh + lDom[0].first();
+                         int j = idx[1] - ngh + lDom[1].first();
+                         int k = idx[2] - ngh + lDom[2].first();
+
+                         // The DC mode (k = 0) is always real and can be excluded from the Hermitian check.
+                         if (i == 0 && j == 0 && k == 0) return;
+
+                         // Compute the global “negative” indices for Hermitian pair
+                         int i_neg = (i == 0 ? 0 : Nx - i);
+                         int j_neg = (j == 0 ? 0 : Ny - j);
+                         int k_neg = (k == 0 ? 0 : Nz - k);
+
+                         index_array_type neg_idx = {i_neg + ngh - lDom[0].first(),
+                                                     j_neg + ngh - lDom[1].first(),
+                                                     k_neg + ngh - lDom[2].first()};
+                         
+                         // store delta(k), delta(-k), complex conjugate conj[delta(k)]
+                         Kokkos::complex<double> delta_k = ippl::apply(field, idx);
+                         Kokkos::complex<double> delta_minus_k = ippl::apply(field, neg_idx);
+                         Kokkos::complex<double> conjugate_delta_k = Kokkos::conj(delta_k);
+                         
+                         // set the tolerance for comparison based on the value type
+                         const double tol = std::numeric_limits<double>::epsilon();
+
+
+                         // uncomment for debugging
+                         /*
+                         printf("[Hermitian‑check]  k=(%d,%d,%d)  , "
+                                 "delta(k)=(% .3e%+.3ei)   ,"
+                                 "delta(-k)=(% .3e%+.3ei)  ,"
+                                 "conj[delta(k)] = (% .3e%+.3ei)\n",
+                                  i, j, k,
+                                  val_k.real(), val_k.imag(),
+                                  val_minus_k.real(), val_minus_k.imag(),
+                                  conjugate_val_k.real(),  conjugate_val_k.imag());
+                         */
+
+                         // If delta(-k) != conj[delta(k)], field is not hermitian
+                         bool hermitian =
+                              std::abs(delta_minus_k.real() - conjugate_delta_k.real()) <= tol &&
+                              std::abs(delta_minus_k.imag() - conjugate_delta_k.imag()) <= tol;
+
+                         if (!hermitian)
+                              isHermitian = 0; 
+                     }, 
+                     Kokkos::Min<int>(localHermitian)); // if any value becomes 0, final result is 0 on this rank
+
+    // Then do the global MPI reduction across ranks
+    int globalHermitian = 0;
+    MPI_Allreduce(&localHermitian, &globalHermitian, 1, MPI_INT, MPI_MIN, ippl::Comm->getCommunicator());
+
+    return globalHermitian != 0;
+  }
   
   /**
      * @brief Create particles using Zarijas initializer

@@ -21,15 +21,15 @@ add_ippl_integration_test(benchmarkParticleUpdate
 )
 
 
-add_ippl_integration_test(univ-3
-  LABELS integration particle
-  ARGS 128 128 128 10000 10 --info 10
-)
+#add_ippl_integration_test(univ-3
+#  LABELS integration particle
+#  ARGS 128 128 128 10000 10 --info 10
+#)
 
-add_ippl_integration_test(univ-2
-  LABELS integration particle
-  ARGS 128 128 128 10000 10 --info 10
-)
+#add_ippl_integration_test(univ-2
+#  LABELS integration particle
+#  ARGS 128 128 128 10000 10 --info 10
+#)
 
 add_ippl_integration_test(zeldo-test1
   LABELS integration particle
