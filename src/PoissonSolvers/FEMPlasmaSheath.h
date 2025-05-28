@@ -24,6 +24,7 @@ namespace ippl {
         using Base = Poisson<FieldLHS, FieldRHS>;
         using typename Base::lhs_type, typename Base::rhs_type;
         using MeshType = typename FieldRHS::Mesh_t;
+        using ViewType = typename detail::ViewType<Tlhs, Dim>::view_type;
 
         // PCG (Preconditioned Conjugate Gradient) is the solver algorithm used
         using PCGSolverAlgorithm_t =
@@ -48,44 +49,33 @@ namespace ippl {
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf; // phi_infty
-            FieldLHS* phi_prev; // (phi_(it -1))
-            LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
+            ViewType phi_prev; // (phi_(it -1))
+            LagrangeType lagrangeSpace; // lagrangeSpace
 
             EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf,
-                        Tlhs phi_inf, FieldLHS* phi_prev, LagrangeType* lagrangeSpace)
+                        Tlhs phi_inf, ViewType& phi_prev, LagrangeType lagrangeSpace)
                 : DPhiInvT(DPhiInvT)
                 , absDetDPhi(absDetDPhi)
                 , e_Te(e_Te), n_inf(n_inf)
                 , phi_inf(phi_inf), phi_prev(phi_prev)
-                , lagrangeSpace_ptr(lagrangeSpace)
+                , lagrangeSpace(lagrangeSpace)
                 {}
-
-            KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
-                const Vector<Tlhs, numElemDOFs>& b_q_k) const {
-                const Vector<size_t, numElemDOFs> global_dofs =
-                        lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
-
-                auto ldom = (phi_prev->getLayout()).getLocalNDIndex();
-                const int nghost = phi_prev->getNghost();
-
-                Tlhs val = 0;
-                for (size_t i = 0; i < numElemDOFs; ++i) {
-                    auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
-                    }
-                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(*phi_prev, dof_ndindex) - phi_inf));
-                }
-                return val;
-            }
-
 
             KOKKOS_FUNCTION const auto operator()(
                 const size_t& i, const size_t& j, const Vector<Tlhs, numElemDOFs>& b_q_k,
                 const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k, int elemIdx) const {
 
-                    // get wB value (with interpolated phi_prev)
-                    Tlhs val_w_k = getInterpolated_wB(elemIdx, b_q_k);
+                    const Vector<size_t, numElemDOFs> global_dofs =
+                            lagrangeSpace.getGlobalDOFIndices(elemIdx);
+
+                    Tlhs val_w_k = 0;
+                    for (size_t s = 0; s < numElemDOFs; ++s) {
+                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[s]);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex[d] = dof_ndindex[d] + 1; //+ nghost - ldom[d].first();
+                        }
+                        val_w_k += b_q_k[s] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
+                    }
 
                     // stiffness matrix term
                     Tlhs val1 = dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply();
@@ -103,69 +93,43 @@ namespace ippl {
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf;  // phi_infty
-            FieldRHS* rho;      // (q_i * n_i - e * n_e)
-            FieldLHS* phi_prev; // (phi_(it -1))
-            LagrangeType* lagrangeSpace_ptr; // pointer to lagrangeSpace
+            ViewType rho;      // (q_i * n_i - e * n_e)
+            ViewType phi_prev; // (phi_(it -1))
+            LagrangeType lagrangeSpace; // lagrangeSpace
 
             RHSFunctor(Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf, Tlhs phi_inf, 
-                        FieldRHS* rho, FieldLHS* phi_prev, LagrangeType* lagrangeSpace)
+                        ViewType& rho, ViewType& phi_prev, LagrangeType lagrangeSpace)
                 : absDetDPhi(absDetDPhi), e_Te(e_Te)
                 , n_inf(n_inf), phi_inf(phi_inf), rho(rho)
-                , phi_prev(phi_prev), lagrangeSpace_ptr(lagrangeSpace)
+                , phi_prev(phi_prev), lagrangeSpace(lagrangeSpace)
                 {}
 
-            KOKKOS_FUNCTION const auto getLocal(unsigned int elemIdx) const {
-                Vector<Tlhs, numElemDOFs> rho_local;
-                Vector<Tlhs, numElemDOFs> phi_prev_local;
-
-                const Vector<size_t, numElemDOFs> global_dofs =
-                        lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
-
-                auto ldom = (rho->getLayout()).getLocalNDIndex();
-                const int nghost = rho->getNghost();
-
-                for (size_t i = 0; i < numElemDOFs; ++i) {
-                    auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
-                    }
-                    rho_local[i] = apply(*rho, dof_ndindex);
-                    phi_prev_local[i] = apply(*phi_prev, dof_ndindex);
-                }
-
-                return std::pair{rho_local, phi_prev_local};
-            }
-            
-            KOKKOS_FUNCTION const auto getInterpolated_wB(unsigned int elemIdx,
-                const Vector<Tlhs, numElemDOFs>& b_q_k) const {
-                const Vector<size_t, numElemDOFs> global_dofs =
-                        lagrangeSpace_ptr->getGlobalDOFIndices(elemIdx);
-
-                auto ldom = (phi_prev->getLayout()).getLocalNDIndex();
-                const int nghost = phi_prev->getNghost();
-
-                Tlhs val = 0;
-                for (size_t i = 0; i < numElemDOFs; ++i) {
-                    auto dof_ndindex = lagrangeSpace_ptr->getMeshVertexNDIndex(global_dofs[i]);
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        dof_ndindex[d] = dof_ndindex[d] + nghost - ldom[d].first();
-                    }
-                    val += b_q_k[i] * Kokkos::exp(e_Te * (apply(*phi_prev, dof_ndindex) - phi_inf));
-                }
-                return val;
-            }
-
             KOKKOS_FUNCTION const auto operator()(
-                const size_t& i, const Vector<Tlhs, numElemDOFs>& b_q_k, int elemIdx) const {
+                const size_t& i, const Vector<Tlhs, numElemDOFs>& b_q_k, unsigned int elemIdx) const {
 
-                    Vector<Tlhs, numElemDOFs> rho_local = getLocal(elemIdx).first;
-                    Vector<Tlhs, numElemDOFs> phi_prev_local = getLocal(elemIdx).second;
-                    Tlhs val_w_k = getInterpolated_wB(elemIdx, b_q_k);
+                    const Vector<size_t, numElemDOFs> global_dofs =
+                            lagrangeSpace.getGlobalDOFIndices(elemIdx);
+
+                    Tlhs val_w_k = 0;
+                    for (size_t j = 0; j < numElemDOFs; ++j) {
+                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex[d] = dof_ndindex[d] + 1; //+ nghost - ldom[d].first();
+                        }
+                        val_w_k += b_q_k[j] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
+                    }
 
                     Tlhs val = 0;
                     for (size_t j = 0; j < numElemDOFs; ++j) {
-                        val += b_q_k[i] * b_q_k[j] * (rho_local[j]
-                               + n_inf * e_Te * phi_prev_local[j] * val_w_k);
+                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex[d] = dof_ndindex[d] + 1;// nghost - ldom[d].first();
+                        }
+                        Tlhs rho_loc = apply(rho, dof_ndindex);
+                        Tlhs phi_prev_loc = apply(phi_prev, dof_ndindex);
+
+                        val += b_q_k[i] * b_q_k[j] * (rho_loc
+                               + n_inf * e_Te * phi_prev_loc * val_w_k);
                     }
                     return val * absDetDPhi;
             }
@@ -191,6 +155,8 @@ namespace ippl {
         {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
 
+            Inform m("");
+
             // need to pass rho = q_i*n_i - q_e*n_e as rhs
             // and phi_prev as lhs
 
@@ -214,7 +180,8 @@ namespace ippl {
 
             // initialize the RHSFunctor struct to pass to Load vector creation
             RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                absDetDPhi, e_Te, n_inf, phi_inf, this->rhs_mp, this->lhs_mp, &(this->lagrangeSpace_m));
+                absDetDPhi, e_Te, n_inf, phi_inf, (this->rhs_mp)->getView(),
+                (this->lhs_mp)->getView(), this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
@@ -248,12 +215,12 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             // initialize the RHSFunctor struct to pass to Load vector creation
-            RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-                absDetDPhi, e_Te, n_inf, phi_inf, this->rhs_mp, this->lhs_mp, &(this->lagrangeSpace_m));
+            //RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+            //    absDetDPhi, e_Te, n_inf, phi_inf, *this->rhs_mp, *this->lhs_mp, this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
-            lagrangeSpace_m.evaluateLoadVector(rhs, modifiedPoissonRHS);
+            //lagrangeSpace_m.evaluateLoadVector(rhs, modifiedPoissonRHS);
 
             rhs.fillHalo();
         }
@@ -284,7 +251,7 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             EvalFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonEval(
-                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, this->lhs_mp, &(this->lagrangeSpace_m));
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, (this->lhs_mp)->getView(), this->lagrangeSpace_m);
 
             // get BC type of our RHS
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
