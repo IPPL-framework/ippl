@@ -63,7 +63,8 @@ namespace ippl {
 
             KOKKOS_FUNCTION const auto operator()(
                 const size_t& i, const size_t& j, const Vector<Tlhs, numElemDOFs>& b_q_k,
-                const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k, int elemIdx) const {
+                const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k, int elemIdx,
+                const Vector<int, Dim> shift) const {
 
                     const Vector<size_t, numElemDOFs> global_dofs =
                             lagrangeSpace.getGlobalDOFIndices(elemIdx);
@@ -72,7 +73,7 @@ namespace ippl {
                     for (size_t s = 0; s < numElemDOFs; ++s) {
                         auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[s]);
                         for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex[d] = dof_ndindex[d] + 1; //+ nghost - ldom[d].first();
+                            dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
                         val_w_k += b_q_k[s] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
                     }
@@ -105,7 +106,8 @@ namespace ippl {
                 {}
 
             KOKKOS_FUNCTION const auto operator()(
-                const size_t& i, const Vector<Tlhs, numElemDOFs>& b_q_k, unsigned int elemIdx) const {
+                const size_t& i, const Vector<Tlhs, numElemDOFs>& b_q_k, unsigned int elemIdx, 
+                const Vector<int, Dim> shift) const {
 
                     const Vector<size_t, numElemDOFs> global_dofs =
                             lagrangeSpace.getGlobalDOFIndices(elemIdx);
@@ -114,7 +116,7 @@ namespace ippl {
                     for (size_t j = 0; j < numElemDOFs; ++j) {
                         auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
                         for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex[d] = dof_ndindex[d] + 1; //+ nghost - ldom[d].first();
+                            dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
                         val_w_k += b_q_k[j] * Kokkos::exp(e_Te * (apply(phi_prev, dof_ndindex) - phi_inf));
                     }
@@ -123,7 +125,7 @@ namespace ippl {
                     for (size_t j = 0; j < numElemDOFs; ++j) {
                         auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
                         for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex[d] = dof_ndindex[d] + 1;// nghost - ldom[d].first();
+                            dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
                         Tlhs rho_loc = apply(rho, dof_ndindex);
                         Tlhs phi_prev_loc = apply(phi_prev, dof_ndindex);

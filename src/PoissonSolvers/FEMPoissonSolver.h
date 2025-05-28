@@ -22,7 +22,7 @@ namespace ippl {
         KOKKOS_FUNCTION const auto operator()(
             const size_t& i, const size_t& j, [[maybe_unused]] const Vector<Tlhs, numElemDOFs>& b_q_k,
             const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k,
-            [[maybe_unused]] int elementIndex) const {
+            [[maybe_unused]] int elementIndex, [[maybe_unused]] const Vector<int, Dim> shift) const {
             return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
         }
     };

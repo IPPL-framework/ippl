@@ -404,6 +404,10 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        Vector<int, Dim> shift;
+        for (unsigned d = 0; d <Dim; ++d) {
+            shift[d] = nghost - ldom[d].first();
+        }
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -438,7 +442,7 @@ namespace ippl {
                         A_K[i][j] = 0.0;
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, basis_q[k],
-                                         grad_b_q[k], elementIndex);
+                                         grad_b_q[k], elementIndex, shift);
                         }
                     }
                 }
@@ -548,6 +552,10 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        Vector<int, Dim> shift;
+        for (unsigned d = 0; d <Dim; ++d) {
+            shift[d] = nghost - ldom[d].first();
+        }
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -578,7 +586,7 @@ namespace ippl {
                         A_K[i][j] = 0.0;
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, basis_q[k], 
-                                         grad_b_q[k], elementIndex);
+                                         grad_b_q[k], elementIndex, shift);
                         }
                     }
                 }
@@ -786,6 +794,10 @@ namespace ippl {
         // Get domain information and ghost cells
         auto ldom        = (field.getLayout()).getLocalNDIndex();
         const int nghost = field.getNghost();
+        Vector<int, Dim> shift;
+        for (unsigned d = 0; d <Dim; ++d) {
+            shift[d] = nghost - ldom[d].first();
+        }
 
         // Get boundary conditions from field
         BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
@@ -835,7 +847,7 @@ namespace ippl {
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        contrib += w[k] * evalFunction(i, basis_q[k], elementIndex);
+                        contrib += w[k] * evalFunction(i, basis_q[k], elementIndex, shift);
                     }
 
                     // get the appropriate index for the Kokkos view of the field
