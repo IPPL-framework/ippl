@@ -215,8 +215,9 @@ namespace ippl {
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
             // initialize the RHSFunctor struct to pass to Load vector creation
-            //RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
-            //    absDetDPhi, e_Te, n_inf, phi_inf, *this->rhs_mp, *this->lhs_mp, this->lagrangeSpace_m);
+            RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
+                absDetDPhi, e_Te, n_inf, phi_inf, (this->rhs_mp)->getView(),
+                (this->lhs_mp)->getView(), this->lagrangeSpace_m);
 
             rhs.fillHalo();
 
