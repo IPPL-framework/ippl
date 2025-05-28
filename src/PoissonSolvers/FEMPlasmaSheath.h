@@ -41,24 +41,141 @@ namespace ippl {
         using LagrangeType = LagrangeSpace<Tlhs, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
         // structs used for matrix-free evaluation of A and b (matrix, load vector)
+        // light-weight lagrangeSpace
+        template <unsigned numElemDOFs>
+        struct MiniLagrangeSpace {
+            Vector<size_t, Dim> nr_m;
+
+            MiniLagrangeSpace(Vector<size_t, Dim>& nr)
+                : nr_m(nr)
+                {}
+
+            KOKKOS_FUNCTION 
+            Vector<size_t, Dim> getMeshVertexNDIndex(size_t vertex_index) const {
+                Vector<size_t, Dim> vertex_indices;
+
+                // This is the number of vertices in each dimension.
+                Vector<size_t, Dim> vertices_per_dim = nr_m;
+
+                // The number_of_lower_dim_vertices is the product of the number of vertices per
+                // dimension, it will get divided by the current dimensions number to get the index in
+                // that dimension
+                size_t remaining_number_of_vertices = 1;
+                for (const size_t num_vertices : vertices_per_dim) {
+                    remaining_number_of_vertices *= num_vertices;
+                }
+
+                for (int d = Dim - 1; d >= 0; --d) {
+                    remaining_number_of_vertices /= vertices_per_dim[d];
+                    vertex_indices[d] = vertex_index / remaining_number_of_vertices;
+                    vertex_index -= vertex_indices[d] * remaining_number_of_vertices;
+                }
+
+                return vertex_indices;
+            }   
+            
+            KOKKOS_FUNCTION
+            Vector<size_t, numElemDOFs> getGlobalDOFIndices(size_t elemIdx) const {
+
+                Vector<size_t, numElemDOFs> globalDOFs(0);
+
+                // get element position
+                Vector<size_t, Dim> element_nd_index;
+                Vector<size_t, Dim> cells_per_dim = nr_m - 1;
+                size_t remaining_number_of_cells = 1;
+                for (const size_t num_cells : cells_per_dim) {
+                    remaining_number_of_cells *= num_cells;
+                }
+                for (int d = Dim - 1; d >= 0; --d) {
+                    remaining_number_of_cells /= cells_per_dim[d];
+                    element_nd_index[d] = (elemIdx / remaining_number_of_cells);
+                    elemIdx -= (element_nd_index[d]) * remaining_number_of_cells;
+                }
+                // multiply the ndindex to get correct value
+                cells_per_dim = 1;
+                for (size_t d = 1; d < Dim; ++d) {
+                    for (size_t d2 = d; d2 < Dim; ++d) {
+                        cells_per_dim *= nr_m[d - 1];
+                    }
+                }
+                cells_per_dim *= Order;
+                size_t smallestGlobalDOF = element_nd_index.dot(cells_per_dim);
+
+                // assign globalDOFs
+                globalDOFs[0] = smallestGlobalDOF;
+                globalDOFs[1] = smallestGlobalDOF + Order;
+                
+                if (Dim >= 2) {
+                    globalDOFs[2] = globalDOFs[1] + nr_m[1] * Order;
+                    globalDOFs[3] = globalDOFs[0] + nr_m[1] * Order;
+                }
+                if (Dim >= 3) {
+                    globalDOFs[4] = globalDOFs[0] + nr_m[1] * nr_m[2] * Order;
+                    globalDOFs[5] = globalDOFs[1] + nr_m[1] * nr_m[2] * Order;
+                    globalDOFs[6] = globalDOFs[2] + nr_m[1] * nr_m[2] * Order;
+                    globalDOFs[7] = globalDOFs[3] + nr_m[1] * nr_m[2] * Order;
+                }
+
+                if (Order > 1) {
+                    // If the order is greater than 1, there are edge and face DOFs, otherwise the work is
+                    // done
+
+                    // Add the edge DOFs
+                    if (Dim >= 2) {
+                        for (size_t i = 0; i < Order - 1; ++i) {
+                            globalDOFs[8 + i]                   = globalDOFs[0] + i + 1;
+                            globalDOFs[8 + Order - 1 + i]       = globalDOFs[1] + (i + 1) * nr_m[1];
+                            globalDOFs[8 + 2 * (Order - 1) + i] = globalDOFs[2] - (i + 1);
+                            globalDOFs[8 + 3 * (Order - 1) + i] = globalDOFs[3] - (i + 1) * nr_m[1];
+                        }
+                    }
+                    if (Dim >= 3) {
+                        // TODO
+                    }
+
+                    // Add the face DOFs
+                    if (Dim >= 2) {
+                        for (size_t i = 0; i < Order - 1; ++i) {
+                            for (size_t j = 0; j < Order - 1; ++j) {
+                                // TODO CHECK
+                                globalDOFs[8 + 4 * (Order - 1) + i * (Order - 1) + j] =
+                                    globalDOFs[0] + (i + 1) + (j + 1) * nr_m[1];
+                                globalDOFs[8 + 4 * (Order - 1) + (Order - 1) * (Order - 1) + i * (Order - 1)
+                                           + j] = globalDOFs[1] + (i + 1) + (j + 1) * nr_m[1];
+                                globalDOFs[8 + 4 * (Order - 1) + 2 * (Order - 1) * (Order - 1)
+                                           + i * (Order - 1) + j] =
+                                    globalDOFs[2] - (i + 1) + (j + 1) * nr_m[1];
+                                globalDOFs[8 + 4 * (Order - 1) + 3 * (Order - 1) * (Order - 1)
+                                           + i * (Order - 1) + j] =
+                                    globalDOFs[3] - (i + 1) + (j + 1) * nr_m[1];
+                            }
+                        }
+                    }
+                }
+                return globalDOFs;
+            }
+        };
         
+        // matrix evaluation
         template <unsigned numElemDOFs>
         struct EvalFunctor {
+            using MiniType = MiniLagrangeSpace<numElemDOFs>;
+
             const Vector<Tlhs, Dim> DPhiInvT;
             const Tlhs absDetDPhi;
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf; // phi_infty
             ViewType phi_prev; // (phi_(it -1))
-            LagrangeType lagrangeSpace; // lagrangeSpace
+            MiniType lagrangeSpace_m; // lightweight lagrange space
 
             EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf,
-                        Tlhs phi_inf, ViewType& phi_prev, LagrangeType lagrangeSpace)
+                        Tlhs phi_inf, ViewType& phi_prev, MiniType lagrangeSpace)
                 : DPhiInvT(DPhiInvT)
                 , absDetDPhi(absDetDPhi)
                 , e_Te(e_Te), n_inf(n_inf)
                 , phi_inf(phi_inf), phi_prev(phi_prev)
-                , lagrangeSpace(lagrangeSpace)
+                , lagrangeSpace_m(lagrangeSpace)
                 {}
 
             KOKKOS_FUNCTION const auto operator()(
@@ -67,11 +184,11 @@ namespace ippl {
                 const Vector<int, Dim> shift) const {
 
                     const Vector<size_t, numElemDOFs> global_dofs =
-                            lagrangeSpace.getGlobalDOFIndices(elemIdx);
+                            lagrangeSpace_m.getGlobalDOFIndices(elemIdx);
 
                     Tlhs val_w_k = 0;
                     for (size_t s = 0; s < numElemDOFs; ++s) {
-                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[s]);
+                        auto dof_ndindex = lagrangeSpace_m.getMeshVertexNDIndex(global_dofs[s]);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
@@ -88,21 +205,24 @@ namespace ippl {
             }
         };
 
+        // RHS (load vector) evaluation
         template <unsigned numElemDOFs>
         struct RHSFunctor {
+            using MiniType = MiniLagrangeSpace<numElemDOFs>;
+
             const Tlhs absDetDPhi;
             const Tlhs e_Te;   // e / T_e
             const Tlhs n_inf;  // n_infty
             const Tlhs phi_inf;  // phi_infty
             ViewType rho;      // (q_i * n_i - e * n_e)
             ViewType phi_prev; // (phi_(it -1))
-            LagrangeType lagrangeSpace; // lagrangeSpace
+            MiniType lagrangeSpace_m; // lightweight lagrange space
 
             RHSFunctor(Tlhs absDetDPhi, Tlhs e_Te, Tlhs n_inf, Tlhs phi_inf, 
-                        ViewType& rho, ViewType& phi_prev, LagrangeType lagrangeSpace)
+                        ViewType& rho, ViewType& phi_prev, MiniType lagrangeSpace)
                 : absDetDPhi(absDetDPhi), e_Te(e_Te)
                 , n_inf(n_inf), phi_inf(phi_inf), rho(rho)
-                , phi_prev(phi_prev), lagrangeSpace(lagrangeSpace)
+                , phi_prev(phi_prev), lagrangeSpace_m(lagrangeSpace)
                 {}
 
             KOKKOS_FUNCTION const auto operator()(
@@ -110,11 +230,11 @@ namespace ippl {
                 const Vector<int, Dim> shift) const {
 
                     const Vector<size_t, numElemDOFs> global_dofs =
-                            lagrangeSpace.getGlobalDOFIndices(elemIdx);
+                            lagrangeSpace_m.getGlobalDOFIndices(elemIdx);
 
                     Tlhs val_w_k = 0;
                     for (size_t j = 0; j < numElemDOFs; ++j) {
-                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
+                        auto dof_ndindex = lagrangeSpace_m.getMeshVertexNDIndex(global_dofs[j]);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
@@ -123,7 +243,7 @@ namespace ippl {
 
                     Tlhs val = 0;
                     for (size_t j = 0; j < numElemDOFs; ++j) {
-                        auto dof_ndindex = lagrangeSpace.getMeshVertexNDIndex(global_dofs[j]);
+                        auto dof_ndindex = lagrangeSpace_m.getMeshVertexNDIndex(global_dofs[j]);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex[d] = dof_ndindex[d] + shift[d];
                         }
@@ -180,10 +300,13 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
+            MiniLagrangeSpace<this->lagrangeSpace_m.numElementDOFs> 
+                    miniLagrange(this->lagrangeSpace_m.nr_m);
+
             // initialize the RHSFunctor struct to pass to Load vector creation
             RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
                 absDetDPhi, e_Te, n_inf, phi_inf, (this->rhs_mp)->getView(),
-                (this->lhs_mp)->getView(), this->lagrangeSpace_m);
+                (this->lhs_mp)->getView(), miniLagrange);
 
             rhs.fillHalo();
 
@@ -216,10 +339,13 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
+            MiniLagrangeSpace<this->lagrangeSpace_m.numElementDOFs> 
+                    miniLagrange(this->lagrangeSpace_m.nr_m);
+
             // initialize the RHSFunctor struct to pass to Load vector creation
             RHSFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonRHS(
                 absDetDPhi, e_Te, n_inf, phi_inf, (this->rhs_mp)->getView(),
-                (this->lhs_mp)->getView(), this->lagrangeSpace_m);
+                (this->lhs_mp)->getView(), miniLagrange);
 
             rhs.fillHalo();
 
@@ -253,8 +379,11 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
+            MiniLagrangeSpace<this->lagrangeSpace_m.numElementDOFs> 
+                    miniLagrange(this->lagrangeSpace_m.nr_m);
+
             EvalFunctor<this->lagrangeSpace_m.numElementDOFs> modifiedPoissonEval(
-                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, (this->lhs_mp)->getView(), this->lagrangeSpace_m);
+                DPhiInvT, absDetDPhi, e_Te, n_inf, phi_inf, (this->lhs_mp)->getView(), miniLagrange);
 
             // get BC type of our RHS
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
