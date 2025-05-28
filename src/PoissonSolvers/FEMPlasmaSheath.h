@@ -81,25 +81,25 @@ namespace ippl {
 
                 // get element position
                 Vector<size_t, Dim> element_nd_index;
-                Vector<size_t, Dim> cells_per_dim = nr_m - 1;
+                Vector<size_t, Dim> vec = nr_m - 1;
                 size_t remaining_number_of_cells = 1;
-                for (const size_t num_cells : cells_per_dim) {
+                for (const size_t num_cells : vec) {
                     remaining_number_of_cells *= num_cells;
                 }
                 for (int d = Dim - 1; d >= 0; --d) {
-                    remaining_number_of_cells /= cells_per_dim[d];
+                    remaining_number_of_cells /= vec[d];
                     element_nd_index[d] = (elemIdx / remaining_number_of_cells);
                     elemIdx -= (element_nd_index[d]) * remaining_number_of_cells;
                 }
                 // multiply the ndindex to get correct value
-                cells_per_dim = 1;
+                vec = 1;
                 for (size_t d = 1; d < Dim; ++d) {
-                    for (size_t d2 = d; d2 < Dim; ++d) {
-                        cells_per_dim *= nr_m[d - 1];
+                    for (size_t d2 = d; d2 < Dim; ++d2) {
+                        vec[d2] *= nr_m[d - 1];
                     }
                 }
-                cells_per_dim *= Order;
-                size_t smallestGlobalDOF = element_nd_index.dot(cells_per_dim);
+                vec *= Order;
+                size_t smallestGlobalDOF = element_nd_index.dot(vec);
 
                 // assign globalDOFs
                 globalDOFs[0] = smallestGlobalDOF;
