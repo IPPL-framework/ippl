@@ -579,8 +579,6 @@ namespace ippl {
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, basis_q[k], 
                                          grad_b_q[k], elementIndex);
-                            std::cout << "A_" << elementIndex << "(" << i << "," << j;
-                            std::cout << ")=" << A_K[i][j] << std::endl;
                         }
                     }
                 }
