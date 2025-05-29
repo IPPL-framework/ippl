@@ -56,9 +56,10 @@ namespace ippl {
 
             virtual FieldBC getBCType() const { return NO_FACE; }
 
-            virtual void findBCNeighbors(Field& field) = 0;
-            virtual void apply(Field& field)           = 0;
-            virtual void write(std::ostream&) const    = 0;
+            virtual void findBCNeighbors(Field& field)          = 0;
+            virtual void apply(Field& field)                    = 0;
+            virtual void assignGhostToPhysical(Field& field) = 0;
+            virtual void write(std::ostream&) const             = 0;
 
             // Return face on which BC applies
             unsigned int getFace() const { return face_m; }
@@ -103,6 +104,7 @@ namespace ippl {
 
         virtual void findBCNeighbors(Field& /*field*/) {}
         virtual void apply(Field& field);
+        virtual void assignGhostToPhysical(Field& field);
 
         virtual void write(std::ostream& out) const;
 
@@ -122,6 +124,7 @@ namespace ippl {
 
         virtual void findBCNeighbors(Field& /*field*/) {}
         virtual void apply(Field& /*field*/) {}
+        virtual void assignGhostToPhysical(Field& /*field*/) {}
 
         virtual void write(std::ostream& out) const;
     };
@@ -166,6 +169,7 @@ namespace ippl {
 
         virtual void findBCNeighbors(Field& field);
         virtual void apply(Field& field);
+        virtual void assignGhostToPhysical(Field& field);
 
         virtual void write(std::ostream& out) const;
 

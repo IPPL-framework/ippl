@@ -7,22 +7,23 @@
 //
 namespace ippl {
     template <typename T, unsigned Dim>
-    typename Mesh<T, Dim>::vector_type Mesh<T, Dim>::getOrigin() const {
+    KOKKOS_INLINE_FUNCTION typename Mesh<T, Dim>::vector_type Mesh<T, Dim>::getOrigin() const {
         return origin_m;
     }
 
     template <typename T, unsigned Dim>
-    void Mesh<T, Dim>::setOrigin(const vector_type& origin) {
+    KOKKOS_INLINE_FUNCTION void Mesh<T, Dim>::setOrigin(const vector_type& origin) {
         origin_m = origin;
     }
 
     template <typename T, unsigned Dim>
-    const typename Mesh<T, Dim>::vector_type& Mesh<T, Dim>::getGridsize() const {
+    KOKKOS_INLINE_FUNCTION const typename Mesh<T, Dim>::vector_type& Mesh<T, Dim>::getGridsize()
+        const {
         return gridSizes_m;
     }
 
     template <typename T, unsigned Dim>
-    T Mesh<T, Dim>::getGridsize(size_t dim) const {
+    KOKKOS_INLINE_FUNCTION T Mesh<T, Dim>::getGridsize(size_t dim) const {
         return gridSizes_m[dim];
     }
 }  // namespace ippl

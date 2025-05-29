@@ -5,19 +5,21 @@
 
 Different types of Poisson solvers and a biharmonic solver are available in IPPL.
 
-Poisson solvers are numerical method used to solve Poisson's equation, a PDE that appears in many areas of physics. The equation is of the form:
+Poisson solvers are numerical method used to solve Poisson's equation, a PDE that appears in many
+areas of physics. The equation is of the form:
 
 \f[
-    - \nabla^2 \phi = f 
+    - \nabla^2 \phi = f
 \f]
 
-where \f$\nabla^2 \f$ is the Laplace operator, \f$\phi\f$ is the unknown function, and \f$ f \f$ is a given function. 
+where \f$\nabla^2 \f$ is the Laplace operator, \f$\phi\f$ is the unknown function, and \f$ f \f$ is
+a given function.
 
 IPPL provides different variants:
 
-- ippl::FFTPeriodicPoissonSolver: Solves Poisson equation with periodic bcs spectrally 
-- ippl::FFTOpenPoissonSolver: Solves Poisson equation with Open BCs using FFTs (subtypes: Hockney (2nd order
-solver), Vico (spectral solver))
+- ippl::FFTPeriodicPoissonSolver: Solves Poisson equation with periodic bcs spectrally
+- ippl::FFTOpenPoissonSolver: Solves Poisson equation with Open BCs using FFTs (subtypes: Hockney
+(2nd order solver), Vico (spectral solver))
 - ippl::P3MSolver: Solves Poisson equation with periodic bcs, based on FFT
 - ippl::PoissonCG: Solves Poison equation with Conjugate Gradient method
 
@@ -34,18 +36,19 @@ For Poisson equation solved with these different types of solvers see:
 
 @subsection example_poisson_solver Example: Poisson solver
 
-This section shows how to use the solvers. This example uses the FFTOpenPoissonSolver. The concepts used here are the same for the other solvers.
+This section shows how to use the solvers. This example uses the FFTOpenPoissonSolver. The concepts
+used here are the same for the other solvers.
 ___
 
 To start we define the mesh and the field types:
-@code 
+@code
 using Mesh_t      = ippl::UniformCartesian<double, 3>;
 using Centering_t = Mesh_t::DefaultCentering;
 typedef ippl::Field<double, Dim, Mesh_t, Centering_t> field;
 typedef ippl::Field<ippl::Vector<double, Dim>, Dim, Mesh_t, Centering_t> fieldV;
 
 
-// .... Define the mesh and the field types .... // 
+// .... Define the mesh and the field types .... //
 
 
 // define the R (rho) field
@@ -62,9 +65,10 @@ fieldE.initialize(mesh, layout);
 
 Then we need to define the solver type we want to use:
 @code
-using Solver_t = ippl::FFTOpenPoissonSolver<fieldV, field> 
+using Solver_t = ippl::FFTOpenPoissonSolver<fieldV, field>
 @endcode
-We define the parameters to pass to the solver. Consider the not declared variable to be your choice for your own simulation:
+We define the parameters to pass to the solver. Consider the not declared variable to be your choice
+for your own simulation:
 @code
 // Parameter List to pass to solver
 ippl::ParameterList params;
@@ -77,7 +81,8 @@ params.add("use_heffte_defaults", false); // can be true or false
 params.add("use_gpu_aware", true); // can be true or false
 params.add("r2c_direction", 0); // can be 0, 1, 2
 params.add("algorithm", Solver_t::HOCKNEY); // can be Solver_t::HOCKNEY or Solver_t::VICO
-params.add("output_type", Solver_t::SOL_AND_GRAD); // can be Solver_t::SOL_AND_GRAD or Solver_t::SOL_ONLY
+params.add("output_type", Solver_t::SOL_AND_GRAD); // can be Solver_t::SOL_AND_GRAD or
+Solver_t::SOL_ONLY
 @endcode
 
 
