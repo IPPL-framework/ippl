@@ -62,6 +62,7 @@ template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
                                              P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
+template <typename T = double>
 const double pi = Kokkos::numbers::pi_v<T>;
 
 extern const char* TestName;
