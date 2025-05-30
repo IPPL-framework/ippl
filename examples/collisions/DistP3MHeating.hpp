@@ -153,7 +153,8 @@ public:
     }
 
  
-    void particleExchange() {      
+    void particleExchange() {
+        return;
 
         // get communicator size and rank
         int commSize = ippl::Comm->size();
@@ -1154,7 +1155,7 @@ public:
         // Set Particle Container (to P3MParticleContainer)
         this->setParticleContainer(
             std::make_shared<ParticleContainer_t>(
-                this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()
+                this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(), this->rcut_m
             )
         );
 
@@ -1426,6 +1427,7 @@ public:
      * @brief Initializes a neighbor list to be used in PP interaction calculation
     */
     void initializeNeighborList() {
+        return;
         Inform m("Initialize Neighbor List");
 
         // get communicator size and rank
@@ -1707,7 +1709,7 @@ public:
 
         this->par2par();
 
-        particleExchange();
+        // particleExchange();
 
         // haloEnergyUpdate();
 

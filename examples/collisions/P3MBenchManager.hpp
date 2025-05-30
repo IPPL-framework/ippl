@@ -1443,7 +1443,7 @@ public:
 
         this->time_m += this->dt_m;
         this->it_m++;
- }
+    }
 
     void grid2par() override {
         gatherCIC();
@@ -1458,7 +1458,6 @@ public:
         // get particle data
         auto R = this->pcontainer_m->R.getView();
         auto E = this->pcontainer_m->E.getView();
-        auto P = this->pcontainer_m->P.getView();
         constexpr auto& offset = ParticleContainer_t::offset_m;
         auto Q = this->pcontainer_m->Q.getView();
 
@@ -1525,19 +1524,16 @@ public:
                                 const size_type jj = neighborStart + j;
                                 if (((cellIdx == neighborCellIdx) && ii >= jj)) return;
 
-                                double rsq_ij = 0.0;
                                 Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                                for (int d = 0; d < Dim; ++d) {
-                                    rsq_ij += dist_ij[d] * dist_ij[d];
-                                }
+                                const double rsq_ij = dist_ij.dot(dist_ij);
 
                                 double r_ij = Kokkos::sqrt(rsq_ij);
-				                if  (r_ij >= rcut) return;
+                                if (r_ij >= rcut) return;
 
                                 // calculate and apply force
                                 Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-				                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
-                                    Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
+		                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
+                                Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
                             }
                         );
                      }
