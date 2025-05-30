@@ -4,6 +4,8 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION typename EdgeElement<T>::vertex_points_t EdgeElement<T>::getLocalVertices()
         const {
+        // For the ordering of local vertices, see section 3.3.1:
+        // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/phys/bachelor_thesis_buehlluk.pdf
         EdgeElement::vertex_points_t vertices;
         vertices[0] = {0.0};
         vertices[1] = {1.0};

@@ -23,6 +23,7 @@ include(AddIpplTest)
 
 add_subdirectory(BareField)
 add_subdirectory(Communicate)
+add_subdirectory(FEM)
 add_subdirectory(FFT)
 add_subdirectory(Field)
 add_subdirectory(Meshes)

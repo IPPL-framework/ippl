@@ -9,6 +9,7 @@
 
 namespace ippl {
 
+    // this is the basic cube 3D element with 8 vertices
     template <typename T>
     class HexahedralElement : public Element3D<T, 8> {
     public:
