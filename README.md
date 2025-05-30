@@ -238,3 +238,39 @@ chmod +x ./select_gpu
 srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5
 rm -rf ./select_gpu
 ```
+
+# Profiling IPPL MPI calls
+
+You can use the mpiP tool (https://github.com/LLNL/mpiP) to get statistics about the MPI calls in IPPL. 
+
+To use it, download it from [Github](https://github.com/LLNL/mpiP) and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:
+- On Cray systems "MPI_Init not defined": This I fixed by passing the correct Cray wrappers for the compilers to the configure: `./configure CC=cc FC=ftn F77=ftn`
+- If you have an issue with it not recognizing a function symbol in Fortran 77, you need to substitute the line `echo "main(){ FF(); return 0; }" > flink.c` (line 706) in the file `configure.ac` by the following line `echo "extern void FF(); int main() { FF(); return 0; }" > flink.c`
+- During the `make all`, if you run into an issue of some Testing file not recognizing mpi.h, then you need to add the following line `CXX = CC` in the file `Testing/Makefile`.
+
+If the installation was successful, you should have the library `libmpip.so` in the mpiP directory. 
+
+To instument your application with the mpiP library, add the following line to your jobscript (or run it in your command line if you are running locally/on an interactive node):
+`export LD_PRELOAD=$[path to mpip directory]/libmpiP.so`
+To pass any options to mpiP, you can export the variable MPIP with the options you want. For example, if you would like to get a histogram of the data sent by MPI calls (option `-y`), you would need to add the following line to your jobscript:
+`export MPIP="-y"`
+
+If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics:
+`Storing mpiP output in ...`
+
+To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form:
+`python3 mpiP.py [path/to/directory]`
+where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.
+
+Happy profiling!
+
+# Build Instructions
+Here we compile links to recipies for easy build on various HPC systems. 
+
+## MERLIN 7 (PSI)
+[IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
+
+## ALPS (CSCS)
+comming soon
+
+Happy building!
