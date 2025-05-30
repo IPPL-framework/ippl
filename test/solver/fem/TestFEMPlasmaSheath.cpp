@@ -29,7 +29,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
-    //using BConds_t = ippl::BConds<Field_t, Dim>;
+    using BConds_t = ippl::BConds<Field_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
@@ -50,15 +50,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
 
     // Define boundary conditions
-    /*
     BConds_t bcField;
     for (unsigned int i = 0; i < 2 * Dim; ++i) {
         bcField[i] = std::make_shared<ippl::ZeroFace<Field_t>>(i);
     }
     lhs.setFieldBC(bcField);
     rhs.setFieldBC(bcField);
-    */
-    
+
     // set rhs
     rhs = 2.0;
     lhs = 1.0; // phi_init to be given as phi at t_0-1
@@ -103,7 +101,7 @@ int main(int argc, char* argv[]) {
         // which here is confounded with the degrees of freedom,
         // second and third arguments are domain_start and
         // domain_end respectively
-        testFEMSolver<T, 1>(2, 0.0, 1.0);
+        testFEMSolver<T, 1>(4, 0.0, 1.0);
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
