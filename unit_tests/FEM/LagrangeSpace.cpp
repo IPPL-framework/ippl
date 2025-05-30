@@ -708,6 +708,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             }
         } else {
             // FAIL();
+            // TODO make up a 2D and 3D unit test for evalAx
             GTEST_SKIP();
         }
     } else {
@@ -752,7 +753,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             // call evaluateLoadVector
             rhs_field.fillHalo();
             lagrangeSpace.evaluateLoadVector(rhs_field);
-            rhs_field.accumulateHalo();
+            rhs_field.fillHalo();
 
             // set up for comparison
             auto view_ref = ref_field.getView();
@@ -801,11 +802,134 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             double err = ippl::norm(rhs_field);
 
             ASSERT_NEAR(err, 0.0, 1e-6);
+        } else if (dim == 2) {
+            // initialize the RHS field
+            ippl::NDIndex<lagrangeSpace.dim> domain(
+                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
 
+            // specifies decomposition; here all dimensions are parallel
+            std::array<bool, lagrangeSpace.dim> isParallel;
+            isParallel.fill(true);
+
+            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+
+            FieldType rhs_field(mesh, layout, 1);
+            FieldType ref_field(mesh, layout, 1);
+
+            // Define boundary conditions
+            BCType bcField;
+            for (unsigned int i = 0; i < 2 * dim; ++i) {
+                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+            }
+            rhs_field.setFieldBC(bcField);
+
+            rhs_field = 3.5;
+
+            // call evaluateLoadVector
+            rhs_field.fillHalo();
+            lagrangeSpace.evaluateLoadVector(rhs_field);
+            rhs_field.fillHalo();
+
+            // set up for comparison
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            int nghost    = rhs_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first() - nghost;
+                }
+
+                // reference field
+                if ((coords[0] == 0) || (coords[1] == 0) || 
+                    (coords[0] == 4) || (coords[1] == 4)) {
+                    mirror(args...) = 0.0;
+                } else {
+                    mirror(args...) = 0.875;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            rhs_field  = rhs_field - ref_field;
+            double err = ippl::norm(rhs_field);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
+        } else if (dim == 3) {
+            // initialize the RHS field
+            ippl::NDIndex<lagrangeSpace.dim> domain(
+                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
+
+            // specifies decomposition; here all dimensions are parallel
+            std::array<bool, lagrangeSpace.dim> isParallel;
+            isParallel.fill(true);
+
+            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+
+            FieldType rhs_field(mesh, layout, 1);
+            FieldType ref_field(mesh, layout, 1);
+
+            // Define boundary conditions
+            BCType bcField;
+            for (unsigned int i = 0; i < 2 * dim; ++i) {
+                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+            }
+            rhs_field.setFieldBC(bcField);
+
+            rhs_field = 1.25;
+
+            // call evaluateLoadVector
+            rhs_field.fillHalo();
+            lagrangeSpace.evaluateLoadVector(rhs_field);
+            rhs_field.fillHalo();
+
+            // set up for comparison
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            int nghost    = rhs_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first() - nghost;
+                }
+
+                // reference field
+                if ((coords[0] == 0) || (coords[1] == 0) || (coords[2] == 0) ||
+                    (coords[0] == 4) || (coords[1] == 4) || (coords[2] == 4)) {
+                    mirror(args...) = 0.0;
+                } else {
+                    mirror(args...) = 0.15625;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            rhs_field  = rhs_field - ref_field;
+            double err = ippl::norm(rhs_field);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
         } else {
-            GTEST_SKIP();
+            // only dims 1, 2, 3 supported
+            FAIL();
         }
     } else {
+        // TODO add higher order unit tests when available
         GTEST_SKIP();
     }
 }
