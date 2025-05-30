@@ -15,7 +15,7 @@ public:
     ippl::ParticleAttrib<double> q;           // charge
     ippl::ParticleAttrib<T> m;                // mass
     particle_velocity_type P;                 // particle velocity
-    typename Base::particle_position_type E;  // electric field at particle position
+    particle_velocity_type E;  // electric field at particle position
 private:
     PLayout_t<T, Dim> pl_m;
 
