@@ -131,6 +131,8 @@ namespace ippl {
         T min();
         T prod();
 
+        void applyPermutation(const hash_type& permutation);
+
     private:
         view_type dview_m;
         view_type buf_m;

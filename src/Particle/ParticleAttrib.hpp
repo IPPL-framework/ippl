@@ -200,6 +200,25 @@ namespace ippl {
         IpplTimings::stopTimer(gatherTimer);
     }
 
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::applyPermutation(
+        const hash_type& permutation) {
+
+        auto view = this->getView();
+        auto size = *(this->localNum_mp);
+
+        view_type temp("copy", size);
+
+        using policy_type = Kokkos::RangePolicy<execution_space>;
+        Kokkos::parallel_for(
+            "Copy to temp", policy_type(0, size),
+            KOKKOS_LAMBDA(const size_type& i) { temp(permutation(i)) = view(i); });
+
+        Kokkos::fence();
+
+        Kokkos::deep_copy(Kokkos::subview(view, Kokkos::make_pair<size_type, size_type>(0, size)), temp);
+    }
+
     /*
      * Non-class function
      *
