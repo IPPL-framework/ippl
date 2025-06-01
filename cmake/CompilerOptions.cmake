@@ -10,12 +10,11 @@
 #
 # Not responsible for:
 #   - Enabling CUDA/OpenMP/Serial                 → Platforms.cmake
-#   - Selecting platform specific compiler flags  → Platforms.cmake 
+#   - Selecting platform specific compiler flags  → Platforms.cmake
 #
 #
 # This file is only concerned with general correctness and development-time safety.
 # -----------------------------------------------------------------------------
-
 
 # === Basic warnings (apply to all builds) ===
 add_compile_options(
@@ -25,8 +24,8 @@ add_compile_options(
 )
 
 # === Use modified variant implementation ===
-if (USE_ALTERNATIVE_VARIANT)
-    add_definitions (-DUSE_ALTERNATIVE_VARIANT)
+if (IPPL_USE_ALTERNATIVE_VARIANT)
+    add_definitions (-DIPPL_USE_ALTERNATIVE_VARIANT)
 endif()
 
 # === Code coverage options ===
@@ -57,9 +56,14 @@ endif()
 # === Debug-specific sanitizers ===
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND IPPL_ENABLE_SANITIZER)
     message(STATUS "✅ Enabling AddressSanitizer and UBSan for Debug build")
-    add_compile_options(-fsanitize=address,undefined)
-    add_link_options(-fsanitize=address,undefined)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+endif()
+
+# === Position Independent Code (PIC) for shared libraries ===
+if(BUILD_SHARED_LIBS)
+    message(STATUS "✅ Enabling Position Independent Code (PIC) for shared libraries")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
 message(STATUS "✅ Compiler options configured")
-

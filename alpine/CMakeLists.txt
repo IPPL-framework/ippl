@@ -8,7 +8,7 @@ add_subdirectory(ExamplesWithoutPicManager)
 
 set(COMMON_LIBS
     ippl
-    ${MPI_CXX_LIBRARIES}
+    MPI::MPI_CXX
 )
 
 set(COMMON_FLAGS
