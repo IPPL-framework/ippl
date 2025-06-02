@@ -315,9 +315,9 @@ public:
     IpplTimings::stopTimer(fourDenTimer);
 
     // Check whether the generated density field is Hermitian before proceeding
-    bool isDensityHermitian = (ippl::Comm->size() > 1) ? isHermitianMultiRank() : isHermitian();
+    // bool isDensityHermitian = (ippl::Comm->size() > 1) ? isHermitianMultiRank() : isHermitian();
 
-    if (isDensityHermitian) {
+     if (isHermitianMultiRank()) {
         msg << "Fourier density field is Hermitian." << endl;
     } else {
         std::cerr << "Fourier density field is NOT Hermitian!" << std::endl;
@@ -427,17 +427,7 @@ public:
     bool localHermitian = true;
 
     // construct a map of the global field layout and which indices are on which rank
-    const auto& domains = layout.getHostLocalDomains();
-    std::map<int, ippl::NDIndex<Dim>> global_domains;
-    for (size_t rank = 0; rank < domains.size(); ++rank) {
-        const auto& d = domains[rank];
-        ippl::NDIndex<Dim> domain(
-          ippl::Index(d[0].first(), d[0].last()),
-          ippl::Index(d[1].first(), d[1].last()),
-          ippl::Index(d[2].first(), d[2].last())
-        );
-        global_domains[rank] = domain;
-    }
+    const auto& global_domains = layout.getHostLocalDomains();
 
     // Loop over all local indices and store negative pairs found on other ranks
     for (int i = lDom[0].first(); i <= lDom[0].last(); ++i) {
@@ -465,7 +455,8 @@ public:
 
                	// which rank owns the negative indices
                 int neg_k_owner = -1;
-                for (const auto& [rank, domain] : global_domains) {
+                for (int rank = 0; rank < ippl::Comm->size(); rank++){
+                    auto domain = global_domains[rank];
                     if ((domain[0].first() <= global_neg_k[0] && global_neg_k[0] <= domain[0].last() &&
                         domain[1].first() <= global_neg_k[1] && global_neg_k[1] <= domain[1].last() &&
                         domain[2].first() <= global_neg_k[2] && global_neg_k[2] <= domain[2].last())) {
