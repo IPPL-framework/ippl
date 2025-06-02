@@ -12,6 +12,7 @@
 #include "Random/Distribution.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
+#include "input.h"
 
 using view_typeR = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 using view_typeP = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
@@ -24,6 +25,7 @@ public:
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    using generator           = typename Kokkos::Random_XorShift64_Pool<>::generator_type;
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_,
@@ -76,6 +78,37 @@ public:
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
           << " dt=" << this->dt_m << endl;
+    }
+
+    Vector<T, 3> generate_ions(const double v_max, const double f_max,
+                               const double K, generator rand_gen) {
+        // rejection sampling for v^2 * exp(-v^2/2)
+        Vector<T, 3> v = {0.0, 0.0, 0.0};
+        while ((v[0] <= 0) || (v[0] > v_max)) {
+            double y = f_max * 1.1;
+            double f_vx = 0.0;
+            while (y > f_vx) {
+                v[0] = v_max * rand_gen.drand(0.0, 1.0);
+                y = f_max * rand_gen.drand(0.0, 1.0);
+                f_vx = K * v[0] * v[0] * Kokkos::exp(-(v[0] * v[0])/2.0);
+            }
+        }
+        for (unsigned d = 1; d < 3; ++d) {
+            v[d] = K * Kokkos::sqrt(2 * pi) * (rand_gen.normal(0.0, 1.0));
+        }
+        return v;
+    }
+
+    Vector<T, 3> generate_electrons(const double mu[3], const double std[3],
+                 const double prefactor, const double v_max, generator rand_gen) {
+        Vector<T, 3> v = {0.0, 0.0, 0.0};
+        while ((v[0] <= 0) || (v[0] > v_max)) {
+            v[0] = prefactor * (mu[0] + std[0] * rand_gen.normal(0.0, 1.0));
+        }
+        for (unsigned d = 1; d < 3; ++d) {
+            v[d] = prefactor * (mu[d] + std[d] * rand_gen.normal(0.0, 1.0));
+        }
+        return v;
     }
 
     void pre_run() override {
@@ -138,8 +171,6 @@ public:
 
         IpplTimings::startTimer(particleCreation);
 
-        const double pi = Kokkos::numbers::pi_v<T>;
-
         // divide particles equally among ranks
         size_type totalP = this->totalP_m;
         size_type nlocal = totalP / ippl::Comm->size();
@@ -150,36 +181,9 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        // TODO: put correct physical values
-        // there are two species: electrons and ions
-        double q_i = 1.0; // ion charge
-        double q_e = -1.0; // electron charge
-        T m_i = 1836; // ion mass
-        T m_e = 1; // electron mass
-        
-        // electron distribution: Maxwellian (normal distribution)
-        Vector_t<double, 3> v0 = {0.0, 0.0, 0.0}; // avg velocity
-        double T_e = 1; // temperature
-        double n_e = 1; // n_e
-
-        double prefactor_e = n_e * m_e / (2 * pi * T_e);
-        double stdeviation_e = Kokkos::sqrt(T_e/m_e); 
-
+        // mean and standard deviation for electron distribution function
         double muE[3] = {v0[0], v0[1], v0[2]};
         double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
-
-        // ion distribution: (normal distribution)
-        double parallel_v = 1; // v_parallel
-        double v_thi = 1; // thermal velocity of ions
-        double K = 1; // constant K
-
-        double prefactor_i = K * Kokkos::sqrt(2 * pi) * parallel_v * parallel_v / v_thi;
-        double stdeviation_i = v_thi; 
-
-        double muI[3] = {0.0, 0.0, 0.0};
-        double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
-
-        // assign the particle attributes
 
         // particles are initially sampled at x=0 (bulk plasma)
         this->pcontainer_m->R = 0;
@@ -194,6 +198,7 @@ public:
         int seed = 42;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
+        // TODO check what limits of velocity to put on vy and vz
         // half the particles are ions, half are electrons
         // we do this approximate division by checking whether even or odd ID
         Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
@@ -206,17 +211,11 @@ public:
                 auto rand_gen = rand_pool64.get_state();
 
                 // accept only those which have velocity_x > 0 (moving towards wall)
-                double v_x = 0.0;
-                while (v_x <= 0.0) {
-                    v_x = (!odd) * prefactor_e * (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0))
-                          + odd * prefactor_i * (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                if (odd) {
+                    Pview(i) = generate_ions(v_max, f_max, K, rand_gen);
+                } else {
+                    Pview(i) = generate_electrons(muE, sdE, prefactor_e, v_max, rand_gen);
                 }
-                Pview(i)[0] = v_x;
-                for (unsigned d = 1; d < 3; ++d) {
-                    Pview(i)[d] = (!odd) * prefactor_e * (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0))
-                                  + odd * prefactor_i * (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
-                }
-
                 rand_pool64.free_state(rand_gen);
             });
         Kokkos::fence();
@@ -257,31 +256,8 @@ public:
         // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
         
-        // TODO: put correct physical values
-        const double pi = Kokkos::numbers::pi_v<T>;
-        T m_e = 1; // electron mass
-        
-        // electron distribution: Maxwellian (normal distribution)
-        Vector_t<double, 3> v0 = {0.0, 0.0, 0.0}; // avg velocity
-        double T_e = 1; // temperature
-        double n_e = 1; // n_e
-
-        double prefactor_e = n_e * m_e / (2 * pi * T_e);
-        double stdeviation_e = Kokkos::sqrt(T_e/m_e); 
-
         double muE[3] = {v0[0], v0[1], v0[2]};
         double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
-
-        // ion distribution: (normal distribution)
-        double parallel_v = 1; // v_parallel
-        double v_thi = 1; // thermal velocity of ions
-        double K = 1; // constant K
-
-        double prefactor_i = K * Kokkos::sqrt(2 * pi) * parallel_v * parallel_v / v_thi;
-        double stdeviation_i = v_thi; 
-
-        double muI[3] = {0.0, 0.0, 0.0};
-        double sdI[3] = {stdeviation_i, stdeviation_i, stdeviation_i};
 
         auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;
@@ -306,19 +282,11 @@ public:
                     Rview(i) = 0;
                     bool odd = (i % 2);
                     auto rand_gen = rand_pool64.get_state();
-
-                    // accept only those which have velocity_x > 0 (moving towards wall)
-                    double v_x = 0.0;
-                    while (v_x <= 0.0) {
-                        v_x = (!odd) * prefactor_e * (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0))
-                              + odd * prefactor_i * (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                    if (odd) {
+                        Pview(i) = generate_ions(v_max, f_max, K, rand_gen);
+                    } else {
+                        Pview(i) = generate_electrons(muE, sdE, prefactor_e, v_max, rand_gen);
                     }
-                    Pview(i)[0] = v_x;
-                    for (unsigned d = 1; d < 3; ++d) {
-                        Pview(i)[d] = (!odd) * prefactor_e * (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0))
-                                      + odd * prefactor_i * (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
-                    }
-
                     rand_pool64.free_state(rand_gen);
                 }
             });
