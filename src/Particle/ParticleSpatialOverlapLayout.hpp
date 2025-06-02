@@ -56,10 +56,10 @@ namespace ippl {
         size_type localIdx = 0, ghostIdx = numLocalCells_m;
         for (size_type i = 0; i < totalCells_m; ++i) {
             if (isLocalCellIndex(i, numCells_m)) {
-                hostCellPermutation(localIdx) = i;
+                hostCellPermutation(i) = localIdx;
                 ++localIdx;
             } else {
-                hostCellPermutation(ghostIdx) = i;
+                hostCellPermutation(i) = ghostIdx;
                 ++ghostIdx;
             }
         }
