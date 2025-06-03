@@ -30,8 +30,6 @@ public:
     struct ParticleGen {
         Vector<T,3> muI;
         Vector<T,3> sdI;
-        Vector<T,3> muE;
-        Vector<T,3> sdE;
         double v_max;
         RNG rand_pool64;
 
@@ -49,25 +47,11 @@ public:
             double unif = 0.0;
             while ((v[0] <= 0) || (v[0] > v_max) || (unif >= accept_prob)) {
                 v[0] = (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
-                accept_prob = v[0] * v[0] / (v_max * v_max);
+                accept_prob = K * v[0] * v[0] / (v_max * v_max);
                 unif = rand_gen.drand(0.0, 1.0);
             }
             for (unsigned d = 1; d < 3; ++d) {
                 v[d] = (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
-            }
-            rand_pool64.free_state(rand_gen);
-            return v;
-        }
-
-        KOKKOS_FUNCTION Vector<T, 3> generate_electron() const {
-            RNG::generator_type rand_gen = rand_pool64.get_state();
-
-            Vector<T, 3> v = {0.0, 0.0, 0.0};
-            while ((v[0] <= 0) || (v[0] > v_max)) {
-                v[0] = (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0));
-            }
-            for (unsigned d = 1; d < 3; ++d) {
-                v[d] = (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0));
             }
             rand_pool64.free_state(rand_gen);
             return v;
@@ -211,44 +195,30 @@ public:
         // particles are initially sampled at x=0 (bulk plasma)
         this->pcontainer_m->R = 0;
 
-        if (params::kinetic_electrons) {
-            // charge and mass are species dependent
-            view_typeQ Qview = this->pcontainer_m->q.getView();
-            view_typeQ Mview = this->pcontainer_m->m.getView();
+        // charge and mass are species dependent
+        view_typeQ Qview = this->pcontainer_m->q.getView();
+        view_typeQ Mview = this->pcontainer_m->m.getView();
 
-            // velocity is sampled from the species' respective distribution
-            view_typeP Pview = this->pcontainer_m->P.getView();
+        // velocity is sampled from the species' respective distribution
+        view_typeP Pview = this->pcontainer_m->P.getView();
 
-            // TODO check what limits of velocity to put on vy and vz
-            // half the particles are ions, half are electrons
-            // we do this approximate division by checking whether even or odd ID
-            Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
-                KOKKOS_LAMBDA(const int i) {
-                    bool odd = (i % 2);
-                    
-                    Qview(i) = ((!odd) * q_e) + (odd * q_i);
-                    Mview(i) = ((!odd) * m_e) + (odd * m_i);
+        // TODO check what limits of velocity to put on vy and vz
+        // half the particles are ions, half are electrons
+        // we do this approximate division by checking whether even or odd ID
+        Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
+            KOKKOS_LAMBDA(const int i) {
+                bool odd = (i % 2);
+                
+                Qview(i) = ((!odd) * q_e) + (odd * q_i);
+                Mview(i) = ((!odd) * m_e) + (odd * m_i);
 
-                    // accept only those which have velocity_x > 0 (moving towards wall)
-                    if (odd) {
-                        Pview(i) = pgen.generate_ion();
-                    } else {
-                        Pview(i) = pgen.generate_electron();
-                    }
-                });
-        } else {
-            // single species: ions 
-            // adiabatic electrons are taken care of in the fieldsolver
-            this->pcontainer_m->q = q_i;
-            this->pcontainer_m->m = m_i;
-
-            // velocity is sampled from the ion distribution
-            view_typeP Pview = this->pcontainer_m->P.getView();
-            Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
-                KOKKOS_LAMBDA(const int i) {
+                // accept only those which have velocity_x > 0 (moving towards wall)
+                if (odd) {
                     Pview(i) = pgen.generate_ion();
-                });
-        }
+                } else {
+                    Pview(i) = pgen.generate_electron();
+                }
+            });
         Kokkos::fence();
         ippl::Comm->barrier();
 
@@ -318,14 +288,10 @@ public:
                 if (outside) {
                     Rview(i) = 0;
                     bool odd = (i % 2);
-                    if (params::kinetic_electrons) {
-                        if (odd) {
-                            Pview(i) = pgen.generate_ion();
-                        } else {
-                            Pview(i) = pgen.generate_electron();
-                        }
-                    } else {
+                    if (odd) {
                         Pview(i) = pgen.generate_ion();
+                    } else {
+                        Pview(i) = pgen.generate_electron();
                     }
                 }
             });
