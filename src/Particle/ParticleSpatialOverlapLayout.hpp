@@ -681,11 +681,12 @@ namespace ippl {
 
         // Move the data around (maybe there is a better solution)
 
-        // auto filter = [&]<typename MemorySpace>() {
-        //     return attributes_m.template get<MemorySpace>().size() > 0;
-        // };
-        // deleteIndex_m.copyToOtherSpaces<memory_space>(filter);
-        // keepIndex_m.copyToOtherSpaces<memory_space>(filter);
+        // TODO consider this
+        //  auto filter = [&]<typename MemorySpace>() {
+        //      return attributes_m.template get<MemorySpace>().size() > 0;
+        //  };
+        //  deleteIndex_m.copyToOtherSpaces<memory_space>(filter);
+        //  keepIndex_m.copyToOtherSpaces<memory_space>(filter);
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_t num_attributes_in_space = 0;
             pc.template forAllAttributes<MemorySpace>(
@@ -711,18 +712,18 @@ namespace ippl {
                                 KOKKOS_LAMBDA(const size_type &i, size_type &sum/*, size_type &max*/) {
                                     auto n = cellParticleCount(i);
                                     // if (i < numLocalCells) [[likely]] {
-                                        sum += n;
+                                    sum += n;
                                     // }
                                     // max = std::max<size_type>(n, max);
                                 },
                                 Kokkos::Sum<size_type>(numLocalParticles)
                                 // , Kokkos::Max<size_type>(numMaxParticleInCell)
-                                );
+        );
 
         cellIndex_m = cellIndex;
 
         Kokkos::fence();
-        pc.setLocalNum(numLocalParticles);
+            pc.setLocalNum(numLocalParticles);
 
         // this is not needed as they views on the same data
         // cellStartingIdx_m = cellStartingIdx;
@@ -776,7 +777,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_FUNCTION void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
-        const vector_type &pos, NeighborData &neighborData, neighbor_list_type &particleNeighborList) {
+        const vector_type &pos, const /*TODO think about the hash again*/ NeighborData &neighborData,
+        neighbor_list_type &particleNeighborList) {
         // TODO apply cell permutation every where where cell index is computed, maybe just add it to the functions computing it directly?
         // Get the cell of the particle
 
@@ -784,7 +786,7 @@ namespace ippl {
         auto locCellIndex = getCellIndex(is, pos, neighborData.region, neighborData.cellStrides,
                                          neighborData.cellWidth);
         auto locCellIndexPermuted = neighborData.cellPermutation(locCellIndex);
-        if (locCellIndexPermuted == neighborData.hash) { return; } // caller already has the correct neighbor list
+        // if (locCellIndexPermuted == neighborData.hash) { return; } // TODO this doesnt work yet as a thread cannot have local data yet. caller already has the correct neighbor list
 
         // TODO maye make get neighbor take a position vector instead? this would remove the need for cellIndex view (O(NumParticles))
 
@@ -838,7 +840,7 @@ namespace ippl {
 
 
         particleNeighborList = neighborList;
-        neighborData.hash = locCellIndex;
+        // neighborData.hash = locCellIndex;
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>

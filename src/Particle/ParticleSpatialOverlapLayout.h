@@ -175,7 +175,7 @@ namespace ippl {
         KOKKOS_FUNCTION static void getNeighbors(size_type i, NeighborData &neighborData,
                                                  neighbor_list_type &neighbor_list);
 
-        KOKKOS_FUNCTION static void getNeighbors(const vector_type &pos, NeighborData &neighborData,
+        KOKKOS_FUNCTION static void getNeighbors(const vector_type &pos, const NeighborData &neighborData,
                                                  neighbor_list_type &neighbor_list);
     };
 } // namespace ippl
