@@ -5,7 +5,7 @@ namespace ippl {
     void TruncatedGreenInteraction<ParticleContainer, ScalarAttribute, VectorAttribute>::solve() {
         // get particle data
         auto R = *R_m;
-        auto E = *E_m;
+        auto F = *F_m;
         auto QM = *QM_m;
 
         // get simulation specific data
@@ -47,7 +47,7 @@ namespace ippl {
                                                                           -alpha * alpha * rsq_ij) /
                                                                       (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (
                                                                           1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-                                                          Kokkos::atomic_sub(&E(particleIndex), F_ij * QM(neighborIdx));
+                                                          Kokkos::atomic_sub(&F(particleIndex), F_ij * QM(neighborIdx));
                                                           // Kokkos::atomic_add(&E(neighborList), F_ij * Q(particleIndex));
                                                       }
                                  );
