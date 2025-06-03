@@ -25,7 +25,55 @@ public:
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
-    using generator           = typename Kokkos::Random_XorShift64_Pool<>::generator_type;
+    using RNG                 = typename Kokkos::Random_XorShift64_Pool<>;
+
+    struct ParticleGen {
+        Vector<T,3> muI;
+        Vector<T,3> sdI;
+        Vector<T,3> muE;
+        Vector<T,3> sdE;
+        double v_max;
+        RNG rand_pool64;
+
+
+        ParticleGen(Vector<T,3>& muI_, Vector<T,3>& sdI_, Vector<T,3>& muE_,
+                    Vector<T,3>& sdE_, const double v_max_) 
+        : muI(muI_), sdI(sdI_), muE(muE_), sdE(sdE_), v_max(v_max_), 
+          rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()))
+        {}
+
+        KOKKOS_FUNCTION Vector<T, 3> generate_ion() const {
+            RNG::generator_type rand_gen = rand_pool64.get_state();
+
+            Vector<T, 3> v = {0.0, 0.0, 0.0};
+            double accept_prob = 0.0;
+            double unif = 0.0;
+            while ((v[0] <= 0) || (v[0] > v_max) || (unif >= accept_prob)) {
+                v[0] = (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                accept_prob = K * v[0] * v[0] / (v_max * v_max);
+                unif = rand_gen.drand(0.0, 1.0);
+            }
+            for (unsigned d = 1; d < 3; ++d) {
+                v[d] = (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
+            }
+            rand_pool64.free_state(rand_gen);
+            return v;
+        }
+
+        KOKKOS_FUNCTION Vector<T, 3> generate_electron() const {
+            RNG::generator_type rand_gen = rand_pool64.get_state();
+
+            Vector<T, 3> v = {0.0, 0.0, 0.0};
+            while ((v[0] <= 0) || (v[0] > v_max)) {
+                v[0] = (n_e * m_e / (2 * pi * T_e)) *(muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0));
+            }
+            for (unsigned d = 1; d < 3; ++d) {
+                v[d] = (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0));
+            }
+            rand_pool64.free_state(rand_gen);
+            return v;
+        }
+    };
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_,
@@ -67,7 +115,7 @@ public:
         this->phiWall_m = phiWall; // Dirichlet BC for phi at wall
         this->Bext_m = Bext; // External magnetic field
 
-        this->dt_m = std::min(.05, 0.5 * *std::min_element(this->hr_m.begin(), this->hr_m.end()));
+        this->dt_m   = (this->hr_m[0]) / (20 * v_max);
         this->it_m   = 0;
         this->time_m = 0.0;
 
@@ -78,37 +126,6 @@ public:
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
           << " dt=" << this->dt_m << endl;
-    }
-
-    Vector<T, 3> generate_ions(const double v_max, const double f_max,
-                               const double K, generator rand_gen) {
-        // rejection sampling for v^2 * exp(-v^2/2)
-        Vector<T, 3> v = {0.0, 0.0, 0.0};
-        while ((v[0] <= 0) || (v[0] > v_max)) {
-            double y = f_max * 1.1;
-            double f_vx = 0.0;
-            while (y > f_vx) {
-                v[0] = v_max * rand_gen.drand(0.0, 1.0);
-                y = f_max * rand_gen.drand(0.0, 1.0);
-                f_vx = K * v[0] * v[0] * Kokkos::exp(-(v[0] * v[0])/2.0);
-            }
-        }
-        for (unsigned d = 1; d < 3; ++d) {
-            v[d] = K * Kokkos::sqrt(2 * pi) * (rand_gen.normal(0.0, 1.0));
-        }
-        return v;
-    }
-
-    Vector<T, 3> generate_electrons(const double mu[3], const double std[3],
-                 const double prefactor, const double v_max, generator rand_gen) {
-        Vector<T, 3> v = {0.0, 0.0, 0.0};
-        while ((v[0] <= 0) || (v[0] > v_max)) {
-            v[0] = prefactor * (mu[0] + std[0] * rand_gen.normal(0.0, 1.0));
-        }
-        for (unsigned d = 1; d < 3; ++d) {
-            v[d] = prefactor * (mu[d] + std[d] * rand_gen.normal(0.0, 1.0));
-        }
-        return v;
     }
 
     void pre_run() override {
@@ -181,9 +198,16 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
+        // mean and standard deviaiton for ion distribution function
+        Vector<T,3> muI = v0;
+        Vector<T,3> sdI = {stdeviation_i, stdeviation_i, stdeviation_i};
+
         // mean and standard deviation for electron distribution function
-        double muE[3] = {v0[0], v0[1], v0[2]};
-        double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
+        Vector<T,3> muE = v0;
+        Vector<T,3> sdE = {stdeviation_e, stdeviation_e, stdeviation_e};
+
+        // particle velocity sampler
+        ParticleGen pgen(muI, sdI, muE, sdE, v_max);
 
         // particles are initially sampled at x=0 (bulk plasma)
         this->pcontainer_m->R = 0;
@@ -195,9 +219,6 @@ public:
         // velocity is sampled from the species' respective distribution
         view_typeP Pview = this->pcontainer_m->P.getView();
 
-        int seed = 42;
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-
         // TODO check what limits of velocity to put on vy and vz
         // half the particles are ions, half are electrons
         // we do this approximate division by checking whether even or odd ID
@@ -208,15 +229,12 @@ public:
                 Qview(i) = ((!odd) * q_e) + (odd * q_i);
                 Mview(i) = ((!odd) * m_e) + (odd * m_i);
 
-                auto rand_gen = rand_pool64.get_state();
-
                 // accept only those which have velocity_x > 0 (moving towards wall)
                 if (odd) {
-                    Pview(i) = generate_ions(v_max, f_max, K, rand_gen);
+                    Pview(i) = pgen.generate_ion();
                 } else {
-                    Pview(i) = generate_electrons(muE, sdE, prefactor_e, v_max, rand_gen);
+                    Pview(i) = pgen.generate_electron();
                 }
-                rand_pool64.free_state(rand_gen);
             });
         Kokkos::fence();
         ippl::Comm->barrier();
@@ -256,8 +274,16 @@ public:
         // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
         
-        double muE[3] = {v0[0], v0[1], v0[2]};
-        double sdE[3] = {stdeviation_e, stdeviation_e, stdeviation_e};
+        // mean and standard deviaiton for ion distribution function
+        Vector<T,3> muI = {v0[0], v0[1], v0[2]};
+        Vector<T,3> sdI = {stdeviation_i, stdeviation_i, stdeviation_i};
+
+        // mean and standard deviation for electron distribution function
+        Vector<T,3> muE = {v0[0], v0[1], v0[2]};
+        Vector<T,3> sdE = {stdeviation_e, stdeviation_e, stdeviation_e};
+
+        // particle velocity sampler
+        ParticleGen pgen(muI, sdI, muE, sdE, v_max);
 
         auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;
@@ -271,23 +297,19 @@ public:
         Kokkos::parallel_for("Remove particle", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
                 bool outside = false;
-
                 for (unsigned int d = 0; d < Dim; ++d) {
                     if ((Rview(i)[d] > rmax[d]) || (Rview(i)[d] < rmin[d])) {
                         outside = true;
                     }
                 }
-
                 if (outside) {
                     Rview(i) = 0;
                     bool odd = (i % 2);
-                    auto rand_gen = rand_pool64.get_state();
                     if (odd) {
-                        Pview(i) = generate_ions(v_max, f_max, K, rand_gen);
+                        Pview(i) = pgen.generate_ion();
                     } else {
-                        Pview(i) = generate_electrons(muE, sdE, prefactor_e, v_max, rand_gen);
+                        Pview(i) = pgen.generate_electron();
                     }
-                    rand_pool64.free_state(rand_gen);
                 }
             });
         Kokkos::fence();
