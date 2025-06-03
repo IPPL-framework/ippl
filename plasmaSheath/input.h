@@ -32,7 +32,7 @@ namespace params {
 	constexpr double D_D = 1.0;  // Debye length (setting this to 1.0 is equivalent to setting L_ref = λ_D)
 	constexpr double D_C = 10.0;  // ion thermal gyroradius ρ_th_i, in units of L_ref. Set this to ∞ (Kokkos::numbers::infinity_v<double>) to effectively set B = 0
 
-	constexpr alpha = 10*pi/180.0;  // magnetic field incidence angle
+	constexpr double alpha = 10*pi/180.0;  // magnetic field incidence angle
 
 	constexpr double phi0 = -2.37;  // wall bias. note that phi(x=MPE) = 0
 
