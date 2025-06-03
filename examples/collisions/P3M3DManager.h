@@ -9,6 +9,8 @@
 #include "Manager/FieldSolverBase.h"
 #include "PoissonSolvers/P3MSolver.h"
 #include "P3MParticleContainer.hpp"
+#include "Interaction/TruncatedGreenInteraction.h"
+
 
 /**
  * @class P3M3DManager
@@ -23,14 +25,14 @@
  * @tparam fc   The field container type
  */
 template <typename T, unsigned Dim, class fc>
-    requires (Dim == 3) // Currently only dim == 3 is supported
 class P3M3DManager : public ippl::BaseManager {
     // use only the P3M Particle Container
     using pc = P3MParticleContainer<T, Dim>;
 
 public:
+    using PPInteraction = ippl::TruncatedGreenInteraction<pc, decltype(pc::E), decltype(pc::Q)>; //TODO get better method for this type?
     P3M3DManager()
-        : ippl::BaseManager() {}
+        : BaseManager() {}
 
     virtual ~P3M3DManager() = default;
 
@@ -47,13 +49,6 @@ public:
     * In a derived class, the user must override this method to perform grid-to-particle operations.
     */
     virtual void grid2par() = 0;
-
-    /**
-    * @brief Particle-to-particle operation.
-    *
-    * In a derived class, the user must override this method to perform particle-to-particle operations.
-    */
-    virtual void par2par() = 0;
 
     /**
      * @brief Dump Simulation Data
@@ -87,12 +82,22 @@ public:
         fsolver_m = fsolver;
     }
 
+    std::shared_ptr<PPInteraction> getInteractionSolver() {
+        return isolver_m;
+    }
+
+    void setInteractionSolver(std::shared_ptr<PPInteraction > isolver) {
+        isolver_m = isolver;
+    }
+
     protected:
         std::shared_ptr<fc> fcontainer_m;
 
         std::shared_ptr<pc> pcontainer_m;
 
         std::shared_ptr<P3MSolver_t<T, Dim> > fsolver_m;
+
+        std::shared_ptr<PPInteraction> isolver_m;
 };
 
 #endif
