@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 constexpr double pi = 3.14159265358979323846;
 
@@ -30,7 +31,8 @@ namespace params {
 	constexpr double nu = 1.0;  // perp-parallel temperature anisotropy, ν = v_th_perp_i / v_th_par_i
 
 	constexpr double D_D = 1.0;  // Debye length (setting this to 1.0 is equivalent to setting L_ref = λ_D)
-	constexpr double D_C = 10.0;  // ion thermal gyroradius ρ_th_i, in units of L_ref. Set this to ∞ (Kokkos::numbers::infinity_v<double>) to effectively set B = 0
+	constexpr double D_C = 10.0;  // ion thermal gyroradius ρ_th_i, in units of L_ref. To have B = 0, set D_C = ∞
+	// constexpr double D_C = std::numeric_limits<double>::infinity();
 
 	constexpr double alpha = 10*pi/180.0;  // magnetic field incidence angle
 
@@ -43,13 +45,12 @@ namespace params {
 	//                      ρ_th_i = D_C   and ρ_th_e = D_C √~m_e / √τ
 	//                      Ω_ci = 1/D_C   and Ω_ce = 1/(Z ~m_e D_C)
 	constexpr double v_th_i = 1.0;  // ion thermal velocity, by definition of normalization
+	static_assert(v_th_i == 1.0);
 	constexpr double v_th_e = std::sqrt(tau / m_e);
-	constexpr double rho_th_i = 1.0;
+	constexpr double rho_th_i = D_C;
 	constexpr double rho_th_e = D_C * std::sqrt(m_e / tau);
 	constexpr double Omega_ci = 1.0/D_C;
 	constexpr double Omega_ce = 1.0/(Z_i * m_e * D_C);
-	static_assert(v_th_i == 1.0);
-	static_assert(rho_th_i == 1.0);
 
 	// -- SIMULATION PARAMETERS --
 	constexpr double L = 100.0;  // length of the simulation domain, in units of L_ref
