@@ -14,7 +14,7 @@
 
 // P3M Headers
 #include "P3M3DManager.h"
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "P3MParticleContainer.hpp"
 
 // Distribution functions
@@ -24,7 +24,7 @@
 
 // Required Datatypes
 template <typename T, unsigned Dim>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+using P3MSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T, unsigned Dim>
 using Vector_t = ippl::Vector<T, Dim>;
@@ -185,7 +185,7 @@ public:
         // Set Particle Container (to P3MParticleContainer)
         this->setParticleContainer(
             std::make_shared<ParticleContainer_t>(
-                this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()
+                this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(), this->rcut_m
             )
         );
 
@@ -220,8 +220,6 @@ public:
 
         computeRMSBeamSize();
 
-        // intialize Neighbor List
-        initializeNeighborList();
 
         this->fcontainer_m->getRho() = 0.0;
 
@@ -233,7 +231,7 @@ public:
 
 	    // this->pcontainer_m->E = -1.0 * this->pcontainer_m->E;
 
-	    this->par2par();
+	    this->isolver_m->solve();
 
 	    this->focusingF_m *= this->computeAvgSpaceChargeForces();
 	    
@@ -361,278 +359,6 @@ public:
         return rms_x;
     }
 
-    /**
-     * @brief Initializes a neighbor list to be used in PP interaction calculation
-    */
-    void initializeNeighborList() {
-        Inform m("Initialize Neighbor List");
-
-        // get communicator size and rank
-        int commSize = ippl::Comm->size();
-        int rank = ippl::Comm->rank();
-
-        // get other relevant information
-        size_type nLoc = this->pcontainer_m->getLocalNum();
-        view_type R = this->pcontainer_m->R.getView();
-        view_type P = this->pcontainer_m->P.getView();
-        view_type E = this->pcontainer_m->E.getView();
-        
-	    // get local domain extend
-        auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
-        // std::cout << hLocalRegions(rank) << std::endl;
-        
-        // calculate chaining meshwidth and number of mesh cells
-        double hCM[3], l_extend[3], r_extend[3];
-        unsigned nCells[3], totalCells = 1;
-        for (int d = 0; d < Dim; ++d){
-            l_extend[d] = hLocalRegions(rank)[d].min();
-            r_extend[d] = hLocalRegions(rank)[d].max();
-            double length = hLocalRegions(rank)[d].length();
-
-            nCells[d] = floor(length / this->rcut_m);
-            this->nCells_m[d] = nCells[d];
-            totalCells *= nCells[d];
-            hCM[d] = length / nCells[d];
-        }
-	
-        // allocate required (temporary) Kokkos views
-        Kokkos::View<unsigned *, Device> cellIndex("cellIndex", nLoc);
-        Kokkos::View<unsigned *, Device> cellParticleCount("cellParticleCount", totalCells);
-        Kokkos::View<unsigned *, Device> cellStartingIdx("cellStartingIdx", totalCells+1);
-        Kokkos::View<unsigned *, Device> cellCurrentIdx("cellCurrentIdx", totalCells+1);
-        Kokkos::View<ippl::Vector<double, 3> *, Device> tempP("tempMom", nLoc);
-        Kokkos::View<ippl::Vector<double, 3> *, Device> tempR("tempPos", nLoc);
-        Kokkos::View<ippl::Vector<double, 3> *, Device> tempE("tempEn", nLoc);
-	
-        // calculate cell index for each particle
-        Kokkos::parallel_for("CalcCellIndices", Kokkos::RangePolicy<Device>(0, nLoc), 
-	    KOKKOS_LAMBDA(const int i) {
-            	unsigned x_Idx = floor((R(i)[0] - l_extend[0]) / hCM[0]);
-            	unsigned y_Idx = floor((R(i)[1] - l_extend[1]) / hCM[1]);
-            	unsigned z_Idx = floor((R(i)[2] - l_extend[2]) / hCM[2]);
-
-            	unsigned locCMeshIdx = x_Idx * nCells[1] * nCells[2] + y_Idx * nCells[2] + z_Idx;
-            	assert(locCMeshIdx < totalCells && "Invalid Grid Position");
-                // if (locCMeshIdx >= totalCells) locCMeshIdx = totalCells-1;
-
-            	Kokkos::atomic_increment(&cellParticleCount(locCMeshIdx));
-            	cellIndex(i) = locCMeshIdx;
-        });
-
-        Kokkos::fence();
- 	
-        // compute starting indices for each cell
-	    Kokkos::parallel_scan(Kokkos::RangePolicy<Device>(0, totalCells),
-	        KOKKOS_LAMBDA(const int i, unsigned& localSum, bool isFinal){
-		        if(isFinal) cellStartingIdx(i) = localSum;
-	            localSum += cellParticleCount(i);
-	        }
-	    );
-
-        Kokkos::fence();
-	
-        Kokkos::parallel_for("Set last position", Kokkos::RangePolicy<Device>(totalCells, totalCells+1),
-            KOKKOS_LAMBDA(const int i){
-                cellStartingIdx(i) = nLoc;
-            }
-        );
-
-        Kokkos::fence();
-
-        Kokkos::deep_copy(cellCurrentIdx, cellStartingIdx);
-
-        Kokkos::fence();
-	
-        // Build temp views
-        Kokkos::parallel_for("Build view", Kokkos::RangePolicy<Device>(0, nLoc), 
-            KOKKOS_LAMBDA(const size_type& i){
-                unsigned cellNumber = cellIndex(i);
-                assert(cellNumber < totalCells && "Invalid Cell Number");
-                size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
-                assert(newIdx < nLoc && "Invalid Index");
-                tempR(newIdx) = R(i);
-                tempP(newIdx) = P(i);
-                tempE(newIdx) = E(i);
-        });
-
-        Kokkos::fence();
-	
-        // move data from Temp view into main view, there should be a better way to do this
-        Kokkos::parallel_for("Copy Data", Kokkos::RangePolicy<Device>(0, nLoc),
-            KOKKOS_LAMBDA(const size_type i){
-                R(i) = tempR(i);
-                P(i) = tempP(i);
-                E(i) = tempE(i);
-            }
-        );
-
-        if(commSize < 2){
-            this->pcontainer_m->setNL(cellStartingIdx);
-            return;
-        }
-
-        /* Ghost NL Build - Halo exchange
-         * 1. Figure out where neighbors are located relative to rank
-         * 2. Build Send Buffer
-         * 3. Send / Recieve Particles
-         */
-	
-	    // get FieldLayout and list of neighboring domains
-        auto FL = this->fcontainer_m->getFL();
-	
-        // get host mirror of particle view
-        view_type::HostMirror R_host = Kokkos::create_mirror_view(this->pcontainer_m->R.getView());
-            
-        auto comm = FL.comm; 
-        
-        Kokkos::View<unsigned *, Host> host_cellStartingIdx("host_cellStartingIdx", totalCells+1);
-        Kokkos::deep_copy(host_cellStartingIdx, cellStartingIdx);
-
-        Kokkos::View<unsigned *, Host> host_cellParticleCount("host_cellParticleCount", totalCells);
-        Kokkos::deep_copy(host_cellParticleCount, cellParticleCount);
-        
-        bool neighbors[commSize];	
-
-        unsigned totalNeighbors = 0;
-        // unsigned neighborcubes = 0;
-        for (int recvRank = 0; recvRank < commSize; ++recvRank) {
-            if (recvRank == rank) {
-                continue;
-            }
-            // 0: no overlap; 1: left from domain; 2: right from domain
-            int overlapInDim[3];
-            int equalInDim[3];
-
-            // these are the starting and end indices of the cell range in each dim
-            // Note that currently, the cellRange is flattened
-            int cellStartIdx[3];
-            int cellEndIdx[3];
-
-            // this tells us over how many surface cells we need to iterate
-            int numSurfaceCells = 1;
-
-            // 0: no overlap; 1: face; 2: edge; 3: corner
-            int overlapType = 0;
-            int equalType = 0;
-
-            for(unsigned d = 0; d < Dim; ++d){
-
-                // checks for overlap in Dimension d and assigns
-                // 0: when there is no overlap
-                // 1: for an overlap at the lower domain extend
-                // 2: for an overlap at the upper domain extend
-                overlapInDim[d] = (l_extend[d] < hLocalRegions(recvRank)[d].max() && l_extend[d] > hLocalRegions(recvRank)[d].min())
-                        + 2 * (r_extend[d] > hLocalRegions(recvRank)[d].min() && r_extend[d] < hLocalRegions(recvRank)[d].max());
-
-                equalInDim[d] = (l_extend[d] == hLocalRegions(recvRank)[d].min())
-                    + 2 * (r_extend[d] == hLocalRegions(recvRank)[d].max());
-
-                overlapType += (overlapInDim[d] > 0);
-                equalType += equalInDim[d] > 0;
-
-                // if there is no overlap in a certain dimension, we want to iterate from 0 to nCells
-                // if there is an overlap, its index is fixed at either 0 or nCells[d]-1
-                cellStartIdx[d] = (overlapInDim[d] + !overlapInDim[d] - 1) * (nCells[d]-1);
-                cellEndIdx[d] = (overlapInDim[d] ? (cellStartIdx[d]+1) : nCells[d]);
-
-                // this is either 1 or nCells per Dimension
-                numSurfaceCells *= (cellEndIdx[d] - cellStartIdx[d]);
-            }
-            overlapType = (overlapType + equalType == Dim);
-
-            int nParticlesToSend = 0;
-
-            if(overlapType + equalType == Dim) {
-                neighbors[recvRank] = true;
-                totalNeighbors++;
-            } else {
-                neighbors[recvRank] = false;
-                continue;
-            }
-
-            if(overlapType+equalType == 3 && nLoc > 0) {
-
-                // find out how many particles to send
-                // (we may merge with create sendbuf, by using a vector instead of an array)
-                for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-                    for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-                        for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-                            unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-                            nParticlesToSend += host_cellParticleCount(CellIdx);
-                        }
-                    }
-                }
-
-                if (nParticlesToSend > 0){
-                    double sendBuf[nParticlesToSend * 3];
-
-                    // build send buffer
-                    size_type sendBufIdx = 0;
-                    for(int xCellIdx = cellStartIdx[0]; xCellIdx < cellEndIdx[0]; ++xCellIdx){
-                        for(int yCellIdx = cellStartIdx[1]; yCellIdx < cellEndIdx[1]; ++yCellIdx){
-                            for(int zCellIdx = cellStartIdx[2]; zCellIdx < cellEndIdx[2]; ++zCellIdx){
-                                unsigned CellIdx = xCellIdx * nCells[1] * nCells[2] + yCellIdx * nCells[2] + zCellIdx;
-                                size_type start = host_cellStartingIdx(CellIdx);
-                                size_type end = host_cellStartingIdx(CellIdx+1);
-
-                                // loop over all particles in a cell
-                                for(size_type i = start; i < end; ++i){
-                                    for(int d = 0; d < Dim; ++d){
-                                        // assert(sendBufIdx < nParticlesToSend && "too many particles");
-                                        sendBuf[3*sendBufIdx + d] = R_host(i)[d];
-                                    }
-                                    ++sendBufIdx;
-                                }
-                            }
-                        }
-                    }
-                    // make sure we send as many particles as expected
-                    assert((sendBufIdx == nParticlesToSend) && "sendBuf invalid");
-
-                    MPI_Request request;
-                    MPI_Isend(sendBuf, 3*nParticlesToSend, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);
-
-                    //std::cerr << nParticlesToSend << " Particles from Rank " << rank << " to " << recvRank << std::endl;
-                } else {
-                    // send dummy message, remove later
-                    double dummy = 0;
-                    MPI_Request request;
-                    MPI_Isend(&dummy, 1, MPI_DOUBLE, recvRank, recvRank, ippl::Comm->getCommunicator(), &request);
-                }
-            }
-        }   
-        neighbors[rank] = false;
-
-        // set neighbor list after initialization
-        this->pcontainer_m->setNL(cellStartingIdx);
-        this->pcontainer_m->setNeighbors(neighbors);
-        
-        if(totalNeighbors > 0){
-            double *recvBuffers[totalNeighbors];
-            int senderCount = 0;	
-            // recieve Messages
-            for(int sender = 0; sender < commSize; ++sender){
-                if (neighbors[sender]){
-                    // MPI stuff to facilitate exchange
-                    MPI_Status status;
-                    int count;
-
-                    // Probe for message and get number of doubles
-                    MPI_Probe(sender, /*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                    MPI_Get_count(&status, MPI_DOUBLE, &count);
-
-                    // allocate buffer and recieve
-                    double recvBuf[count];
-                    recvBuffers[senderCount] = recvBuf;
-                    ++senderCount;
-                    MPI_Recv(recvBuf, count, MPI_DOUBLE, sender,/*rank*/ MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                    //std::cerr << "Rank " << rank << " recieved " << count/3 << " paricles from " << sender << std::endl;
-                }
-            }
-        }
-        std::cerr << "Rank " << rank << " is done :) " << std::endl;
-    }
-
     void pre_step() override {
         Inform m("pre step");
         /* TODO */
@@ -655,104 +381,6 @@ public:
     void par2grid() override {
         scatterCIC();
     }
-
-    void par2par() override {
-
-        // get particle data
-        auto R = this->pcontainer_m->R.getView();
-        auto E = this->pcontainer_m->E.getView();
-        auto P = this->pcontainer_m->P.getView();
-        constexpr auto& offset = ParticleContainer_t::offset_m;
-        auto Q = this->pcontainer_m->Q.getView();
-
-        // get simulation specific data
-        auto rcut = this->rcut_m;
-        auto alpha = this->alpha_m;
-        auto epsilon = this->epsilon_m;
-
-        // get neighbor mesh data
-        auto cellStartingIdx = this->pcontainer_m->getNL();
-        size_type totalCells = cellStartingIdx.size() - 1;
-        auto nCells = this->nCells_m;
-        int xCells = nCells[0];
-        int yCells = nCells[1];
-        int zCells = nCells[2];
-
-        assert(totalCells == xCells * yCells * zCells && "Invalid number of cells");
-
-        Kokkos::View<unsigned[1], Device> counter("counter");
-        using team_t = typename Kokkos::TeamPolicy<Device>::member_type;
-        
-        // calculate interaction force
-        Kokkos::parallel_for("Particle-Particle", Kokkos::TeamPolicy<Device>(totalCells, Kokkos::AUTO()),
-            KOKKOS_LAMBDA(const team_t& team){
-                const size_type cellIdx = team.league_rank();
-
-                // calculate cellIdx in each dimension
-                int xIdx = cellIdx / (yCells * zCells);
-                int yIdx = (cellIdx % (yCells * zCells)) / zCells;
-                int zIdx = cellIdx % zCells;
-
-                // get number of particles in current cell
-                const size_type start = cellStartingIdx(cellIdx);
-                const size_type end = cellStartingIdx(cellIdx+1);
-                const size_type nParticles = end - start;
-
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 14),
-                    [=](const int& neighborIdx){
-
-                        // get offset for neighbor cell
-                        const auto [offsetX, offsetY, offsetZ] = offset[neighborIdx];
-                    
-                        // check if neighbor is within domain
-                        if ((xIdx + offsetX < 0) || (xIdx + offsetX >= xCells) ||
-                            (yIdx + offsetY < 0) || (yIdx + offsetY >= yCells) ||
-                            (zIdx + offsetZ < 0) || (zIdx + offsetZ >= zCells)) {
-                            return;
-                        }
-
-                        // get number of particles in neighbor cell
-                        const size_type neighborCellIdx = (xIdx + offsetX) * yCells * zCells + (yIdx + offsetY) * zCells + (zIdx + offsetZ);
-                        const size_type neighborStart = cellStartingIdx(neighborCellIdx);
-                        const size_type neighborEnd = cellStartingIdx(neighborCellIdx+1);
-                        const size_type nNeighborParticles = neighborEnd - neighborStart;
-
-                        auto threadVectorMDRange = 
-                            Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(team, nParticles, nNeighborParticles);
-	 			
-                        Kokkos::parallel_for(threadVectorMDRange, 
-                            [=](const int& i, const int& j){
-                                const size_type ii = start + i;
-                                const size_type jj = neighborStart + j;
-                                if (((cellIdx == neighborCellIdx) && ii >= jj)) return;
-                                const double ke = 2.532638e8;
-
-                                double rsq_ij = 0.0;
-                                Vector_t<T, Dim> dist_ij = R(ii) - R(jj);
-                                for (int d = 0; d < Dim; ++d) {
-                                    rsq_ij += dist_ij[d] * dist_ij[d];
-                                }
-
-                                double r_ij = Kokkos::sqrt(rsq_ij);
-				                if  (r_ij >= rcut) return;
-
-                                // calculate and apply force
-                                Vector_t<T, Dim> F_ij =  ke * (dist_ij/r_ij) * ((2.0 * alpha * Kokkos::exp(-alpha * alpha * rsq_ij))/ (Kokkos::sqrt(Kokkos::numbers::pi) * r_ij) + (1.0 - Kokkos::erf(alpha * r_ij)) / rsq_ij);
-				                Kokkos::atomic_sub(&E(ii), F_ij * Q(jj));
-                                Kokkos::atomic_add(&E(jj), F_ij * Q(ii));
-                            }
-                        );
-                    }
-                );
-            }
-        );
-
-        // Kokkos::fence();
-        // ippl::Comm->barrier();
-
-        std::cerr << "Particle-Particle Interaction finished" << std::endl;
-    }
-
 
     void advance() override {
         LeapFrogStep();
@@ -914,15 +542,13 @@ public:
 
         pc->update();
 
-        this->initializeNeighborList();
-
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
 
-        this->par2par();
+        this->isolver_m->solve();
 
         this->applyConstantFocusing();
 
