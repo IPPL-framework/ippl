@@ -16,7 +16,7 @@ namespace ippl {
     // constructor and destructor
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver()
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -27,7 +27,7 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -42,7 +42,7 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -58,7 +58,7 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha)
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -74,7 +74,7 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initializeFields();
     }
@@ -83,7 +83,7 @@ namespace ippl {
     // initializeFields method, called in constructor
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::initializeFields() {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
         static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
 
         // get layout and mesh
@@ -208,7 +208,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::solve() {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -325,7 +325,7 @@ namespace ippl {
     // calculate FFT of the Green's function
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
 
         // define pi

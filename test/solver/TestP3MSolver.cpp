@@ -1,6 +1,6 @@
 //
 // TestP3MSolver
-// This program tests the P3MSolver with a constant source rho = 2.
+// This program tests the FFTTruncatedGreenPeriodicPoissonSolver with a constant source rho = 2.
 // This is for comparison purposes with a reference implementation in ippl_orig.
 // I/O output is only enabled when running serially.
 //   Usage:
@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
         typedef ippl::Vector<double, dim> Vector_t;
         typedef ippl::Field<Vector_t, dim, Mesh_t, Centering_t> VField_t;
-        typedef ippl::P3MSolver<VField_t, Field_t> Solver_t;
+        typedef ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t, Field_t> Solver_t;
 
         // get the gridsize from the user
         ippl::Vector<int, dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};

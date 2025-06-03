@@ -14,7 +14,7 @@
 
 // P3M Headers
 #include "P3M3DManager.h"
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "P3MParticleContainer.hpp"
 
 // Distribution functions
@@ -24,7 +24,7 @@
 
 // Required Datatypes
 template<typename T, unsigned Dim>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim> > >;
+using P3MSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim> > >;
 
 template<typename T, unsigned Dim>
 using Vector_t = ippl::Vector<T, Dim>;

@@ -7,7 +7,7 @@
 #include "Manager/PicManager.h"
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "P3MParticleContainer.hpp"
 #include "Interaction/TruncatedGreenInteraction.h"
 

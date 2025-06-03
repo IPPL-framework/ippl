@@ -3,7 +3,7 @@
 
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
 
 #include <memory>
@@ -48,7 +48,7 @@ using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
                                     ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T, unsigned Dim>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+using FFTTruncatedGreenSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T, unsigned Dim>
 using OpenSolver_t =
@@ -56,7 +56,7 @@ using OpenSolver_t =
 
 template <typename T, unsigned Dim>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+                                             FFTTruncatedGreenSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 // Define the FieldSolverBase class
 namespace ippl {

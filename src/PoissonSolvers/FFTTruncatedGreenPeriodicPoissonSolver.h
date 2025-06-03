@@ -1,5 +1,5 @@
 //
-// Class P3MSolver
+// Class FFTTruncatedGreenPeriodicPoissonSolver
 //   Poisson solver for periodic boundaries, based on FFTs.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
@@ -24,7 +24,7 @@
 
 namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
-    class P3MSolver : public Poisson<FieldLHS, FieldRHS> {
+    class FFTTruncatedGreenPeriodicPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldRHS::Mesh_t;
@@ -51,11 +51,11 @@ namespace ippl {
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // constructor and destructor
-        P3MSolver();
-        P3MSolver(rhs_type& rhs, ParameterList& params);
-        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha);
-        ~P3MSolver() = default;
+        FFTTruncatedGreenPeriodicPoissonSolver();
+        FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha);
+        ~FFTTruncatedGreenPeriodicPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
@@ -127,12 +127,12 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("P3MSolver::setDefaultParameters",
+                    throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
         }
     };
 }  // namespace ippl
 
-#include "PoissonSolvers/P3MSolver.hpp"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
 #endif

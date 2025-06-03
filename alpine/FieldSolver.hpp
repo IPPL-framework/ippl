@@ -91,7 +91,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             }
         } else if (this->getStype() == "P3M") {
             if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<T, Dim>>(this->getSolver()).solve();
+                std::get<FFTTruncatedGreenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
         } else if (this->getStype() == "OPEN") {
             if constexpr (Dim == 3) {
@@ -152,7 +152,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
     void initP3MSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("output_type", FFTTruncatedGreenSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -160,7 +160,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
+            initSolverWithParams<FFTTruncatedGreenSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for P3M solver");
         }

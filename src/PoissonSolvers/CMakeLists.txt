@@ -13,8 +13,8 @@ if (ENABLE_FFT)
                  FFTOpenPoissonSolver.hpp
                  FFTPeriodicPoissonSolver.h
                  FFTPeriodicPoissonSolver.hpp
-                 P3MSolver.h
-                 P3MSolver.hpp
+                 FFTTruncatedGreenPeriodicPoissonSolver.h
+                 FFTTruncatedGreenPeriodicPoissonSolver.hpp
     )
 endif ()
 
