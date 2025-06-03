@@ -54,7 +54,6 @@ namespace ippl {
         FFTTruncatedGreenPeriodicPoissonSolver();
         FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params);
         FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha);
         ~FFTTruncatedGreenPeriodicPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
@@ -71,7 +70,6 @@ namespace ippl {
         // compute standard Green's function
         void greensFunction();
 
-        void setAlpha(Trhs alpha) { alpha_m = alpha; }
 
     private:
         Field_t grn_m;  // the Green's function
@@ -102,8 +100,6 @@ namespace ippl {
         Vector_t hr_m;
         Vector<int, Dim> nr_m;
 
-        Trhs alpha_m;  // controls long-range interaction
-
     protected:
         virtual void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
@@ -112,6 +108,8 @@ namespace ippl {
             this->params_m.add("use_reorder", opts.use_reorder);
             this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
             this->params_m.add("r2c_direction", 0);
+            this->params_m.template add<Trhs>("alpha", 1e6);
+            this->params_m.template add<Trhs>("force_constant", 1e8);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:

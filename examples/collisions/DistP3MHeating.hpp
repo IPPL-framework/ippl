@@ -177,10 +177,13 @@ public:
         sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
+        sp.add("alpha", this->alpha_m);
+        sp.add("force_constant", static_cast<T>(2.532638e8)); // ke
+
 
         this->setFieldSolver(
             std::make_shared<P3MSolver_t<T, Dim> >(
-                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp, this->alpha_m
+                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp
             )
         );
 

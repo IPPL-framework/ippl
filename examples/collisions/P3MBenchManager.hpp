@@ -57,7 +57,7 @@ class P3M3DBenchManager
 public:
 
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base = P3M3DManager<T, Dim, FieldContainer<T, Dim> >;
     using FieldContainer_t = FieldContainer<T, Dim>;
 
 protected:
@@ -176,14 +176,25 @@ public:
         sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
+        sp.add("alpha", this->alpha_m);
+        sp.add("force_constant", static_cast<T>(2.532638e8)); // ke
 
         this->setFieldSolver(
             std::make_shared<P3MSolver_t<T, Dim>>(
-                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp, this->alpha_m
+                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp
             )
         );
 
-        // setupMPI();
+        ippl::ParameterList ppInteractionParams;
+        ppInteractionParams.add("rcut", this->rcut_m);
+        ppInteractionParams.add("alpha", this->alpha_m);
+        ppInteractionParams.add("force_constant", static_cast<T>(2.532638e8)); // ke
+
+        this->setInteractionSolver(
+            std::make_shared<typename Base::PPInteraction>(
+                *this->pcontainer_m, this->pcontainer_m->E, this->pcontainer_m->R, this->pcontainer_m->Q, ppInteractionParams
+                )
+            );
 
         double initTimerStart = MPI_Wtime();
         initializeParticles();
@@ -424,7 +435,7 @@ public:
         this->fcontainer_m->getRho() = 0.0;
 
         ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
-        typename Base::particle_position_type *R = &this->pcontainer_m->R;
+        typename ParticleContainer_t::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
         double Q                        = this->Q_m;
         Vector_t<double, Dim> rmin	= this->rmin_m;

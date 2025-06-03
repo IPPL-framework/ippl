@@ -47,17 +47,17 @@ const double ke = 2.532638e8;
 /**
  * @class P3M3DHeatingManager
  * @brief A class that runs P3M simulation for Disorder induced Heating processes
- * 
+ *
  * @tparam T the data dype for simulation variables
  * @tparam Dim the dimensionality of the simulation
 */
 template <typename T, unsigned Dim>
-class P3M3DHeatingManager 
+class P3M3DHeatingManager
     : public P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
 
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base = P3M3DManager<T, Dim, FieldContainer<T, Dim> >;
     using FieldContainer_t = FieldContainer<T, Dim>;
 
 protected:
@@ -70,9 +70,9 @@ protected:
     std::string solver_m;       // solver is P3MSolver
     double beamRad_m;           // beam radius
     double focusingF_m;         // constant focusing force
-    
+
 public:
-    P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_) 
+    P3M3DHeatingManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_)
         : P3M3DManager<T, Dim, FieldContainer<T, Dim> >()
         , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_)
         {}
@@ -95,7 +95,7 @@ protected:
     std::array<bool, Dim> decomp_m; // Domain Decomposition
     double rhoNorm_m;               // Rho norm, required for scatterCIC
 
-public: 
+public:
     size_type getTotalP() const { return totalP_m; }
 
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
@@ -143,7 +143,7 @@ public:
                 R(i-1)[d] = std::stod(token);
                 P(i-1)[d] = 0.0;
                 // std::cout << token << std::endl;
-                
+
             }
             Q(i-1) = q;
         }
@@ -169,7 +169,7 @@ public:
         this->hr_m = box_length/(double)(this->nr_m[0]);
 
         std::cerr << "hr: " << this->hr_m << std::endl;
-        
+
         // initialize time stuff
         this->it_m = 0;
         this->time_m = 0.;
@@ -177,7 +177,7 @@ public:
         // initialize field container
         this->setFieldContainer(
             std::make_shared<FieldContainer_t>(
-                this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, 
+                this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m,
                 this->domain_m, this->origin_m, this->isAllPeriodic_m
             )
         );
@@ -192,7 +192,7 @@ public:
 	    std::cerr << "Device Space: " << Device::name() << std::endl;
 	    std::cerr << "Host Space: " << Host::name() << std::endl;
 
-    
+
         this->fcontainer_m->initializeFields("P3M");
 
         // initialize solver
@@ -204,12 +204,26 @@ public:
         sp.add("use_gpu_aware", true);
         sp.add("comm", ippl::p2p_pl);
         sp.add("r2c_direction", 0);
+        sp.add("alpha", this->alpha_m);
+        sp.add("force_constant", static_cast<T>(2.532638e8)); // ke
+
 
         this->setFieldSolver(
             std::make_shared<P3MSolver_t<T, Dim>>(
-                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp, this->alpha_m
-            )
+                this->fcontainer_m->getE(), this->fcontainer_m->getRho(), sp
+        )
         );
+
+        ippl::ParameterList ppInteractionParams;
+        ppInteractionParams.add("rcut", this->rcut_m);
+        ppInteractionParams.add("alpha", this->alpha_m);
+        ppInteractionParams.add("force_constant", static_cast<T>(2.532638e8)); // ke
+
+        this->setInteractionSolver(
+            std::make_shared<typename Base::PPInteraction>(
+                *this->pcontainer_m, this->pcontainer_m->E, this->pcontainer_m->R, this->pcontainer_m->Q, ppInteractionParams
+                )
+            );
 
         // probably not needed
         // this->fsolver_m->initSolver();
@@ -234,7 +248,7 @@ public:
 	    this->isolver_m->solve();
 
 	    this->focusingF_m *= this->computeAvgSpaceChargeForces();
-	    
+
         this->pcontainer_m->update();
 
         std::cerr << "Pre Run finished" << endl;
@@ -252,12 +266,12 @@ public:
         static IpplTimings::TimerRef UTimer = IpplTimings::getTimer("updateToRank");
 
         IpplTimings::startTimer(ITimer);
-        
+
         unsigned np = this->totalP_m;
         unsigned nloc = np / commSize;
-        
+
         this->Q_m = np;
-        
+
 	    // make sure all particles are accounted for
         if(rank == commSize-1){
             nloc = np - (commSize-1)*nloc;
@@ -266,8 +280,8 @@ public:
         IpplTimings::startTimer(CTimer);
         this->pcontainer_m->create(nloc);
         IpplTimings::stopTimer(CTimer);
-        
-	
+
+
         auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
         auto Q = this->pcontainer_m->Q.getView();
@@ -275,7 +289,7 @@ public:
         double beamRad = this->beamRad_m;
 
         Kokkos::fence();
-	
+
 	    // make sure this runs on the host, device does not work yet
         Kokkos::Random_XorShift64_Pool<Device> rand_pool((size_type)(42 + 24 * rank));
 
@@ -285,7 +299,7 @@ public:
                 Vector_t<T, Dim> x(0.0);
 
                 auto generator = rand_pool.get_state();
-                
+
                 // obtain random numbers
                 double u = generator.drand();
                 for(int i = 0; i < Dim; ++i){
@@ -310,16 +324,16 @@ public:
         // before we can update them to their corresponding rank
         Kokkos::fence();
         ippl::Comm->barrier();
-	
+
         IpplTimings::stopTimer(GTimer);
-        
+
         IpplTimings::startTimer(UTimer);
         this->pcontainer_m->update();
         IpplTimings::stopTimer(UTimer);
-        
+
         ippl::Comm->barrier();
         IpplTimings::stopTimer(ITimer);
-	
+
 	    // debug output, can be ignored
         std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
     }
@@ -391,8 +405,8 @@ public:
         auto nLoc = this->pcontainer_m->getLocalNum();
 
         double localEnergy = 0.0;
-        double globalEnergy = 0.0;  
-        
+        double globalEnergy = 0.0;
+
 	    Kokkos::parallel_reduce("calc kinetic energy", nLoc,
             KOKKOS_LAMBDA(const size_type& i, double& sum){
                 sum += 0.5 * (P)(i).dot((P)(i));
@@ -426,7 +440,7 @@ public:
 
         globAvgVel /= totalP;
         std::cerr << "Average Velocity: " << globAvgVel << std::endl;
-	
+
         ippl::Vector<double, 3> localTemperature = 0.0;
         ippl::Vector<double, 3> globalTemperature = 0.0;
 
@@ -443,13 +457,13 @@ public:
         std::cerr << "Temperature: " << globalTemperature << std::endl;
 
         // l2 norm
-        double temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0] 
-                            + globalTemperature[1] * globalTemperature[1] 
+        double temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
+                            + globalTemperature[1] * globalTemperature[1]
                             + globalTemperature[2] * globalTemperature[2]);
 
         std::cerr << "L2-Norm of Temperature: " << temperature << std::endl;
         // return temperature[0];
-	
+
     }
 
     void computeBeamStatistics() {
@@ -483,7 +497,7 @@ public:
 
         // there must be a better way to do this
         ippl::Comm->reduce(&stats[0], &global_stats[0], 9, std::plus<double>(), 0);
-    
+
 
         // double avg_xsq = global_xsq / this->totalP_m;
         // double avg_psq = global_psq / this->totalP_m;
@@ -533,7 +547,7 @@ public:
     }
 
     void LeapFrogStep() {
-        
+
         double dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
@@ -564,7 +578,7 @@ public:
         auto E = this->pcontainer_m->E.getView();
         Vector_t<T, Dim> avgE = 0.0;
 
-        Kokkos::parallel_reduce("compute average space charge forces", nLoc, 
+        Kokkos::parallel_reduce("compute average space charge forces", nLoc,
             KOKKOS_LAMBDA(const size_type i, Vector_t<T, Dim>& sum){
                 sum[0] += Kokkos::abs(E(i)[0]);
                 sum[1] += Kokkos::abs(E(i)[1]);
@@ -577,7 +591,7 @@ public:
         Vector_t<double, Dim> globE = 0.0;
 
         ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<double>(), 0);
-        
+
         globE /= totalP;
 
         double focusingf = 0.0;
@@ -597,7 +611,7 @@ public:
         auto nLoc = this->pcontainer_m->getLocalNum();
 
         std::cerr << "Focusing Force " << focusStrength << std::endl;
-        
+
 	    Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
@@ -607,8 +621,8 @@ public:
     }
 
     void gatherCIC(){
-        gather( this->pcontainer_m->E, 
-                this->fcontainer_m->getE(), 
+        gather( this->pcontainer_m->E,
+                this->fcontainer_m->getE(),
                 this->pcontainer_m->R
         );
     }
@@ -618,7 +632,7 @@ public:
         this->fcontainer_m->getRho() = 0.0;
 
         ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
-        typename Base::particle_position_type *R = &this->pcontainer_m->R;
+        typename ParticleContainer_t::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
         double Q                        = this->Q_m;
         Vector_t<double, Dim> rmin	= this->rmin_m;
@@ -643,7 +657,7 @@ public:
                 m << "Rel. error in charge conservation: " << relError << endl;
                 ippl::Comm->abort();
             }
-	    }   
+	    }
 
 	    double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)          = (*rho) / cellVolume;
@@ -656,7 +670,7 @@ public:
             size *= rmax[d] - rmin[d];
         }
         *rho = *rho - (Q / size);
-        
+
     }
 };
 

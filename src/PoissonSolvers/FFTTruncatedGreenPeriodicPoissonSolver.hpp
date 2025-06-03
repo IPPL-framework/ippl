@@ -22,8 +22,7 @@ namespace ippl {
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-        setDefaultParameters();
-        this->setAlpha(1e6);
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -32,13 +31,12 @@ namespace ippl {
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-        this->setAlpha(1e6);
-        setDefaultParameters();
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
 
         this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
-        this->setRhs(rhs);
+        FFTTruncatedGreenPeriodicPoissonSolver::setRhs(rhs);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -47,30 +45,12 @@ namespace ippl {
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-
-        this->setAlpha(1e6);
-        setDefaultParameters();
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
 
         this->params_m.merge(params);
 
         this->setLhs(lhs);
-        this->setRhs(rhs);
-    }
-
-    template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params, double& alpha)
-        : mesh_mp(nullptr)
-        , layout_mp(nullptr)
-        , meshComplex_m(nullptr)
-        , layoutComplex_m(nullptr) {
-            
-        this->setAlpha(alpha);
-        setDefaultParameters();
-
-        this->params_m.merge(params);
-
-        this->setLhs(lhs);
-        this->setRhs(rhs);
+        FFTTruncatedGreenPeriodicPoissonSolver::setRhs(rhs);
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -84,7 +64,7 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-        static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
+        static_assert(Dim == 3, "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
 
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
@@ -336,7 +316,8 @@ namespace ippl {
         // for the P3M collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        Trhs alpha = alpha_m;
+        const Trhs alpha = this->params_m. template get<Trhs>("alpha");
+        const Trhs forceConstant = this->params_m. template get<Trhs>("force_constant");
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
@@ -349,7 +330,6 @@ namespace ippl {
         typename Field_t::view_type view = grn_m.getView();
         const int nghost                 = grn_m.getNghost();
         const auto& ldom                 = layout_mp->getLocalNDIndex();
-        const double ke = 2.532638e8;
 
         // Kokkos parallel for loop to find (0,0,0) point and regularize
         Kokkos::parallel_for(
@@ -363,7 +343,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * ke * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * forceConstant * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution
