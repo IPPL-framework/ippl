@@ -12,6 +12,8 @@ set (_HDRS
     ParticleLayout.hpp
     ParticleSpatialLayout.h
     ParticleSpatialLayout.hpp
+    ParticleSpatialOverlapLayout.h
+    ParticleSpatialOverlapLayout.hpp
     )
 
 include_directories (
