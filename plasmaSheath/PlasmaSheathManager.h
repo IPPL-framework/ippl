@@ -424,7 +424,8 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        this->dump();
+        // dump
+        dumpPlasma();
     }
 
     void dump() override {
@@ -473,6 +474,40 @@ public:
             }
             pcsvout << endl;
         }
+        ippl::Comm->barrier();
+    }
+
+    void dumpPlasma() {
+        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho 
+                             = this->fcontainer_m->getRho().getHostMirror();
+        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi 
+                             = this->fcontainer_m->getPhi().getHostMirror();
+
+        Kokkos::deep_copy(host_view_rho, this->fcontainer_m->getRho().getView());
+        Kokkos::deep_copy(host_view_phi, this->fcontainer_m->getPhi().getView());
+
+        const int nghost = this->fcontainer_m->getRho().getNghost();
+        const int nx     = this->nr_m[0];
+        const double hx     = this->hr_m[0];
+        const double orig_x = this->origin_m[0];
+
+        std::stringstream fname;
+        fname << "data/Fields_";
+        fname << this->it_m;
+        fname << ".csv";
+        Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+        csvout.precision(16);
+        csvout.setf(std::ios::scientific, std::ios::floatfield);
+        csvout << "x, rho(x), phi(x)" << endl;
+
+        for (int i = nghost; i < nx + nghost; ++i) {
+            double x = (i + 0.5) * hx + orig_x;
+            csvout << x << ", ";
+            csvout << host_view_rho(i) << ", ";
+            csvout << host_view_phi(i) << ", ";
+            csvout << endl;
+        }
+
         ippl::Comm->barrier();
     }
 };
