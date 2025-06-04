@@ -30,11 +30,12 @@ public:
     struct ParticleGen {
         Vector<T,3> sdI;
         Vector<T,3> sdE;
-        double v_max;
+        double v_max_I;
+        double v_max_E;
         RNG rand_pool64;
 
-        ParticleGen(Vector<T,3>& sdI_, Vector<T,3>& sdE_, const double v_max_) 
-        : sdI(sdI_), sdE(sdE_), v_max(v_max_), 
+        ParticleGen(Vector<T,3>& sdI_, Vector<T,3>& sdE_, const double v_max_I_, const double v_max_E_) 
+        : sdI(sdI_), sdE(sdE_), v_max_I(v_max_I_), v_max_E(v_max_E_),
           rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()))
         {}
 
@@ -44,9 +45,11 @@ public:
             Vector<T, 3> v = {0.0, 0.0, 0.0};
             double accept_prob = 0.0;
             double unif = 0.0;
-            while ((v[0] <= 0) || (v[0] > v_max) || (unif >= accept_prob)) {
+            // -v_max < v_x < 0 so that the particles travel from 
+            // the injection site (bulk plasma) to the wall
+            while ((v[0] >= 0) || (-v_max_I < v[0]) || (unif >= accept_prob)) {
                 v[0] = (sdI[0] * rand_gen.normal(0.0, 1.0));
-                accept_prob = v[0] * v[0] / (v_max * v_max);
+                accept_prob = v[0] * v[0] / (v_max_I * v_max_I);
                 unif = rand_gen.drand(0.0, 1.0);
             }
             for (unsigned d = 1; d < 3; ++d) {
@@ -60,7 +63,9 @@ public:
             RNG::generator_type rand_gen = rand_pool64.get_state();
 
             Vector<T, 3> v = {0.0, 0.0, 0.0};
-            while ((v[0] <= 0) || (v[0] > v_max)) {
+            // -v_max < v_x < 0 so that the particles travel from 
+            // the injection site (bulk plasma) to the wall
+            while ((v[0] >= 0) || (-v_max_E < v[0])) {
                 v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
             }
             for (unsigned d = 1; d < 3; ++d) {
@@ -101,15 +106,18 @@ public:
 
         this->decomp_m.fill(true);
 
+        // the particles are spawned at x=L (injection from bulk plasma),
+        // and x=0 is the wall
         this->rmin_m   = 0.0;
         this->rmax_m   = params::L; // L = size of domain
         this->origin_m = this->rmin_m;
         this->hr_m     = params::dx;
 
-        this->phiWall_m = params::phi0; // Dirichlet BC for phi at wall
-        this->Bext_m = {params::Bext * Kokkos::cos(params::alpha),
-                        params::Bext * Kokkos::sin(params::alpha), 
-                        0.0}; // External magnetic field
+        this->phiWall_m = params::phi0; // Dirichlet BC for phi at wall (x=0)
+
+        // normalized B-field - vector for direction
+        this->Bext_m = {-Kokkos::cos(params::alpha), 0.0,
+                        Kokkos::sin(params::alpha)};  // External magnetic field
 
         this->dt_m   = params::dt;
         this->it_m   = 0;
@@ -201,10 +209,11 @@ public:
         Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(sdI, sdE, params::v_max);
+        ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
 
-        // particles are initially sampled at x=0 (bulk plasma)
-        this->pcontainer_m->R = 0;
+        // particles are initially sampled at x = L (bulk plasma)
+        // the wall is at x = 0 
+        this->pcontainer_m->R = this->rmax_m;
 
         if (params::kinetic_electrons) {
             // charge and mass are species dependent
@@ -289,7 +298,7 @@ public:
         Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(sdI, sdE, params::v_max);
+        ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
 
         auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;

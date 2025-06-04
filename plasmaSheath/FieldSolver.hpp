@@ -61,9 +61,9 @@ public:
         bc_type dirichlet;
         for (unsigned int i = 0; i < 2 * Dim; ++i) {
             if (i & 1) {
-                dirichlet[i] = std::make_shared<ippl::ConstantFace<Field<T, Dim>>>(i, phiWall_m);
-            } else {
                 dirichlet[i] = std::make_shared<ippl::ConstantFace<Field<T, Dim>>>(i, 0.0);
+            } else {
+                dirichlet[i] = std::make_shared<ippl::ConstantFace<Field<T, Dim>>>(i, phiWall_m);
             }
         }
         phi_m->setFieldBC(dirichlet);
