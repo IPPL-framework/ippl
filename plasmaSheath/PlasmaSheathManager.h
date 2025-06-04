@@ -79,8 +79,8 @@ public:
 				// 2. convert to wall-aligned coordinates
 				v3 = fieldaligned_to_wallaligned(vpar, vperpx, vperpy);
 
-				// 3. only keep velocities for which v_x < 0 !!
-				if (v3[0] < 0.0) break;
+				// 3. only keep velocities for which v_x < 0 and v_x > -v_trunc (for the CFL condition) !!
+				if (v3[0] < 0.0 && v3[0] > -v_trunc) break;
 			}
 
             rand_pool64.free_state(rand_gen);
