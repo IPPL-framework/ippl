@@ -67,9 +67,6 @@ public:
             // the injection site (bulk plasma) to the wall
             while ((v[0] >= 0) || (v[0] < -v_max_E)) {
                 v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
-                std::cout << "generation of electron v_X = " << v[0] << std::endl;
-                std::cout << "the vmaxE is " << v_max_E << std::endl;
-                std::cout << "and -v_max_e < vx is " << (-v_max_E < v[0]) << std::endl;
             }
             for (unsigned d = 1; d < 3; ++d) {
                 v[d] = (sdE[d] * rand_gen.normal(0.0, 1.0));
