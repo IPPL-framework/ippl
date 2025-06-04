@@ -206,8 +206,6 @@ public:
 
         this->grid2par();
 
-        this->dump();
-
         m << "Done";
     }
 
@@ -277,7 +275,6 @@ public:
         IpplTimings::stopTimer(particleCreation);
 
         m << "particles created and initial conditions assigned " << endl;
-        this->dump();
     }
 
     void advance() override {
@@ -498,14 +495,13 @@ public:
         Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
         csvout.precision(16);
         csvout.setf(std::ios::scientific, std::ios::floatfield);
-        csvout << "x, rho(x), phi(x)" << endl;
+        csvout << "x rho(x) phi(x)" << endl;
 
         for (int i = nghost; i < nx + nghost; ++i) {
             double x = (i + 0.5) * hx + orig_x;
-            csvout << x << ", ";
-            csvout << host_view_rho(i) << ", ";
-            csvout << host_view_phi(i) << ", ";
-            csvout << endl;
+            csvout << x << " ";
+            csvout << host_view_rho(i) << " ";
+            csvout << host_view_phi(i) << endl;
         }
 
         ippl::Comm->barrier();
