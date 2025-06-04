@@ -28,54 +28,64 @@ public:
     using RNG                 = typename Kokkos::Random_XorShift64_Pool<>;
 
     struct ParticleGen {
-        Vector<T, 3> sdI;
-        Vector<T, 3> sdE;
-        double v_max_I;
-        double v_max_E;
         RNG rand_pool64;
 
-        ParticleGen(Vector<T, 3>& sdI_, Vector<T, 3>& sdE_, const double v_max_I_,
-                    const double v_max_E_)
-            : sdI(sdI_)
-            , sdE(sdE_)
-            , v_max_I(v_max_I_)
-            , v_max_E(v_max_E_)
-            , rand_pool64((size_type)(42 + 100 * ippl::Comm->rank())) {}
+	enum Species { Electrons, Ions };
+
+        ParticleGen() : rand_pool64((size_type)(42 + 100 * ippl::Comm->rank())) {}
+
+		KOKKOS_FUNCTION Vector<T, 3> fieldaligned_to_wallaligned(double vpar, double vperpx, double vperpy) const {
+			return {
+				vperpx*params::ca - vpar*params::sa,
+				vperpy,
+				vperpx*params::sa + vpar*params::ca,	
+			};
+		}
+
+		KOKKOS_FUNCTION Vector<T, 3> sample_v3(Species s) const {
+		    RNG::generator_type rand_gen = rand_pool64.get_state();
+			Vector<T, 3> v3;
+
+			while (true) {
+				// 1. sample in field-aligned coordinates
+				// 1.a. sample vpar from the modified half-maxwellian
+				// note that by coincidence, the normalization constant for beta = 0 and beta = 2 (i.e.
+				// vpar² prefactor) are the same, and evaluate to 2/√(2π)
+				const double stdpar = s == Electrons ? params::v_th_e : params::v_th_i,
+							 v_trunc = s == Electrons ? params::v_trunc_e : params::v_trunc_i;
+
+				double vpar;
+				while (true) {
+					vpar = rand_gen.normal(0.0, stdpar);
+					const double R =
+						double(vpar > 0.0) * double(vpar < v_trunc) * 2.0 *
+						(s == Electrons : 1.0 ? vpar*vpar/(v_trunc*v_trunc));
+					if (rand_gen.drand(0.0, 1.0) < R) break;
+				}
+
+				// 1.b. sample vperp coordinates
+				const double stdperp = s == Electrons ? params::v_th_e : params::v_th_i * params::nu;
+				const double vperpx = rand_gen.normal(0.0, stdperp),
+					   vperpy = rand_gen.normal(0.0, stdperp);
+
+
+				// 2. convert to wall-aligned coordinates
+				v3 = fieldaligned_to_wallaligned(vpar, vperpx, vperpy);
+
+				// 3. only keep velocities for which v_x < 0 !!
+				if (v3[0] < 0.0) break;
+			}
+
+            rand_pool64.free_state(rand_gen);
+			return v3;
+		}
 
         KOKKOS_FUNCTION Vector<T, 3> generate_ion() const {
-            RNG::generator_type rand_gen = rand_pool64.get_state();
-
-            Vector<T, 3> v     = {0.0, 0.0, 0.0};
-            double accept_prob = 0.0;
-            double unif        = 0.0;
-            // -v_max < v_x < 0 so that the particles travel from
-            // the injection site (bulk plasma) to the wall
-            while ((v[0] >= 0) || (v[0] < -v_max_I) || (unif >= accept_prob)) {
-                v[0]        = (sdI[0] * rand_gen.normal(0.0, 1.0));
-                accept_prob = v[0] * v[0] / (v_max_I * v_max_I);
-                unif        = rand_gen.drand(0.0, 1.0);
-            }
-            for (unsigned d = 1; d < 3; ++d) {
-                v[d] = (sdI[d] * rand_gen.normal(0.0, 1.0));
-            }
-            rand_pool64.free_state(rand_gen);
-            return v;
+            return sample_v3(Ions);
         }
 
         KOKKOS_FUNCTION Vector<T, 3> generate_electron() const {
-            RNG::generator_type rand_gen = rand_pool64.get_state();
-
-            Vector<T, 3> v = {0.0, 0.0, 0.0};
-            // -v_max < v_x < 0 so that the particles travel from
-            // the injection site (bulk plasma) to the wall
-            while ((v[0] >= 0) || (v[0] < -v_max_E)) {
-                v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
-            }
-            for (unsigned d = 1; d < 3; ++d) {
-                v[d] = (sdE[d] * rand_gen.normal(0.0, 1.0));
-            }
-            rand_pool64.free_state(rand_gen);
-            return v;
+			return sample_v3(Electrons);
         }
     };
 
@@ -217,14 +227,15 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        // standard deviaiton for ion and electron distribution functions
+        // standard deviaton for ion and electron distribution functions
         // mu = 0 for both (average velocity is 0)
         // standard deviation is the thermal velocity of the species
-        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+		// note these are given in field-aligned coordinates (vpar, vperpx, vperpy) !!
+        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, * params::nu, params::v_th_i * params::nu};
         Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
+        ParticleGen pgen;
 
         // particles are initially sampled at x = L (bulk plasma)
         // the wall is at x = 0
@@ -308,11 +319,11 @@ public:
         // standard deviaiton for ion and electron distribution functions
         // mu = 0 for both (average velocity is 0)
         // standard deviation is the thermal velocity of the species
-        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i * params::nu, params::v_th_i * params::nu};
         Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
+        ParticleGen pgen;
 
         auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;
