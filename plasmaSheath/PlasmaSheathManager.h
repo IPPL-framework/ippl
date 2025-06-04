@@ -117,7 +117,7 @@ public:
 
         // normalized B-field - vector for direction
         this->Bext_m = {-Kokkos::cos(params::alpha), 0.0,
-                        Kokkos::sin(params::alpha)};  // External magnetic field
+                         Kokkos::sin(params::alpha)};  // External magnetic field
 
         this->dt_m   = params::dt;
         this->it_m   = 0;
@@ -364,8 +364,9 @@ public:
         // kick (velocity update)
 
         // half acceleration
+        // 1/tau factor in front of (q/m)*E for physics
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * (pc->q/pc->m) * pc->E;
+        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q/pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // rotation
@@ -375,9 +376,10 @@ public:
         view_typeQ Qview = this->pcontainer_m->q.getView();
         view_typeQ Mview = this->pcontainer_m->m.getView();
 
+        // 1/D_C factor in front of (q/m)*(v x B) for physics
         Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
             KOKKOS_LAMBDA(const int i) {
-                Vector_t<T, 3> const t = 0.5 * dt * (Qview(i)/Mview(i)) * Bext;
+                Vector_t<T, 3> const t = (1.0 / params::D_C) * 0.5 * dt * (Qview(i)/Mview(i)) * Bext;
                 Vector_t<T, 3> const w = Pview(i) + cross(Pview(i), t).apply();
                 Vector_t<T, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
                 Pview(i) = Pview(i) + cross(w, s);
@@ -386,7 +388,7 @@ public:
 
         // half acceleration
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * (pc->q/pc->m) * pc->E;
+        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q/pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // push position (half step)

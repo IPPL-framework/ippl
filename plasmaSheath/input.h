@@ -5,7 +5,8 @@
 #ifndef PLASMA_INPUT_H_
 #define PLASMA_INPUT_H_
 
-constexpr double pi = 3.14159265358979323846;
+constexpr double pi       = 3.14159265358979323846;
+constexpr double infinity = std::numeric_limits<double>::infinity();
 
 namespace params {
 	// -- PHYSICAL PARAMETERS -- 
@@ -34,11 +35,10 @@ namespace params {
 	constexpr double nu = 1.0;  // perp-parallel temperature anisotropy, ν = v_th_perp_i / v_th_par_i
 
 	constexpr double D_D = 1.0;  // Debye length (setting this to 1.0 is equivalent to setting L_ref = λ_D)
-	constexpr double D_C = 10.0;  // ion thermal gyroradius ρ_th_i, in units of L_ref. To have B = 0, set D_C = ∞
-	// constexpr double D_C = std::numeric_limits<double>::infinity();
+	//constexpr double D_C = 10.0;  // ion thermal gyroradius ρ_th_i, in units of L_ref. To have B = 0, set D_C = ∞
+	constexpr double D_C = infinity;
 
 	constexpr double alpha = 10*pi/180.0;  // magnetic field incidence angle
-    constexpr double Bext  = 0.0;          // magnetic field magnitude
 
 	constexpr double phi0 = -2.37;  // wall bias. note that phi(x=MPE) = 0
 
@@ -71,8 +71,8 @@ namespace params {
 	constexpr unsigned int nx = std::ceil(L / dx0);
 	constexpr double dx = L / (double) nx;  // the actual dx
 	constexpr double v_max = std::max({v_trunc_e, f_ion_speedup * v_trunc_i});  // maximum velocity that we expect to encounter
-	constexpr double dt = std::min({
-		f_t * 2.0*pi / std::max({Omega_ci, Omega_ce}),  // resolution such that dt << smallest time scale
+	constexpr double dt = std::min({ 
+		std::isfinite(D_C) ? (f_t * 2.0*pi / std::max({Omega_ci, Omega_ce})) : infinity,  // resolution such that dt << smallest time scale
 		dx/v_max*CFL_max  // time step constraint due to the CFL condition
 	});
 }
