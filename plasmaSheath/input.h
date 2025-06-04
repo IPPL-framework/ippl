@@ -48,7 +48,7 @@ namespace params {
 
 	// magnetic field incidence angle
 	// set this to 90deg for Debye sheath simulations, so that vpar = -vx !
-    constexpr double alpha = 10 * pi / 180.0;
+    constexpr double alpha = pi / 2; //10 * pi / 180.0;
 	constexpr double sa = std::sin(alpha);
 	constexpr double ca = std::cos(alpha);
 
