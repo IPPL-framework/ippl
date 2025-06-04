@@ -2,6 +2,9 @@
 #include <cmath>
 #include <limits>
 
+#ifndef PLASMA_INPUT_H_
+#define PLASMA_INPUT_H_
+
 constexpr double pi = 3.14159265358979323846;
 
 namespace params {
@@ -35,6 +38,7 @@ namespace params {
 	// constexpr double D_C = std::numeric_limits<double>::infinity();
 
 	constexpr double alpha = 10*pi/180.0;  // magnetic field incidence angle
+    constexpr double Bext  = 0.0;          // magnetic field magnitude
 
 	constexpr double phi0 = -2.37;  // wall bias. note that phi(x=MPE) = 0
 
@@ -72,3 +76,4 @@ namespace params {
 		dx/v_max*CFL_max  // time step constraint due to the CFL condition
 	});
 }
+#endif

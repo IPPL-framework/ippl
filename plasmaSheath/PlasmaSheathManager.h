@@ -28,16 +28,13 @@ public:
     using RNG                 = typename Kokkos::Random_XorShift64_Pool<>;
 
     struct ParticleGen {
-        Vector<T,3> muI;
         Vector<T,3> sdI;
-        Vector<T,3> muE;
         Vector<T,3> sdE;
         double v_max;
         RNG rand_pool64;
 
-        ParticleGen(Vector<T,3>& muI_, Vector<T,3>& sdI_, Vector<T,3>& muE_,
-                    Vector<T,3>& sdE_, const double v_max_) 
-        : muI(muI_), sdI(sdI_), muE(muE_), sdE(sdE_), v_max(v_max_), 
+        ParticleGen(Vector<T,3>& sdI_, Vector<T,3>& sdE_, const double v_max_) 
+        : sdI(sdI_), sdE(sdE_), v_max(v_max_), 
           rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()))
         {}
 
@@ -48,12 +45,12 @@ public:
             double accept_prob = 0.0;
             double unif = 0.0;
             while ((v[0] <= 0) || (v[0] > v_max) || (unif >= accept_prob)) {
-                v[0] = (muI[0] + sdI[0] * rand_gen.normal(0.0, 1.0));
+                v[0] = (sdI[0] * rand_gen.normal(0.0, 1.0));
                 accept_prob = v[0] * v[0] / (v_max * v_max);
                 unif = rand_gen.drand(0.0, 1.0);
             }
             for (unsigned d = 1; d < 3; ++d) {
-                v[d] = (muI[d] + sdI[d] * rand_gen.normal(0.0, 1.0));
+                v[d] = (sdI[d] * rand_gen.normal(0.0, 1.0));
             }
             rand_pool64.free_state(rand_gen);
             return v;
@@ -64,10 +61,10 @@ public:
 
             Vector<T, 3> v = {0.0, 0.0, 0.0};
             while ((v[0] <= 0) || (v[0] > v_max)) {
-                v[0] = (muE[0] + sdE[0] * rand_gen.normal(0.0, 1.0));
+                v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
             }
             for (unsigned d = 1; d < 3; ++d) {
-                v[d] = (muE[d] + sdE[d] * rand_gen.normal(0.0, 1.0));
+                v[d] = (sdE[d] * rand_gen.normal(0.0, 1.0));
             }
             rand_pool64.free_state(rand_gen);
             return v;
@@ -75,24 +72,22 @@ public:
     };
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                         std::string& solver_, std::string& stepMethod_,
-                         double L = 1, T phiWall = 1, Vector_t<T, 3> Bext = {0,0,0})
+                         std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
-            setup(L, phiWall, Bext);
+            setup();
         }
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_,
-                         std::vector<std::string> preconditioner_params_, 
-                         double L = 1, T phiWall = 1, Vector_t<T, 3> Bext = {0,0,0})
+                         std::vector<std::string> preconditioner_params_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
                                 preconditioner_params_) {
-            setup(L, phiWall, Bext);
+            setup();
         }
 
     ~PlasmaSheathManager() {}
 
-    void setup(T L, T phiWall, Vector_t<T, 3> Bext) {
+    void setup() {
         Inform m("Setup");
 
         if ((this->solver_m != "CG") && (this->solver_m != "PCG")) {
@@ -107,14 +102,16 @@ public:
         this->decomp_m.fill(true);
 
         this->rmin_m   = 0.0;
-        this->rmax_m   = L; // L = size of domain
+        this->rmax_m   = params::L; // L = size of domain
         this->origin_m = this->rmin_m;
-        this->hr_m     = L / this->nr_m;
+        this->hr_m     = params::dx;
 
-        this->phiWall_m = phiWall; // Dirichlet BC for phi at wall
-        this->Bext_m = Bext; // External magnetic field
+        this->phiWall_m = params::phi0; // Dirichlet BC for phi at wall
+        this->Bext_m = {params::Bext * Kokkos::cos(params::alpha),
+                        params::Bext * Kokkos::sin(params::alpha), 
+                        0.0}; // External magnetic field
 
-        this->dt_m   = (this->hr_m[0]) / (20 * v_max);
+        this->dt_m   = params::dt;
         this->it_m   = 0;
         this->time_m = 0.0;
 
@@ -197,16 +194,14 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        // mean and standard deviaiton for ion distribution function
-        Vector<T,3> muI = v0;
-        Vector<T,3> sdI = {stdeviation_i, stdeviation_i, stdeviation_i};
-
-        // mean and standard deviation for electron distribution function
-        Vector<T,3> muE = v0;
-        Vector<T,3> sdE = {stdeviation_e, stdeviation_e, stdeviation_e};
+        // standard deviaiton for ion and electron distribution functions
+        // mu = 0 for both (average velocity is 0)
+        // standard deviation is the thermal velocity of the species
+        Vector<T,3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+        Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(muI, sdI, muE, sdE, v_max);
+        ParticleGen pgen(sdI, sdE, params::v_max);
 
         // particles are initially sampled at x=0 (bulk plasma)
         this->pcontainer_m->R = 0;
@@ -226,8 +221,8 @@ public:
                 KOKKOS_LAMBDA(const int i) {
                     bool odd = (i % 2);
                     
-                    Qview(i) = ((!odd) * q_e) + (odd * q_i);
-                    Mview(i) = ((!odd) * m_e) + (odd * m_i);
+                    Qview(i) = ((!odd) * params::Z_e) + (odd * params::Z_i);
+                    Mview(i) = ((!odd) * params::m_e) + (odd * params::m_i);
 
                     // accept only those which have velocity_x > 0 (moving towards wall)
                     if (odd) {
@@ -239,8 +234,8 @@ public:
         } else {
             // single species: ions 
             // adiabatic electrons are taken care of in the fieldsolver
-            this->pcontainer_m->q = q_i;
-            this->pcontainer_m->m = m_i;
+            this->pcontainer_m->q = params::Z_i;
+            this->pcontainer_m->m = params::m_i;
 
             // velocity is sampled from the ion distribution
             view_typeP Pview = this->pcontainer_m->P.getView();
@@ -287,16 +282,14 @@ public:
         // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
         
-        // mean and standard deviaiton for ion distribution function
-        Vector<T,3> muI = {v0[0], v0[1], v0[2]};
-        Vector<T,3> sdI = {stdeviation_i, stdeviation_i, stdeviation_i};
-
-        // mean and standard deviation for electron distribution function
-        Vector<T,3> muE = {v0[0], v0[1], v0[2]};
-        Vector<T,3> sdE = {stdeviation_e, stdeviation_e, stdeviation_e};
+        // standard deviaiton for ion and electron distribution functions
+        // mu = 0 for both (average velocity is 0)
+        // standard deviation is the thermal velocity of the species
+        Vector<T,3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+        Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
-        ParticleGen pgen(muI, sdI, muE, sdE, v_max);
+        ParticleGen pgen(sdI, sdE, params::v_max);
 
         auto rmin = this->rmin_m;
         auto rmax = this->rmax_m;
