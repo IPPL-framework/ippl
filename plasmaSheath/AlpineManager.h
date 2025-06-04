@@ -70,7 +70,7 @@ public:
 
     std::vector<std::string> getPreconditionerParams() const { return preconditioner_params_m; };
 
-    virtual void dump(){/* default does nothing */};
+    virtual void dump() { /* default does nothing */ };
 
     void pre_step() override {
         Inform m("Pre-step");
@@ -117,8 +117,8 @@ public:
         const int nghost   = rho->getNghost();
         auto view          = rho->getView();
 
-        using exec_space = typename Field_t<Dim>::execution_space;
-        using index_type = typename ippl::RangePolicy<Dim, exec_space>::index_type;
+        using exec_space       = typename Field_t<Dim>::execution_space;
+        using index_type       = typename ippl::RangePolicy<Dim, exec_space>::index_type;
         using index_array_type = typename ippl::RangePolicy<Dim, exec_space>::index_array_type;
         Kokkos::Array<index_type, Dim> begin, end, begin_ghost, end_ghost;
 
@@ -126,7 +126,7 @@ public:
         bool addGhosts_lower = false;
         for (unsigned int d = 0; d < Dim; ++d) {
             begin[d] = view.extent(d) - nghost;
-            end[d] = nghost;
+            end[d]   = nghost;
             if (ldom[d].max() == gdom[d].max()) {
                 end_ghost[d]    = view.extent(d);
                 addGhosts_upper = true;
@@ -141,17 +141,17 @@ public:
         T sum_lower = 0;
         if (addGhosts_upper) {
             ippl::parallel_reduce(
-                "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin, end_ghost),
-                KOKKOS_LAMBDA(index_array_type & args, T& val) {
-                    val += ippl::apply(view, args);
-            }, Kokkos::Sum<T>(sum_upper));
+                "Assign periodic field BC",
+                ippl::createRangePolicy<Dim, exec_space>(begin, end_ghost),
+                KOKKOS_LAMBDA(index_array_type & args, T & val) { val += ippl::apply(view, args); },
+                Kokkos::Sum<T>(sum_upper));
         }
         if (addGhosts_lower) {
             ippl::parallel_reduce(
-                "Assign periodic field BC", ippl::createRangePolicy<Dim, exec_space>(begin_ghost, end),
-                KOKKOS_LAMBDA(index_array_type & args, T& val) {
-                    val += ippl::apply(view, args);
-            }, Kokkos::Sum<T>(sum_lower));
+                "Assign periodic field BC",
+                ippl::createRangePolicy<Dim, exec_space>(begin_ghost, end),
+                KOKKOS_LAMBDA(index_array_type & args, T & val) { val += ippl::apply(view, args); },
+                Kokkos::Sum<T>(sum_lower));
         }
         T globalSum_upper = 0;
         T globalSum_lower = 0;

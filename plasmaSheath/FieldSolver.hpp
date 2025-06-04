@@ -13,7 +13,7 @@ private:
     Field_t<Dim>* rho_m;
     VField_t<T, Dim>* E_m;
     Field<T, Dim>* phi_m;
-    T phiWall_m; // Dirichlet BC at wall
+    T phiWall_m;  // Dirichlet BC at wall
     std::vector<std::string> preconditioner_params_m;
 
 public:

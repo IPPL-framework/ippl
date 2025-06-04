@@ -33,8 +33,8 @@ const char* TestName   = "PlasmaSheath";
 
 #include "Utility/IpplTimings.h"
 
-#include "PlasmaSheathManager.h"
 #include "Manager/PicManager.h"
+#include "PlasmaSheathManager.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
-        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef mainTimer       = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
         IpplTimings::startTimer(mainTimer);
         IpplTimings::startTimer(initializeTimer);
@@ -53,11 +53,11 @@ int main(int argc, char* argv[]) {
             nr[d] = params::nx;
         }
 
-        int arg = 1;
-        size_type totalP   = std::atoll(argv[arg++]);
-        int nt             = std::atoi(argv[arg++]);
-        double lbt         = std::atof(argv[arg++]);
-        std::string solver = "CG";
+        int arg                 = 1;
+        size_type totalP        = std::atoll(argv[arg++]);
+        int nt                  = std::atoi(argv[arg++]);
+        double lbt              = std::atof(argv[arg++]);
+        std::string solver      = "CG";
         std::string step_method = "Boris";
 
         msg << "nr=" << nr << ", Np=" << totalP << ", nt=" << nt << ", solver=" << solver << endl;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         manager.pre_run();
 
         IpplTimings::stopTimer(initializeTimer);
-        
+
         manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;

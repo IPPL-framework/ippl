@@ -28,29 +28,32 @@ public:
     using RNG                 = typename Kokkos::Random_XorShift64_Pool<>;
 
     struct ParticleGen {
-        Vector<T,3> sdI;
-        Vector<T,3> sdE;
+        Vector<T, 3> sdI;
+        Vector<T, 3> sdE;
         double v_max_I;
         double v_max_E;
         RNG rand_pool64;
 
-        ParticleGen(Vector<T,3>& sdI_, Vector<T,3>& sdE_, const double v_max_I_, const double v_max_E_) 
-        : sdI(sdI_), sdE(sdE_), v_max_I(v_max_I_), v_max_E(v_max_E_),
-          rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()))
-        {}
+        ParticleGen(Vector<T, 3>& sdI_, Vector<T, 3>& sdE_, const double v_max_I_,
+                    const double v_max_E_)
+            : sdI(sdI_)
+            , sdE(sdE_)
+            , v_max_I(v_max_I_)
+            , v_max_E(v_max_E_)
+            , rand_pool64((size_type)(42 + 100 * ippl::Comm->rank())) {}
 
         KOKKOS_FUNCTION Vector<T, 3> generate_ion() const {
             RNG::generator_type rand_gen = rand_pool64.get_state();
 
-            Vector<T, 3> v = {0.0, 0.0, 0.0};
+            Vector<T, 3> v     = {0.0, 0.0, 0.0};
             double accept_prob = 0.0;
-            double unif = 0.0;
-            // -v_max < v_x < 0 so that the particles travel from 
+            double unif        = 0.0;
+            // -v_max < v_x < 0 so that the particles travel from
             // the injection site (bulk plasma) to the wall
             while ((v[0] >= 0) || (v[0] < -v_max_I) || (unif >= accept_prob)) {
-                v[0] = (sdI[0] * rand_gen.normal(0.0, 1.0));
+                v[0]        = (sdI[0] * rand_gen.normal(0.0, 1.0));
                 accept_prob = v[0] * v[0] / (v_max_I * v_max_I);
-                unif = rand_gen.drand(0.0, 1.0);
+                unif        = rand_gen.drand(0.0, 1.0);
             }
             for (unsigned d = 1; d < 3; ++d) {
                 v[d] = (sdI[d] * rand_gen.normal(0.0, 1.0));
@@ -63,7 +66,7 @@ public:
             RNG::generator_type rand_gen = rand_pool64.get_state();
 
             Vector<T, 3> v = {0.0, 0.0, 0.0};
-            // -v_max < v_x < 0 so that the particles travel from 
+            // -v_max < v_x < 0 so that the particles travel from
             // the injection site (bulk plasma) to the wall
             while ((v[0] >= 0) || (v[0] < -v_max_E)) {
                 v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
@@ -77,18 +80,18 @@ public:
     };
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                         std::string& solver_, std::string& stepMethod_)
+                        std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
-            setup();
-        }
+        setup();
+    }
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                         std::string& solver_, std::string& stepMethod_,
-                         std::vector<std::string> preconditioner_params_)
+                        std::string& solver_, std::string& stepMethod_,
+                        std::vector<std::string> preconditioner_params_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
                                 preconditioner_params_) {
-            setup();
-        }
+        setup();
+    }
 
     ~PlasmaSheathManager() {}
 
@@ -109,21 +112,21 @@ public:
         // the particles are spawned at x=L (injection from bulk plasma),
         // and x=0 is the wall
         this->rmin_m   = 0.0;
-        this->rmax_m   = params::L; // L = size of domain
+        this->rmax_m   = params::L;  // L = size of domain
         this->origin_m = this->rmin_m;
         this->hr_m     = params::dx;
 
-        this->phiWall_m = params::phi0; // Dirichlet BC for phi at wall (x=0)
+        this->phiWall_m = params::phi0;  // Dirichlet BC for phi at wall (x=0)
 
         // normalized B-field - vector for direction
         this->Bext_m = {-Kokkos::cos(params::alpha), 0.0,
-                         Kokkos::sin(params::alpha)};  // External magnetic field
+                        Kokkos::sin(params::alpha)};  // External magnetic field
 
         this->dt_m   = params::dt;
         this->it_m   = 0;
         this->time_m = 0.0;
 
-        // total charge is 0 since quasineutral; 
+        // total charge is 0 since quasineutral;
         // if total no. of particles is odd, will have 1 electron more
         this->Q_m = 0.0 - (this->totalP_m % 2);
 
@@ -195,7 +198,7 @@ public:
         // divide particles equally among ranks
         size_type totalP = this->totalP_m;
         size_type nlocal = totalP / ippl::Comm->size();
-        int rest = (int)(totalP - nlocal * ippl::Comm->size());
+        int rest         = (int)(totalP - nlocal * ippl::Comm->size());
         if (ippl::Comm->rank() < rest)
             ++nlocal;
 
@@ -205,14 +208,14 @@ public:
         // standard deviaiton for ion and electron distribution functions
         // mu = 0 for both (average velocity is 0)
         // standard deviation is the thermal velocity of the species
-        Vector<T,3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
-        Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
+        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+        Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
         ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
 
         // particles are initially sampled at x = L (bulk plasma)
-        // the wall is at x = 0 
+        // the wall is at x = 0
         this->pcontainer_m->R = this->rmax_m;
 
         if (params::kinetic_electrons) {
@@ -226,10 +229,10 @@ public:
             // TODO check what limits of velocity to put on vy and vz
             // half the particles are ions, half are electrons
             // we do this approximate division by checking whether even or odd ID
-            Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
-                KOKKOS_LAMBDA(const int i) {
+            Kokkos::parallel_for(
+                "Set attributes", this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const int i) {
                     bool odd = (i % 2);
-                    
+
                     Qview(i) = ((!odd) * params::Z_e) + (odd * params::Z_i);
                     Mview(i) = ((!odd) * params::m_e) + (odd * params::m_i);
 
@@ -241,17 +244,16 @@ public:
                     }
                 });
         } else {
-            // single species: ions 
+            // single species: ions
             // adiabatic electrons are taken care of in the fieldsolver
             this->pcontainer_m->q = params::Z_i;
             this->pcontainer_m->m = params::m_i;
 
             // velocity is sampled from the ion distribution
             view_typeP Pview = this->pcontainer_m->P.getView();
-            Kokkos::parallel_for("Set attributes", this->pcontainer_m->getLocalNum(),
-                KOKKOS_LAMBDA(const int i) {
-                    Pview(i) = pgen.generate_ion();
-                });
+            Kokkos::parallel_for(
+                "Set attributes", this->pcontainer_m->getLocalNum(),
+                KOKKOS_LAMBDA(const int i) { Pview(i) = pgen.generate_ion(); });
         }
         Kokkos::fence();
         ippl::Comm->barrier();
@@ -290,12 +292,12 @@ public:
 
         // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
-        
+
         // standard deviaiton for ion and electron distribution functions
         // mu = 0 for both (average velocity is 0)
         // standard deviation is the thermal velocity of the species
-        Vector<T,3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
-        Vector<T,3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
+        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, params::v_th_i};
+        Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
         ParticleGen pgen(sdI, sdE, params::v_trunc_i, params::v_trunc_e);
@@ -309,8 +311,8 @@ public:
         int seed = 42;
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
 
-        Kokkos::parallel_for("Remove particle", this->pcontainer_m->getLocalNum(),
-            KOKKOS_LAMBDA(const int i) {
+        Kokkos::parallel_for(
+            "Remove particle", this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const int i) {
                 bool outside = false;
                 for (unsigned int d = 0; d < Dim; ++d) {
                     if ((Rview(i)[d] > rmax[d]) || (Rview(i)[d] < rmin[d])) {
@@ -366,29 +368,30 @@ public:
         // half acceleration
         // 1/tau factor in front of (q/m)*E for physics
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q/pc->m) * pc->E;
+        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q / pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // rotation
         IpplTimings::startTimer(BTimer);
 
         Vector_t<T, 3> Bext = this->Bext_m;
-        view_typeQ Qview = this->pcontainer_m->q.getView();
-        view_typeQ Mview = this->pcontainer_m->m.getView();
+        view_typeQ Qview    = this->pcontainer_m->q.getView();
+        view_typeQ Mview    = this->pcontainer_m->m.getView();
 
         // 1/D_C factor in front of (q/m)*(v x B) for physics
-        Kokkos::parallel_for("Apply rotation", this->pcontainer_m->getLocalNum(),
-            KOKKOS_LAMBDA(const int i) {
-                Vector_t<T, 3> const t = (1.0 / params::D_C) * 0.5 * dt * (Qview(i)/Mview(i)) * Bext;
+        Kokkos::parallel_for(
+            "Apply rotation", this->pcontainer_m->getLocalNum(), KOKKOS_LAMBDA(const int i) {
+                Vector_t<T, 3> const t =
+                    (1.0 / params::D_C) * 0.5 * dt * (Qview(i) / Mview(i)) * Bext;
                 Vector_t<T, 3> const w = Pview(i) + cross(Pview(i), t).apply();
                 Vector_t<T, 3> const s = (2.0 / (1 + dot(t, t).apply())) * t;
-                Pview(i) = Pview(i) + cross(w, s);
+                Pview(i)               = Pview(i) + cross(w, s);
             });
         IpplTimings::stopTimer(BTimer);
 
         // half acceleration
         IpplTimings::startTimer(ETimer);
-        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q/pc->m) * pc->E;
+        pc->P = pc->P + 0.5 * dt * params::tau * (pc->q / pc->m) * pc->E;
         IpplTimings::stopTimer(ETimer);
 
         // push position (half step)
@@ -415,10 +418,12 @@ public:
     }
 
     void dumpParticleData() {
-        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host = this->pcontainer_m->R.getHostMirror();
-        typename ParticleAttrib<Vector_t<T, 3>>::HostMirror P_host = this->pcontainer_m->P.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, Dim>>::HostMirror R_host =
+            this->pcontainer_m->R.getHostMirror();
+        typename ParticleAttrib<Vector_t<T, 3>>::HostMirror P_host =
+            this->pcontainer_m->P.getHostMirror();
         typename ParticleAttrib<double>::HostMirror q_host = this->pcontainer_m->q.getHostMirror();
-        typename ParticleAttrib<T>::HostMirror m_host = this->pcontainer_m->m.getHostMirror();
+        typename ParticleAttrib<T>::HostMirror m_host      = this->pcontainer_m->m.getHostMirror();
 
         Kokkos::deep_copy(R_host, this->pcontainer_m->R.getView());
         Kokkos::deep_copy(P_host, this->pcontainer_m->P.getView());

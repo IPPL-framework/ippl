@@ -17,7 +17,7 @@ public:
         , rmax_m(rmax)
         , decomp_m(decomp)
         , mesh_m(domain, hr, origin)
-        , fl_m(MPI_COMM_WORLD, domain, decomp) 
+        , fl_m(MPI_COMM_WORLD, domain, decomp)
         , phiWall_m(phiWall) {}
 
     ~FieldContainer() {}
