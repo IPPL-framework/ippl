@@ -47,7 +47,7 @@ public:
             double unif = 0.0;
             // -v_max < v_x < 0 so that the particles travel from 
             // the injection site (bulk plasma) to the wall
-            while ((v[0] >= 0) || (-v_max_I < v[0]) || (unif >= accept_prob)) {
+            while ((v[0] >= 0) || (v[0] < -v_max_I) || (unif >= accept_prob)) {
                 v[0] = (sdI[0] * rand_gen.normal(0.0, 1.0));
                 accept_prob = v[0] * v[0] / (v_max_I * v_max_I);
                 unif = rand_gen.drand(0.0, 1.0);
@@ -65,8 +65,11 @@ public:
             Vector<T, 3> v = {0.0, 0.0, 0.0};
             // -v_max < v_x < 0 so that the particles travel from 
             // the injection site (bulk plasma) to the wall
-            while ((v[0] >= 0) || (-v_max_E < v[0])) {
+            while ((v[0] >= 0) || (v[0] < -v_max_E)) {
                 v[0] = (sdE[0] * rand_gen.normal(0.0, 1.0));
+                std::cout << "generation of electron v_X = " << v[0] << std::endl;
+                std::cout << "the vmaxE is " << v_max_E << std::endl;
+                std::cout << "and -v_max_e < vx is " << (-v_max_E < v[0]) << std::endl;
             }
             for (unsigned d = 1; d < 3; ++d) {
                 v[d] = (sdE[d] * rand_gen.normal(0.0, 1.0));
