@@ -183,6 +183,9 @@ public:
         IpplTimings::startTimer(SolveTimer);
 
         if (!params::kinetic_electrons) {
+            // is the electrons are adiabatic, then we have a background
+            // charge density field which is given by exp(phi) where
+            // phi is the previous iteration's solution (electric potential)
             this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
                                            + exp(this->fcontainer_m->getPhi())
                                            * params::Z_e * params::n_e0;
@@ -367,6 +370,9 @@ public:
         // Field solve
         IpplTimings::startTimer(SolveTimer);
         if (!params::kinetic_electrons) {
+            // is the electrons are adiabatic, then we have a background
+            // charge density field which is given by exp(phi) where
+            // phi is the previous iteration's solution (electric potential)
             this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
                                            + exp(this->fcontainer_m->getPhi())
                                            * params::Z_e * params::n_e0;
