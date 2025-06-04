@@ -59,7 +59,7 @@ public:
 					vpar = rand_gen.normal(0.0, stdpar);
 					const double R =
 						double(vpar > 0.0) * double(vpar < v_trunc) * 2.0 *
-						(s == Electrons : 1.0 ? vpar*vpar/(v_trunc*v_trunc));
+						((s == Electrons) ? 1.0 : vpar*vpar/(v_trunc*v_trunc));
 					if (rand_gen.drand(0.0, 1.0) < R) break;
 				}
 
@@ -227,13 +227,6 @@ public:
         // create particles on each rank
         this->pcontainer_m->create(nlocal);
 
-        // standard deviaton for ion and electron distribution functions
-        // mu = 0 for both (average velocity is 0)
-        // standard deviation is the thermal velocity of the species
-		// note these are given in field-aligned coordinates (vpar, vperpx, vperpy) !!
-        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i, * params::nu, params::v_th_i * params::nu};
-        Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
-
         // particle velocity sampler
         ParticleGen pgen;
 
@@ -315,12 +308,6 @@ public:
 
         // remove particles which have hit the wall (either side of domain)
         // and resample to insert them from plasma boundary
-
-        // standard deviaiton for ion and electron distribution functions
-        // mu = 0 for both (average velocity is 0)
-        // standard deviation is the thermal velocity of the species
-        Vector<T, 3> sdI = {params::v_th_i, params::v_th_i * params::nu, params::v_th_i * params::nu};
-        Vector<T, 3> sdE = {params::v_th_e, params::v_th_e, params::v_th_e};
 
         // particle velocity sampler
         ParticleGen pgen;
@@ -435,8 +422,10 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        // dump
-        dumpPlasma();
+        // dump only every 1000 timesteps
+        if ((this->it_m % 1000) == 1) {
+            dumpPlasma();
+        }
     }
 
     void dump() override {
