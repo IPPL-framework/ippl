@@ -126,9 +126,13 @@ public:
         this->it_m   = 0;
         this->time_m = 0.0;
 
-        // total charge is 0 since quasineutral;
-        // if total no. of particles is odd, will have 1 electron more
-        this->Q_m = 0.0 - (this->totalP_m % 2);
+        if (params::kinetic_electrons) {
+            // total charge is 0 since quasineutral;
+            // if total no. of particles is odd, will have 1 electron more
+            this->Q_m = 0.0 - params::Z_e*(this->totalP_m % 2);
+        } else {
+            this->Q_m = this->totalP_m * params::Z_i;
+        }
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
@@ -178,6 +182,11 @@ public:
         static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
         IpplTimings::startTimer(SolveTimer);
 
+        if (!params::kinetic_electrons) {
+            this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
+                                           + exp(this->fcontainer_m->getPhi())
+                                           * params::Z_e * params::n_e0;
+        }
         this->fsolver_m->runSolver();
 
         IpplTimings::stopTimer(SolveTimer);
@@ -357,6 +366,11 @@ public:
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
+        if (!params::kinetic_electrons) {
+            this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
+                                           + exp(this->fcontainer_m->getPhi())
+                                           * params::Z_e * params::n_e0;
+        }
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
