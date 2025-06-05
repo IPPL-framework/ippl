@@ -79,6 +79,19 @@ if (IPPL_ENABLE_SOLVERS)
     add_subdirectory (LinearSolvers)
 endif ()
 
+if (IPPL_ENABLE_CATALYST)
+    message (STATUS "Adding Catalyst subdirectory")
+    add_subdirectory (Stream)
+    find_package(Catalyst REQUIRED)
+    message (STATUS "Found Catalyst")
+    target_link_libraries(ippl PUBLIC 
+        catalyst::catalyst
+    )
+    target_compile_definitions(ippl PUBLIC
+        IPPL_ENABLE_CATALYST 
+    )
+endif ()
+
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
 target_link_libraries(ippl

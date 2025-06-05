@@ -4,7 +4,7 @@ set(CMAKE_CXX_FLAGS_DEBUG_INIT "-O0 -g")
 set(CMAKE_CXX_FLAGS_RELEASE_INIT "-O3")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "-O3 -g")
 
-project(IPPL LANGUAGES CXX VERSION 3.0.2)
+project(IPPL LANGUAGES C CXX VERSION 3.0.2)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -17,6 +17,7 @@ option(IPPL_ENABLE_TESTS "Build integration tests in test/ directory" OFF)
 option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF)
 option(IPPL_ENABLE_COVERAGE "Enable code coverage" OFF)
 option(IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
+option(IPPL_ENABLE_CATALYST "Enable ParaView Catalyst" OFF)
 option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 

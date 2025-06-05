@@ -7,8 +7,8 @@
 
 // Define the ParticlesContainer class
 template <typename T, unsigned Dim = 3>
-class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>> {
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>, Kokkos::DefaultExecutionSpace>{
+    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>, Kokkos::DefaultExecutionSpace>;
 
 public:
     ippl::ParticleAttrib<double> q;           // charge
