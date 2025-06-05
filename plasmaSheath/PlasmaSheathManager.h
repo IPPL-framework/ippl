@@ -214,6 +214,9 @@ public:
 
         this->grid2par();
 
+        // dump particle ICs
+        this->dump();
+
         m << "Done";
     }
 
@@ -335,7 +338,7 @@ public:
                     }
                 }
                 if (outside) {
-                    Rview(i) = 0;
+                    Rview(i) = rmax;
                     bool odd = (i % 2);
                     if (params::kinetic_electrons) {
                         if (odd) {

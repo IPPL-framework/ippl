@@ -55,7 +55,7 @@ namespace params {
     constexpr double phi0 = -2.37;  
 	
 	// toggles between adiabatic electrons and kinetic electron
-    constexpr bool kinetic_electrons = false;  
+    constexpr bool kinetic_electrons = false;
 
     // derived quantities from the physical parameters
     // in normalized units, v_th_i = 1.0   and v_th_e = √(T_i/T_e) √m_e/m_i = √τ √~m_e
