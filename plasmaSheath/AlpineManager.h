@@ -81,8 +81,6 @@ public:
         // Update time
         this->time_m += this->dt_m;
         this->it_m++;
-        // wrtie solution to output file
-        this->dump();
 
         Inform m("Post-step:");
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
