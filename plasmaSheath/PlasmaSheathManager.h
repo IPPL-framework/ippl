@@ -34,7 +34,7 @@ public:
         double v_th_e;
         double v_trunc_e;
 
-	enum Species { Electrons, Ions };
+        enum Species { Electrons, Ions };
 
         ParticleGen(double v_th_e_, double v_trunc_e_)
         : rand_pool64((size_type)(42 + 100 * ippl::Comm->rank())),
@@ -49,56 +49,58 @@ public:
 			};
 		}
 
-		KOKKOS_FUNCTION Vector<T, 3> sample_v3(Species s) const {
-		    RNG::generator_type rand_gen = rand_pool64.get_state();
-			Vector<T, 3> v3;
+        KOKKOS_FUNCTION Vector<T, 3> sample_v3(Species s) const {
+            RNG::generator_type rand_gen = rand_pool64.get_state();
+            Vector<T, 3> v3;
 
-			while (true) {
-				// 1. sample in field-aligned coordinates
-				// 1.a. sample vpar from the modified half-maxwellian
-				// note that by coincidence, the normalization constant for beta = 0 and beta = 2 (i.e.
-				// vpar² prefactor) are the same, and evaluate to 2/√(2π)
-				const double stdpar = s == Electrons ? v_th_e : params::v_th_i,
-							 v_trunc = s == Electrons ? v_trunc_e : params::v_trunc_i;
+            while (true) {
+                // TODO: use samples from the Gamma distribution generated using the normal distribution samples
+                // 1. sample in field-aligned coordinates
+                // 1.a. sample vpar from the modified half-maxwellian
+                // note that by coincidence, the normalization constant for beta = 0 and beta = 2 (i.e.
+                // vpar² prefactor) are the same, and evaluate to 2/√(2π)
+                const double stdpar = s == Electrons ? params::v_th_e : params::v_th_i,
+                             v_trunc = s == Electrons ? params::v_trunc_e : params::v_trunc_i;
 
-				double vpar;
-				while (true) {
-					vpar = rand_gen.normal(0.0, stdpar);
-					const double R =
-						double(vpar > 0.0) * double(vpar < v_trunc) * 2.0 *
-						((s == Electrons) ? 1.0 : vpar*vpar/(v_trunc*v_trunc));
-					if (rand_gen.drand(0.0, 1.0) < R) break;
-				}
+                double vpar;
+                while (true) {
+                    vpar = rand_gen.normal(0.0, stdpar);
+                    const double R =
+                        double(vpar > 0.0) * double(vpar < v_trunc) * 2.0 *
+                        ((s == Electrons) ? 1.0 : vpar*vpar/(v_trunc*v_trunc));
+                    if (rand_gen.drand(0.0, 1.0) < R) break;
+                }
 
-				// 1.b. sample vperp coordinates
-				const double stdperp = s == Electrons ? v_th_e : params::v_th_i * params::nu;
-				const double vperpx = rand_gen.normal(0.0, stdperp),
-					   vperpy = rand_gen.normal(0.0, stdperp);
+                // 1.b. sample vperp coordinates
+                const double stdperp = s == Electrons ? params::v_th_e : params::v_th_i * params::nu;
+                const double vperpx = rand_gen.normal(0.0, stdperp),
+                       vperpy = rand_gen.normal(0.0, stdperp);
 
+                // 2. convert to wall-aligned coordinates
+                v3 = fieldaligned_to_wallaligned(vpar, vperpx, vperpy);
 
-				// 2. convert to wall-aligned coordinates
-				v3 = fieldaligned_to_wallaligned(vpar, vperpx, vperpy);
-
-				// 3. only keep velocities for which v_x < 0 and v_x > -v_trunc (for the CFL condition) !!
-				if (v3[0] < 0.0 && v3[0] > -v_trunc) break;
-			}
+                // 3. only keep velocities for which v_x < 0 and v_x > -v_trunc (for the CFL condition) !!
+                if (v3[0] < 0.0 && v3[0] > -v_trunc) break;
+            }
 
             rand_pool64.free_state(rand_gen);
-			return v3;
-		}
+            return v3;
+        }
 
         KOKKOS_FUNCTION Vector<T, 3> generate_ion() const {
             return sample_v3(Ions);
         }
 
         KOKKOS_FUNCTION Vector<T, 3> generate_electron() const {
-			return sample_v3(Electrons);
+            return sample_v3(Electrons);
         }
     };
 
+    int n_timeavg;
+
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                         std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
+        : n_timeavg(1), AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
         setup();
     }
 
@@ -213,6 +215,8 @@ public:
         IpplTimings::stopTimer(SolveTimer);
 
         this->grid2par();
+
+        resetPlasmaAverage();
 
         m << "Done";
     }
@@ -427,8 +431,10 @@ public:
         pc->update();
         IpplTimings::stopTimer(updateTimer);
 
-        // dump only every 1000 timesteps
-        if ((this->it_m % 1000) == 1) {
+        // update the incremental average
+        updatePlasmaAverage();
+
+        if ((this->it_m % params::dump_interval) == 1) {
             dumpPlasma();
         }
     }
@@ -482,14 +488,35 @@ public:
         ippl::Comm->barrier();
     }
 
+    void resetPlasmaAverage() {
+        this->fcontainer_m->getPhiTimeavg() = this->fcontainer_m->getPhi();
+        this->fcontainer_m->getRhoTimeavg() = this->fcontainer_m->getRho();
+        n_timeavg = 1;
+    }
+
+    void updatePlasmaAverage() {
+        this->fcontainer_m->getPhiTimeavg() = this->fcontainer_m->getPhiTimeavg() + 
+            (this->fcontainer_m->getPhi() - this->fcontainer_m->getPhiTimeavg()) / n_timeavg;
+        this->fcontainer_m->getRhoTimeavg() = this->fcontainer_m->getRhoTimeavg() + 
+            (this->fcontainer_m->getRho() - this->fcontainer_m->getRhoTimeavg()) / n_timeavg;
+
+        n_timeavg += 1;
+    }
+
     void dumpPlasma() {
         typename Field_t<Dim>::view_type::host_mirror_type host_view_rho 
                              = this->fcontainer_m->getRho().getHostMirror();
         typename Field<T, Dim>::view_type::host_mirror_type host_view_phi 
                              = this->fcontainer_m->getPhi().getHostMirror();
+        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho_timeavg
+                             = this->fcontainer_m->getRhoTimeavg().getHostMirror();
+        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi_timeavg 
+                             = this->fcontainer_m->getPhiTimeavg().getHostMirror();
 
         Kokkos::deep_copy(host_view_rho, this->fcontainer_m->getRho().getView());
         Kokkos::deep_copy(host_view_phi, this->fcontainer_m->getPhi().getView());
+        Kokkos::deep_copy(host_view_rho_timeavg, this->fcontainer_m->getRhoTimeavg().getView());
+        Kokkos::deep_copy(host_view_phi_timeavg, this->fcontainer_m->getPhiTimeavg().getView());
 
         const int nghost = this->fcontainer_m->getRho().getNghost();
         const int nx     = this->nr_m[0];
@@ -503,14 +530,18 @@ public:
         Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
         csvout.precision(16);
         csvout.setf(std::ios::scientific, std::ios::floatfield);
-        csvout << "x rho(x) phi(x)" << endl;
+        csvout << "x rho(x) rho_timeavg(x) phi(x) phi_timeavg(x)" << endl;
 
         for (int i = nghost; i < nx + nghost; ++i) {
             double x = (i + 0.5) * hx + orig_x;
             csvout << x << " ";
             csvout << host_view_rho(i) << " ";
-            csvout << host_view_phi(i) << endl;
+            csvout << host_view_rho_timeavg(i) << " ";
+            csvout << host_view_phi(i) << " ";
+            csvout << host_view_phi_timeavg(i) << endl;
         }
+
+        resetPlasmaAverage();
 
         ippl::Comm->barrier();
     }
