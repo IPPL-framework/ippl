@@ -160,7 +160,7 @@ public:
 
         m << "Discretization:" << endl
           << "nt " << this->nt_m << " Np= " << this->totalP_m << " grid=" << this->nr_m
-          << " dt=" << this->dt_m << endl;
+          << " dt=" << this->dt_m << " kinetic electrons? " << params::kinetic_electrons << endl;
     }
 
     void pre_run() override {
@@ -471,7 +471,7 @@ public:
         Kokkos::deep_copy(m_host, this->pcontainer_m->m.getView());
 
         std::stringstream pname;
-        pname << "data" << params::kinetic_electrons << "/ParticleIC_";
+        pname << "data_" << params::kinetic_electrons << "/ParticleIC_";
         pname << ippl::Comm->rank();
         pname << ".csv";
         Inform pcsvout(NULL, pname.str().c_str(), Inform::APPEND, ippl::Comm->rank());
@@ -534,7 +534,7 @@ public:
         const double orig_x = this->origin_m[0];
 
         std::stringstream fname;
-        fname << "data/Fields_";
+        fname << "data_" << params::kinetic_electrons << "/Fields_";
         fname << this->it_m;
         fname << ".csv";
         Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
