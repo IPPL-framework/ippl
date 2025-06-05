@@ -34,73 +34,78 @@ public:
         double v_th_e;
         double v_trunc_e;
 
-        enum Species { Electrons, Ions };
+        enum Species {
+            Electrons,
+            Ions
+        };
 
         ParticleGen(double v_th_e_, double v_trunc_e_)
-        : rand_pool64((size_type)(42 + 100 * ippl::Comm->rank())),
-          v_th_e(v_th_e_), v_trunc_e(v_trunc_e_)
-        {}
+            : rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()))
+            , v_th_e(v_th_e_)
+            , v_trunc_e(v_trunc_e_) {}
 
-		KOKKOS_FUNCTION Vector<T, 3> fieldaligned_to_wallaligned(double vpar, double vperpx, double vperpy) const {
-			return {
-				vperpx * Kokkos::cos(params::alpha) - vpar * Kokkos::sin(params::alpha),
-				vperpy,
-				vperpx * Kokkos::sin(params::alpha) + vpar * Kokkos::cos(params::alpha),	
-			};
-		}
+        KOKKOS_FUNCTION Vector<T, 3> fieldaligned_to_wallaligned(double vpar, double vperpx,
+                                                                 double vperpy) const {
+            return {
+                vperpx * Kokkos::cos(params::alpha) - vpar * Kokkos::sin(params::alpha),
+                vperpy,
+                vperpx * Kokkos::sin(params::alpha) + vpar * Kokkos::cos(params::alpha),
+            };
+        }
 
         KOKKOS_FUNCTION Vector<T, 3> sample_v3(Species s) const {
             RNG::generator_type rand_gen = rand_pool64.get_state();
             Vector<T, 3> v3;
 
             while (true) {
-                // TODO: use samples from the Gamma distribution generated using the normal distribution samples
+                // TODO: use samples from the Gamma distribution generated using the normal
+                // distribution samples
                 // 1. sample in field-aligned coordinates
                 // 1.a. sample vpar from the modified half-maxwellian
-                // note that by coincidence, the normalization constant for beta = 0 and beta = 2 (i.e.
-                // vpar² prefactor) are the same, and evaluate to 2/√(2π)
-                const double stdpar = s == Electrons ? params::v_th_e : params::v_th_i,
+                // note that by coincidence, the normalization constant for beta = 0 and beta = 2
+                // (i.e. vpar² prefactor) are the same, and evaluate to 2/√(2π)
+                const double stdpar  = s == Electrons ? params::v_th_e : params::v_th_i,
                              v_trunc = s == Electrons ? params::v_trunc_e : params::v_trunc_i;
 
                 double vpar;
                 while (true) {
-                    vpar = rand_gen.normal(0.0, stdpar);
-                    const double R =
-                        double(vpar > 0.0) * double(vpar < v_trunc) * 2.0 *
-                        ((s == Electrons) ? 1.0 : vpar*vpar/(v_trunc*v_trunc));
-                    if (rand_gen.drand(0.0, 1.0) < R) break;
+                    vpar           = rand_gen.normal(0.0, stdpar);
+                    const double R = double(vpar > 0.0) * double(vpar < v_trunc) * 2.0
+                                     * ((s == Electrons) ? 1.0 : vpar * vpar / (v_trunc * v_trunc));
+                    if (rand_gen.drand(0.0, 1.0) < R)
+                        break;
                 }
 
                 // 1.b. sample vperp coordinates
-                const double stdperp = s == Electrons ? params::v_th_e : params::v_th_i * params::nu;
+                const double stdperp =
+                    s == Electrons ? params::v_th_e : params::v_th_i * params::nu;
                 const double vperpx = rand_gen.normal(0.0, stdperp),
-                       vperpy = rand_gen.normal(0.0, stdperp);
+                             vperpy = rand_gen.normal(0.0, stdperp);
 
                 // 2. convert to wall-aligned coordinates
                 v3 = fieldaligned_to_wallaligned(vpar, vperpx, vperpy);
 
-                // 3. only keep velocities for which v_x < 0 and v_x > -v_trunc (for the CFL condition) !!
-                if (v3[0] < 0.0 && v3[0] > -v_trunc) break;
+                // 3. only keep velocities for which v_x < 0 and v_x > -v_trunc (for the CFL
+                // condition) !!
+                if (v3[0] < 0.0 && v3[0] > -v_trunc)
+                    break;
             }
 
             rand_pool64.free_state(rand_gen);
             return v3;
         }
 
-        KOKKOS_FUNCTION Vector<T, 3> generate_ion() const {
-            return sample_v3(Ions);
-        }
+        KOKKOS_FUNCTION Vector<T, 3> generate_ion() const { return sample_v3(Ions); }
 
-        KOKKOS_FUNCTION Vector<T, 3> generate_electron() const {
-            return sample_v3(Electrons);
-        }
+        KOKKOS_FUNCTION Vector<T, 3> generate_electron() const { return sample_v3(Electrons); }
     };
 
     int n_timeavg;
 
     PlasmaSheathManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                         std::string& solver_, std::string& stepMethod_)
-        : n_timeavg(1), AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
+        : n_timeavg(1)
+        , AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {
         setup();
     }
 
@@ -138,8 +143,7 @@ public:
         this->phiWall_m = params::phi0;  // Dirichlet BC for phi at wall (x=0)
 
         // normalized B-field - vector for direction
-        this->Bext_m = {-Kokkos::cos(params::alpha),
-                        0.0,
+        this->Bext_m = {-Kokkos::cos(params::alpha), 0.0,
                         Kokkos::sin(params::alpha)};  // External magnetic field
 
         this->dt_m   = params::dt;
@@ -149,7 +153,7 @@ public:
         if (params::kinetic_electrons) {
             // total charge is 0 since quasineutral;
             // if total no. of particles is odd, will have 1 electron more
-            this->Q_m = 0.0 - params::Z_e*(this->totalP_m % 2);
+            this->Q_m = 0.0 - params::Z_e * (this->totalP_m % 2);
         } else {
             this->Q_m = this->totalP_m * params::Z_i;
         }
@@ -206,9 +210,9 @@ public:
             // is the electrons are adiabatic, then we have a background
             // charge density field which is given by exp(phi) where
             // phi is the previous iteration's solution (electric potential)
-            this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
-                                           + exp(this->fcontainer_m->getPhi())
-                                           * params::Z_e * params::n_e0;
+            this->fcontainer_m->getRho() =
+                this->fcontainer_m->getRho()
+                + exp(this->fcontainer_m->getPhi()) * params::Z_e * params::n_e0;
         }
         this->fsolver_m->runSolver();
 
@@ -384,9 +388,9 @@ public:
             // is the electrons are adiabatic, then we have a background
             // charge density field which is given by exp(phi) where
             // phi is the previous iteration's solution (electric potential)
-            this->fcontainer_m->getRho() = this->fcontainer_m->getRho()
-                                           + exp(this->fcontainer_m->getPhi())
-                                           * params::Z_e * params::n_e0;
+            this->fcontainer_m->getRho() =
+                this->fcontainer_m->getRho()
+                + exp(this->fcontainer_m->getPhi()) * params::Z_e * params::n_e0;
         }
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
@@ -495,35 +499,37 @@ public:
     void resetPlasmaAverage() {
         this->fcontainer_m->getPhiTimeavg() = this->fcontainer_m->getPhi();
         this->fcontainer_m->getRhoTimeavg() = this->fcontainer_m->getRho();
-        n_timeavg = 1;
+        n_timeavg                           = 1;
     }
 
     void updatePlasmaAverage() {
-        this->fcontainer_m->getPhiTimeavg() = this->fcontainer_m->getPhiTimeavg() + 
-            (this->fcontainer_m->getPhi() - this->fcontainer_m->getPhiTimeavg()) / n_timeavg;
-        this->fcontainer_m->getRhoTimeavg() = this->fcontainer_m->getRhoTimeavg() + 
-            (this->fcontainer_m->getRho() - this->fcontainer_m->getRhoTimeavg()) / n_timeavg;
+        this->fcontainer_m->getPhiTimeavg() =
+            this->fcontainer_m->getPhiTimeavg()
+            + (this->fcontainer_m->getPhi() - this->fcontainer_m->getPhiTimeavg()) / n_timeavg;
+        this->fcontainer_m->getRhoTimeavg() =
+            this->fcontainer_m->getRhoTimeavg()
+            + (this->fcontainer_m->getRho() - this->fcontainer_m->getRhoTimeavg()) / n_timeavg;
 
         n_timeavg += 1;
     }
 
     void dumpPlasma() {
-        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho 
-                             = this->fcontainer_m->getRho().getHostMirror();
-        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi 
-                             = this->fcontainer_m->getPhi().getHostMirror();
-        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho_timeavg
-                             = this->fcontainer_m->getRhoTimeavg().getHostMirror();
-        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi_timeavg 
-                             = this->fcontainer_m->getPhiTimeavg().getHostMirror();
+        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho =
+            this->fcontainer_m->getRho().getHostMirror();
+        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi =
+            this->fcontainer_m->getPhi().getHostMirror();
+        typename Field_t<Dim>::view_type::host_mirror_type host_view_rho_timeavg =
+            this->fcontainer_m->getRhoTimeavg().getHostMirror();
+        typename Field<T, Dim>::view_type::host_mirror_type host_view_phi_timeavg =
+            this->fcontainer_m->getPhiTimeavg().getHostMirror();
 
         Kokkos::deep_copy(host_view_rho, this->fcontainer_m->getRho().getView());
         Kokkos::deep_copy(host_view_phi, this->fcontainer_m->getPhi().getView());
         Kokkos::deep_copy(host_view_rho_timeavg, this->fcontainer_m->getRhoTimeavg().getView());
         Kokkos::deep_copy(host_view_phi_timeavg, this->fcontainer_m->getPhiTimeavg().getView());
 
-        const int nghost = this->fcontainer_m->getRho().getNghost();
-        const int nx     = this->nr_m[0];
+        const int nghost    = this->fcontainer_m->getRho().getNghost();
+        const int nx        = this->nr_m[0];
         const double hx     = this->hr_m[0];
         const double orig_x = this->origin_m[0];
 
