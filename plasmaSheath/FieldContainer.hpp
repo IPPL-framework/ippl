@@ -29,7 +29,9 @@ private:
     std::array<bool, Dim> decomp_m;
     VField_t<T, Dim> E_m;
     Field_t<Dim> rho_m;
+    Field_t<Dim> rho_timeavg_m;
     Field<T, Dim> phi_m;
+    Field<T, Dim> phi_timeavg_m;
     Mesh_t<Dim> mesh_m;
     FieldLayout_t<Dim> fl_m;
     T phiWall_m;
@@ -41,8 +43,14 @@ public:
     Field_t<Dim>& getRho() { return rho_m; }
     void setRho(Field_t<Dim>& rho) { rho_m = rho; }
 
+    Field_t<Dim>& getRhoTimeavg() { return rho_timeavg_m; }
+    void setRhoTimeavg(Field_t<Dim>& rho) { rho_timeavg_m = rho; }
+
     Field<T, Dim>& getPhi() { return phi_m; }
     void setPhi(Field<T, Dim>& phi) { phi_m = phi; }
+
+    Field<T, Dim>& getPhiTimeavg() { return phi_timeavg_m; }
+    void setPhiTimeavg(Field<T, Dim>& phi) { phi_timeavg_m = phi; }
 
     Vector_t<T, Dim>& getHr() { return hr_m; }
     void setHr(const Vector_t<T, Dim>& hr) { hr_m = hr; }
