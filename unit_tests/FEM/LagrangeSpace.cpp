@@ -23,7 +23,7 @@ struct EvalFunctor {
                     const ippl::Vector<Tlhs, numElemDOFs>& basis_q_k,
                     const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k,
                     [[maybe_unused]] int elementIndex, 
-                    [[maybe_unused]] const Vector<int, Dim> shift) const {
+                    [[maybe_unused]] const ippl::Vector<int, Dim> shift) const {
         return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
     }
 };
