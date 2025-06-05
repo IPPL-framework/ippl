@@ -72,10 +72,7 @@ int main(int argc, char* argv[]) {
 
         msg << "Starting iterations ..." << endl;
 
-	    double start = MPI_Wtime();
         manager.run(manager.getNt());
-	    double end = MPI_Wtime();
-        std::cout << "Total Simulation time: " << end-start << " seconds." << std::endl;
 
         msg << "End." << endl;
 	    IpplTimings::stopTimer(mainTimer);

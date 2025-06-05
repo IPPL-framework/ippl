@@ -52,10 +52,11 @@ int main(int argc, char* argv[]){
 
         msg << "Starting iterations ..." << endl;
 
-        double start = MPI_Wtime();
+        static IpplTimings::TimerRef simulationTimer = IpplTimings::getTimer("Total Simulation Time");
+        IpplTimings::startTimer(simulationTimer);
         manager.run(manager.getNt());
-        double end = MPI_Wtime();
-        std::cout << "Total Simulation time: " << end-start << " seconds." << std::endl;
+        IpplTimings::stopTimer(simulationTimer);
+        IpplTimings::print();
    }
     ippl::finalize();
     
