@@ -1,6 +1,7 @@
 #include <algorithm>
-#include <cmath>
 #include <limits>
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
 
 #ifndef PLASMA_INPUT_H_
 #define PLASMA_INPUT_H_
@@ -49,14 +50,12 @@ namespace params {
 	// magnetic field incidence angle
 	// set this to 90deg for Debye sheath simulations, so that vpar = -vx !
     constexpr double alpha = pi / 2; //10 * pi / 180.0;
-	constexpr double sa = std::sin(alpha);
-	constexpr double ca = std::cos(alpha);
 
 	// wall bias. note that phi(x=MPE) = 0
     constexpr double phi0 = -2.37;  
 	
 	// toggles between adiabatic electrons and kinetic electron
-    constexpr bool kinetic_electrons = true;  
+    constexpr bool kinetic_electrons = false;  
 
     // derived quantities from the physical parameters
     // in normalized units, v_th_i = 1.0   and v_th_e = √(T_i/T_e) √m_e/m_i = √τ √~m_e
@@ -65,9 +64,9 @@ namespace params {
 	// ion thermal velocity, by definition of normalization
     constexpr double v_th_i = 1.0;
     static_assert(v_th_i == 1.0);
-    constexpr double v_th_e   = std::sqrt(tau / m_e);
+    double v_th_e = Kokkos::sqrt(tau / m_e); // can't use constexpr since sqrt not constexpr
     constexpr double rho_th_i = D_C;
-    constexpr double rho_th_e = D_C * std::sqrt(m_e / tau);
+    double rho_th_e = D_C * v_th_e; // can't use constexpr since v_th_e not constexpr
     constexpr double Omega_ci = 1.0 / D_C;
     constexpr double Omega_ce = 1.0 / (Z_i * m_e * D_C);
 
@@ -84,19 +83,20 @@ namespace params {
 	// velocity at which to truncate the ion distribution function
     constexpr double v_trunc_i = 6.0 * v_th_i;  
 	// velocity at which to truncate the electron distribution function
-    constexpr double v_trunc_e = 6.0 * v_th_e;  
+    double v_trunc_e = 6.0 * v_th_e; // can't use constexpr since v_th_e not constexpr 
 	// rough estimate of the velocity of the ions as the impact the wall
     constexpr double f_ion_speedup = 10.0;  
 
     // postprocessing of simulation parameters
 	// resolution such that dx << smallest length scale
-    constexpr double dx0 = f_x * std::min({kinetic_electrons ? rho_th_e : infinity, rho_th_i, D_D});  
-    constexpr unsigned int nx = std::ceil(L / dx0);
+    // can't use constexpr since rho_th_e, min(), ceil() not marked as constexpr
+    double dx0 = f_x * std::min({kinetic_electrons ? rho_th_e : infinity, rho_th_i, D_D});  
+    unsigned int nx = Kokkos::ceil(L / dx0);
 	// the actual dx
-    constexpr double dx = L / (double)nx;  
+    double dx = L / (double)nx;  
 	// maximum velocity that we expect to encounter
-    constexpr double v_max = std::max({v_trunc_e, f_ion_speedup* v_trunc_i});
-    constexpr double dt = std::min({
+    double v_max = std::max({v_trunc_e, f_ion_speedup* v_trunc_i});
+    double dt = std::min({
         std::isfinite(D_C) ? (f_t * 2.0 * pi / std::max({Omega_ci, kinetic_electrons ? Omega_ce
 																					 : 0.0}))
                            : infinity,  // resolution such that dt << smallest time scale
