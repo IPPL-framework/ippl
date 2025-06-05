@@ -29,10 +29,10 @@ int main(int argc, char* argv[]){
         // const T rcut           = 0.0003125;    // 8 * PM grid spacing
         // const T alpha          = 2./rcut;      // choice motivated by B. Ulmer
         const T dt             = 2.15623e-13;
-        const T eps            = 0;
+        // const T eps            = 0;
         const unsigned int nt       = 1000;
-        const T m_e            = 1;
-        const T q_e            = 1;
+        // const T m_e            = 1;
+        // const T q_e            = 1;
         const T focus_strength = 1.5;
 
         int arg = 1;

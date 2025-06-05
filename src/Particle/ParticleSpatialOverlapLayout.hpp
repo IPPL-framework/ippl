@@ -37,7 +37,7 @@ namespace ippl {
 
         totalCells_m = 1;
         numLocalCells_m = 1;
-        for (int d = 0; d < Dim; ++d) {
+        for (unsigned d = 0; d < Dim; ++d) {
             const T length = hLocalRegions(rank)[d].length();
             const size_type nLocalCells = std::floor(length / rcutoff_m);
             numCells_m[d] = nLocalCells + 2 * numGhostCellsPerDim_m;
@@ -364,7 +364,7 @@ namespace ippl {
                 // Count matches for this particle
                 bool belongs_to_rank = false;
                 // Check all rank slots for this particle
-#pragma unroll // or reduce this with template param pack reduction
+// #pragma unroll // or reduce this with template param pack reduction
                 for (size_t slot = 0; slot < ranks.extent(0); ++slot) {
                     if (ranks(i, slot) == rank) {
                         belongs_to_rank = true;
@@ -430,8 +430,6 @@ namespace ippl {
         typename RegionLayout_t::view_type Regions = this->rlayout_m.getdLocalRegions();
         // Two views: one for data, one for offsets
 
-        const auto is = std::make_index_sequence<Dim>{};
-
         size_type numLoc = pc.getLocalNum();
 
         // First pass: count assignments per particle
@@ -479,7 +477,7 @@ namespace ippl {
 
         locate_type rank_data("rank_data", total_assignments()); // TODO does this work?
 
-        int myRank = Comm->rank();
+        const size_type myRank = Comm->rank();
 
         // Second pass: fill the data
         size_type invalidCount = 0;
@@ -538,7 +536,7 @@ namespace ippl {
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
         size_type index, const std::array<size_type, Dim> &numCells) {
         CellIndex_t ndIndex;
-#pragma unroll
+// #pragma unroll
         for (size_type d = 0; d < Dim; ++d) {
             ndIndex[d] = index % numCells[d];
             index /= numCells[d];
@@ -551,7 +549,7 @@ namespace ippl {
     constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isLocalCellIndex(
         size_type index, const std::array<size_type, Dim> &numCells) {
-#pragma unroll
+// #pragma unroll
         for (size_type d = 0; d < Dim; ++d) {
             size_type indexDim = index % numCells[d];
             if (indexDim == 0 || indexDim == numCells[d] - 1) { return false; }
@@ -567,14 +565,12 @@ namespace ippl {
         auto &positions = pc.R.getView();
         typename RegionLayout_t::view_type Regions = this->rlayout_m.getdLocalRegions();
 
-        int myRank = Comm->rank();
-
-        const auto is = std::make_index_sequence<Dim>{};
+        const size_type myRank = Comm->rank();
 
         Kokkos::deep_copy(ranks, -1);
 
         size_type invalidCount = 0;
-        size_type numLoc = pc.getLocalNum();
+        const size_type numLoc = pc.getLocalNum();
 
         const auto overlap = rcutoff_m;
 
@@ -628,7 +624,6 @@ namespace ippl {
 
         // calculate cell index for each particle
         using range_policy = Kokkos::RangePolicy<position_execution_space>;
-        const auto numCells = numCells_m;
         const auto cellStrides = cellStrides_m;
         const auto cellPermutation = cellPermutationForward_m;
 
@@ -690,7 +685,7 @@ namespace ippl {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_t num_attributes_in_space = 0;
             pc.template forAllAttributes<MemorySpace>(
-                [&]<typename Attribute>(Attribute &att) {
+                [&]<typename Attribute>(Attribute &) {
                     ++num_attributes_in_space;
                 });
             if (num_attributes_in_space > 0) {
@@ -834,7 +829,7 @@ namespace ippl {
         size_type maxParticleInNeighbors = 0;
 
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborOffsets;
-#pragma unroll
+// #pragma unroll
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
             auto n = neighborData.cellParticleCount(neighbors[neighborIdx]);
             neighborSizes[neighborIdx] = n;
@@ -876,7 +871,7 @@ namespace ippl {
 
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborOffsets;
 
-#pragma unroll
+// #pragma unroll
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
             auto n = neighborData.cellParticleCount(neighbors[neighborIdx]);
             neighborSizes[neighborIdx] = n;

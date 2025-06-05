@@ -22,27 +22,7 @@
 #include "Random/NormalDistribution.h"
 #include "Random/UniformDistribution.h"
 
-// Required Datatypes
-template <typename T, unsigned Dim>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
-
-template <typename T, unsigned Dim>
-using Vector_t = ippl::Vector<T, Dim>;
-
-template <unsigned Dim, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template <typename T, unsigned Dim, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
-
-using view_type = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
-
-// Kokkos Device and Host Spaces
-using Device = Kokkos::DefaultExecutionSpace;
-using Host = Kokkos::DefaultHostExecutionSpace;
-
-// physical constants
-// const double ke = 2.532638e8;
+#include "datatypes.h"
 
 /**
  * @class P3M3DBenchManager
@@ -55,6 +35,9 @@ template <typename T, unsigned Dim>
 class P3M3DBenchManager 
     : public P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
+    // Kokkos Device and Host Spaces
+    using Device = Kokkos::DefaultExecutionSpace;
+    using Host = Kokkos::DefaultHostExecutionSpace;
 
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
     using Base = P3M3DManager<T, Dim, FieldContainer<T, Dim> >;
@@ -64,47 +47,38 @@ protected:
 
     size_type totalP_m;         // Total number of particles
     int nt_m;                   // Total number of time steps
-    double dt_m;                // Time step size
+    T dt_m;                // Time step size
     Vector_t<int, Dim> nr_m;    // Domain granularity
-    double rcut_m;              // Interaction cutoff radius
+    T rcut_m;              // Interaction cutoff radius
     std::string solver_m;       // solver is P3MSolver
-    double beamRad_m;           // beam radius
-    double focusingF_m;         // constant focusing force
-    double boxlen_m;            // box length
+    T beamRad_m;           // beam radius
+    T focusingF_m;         // constant focusing force
+    T boxlen_m;            // box length
     
 public:
-    P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim>& nr_, double rcut_, double alpha_, double beamRad_, double focusingF_, double boxlen_) 
+    P3M3DBenchManager(size_type totalP_, int nt_, T dt_, Vector_t<int, Dim>& nr_, T rcut_, T alpha_, T beamRad_, T focusingF_, T boxlen_)
         : P3M3DManager<T, Dim, FieldContainer<T, Dim> >()
-        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_)
+        , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), solver_m("P3M"), beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_), alpha_m(alpha_)
         {
-            this->preallocatedSendBuffer_m = 1000;
-            this->sendBuffer_m = new T[preallocatedSendBuffer_m];
-            this->preallocatedRecvBuffer_m = 1000;
-            this->recvBuffer_m = new T[preallocatedRecvBuffer_m];
         }
 
     ~P3M3DBenchManager(){}
 
 protected:
-    double time_m;                  // Simulation time
-    double it_m;                    // Iteration counter
-    double alpha_m;                 // Green's function splitting parameter
-    double epsilon_m;               // Regularization for PP interaction
-    Vector_t<double, Dim> rmin_m;   // minimum domain extend
-    Vector_t<double, Dim> rmax_m;   // maximum domain extend
-    Vector_t<double, Dim> hr_m;     // PM Meshwidth
+    T time_m;                  // Simulation time
+    T it_m;                    // Iteration counter
+    T alpha_m;                 // Green's function splitting parameter
+    T epsilon_m;               // Regularization for PP interaction
+    Vector_t<T, Dim> rmin_m;   // minimum domain extend
+    Vector_t<T, Dim> rmax_m;   // maximum domain extend
+    Vector_t<T, Dim> hr_m;     // PM Meshwidth
     Vector_t<int, Dim> nCells_m;    // Number of cells in each dimension
-    double Q_m;                     // Particle Charge
-    Vector_t<double, Dim> origin_m;
+    T Q_m;                     // Particle Charge
+    Vector_t<T, Dim> origin_m;
     bool isAllPeriodic_m;
     ippl::NDIndex<Dim> domain_m;    // Domain as index range
     std::array<bool, Dim> decomp_m; // Domain Decomposition
-    double rhoNorm_m;               // Rho norm, required for scatterCIC
-    MPI_Comm graph_comm_m;          // MPI Graph communicator
-    unsigned preallocatedSendBuffer_m;  // Preallocated buffer size
-    T* sendBuffer_m;                // Send buffer
-    unsigned preallocatedRecvBuffer_m;  // Preallocated buffer size
-    T* recvBuffer_m;                // Recieve buffer
+    T rhoNorm_m;               // Rho norm, required for scatterCIC
 
 public: 
     size_type getTotalP() const { return totalP_m; }
@@ -119,9 +93,9 @@ public:
 
     void setNr(const Vector_t<int, Dim>& nr_) { nr_m = nr_; }
 
-    double getTime() const { return time_m; }
+    T getTime() const { return time_m; }
 
-    void setTime(double time_) { time_m = time_; }
+    void setTime(T time_) { time_m = time_; }
 
     void pre_run() override {
         Inform m("Pre Run");
@@ -132,13 +106,13 @@ public:
 
         this->decomp_m.fill(true);
         // this->alpha_m = 2./this->rcut_m;
-        double box_length = this->boxlen_m;
+        T box_length = this->boxlen_m;
         this->rmin_m = -box_length/2.;
         this->rmax_m = box_length/2.;
         this->origin_m = rmin_m;
         this->isAllPeriodic_m = true;
 
-        this->hr_m = box_length/(double)(this->nr_m[0]);
+        this->hr_m = box_length/(T)(this->nr_m[0]);
 
         std::cerr << "hr: " << this->hr_m << std::endl;
         
@@ -196,26 +170,26 @@ public:
                 )
             );
 
-        double initTimerStart = MPI_Wtime();
+        T initTimerStart = MPI_Wtime();
         initializeParticles();
-        double initTimerEnd = MPI_Wtime();
+        T initTimerEnd = MPI_Wtime();
         std::cout << "Particle Initialization Time: " << initTimerEnd - initTimerStart << std::endl;
 
         this->fcontainer_m->getRho() = 0.0;
 
-        double PMTimerStart = MPI_Wtime();
+        T PMTimerStart = MPI_Wtime();
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
-        double PMTimerEnd = MPI_Wtime();
+        T PMTimerEnd = MPI_Wtime();
         
         std::cout << "Field Solver Time: " << PMTimerEnd - PMTimerStart << std::endl;
 
-        double PPTimerStart = MPI_Wtime();
+        T PPTimerStart = MPI_Wtime();
 	    this->isolver_m->solve();
-        double PPTimerEnd = MPI_Wtime();
+        T PPTimerEnd = MPI_Wtime();
         std::cout << "PP Interaction Time: " << PPTimerEnd - PPTimerStart << std::endl;
 
 	    // this->focusingF_m *= this->computeAvgSpaceChargeForces();
@@ -264,7 +238,7 @@ public:
         auto hLocalRegions = this->pcontainer_m->getLayout().getRegionLayout().gethLocalRegions();
         Vector_t<T, Dim> domainMin, domainLength;
         
-        for(int d = 0; d < Dim; ++d){
+        for(unsigned d = 0; d < Dim; ++d){
             domainMin[d] = hLocalRegions(rank)[d].min();
             domainLength[d] = hLocalRegions(rank)[d].length();
         }
@@ -283,7 +257,7 @@ public:
                 
                 // obtain random numbers
                 Vector_t<T, Dim> u;
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     u[d] = generator.drand();
                 }
 
@@ -298,7 +272,7 @@ public:
                 // if (sign < 0.5) u = -u;
                 Vector_t<T, Dim> pos = domainMin + domainLength * u;
 
-                for(int d = 0; d < Dim; ++d){
+                for(unsigned d = 0; d < Dim; ++d){
                     P(index)[d] = 0;		// initialize with zero momentum
 		            R(index)[d] = pos[d];
                 }
@@ -351,7 +325,7 @@ public:
 
     void LeapFrogStep() {
         
-        double dt                               = this->dt_m;
+        T dt                               = this->dt_m;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
 
@@ -375,7 +349,7 @@ public:
 
     }
 
-    double computeAvgSpaceChargeForces() {
+    T computeAvgSpaceChargeForces() {
         auto totalP = this->totalP_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto E = this->pcontainer_m->E.getView();
@@ -391,13 +365,13 @@ public:
 
         std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
 
-        Vector_t<double, Dim> globE = 0.0;
+        Vector_t<T, Dim> globE = 0.0;
 
-        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<double>(), 0);
+        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<T>(), 0);
         
         globE /= totalP;
 
-        double focusingf = 0.0;
+        T focusingf = 0.0;
         for (unsigned d = 0; d < Dim; ++d) {
             focusingf += globE[d] * globE[d];
         }
@@ -406,11 +380,11 @@ public:
     }
 
     void applyConstantFocusing() {
-        view_type E = this->pcontainer_m->E.getView();
-        view_type R = this->pcontainer_m->R.getView();
+        auto E = this->pcontainer_m->E.getView();
+        auto R = this->pcontainer_m->R.getView();
 
-        double beamRad = this->beamRad_m;
-        double focusStrength = this->focusingF_m;
+        T beamRad = this->beamRad_m;
+        T focusStrength = this->focusingF_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
 
         std::cerr << "Focusing Force " << focusStrength << std::endl;
@@ -434,16 +408,16 @@ public:
         Inform m("scatter ");
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
+        ippl::ParticleAttrib<T> *q = &this->pcontainer_m->Q;
         typename ParticleContainer_t::particle_position_type *R = &this->pcontainer_m->R;
         Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
-        double Q                        = this->Q_m;
-        Vector_t<double, Dim> rmin	= this->rmin_m;
-        Vector_t<double, Dim> rmax	= this->rmax_m;
-        Vector_t<double, Dim> hr        = this->hr_m;
+        T Q                        = this->Q_m;
+        Vector_t<T, Dim> rmin	= this->rmin_m;
+        Vector_t<T, Dim> rmax	= this->rmax_m;
+        Vector_t<T, Dim> hr        = this->hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q-(*rho).sum())/Q);
+        T relError = std::fabs((Q-(*rho).sum())/Q);
 
         std::cerr << "Relative Error: " << relError << std::endl;
 
@@ -462,13 +436,13 @@ public:
             }
 	    }   
 
-	    double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
+	    T cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<T>());
         (*rho)          = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
 
         // rho = rho_e - rho_i;
-        double size = 1;
+        T size = 1;
         for (unsigned d = 0; d < Dim; d++) {
             size *= rmax[d] - rmin[d];
         }

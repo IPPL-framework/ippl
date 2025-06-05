@@ -22,27 +22,7 @@
 #include "Random/NormalDistribution.h"
 #include "Random/UniformDistribution.h"
 
-// Required Datatypes
-template<typename T, unsigned Dim>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim> > >;
-
-template<typename T, unsigned Dim>
-using Vector_t = ippl::Vector<T, Dim>;
-
-template<unsigned Dim, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template<typename T, unsigned Dim, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
-
-using view_type = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
-
-// Kokkos Device and Host Spaces
-using Device = Kokkos::DefaultExecutionSpace;
-using Host = Kokkos::DefaultHostExecutionSpace;
-
-// physical constants
-// const double ke = 2.532638e8;
+#include "datatypes.h"
 
 /**
  * @class P3M3DBenchManager
@@ -55,6 +35,10 @@ template<typename T, unsigned Dim>
 class P3M3DBenchManager
         : public P3M3DManager<T, Dim, FieldContainer<T, Dim> > {
 public:
+    // Kokkos Device and Host Spaces
+    using Device = Kokkos::DefaultExecutionSpace;
+    using Host = Kokkos::DefaultHostExecutionSpace;
+
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
     using Base = P3M3DManager<T, Dim, FieldContainer<T, Dim> >;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -62,50 +46,40 @@ public:
 protected:
     size_type totalP_m; // Total number of particles
     int nt_m; // Total number of time steps
-    double dt_m; // Time step size
+    T dt_m; // Time step size
     Vector_t<int, Dim> nr_m; // Domain granularity
-    double rcut_m; // Interaction cutoff radius
+    T rcut_m; // Interaction cutoff radius
     std::string solver_m; // solver is P3MSolver
-    double beamRad_m; // beam radius
-    double focusingF_m; // constant focusing force
-    double boxlen_m; // box length
+    T beamRad_m; // beam radius
+    T focusingF_m; // constant focusing force
+    T boxlen_m; // box length
 
 public:
-    P3M3DBenchManager(size_type totalP_, int nt_, double dt_, Vector_t<int, Dim> &nr_, double rcut_, double alpha_,
-                      double beamRad_, double focusingF_, double boxlen_)
+    P3M3DBenchManager(size_type totalP_, int nt_, T dt_, Vector_t<int, Dim> &nr_, T rcut_, T alpha_,
+                      T beamRad_, T focusingF_, T boxlen_)
         : P3M3DManager<T, Dim, FieldContainer<T, Dim> >()
-          , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), alpha_m(alpha_), solver_m("P3M"),
-          beamRad_m(beamRad_), focusingF_m(focusingF_), boxlen_m(boxlen_) {
-        this->preallocatedSendBuffer_m = 1000;
-        this->sendBuffer_m = new T[preallocatedSendBuffer_m];
-        this->preallocatedRecvBuffer_m = 1000;
-        this->recvBuffer_m = new T[preallocatedRecvBuffer_m];
+          , totalP_m(totalP_), nt_m(nt_), dt_m(dt_), nr_m(nr_), rcut_m(rcut_), solver_m("P3M"), beamRad_m(beamRad_),
+          focusingF_m(focusingF_), boxlen_m(boxlen_), alpha_m(alpha_) {
     }
 
     ~P3M3DBenchManager() {
     }
 
 protected:
-    double time_m; // Simulation time
-    double it_m; // Iteration counter
-    double alpha_m; // Green's function splitting parameter
-    double epsilon_m; // Regularization for PP interaction
-    Vector_t<double, Dim> rmin_m; // minimum domain extend
-    Vector_t<double, Dim> rmax_m; // maximum domain extend
-    Vector_t<double, Dim> hr_m; // PM Meshwidth
+    T time_m; // Simulation time
+    T it_m; // Iteration counter
+    T alpha_m; // Green's function splitting parameter
+    T epsilon_m; // Regularization for PP interaction
+    Vector_t<T, Dim> rmin_m; // minimum domain extend
+    Vector_t<T, Dim> rmax_m; // maximum domain extend
+    Vector_t<T, Dim> hr_m; // PM Meshwidth
     Vector_t<int, Dim> nCells_m; // Number of cells in each dimension
-    double Q_m; // Particle Charge
-    Vector_t<double, Dim> origin_m;
+    T Q_m; // Particle Charge
+    Vector_t<T, Dim> origin_m;
     bool isAllPeriodic_m;
     ippl::NDIndex<Dim> domain_m; // Domain as index range
     std::array<bool, Dim> decomp_m; // Domain Decomposition
-    double rhoNorm_m; // Rho norm, required for scatterCIC
-    MPI_Comm graph_comm_m; // MPI Graph communicator
-    unsigned preallocatedSendBuffer_m; // Preallocated buffer size
-    T *sendBuffer_m; // Send buffer
-    unsigned preallocatedRecvBuffer_m; // Preallocated buffer size
-    T *recvBuffer_m; // Recieve buffer
-    Kokkos::View<ippl::Vector<double, 3> *, Host> *haloE_m;
+    T rhoNorm_m; // Rho norm, required for scatterCIC
 
 public:
     size_type getTotalP() const { return totalP_m; }
@@ -120,9 +94,9 @@ public:
 
     void setNr(const Vector_t<int, Dim> &nr_) { nr_m = nr_; }
 
-    double getTime() const { return time_m; }
+    T getTime() const { return time_m; }
 
-    void setTime(double time_) { time_m = time_; }
+    void setTime(T time_) { time_m = time_; }
 
     void pre_run() override {
         Inform m("Pre Run");
@@ -133,15 +107,15 @@ public:
 
         this->decomp_m.fill(true);
         // this->alpha_m = 2./this->rcut_m;
-        double box_length = this->boxlen_m;
+        T box_length = this->boxlen_m;
         this->rmin_m = -box_length / 2.;
         this->rmax_m = box_length / 2.;
         this->origin_m = rmin_m;
         this->isAllPeriodic_m = true;
 
-        this->hr_m = box_length / (double) (this->nr_m[0]);
+        this->hr_m = box_length / (T) (this->nr_m[0]);
 
-        std::cerr << "hr: " << this->hr_m << std::endl;
+        m << "hr: " << this->hr_m << "\n";
 
         // initialize time stuff
         this->it_m = 0;
@@ -162,8 +136,8 @@ public:
             )
         );
 
-        std::cerr << "Device Space: " << Device::name() << std::endl;
-        std::cerr << "Host Space: " << Host::name() << std::endl;
+        m << "Device Space: " << Device::name() << "\n";
+        m << "Host Space: " << Host::name() << "\n";
 
 
         this->fcontainer_m->initializeFields("P3M");
@@ -194,53 +168,44 @@ public:
 
         this->setInteractionSolver(
             std::make_shared<typename Base::PPInteraction>(
-                *this->pcontainer_m, this->pcontainer_m->E, this->pcontainer_m->R, this->pcontainer_m->Q, ppInteractionParams
-                )
-            );
+                *this->pcontainer_m, this->pcontainer_m->E, this->pcontainer_m->R, this->pcontainer_m->Q,
+                ppInteractionParams
+            )
+        );
 
-        // setupMPI();
 
-        double initTimerStart = MPI_Wtime();
+        static IpplTimings::TimerRef particleInitTimer = IpplTimings::getTimer("particle_init");
+        IpplTimings::startTimer(particleInitTimer);
         initializeParticles();
-        double initTimerEnd = MPI_Wtime();
-        std::cout << "Particle Initialization Time: " << initTimerEnd - initTimerStart << std::endl;
+        IpplTimings::stopTimer(particleInitTimer);
 
         this->fcontainer_m->getRho() = 0.0;
 
-        double PMTimerStart = MPI_Wtime();
         this->par2grid();
 
         this->fsolver_m->solve();
 
         this->grid2par();
-        double PMTimerEnd = MPI_Wtime();
 
-        std::cout << "Field Solver Time: " << PMTimerEnd - PMTimerStart << std::endl;
-
-        double PPTimerStart = MPI_Wtime();
         this->isolver_m->solve();
-        double PPTimerEnd = MPI_Wtime();
-        std::cout << "PP Interaction Time: " << PPTimerEnd - PPTimerStart << std::endl;
 
         this->focusingF_m *= this->computeAvgSpaceChargeForces();
 
-        // this->pcontainer_m->update();
-
-        std::cerr << "Pre Run finished" << std::endl;
+        m << "Pre Run finished" << "\n";
     }
 
     void computeBeamStatistics() {
-        // std::cerr << "Start Computing Beam Statistics" << std::endl;
+        Inform m("ComputeBeamStatistics");
 
-        auto R = this->pcontainer_m->R.getView();
-        auto nLoc = this->pcontainer_m->getLocalNum();
-        auto P = this->pcontainer_m->P.getView();
-        double beamRad = this->beamRad_m;
+        const auto R = this->pcontainer_m->R.getView();
+        const auto nLoc = this->pcontainer_m->getLocalNum();
+        const auto P = this->pcontainer_m->P.getView();
+        // const T beamRad = this->beamRad_m;
 
-        Vector_t<double, 12> stats = 0.0;
+        Vector_t<T, 12> stats = 0.0;
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 12> &sum) {
+                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 12> &sum) {
                                     sum[0] += R(i)[0] * R(i)[0];
                                     sum[1] += P(i)[0] * P(i)[0];
                                     sum[2] += R(i)[0] * P(i)[0];
@@ -256,73 +221,67 @@ public:
                                 }, stats
         );
 
-        // double global_xsq = 0.0;
-        // double global_psq = 0.0;
-        // double global_xpsq = 0.0;
-        ippl::Vector<double, 12> global_stats = 0.0;
+        ippl::Vector<T, 12> global_stats = 0.0;
 
-        ippl::Comm->reduce(&stats[0], &global_stats[0], 12, std::plus<double>(), 0);
+        ippl::Comm->reduce(&stats[0], &global_stats[0], 12, std::plus<T>(), 0);
 
         global_stats /= this->totalP_m;
 
-        double sigma_x = Kokkos::sqrt(global_stats[0] - global_stats[9] * global_stats[9]);
-        double sigma_y = Kokkos::sqrt(global_stats[3] - global_stats[10] * global_stats[10]);
-        double sigma_z = Kokkos::sqrt(global_stats[6] - global_stats[11] * global_stats[11]);
-        double emit_x = Kokkos::sqrt(global_stats[0] * global_stats[1] - global_stats[2] * global_stats[2]);
-        double emit_y = Kokkos::sqrt(global_stats[3] * global_stats[4] - global_stats[5] * global_stats[5]);
-        double emit_z = Kokkos::sqrt(global_stats[6] * global_stats[7] - global_stats[8] * global_stats[8]);
-        // double beta = avg_xsq / emit_x;
-        // double sigma_x = Kokkos::sqrt(avg_xsq);
+        const T sigma_x = Kokkos::sqrt(global_stats[0] - global_stats[9] * global_stats[9]);
+        const T sigma_y = Kokkos::sqrt(global_stats[3] - global_stats[10] * global_stats[10]);
+        const T sigma_z = Kokkos::sqrt(global_stats[6] - global_stats[11] * global_stats[11]);
+        const T emit_x = Kokkos::sqrt(global_stats[0] * global_stats[1] - global_stats[2] * global_stats[2]);
+        const T emit_y = Kokkos::sqrt(global_stats[3] * global_stats[4] - global_stats[5] * global_stats[5]);
+        const T emit_z = Kokkos::sqrt(global_stats[6] * global_stats[7] - global_stats[8] * global_stats[8]);
+        // T beta = avg_xsq / emit_x;
+        // T sigma_x = Kokkos::sqrt(avg_xsq);
 
-        auto rank = ippl::Comm->rank();
-        if (rank == 0) {
-            std::cerr << "Beam Statistics: " << std::endl;
-            std::cerr << "RMS Beam Size: " << sigma_x << " , " << sigma_y << " , " << sigma_z << std::endl;
-            std::cerr << "RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << std::endl;
-        }
+        m << "Beam Statistics: " << "\n";
+        m << "RMS Beam Size: " << sigma_x << " , " << sigma_y << " , " << sigma_z << "\n";
+        m << "RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << "\n";
     }
 
     void compute_temperature() {
-        Vector_t<double, 3> locAvgVel = 0.0;
-        Vector_t<double, 3> globAvgVel = 0.0;
-        auto nLoc = this->pcontainer_m->getLocalNum();
-        auto P = this->pcontainer_m->P.getView();
+        Inform m("compute_temperature");
+        Vector_t<T, 3> locAvgVel = 0.0;
+        Vector_t<T, 3> globAvgVel = 0.0;
+        const auto nLoc = this->pcontainer_m->getLocalNum();
+        const auto P = this->pcontainer_m->P.getView();
 
-        auto rank = ippl::Comm->rank();
         Kokkos::parallel_reduce("compute average velocity", Kokkos::RangePolicy<Device>(0, nLoc),
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3> &sum) {
+                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3> &sum) {
                                     sum += P(i);
                                 }, locAvgVel
         );
-        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<double>(), 0);
+        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<T>(), 0);
 
         ippl::Comm->barrier();
 
-        auto totalP = this->totalP_m;
+        const auto totalP = this->totalP_m;
 
         globAvgVel /= totalP;
-        if (rank == 0) std::cerr << "Average Velocity: " << globAvgVel << std::endl;
-        MPI_Bcast(&globAvgVel[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        m << "Average Velocity: " << globAvgVel << "\n";
+        MPI_Bcast(&globAvgVel[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD); // TODO maybe just use allreduce?
 
-        ippl::Vector<double, 3> localTemperature = 0.0;
-        ippl::Vector<double, 3> globalTemperature = 0.0;
+        ippl::Vector<T, 3> localTemperature = 0.0;
+        ippl::Vector<T, 3> globalTemperature = 0.0;
 
         Kokkos::parallel_reduce("compute temperature", nLoc,
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<double, 3> &sum) {
+                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3> &sum) {
                                     sum += (P(i) - globAvgVel(0)) * (P(i) - globAvgVel(0));
                                 }, localTemperature
         );
 
-        ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<double>(), 0);
+        ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<T>(), 0);
 
         globalTemperature /= totalP;
 
-        if (rank == 0) std::cerr << "Temperature: " << globalTemperature << std::endl;
+        m << "Temperature: " << globalTemperature << "\n";
         // l2 norm
-        double temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
-                                          + globalTemperature[1] * globalTemperature[1]
-                                          + globalTemperature[2] * globalTemperature[2]);
-        if (rank == 0) std::cerr << "L2-Norm of Temperature: " << temperature << std::endl;
+        T temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
+                                     + globalTemperature[1] * globalTemperature[1]
+                                     + globalTemperature[2] * globalTemperature[2]);
+        m << "L2-Norm of Temperature: " << temperature << "\n";
     }
 
     void dump() {
@@ -364,12 +323,11 @@ public:
         this->pcontainer_m->create(nloc);
         IpplTimings::stopTimer(CTimer);
 
-
         auto P = this->pcontainer_m->P.getView();
         auto R = this->pcontainer_m->R.getView();
         auto Q = this->pcontainer_m->Q.getView();
 
-        double beamRad = this->beamRad_m;
+        T beamRad = this->beamRad_m;
 
         Kokkos::fence();
 
@@ -384,8 +342,8 @@ public:
                                  auto generator = rand_pool.get_state();
 
                                  // obtain random numbers
-                                 double u = generator.drand();
-                                 for (int i = 0; i < Dim; ++i) {
+                                 T u = generator.drand();
+                                 for (unsigned i = 0; i < Dim; ++i) {
                                      x[i] = generator.normal(0.0, 1.0);
                                  }
 
@@ -395,7 +353,7 @@ public:
                                  T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
                                  Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1. / 3.) / Kokkos::sqrt(normsq)) * x;
 
-                                 for (int d = 0; d < Dim; ++d) {
+                                 for (unsigned d = 0; d < Dim; ++d) {
                                      P(index)[d] = 0; // initialize with zero momentum
                                      R(index)[d] = pos[d];
                                  }
@@ -416,9 +374,6 @@ public:
 
         ippl::Comm->barrier();
         IpplTimings::stopTimer(ITimer);
-
-        // debug output, can be ignored
-        // std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
     }
 
     void pre_step() override {
@@ -446,61 +401,53 @@ public:
         LeapFrogStep();
     }
 
-    void haloEnergyUpdate() {
-        auto nLoc = this->pcontainer_m->getLocalNum();
-        Kokkos::View<ippl::Vector<double, 3> *, Device> E_halo("Halo Energy Device View", nLoc);
-        Kokkos::View<ippl::Vector<double, 3> *, Host> haloE("Halo Energy Host View", nLoc);
-
-        Kokkos::parallel_for("Write in local view", Kokkos::RangePolicy<Host>(0, nLoc),
-                             KOKKOS_CLASS_LAMBDA(const size_type &i) {
-                                 haloE(i) = (*haloE_m)(i);
-                             }
-        );
-
-        Kokkos::deep_copy(E_halo, haloE);
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-        Kokkos::parallel_for("update Energy by halo interaction values", nLoc,
-                             KOKKOS_LAMBDA(const size_type &i) {
-                                 pc->E(i) += E_halo(i);
-                             }
-        );
-    }
-
     void LeapFrogStep() {
-        double dt = this->dt_m;
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-        std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
+        Inform m("LeapFrogStep");
+        T dt = this->dt_m;
+        auto pc = this->pcontainer_m;
+        auto fc = this->fcontainer_m;
 
-        auto rank = ippl::Comm->rank();
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef PPSolveTimer = IpplTimings::getTimer("PPInteraction");
+        static IpplTimings::TimerRef FieldSolveTimer = IpplTimings::getTimer("FieldSolve");
 
+        IpplTimings::startTimer(RTimer);
         pc->R = pc->R + dt * pc->P;
+        IpplTimings::stopTimer(RTimer);
 
+        IpplTimings::startTimer(updateTimer);
         pc->update();
-
-        Kokkos::fence();
+        IpplTimings::stopTimer(updateTimer);
 
         this->par2grid();
 
+        IpplTimings::startTimer(FieldSolveTimer);
         this->fsolver_m->solve();
+        IpplTimings::stopTimer(FieldSolveTimer);
 
         this->grid2par();
 
+        IpplTimings::startTimer(PPSolveTimer);
         this->isolver_m->solve();
+        IpplTimings::stopTimer(PPSolveTimer);
 
         this->applyConstantFocusing();
 
+        IpplTimings::startTimer(PTimer);
         pc->P = pc->P - dt * pc->E;
+        IpplTimings::stopTimer(PTimer);
 
-        if (rank == 0) std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
+        m << "LeapFrog Step " << this->it_m << " Finished." << "\n";
     }
 
-    double computeAvgSpaceChargeForces() {
-        auto rank = ippl::Comm->rank();
+    T computeAvgSpaceChargeForces() {
+        Inform m("computeAvgSpaceChargeForces");
 
-        auto totalP = this->totalP_m;
-        auto nLoc = this->pcontainer_m->getLocalNum();
-        auto E = this->pcontainer_m->E.getView();
+        const auto totalP = this->totalP_m;
+        const auto nLoc = this->pcontainer_m->getLocalNum();
+        const auto E = this->pcontainer_m->E.getView();
         Vector_t<T, Dim> avgE = 0.0;
 
         Kokkos::parallel_reduce("compute average space charge forces", nLoc,
@@ -511,15 +458,15 @@ public:
                                 }, avgE
         );
 
-        // std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
+        // m << "Average Space Charge Forces: " << avgE << "\n";
 
-        Vector_t<double, Dim> globE = 0.0;
+        Vector_t<T, Dim> globE = 0.0;
 
-        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<double>(), 0);
-        if (rank == 0) std::cerr << "Average Space Charge Forces: " << globE << std::endl;
+        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<T>(), 0);
+        m << "Average Space Charge Forces: " << globE << "\n";
         globE /= totalP;
 
-        double focusingf = 0.0;
+        T focusingf = 0.0;
         for (unsigned d = 0; d < Dim; ++d) {
             focusingf += globE[d] * globE[d];
         }
@@ -529,16 +476,15 @@ public:
     }
 
     void applyConstantFocusing() {
-        view_type E = this->pcontainer_m->E.getView();
-        view_type R = this->pcontainer_m->R.getView();
+        Inform m("applyConstantFocusing");
+        const auto E = this->pcontainer_m->E.getView();
+        const auto R = this->pcontainer_m->R.getView();
 
-        double beamRad = this->beamRad_m;
-        double focusStrength = this->focusingF_m;
-        auto nLoc = this->pcontainer_m->getLocalNum();
+        const T beamRad = this->beamRad_m;
+        const T focusStrength = this->focusingF_m;
+        const auto nLoc = this->pcontainer_m->getLocalNum();
 
-        auto rank = ippl::Comm->rank();
-
-        if (rank == 0) std::cerr << "Focusing Force " << focusStrength << std::endl;
+        m << "Focusing Force " << focusStrength << "\n";
 
         Kokkos::parallel_for("apply constant focusing", nLoc,
                              KOKKOS_LAMBDA(const size_type &i) {
@@ -559,18 +505,18 @@ public:
         Inform m("scatter ");
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->Q;
+        ippl::ParticleAttrib<T> *q = &this->pcontainer_m->Q;
         typename ParticleContainer_t::particle_position_type *R = &this->pcontainer_m->R;
-        Field_t<Dim> *rho = &this->fcontainer_m->getRho();
-        double Q = this->Q_m;
-        Vector_t<double, Dim> rmin = this->rmin_m;
-        Vector_t<double, Dim> rmax = this->rmax_m;
-        Vector_t<double, Dim> hr = this->hr_m;
+        auto rho = &this->fcontainer_m->getRho();
+        T Q = this->Q_m;
+        Vector_t<T, Dim> rmin = this->rmin_m;
+        Vector_t<T, Dim> rmax = this->rmax_m;
+        Vector_t<T, Dim> hr = this->hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q - (*rho).sum()) / Q);
+        T relError = std::fabs((Q - (*rho).sum()) / Q);
 
-        // std::cerr << "Relative Error: " << relError << std::endl;
+        // m << "Relative Error: " << relError << "\n";
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
@@ -587,13 +533,13 @@ public:
             }
         }
 
-        double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
+        T cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<T>());
         (*rho) = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
 
         // rho = rho_e - rho_i;
-        double size = 1;
+        T size = 1;
         for (unsigned d = 0; d < Dim; d++) {
             size *= rmax[d] - rmin[d];
         }
