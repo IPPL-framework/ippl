@@ -297,7 +297,8 @@ namespace CatalystAdaptor {
       assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
 
         //auto layout_view = particleContainer->R.getView();
-        typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror R_host = particleContainer->P.getHostMirror();
+        typename ippl::ParticleAttrib<ippl::Vector<double, 1>>::HostMirror R_host = particleContainer->R.getHostMirror();
+        typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror R_host_mod = particleContainer->P.getHostMirror();
         typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror P_host = particleContainer->P.getHostMirror();
         typename ippl::ParticleAttrib<double>::HostMirror q_host = particleContainer->q.getHostMirror();
         typename ippl::ParticleAttrib<std::int64_t>::HostMirror ID_host = particleContainer->ID.getHostMirror();
@@ -325,20 +326,21 @@ namespace CatalystAdaptor {
         auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set_string("explicit");
 
-        /*
+        
         for (size_t i = 0; i < particleContainer->getLocalNum(); ++i) {
-            R_host(i) = 0.0;               // Set Y to 0
-            R_host(i) = 0.0;               // Set Z to 0
+            R_host_mod(i)[0] = R_host(i)[0];
+            R_host_mod(i)[1] = 0.0;               // Set Y to 0
+            R_host_mod(i)[2] = 0.0;               // Set Z to 0
         }
-        */
+        
         
 
         //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/x"].set(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/y"].set(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/z"].set(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/x"].set(&R_host_mod.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set(&R_host_mod.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set(&R_host_mod.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         mesh["topologies/mesh/type"].set_string("unstructured");
         mesh["topologies/mesh/coordset"].set_string("coords");
@@ -377,9 +379,9 @@ namespace CatalystAdaptor {
         //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/x"].set(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/y"].set(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/z"].set(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/x"].set(&R_host_mod.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/y"].set(&R_host_mod.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/z"].set(&R_host_mod.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         // this node we can return as the pointer to velocity and charge is globally valid
         if (node_in == std::nullopt)
