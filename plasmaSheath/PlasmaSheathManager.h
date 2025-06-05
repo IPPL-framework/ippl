@@ -471,7 +471,7 @@ public:
         Kokkos::deep_copy(m_host, this->pcontainer_m->m.getView());
 
         std::stringstream pname;
-        pname << "data/ParticleIC_";
+        pname << "data" << params::kinetic_electrons << "/ParticleIC_";
         pname << ippl::Comm->rank();
         pname << ".csv";
         Inform pcsvout(NULL, pname.str().c_str(), Inform::APPEND, ippl::Comm->rank());
