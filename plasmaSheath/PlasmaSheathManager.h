@@ -64,8 +64,8 @@ public:
                 // 1.a. sample vpar from the modified half-maxwellian
                 // note that by coincidence, the normalization constant for beta = 0 and beta = 2
                 // (i.e. vpar² prefactor) are the same, and evaluate to 2/√(2π)
-                const double stdpar  = s == Electrons ? params::v_th_e : params::v_th_i,
-                             v_trunc = s == Electrons ? params::v_trunc_e : params::v_trunc_i;
+                const double stdpar  = s == Electrons ? v_th_e : params::v_th_i,
+                             v_trunc = s == Electrons ? v_trunc_e : params::v_trunc_i;
 
                 double vpar;
                 while (true) {
@@ -78,7 +78,7 @@ public:
 
                 // 1.b. sample vperp coordinates
                 const double stdperp =
-                    s == Electrons ? params::v_th_e : params::v_th_i * params::nu;
+                    s == Electrons ? v_th_e : params::v_th_i * params::nu;
                 const double vperpx = rand_gen.normal(0.0, stdperp),
                              vperpy = rand_gen.normal(0.0, stdperp);
 
