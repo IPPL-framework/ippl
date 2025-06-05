@@ -35,10 +35,6 @@ template <typename T, unsigned Dim>
 class P3M3DHeatingManager
     : public P3M3DManager<T, Dim, FieldContainer<T, Dim>> {
 public:
-    // Kokkos Device and Host Spaces
-    using Device = Kokkos::DefaultExecutionSpace;
-    using Host = Kokkos::DefaultHostExecutionSpace;
-
     using ParticleContainer_t = P3MParticleContainer<T, Dim>;
     using Base = P3M3DManager<T, Dim, FieldContainer<T, Dim> >;
     using FieldContainer_t = FieldContainer<T, Dim>;
@@ -172,8 +168,8 @@ public:
             )
         );
 
-	    std::cerr << "Device Space: " << Device::name() << std::endl;
-	    std::cerr << "Host Space: " << Host::name() << std::endl;
+	    // std::cerr << "Device Space: " << Device::name() << std::endl;
+	    // std::cerr << "Host Space: " << Host::name() << std::endl;
 
 
         this->fcontainer_m->initializeFields("P3M");
@@ -274,10 +270,10 @@ public:
         Kokkos::fence();
 
 	    // make sure this runs on the host, device does not work yet
-        Kokkos::Random_XorShift64_Pool<Device> rand_pool((size_type)(42 + 24 * rank));
+        Kokkos::Random_XorShift64_Pool rand_pool((size_type)(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
-        Kokkos::parallel_for("initialize particles", Kokkos::RangePolicy<Device>(0, nloc),
+        Kokkos::parallel_for("initialize particles", nloc,
             KOKKOS_LAMBDA(const size_t index) {
                 Vector_t<T, Dim> x(0.0);
 
@@ -410,7 +406,7 @@ public:
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
 
-        Kokkos::parallel_reduce("compute average velocity", Kokkos::RangePolicy<Device>(0, nLoc),
+        Kokkos::parallel_reduce("compute average velocity", nLoc,
             KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3>& sum){
                 sum += P(i);
             }, locAvgVel

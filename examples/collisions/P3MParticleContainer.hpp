@@ -19,11 +19,6 @@
 template<typename T, unsigned Dim = 3>
 class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialOverlapLayout<T, Dim> > {
 public:
-    using Device = Kokkos::DefaultExecutionSpace;
-    using Host = Kokkos::DefaultHostExecutionSpace;
-    using Offset_t = const std::array<std::array<int, Dim>, ippl::detail::countHypercubes(Dim) / 2 + 1>;
-    // 14, 3 in 3 dimensions
-
     using Base = ippl::ParticleBase<ippl::ParticleSpatialOverlapLayout<T, Dim> >;
     using Vector = ippl::Vector<T, Dim>;
 
