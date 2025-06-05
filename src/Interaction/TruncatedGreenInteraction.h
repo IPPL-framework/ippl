@@ -10,6 +10,8 @@ namespace ippl {
         using Base = ParticleInteractionBase<ParticleContainer>;
         using Vector_t = typename VectorAttribute::value_type;
         using Scalar_t = typename ScalarAttribute::value_type;
+        using execution_space = typename VectorAttribute::execution_space;
+        static_assert(std::is_same_v<execution_space, typename ScalarAttribute::execution_space>);
 
     public:
         TruncatedGreenInteraction(const ParticleContainer &pc, VectorAttribute &F, const VectorAttribute &R,
@@ -22,6 +24,9 @@ namespace ippl {
         void solve() override;
 
     private:
+
+        KOKKOS_INLINE_FUNCTION static constexpr Vector_t pairForce(const Vector_t& dist, Scalar_t r2, Scalar_t alpha, Scalar_t forceConstant, Scalar_t qm2 = 1);
+
         VectorAttribute *F_m;
         const VectorAttribute *R_m;
         const ScalarAttribute *QM_m;

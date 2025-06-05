@@ -49,23 +49,28 @@ namespace ippl {
         numGhostCells_m = totalCells_m - numLocalCells_m;
 
 
-        cellPermutation_m = hash_type("cell permutation", totalCells_m);
-        auto hostCellPermutation = Kokkos::create_mirror_view(cellPermutation_m);
+        cellPermutationForward_m = hash_type("cell permutation forward", totalCells_m);
+        cellPermutationBackward_m = hash_type("cell permutation backward", totalCells_m);
+        auto hostCellPermutationForward = Kokkos::create_mirror_view(cellPermutationForward_m);
+        auto hostCellPermutationBackward = Kokkos::create_mirror_view(cellPermutationBackward_m);
 
         // TODO think about how to make this parallel without too many stalls
         size_type localIdx = 0, ghostIdx = numLocalCells_m;
         for (size_type i = 0; i < totalCells_m; ++i) {
             if (isLocalCellIndex(i, numCells_m)) {
-                hostCellPermutation(i) = localIdx;
+                hostCellPermutationForward(i) = localIdx;
+                hostCellPermutationBackward(localIdx) = i;
                 ++localIdx;
             } else {
-                hostCellPermutation(i) = ghostIdx;
+                hostCellPermutationForward(i) = ghostIdx;
+                hostCellPermutationBackward(ghostIdx) = i;
                 ++ghostIdx;
             }
         }
         assert(localIdx == numLocalCells_m);
         assert(ghostIdx == totalCells_m);
-        Kokkos::deep_copy(cellPermutation_m, hostCellPermutation);
+        Kokkos::deep_copy(cellPermutationForward_m, hostCellPermutationForward);
+        Kokkos::deep_copy(cellPermutationBackward_m, hostCellPermutationBackward);
 
         std::exclusive_scan(numCells_m.begin(), numCells_m.end(), cellStrides_m.begin(), 1, std::multiplies());
 
@@ -209,16 +214,6 @@ namespace ippl {
 
         if (nRanks < 2) {
             return;
-        }
-
-        if (false) {
-            volatile int i = 0;
-            char hostname[256];
-            gethostname(hostname, sizeof(hostname));
-            printf("PID %d on %s ready for attach\n", getpid(), hostname);
-            fflush(stdout);
-            while (0 == i)
-                sleep(5);
         }
 
         /* particle MPI exchange:
@@ -449,7 +444,7 @@ namespace ippl {
             "count_assignments", range_policy, KOKKOS_LAMBDA(size_t i) {
                 int count = 0;
                 for (size_t j = 0; j < Regions.extent(0); ++j) {
-                    if (positionInRegion(is, positions(i), Regions(j), overlap)) {
+                    if (positionInRegion(positions(i), Regions(j), overlap)) {
                         count++;
                     }
                 }
@@ -494,7 +489,7 @@ namespace ippl {
                 size_t offset = rank_offsets(i);
                 int local_count = 0;
                 for (size_t j = 0; j < Regions.extent(0); ++j) {
-                    bool xyz_bool = positionInRegion(is, positions(i), Regions(j), overlap);
+                    bool xyz_bool = positionInRegion(positions(i), Regions(j), overlap);
                     if (xyz_bool) {
                         rank_data(offset + local_count) = j;
                         local_count++;
@@ -517,29 +512,32 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    template<size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::positionInRegion(
-        const std::index_sequence<Idx...> &, const vector_type &pos, const region_type &region, T overlap) {
-        return ((pos[Idx] > region[Idx].min() - overlap) && ...) && ((pos[Idx] <= region[Idx].max() + overlap) && ...);
+        const vector_type &pos, const region_type &region, T overlap) {
+        return [&]<size_t ... Idx>(const std::index_sequence<Idx...> &) {
+            return ((pos[Idx] > region[Idx].min() - overlap) && ...) && ((pos[Idx] <= region[Idx].max() + overlap) &&
+                       ...);
+        }(std::make_index_sequence<Dim>());
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    template<size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr size_type
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
-        const std::index_sequence<Idx...> &, const vector_type &pos, const NDRegion_t &region,
+        const vector_type &pos, const NDRegion_t &region,
         const std::array<size_type, Dim> &strides, const std::array<T, Dim> &cellWidth) {
-        return ((static_cast<size_type>(std::floor((pos[Idx] - region[Idx].min()) / cellWidth[Idx]) +
-                                        numGhostCellsPerDim_m)
-                 * strides[Idx]) + ...);
+        return [&]<size_t ... Idx>(const std::index_sequence<Idx...> &) {
+            return ((static_cast<size_type>(std::floor((pos[Idx] - region[Idx].min()) / cellWidth[Idx]) +
+                                            numGhostCellsPerDim_m)
+                     * strides[Idx]) + ...);
+        }(std::make_index_sequence<Dim>());
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    constexpr Kokkos::Array<typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::index_t, Dim>
+    constexpr typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::CellIndex_t
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
         size_type index, const std::array<size_type, Dim> &numCells) {
-        Kokkos::Array<index_t, Dim> ndIndex;
+        CellIndex_t ndIndex;
 #pragma unroll
         for (size_type d = 0; d < Dim; ++d) {
             ndIndex[d] = index % numCells[d];
@@ -585,7 +583,7 @@ namespace ippl {
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0}, {numLoc, Regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j, size_type &count) {
-                bool xyz_bool = positionInRegion(is, positions(i), Regions(j), overlap);
+                bool xyz_bool = positionInRegion(positions(i), Regions(j), overlap);
                 if (xyz_bool) {
                     size_t l = 0;
                     for (; l < ranks.extent(1) && ranks(i, l) >= 0; ++l) {
@@ -606,6 +604,9 @@ namespace ippl {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     template<class ParticleContainer>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::buildCells(ParticleContainer &pc) {
+        static IpplTimings::TimerRef cellBuildTimer = IpplTimings::getTimer("cellBuildTimer");
+        IpplTimings::startTimer(cellBuildTimer);
+
         size_type nLoc = pc.getLocalNum();
         auto R = pc.R.getView();
 
@@ -628,15 +629,14 @@ namespace ippl {
         // calculate cell index for each particle
         using range_policy = Kokkos::RangePolicy<position_execution_space>;
         const auto numCells = numCells_m;
-        const auto is = std::make_index_sequence<Dim>();
         const auto cellStrides = cellStrides_m;
-        const auto cellPermutation = cellPermutation_m;
+        const auto cellPermutation = cellPermutationForward_m;
 
         Kokkos::deep_copy(cellParticleCount, 0);
         Kokkos::parallel_for(
             "CalcCellIndices", range_policy(0, nLoc),
             KOKKOS_LAMBDA(const int i) {
-                auto locCellIndex = getCellIndex(is, R(i), localRegion, cellStrides, cellWidth);
+                auto locCellIndex = getCellIndex(R(i), localRegion, cellStrides, cellWidth);
                 locCellIndex = cellPermutation(locCellIndex);
                 assert(locCellIndex < totalCells && "Invalid Grid Position");
 
@@ -723,25 +723,26 @@ namespace ippl {
         cellIndex_m = cellIndex;
 
         Kokkos::fence();
-            pc.setLocalNum(numLocalParticles);
+        pc.setLocalNum(numLocalParticles);
 
         // this is not needed as they views on the same data
         // cellStartingIdx_m = cellStartingIdx;
         // cellParticleCount_m = cellParticleCount;
+        IpplTimings::stopTimer(cellBuildTimer);
+
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    template<size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_info_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighborCells(
-        const std::index_sequence<Idx...> &, index_t cellIndex,
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_info_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighborCells(index_t cellIndex,
         const std::array<size_type, Dim> &numCells, const hash_type &cellPermutation) {
         // TODO consider cell permutation
         // Get the base cell coordinates for each dimension
         auto cellIndexNd = getCellIndex(cellIndex, numCells);
 
         // Generate all 3^Dim combinations of offsets (-1, 0, +1) for each dimension
+        constexpr auto is = std::make_index_sequence<Dim>();
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
         neighbor_info_type neighborIndices{};
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
@@ -750,20 +751,56 @@ namespace ippl {
             index_t stride = 1;
 
             // This converts neighborIdx to base-3 representation where each digit is the offset+1
-            ((flatIndex += (cellIndexNd[Idx] + (temp % 3) - 1) * stride, temp /= 3, stride *= numCells[Idx]), ...);
+            [&]<size_type ... Idx>(const std::index_sequence<Idx...> &) {
+                ((flatIndex += (cellIndexNd[Idx] + (temp % 3) - 1) * stride, temp /= 3, stride *= numCells[Idx]), ...);
+            }(is);
 
             neighborIndices[neighborIdx] = cellPermutation(flatIndex);
         }
         return neighborIndices;
     }
 
-    template<typename T, unsigned Dim, class Mesh, typename... Properties>
 
-    ParticleSpatialOverlapLayout<T, Dim, Mesh,
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    size_t ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNumCells() const {
+        return numLocalCells_m;
+    }
+
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticlesOfCell(size_type cellIndex) const {
+        neighbor_list_type cellParticles("cell particles", cellParticleCount_m(cellIndex));
+        using range_policy = Kokkos::RangePolicy<position_execution_space>;
+        auto offset = cellStartingIdx_m(cellIndex);
+        Kokkos::parallel_for("create cell particles", range_policy(0, cellParticleCount_m(cellIndex)),
+                             KOKKOS_LAMBDA(const size_type &i) {
+                                 cellParticles(i) = offset + i;
+                             }
+        );
+        return cellParticles;
+    }
+
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    KOKKOS_INLINE_FUNCTION constexpr typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties
+        ...>::neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticlesOfCell(
+        const NeighborData &neighborData, size_type cellIndex) {
+        neighbor_list_type cellParticles("cell particles", neighborData.cellParticleCount(cellIndex));
+        using range_policy = Kokkos::RangePolicy<position_execution_space>;
+        auto offset = neighborData.cellStartingIdx(cellIndex);
+        Kokkos::parallel_for("create cell particles", range_policy(0, neighborData.cellParticleCount(cellIndex)),
+                             KOKKOS_LAMBDA(const size_type &i) {
+                                 cellParticles(i) = offset + i;
+                             }
+        );
+        return cellParticles;
+    }
+
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
         Properties...>::NeighborData ParticleSpatialOverlapLayout<T, Dim, Mesh,
         Properties...>::getNeighborData() const {
         return {
-            .hash = -1,
             .cellStrides = cellStrides_m,
             .numCells = numCells_m,
             .cellWidth = cellWidth_m,
@@ -771,43 +808,30 @@ namespace ippl {
             .cellStartingIdx = cellStartingIdx_m,
             .cellIndex = cellIndex_m,
             .cellParticleCount = cellParticleCount_m,
-            .cellPermutation = cellPermutation_m,
+            .cellPermutationForward = cellPermutationForward_m,
+            .cellPermutationBackward = cellPermutationBackward_m,
         };
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    KOKKOS_FUNCTION void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
-        const vector_type &pos, const /*TODO think about the hash again*/ NeighborData &neighborData,
-        neighbor_list_type &particleNeighborList) {
-        // TODO apply cell permutation every where where cell index is computed, maybe just add it to the functions computing it directly?
+    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
+        const vector_type &pos, const /*TODO think about the hash again*/ NeighborData &neighborData) {
+        // TODO using this to compute PP interaction produces different results!
         // Get the cell of the particle
 
-        auto is = std::make_index_sequence<Dim>();
-        auto locCellIndex = getCellIndex(is, pos, neighborData.region, neighborData.cellStrides,
+        auto locCellIndex = getCellIndex(pos, neighborData.region, neighborData.cellStrides,
                                          neighborData.cellWidth);
-        auto locCellIndexPermuted = neighborData.cellPermutation(locCellIndex);
+        auto locCellIndexPermuted = neighborData.cellPermutationForward(locCellIndex);
         // if (locCellIndexPermuted == neighborData.hash) { return; } // TODO this doesnt work yet as a thread cannot have local data yet. caller already has the correct neighbor list
-
-        // TODO maye make get neighbor take a position vector instead? this would remove the need for cellIndex view (O(NumParticles))
 
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
 
-        auto neighbors = getNeighborCells(is, locCellIndex, neighborData.numCells, neighborData.cellPermutation);
+        auto neighbors = getNeighborCells(locCellIndex, neighborData.numCells, neighborData.cellPermutationForward);
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborSizes;
 
         size_type totalParticleInNeighbors = 0;
         size_type maxParticleInNeighbors = 0;
-        // using range_policy = Kokkos::RangePolicy<position_execution_space>;
-        // Kokkos::parallel_reduce("Calculate neighborsizes", range_policy(0, numNeighbors),
-        //                         KOKKOS_LAMBDA(const size_type &i, size_type &sum, size_type &max) {
-        //                             auto n = neighborData.cellParticleCount(neighbors[i]);
-        //                             neighborSizes[i] = n;
-        //                             max = std::max<size_type>(n, max);
-        //                             sum += n;
-        //                         }, Kokkos::Sum<size_type>(totalParticleInNeighbors),
-        //                         Kokkos::Max<size_type>(maxParticleInNeighbors));
-        //
-        // Kokkos::fence();
 
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborOffsets;
 #pragma unroll
@@ -819,15 +843,7 @@ namespace ippl {
             totalParticleInNeighbors += n;
         }
 
-        // Kokkos::parallel_scan("Calculate neighborsizes", range_policy(0, numNeighbors),
-        //                       KOKKOS_LAMBDA(const size_t &i, size_type &localSum, bool isFinal) {
-        //                           if (isFinal) neighborOffsets[i] = localSum;
-        //                           localSum += neighborSizes[i];
-        //                       });
-        //
-        // Kokkos::fence();
-
-        hash_type neighborList("Neigbor list", totalParticleInNeighbors);
+        neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
 
         using twod_range_policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_for("collect neighbors", twod_range_policy({0, 0}, {numNeighbors, maxParticleInNeighbors}),
@@ -839,41 +855,24 @@ namespace ippl {
                              });
 
 
-        particleNeighborList = neighborList;
-        // neighborData.hash = locCellIndex;
+        return neighborList;
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    KOKKOS_FUNCTION void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
-        size_type i, NeighborData &neighborData, neighbor_list_type &particleNeighborList) {
-        assert(false && "currently not working, cellPermutation is not being considered");
-        // TODO apply cell permutation every where where cell index is computed, maybe just add it to the functions computing it directly?
+    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
+        size_type i, NeighborData &neighborData) {
         // Get the cell of the particle
 
         auto locCellIndex = neighborData.cellIndex(i);
-        if (locCellIndex == neighborData.hash) { return; } // caller already has the correct neighbor list
-
-        // TODO maye make get neighbor take a position vector instead? this would remove the need for cellIndex view (O(NumParticles))
 
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
 
-        auto is = std::make_index_sequence<Dim>();
-        auto neighbors = getNeighborCells(is, locCellIndex, neighborData.numCells, neighborData.cellPermutation);
+        auto neighbors = getNeighborCells(locCellIndex, neighborData.numCells, neighborData.cellPermutation);
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborSizes;
 
         size_type totalParticleInNeighbors = 0;
         size_type maxParticleInNeighbors = 0;
-        // using range_policy = Kokkos::RangePolicy<position_execution_space>;
-        // Kokkos::parallel_reduce("Calculate neighborsizes", range_policy(0, numNeighbors),
-        //                         KOKKOS_LAMBDA(const size_type &i, size_type &sum, size_type &max) {
-        //                             auto n = neighborData.cellParticleCount(neighbors[i]);
-        //                             neighborSizes[i] = n;
-        //                             max = std::max<size_type>(n, max);
-        //                             sum += n;
-        //                         }, Kokkos::Sum<size_type>(totalParticleInNeighbors),
-        //                         Kokkos::Max<size_type>(maxParticleInNeighbors));
-        //
-        // Kokkos::fence();
 
         Kokkos::Array<typename hash_type::value_type, numNeighbors> neighborOffsets;
 
@@ -888,15 +887,7 @@ namespace ippl {
             }
         }
 
-        // Kokkos::parallel_scan("Calculate neighborsizes", range_policy(0, numNeighbors),
-        //                       KOKKOS_LAMBDA(const size_t &i, size_type &localSum, bool isFinal) {
-        //                           if (isFinal) neighborOffsets[i] = localSum;
-        //                           localSum += neighborSizes[i];
-        //                       });
-        //
-        // Kokkos::fence();
-
-        hash_type neighborList("Neigbor list", totalParticleInNeighbors);
+        neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
 
         using twod_range_policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_for("collect neighbors", twod_range_policy({0, 0}, {numNeighbors, maxParticleInNeighbors}),
@@ -907,8 +898,59 @@ namespace ippl {
                                  }
                              });
 
+        return neighborList;
+    }
 
-        particleNeighborList = neighborList;
-        neighborData.hash = locCellIndex;
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    template<typename ExecutionSpace, typename Functor>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::forEachPair(Functor &&f) const {
+        static IpplTimings::TimerRef interactionTimer = IpplTimings::getTimer("PPInteractionTimer");
+        IpplTimings::startTimer(interactionTimer);
+
+        const auto cellStartingIdx = cellStartingIdx_m;
+        const auto cellParticleCount = cellParticleCount_m;
+        const auto cellPermutationForward = cellPermutationForward_m;
+        const auto cellPermutationBackward = cellPermutationBackward_m;
+        const auto& numCells = numCells_m;
+
+        constexpr auto numCellNeighbors = detail::countHypercubes(Dim);
+
+
+        using team_policy_t = Kokkos::TeamPolicy<ExecutionSpace>;
+        using team_t = typename team_policy_t::member_type;
+        Kokkos::parallel_for(
+            "ParticleSpatialOverlapLayout::forEachPair()", team_policy_t(numLocalCells_m, Kokkos::AUTO()),
+            KOKKOS_LAMBDA(const team_t &team) {
+                const size_type cellIdx = team.league_rank();
+                if (cellParticleCount(cellIdx) == 0) { return; }
+
+                const auto cellParticleOffset = cellStartingIdx(cellIdx);
+                const auto numCellParticles = cellParticleCount(cellIdx);
+
+                const auto cellNeighbors = getNeighborCells(cellPermutationBackward(cellIdx), numCells,
+                                                            cellPermutationForward);
+
+                Kokkos::parallel_for(
+                    Kokkos::TeamThreadRange(team, numCellNeighbors),
+                    KOKKOS_LAMBDA(const size_t &n) {
+                        const auto neighborCellIdx = cellNeighbors[n];
+                        const auto neighborCellParticleOffset = cellStartingIdx(neighborCellIdx);
+
+                        Kokkos::parallel_for(
+                            Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
+                                team, numCellParticles, cellParticleCount(neighborCellIdx)),
+                            KOKKOS_LAMBDA(const size_t &i, const size_t &j) {
+                                const auto particleIdx = cellParticleOffset + i;
+                                const auto neighborIdx = neighborCellParticleOffset + j;
+
+                                if (neighborIdx == particleIdx) { return; }
+
+                                f(particleIdx, neighborIdx);
+                            });
+                    });
+            }
+        );
+
+        IpplTimings::stopTimer(interactionTimer);
     }
 } // namespace ippl
