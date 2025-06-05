@@ -216,7 +216,11 @@ public:
 
         this->grid2par();
 
+        // save the rho and phi for computation for the rolling average of the fields
         resetPlasmaAverage();
+
+        // dump particle ICs
+        this->dump();
 
         m << "Done";
     }
@@ -339,7 +343,7 @@ public:
                     }
                 }
                 if (outside) {
-                    Rview(i) = 0;
+                    Rview(i) = rmax;
                     bool odd = (i % 2);
                     if (params::kinetic_electrons) {
                         if (odd) {
