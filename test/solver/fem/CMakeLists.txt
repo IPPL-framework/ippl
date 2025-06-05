@@ -19,6 +19,8 @@ add_ippl_integration_test(TestNonhomDirichlet_1dcos LABELS solver fem integratio
 add_ippl_integration_test(TestScaling_ZeroBC_sin LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin LABELS solver fem integration)
 
+add_ippl_integration_test(TestFEMPlasmaSheath LABELS solver fem integration)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

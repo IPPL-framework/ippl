@@ -213,6 +213,7 @@ namespace ippl {
         struct meta_cross : public detail::Expression<meta_cross<E1, E2>, sizeof(E1) + sizeof(E2)> {
             constexpr static unsigned dim = E1::dim;
             static_assert(E1::dim == E2::dim);
+            static_assert(E1::dim == 3);
 
             KOKKOS_FUNCTION
             meta_cross(const E1& u, const E2& v)
@@ -226,6 +227,18 @@ namespace ippl {
                 const size_t j = (i + 1) % 3;
                 const size_t k = (i + 2) % 3;
                 return u_m[j] * v_m[k] - u_m[k] * v_m[j];
+            }
+
+            /*
+             * Vector::cross
+             */
+            KOKKOS_INLINE_FUNCTION auto apply() const {
+                E1 res;
+                // Only 3D:
+                res[0] = u_m[1] * v_m[2] - u_m[2] * v_m[1];
+                res[1] = u_m[2] * v_m[0] - u_m[0] * v_m[2];
+                res[2] = u_m[0] * v_m[1] - u_m[1] * v_m[0];
+                return res;
             }
 
             /*
