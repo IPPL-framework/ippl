@@ -36,9 +36,24 @@ const char* TestName   = "PlasmaSheath";
 #include "Manager/PicManager.h"
 #include "PlasmaSheathManager.h"
 
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+        #ifdef IPPL_ENABLE_CATALYST
+        for (int i = 1; i < argc; ++i) {
+            if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+                // reduce the argument list
+                char* reducedArgv[] = { argv[0], argv[i + 1] };
+                CatalystAdaptor::Initialize(2, reducedArgv);
+                break;
+            }
+        }
+        #endif
+
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
@@ -86,7 +101,9 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
-
+        #ifdef ENABLE_CATALYST
+        CatalystAdaptor::Finalize();
+        #endif
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));

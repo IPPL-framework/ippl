@@ -14,6 +14,11 @@
 #include "Random/Randn.h"
 #include "input.h"
 
+#ifdef IPPL_ENABLE_CATALYST
+#include <optional>
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 using view_typeR = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 using view_typeP = typename ippl::detail::ViewType<ippl::Vector<double, 3>, 1>::view_type;
 using view_typeQ = typename ippl::detail::ViewType<double, 1>::view_type;
@@ -203,6 +208,7 @@ public:
 
         this->par2grid();
 
+
         static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
         IpplTimings::startTimer(SolveTimer);
 
@@ -381,7 +387,15 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
-
+        #ifdef IPPL_ENABLE_CATALYST
+        std::optional<conduit_cpp::Node> node = std::nullopt;
+        CatalystAdaptor::Execute_Particle_1d(it, this->time_m, ippl::Comm->rank(),  pc, node);
+        //auto *rho               = &this->fcontainer_m->getRho();
+        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
+        //auto *E               = &this->fcontainer_m->getE();
+        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
+        //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
+        #endif 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
         if (!params::kinetic_electrons) {
