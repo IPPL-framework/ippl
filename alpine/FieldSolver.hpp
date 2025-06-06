@@ -39,8 +39,8 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             initFFTSolver();
         } else if (this->getStype() == "CG") {
             initCGSolver();
-        } else if (this->getStype() == "P3M") {
-            initP3MSolver();
+        } else if (this->getStype() == "TG") {
+            initTGSolver();
         } else if (this->getStype() == "OPEN") {
             initOpenSolver();
         } else {
@@ -89,7 +89,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
             }
-        } else if (this->getStype() == "P3M") {
+        } else if (this->getStype() == "TG") {
             if constexpr (Dim == 3) {
                 std::get<FFTTruncatedGreenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
@@ -118,7 +118,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
             solver.setGradient(*E_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
-            // and the P3M solver compute the electric field directly
+            // and the TG solver compute the electric field directly
             solver.setLhs(*E_m);
         }
     }
@@ -149,7 +149,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
-    void initP3MSolver() {
+    void initTGSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
             sp.add("output_type", FFTTruncatedGreenSolver_t<T, Dim>::GRAD);
@@ -162,7 +162,7 @@ class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 
             initSolverWithParams<FFTTruncatedGreenSolver_t<T, Dim>>(sp);
         } else {
-            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+            throw std::runtime_error("Unsupported dimensionality for TG solver");
         }
     }
 

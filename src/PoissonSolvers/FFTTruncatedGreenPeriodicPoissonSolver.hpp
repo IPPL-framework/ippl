@@ -1,11 +1,10 @@
 //
-// Class P3MSolver
+// Class FFTTruncatedGreenPeriodicPoissonSolver
 //   Poisson solver for periodic boundaries, based on FFTs.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //   Uses a convolution with a Green's function given by:
-//      G(r) = ke * erf(alpha * r) / r,
-//   where ke = Coulomb constant,
+//      G(r) = forceConstant * erf(alpha * r) / r,
 //         alpha = controls long-range interaction.
 //
 //
@@ -310,7 +309,7 @@ namespace ippl {
 
         // This alpha parameter is a choice for the Green's function
         // it controls the "range" of the Green's function (e.g.
-        // for the P3M collision modelling method, it indicates
+        // for the collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
         const Trhs alpha = this->params_m. template get<Trhs>("alpha");

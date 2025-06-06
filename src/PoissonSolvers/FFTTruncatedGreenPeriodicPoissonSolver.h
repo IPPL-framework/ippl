@@ -4,14 +4,13 @@
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //   Uses a convolution with a Green's function given by:
-//      G(r) = ke * erf(alpha * r) / r,
-//   where ke = Coulomb constant,
+//      G(r) = forceConstant * erf(alpha * r) / r,
 //         alpha = controls long-range interaction.
 //
 //
 
-#ifndef IPPL_P3M_SOLVER_H_
-#define IPPL_P3M_SOLVER_H_
+#ifndef IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
+#define IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
 
 #include "Types/Vector.h"
 
@@ -101,7 +100,7 @@ namespace ippl {
         Vector<int, Dim> nr_m;
 
     protected:
-        virtual void setDefaultParameters() override {
+        void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
             heffte::plan_options opts = heffte::default_options<heffteBackend>();
             this->params_m.add("use_pencils", opts.use_pencils);
@@ -133,4 +132,4 @@ namespace ippl {
 }  // namespace ippl
 
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
-#endif
+#endif // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_

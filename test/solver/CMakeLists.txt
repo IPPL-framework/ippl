@@ -76,9 +76,9 @@ if (ENABLE_FFT)
         ${MPI_CXX_LIBRARIES}
     )
 
-    add_executable (TestP3MSolver TestP3MSolver.cpp)
+    add_executable (TestFFTTruncatedGreenPeriodicPoissonSolver TestFFTTruncatedGreenPeriodicPoissonSolver.cpp)
     target_link_libraries (
-        TestP3MSolver
+        TestFFTTruncatedGreenPeriodicPoissonSolver
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
     )

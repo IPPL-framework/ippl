@@ -88,7 +88,7 @@ class LoadBalancer{
                     std::get<FFTSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
                 }
                 if constexpr (Dim == 3) {
-                    if (fs_m->getStype() == "P3M") {
+                    if (fs_m->getStype() == "TG") {
                         std::get<FFTTruncatedGreenSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
                     } else if (fs_m->getStype() == "OPEN") {
                         std::get<OpenSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);

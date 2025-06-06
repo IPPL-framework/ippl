@@ -1,16 +1,16 @@
 //
-// TestP3MSolver
+// TestFFTTruncatedGreenPeriodicPoissonSolver
 // This program tests the FFTTruncatedGreenPeriodicPoissonSolver with a constant source rho = 2.
 // This is for comparison purposes with a reference implementation in ippl_orig.
 // I/O output is only enabled when running serially.
 //   Usage:
-//     srun ./TestP3MSolver <nx> <ny> <nz> --info 5
+//     srun ./TestFFTTruncatedGreenPeriodicPoissonSolver <nx> <ny> <nz> --info 5
 //     nx = No. cell-centered points in the x-direction
 //     ny = No. cell-centered points in the y-direction
 //     nz = No. cell-centered points in the z-direction
 //
 //     Example:
-//       srun ./TestP3MSolver 16 16 16 --info 5
+//       srun ./TestFFTTruncatedGreenPeriodicPoissonSolver 16 16 16 --info 5
 //
 //
 
