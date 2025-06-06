@@ -92,13 +92,14 @@ public:
     void setTime(T time_) { time_m = time_; }
 
     void initializeFromCSV(std::string filename){
+        Inform m("initializeFromCSV");
 
         std::ifstream file(filename);
 
         T q = -1;
 
         if(!file.is_open()){
-            std::cerr << "Could not open file" << std::endl;
+            m << "Could not open file" << endl;
             return;
         }
 
@@ -121,8 +122,6 @@ public:
                 if (i == 0) continue;
                 R(i-1)[d] = std::stod(token);
                 P(i-1)[d] = 0.0;
-                // std::cout << token << std::endl;
-
             }
             Q(i-1) = q;
         }
@@ -145,9 +144,9 @@ public:
         this->rmax_m = box_length/2.;
         this->origin_m = rmin_m;
 
-        this->hr_m = box_length/(T)(this->nr_m[0]);
+        this->hr_m = box_length/static_cast<T>(this->nr_m[0]);
 
-        std::cerr << "hr: " << this->hr_m << std::endl;
+        m << "hr: " << this->hr_m << endl;
 
         // initialize time stuff
         this->it_m = 0;
@@ -168,8 +167,8 @@ public:
             )
         );
 
-	    // std::cerr << "Device Space: " << Device::name() << std::endl;
-	    // std::cerr << "Host Space: " << Host::name() << std::endl;
+	    // m << "Device Space: " << Device::name() << endl;
+	    // m << "Host Space: " << Host::name() << endl;
 
 
         this->fcontainer_m->initializeFields("P3M");
@@ -230,7 +229,7 @@ public:
 
         this->pcontainer_m->update();
 
-        std::cerr << "Pre Run finished" << std::endl;
+        m << "Pre Run finished" << endl;
     }
 
     void initializeParticles() {
@@ -270,7 +269,7 @@ public:
         Kokkos::fence();
 
 	    // make sure this runs on the host, device does not work yet
-        Kokkos::Random_XorShift64_Pool rand_pool((size_type)(42 + 24 * rank));
+        Kokkos::Random_XorShift64_Pool rand_pool(static_cast<size_type>(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
         Kokkos::parallel_for("initialize particles", nloc,
@@ -314,11 +313,12 @@ public:
         IpplTimings::stopTimer(ITimer);
 
 	    // debug output, can be ignored
-        std::cerr << this->pcontainer_m->getLocalNum() << std::endl;
+        m << this->pcontainer_m->getLocalNum() << endl;
     }
 
 
     T computeRMSBeamSize(){
+        Inform m("ComputeRMSBeamSize");
         auto R = this->pcontainer_m->R.getView();
         auto nLoc = this->pcontainer_m->getLocalNum();
 
@@ -346,8 +346,8 @@ public:
         T rms_z = sqrt(glob[5] - glob[2] * glob[2]);
 
 
-        std::cerr << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << std::endl;
-        std::cerr << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << std::endl;
+        m << "Beam Center: (" << glob[0] << ", " << glob[1] << ", " << glob[2] << ")" << endl;
+        m << "RMS Beam Size: (" << rms_x << ", " << rms_y << ", " << rms_z << ")" << endl;
 
         return rms_x;
     }
@@ -400,7 +400,8 @@ public:
         return globalEnergy;
     }
 
-    void compute_temperature() {
+    void computeTemperature() {
+        Inform m("computeTemperature");
         Vector_t<T, 3> locAvgVel = 0.0;
         Vector_t<T, 3> globAvgVel = 0.0;
         auto nLoc = this->pcontainer_m->getLocalNum();
@@ -418,7 +419,7 @@ public:
         auto totalP = this->totalP_m;
 
         globAvgVel /= totalP;
-        std::cerr << "Average Velocity: " << globAvgVel << std::endl;
+        m << "Average Velocity: " << globAvgVel << endl;
 
         ippl::Vector<T, 3> localTemperature = 0.0;
         ippl::Vector<T, 3> globalTemperature = 0.0;
@@ -433,20 +434,21 @@ public:
 
         globalTemperature /= totalP;
 
-        std::cerr << "Temperature: " << globalTemperature << std::endl;
+        m << "Temperature: " << globalTemperature << endl;
 
         // l2 norm
         T temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
                             + globalTemperature[1] * globalTemperature[1]
                             + globalTemperature[2] * globalTemperature[2]);
 
-        std::cerr << "L2-Norm of Temperature: " << temperature << std::endl;
+        m << "L2-Norm of Temperature: " << temperature << endl;
         // return temperature[0];
 
     }
 
     void computeBeamStatistics() {
-        std::cerr << "Start Computing Beam Statistics" << std::endl;
+        Inform m("computeBeamStatistics");
+        m << "Start Computing Beam Statistics" << endl;
 
         auto R = this->pcontainer_m->R.getView();
         auto nLoc = this->pcontainer_m->getLocalNum();
@@ -488,18 +490,18 @@ public:
         T emit_z = Kokkos::sqrt(global_stats[6] * global_stats[7] - global_stats[8] * global_stats[8]);
         // T beta = avg_xsq / emit_x;
         // T sigma_x = Kokkos::sqrt(avg_xsq);
-        // std::cerr << "Beam Statistics: " << std::endl;
-        // std::cerr << "Sigma x: " << sigma_x << std::endl;
-        std::cerr << "(Normalized) RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << std::endl;
+        // m << "Beam Statistics: " << endl;
+        // m << "Sigma x: " << sigma_x << endl;
+        m << "(Normalized) RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << endl;
     }
 
     void dump() override {
         Inform m("Dump");
 
-        std::cerr << "Dumping data" << std::endl;
+        m << "Dumping data" << endl;
 
         T E_kin = calcKineticEnergy();
-        std::cerr << "Dumping data, Kinetic Energy: " << E_kin << std::endl;
+        m << "Dumping data, Kinetic Energy: " << E_kin << endl;
 
         // DEBUG output
         int it = this->it_m;
@@ -517,41 +519,57 @@ public:
             }
             outputFile.close();
         } else {
-            std::cerr << "Unable to open file" << std::endl;
+            m << "Unable to open file" << endl;
         }
 
         computeBeamStatistics();
-        compute_temperature();
+        computeTemperature();
         computeRMSBeamSize();
     }
 
     void LeapFrogStep() {
+        Inform m("LeapFrogStep");
+        T dt = this->dt_m;
+        auto pc = this->pcontainer_m;
+        auto fc = this->fcontainer_m;
 
-        T dt                               = this->dt_m;
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-        std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
+        static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("pushVelocity");
+        static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("pushPosition");
+        static IpplTimings::TimerRef updateTimer = IpplTimings::getTimer("update");
+        static IpplTimings::TimerRef PPSolveTimer = IpplTimings::getTimer("PPInteraction");
+        static IpplTimings::TimerRef FieldSolveTimer = IpplTimings::getTimer("FieldSolve");
 
+        IpplTimings::startTimer(RTimer);
         pc->R = pc->R + dt * pc->P;
+        IpplTimings::stopTimer(RTimer);
 
+        IpplTimings::startTimer(updateTimer);
         pc->update();
+        IpplTimings::stopTimer(updateTimer);
 
         this->par2grid();
 
+        IpplTimings::startTimer(FieldSolveTimer);
         this->fsolver_m->solve();
+        IpplTimings::stopTimer(FieldSolveTimer);
 
         this->grid2par();
 
+        IpplTimings::startTimer(PPSolveTimer);
         this->isolver_m->solve();
+        IpplTimings::stopTimer(PPSolveTimer);
 
-        this->applyConstantFocusing();
+        // this->applyConstantFocusing();
 
+        IpplTimings::startTimer(PTimer);
         pc->P = pc->P - dt * pc->E;
+        IpplTimings::stopTimer(PTimer);
 
-        std::cerr << "LeapFrog Step " << this->it_m << " Finished." << std::endl;
-
+        m << "Step " << this->it_m << " Finished." << endl;
     }
 
     T computeAvgSpaceChargeForces() {
+        Inform m("ComputeAvgSpaceChargeForces");
         auto totalP = this->totalP_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto E = this->pcontainer_m->E.getView();
@@ -565,7 +583,7 @@ public:
             }, avgE
         );
 
-        std::cerr << "Average Space Charge Forces: " << avgE << std::endl;
+        m << "Average Space Charge Forces: " << avgE << endl;
 
         Vector_t<T, Dim> globE = 0.0;
 
@@ -582,6 +600,7 @@ public:
     }
 
     void applyConstantFocusing() {
+        Inform m("applyConstantFocusing");
         auto E = this->pcontainer_m->E.getView();
         auto R = this->pcontainer_m->R.getView();
 
@@ -589,7 +608,7 @@ public:
         T focusStrength = this->focusingF_m;
         auto nLoc = this->pcontainer_m->getLocalNum();
 
-        std::cerr << "Focusing Force " << focusStrength << std::endl;
+        m << "Focusing Force " << focusStrength << endl;
 
 	    Kokkos::parallel_for("apply constant focusing", nLoc,
             KOKKOS_LAMBDA(const size_type& i){
@@ -621,22 +640,20 @@ public:
         scatter(*q, *rho, *R);
         T relError = std::fabs((Q-(*rho).sum())/Q);
 
-        std::cerr << "Relative Error: " << relError << std::endl;
+        m << "Relative Error: " << relError << endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
-        if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 1e-10) {
-                m << "Time step: " << it_m << endl;
-                m << "Total particles in the sim. " << totalP_m << " "
-                  << "after update: " << TotalParticles << endl;
-                m << "Rel. error in charge conservation: " << relError << endl;
-                ippl::Comm->abort();
-            }
-	    }
+        if (TotalParticles != totalP_m || relError > 1e-10) {
+            m << "Time step: " << it_m << endl;
+            m << "Total particles in the sim. " << totalP_m << " "
+              << "after update: " << TotalParticles << endl;
+            m << "Rel. error in charge conservation: " << relError << endl;
+            ippl::Comm->abort();
+        }
 
 	    T cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<T>());
         (*rho)          = (*rho) / cellVolume;

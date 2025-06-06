@@ -109,9 +109,9 @@ public:
         this->origin_m = rmin_m;
         this->isAllPeriodic_m = true;
 
-        this->hr_m = box_length / (T) (this->nr_m[0]);
+        this->hr_m = box_length / static_cast<T>(this->nr_m[0]);
 
-        m << "hr: " << this->hr_m << "\n";
+        m << "hr: " << this->hr_m << endl;
 
         // initialize time stuff
         this->it_m = 0;
@@ -132,8 +132,8 @@ public:
             )
         );
 
-        // m << "Device Space: " << Device::name() << "\n";
-        // m << "Host Space: " << Host::name() << "\n";
+        // m << "Device Space: " << Device::name() << endl;
+        // m << "Host Space: " << Host::name() << endl;
 
 
         this->fcontainer_m->initializeFields("P3M");
@@ -187,7 +187,7 @@ public:
 
         this->focusingF_m *= this->computeAvgSpaceChargeForces();
 
-        m << "Pre Run finished" << "\n";
+        m << "Pre Run finished" << endl;
     }
 
     void computeBeamStatistics() {
@@ -232,13 +232,13 @@ public:
         // T beta = avg_xsq / emit_x;
         // T sigma_x = Kokkos::sqrt(avg_xsq);
 
-        m << "Beam Statistics: " << "\n";
-        m << "RMS Beam Size: " << sigma_x << " , " << sigma_y << " , " << sigma_z << "\n";
-        m << "RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << "\n";
+        m << "Beam Statistics: " << endl;
+        m << "RMS Beam Size: " << sigma_x << " , " << sigma_y << " , " << sigma_z << endl;
+        m << "RMS Emittance: " << emit_x << " , " << emit_y << " , " << emit_z << endl;
     }
 
-    void compute_temperature() {
-        Inform m("compute_temperature");
+    void computeTemperature() {
+        Inform m("computeTemperature");
         Vector_t<T, 3> locAvgVel = 0.0;
         Vector_t<T, 3> globAvgVel = 0.0;
         const auto nLoc = this->pcontainer_m->getLocalNum();
@@ -256,7 +256,7 @@ public:
         const auto totalP = this->totalP_m;
 
         globAvgVel /= totalP;
-        m << "Average Velocity: " << globAvgVel << "\n";
+        m << "Average Velocity: " << globAvgVel << endl;
         MPI_Bcast(&globAvgVel[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD); // TODO maybe just use allreduce?
 
         ippl::Vector<T, 3> localTemperature = 0.0;
@@ -272,17 +272,17 @@ public:
 
         globalTemperature /= totalP;
 
-        m << "Temperature: " << globalTemperature << "\n";
+        m << "Temperature: " << globalTemperature << endl;
         // l2 norm
         T temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
                                      + globalTemperature[1] * globalTemperature[1]
                                      + globalTemperature[2] * globalTemperature[2]);
-        m << "L2-Norm of Temperature: " << temperature << "\n";
+        m << "L2-Norm of Temperature: " << temperature << endl;
     }
 
     void dump() {
         computeBeamStatistics();
-        compute_temperature();
+        computeTemperature();
     }
 
     void initializeParticles() {
@@ -328,7 +328,7 @@ public:
         Kokkos::fence();
 
         // make sure this runs on the host, device does not work yet
-        Kokkos::Random_XorShift64_Pool rand_pool((size_type) (42 + 24 * rank));
+        Kokkos::Random_XorShift64_Pool rand_pool(static_cast<size_type>(42 + 24 * rank));
 
         IpplTimings::startTimer(GTimer);
         Kokkos::parallel_for("initialize particles", nloc,
@@ -435,7 +435,7 @@ public:
         pc->P = pc->P - dt * pc->E;
         IpplTimings::stopTimer(PTimer);
 
-        m << "LeapFrog Step " << this->it_m << " Finished." << "\n";
+        m << "Step " << this->it_m << " Finished." << endl;
     }
 
     T computeAvgSpaceChargeForces() {
@@ -454,12 +454,12 @@ public:
                                 }, avgE
         );
 
-        // m << "Average Space Charge Forces: " << avgE << "\n";
+        // m << "Average Space Charge Forces: " << avgE << endl;
 
         Vector_t<T, Dim> globE = 0.0;
 
         ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<T>(), 0);
-        m << "Average Space Charge Forces: " << globE << "\n";
+        m << "Average Space Charge Forces: " << globE << endl;
         globE /= totalP;
 
         T focusingf = 0.0;
@@ -480,7 +480,7 @@ public:
         const T focusStrength = this->focusingF_m;
         const auto nLoc = this->pcontainer_m->getLocalNum();
 
-        m << "Focusing Force " << focusStrength << "\n";
+        m << "Focusing Force " << focusStrength << endl;
 
         Kokkos::parallel_for("apply constant focusing", nLoc,
                              KOKKOS_LAMBDA(const size_type &i) {
@@ -512,7 +512,7 @@ public:
         scatter(*q, *rho, *R);
         T relError = std::fabs((Q - (*rho).sum()) / Q);
 
-        // m << "Relative Error: " << relError << "\n";
+        // m << "Relative Error: " << relError << endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();

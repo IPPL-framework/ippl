@@ -666,7 +666,7 @@ namespace ippl {
             "Calculate new Indices", range_policy(0, nLoc),
             KOKKOS_LAMBDA(const size_type &i) {
                 int_type cellNumber = cellIndex(i);
-                assert(cellNumber < totalCells && "Invalid Cell Number");
+                assert(cellNumber < static_cast<int_type>(totalCells) && "Invalid Cell Number");
                 size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(cellNumber), 1u);
                 assert(newIdx < nLoc && "Invalid Index");
                 newIndex(i) = newIdx;
