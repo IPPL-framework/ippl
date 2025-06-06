@@ -298,7 +298,6 @@ namespace CatalystAdaptor {
 
         //auto layout_view = particleContainer->R.getView();
         typename ippl::ParticleAttrib<ippl::Vector<double, 1>>::HostMirror R_host = particleContainer->R.getHostMirror();
-        typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror R_host_mod = particleContainer->P.getHostMirror();
         typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror P_host = particleContainer->P.getHostMirror();
         typename ippl::ParticleAttrib<double>::HostMirror q_host = particleContainer->q.getHostMirror();
         typename ippl::ParticleAttrib<std::int64_t>::HostMirror ID_host = particleContainer->ID.getHostMirror();
@@ -306,7 +305,20 @@ namespace CatalystAdaptor {
         Kokkos::deep_copy(P_host, particleContainer->P.getView());
         Kokkos::deep_copy(q_host, particleContainer->q.getView());
         Kokkos::deep_copy(ID_host, particleContainer->ID.getView());
-     
+    
+        // =========================================================================
+        // THE FIX: Create a NEW, independent Kokkos View on the host for padded data
+        // =========================================================================
+        typename Kokkos::View<ippl::Vector<double, 3>*, Kokkos::HostSpace> R_host_padded("R_padded", particleContainer->getLocalNum());
+
+        // Now, fill this NEW buffer with the padded data
+        for (size_t i = 0; i < particleContainer->getLocalNum(); ++i) {
+            R_host_padded(i)[0] = R_host(i)[0]; // Copy X from 1D data
+            R_host_padded(i)[1] = 0.0;          // Pad Y with 0
+            R_host_padded(i)[2] = 0.0;          // Pad Z with 0
+        }
+        // =========================================================================
+
         // if node is passed in, append data to it
         conduit_cpp::Node node;
         if (node_in)
@@ -326,21 +338,13 @@ namespace CatalystAdaptor {
         auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set_string("explicit");
 
-        
-        for (size_t i = 0; i < particleContainer->getLocalNum(); ++i) {
-            R_host_mod(i)[0] = R_host(i)[0];
-            R_host_mod(i)[1] = 0.0;               // Set Y to 0
-            R_host_mod(i)[2] = 0.0;               // Set Z to 0
-        }
-        
-        
 
         //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/x"].set(&R_host_mod.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/y"].set(&R_host_mod.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/z"].set(&R_host_mod.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/x"].set(&R_host_padded.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set(&R_host_padded.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set(&R_host_padded.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         mesh["topologies/mesh/type"].set_string("unstructured");
         mesh["topologies/mesh/coordset"].set_string("coords");
@@ -379,9 +383,9 @@ namespace CatalystAdaptor {
         //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/x"].set(&R_host_mod.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/y"].set(&R_host_mod.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/z"].set(&R_host_mod.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/x"].set(&R_host_padded.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/y"].set(&R_host_padded.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/z"].set(&R_host_padded.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
         // this node we can return as the pointer to velocity and charge is globally valid
         if (node_in == std::nullopt)
