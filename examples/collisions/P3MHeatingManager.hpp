@@ -402,31 +402,30 @@ public:
 
     void computeTemperature() {
         Inform m("computeTemperature");
-        Vector_t<T, 3> locAvgVel = 0.0;
-        Vector_t<T, 3> globAvgVel = 0.0;
+        Vector_t<T, 3> avgVel = 0.0;
         auto nLoc = this->pcontainer_m->getLocalNum();
         auto P = this->pcontainer_m->P.getView();
 
         Kokkos::parallel_reduce("compute average velocity", nLoc,
             KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3>& sum){
                 sum += P(i);
-            }, locAvgVel
+            }, avgVel
         );
-        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<T>(), 0);
+        ippl::Comm->allreduce(avgVel[0], 3, std::plus<T>());
 
         ippl::Comm->barrier();
 
         auto totalP = this->totalP_m;
 
-        globAvgVel /= totalP;
-        m << "Average Velocity: " << globAvgVel << endl;
+        avgVel /= totalP;
+        m << "Average Velocity: " << avgVel << endl;
 
         ippl::Vector<T, 3> localTemperature = 0.0;
         ippl::Vector<T, 3> globalTemperature = 0.0;
 
         Kokkos::parallel_reduce("compute temperature", nLoc,
             KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3>& sum){
-                sum += (P(i)-globAvgVel(0)) * (P(i)-globAvgVel(0));
+                sum += (P(i)-avgVel) * (P(i)-avgVel);
             }, localTemperature
         );
 

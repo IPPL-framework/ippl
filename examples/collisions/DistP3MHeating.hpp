@@ -201,7 +201,7 @@ public:
         Vector_t<T, 12> stats = 0.0;
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 12> &sum) {
+                                KOKKOS_LAMBDA(const size_type i, Vector_t<T, 12> &sum) {
                                     sum[0] += R(i)[0] * R(i)[0];
                                     sum[1] += P(i)[0] * P(i)[0];
                                     sum[2] += R(i)[0] * P(i)[0];
@@ -217,7 +217,7 @@ public:
                                 }, stats
         );
 
-        ippl::Vector<T, 12> global_stats = 0.0;
+        Vector_t<T, 12> global_stats = 0.0;
 
         ippl::Comm->reduce(&stats[0], &global_stats[0], 12, std::plus<T>(), 0);
 
@@ -239,32 +239,32 @@ public:
 
     void computeTemperature() {
         Inform m("computeTemperature");
-        Vector_t<T, 3> locAvgVel = 0.0;
-        Vector_t<T, 3> globAvgVel = 0.0;
+        Vector_t<T, 3> avgVel = 0.0;
         const auto nLoc = this->pcontainer_m->getLocalNum();
         const auto P = this->pcontainer_m->P.getView();
 
         Kokkos::parallel_reduce("compute average velocity", nLoc,
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3> &sum) {
+                                KOKKOS_LAMBDA(const size_type i, Vector_t<T, 3> &sum) {
                                     sum += P(i);
-                                }, locAvgVel
+                                }, avgVel
         );
-        ippl::Comm->reduce(&locAvgVel[0], &globAvgVel[0], 3, std::plus<T>(), 0);
+        ippl::Comm->allreduce(avgVel[0], 3, std::plus<T>());
 
         ippl::Comm->barrier();
 
         const auto totalP = this->totalP_m;
 
-        globAvgVel /= totalP;
-        m << "Average Velocity: " << globAvgVel << endl;
-        MPI_Bcast(&globAvgVel[0], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD); // TODO maybe just use allreduce?
+        avgVel /= totalP;
+        m << "Average Velocity: " << avgVel << endl;
 
-        ippl::Vector<T, 3> localTemperature = 0.0;
-        ippl::Vector<T, 3> globalTemperature = 0.0;
+        Vector_t<T, 3> localTemperature = 0.0;
+        Vector_t<T, 3> globalTemperature = 0.0;
+
+        auto s = avgVel(0);
 
         Kokkos::parallel_reduce("compute temperature", nLoc,
-                                KOKKOS_LAMBDA(const size_type i, ippl::Vector<T, 3> &sum) {
-                                    sum += (P(i) - globAvgVel(0)) * (P(i) - globAvgVel(0));
+                                KOKKOS_LAMBDA(const size_type i, Vector_t<T, 3> &sum) {
+                                    sum += (P(i) - avgVel) * (P(i) - avgVel); // remove mean transportation
                                 }, localTemperature
         );
 
@@ -274,9 +274,7 @@ public:
 
         m << "Temperature: " << globalTemperature << endl;
         // l2 norm
-        T temperature = Kokkos::sqrt(globalTemperature[0] * globalTemperature[0]
-                                     + globalTemperature[1] * globalTemperature[1]
-                                     + globalTemperature[2] * globalTemperature[2]);
+        T temperature = Kokkos::sqrt(globalTemperature.dot(globalTemperature));
         m << "L2-Norm of Temperature: " << temperature << endl;
     }
 
@@ -456,18 +454,13 @@ public:
 
         // m << "Average Space Charge Forces: " << avgE << endl;
 
-        Vector_t<T, Dim> globE = 0.0;
 
-        ippl::Comm->reduce(&avgE[0], &globE[0], 3, std::plus<T>(), 0);
-        m << "Average Space Charge Forces: " << globE << endl;
-        globE /= totalP;
+        ippl::Comm->allreduce(avgE[0], 3, std::plus<T>());
+        avgE /= totalP;
+        m << "Average Space Charge Forces: " << avgE << endl;
 
-        T focusingf = 0.0;
-        for (unsigned d = 0; d < Dim; ++d) {
-            focusingf += globE[d] * globE[d];
-        }
+        T focusingf = avgE.dot(avgE);
 
-        MPI_Bcast(&focusingf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         return std::sqrt(focusingf);
     }
 
@@ -484,7 +477,7 @@ public:
 
         Kokkos::parallel_for("apply constant focusing", nLoc,
                              KOKKOS_LAMBDA(const size_type &i) {
-                                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
+                                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad); // TODO if Q would not be all ones, this should involve Q somehow?
                                  E(i) += F;
                              }
         );
