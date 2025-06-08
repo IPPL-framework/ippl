@@ -260,8 +260,6 @@ public:
         Vector_t<T, 3> localTemperature = 0.0;
         Vector_t<T, 3> globalTemperature = 0.0;
 
-        auto s = avgVel(0);
-
         Kokkos::parallel_reduce("compute temperature", nLoc,
                                 KOKKOS_LAMBDA(const size_type i, Vector_t<T, 3> &sum) {
                                     sum += (P(i) - avgVel) * (P(i) - avgVel); // remove mean transportation
