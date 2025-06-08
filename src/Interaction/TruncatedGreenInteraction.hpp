@@ -15,6 +15,8 @@ namespace ippl {
 
     template<typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
     void TruncatedGreenInteraction<ParticleContainer, ScalarAttribute, VectorAttribute>::solve() {
+        static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("TruncatedGreenInteraction::solve()");
+        IpplTimings::startTimer(solveTimer);
         // get particle data
         auto &F = *F_m;
         const auto &R = *R_m;
@@ -39,6 +41,7 @@ namespace ippl {
             Kokkos::atomic_sub(&F(i), F_ij * QM(j));
             // Kokkos::atomic_add(&E(i), F_ij * QM(j));
         });
+        IpplTimings::stopTimer(solveTimer);
     }
 
 }
