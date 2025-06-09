@@ -1,5 +1,3 @@
-
-#define IORANK 1
 namespace ippl {
 
     // NedelecSpace constructor, which calls the FiniteElementSpace constructor,
@@ -246,10 +244,11 @@ namespace ippl {
         if constexpr (Dim == 3) {
             size_t ny = this->nr_m[1];
 
-            globalDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny;
+            globalDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny
+                + elementPos(1)*nx + elementPos(0);
             globalDOFs(5) = globalDOFs(4) + 1;
-            globalDOFs(6) = globalDOFs(4) + nx;
-            globalDOFs(7) = globalDOFs(4) + nx + 1;
+            globalDOFs(6) = globalDOFs(4) + nx + 1;
+            globalDOFs(7) = globalDOFs(4) + nx;
             globalDOFs(8) = globalDOFs(0) + 3*nx*ny - nx - ny;
             globalDOFs(9) = globalDOFs(8) + nx - 1;
             globalDOFs(10) = globalDOFs(9) + nx;
@@ -301,10 +300,11 @@ namespace ippl {
         if constexpr (Dim == 3) {
             size_t ny = dif[1];
 
-            FEMVectorDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny;
+            FEMVectorDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny
+                + elementPos(1)*nx + elementPos(0);
             FEMVectorDOFs(5) = FEMVectorDOFs(4) + 1;
-            FEMVectorDOFs(6) = FEMVectorDOFs(4) + nx;
-            FEMVectorDOFs(7) = FEMVectorDOFs(4) + nx + 1;
+            FEMVectorDOFs(6) = FEMVectorDOFs(4) + nx + 1;
+            FEMVectorDOFs(7) = FEMVectorDOFs(4) + nx;
             FEMVectorDOFs(8) = FEMVectorDOFs(0) + 3*nx*ny - nx - ny;
             FEMVectorDOFs(9) = FEMVectorDOFs(8) + nx - 1;
             FEMVectorDOFs(10) = FEMVectorDOFs(9) + nx;
@@ -516,6 +516,14 @@ namespace ippl {
             case 1: position(1) = 0.5; break;
             case 2: position(0) = 0.5; position(1) = 1;   break;
             case 3: position(0) = 1;   position(1) = 0.5; break;
+            case 4: position(2) = 0.5; break;
+            case 5: position(0) = 1; position(2) = 0.5; break;
+            case 6: position(0) = 1; position(1) = 1; position(2) = 0.5; break;
+            case 7: position(1) = 1; position(2) = 0.5; break;
+            case 8: position(0) = 0.5; position(2) = 1; break;
+            case 9: position(1) = 0.5; position(2) = 1; break;
+            case 10: position(0) = 0.5; position(1) = 1;   position(2) = 1; break;
+            case 11: position(0) = 1;   position(1) = 0.5; position(2) = 1; break;
         }
 
         return position;
@@ -1029,7 +1037,7 @@ namespace ippl {
 
         point_t result(0);
 
-        if (Dim == 2) {
+        if constexpr (Dim == 2) {
             T x = localPoint(0);
             T y = localPoint(1);
 
@@ -1039,24 +1047,24 @@ namespace ippl {
                 case 2: result(0) = y; break;
                 case 3: result(1) = x; break;
             }
-        } else if (Dim == 3) {
+        } else if constexpr (Dim == 3) {
             T x = localPoint(0);
             T y = localPoint(1);
             T z = localPoint(2);
 
             switch (localDOF){
-                case 0: result(0) = y*z - y - z + 1; break;
-                case 1: result(1) = x*z - x - z + 1; break;
-                case 2: result(0) = y*(1 - z); break;
-                case 3: result(1) = x*(1 - z); break;
-                case 4: result(2) = x*y - x - y + 1; break;
-                case 5: result(2) = x*(1 - y); break;
-                case 6: result(2) = x*y; break;
-                case 7: result(2) = y*(1 - x); break;
-                case 8: result(0) = z*(1 - y); break;
-                case 9: result(1) = z*(1 - x); break;
-                case 10: result(0) = y*z; break;
-                case 11: result(1) = x*z; break;
+                case 0:  result(0) = y*z - y - z + 1; break;
+                case 1:  result(1) = x*z - x - z + 1; break;
+                case 2:  result(0) = y*(1 - z);       break;
+                case 3:  result(1) = x*(1 - z);       break;
+                case 4:  result(2) = x*y - x - y + 1; break;
+                case 5:  result(2) = x*(1 - y);       break;
+                case 6:  result(2) = x*y;             break;
+                case 7:  result(2) = y*(1 - x);       break;
+                case 8:  result(0) = z*(1 - y);       break;
+                case 9:  result(1) = z*(1 - x);       break;
+                case 10: result(0) = y*z;             break;
+                case 11: result(1) = x*z;             break;
             }
         }
 
@@ -1130,7 +1138,7 @@ namespace ippl {
         
         point_t result(0);
 
-        if (Dim == 2) {
+        if constexpr (Dim == 2) {
             // In case of 2d we would have that the curl would correspond to a
             // scalar, but in order to keep the interface uniform across all the
             // dimensions, we still use a 2d vector but only set the first entry
@@ -1144,21 +1152,25 @@ namespace ippl {
                 case 2: result(0) = -1; break;
                 case 3: result(0) = 1; break;
             }
-            /*
-            if (localDOF % 2 == 0) {
-                // are on edge which is parallel to x-axis, therefore x
-                // derivative is zero and y derivative is based on if we are at
-                // the lower or upper edge.
-                result(0) = -(1 - 2*(localDOF == 0));
-            } else {
-                // are on edge which is parallel to y-axis, therefore y
-                // derivative is zero and x derivative is bases on if we are at
-                // the left or right edge
-                result(0) = (1 - 2*(localDOF == 1));
-            }
-            */
         } else {
+            T x = localPoint(0);
+            T y = localPoint(1);
+            T z = localPoint(2);
 
+            switch (localDOF) {
+                case 0: result(0) = 0; result(1) = -1+y; result(2) = 1-z; break;
+                case 1: result(0) = 1-x; result(1) = 0; result(2) = -1+z; break;
+                case 2: result(0) = 0; result(1) = -y; result(2) = -1+z; break;
+                case 3: result(0) = x; result(1) = 0; result(2) = 1-z; break;
+                case 4: result(0) = -1+x; result(1) = 1-y; result(2) = 0; break;
+                case 5: result(0) = -x; result(1) = -1+y; result(2) = 0; break;
+                case 6: result(0) = x; result(1) = -y; result(2) = 0; break;
+                case 7: result(0) = 1-x; result(1) = y; result(2) = 0; break;
+                case 8: result(0) = 0; result(1) = 1-y; result(2) = z; break;
+                case 9: result(0) = -1+x; result(1) = 0; result(2) = -z; break;
+                case 10: result(0) = 0; result(1) = y; result(2) = -z; break;
+                case 11: result(0) = -x; result(1) = 0; result(2) = z; break;
+            }
         }
 
         return result;
@@ -1383,47 +1395,93 @@ namespace ippl {
         auto coefView = x.getView();
         auto outView = field.getView();
         
-        size_t n = x.size();
-        Kokkos::parallel_for("reconstructBasis", n,
-            KOKKOS_CLASS_LAMBDA(size_t i){
-                // In order to do this we need to figure out to which axis we
-                // are parallel
-                size_t y = i / (2*nx - 1);
-                bool onXAxis = i - (2*nx-1) * y < (nx-1);
-                if (onXAxis) {
-                    size_t fieldIdx1 = i - y*(nx-1);
-                    size_t fieldIdx2 = i + 1 - y*(nx-1);
+        if constexpr (Dim == 2) {
+            size_t n = x.size();
+            Kokkos::parallel_for("reconstructBasis", n,
+                KOKKOS_CLASS_LAMBDA(size_t i){
+                    // In order to do this we need to figure out to which axis we
+                    // are parallel
+                    size_t y = i / (2*nx - 1);
+                    bool onXAxis = i - (2*nx-1) * y < (nx-1);
+                    if (onXAxis) {
+                        size_t fieldIdx1 = i - y*(nx-1);
+                        size_t fieldIdx2 = i + 1 - y*(nx-1);
 
-                    indices_t fieldNDIdx1(0);
-                    fieldNDIdx1[0] = fieldIdx1 % nx;
-                    fieldNDIdx1[1] = fieldIdx1 / nx;
+                        indices_t fieldNDIdx1(0);
+                        fieldNDIdx1[0] = fieldIdx1 % nx;
+                        fieldNDIdx1[1] = fieldIdx1 / nx;
 
-                    indices_t fieldNDIdx2 = this->getMeshVertexNDIndex(fieldIdx2);
-                    fieldNDIdx2[0] = fieldIdx2 % nx;
-                    fieldNDIdx2[1] = fieldIdx2 / nx;
+                        indices_t fieldNDIdx2(0);
+                        fieldNDIdx2[0] = fieldIdx2 % nx;
+                        fieldNDIdx2[1] = fieldIdx2 / nx;
+                        
+                        apply(outView,fieldNDIdx1)[0] = coefView(i);
+                        apply(outView,fieldNDIdx2)[0] = coefView(i);
+
+                    } else {
+                        size_t fieldIdx1 = i - (y+1)*(nx-1);
+                        size_t fieldIdx2 = i + 1 - y*(nx-1);
+                        
+                        indices_t fieldNDIdx1(0);
+                        fieldNDIdx1[0] = fieldIdx1 % nx;
+                        fieldNDIdx1[1] = fieldIdx1 / nx;
+
+                        indices_t fieldNDIdx2(0);
+                        fieldNDIdx2[0] = fieldIdx2 % nx;
+                        fieldNDIdx2[1] = fieldIdx2 / nx;
+                        
+                        apply(outView,fieldNDIdx1)[1] = coefView(i);
+                        apply(outView,fieldNDIdx2)[1] = coefView(i);
+                    }
                     
-                    apply(outView,fieldNDIdx1)[0] = coefView(i);
-                    apply(outView,fieldNDIdx2)[0] = coefView(i);
-
-                } else {
-                    size_t fieldIdx1 = i - (y+1)*(nx-1);
-                    size_t fieldIdx2 = i + 1 - y*(nx-1);
                     
-                    indices_t fieldNDIdx1(0);
-                    fieldNDIdx1[0] = fieldIdx1 % nx;
-                    fieldNDIdx1[1] = fieldIdx1 / nx;
-
-                    indices_t fieldNDIdx2(0);
-                    fieldNDIdx2[0] = fieldIdx2 % nx;
-                    fieldNDIdx2[1] = fieldIdx2 / nx;
-                    
-                    apply(outView,fieldNDIdx1)[1] = coefView(i);
-                    apply(outView,fieldNDIdx2)[1] = coefView(i);
                 }
+            );
+        } else {
+            field = point_t(10);
+            using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+            using policy_type = Kokkos::RangePolicy<exec_space>;
+            Kokkos::parallel_for(
+                "Reconstruct Solution", policy_type(0, elementIndices.extent(0)),
+                KOKKOS_CLASS_LAMBDA(size_t index) {
+                    const size_t elementIndex                              = elementIndices(index);
+                    const Vector<size_t, this->numElementDOFs> local_dofs  =
+                        this->getLocalDOFIndices();
                 
-                
-            }
-        );
+                    const Vector<size_t, this->numElementDOFs> vectorIndices =
+                        this->getFEMVectorDOFIndices(elementIndex, ldom);
+
+                    indices_t elementNDIndex = this->getElementNDIndex(elementIndex);
+                    elementNDIndex += 1; // For ghost cell
+
+                    apply(outView, elementNDIndex)[0] = coefView(vectorIndices[0]);
+                    apply(outView, elementNDIndex)[1] = coefView(vectorIndices[1]);
+                    apply(outView, elementNDIndex)[2] = coefView(vectorIndices[4]);
+
+                    if (elementNDIndex[0] == extents[0]-3) {
+                        // have hit x-bound
+                        elementNDIndex[0] += 1;
+                        apply(outView, elementNDIndex)[0] = coefView(vectorIndices[0]);
+                        apply(outView, elementNDIndex)[1] = coefView(vectorIndices[3]);
+                        apply(outView, elementNDIndex)[2] = coefView(vectorIndices[5]);
+                    }
+                    if (elementNDIndex[1] == extents[1]-3) {
+                        // have hit y-bound
+                        elementNDIndex[1] += 1;
+                        apply(outView, elementNDIndex)[0] = coefView(vectorIndices[2]);
+                        apply(outView, elementNDIndex)[1] = coefView(vectorIndices[1]);
+                        apply(outView, elementNDIndex)[2] = coefView(vectorIndices[7]);
+                    }
+                    if (elementNDIndex[2] == extents[2]-3) {
+                        // have hit z-bound
+                        elementNDIndex[2] += 1;
+                        apply(outView, elementNDIndex)[0] = coefView(vectorIndices[8]);
+                        apply(outView, elementNDIndex)[1] = coefView(vectorIndices[9]);
+                        apply(outView, elementNDIndex)[2] = coefView(vectorIndices[4]);
+                    }
+                }
+            );
+        }
                                     
     }
 
@@ -1554,16 +1612,6 @@ namespace ippl {
             }
         }
 
-        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> 
-            quadratureDOFDistances;
-        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                point_t dofPos = getLocalDOFPosition(i);
-                point_t d = dofPos - q[k];
-                quadratureDOFDistances[k][i] = d;
-            }
-        }
-
         const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
 
         // Absolute value of det Phi_K
@@ -1604,16 +1652,9 @@ namespace ippl {
                     point_t val_u_h = 0;
                     for (size_t j = 0; j < this->numElementDOFs; ++j) {
                         // get field index corresponding to this DOF
-                        bool onXAxis = j == 0 || j == 2;
                         size_t J = global_dofs[j];
-                        point_t dist = quadratureDOFDistances[k][j];
 
-                        // get field value at DOF and interpolate to q_k
-                        if (onXAxis) {
-                            val_u_h(0) += (1-Kokkos::abs(dist[1])) * view(vectorIndices[j]);
-                        }else {
-                            val_u_h(1) += (1-Kokkos::abs(dist[0])) * view(vectorIndices[j]);
-                        }
+                        val_u_h += basis_q[k][j] * view(vectorIndices[j]);
                     }
 
                     point_t dif = (val_u_sol -  val_u_h);

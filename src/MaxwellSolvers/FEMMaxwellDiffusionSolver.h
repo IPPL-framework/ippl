@@ -30,8 +30,15 @@ namespace ippl {
             //std::cout << "non curl val: " << dot(DPhiInvT*val_b_q_k[j], DPhiInvT*val_b_q_k[i]).apply() << "\n";
             //std::cout << absDetDPhi << "\n";
             // 
-            T curlTerm = dot(curl_b_q_k[j], curl_b_q_k[i]).apply()/absDetDPhi;
-            T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
+            T curlTerm = 0;
+            T massTerm = 0; 
+            if constexpr (Dim == 2) {
+                curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
+                massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
+            } else  {
+                curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
+                massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
+            }
             return (curlTerm + massTerm)*absDetDPhi;
         }
     };
@@ -202,6 +209,7 @@ namespace ippl {
 
             //FEMVector<T> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp));
             FEMVector<T> lhsVector = rhsVector_m->deepCopy();
+            lhsVector = 0;
             
             try {
                 pcg_algo_m(lhsVector, *rhsVector_m, this->params_m);
@@ -219,12 +227,12 @@ namespace ippl {
 
             
             //lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
-            nedelecSpace_m.reconstructSolution(lhsVector, *(this->En_mp));
+            //nedelecSpace_m.reconstructSolution(lhsVector, *(this->En_mp));
             //lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
 
             IpplTimings::stopTimer(solve);
             lhsVector_m = std::make_unique<FEMVector<T>>(lhsVector);
-            return nedelecSpace_m.reconstructBasis(lhsVector);
+            return lhsVector.template skeletonCopy<Vector<T,Dim> >();//nedelecSpace_m.reconstructBasis(lhsVector);
         }
 
         /**

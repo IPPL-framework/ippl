@@ -279,7 +279,10 @@ namespace ippl {
         FEMVector<T> evaluateAx(FEMVector<T>& x, F& evalFunction) const;
 
         /**
-         * @brief Assemble the load vector b of the system Ax = b
+         * @brief Assemble the load vector b of the system Ax = b, given a field
+         * of the right hand side defined at the Nédélec DOF positions. If a
+         * functor instead of a field should be used, use the function 
+         * \c NedelecSpace::evaluateLoadVectorFunctor.
          *
          * @param f The source field defined at the Nédélec degrees fo freedom.
          *
@@ -287,6 +290,19 @@ namespace ippl {
          */
         FEMVector<T> evaluateLoadVector(const FEMVector<point_t>& f) const;
         
+
+        /**
+         * @brief Assemble the load vector b of the system Ax = b, given a
+         * functional of the rhs. If a field instead of a functor should be
+         * used, use the function \c NedelecSpace::evaluateLoadVector.
+         *
+         * @param f The source function, which can be evaluated at arbitrary
+         * points.
+         * 
+         * @tparam F The functor type.
+         * 
+         * @return The resulting rhs b of the Galerkin discretization.
+         */
         template <typename F>
         FEMVector<T> evaluateLoadVectorFunctor(const FEMVector<NedelecSpace<T, Dim, Order, ElementType,
             QuadratureType, FieldType>::point_t>& model, const F& f) const;
@@ -311,39 +327,6 @@ namespace ippl {
          * \p field at the appropriate DOF positions.
          */
         FEMVector<T> interpolateToFEMVector(const FieldType& field) const;
-
-
-        /**
-         * @brief Given the basis function coefficients evaluates them and
-         * returns a \c ippl::FEMVector defined at the Nédélec DOFs.
-         * 
-         * This function takes as input a \c ippl::FEMVector which defines the 
-         * basis function coefficients of the Nédélec space, it will then
-         * evaluate the basis functions given the coefficients and return a new
-         * \c ippl::FEMVector which stores the resulting vector field defined at
-         * the Nédélec DOF positions.
-         * 
-         * @param coef The coefficients of the basis functions.
-         * 
-         * @returns The evaluation of the basis functions given the coefficients
-         * defined at the Nédélec DOF positions.
-         */
-        FEMVector<Vector<T,Dim> > reconstructBasis(const FEMVector<T>& coef) const;
-        
-
-        /**
-         * @brief Interpolates data from a \c ippl::FEMVector to a
-         * \c ippl::Field.
-         * 
-         * Given an \c ippl::FEMVector defined at the Nédéle DOF positions
-         * interpolate the data to the mesh vertecies defined by the field
-         * \p field.
-         * 
-         * @param vector The vector from which to take the data from.
-         * @param field The field to which to interpolate the data to.
-         * 
-         */
-        void interpolateToField(const FEMVector<T>& vector, FieldType& field) const;
 
         
         /**
@@ -373,18 +356,18 @@ namespace ippl {
          * @return error - The error ||u_h - u_sol||_L2
          */
         template <typename F> T computeError(const FEMVector<Vector<T,Dim> >& u_h, const F& u_sol) const;
-
-        template <typename F> T computeErrorCoeff(const FEMVector<T>& u_h, const F& u_sol) const;
+        
 
         /**
-         * @brief Given two fields, compute the L-infinity error
+         * @brief Given two fields, compute the L2 norm error
          *
          * @param u_h The numerical solution found using FEM
          * @param u_sol The analytical solution (functor)
          *
-         * @return error - The error ||u_h - u_sol||_Linf
+         * @return error - The error ||u_h - u_sol||_L2
          */
-        template <typename F> T computeErrorInf(const FieldType& u_h, const F& u_sol) const;
+        template <typename F> T computeErrorCoeff(const FEMVector<T>& u_h, const F& u_sol) const;
+
 
         /**
          * @brief Check if a DOF is on the boundary of the mesh
@@ -395,21 +378,85 @@ namespace ippl {
          * @return false - If the DOF is not on the boundary
          */
         KOKKOS_FUNCTION bool isDOFOnBoundary(const size_t& dofIdx) const {
-            assert(Dim == 2 && "AHHHH Not implemented");
-            size_t nx = this->nr_m[0];
-            size_t ny = this->nr_m[1];
             
             bool onBoundary = false;
+            if constexpr (Dim == 2) {
+                size_t nx = this->nr_m[0];
+                size_t ny = this->nr_m[1];
+                // South
+                bool sVal = (dofIdx < nx -1);
+                onBoundary = onBoundary || sVal;
+                // North
+                onBoundary = onBoundary || (dofIdx > nx*(ny-1) + ny*(nx-1) - nx);
+                // West
+                onBoundary = onBoundary || ((dofIdx >= nx-1) && (dofIdx - (nx-1)) % (2*nx - 1) == 0);
+                // East
+                onBoundary = onBoundary || ((dofIdx >= 2*nx-2) && ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0));    
+            }
 
-            // South
-            bool sVal = (dofIdx < nx -1);
-            onBoundary = onBoundary || sVal;
-            // North
-            onBoundary = onBoundary || (dofIdx > nx*(ny-1) + ny*(nx-1) - nx);
-            // West
-            onBoundary = onBoundary || ((dofIdx - (nx-1)) % (2*nx - 1) == 0);
-            // East
-            onBoundary = onBoundary || ((dofIdx >= 2*nx-2) && ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0));
+            if constexpr (Dim == 3) {
+                size_t nx = this->nr_m[0];
+                size_t ny = this->nr_m[1];
+                size_t nz = this->nr_m[2];
+
+                size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
+
+
+                if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                    // we are parallel to z axis
+                    // therefore we have halve a cell offset and can never be on the ground or in
+                    // s
+                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                        - (nx*(ny-1) + ny*(nx-1));
+                    
+                    size_t yOffset = f / nx;
+                    // South
+                    onBoundary = onBoundary || yOffset == 0;
+                    // North
+                    onBoundary = onBoundary || yOffset == ny-1;
+
+                    size_t xOffset = f % nx;
+                    // West
+                    onBoundary = onBoundary || xOffset == 0;
+                    // East
+                    onBoundary = onBoundary || xOffset == nx-1;
+
+                } else {
+                    // are parallel to one of the other axes
+                    // Ground
+                    onBoundary = onBoundary || zOffset == 0;
+                    // Space
+                    onBoundary = onBoundary || zOffset == nz-1;
+                    
+                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                    size_t yOffset = f / (2*nx - 1);
+                    size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                    if (xOffset < (nx-1)) {
+                        // we are parallel to the x axis, therefore we cannot
+                        // be on an west or east boundary, but we still can
+                        // be on a north or south boundary
+                        
+                        // South
+                        onBoundary = onBoundary || yOffset == 0;
+                        // North
+                        onBoundary = onBoundary || yOffset == ny-1;
+                        
+                    } else {
+                        // we are parallel to the y axis, therefore we cannot be
+                        // on a south or north boundary, but we still can be on
+                        // a west or east boundary
+                        if (xOffset >= nx-1) {
+                            xOffset -= (nx-1);
+                        }
+
+                        // West
+                        onBoundary = onBoundary || xOffset == 0;
+                        // East
+                        onBoundary = onBoundary || xOffset == nx-1;
+                    }
+                }
+            }
 
             return onBoundary;
         }
@@ -420,22 +467,92 @@ namespace ippl {
         *             1 = west
         *             2 = north
         *             3 = east
+        *             4 = ground
+        *             5 = space
         */
         KOKKOS_FUNCTION int getBoundarySide(const size_t& dofIdx) const {
-            assert(Dim == 2 && "AHHHH Not implemented");
-            size_t nx = this->nr_m[0];
-            size_t ny = this->nr_m[1];
 
-            // South
-            if (dofIdx < nx -1) return 0;
-            // West
-            if ((dofIdx - (nx-1)) % (2*nx - 1) == 0) return 1;
-            // North
-            if (dofIdx > nx*(ny-1) + ny*(nx-1) - nx) return 2;
-            // East
-            if ((dofIdx >= 2*nx-2) && (dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
+            if constexpr (Dim == 2) {
+                size_t nx = this->nr_m[0];
+                size_t ny = this->nr_m[1];
 
-            return -1;
+                // South
+                if (dofIdx < nx -1) return 0;
+                // West
+                if ((dofIdx - (nx-1)) % (2*nx - 1) == 0) return 1;
+                // North
+                if (dofIdx > nx*(ny-1) + ny*(nx-1) - nx) return 2;
+                // East
+                if ((dofIdx >= 2*nx-2) && (dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
+
+                return -1;
+            }
+
+            if constexpr (Dim == 3) {
+                size_t nx = this->nr_m[0];
+                size_t ny = this->nr_m[1];
+                size_t nz = this->nr_m[2];
+
+                size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
+
+
+                if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                    // we are parallel to z axis
+                    // therefore we have halve a cell offset and can never be on the ground or in
+                    // s
+                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                        - (nx*(ny-1) + ny*(nx-1));
+                    
+                    size_t yOffset = f / nx;
+                    // South
+                    return 0;
+                    // North
+                    return 2;
+
+                    size_t xOffset = f % nx;
+                    // West
+                    return 1;
+                    // East
+                    return 3;
+
+                } else {
+                    // are parallel to one of the other axes
+                    // Ground
+                    return 4;
+                    // Space
+                    return 5;
+                    
+                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                    size_t yOffset = f / (2*nx - 1);
+                    size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                    if (xOffset < (nx-1)) {
+                        // we are parallel to the x axis, therefore we cannot
+                        // be on an west or east boundary, but we still can
+                        // be on a north or south boundary
+                        
+                        // South
+                        return 0;
+                        // North
+                        return 2;
+                        
+                    } else {
+                        // we are parallel to the y axis, therefore we cannot be
+                        // on a south or north boundary, but we still can be on
+                        // a west or east boundary
+                        if (xOffset >= nx-1) {
+                            xOffset -= (nx-1);
+                        }
+
+                        // West
+                        return 1;
+                        // East
+                        return 3;
+                    }
+                }
+                return -1;
+            }
+
         }
 
 
