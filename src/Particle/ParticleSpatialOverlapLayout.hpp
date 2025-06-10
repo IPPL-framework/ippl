@@ -583,7 +583,7 @@ namespace ippl {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_INLINE_FUNCTION constexpr typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::CellIndex_t
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
-        const vector_type &pos, const NDRegion_t &region, const std::array<T, Dim> &cellWidth) {
+        const vector_type &pos, const NDRegion_t &region, const Vector_t<T, Dim> &cellWidth) {
         CellIndex_t cellIndex;
         for (unsigned d = 0; d < Dim; ++d) {
             cellIndex[d] = static_cast<size_type>(std::floor((pos[d] - region[d].min()) / cellWidth[d]) +
@@ -619,7 +619,7 @@ namespace ippl {
         const auto numLocalCells = numLocalCells_m;
         // calculate chaining meshwidth and number of mesh cells
 
-        using int_type = typename neighbor_list_type::value_type;
+        using int_type = typename particle_neighbor_list_type::value_type;
 
         // allocate required (temporary) Kokkos views
         hash_type cellIndex("cellIndex", nLoc);
@@ -743,8 +743,8 @@ namespace ippl {
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_INLINE_FUNCTION constexpr
-    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::cell_neighbor_list_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighborCells(const CellIndex_t &cellIndex,
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::cell_particle_neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellNeighbors(const CellIndex_t &cellIndex,
         const Vector_t<size_type, Dim> &cellStrides, const hash_type &cellPermutationForward) {
         // TODO consider cell permutation
         // Get the base cell coordinates for each dimension
@@ -752,7 +752,7 @@ namespace ippl {
         // Generate all 3^Dim combinations of offsets (-1, 0, +1) for each dimension
         // constexpr auto is = std::make_index_sequence<Dim>();
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
-        cell_neighbor_list_type neighborIndices{};
+        cell_particle_neighbor_list_type neighborIndices{};
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
             index_t temp = neighborIdx;
 
@@ -771,63 +771,25 @@ namespace ippl {
         return neighborIndices;
     }
 
-
-    template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    size_t ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNumCells() const {
-        return numLocalCells_m;
-    }
-
-    template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticlesOfCell(size_type cellIndex) const {
-        neighbor_list_type cellParticles("cell particles", cellParticleCount_m(cellIndex));
-        using range_policy = Kokkos::RangePolicy<position_execution_space>;
-        auto offset = cellStartingIdx_m(cellIndex);
-        Kokkos::parallel_for("create cell particles", range_policy(0, cellParticleCount_m(cellIndex)),
-                             KOKKOS_LAMBDA(const size_type &i) {
-                                 cellParticles(i) = offset + i;
-                             }
-        );
-        return cellParticles;
-    }
-
-    template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    KOKKOS_INLINE_FUNCTION constexpr typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties
-        ...>::neighbor_list_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticlesOfCell(
-        const NeighborData &neighborData, size_type cellIndex) {
-        neighbor_list_type cellParticles("cell particles", neighborData.cellParticleCount(cellIndex));
-        using range_policy = Kokkos::RangePolicy<position_execution_space>;
-        auto offset = neighborData.cellStartingIdx(cellIndex);
-        Kokkos::parallel_for("create cell particles", range_policy(0, neighborData.cellParticleCount(cellIndex)),
-                             KOKKOS_LAMBDA(const size_type &i) {
-                                 cellParticles(i) = offset + i;
-                             }
-        );
-        return cellParticles;
-    }
-
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
         Properties...>::NeighborData ParticleSpatialOverlapLayout<T, Dim, Mesh,
         Properties...>::getNeighborData() const {
-        return {
-            .numLocalParticles = numLocalParticles_m,
-            .cellStrides = cellStrides_m,
-            .numCells = numCells_m,
-            .cellWidth = cellWidth_m,
-            .region = this->rlayout_m.getdLocalRegions()(Comm->rank()),
-            .cellStartingIdx = cellStartingIdx_m,
-            .cellIndex = cellIndex_m,
-            .cellParticleCount = cellParticleCount_m,
-            .cellPermutationForward = cellPermutationForward_m,
-            .cellPermutationBackward = cellPermutationBackward_m,
-        };
+        return NeighborData(numLocalParticles_m,
+                            cellStrides_m,
+                            numCells_m,
+                            cellWidth_m,
+                            this->rlayout_m.getdLocalRegions()(Comm->rank()),
+                            cellStartingIdx_m,
+                            cellIndex_m,
+                            cellParticleCount_m,
+                            cellPermutationForward_m,
+                            cellPermutationBackward_m);
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
+    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particle_neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
         const vector_type &pos, const NeighborData &neighborData) {
         // TODO using this to compute PP interaction produces different results!
         // Get the cell of the particle
@@ -835,11 +797,10 @@ namespace ippl {
         const auto locCellIndex = getCellIndex(pos, neighborData.region, neighborData.cellStrides,
                                                neighborData.cellWidth);
         const auto locCellIndexPermuted = neighborData.cellPermutationForward(locCellIndex);
-        // if (locCellIndexPermuted == neighborData.hash) { return; } // TODO this doesnt work yet as a thread cannot have local data yet. caller already has the correct neighbor list
 
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
 
-        const auto neighbors = getNeighborCells(locCellIndex, neighborData.cellStrides,
+        const auto neighbors = getCellNeighbors(locCellIndex, neighborData.cellStrides,
                                                 neighborData.cellPermutationForward);
 
         size_type totalParticleInNeighbors = 0;
@@ -857,7 +818,7 @@ namespace ippl {
             totalParticleInNeighbors += n;
         }
 
-        neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
+        particle_neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
 
         using twod_range_policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_for("collect neighbors", twod_range_policy({0, 0}, {numNeighbors, maxParticleInNeighbors}),
@@ -873,8 +834,8 @@ namespace ippl {
     }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
-    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::neighbor_list_type
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighbors(
+    KOKKOS_FUNCTION typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particle_neighbor_list_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
         index_t particleIndex, const NeighborData &neighborData) {
         // Get the cell of the particle
 
@@ -886,7 +847,7 @@ namespace ippl {
         const auto locCellIndex = toCellIndex(neighborData.cellPermutationBackward(locCellIndexFlat),
                                               neighborData.numCells);
         assert(isLocalCellIndex(locCellIndex, neighborData.numCells));
-        const auto neighbors = getNeighborCells(locCellIndex, neighborData.cellStrides,
+        const auto neighbors = getCellNeighbors(locCellIndex, neighborData.cellStrides,
                                                 neighborData.cellPermutationForward);
 
         size_type totalParticleInNeighbors = 0;
@@ -904,7 +865,7 @@ namespace ippl {
         }
         neighborOffsets[numNeighbors] = totalParticleInNeighbors;
 
-        neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
+        particle_neighbor_list_type neighborList("Neigbor list", totalParticleInNeighbors);
 
         using twod_range_policy = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_for(
@@ -950,7 +911,7 @@ namespace ippl {
 
 
                 const auto cellIdx = toCellIndex(cellPermutationBackward(cellIdxFlat), numCells);
-                const auto cellNeighbors = getNeighborCells(cellIdx, cellStrides,
+                const auto cellNeighbors = getCellNeighbors(cellIdx, cellStrides,
                                                             cellPermutationForward);
 
                 Kokkos::parallel_for(
@@ -1001,7 +962,7 @@ namespace ippl {
     //         KOKKOS_LAMBDA(const team_t &team) {
     //             const index_t particleIndex = team.league_rank();
     //
-    //             auto neighborList = getNeighbors(particleIndex, data);
+    //             auto neighborList = getParticleNeighbors(particleIndex, data);
     //
     //             Kokkos::parallel_for(
     //                 Kokkos::TeamThreadRange(team, neighborList.extent(0)),

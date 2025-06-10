@@ -40,7 +40,6 @@ namespace ippl {
         typename... PositionProperties>
     class ParticleSpatialOverlapLayout : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
-        using overlap_type = std::array<T, Dim>;
         using Base = ParticleSpatialLayout<T, Dim, PositionProperties...>;
         using typename Base::position_memory_space, typename Base::position_execution_space;
 
@@ -58,14 +57,14 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
-        using neighbor_list_type = hash_type;
+        using particle_neighbor_list_type = hash_type;
         using typename Base::particle_position_type;
 
     private:
         const T rcutoff_m;
         Vector_t<size_type, Dim> numCells_m;
         Vector_t<size_type, Dim> cellStrides_m;
-        std::array<T, Dim> cellWidth_m;
+        Vector_t<T, Dim> cellWidth_m;
         size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
         static constexpr size_type numGhostCellsPerDim_m = 1;
         hash_type cellPermutationForward_m; // given index from flattened indices gives cell index
@@ -79,11 +78,32 @@ namespace ippl {
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
     public:
-        struct NeighborData {
+        class NeighborData {
+        private:
+            friend class ParticleSpatialOverlapLayout;
+
+            NeighborData(size_type numLocalParticles,
+                         Vector_t<size_type, Dim> cellStrides,
+                         Vector_t<size_type, Dim> numCells,
+                         Vector_t<T, Dim> cellWidth,
+                         NDRegion_t region,
+                         hash_type cellStartingIdx,
+                         hash_type cellIndex,
+                         hash_type cellParticleCount,
+                         hash_type cellPermutationForward,
+                         hash_type cellPermutationBackward) : numLocalParticles(numLocalParticles),
+                                                              cellStrides(cellStrides), numCells(numCells),
+                                                              cellWidth(cellWidth), region(region),
+                                                              cellStartingIdx(cellStartingIdx), cellIndex(cellIndex),
+                                                              cellParticleCount(cellParticleCount),
+                                                              cellPermutationForward(cellPermutationForward),
+                                                              cellPermutationBackward(cellPermutationBackward) {
+            }
+
             size_type numLocalParticles;
             Vector_t<size_type, Dim> cellStrides;
             Vector_t<size_type, Dim> numCells;
-            std::array<T, Dim> cellWidth;
+            Vector_t<T, Dim> cellWidth;
             NDRegion_t region;
             hash_type cellStartingIdx;
             hash_type cellIndex;
@@ -122,12 +142,12 @@ namespace ippl {
 
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
             const vector_type &pos, const NDRegion_t &region,
-            const std::array<T, Dim> &cellWidth);
+            const Vector_t<T, Dim> &cellWidth);
 
 
-        using cell_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
+        using cell_particle_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
 
-        KOKKOS_INLINE_FUNCTION constexpr static cell_neighbor_list_type getNeighborCells(
+        KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
             const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
             const hash_type &cellPermutationForward);
 
@@ -148,10 +168,6 @@ namespace ippl {
         template<class ParticleContainer>
         void update(ParticleContainer &pc);
 
-        //        template <typename ParticleContainer>
-        //        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
-        //                                  bool_type& invalid) const;
-
         template<typename ParticleContainer>
         size_type locateParticles(const ParticleContainer &pc, locate_type_nd &ranks,
                                   bool_type &invalid) const;
@@ -165,13 +181,6 @@ namespace ippl {
 
         size_t numberOfSends(int rank, const locate_type &ranks);
 
-        size_t getNumCells() const; // returns local number of cels
-
-        neighbor_list_type getParticlesOfCell(size_type cellIndex) const;
-
-        KOKKOS_FUNCTION static constexpr neighbor_list_type getParticlesOfCell(
-            const NeighborData &neighborData, size_type cellIndex);
-
 
         void fillHash(int rank, const locate_type_nd &ranks, hash_type &hash);
 
@@ -180,9 +189,11 @@ namespace ippl {
 
         NeighborData getNeighborData() const;
 
-        KOKKOS_FUNCTION static neighbor_list_type getNeighbors(index_t particleIndex, const NeighborData &neighborData);
+        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
+            index_t particleIndex, const NeighborData &neighborData);
 
-        KOKKOS_FUNCTION static neighbor_list_type getNeighbors(const vector_type &pos, const NeighborData &neighborData);
+        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
+            const vector_type &pos, const NeighborData &neighborData);
 
         template<typename ExecutionSpace, typename Functor>
         void forEachPair(Functor &&f) const;

@@ -25,7 +25,7 @@ public:
     template<typename U, unsigned dim>
     using PLayout_t = typename ippl::ParticleSpatialOverlapLayout<U, dim, Mesh_t<dim> >;
 
-    using NList_t = typename PLayout_t<T, Dim>::neighbor_list_type; // TODO maybe rename this?
+    using NList_t = typename PLayout_t<T, Dim>::particle_neighbor_list_type; // TODO maybe rename this?
 
 public:
     ippl::ParticleAttrib<T> Q; // charge
