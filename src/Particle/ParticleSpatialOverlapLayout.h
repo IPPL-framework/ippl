@@ -38,7 +38,7 @@ namespace ippl {
      */
     template<typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
         typename... PositionProperties>
-    class ParticleSpatialOverlapLayout : public ParticleSpatialLayout<T, Dim, PositionProperties...> {
+    class ParticleSpatialOverlapLayout : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
         using overlap_type = std::array<T, Dim>;
         using Base = ParticleSpatialLayout<T, Dim, PositionProperties...>;
@@ -63,23 +63,26 @@ namespace ippl {
 
     private:
         const T rcutoff_m;
-        std::array<size_type, Dim> numCells_m;
-        std::array<size_type, Dim> cellStrides_m;
+        Vector_t<size_type, Dim> numCells_m;
+        Vector_t<size_type, Dim> cellStrides_m;
         std::array<T, Dim> cellWidth_m;
-        size_type totalCells_m, numGhostCells_m, numLocalCells_m;
+        size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
         static constexpr size_type numGhostCellsPerDim_m = 1;
         hash_type cellPermutationForward_m; // given index from flattened indices gives cell index
-        hash_type cellPermutationBackward_m; // given index in range [0, numLocCells) gives global index corresponding to flattened index
+        hash_type cellPermutationBackward_m;
+        // given index in range [0, numLocCells) gives global index corresponding to flattened index
         hash_type cellStartingIdx_m;
         hash_type cellIndex_m;
         hash_type cellParticleCount_m;
 
         using CellIndex_t = Vector_t<size_type, Dim>;
+        using FlatCellIndex_t = typename CellIndex_t::value_type;
 
     public:
         struct NeighborData {
-            std::array<size_type, Dim> cellStrides;
-            std::array<size_type, Dim> numCells;
+            size_type numLocalParticles;
+            Vector_t<size_type, Dim> cellStrides;
+            Vector_t<size_type, Dim> numCells;
             std::array<T, Dim> cellWidth;
             NDRegion_t region;
             hash_type cellStartingIdx;
@@ -104,24 +107,29 @@ namespace ippl {
         //! Type of a single Region object.
         using typename Base::region_type;
 
-        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(size_type index,
-                                                                      const std::array<size_type, Dim> &numCells);
+        KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
+            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
+            hash_type cellPermutationForward);
+
+        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(FlatCellIndex_t nonPermutedIndex,
+                                                                        const Vector_t<size_type, Dim> &numCells);
+
+        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(const CellIndex_t &index,
+                                                                      const Vector_t<size_type, Dim> &numCells);
 
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(const vector_type &pos, const region_type &region,
                                                                       T overlap);
 
-        KOKKOS_INLINE_FUNCTION constexpr static size_type getCellIndex(const vector_type &pos, const NDRegion_t &region,
-                                                                       const std::array<size_type, Dim> &strides,
-                                                                       const std::array<T, Dim> &cellWidth);
+        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
+            const vector_type &pos, const NDRegion_t &region,
+            const std::array<T, Dim> &cellWidth);
 
-        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(size_type index,
-            const std::array<size_type, Dim> &strides);
 
-        using neighbor_info_type = Kokkos::Array<index_t, detail::countHypercubes(Dim)>;
+        using cell_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
 
-        KOKKOS_INLINE_FUNCTION constexpr static neighbor_info_type getNeighborCells(
-            index_t cellIndex, const std::array<size_type, Dim> &numCells,
-            const hash_type &cellPermutation);
+        KOKKOS_INLINE_FUNCTION constexpr static cell_neighbor_list_type getNeighborCells(
+            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
+            const hash_type &cellPermutationForward);
 
     public:
         //
@@ -172,10 +180,9 @@ namespace ippl {
 
         NeighborData getNeighborData() const;
 
-        KOKKOS_FUNCTION static neighbor_list_type getNeighbors(size_type i, NeighborData &neighborData);
+        KOKKOS_FUNCTION static neighbor_list_type getNeighbors(index_t particleIndex, const NeighborData &neighborData);
 
         KOKKOS_FUNCTION static neighbor_list_type getNeighbors(const vector_type &pos, const NeighborData &neighborData);
-
 
         template<typename ExecutionSpace, typename Functor>
         void forEachPair(Functor &&f) const;

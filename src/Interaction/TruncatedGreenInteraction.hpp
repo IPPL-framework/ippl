@@ -4,7 +4,8 @@ namespace ippl {
     template<typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
     KOKKOS_INLINE_FUNCTION constexpr typename TruncatedGreenInteraction<ParticleContainer, ScalarAttribute,
         VectorAttribute>::Vector_t TruncatedGreenInteraction<ParticleContainer, ScalarAttribute,
-        VectorAttribute>::pairForce(const Vector_t &dist, Scalar_t r2, Scalar_t alpha, Scalar_t forceConstant, Scalar_t qm2) {
+        VectorAttribute>::pairForce(const Vector_t &dist, Scalar_t r2, Scalar_t alpha, Scalar_t forceConstant,
+                                    Scalar_t qm2) {
         const Scalar_t r = Kokkos::sqrt(r2);
 
         return forceConstant * qm2 * (dist / r) * (
@@ -39,9 +40,8 @@ namespace ippl {
 
             // TODO is energy nonetheless? in anycase its F/QM(i)
             Kokkos::atomic_sub(&F(i), F_ij * QM(j));
-            // Kokkos::atomic_add(&E(i), F_ij * QM(j));
+            // Kokkos::atomic_add(&F(i), F_ij * QM(j));
         });
         IpplTimings::stopTimer(solveTimer);
     }
-
 }
