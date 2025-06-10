@@ -107,8 +107,8 @@ namespace ippl {
             this->params_m.add("use_reorder", opts.use_reorder);
             this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
             this->params_m.add("r2c_direction", 0);
-            this->params_m.template add<Trhs>("alpha", 1e6);
-            this->params_m.template add<Trhs>("force_constant", 1e8);
+            this->params_m.template add<Trhs>("alpha", 1);
+            this->params_m.template add<Trhs>("force_constant", 1);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:

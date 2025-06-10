@@ -104,12 +104,14 @@ public:
         this->decomp_m.fill(true);
         // this->alpha_m = 2./this->rcut_m;
         T box_length = this->boxlen_m;
-        this->rmin_m = -box_length / 2.;
-        this->rmax_m = box_length / 2.;
+        this->rmin_m = Vector_t<T, Dim>(-box_length / 2.);
+        this->rmax_m = Vector_t<T, Dim>(box_length / 2.);
         this->origin_m = rmin_m;
         this->isAllPeriodic_m = true;
 
-        this->hr_m = box_length / static_cast<T>(this->nr_m[0]);
+        for (unsigned d = 0; d < Dim; ++d) {
+            this->hr_m[d] = box_length / this->nr_m[d];
+        }
 
         m << "hr: " << this->hr_m << endl;
 
@@ -198,7 +200,7 @@ public:
         const auto P = this->pcontainer_m->P.getView();
         // const T beamRad = this->beamRad_m;
 
-        Vector_t<T, 12> stats = 0.0;
+        Vector_t<T, 12> stats(0.0);
 
         Kokkos::parallel_reduce("compute sigma x", nLoc,
                                 KOKKOS_LAMBDA(const size_type i, Vector_t<T, 12> &sum) {
@@ -217,7 +219,7 @@ public:
                                 }, stats
         );
 
-        Vector_t<T, 12> global_stats = 0.0;
+        Vector_t<T, 12> global_stats(0.0);
 
         ippl::Comm->reduce(&stats[0], &global_stats[0], 12, std::plus<T>(), 0);
 
@@ -239,7 +241,7 @@ public:
 
     void computeTemperature() {
         Inform m("computeTemperature");
-        Vector_t<T, 3> avgVel = 0.0;
+        Vector_t<T, 3> avgVel(0.0);
         const auto nLoc = this->pcontainer_m->getLocalNum();
         const auto P = this->pcontainer_m->P.getView();
 
@@ -257,8 +259,8 @@ public:
         avgVel /= totalP;
         m << "Average Velocity: " << avgVel << endl;
 
-        Vector_t<T, 3> localTemperature = 0.0;
-        Vector_t<T, 3> globalTemperature = 0.0;
+        Vector_t<T, 3> localTemperature(0.0);
+        Vector_t<T, 3> globalTemperature(0.0);
 
         Kokkos::parallel_reduce("compute temperature", nLoc,
                                 KOKKOS_LAMBDA(const size_type i, Vector_t<T, 3> &sum) {
@@ -440,7 +442,7 @@ public:
         const auto totalP = this->totalP_m;
         const auto nLoc = this->pcontainer_m->getLocalNum();
         const auto E = this->pcontainer_m->E.getView();
-        Vector_t<T, Dim> avgE = 0.0;
+        Vector_t<T, Dim> avgE(0.0);
 
         Kokkos::parallel_reduce("compute average space charge forces", nLoc,
                                 KOKKOS_LAMBDA(const size_type i, Vector_t<T, Dim> &sum) {
@@ -449,9 +451,6 @@ public:
                                     sum[2] += Kokkos::abs(E(i)[2]);
                                 }, avgE
         );
-
-        // m << "Average Space Charge Forces: " << avgE << endl;
-
 
         ippl::Comm->allreduce(avgE[0], 3, std::plus<T>());
         avgE /= totalP;
@@ -475,7 +474,8 @@ public:
 
         Kokkos::parallel_for("apply constant focusing", nLoc,
                              KOKKOS_LAMBDA(const size_type &i) {
-                                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad); // TODO if Q would not be all ones, this should involve Q somehow?
+                                 Vector_t<T, Dim> F = focusStrength * (R(i) / beamRad);
+                                 // TODO if Q would not be all ones, this should involve Q somehow?
                                  E(i) += F;
                              }
         );

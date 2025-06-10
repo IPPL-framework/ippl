@@ -44,10 +44,6 @@ namespace ippl {
          */
         void mergeParameters(const ParameterList &params) { params_m.merge(params); }
 
-        /*!
-         * Solve the Poisson problem described by
-         * -laplace(lhs) = rhs
-         */
         virtual void solve() = 0;
 
         virtual ~ParticleInteractionBase() = default;
