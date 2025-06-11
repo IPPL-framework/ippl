@@ -112,7 +112,7 @@ namespace ippl {
             hash_type cellPermutationBackward;
         };
 
-    private:
+    public:
         template<class ParticleContainer>
         void particleExchange1(ParticleContainer &pc);
 

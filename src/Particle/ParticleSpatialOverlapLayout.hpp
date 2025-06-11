@@ -455,7 +455,7 @@ namespace ippl {
         // Compute exclusive prefix sum (each offset points to start of particle's data)
         Kokkos::parallel_scan(
             "compute_offsets", range_policy,
-            KOKKOS_LAMBDA(const int i, int &localSum, const bool final) {
+            KOKKOS_LAMBDA(const size_t i, int &localSum, const bool final) {
                 const int count_i = counts(i);
                 if (final) {
                     offsets(i + 1) = localSum + count_i;
@@ -635,7 +635,7 @@ namespace ippl {
         Kokkos::deep_copy(cellParticleCount, 0);
         Kokkos::parallel_for(
             "CalcCellIndices", range_policy(0, nLoc),
-            KOKKOS_LAMBDA(const int i) {
+            KOKKOS_LAMBDA(const size_t& i) {
                 const auto locCellIndex = getCellIndex(R(i), localRegion, cellWidth);
                 const auto locCellIndexFlat = toFlatCellIndex(locCellIndex, cellStrides, cellPermutationForward);
                 assert(locCellIndexFlat < totalCells && "Invalid Grid Position");
@@ -649,7 +649,7 @@ namespace ippl {
         // compute starting indices for each cell
         Kokkos::parallel_scan(
             range_policy(0, totalCells),
-            KOKKOS_LAMBDA(const int i, int_type &localSum, bool isFinal) {
+            KOKKOS_LAMBDA(const size_t i, int_type &localSum, bool isFinal) {
                 if (isFinal) {
                     cellStartingIdx(i) = localSum;
                 }
