@@ -9,7 +9,7 @@
 #include "Manager/FieldSolverBase.h"
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "P3MParticleContainer.hpp"
-#include "Interaction/TruncatedGreenInteraction.h"
+#include "Interaction/TruncatedGreenParticleInteraction.h"
 
 
 /**
@@ -30,7 +30,7 @@ class P3M3DManager : public ippl::BaseManager {
     using pc = P3MParticleContainer<T, Dim>;
 
 public:
-    using PPInteraction = ippl::TruncatedGreenInteraction<pc, decltype(pc::E), decltype(pc::Q)>; //TODO get better method for this type?
+    using PPInteraction = ippl::TruncatedGreenParticleInteraction<pc, decltype(pc::E), decltype(pc::Q)>; //TODO get better method for this type?
     P3M3DManager()
         : BaseManager() {}
 

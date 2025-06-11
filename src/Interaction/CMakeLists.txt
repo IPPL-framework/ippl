@@ -1,7 +1,7 @@
 set (_SRCS
         ParticleInteractionBase.h
-        TruncatedGreenInteraction.h
-        TruncatedGreenInteraction.hpp
+        TruncatedGreenParticleInteraction.h
+        TruncatedGreenParticleInteraction.hpp
 )
 
 set (_HDRS

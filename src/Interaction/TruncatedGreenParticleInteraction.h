@@ -5,7 +5,7 @@
 
 namespace ippl {
     template<typename ParticleContainer, typename VectorAttribute, typename ScalarAttribute>
-    class TruncatedGreenInteraction : public ParticleInteractionBase<ParticleContainer> /*ScaledForce, Position, Charge/Mass*/ {
+    class TruncatedGreenParticleInteraction : public ParticleInteractionBase<ParticleContainer> /*ScaledForce, Position, Charge/Mass*/ {
     public:
         using Base = ParticleInteractionBase<ParticleContainer>;
         using Vector_t = typename VectorAttribute::value_type;
@@ -14,12 +14,12 @@ namespace ippl {
         static_assert(std::is_same_v<execution_space, typename ScalarAttribute::execution_space>);
 
     public:
-        TruncatedGreenInteraction(const ParticleContainer &pc, VectorAttribute &F, const VectorAttribute &R,
+        TruncatedGreenParticleInteraction(const ParticleContainer &pc, VectorAttribute &F, const VectorAttribute &R,
                                  const ScalarAttribute &QM, const ParameterList &params) : Base(pc, params),
             F_m(&F), R_m(&R), QM_m(&QM) {
         }
 
-        ~TruncatedGreenInteraction() override = default;
+        ~TruncatedGreenParticleInteraction() override = default;
 
         void solve() override;
 
@@ -33,6 +33,6 @@ namespace ippl {
     };
 }
 
-#include "TruncatedGreenInteraction.hpp"
+#include "TruncatedGreenParticleInteraction.hpp"
 
 #endif //IPPL_TRUNCATEDGREEN_SHORTRANGE_H

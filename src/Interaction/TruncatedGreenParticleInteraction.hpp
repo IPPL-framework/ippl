@@ -2,8 +2,8 @@
 
 namespace ippl {
     template<typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
-    KOKKOS_INLINE_FUNCTION constexpr typename TruncatedGreenInteraction<ParticleContainer, ScalarAttribute,
-        VectorAttribute>::Vector_t TruncatedGreenInteraction<ParticleContainer, ScalarAttribute,
+    KOKKOS_INLINE_FUNCTION constexpr typename TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
+        VectorAttribute>::Vector_t TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
         VectorAttribute>::pairForce(const Vector_t &dist, Scalar_t r2, Scalar_t alpha, Scalar_t forceConstant,
                                     Scalar_t qm2) {
         const Scalar_t r = Kokkos::sqrt(r2);
@@ -15,8 +15,8 @@ namespace ippl {
     }
 
     template<typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
-    void TruncatedGreenInteraction<ParticleContainer, ScalarAttribute, VectorAttribute>::solve() {
-        static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("TruncatedGreenInteraction::solve()");
+    void TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute, VectorAttribute>::solve() {
+        static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("TruncatedGreenParticleInteraction::solve()");
         IpplTimings::startTimer(solveTimer);
         // get particle data
         auto &F = *F_m;
