@@ -914,7 +914,7 @@ namespace ippl {
 
                 Kokkos::parallel_for(
                     Kokkos::TeamThreadRange(team, numCellNeighbors),
-                    KOKKOS_LAMBDA(const size_t &n) {
+                    [&](const size_t &n) {
                         const auto neighborCellIdx = cellNeighbors[n];
                         const auto neighborCellParticleOffset = cellStartingIdx(neighborCellIdx);
                         const auto numNeigborCellParticles = cellParticleCount(neighborCellIdx);
@@ -922,7 +922,7 @@ namespace ippl {
                         Kokkos::parallel_for(
                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
                                 team, numCellParticles, numNeigborCellParticles),
-                            KOKKOS_LAMBDA(const size_t &i, const size_t &j) {
+                            [&](const size_t &i, const size_t &j) {
                                 const auto particleIdx = cellParticleOffset + i;
                                 const auto neighborIdx = neighborCellParticleOffset + j;
 
