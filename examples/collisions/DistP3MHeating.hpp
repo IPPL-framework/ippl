@@ -218,6 +218,7 @@ public:
                                     sum[11] += R(i)[2];
                                 }, stats
         );
+        Kokkos::fence();
 
         Vector_t<T, 12> global_stats(0.0);
 
@@ -250,6 +251,8 @@ public:
                                     sum += P(i);
                                 }, avgVel
         );
+        Kokkos::fence();
+
         ippl::Comm->allreduce(avgVel[0], 3, std::plus<T>());
 
         ippl::Comm->barrier();
@@ -267,6 +270,7 @@ public:
                                     sum += (P(i) - avgVel) * (P(i) - avgVel); // remove mean transportation
                                 }, localTemperature
         );
+        Kokkos::fence();
 
         ippl::Comm->reduce(&localTemperature[0], &globalTemperature[0], 3, std::plus<T>(), 0);
 
@@ -326,34 +330,34 @@ public:
         Kokkos::fence();
 
         // make sure this runs on the host, device does not work yet
-        Kokkos::Random_XorShift64_Pool rand_pool(static_cast<size_type>(42 + 24 * rank));
+        Kokkos::Random_XorShift64_Pool rand_pool(42 + 24 * rank);
 
         IpplTimings::startTimer(GTimer);
-        Kokkos::parallel_for("initialize particles", nloc,
-                             KOKKOS_LAMBDA(const size_t index) {
-                                 Vector_t<T, Dim> x(0.0);
+        Kokkos::parallel_for(
+            "initialize particles", nloc,
+            KOKKOS_LAMBDA(const size_t index) {
+                Vector_t<T, Dim> x(0.0);
 
-                                 auto generator = rand_pool.get_state();
+                auto generator = rand_pool.get_state();
 
-                                 // obtain random numbers
-                                 T u = generator.drand();
-                                 for (unsigned i = 0; i < Dim; ++i) {
-                                     x[i] = generator.normal(0.0, 1.0);
-                                 }
+                // obtain random numbers
+                T u = generator.drand();
+                for (unsigned i = 0; i < Dim; ++i) {
+                    x[i] = generator.normal(0.0, 1.0);
+                }
 
-                                 rand_pool.free_state(generator);
+                rand_pool.free_state(generator);
 
-                                 // calculate position
-                                 T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
-                                 Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1. / 3.) / Kokkos::sqrt(normsq)) * x;
+                // calculate position
+                T normsq = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
+                Vector_t<T, Dim> pos = beamRad * (Kokkos::pow(u, 1. / 3.) / Kokkos::sqrt(normsq)) * x;
 
-                                 for (unsigned d = 0; d < Dim; ++d) {
-                                     P(index)[d] = 0; // initialize with zero momentum
-                                     R(index)[d] = pos[d];
-                                 }
-                                 Q(index) = 1;
-                             }
-        );
+                for (unsigned d = 0; d < Dim; ++d) {
+                    P(index)[d] = 0; // initialize with zero momentum
+                    R(index)[d] = pos[d];
+                }
+                Q(index) = 1;
+            });
 
         // we need to wait for all other ranks to have finished the particle initialization
         // before we can update them to their corresponding rank
@@ -451,6 +455,7 @@ public:
                                     sum[2] += Kokkos::abs(E(i)[2]);
                                 }, avgE
         );
+        Kokkos::fence();
 
         ippl::Comm->allreduce(avgE[0], 3, std::plus<T>());
         avgE /= totalP;
@@ -479,6 +484,7 @@ public:
                                  E(i) += F;
                              }
         );
+        Kokkos::fence();
     }
 
     void gatherCIC() {

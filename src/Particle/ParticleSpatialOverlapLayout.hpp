@@ -120,10 +120,6 @@ namespace ippl {
 
         size_type invalidCount = locateParticles(pc, ranks, invalid);
 
-        //
-        // TODO <-------------------- got to here, need to decide which method to use
-        //
-
         IpplTimings::stopTimer(locateTimer);
 
         // 2nd step
@@ -331,7 +327,7 @@ namespace ippl {
         using policy_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()", policy_type({0, 0}, {ranks.extent(0), ranks.extent(1)}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, size_t &num) { num += size_t(rank == ranks(i, j)); },
+            KOKKOS_LAMBDA(const size_t i, const size_t j, size_t &num) { num += static_cast<size_t>(rank == ranks(i, j)); },
             nSends);
         Kokkos::fence();
         return nSends;
@@ -344,7 +340,7 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<position_execution_space>;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()", policy_type(0, ranks.extent(0)),
-            KOKKOS_LAMBDA(const size_t i, size_t &num) { num += size_t(rank == ranks(i)); },
+            KOKKOS_LAMBDA(const size_t i, size_t &num) { num += static_cast<size_t>(rank == ranks(i)); },
             nSends);
         Kokkos::fence();
         return nSends;
@@ -659,9 +655,8 @@ namespace ippl {
                 }
                 localSum += cellParticleCount(i);
             });
-        Kokkos::parallel_for(
-            "Set last position", range_policy(totalCells, totalCells + 1),
-            KOKKOS_LAMBDA(const int i) { cellStartingIdx(i) = nLoc; });
+        // set last position
+        Kokkos::deep_copy(Kokkos::subview(cellStartingIdx, Kokkos::make_pair(totalCells, totalCells + 1)), nLoc);
 
         Kokkos::fence();
 
@@ -669,9 +664,8 @@ namespace ippl {
 
         Kokkos::fence();
 
-        hash_type newIndex("newIndex", nLoc); // TODO this should probably be less
+        hash_type newIndex("newIndex", nLoc);
         hash_type newCellIndex("cellIndex", nLoc);
-
 
         Kokkos::parallel_for(
             "Calculate new Indices", range_policy(0, nLoc),
@@ -679,7 +673,7 @@ namespace ippl {
                 auto locCellIndex = cellIndex(i);
                 // auto locCellIndex = cellPermutation(getCellIndex(R(i), localRegion, cellStrides, cellWidth));
                 assert(locCellIndex < static_cast<int_type>(totalCells) && "Invalid Cell Number");
-                size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(locCellIndex), 1u);
+                size_type newIdx = Kokkos::atomic_fetch_add(&cellCurrentIdx(locCellIndex), 1);
                 assert(newIdx < nLoc && "Invalid Index");
                 newIndex(i) = newIdx;
                 newCellIndex(newIdx) = locCellIndex;
@@ -712,6 +706,7 @@ namespace ippl {
                     });
             }
         });
+        Kokkos::fence();
 
         // set local number of particles (excluding ghost particles)
         size_type numLocalParticles = 0;
@@ -728,11 +723,11 @@ namespace ippl {
                                 Kokkos::Sum<size_type>(numLocalParticles)
                                 // , Kokkos::Max<size_type>(numMaxParticleInCell)
         );
+        Kokkos::fence();
 
         cellIndex_m = newCellIndex;
         numLocalParticles_m = numLocalParticles;
 
-        Kokkos::fence();
         pc.setLocalNum(numLocalParticles);
 
         // this is not needed as they are views on the same underlying memory
@@ -829,6 +824,7 @@ namespace ippl {
                                  }
                              });
 
+        Kokkos::fence();
 
         return neighborList;
     }
@@ -877,6 +873,8 @@ namespace ippl {
                             neighborData.cellStartingIdx(neighbors[i]) + j;
                 }
             });
+
+        Kokkos::fence();
 
         return neighborList;
     }
@@ -936,6 +934,8 @@ namespace ippl {
             }
         );
 
+        Kokkos::fence();
+
         IpplTimings::stopTimer(interactionTimer);
     }
 
@@ -974,6 +974,8 @@ namespace ippl {
     //                 }
     //             );
     //         });
+    //
+    //     Kokkos::fence();
     //
     //     IpplTimings::stopTimer(interactionTimer);
     // }

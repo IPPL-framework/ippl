@@ -40,7 +40,7 @@ namespace ippl {
 
             // TODO is energy nonetheless? in anycase its F/QM(i)
             Kokkos::atomic_sub(&F(i), F_ij * QM(j));
-            // Kokkos::atomic_add(&F(i), F_ij * QM(j));
+            // Kokkos::atomic_add(&F(j), F_ij * QM(i));
         });
         IpplTimings::stopTimer(solveTimer);
     }
