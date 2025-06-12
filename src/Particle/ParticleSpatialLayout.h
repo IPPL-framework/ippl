@@ -71,9 +71,6 @@ namespace ippl {
 
         const RegionLayout_t& getRegionLayout() const { return rlayout_m; }
 
-        template<typename ExecutionSpace, typename Functor>
-        void forEachPair(Functor&& f) const {assert(false && "not implemented");}
-
     protected:
         //! The RegionLayout which determines where our particles go.
         RegionLayout_t rlayout_m;
