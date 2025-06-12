@@ -320,19 +320,21 @@ public:
     IpplTimings::stopTimer(fourDenTimer);
 
     // Check whether the generated density field is Hermitian before proceeding
+    static IpplTimings::TimerRef hermiticityTimer = IpplTimings::getTimer("Hermiticity Timer");     
+    IpplTimings::startTimer(hermiticityTimer);
 
-     if (isHermitianGPU()) {
+    if (isHermitianGPU()) {
         msg << "Fourier density field is Hermitian." << endl;
     } else {
         std::cerr << "Fourier density field is NOT Hermitian!" << std::endl;
     }
 
-    static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
+    IpplTimings::stopTimer(hermiticityTimer);
 
+    static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
     // Store delta(k) for reuse 
     auto tmpcfield = cfield_m; 
     typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
-
     /*
       Now we can delete Pk and allocate the particles
 
@@ -341,7 +343,6 @@ public:
     const unsigned int nx = lDom[0].length();
     const unsigned int ny = lDom[1].length();
     const Vector_t<double,3> hr = this->hr_m;
-
     // 2–4. Loop over displacement components x(0), y(1), z(2)
     for (int dim = 0; dim < 3; ++dim) {
       IpplTimings::startTimer(fourDisplTimer);
@@ -369,7 +370,6 @@ public:
 			     : I * (k_comp / k2) * delta;
 			   ippl::apply(view, idx) = result;
 			 });
-	
 	// Inverse FFT to real space
 	Cfft_m->transform(ippl::BACKWARD, cfield_m);
 	IpplTimings::stopTimer(fourDisplTimer);
@@ -377,7 +377,10 @@ public:
 	static IpplTimings::TimerRef posvelInitTimer = IpplTimings::getTimer("Position/Velocity init");
 	IpplTimings::startTimer(posvelInitTimer);
 
-	Kokkos::parallel_for("ComputeWorldCoordinates",lgridsize,
+        // segfault fix : only loop over the cells you own
+        index_type n_local = static_cast<index_type>( rView.extent(0) );
+
+	Kokkos::parallel_for("ComputeWorldCoordinates",n_local,
 			     KOKKOS_LAMBDA(const index_type n) {
 			       // Convert 1D index n back to 3D indices (i, j, k)
 			       const unsigned int i = n % nx;
@@ -701,10 +704,6 @@ bool isHermitianGPU() const {
 
   if (nranks > 1) {
     // device view of the global index layout
-    if (myrank == 0) {
-        msg << "Checking Hermiticty on " << nranks << "ranks" << endl;
-    }
-
     const auto& global_domains = layout.getDeviceLocalDomains();   
 
     Kokkos::View<int*, MemSpace> sendCount("sendCount", nranks);
@@ -713,14 +712,14 @@ bool isHermitianGPU() const {
     // local Hermitian flag - shared across both device reductions
     int localHermitianFlag = 1;
 
-    //Walk over local k‑space & do two things:
+    //Walk over local k‑space and do 2 things:
     //    (i) test Hermiticity when -k is on the same rank
-    //    (ii) pack messages when -k lives elsewhere.
+    //    (ii) add count to sendCount -k lives elsewhere.
     using MDPolicy = Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>;
     MDPolicy mdp({lDom[0].first(), lDom[1].first(), lDom[2].first()},
                  {lDom[0].last()+1, lDom[1].last()+1, lDom[2].last()+1});
 
-    Kokkos::parallel_reduce("isHermitian_first_pass", mdp,
+    Kokkos::parallel_reduce("isHermitian_countSends", mdp,
       KOKKOS_LAMBDA(const int i, const int j, const int k, int& isHermitianFlag)
       {
 
@@ -775,7 +774,7 @@ bool isHermitianGPU() const {
     
     Kokkos::fence(); // make sure sendCount is ready
     
-    // Build per‑rank send/recv counts on HOST – device to host copy
+    // Build per‑rank send counts on HOST – device to host copy
     Kokkos::View<int*, Kokkos::HostSpace> sendCount_h("sendCount_h", nranks);
     Kokkos::deep_copy(sendCount_h, sendCount);
 
@@ -794,15 +793,17 @@ bool isHermitianGPU() const {
     
     // Device copy of the displacements per destination ranks
     Kokkos::View<size_t*,Kokkos::HostSpace> send_disp_h("send_disp_h", nranks);
-    for(int r=0;r<nranks;++r) send_disp_h(r)=send_disp[r];
+    for(int r=0;r<nranks;++r){
+         send_disp_h(r)=send_disp[r];
+    }
     Kokkos::View<size_t*, MemSpace> send_disp_d("send_disp_d", nranks);
     Kokkos::deep_copy(send_disp_d, send_disp_h);
     
     // per-dest ‘how many already packed’ counters
     Kokkos::deep_copy(sendCount, 0);   // resets device view
     
-    // === NEW kernel — pack each +k message into its unique slot = base+local ===
-    Kokkos::parallel_for("pack_send_buffer", mdp,
+    // pack each +k message into its unique slot = base+local
+    Kokkos::parallel_for("isHermitian_pack_send_buffer", mdp,
       KOKKOS_LAMBDA(const int i, const int j, const int k)
       {
         if (i==0 && j==0 && k==0) return;
@@ -872,7 +873,7 @@ bool isHermitianGPU() const {
     Kokkos::fence(); // ensure GPU sees new data
 
     // Perform final hermiticity check on remaining values
-    Kokkos::parallel_reduce("isHermitian_second_pass",
+    Kokkos::parallel_reduce("finalHermiticityCheck",
       Kokkos::RangePolicy<ExecSpace>(0, static_cast<int>(total_sends)),
       KOKKOS_LAMBDA(const int idx, int& isHermitianFlag)
       {
@@ -900,10 +901,8 @@ bool isHermitianGPU() const {
       },
       Kokkos::Min<int>(localHermitianFlag));
     Kokkos::fence();
-
-    // ----------------------------------------------------------------
-    // 7. Final global all‑reduce – identical to original logic
-    // ----------------------------------------------------------------
+    
+    // global reduction of hermiticity value
     int globalResult = 1;
     MPI_Allreduce(&localHermitianFlag, &globalResult, 1, MPI_INT, MPI_MIN,
                   ippl::Comm->getCommunicator());
@@ -911,10 +910,7 @@ bool isHermitianGPU() const {
     return globalResult != 0;
 
   } else {
-    // ----------------------------------------------------------------
-    // SINGLE‑RANK branch – verbatim from the original source
-    // ----------------------------------------------------------------
-    msg << "Checking hermiticity on 1 rank" << endl;
+    // single rank branch
     int localHermitian = 1;
     ippl::parallel_reduce("isHermitian_single_rank",
       ippl::getRangePolicy(field,ngh),
