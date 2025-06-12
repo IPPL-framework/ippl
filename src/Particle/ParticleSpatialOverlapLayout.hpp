@@ -26,13 +26,13 @@
 
 #include "Communicate/Window.h"
 
-namespace ippl {
+namespace ippl::fixDefaultTemplateParam {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff)
         : Base(fl, mesh), rcutoff_m(rcutoff), numLocalParticles_m(0) {
-        auto rank = Comm->rank();
-        auto hLocalRegions = this->rlayout_m.gethLocalRegions();
+        const auto rank = Comm->rank();
+        const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
 
         totalCells_m = 1;
         numLocalCells_m = 1;
