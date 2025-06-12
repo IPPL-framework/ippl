@@ -422,7 +422,7 @@ namespace ippl::fixDefaultTemplateParam {
         const ParticleContainer &pc, locate_type &ranks, locate_type &rank_offsets,
         bool_type &invalid) const {
         auto &positions = pc.R.getView();
-        typename RegionLayout_t::view_type Regions = this->rlayout_m.getdLocalRegions();
+        auto regions = this->rlayout_m.getdLocalRegions();
         // Two views: one for data, one for offsets
 
         size_type numLoc = pc.getLocalNum();
@@ -436,8 +436,8 @@ namespace ippl::fixDefaultTemplateParam {
         Kokkos::parallel_for(
             "count_assignments", range_policy, KOKKOS_LAMBDA(size_t i) {
                 int count = 0;
-                for (size_t j = 0; j < Regions.extent(0); ++j) {
-                    if (positionInRegion(positions(i), Regions(j), overlap)) {
+                for (size_t j = 0; j < regions.extent(0); ++j) {
+                    if (positionInRegion(positions(i), regions(j), overlap)) {
                         count++;
                     }
                 }
@@ -481,8 +481,8 @@ namespace ippl::fixDefaultTemplateParam {
             KOKKOS_LAMBDA(size_t i, size_t &count) {
                 size_t offset = rank_offsets(i);
                 int local_count = 0;
-                for (size_t j = 0; j < Regions.extent(0); ++j) {
-                    bool xyz_bool = positionInRegion(positions(i), Regions(j), overlap);
+                for (size_t j = 0; j < regions.extent(0); ++j) {
+                    bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
                     if (xyz_bool) {
                         rank_data(offset + local_count) = j;
                         local_count++;
@@ -510,7 +510,7 @@ namespace ippl::fixDefaultTemplateParam {
     detail::size_type ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleContainer &pc, locate_type_nd &ranks, bool_type &invalid) const {
         auto &positions = pc.R.getView();
-        typename RegionLayout_t::view_type Regions = this->rlayout_m.getdLocalRegions();
+        typename RegionLayout_t::view_type regions = this->rlayout_m.getdLocalRegions();
 
         const size_type myRank = Comm->rank();
 
@@ -524,9 +524,9 @@ namespace ippl::fixDefaultTemplateParam {
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::locateParticles()",
-            mdrange_type({0, 0}, {numLoc, Regions.extent(0)}),
+            mdrange_type({0, 0}, {numLoc, regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j, size_type &count) {
-                bool xyz_bool = positionInRegion(positions(i), Regions(j), overlap);
+                bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
                 if (xyz_bool) {
                     size_t l = 0;
                     for (; l < ranks.extent(1) && ranks(i, l) >= 0; ++l) {
@@ -624,7 +624,7 @@ namespace ippl::fixDefaultTemplateParam {
         hash_type cellCurrentIdx("cellCurrentIdx", totalCells + 1);
 
         const auto rank = Comm->rank();
-        const auto localRegion = this->rlayout_m.getdLocalRegions()(rank);
+        const auto localRegion = this->rlayout_m.gethLocalRegions()(rank);
         const auto &cellWidth = cellWidth_m;
 
         // calculate cell index for each particle
@@ -774,7 +774,7 @@ namespace ippl::fixDefaultTemplateParam {
                             cellStrides_m,
                             numCells_m,
                             cellWidth_m,
-                            this->rlayout_m.getdLocalRegions()(Comm->rank()),
+                            this->rlayout_m.gethLocalRegions()(Comm->rank()),
                             cellStartingIdx_m,
                             cellIndex_m,
                             cellParticleCount_m,
