@@ -35,6 +35,15 @@ namespace ippl {
     }
 
     template <typename Field, unsigned Dim>
+    void BConds<Field, Dim>::assignPeriodicGhostToPhysical(Field& field) {
+        for (auto& bc : bc_m) {
+            bc->assignPeriodicGhostToPhysical(field);
+        }
+        Kokkos::fence();
+        field.getCommunicator().barrier();
+    }
+
+    template <typename Field, unsigned Dim>
     bool BConds<Field, Dim>::changesPhysicalCells() const {
         for (const auto& bc : bc_m) {
             if (bc->changesPhysicalCells()) {

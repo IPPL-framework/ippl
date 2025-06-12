@@ -8,27 +8,28 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <Kokkos_Random.hpp>
+
 #include "Types/ViewTypes.h"
 
 namespace ippl {
-  namespace random {
+    namespace random {
 
-    template<typename T>
-    KOKKOS_FUNCTION T uniform_cdf_func(T x){
-      return x;
-    }
+        template <typename T>
+        KOKKOS_FUNCTION T uniform_cdf_func(T x) {
+            return x;
+        }
 
-    template<typename T>
-    KOKKOS_FUNCTION T uniform_pdf_func(){
-      return 1.;
-    }
+        template <typename T>
+        KOKKOS_FUNCTION T uniform_pdf_func() {
+            return 1.;
+        }
 
-    template<typename T>
-    KOKKOS_FUNCTION T uniform_estimate_func(T u){
-      return u;
-    }
+        template <typename T>
+        KOKKOS_FUNCTION T uniform_estimate_func(T u) {
+            return u;
+        }
 
-  }  // namespace random
+    }  // namespace random
 }  // namespace ippl
 
 #endif

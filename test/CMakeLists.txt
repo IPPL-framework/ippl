@@ -22,11 +22,13 @@ if (ENABLE_FFT)
 endif()
 if (ENABLE_SOLVERS)
     add_subdirectory (solver)
+    add_subdirectory (solver/fem)
 endif()
 add_subdirectory (particle)
 add_subdirectory (region)
 add_subdirectory (random)
 add_subdirectory (serialization)
+add_subdirectory (FEM)
 
 # vi: set et ts=4 sw=4 sts=4:
 

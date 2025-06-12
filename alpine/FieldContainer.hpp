@@ -7,11 +7,10 @@
 
 // Define the FieldsContainer class
 template <typename T, unsigned Dim = 3>
-class FieldContainer{
+class FieldContainer {
 public:
-    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin,
-                   Vector_t<T, Dim>& rmax, std::array<bool, Dim> decomp,
-                   ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
+    FieldContainer(Vector_t<T, Dim>& hr, Vector_t<T, Dim>& rmin, Vector_t<T, Dim>& rmax,
+                   std::array<bool, Dim> decomp, ippl::NDIndex<Dim> domain, Vector_t<T, Dim> origin,
                    bool isAllPeriodic)
         : hr_m(hr)
         , rmin_m(rmin)
@@ -20,7 +19,7 @@ public:
         , mesh_m(domain, hr, origin)
         , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {}
 
-    ~FieldContainer(){}
+    ~FieldContainer() {}
 
 private:
     Vector_t<double, Dim> hr_m;
@@ -56,7 +55,7 @@ public:
     void setDecomp(std::array<bool, Dim> decomp) { decomp_m = decomp; }
 
     Mesh_t<Dim>& getMesh() { return mesh_m; }
-    void setMesh(Mesh_t<Dim> & mesh) { mesh_m = mesh; }
+    void setMesh(Mesh_t<Dim>& mesh) { mesh_m = mesh; }
 
     FieldLayout_t<Dim>& getFL() { return fl_m; }
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
@@ -64,7 +63,7 @@ public:
     void initializeFields(std::string stype_m = "") {
         E_m.initialize(mesh_m, fl_m);
         rho_m.initialize(mesh_m, fl_m);
-        if (stype_m == "CG") {
+        if (stype_m == "CG" || stype_m == "FEM" || stype_m == "FEM_DIRICHLET") {
             phi_m.initialize(mesh_m, fl_m);
         }
     }

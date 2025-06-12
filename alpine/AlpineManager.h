@@ -17,15 +17,15 @@
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
-class AlpineManager
-    : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
-                              LoadBalancer<T, Dim>> {
+class AlpineManager : public ippl::PicManager<T, Dim, ParticleContainer<T, Dim>,
+                                              FieldContainer<T, Dim>, LoadBalancer<T, Dim>> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t = FieldContainer<T, Dim>;
-    using FieldSolver_t= FieldSolver<T, Dim>;
-    using LoadBalancer_t= LoadBalancer<T, Dim>;
-    using Base= ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using FieldContainer_t    = FieldContainer<T, Dim>;
+    using FieldSolver_t       = FieldSolver<T, Dim>;
+    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    using Base                = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+
 protected:
     size_type totalP_m;
     int nt_m;
@@ -33,16 +33,19 @@ protected:
     double lbt_m;
     std::string solver_m;
     std::string stepMethod_m;
+
 public:
-    AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_, std::string& solver_, std::string& stepMethod_)
-        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>, LoadBalancer<T, Dim>>()
+    AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+                  std::string& solver_, std::string& stepMethod_)
+        : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
+                           LoadBalancer<T, Dim>>()
         , totalP_m(totalP_)
         , nt_m(nt_)
         , nr_m(nr_)
         , lbt_m(lbt_)
         , solver_m(solver_)
-        , stepMethod_m(stepMethod_){}
-    ~AlpineManager(){}
+        , stepMethod_m(stepMethod_) {}
+    ~AlpineManager() {}
 
 protected:
     double time_m;
@@ -90,7 +93,7 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
-    virtual void dump() { /* default does nothing */ };
+    virtual void dump(){/* default does nothing */};
 
     void pre_step() override {
         Inform m("Pre-step");
@@ -120,16 +123,16 @@ public:
         Inform m("scatter ");
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double> *q = &this->pcontainer_m->q;
-        typename Base::particle_position_type *R = &this->pcontainer_m->R;
-        Field_t<Dim> *rho               = &this->fcontainer_m->getRho();
-        double Q                        = Q_m;
-        Vector_t<double, Dim> rmin	= rmin_m;
-        Vector_t<double, Dim> rmax	= rmax_m;
-        Vector_t<double, Dim> hr        = hr_m;
+        ippl::ParticleAttrib<double>* q          = &this->pcontainer_m->q;
+        typename Base::particle_position_type* R = &this->pcontainer_m->R;
+        Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
+        double Q                                 = Q_m;
+        Vector_t<double, Dim> rmin               = rmin_m;
+        Vector_t<double, Dim> rmax               = rmax_m;
+        Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q-(*rho).sum())/Q);
+        double relError = std::fabs((Q - (*rho).sum()) / Q);
 
         m << relError << endl;
 
@@ -146,21 +149,21 @@ public:
                 m << "Rel. error in charge conservation: " << relError << endl;
                 ippl::Comm->abort();
             }
-	}
+        }
 
-	double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
-        (*rho)          = (*rho) / cellVolume;
+        double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
+        (*rho)            = (*rho) / cellVolume;
 
         rhoNorm_m = norm(*rho);
 
         // rho = rho_e - rho_i (only if periodic BCs)
-        if (this->fsolver_m->getStype() != "OPEN") {
+        if ((this->fsolver_m->getStype() != "OPEN") || (this->fsolver_m->getStype() != "FEM_DIRICHLET")) {
             double size = 1;
             for (unsigned d = 0; d < Dim; d++) {
                 size *= rmax[d] - rmin[d];
             }
             *rho = *rho - (Q / size);
         }
-   }
+    }
 };
 #endif

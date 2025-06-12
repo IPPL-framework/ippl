@@ -3,6 +3,7 @@ set (_SRCS
 
 set (_HDRS
     Maxwell.h
+    FEMMaxwellDiffusionSolver.h
 )
 
 include_DIRECTORIES (

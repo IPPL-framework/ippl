@@ -65,9 +65,11 @@ namespace ippl {
         MPI_Datatype get_mpi_datatype(const T& /*x*/) {
             MPI_Datatype type = MPI_BYTE;
             if (core::type_names.find(std::type_index(typeid(T))) == core::type_names.end()) {
-                if constexpr(vector_dim_type<T>::Dim > 0) {
+                if constexpr (vector_dim_type<T>::Dim > 0) {
                     MPI_Datatype tp;
-                    MPI_Type_contiguous(vector_dim_type<T>::Dim, get_mpi_datatype<typename T::value_type>(typename T::value_type{}), &tp);
+                    MPI_Type_contiguous(
+                        vector_dim_type<T>::Dim,
+                        get_mpi_datatype<typename T::value_type>(typename T::value_type{}), &tp);
                     MPI_Type_commit(&tp);
                     core::type_names[std::type_index(typeid(T))] = tp;
                 }
