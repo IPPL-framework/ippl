@@ -30,7 +30,7 @@ namespace ippl {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff)
-        : ParticleSpatialLayout<T, Dim, Properties...>(fl, mesh), rcutoff_m(rcutoff), numLocalParticles_m(0) {
+        : Base(fl, mesh), rcutoff_m(rcutoff), numLocalParticles_m(0) {
         auto rank = Comm->rank();
         auto hLocalRegions = this->rlayout_m.gethLocalRegions();
 
