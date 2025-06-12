@@ -60,23 +60,6 @@ namespace ippl::fixDefaultTemplateArgument {
         using particle_neighbor_list_type = hash_type;
         using typename Base::particle_position_type;
 
-    private:
-        const T rcutoff_m;
-        Vector_t<size_type, Dim> numCells_m;
-        Vector_t<size_type, Dim> cellStrides_m;
-        Vector_t<T, Dim> cellWidth_m;
-        size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
-        static constexpr size_type numGhostCellsPerDim_m = 1;
-        hash_type cellPermutationForward_m; // given index from flattened indices gives cell index
-        hash_type cellPermutationBackward_m;
-        // given index in range [0, numLocCells) gives global index corresponding to flattened index
-        hash_type cellStartingIdx_m;
-        hash_type cellIndex_m;
-        hash_type cellParticleCount_m;
-
-        using CellIndex_t = Vector_t<size_type, Dim>;
-        using FlatCellIndex_t = typename CellIndex_t::value_type;
-
         //! Type of the Kokkos view containing the local regions.
         using typename Base::region_view_type;
         //! Type of a single Region object.
@@ -117,48 +100,7 @@ namespace ippl::fixDefaultTemplateArgument {
             hash_type cellPermutationForward;
             hash_type cellPermutationBackward;
         };
-
     public:
-        template<class ParticleContainer>
-        void particleExchange1(ParticleContainer &pc);
-
-        template<class ParticleContainer>
-        void particleExchange2(ParticleContainer &pc);
-
-        template<class ParticleContainer>
-        void buildCells(ParticleContainer &pc);
-
-    protected:
-        KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
-            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
-            hash_type cellPermutationForward);
-
-        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(FlatCellIndex_t nonPermutedIndex,
-                                                                        const Vector_t<size_type, Dim> &numCells);
-
-        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(const CellIndex_t &index,
-                                                                      const Vector_t<size_type, Dim> &numCells);
-
-        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
-            const vector_type &pos, const region_type &region,
-            T overlap);
-
-        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
-            const vector_type &pos, const region_type &region,
-            const Vector_t<T, Dim> &cellWidth);
-
-
-        using cell_particle_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
-
-        KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
-            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
-            const hash_type &cellPermutationForward);
-
-    public:
-        //
-        // <----------------------- TODO add template parameter for local ordering or should it be separate class?
-        //
-
         // constructor: this one also takes a Mesh
         ParticleSpatialOverlapLayout(FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff);
 
@@ -167,6 +109,8 @@ namespace ippl::fixDefaultTemplateArgument {
         }
 
         ~ParticleSpatialOverlapLayout() = default;
+
+        void updateLayout(FieldLayout<Dim>&, Mesh&);
 
         template<class ParticleContainer>
         void update(ParticleContainer &pc);
@@ -200,6 +144,61 @@ namespace ippl::fixDefaultTemplateArgument {
 
         template<typename ExecutionSpace, typename Functor>
         void forEachPair(Functor &&f) const;
+
+    protected:
+        const T rcutoff_m;
+        Vector_t<size_type, Dim> numCells_m;
+        Vector_t<size_type, Dim> cellStrides_m;
+        Vector_t<T, Dim> cellWidth_m;
+        size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
+        static constexpr size_type numGhostCellsPerDim_m = 1;
+        hash_type cellPermutationForward_m; // given index from flattened indices gives cell index
+        hash_type cellPermutationBackward_m;
+        // given index in range [0, numLocCells) gives global index corresponding to flattened index
+        hash_type cellStartingIdx_m;
+        hash_type cellIndex_m;
+        hash_type cellParticleCount_m;
+
+        using CellIndex_t = Vector_t<size_type, Dim>;
+        using FlatCellIndex_t = typename CellIndex_t::value_type;
+
+    public:
+        template<class ParticleContainer>
+        void particleExchange1(ParticleContainer &pc);
+
+        template<class ParticleContainer>
+        void particleExchange2(ParticleContainer &pc);
+
+        template<class ParticleContainer>
+        void buildCells(ParticleContainer &pc);
+
+    protected:
+        void initializeCells();
+
+        KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
+            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
+            hash_type cellPermutationForward);
+
+        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(FlatCellIndex_t nonPermutedIndex,
+                                                                        const Vector_t<size_type, Dim> &numCells);
+
+        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(const CellIndex_t &index,
+                                                                      const Vector_t<size_type, Dim> &numCells);
+
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
+            const vector_type &pos, const region_type &region,
+            T overlap);
+
+        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
+            const vector_type &pos, const region_type &region,
+            const Vector_t<T, Dim> &cellWidth);
+
+
+        using cell_particle_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
+
+        KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
+            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
+            const hash_type &cellPermutationForward);
     };
 }
 

@@ -22,6 +22,7 @@
 #include <numeric>
 #include <vector>
 
+#include "ParticleSpatialOverlapLayout.h"
 #include "Utility/IpplTimings.h"
 
 #include "Communicate/Window.h"
@@ -31,6 +32,17 @@ namespace ippl::fixDefaultTemplateArgument {
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff)
         : Base(fl, mesh), rcutoff_m(rcutoff), numLocalParticles_m(0) {
+        initializeCells();
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::updateLayout(FieldLayout<Dim>& fl, Mesh& mesh) {
+        Base::updateLayout(fl, mesh);
+        initializeCells();
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
         const auto rank = Comm->rank();
         const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
 
@@ -76,6 +88,7 @@ namespace ippl::fixDefaultTemplateArgument {
         cellParticleCount_m = hash_type("cellParticleCount", totalCells_m);
         cellStartingIdx_m = hash_type("cellStartingIdx", totalCells_m + 1);
     }
+
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     template<class ParticleContainer>
