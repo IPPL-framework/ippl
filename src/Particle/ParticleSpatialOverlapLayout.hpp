@@ -26,7 +26,7 @@
 
 #include "Communicate/Window.h"
 
-namespace ippl::fixDefaultTemplateParam {
+namespace ippl::fixDefaultTemplateArgument {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff)
