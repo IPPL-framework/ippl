@@ -40,7 +40,7 @@ namespace ippl {
         typename... PositionProperties>
     class ParticleSpatialOverlapLayout : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
-        using Base = ParticleSpatialLayout<T, Dim, PositionProperties...>;
+        using Base = ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...>;
         using typename Base::position_memory_space, typename Base::position_execution_space;
 
         using typename Base::hash_type;
@@ -52,7 +52,6 @@ namespace ippl {
 
         using typename Base::vector_type;
         using typename Base::RegionLayout_t;
-        using NDRegion_t = typename RegionLayout_t::NDRegion_t;
         using typename Base::FieldLayout_t;
 
         using size_type = detail::size_type;
@@ -77,6 +76,10 @@ namespace ippl {
         using CellIndex_t = Vector_t<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
+        //! Type of the Kokkos view containing the local regions.
+        using typename Base::region_view_type;
+        //! Type of a single Region object.
+        using typename Base::region_type;
     public:
         class NeighborData {
         private:
@@ -86,7 +89,7 @@ namespace ippl {
                          Vector_t<size_type, Dim> cellStrides,
                          Vector_t<size_type, Dim> numCells,
                          Vector_t<T, Dim> cellWidth,
-                         NDRegion_t region,
+                         region_type region,
                          hash_type cellStartingIdx,
                          hash_type cellIndex,
                          hash_type cellParticleCount,
@@ -104,7 +107,7 @@ namespace ippl {
             Vector_t<size_type, Dim> cellStrides;
             Vector_t<size_type, Dim> numCells;
             Vector_t<T, Dim> cellWidth;
-            NDRegion_t region;
+            region_type region;
             hash_type cellStartingIdx;
             hash_type cellIndex;
             hash_type cellParticleCount;
@@ -122,11 +125,7 @@ namespace ippl {
         template<class ParticleContainer>
         void buildCells(ParticleContainer &pc);
 
-        //! Type of the Kokkos view containing the local regions.
-        using typename Base::region_view_type;
-        //! Type of a single Region object.
-        using typename Base::region_type;
-
+    protected:
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
             const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
             hash_type cellPermutationForward);
@@ -141,7 +140,7 @@ namespace ippl {
                                                                       T overlap);
 
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
-            const vector_type &pos, const NDRegion_t &region,
+            const vector_type &pos, const region_type &region,
             const Vector_t<T, Dim> &cellWidth);
 
 

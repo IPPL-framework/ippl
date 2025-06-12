@@ -579,7 +579,7 @@ namespace ippl {
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_INLINE_FUNCTION constexpr typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::CellIndex_t
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
-        const vector_type &pos, const NDRegion_t &region, const Vector_t<T, Dim> &cellWidth) {
+        const vector_type &pos, const region_type &region, const Vector_t<T, Dim> &cellWidth) {
         CellIndex_t cellIndex;
         for (unsigned d = 0; d < Dim; ++d) {
             cellIndex[d] = static_cast<size_type>(std::floor((pos[d] - region[d].min()) / cellWidth[d]) +
