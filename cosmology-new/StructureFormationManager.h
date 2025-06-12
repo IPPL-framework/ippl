@@ -31,6 +31,11 @@ typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
 typedef Field<Kokkos::complex<double>, Dim> CField_t;
 typedef Field<double, Dim> RField_t; 
 
+struct HermitianPkg {
+  int    kx, ky, kz;
+  double re, im;
+};
+
 /**
  * @brief Construct a new StructureFormationManager object.
  *
@@ -696,16 +701,14 @@ bool isHermitianGPU() const {
 
   if (nranks > 1) {
     // device view of the global index layout
+    if (myrank == 0) {
+        msg << "Checking Hermiticty on " << nranks << "ranks" << endl;
+    }
+
     const auto& global_domains = layout.getDeviceLocalDomains();   
 
     Kokkos::View<int*, MemSpace> sendCount("sendCount", nranks);
     Kokkos::deep_copy(sendCount, 0); // zero-init in device mem
-    
-    // Struct to store the sent values
-    struct Pkg {
-      int kx, ky, kz;  // global +k coordinates
-      double re, im;   // complex value delta(k)  (real, imag)
-    };
     
     // local Hermitian flag - shared across both device reductions
     int localHermitianFlag = 1;
@@ -761,7 +764,7 @@ bool isHermitianGPU() const {
           }
         } else if (neg_k_owner >= 0) {
           // -k belongs to another rank - make space in sendcount
-          const int slot = Kokkos::atomic_fetch_add(&sendCount(neg_k_owner), 1);
+          Kokkos::atomic_fetch_add(&sendCount(neg_k_owner), 1);
         } else {
           // Domain decomposition bug
           if (myrank == 0) printf("Hermiticity check: no found owner rank for neg_k\n");
@@ -783,11 +786,11 @@ bool isHermitianGPU() const {
       send_disp[rank] = send_disp[rank-1] + static_cast<size_t>(sendCount_h[rank-1]);
     }
     
-    const size_t total_sends = send_disp.back() + sendCount_h.back();
+    const size_t total_sends = send_disp.back() + sendCount_h(nranks - 1);
 
     // Allocate send and receive buffer on the GPU (total_sends=total_recvs)
-    Kokkos::View<Pkg*, MemSpace> send_buffer_d("send_buffer_d", total_sends);
-    Kokkos::View<Pkg*, MemSpace> recv_buffer_d("recv_buffer_d", total_sends);
+    Kokkos::View<HermitianPkg*, MemSpace> send_buffer_d("send_buffer_d", total_sends);
+    Kokkos::View<HermitianPkg*, MemSpace> recv_buffer_d("recv_buffer_d", total_sends);
     
     // Device copy of the displacements per destination ranks
     Kokkos::View<size_t*,Kokkos::HostSpace> send_disp_h("send_disp_h", nranks);
@@ -848,19 +851,19 @@ bool isHermitianGPU() const {
     // Post all receives directly into device memory
     for (int rank = 0; rank < nranks; rank++) {
       if (sendCount_h[rank] == 0) continue;
-      MPI_Request req;
-      Pkg* recv_ptr = recv_buffer_d.data() + send_disp[rank];
-      ippl::Comm->irecv(*recv_ptr, sendCount_h[rank], rank, 0, req);
-      mpi_requests.push_back(req);
+      mpi_requests.emplace_back();
+      void* recv_ptr = static_cast<void*>(recv_buffer_d.data() + send_disp[rank]);
+      MPI_Irecv(recv_ptr, sendCount_h[rank] * sizeof(HermitianPkg), MPI_BYTE, rank, 
+                0, ippl::Comm->getCommunicator(), &mpi_requests.back());
     }
 
     // Send out packages directly from device memory
     for (int rank = 0; rank < nranks; rank++) {
       if (sendCount_h[rank] == 0) continue;
-      MPI_Request req;
-      const Pkg* send_ptr = send_buffer_d.data() + send_disp[rank];
-      ippl::Comm->isend(*send_ptr, sendCount_h[rank], rank, 0, req);
-      mpi_requests.push_back(req);
+      mpi_requests.emplace_back();
+      const void* send_ptr = static_cast<void*>(send_buffer_d.data() + send_disp[rank]);
+      MPI_Isend(send_ptr, sendCount_h[rank] * sizeof(HermitianPkg), MPI_BYTE, rank,
+                0, ippl::Comm->getCommunicator(), &mpi_requests.back());
     }
 
 
@@ -874,7 +877,7 @@ bool isHermitianGPU() const {
       KOKKOS_LAMBDA(const int idx, int& isHermitianFlag)
       {
         // unpack the package
-        const Pkg p = recv_buffer_d(idx);
+        const HermitianPkg p = recv_buffer_d(idx);
 
         // compute k coordinates (this point lies on current rank)
         const int i = (p.kx==0 ? 0 : Nx - p.kx);
@@ -911,6 +914,7 @@ bool isHermitianGPU() const {
     // ----------------------------------------------------------------
     // SINGLE‑RANK branch – verbatim from the original source
     // ----------------------------------------------------------------
+    msg << "Checking hermiticity on 1 rank" << endl;
     int localHermitian = 1;
     ippl::parallel_reduce("isHermitian_single_rank",
       ippl::getRangePolicy(field,ngh),
