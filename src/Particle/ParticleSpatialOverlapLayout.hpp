@@ -22,7 +22,6 @@
 #include <numeric>
 #include <vector>
 
-#include "ParticleSpatialOverlapLayout.h"
 #include "Utility/IpplTimings.h"
 
 #include "Communicate/Window.h"
