@@ -100,35 +100,6 @@ namespace ippl {
                 }
             }
         );
-
-        /*
-        auto hView = Kokkos::create_mirror_view(elementIndices);
-        Kokkos::deep_copy(hView, elementIndices);
-        for (int r = 0; r < ippl::Comm->size(); ++r) {
-
-            if (r == ippl::Comm->rank()) {
-                std::ofstream file;
-                if (r == 0) {
-                    file.open("elementIndices.csv");
-                    file << "x,y,z,rank\n";
-                }else {
-                    file.open("elementIndices.csv", std::ios::app);
-                }
-                
-                for (size_t i = 0; i < hView.extent(0); ++i) {
-                    // std::cout << "rank " << r << ": " << hView(i) << "\n";
-                    // std::cout << "rank " << r << ": " << hView(i) << "\n";
-                    size_t f = bounds[0];
-                    size_t x = hView(i) % (size_t)f;
-                    size_t y = hView(i) / f;
-                    file << x << "," << y << ",0," << ippl::Comm->rank() << "\n";
-                }
-                file.close();
-
-            }
-            ippl::Comm->barrier();
-        }
-            */
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -219,10 +190,10 @@ namespace ippl {
     KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
                         QuadratureType, FieldType>::numElementDOFs>
                     NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                            ::getGlobalDOFIndices(const size_t& elementIndex) const {
+                            ::getGlobalDOFIndices(const NedelecSpace<T, Dim, Order, ElementType,
+                                QuadratureType, FieldType>::indices_t& elementIndex) const {
 
         Vector<size_t, this->numElementDOFs> globalDOFs(0);
-        indices_t elementPos = this->getElementNDIndex(elementIndex);
 
         Vector<size_t, Dim> v(1);
         if constexpr (Dim == 2) {
@@ -236,7 +207,7 @@ namespace ippl {
         }
 
         size_t nx = this->nr_m[0];
-        globalDOFs(0) = v.dot(elementPos);
+        globalDOFs(0) = v.dot(elementIndex);
         globalDOFs(1) = globalDOFs(0) + nx - 1;
         globalDOFs(2) = globalDOFs(1) + nx;
         globalDOFs(3) = globalDOFs(1) + 1;
@@ -244,8 +215,8 @@ namespace ippl {
         if constexpr (Dim == 3) {
             size_t ny = this->nr_m[1];
 
-            globalDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny
-                + elementPos(1)*nx + elementPos(0);
+            globalDOFs(4) = v(2)*elementIndex(2) + 2*nx*ny - nx - ny
+                + elementIndex(1)*nx + elementIndex(0);
             globalDOFs(5) = globalDOFs(4) + 1;
             globalDOFs(6) = globalDOFs(4) + nx + 1;
             globalDOFs(7) = globalDOFs(4) + nx;
@@ -259,22 +230,34 @@ namespace ippl {
         return globalDOFs;
     }
 
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
+                        QuadratureType, FieldType>::numElementDOFs>
+                    NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                            ::getGlobalDOFIndices(const size_t& elementIndex) const {
+
+        indices_t elementPos = this->getElementNDIndex(elementIndex);
+        return getGlobalDOFIndices(elementPos);
+    }
+
+    
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
     KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
                         QuadratureType, FieldType>::numElementDOFs>
                     NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                            ::getFEMVectorDOFIndices(const size_t& elementIndex, NDIndex<Dim> ldom) const {
+                            ::getFEMVectorDOFIndices(NedelecSpace<T, Dim, Order, ElementType,
+                                QuadratureType, FieldType>::indices_t elementIndex,
+                                NDIndex<Dim> ldom) const {
 
         Vector<size_t, this->numElementDOFs> FEMVectorDOFs(0);
         
-        // First get the global element position
-        indices_t elementPos = this->getElementNDIndex(elementIndex);
         // Then we can subtract from it the starting position and add the ghost
         // things
-        elementPos -= ldom.first();
-        elementPos += 1;
+        elementIndex -= ldom.first();
+        elementIndex += 1;
         
         indices_t dif(0);
         dif = ldom.last() - ldom.first();
@@ -292,7 +275,7 @@ namespace ippl {
         }
 
         size_t nx = dif[0];
-        FEMVectorDOFs(0) = v.dot(elementPos);
+        FEMVectorDOFs(0) = v.dot(elementIndex);
         FEMVectorDOFs(1) = FEMVectorDOFs(0) + nx - 1;
         FEMVectorDOFs(2) = FEMVectorDOFs(1) + nx;
         FEMVectorDOFs(3) = FEMVectorDOFs(1) + 1;
@@ -300,8 +283,8 @@ namespace ippl {
         if constexpr (Dim == 3) {
             size_t ny = dif[1];
 
-            FEMVectorDOFs(4) = v(2)*elementPos(2) + 2*nx*ny - nx - ny
-                + elementPos(1)*nx + elementPos(0);
+            FEMVectorDOFs(4) = v(2)*elementIndex(2) + 2*nx*ny - nx - ny
+                + elementIndex(1)*nx + elementIndex(0);
             FEMVectorDOFs(5) = FEMVectorDOFs(4) + 1;
             FEMVectorDOFs(6) = FEMVectorDOFs(4) + nx + 1;
             FEMVectorDOFs(7) = FEMVectorDOFs(4) + nx;
@@ -315,193 +298,18 @@ namespace ippl {
         return FEMVectorDOFs;
     }
 
-
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> NedelecSpace<T, Dim, Order, ElementType,
-                        QuadratureType, FieldType>::curlCurlOperator() const {
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType,
+                        QuadratureType, FieldType>::numElementDOFs>
+                    NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                            ::getFEMVectorDOFIndices(const size_t& elementIndex, NDIndex<Dim> ldom) const {
         
-        static_assert(Dim == 3, "Currently the curl curl operator is only supported for 3D");
-        
-        
-        // The gradient of the basis functions at the different local quadrature
-        // points for the reference element. Dimension go over quadrature
-        // points, DOFs, dimensions of basis function.
-        Kokkos::View<T****> gradBasis("gradBasis", QuadratureType::numElementNodes,
-                                        this->numElementDOFs, 3, 3);
-        const Vector<point_t, QuadratureType::numElementNodes> qPoints =
-            this->quadrature_m.getIntegrationNodesForRefElement();
-
-        Kokkos::parallel_for("ComputeGradBasis", QuadratureType::numElementNodes,
-            KOKKOS_CLASS_LAMBDA(const int q){
-                if (Dim == 2) {
-                    gradBasis(q,0,0,0) = 0;
-                    gradBasis(q,0,0,1) = -1;
-                    gradBasis(q,0,1,0) = 0;
-                    gradBasis(q,0,1,1) = 0;
-
-                    gradBasis(q,1,0,0) = 0;
-                    gradBasis(q,1,0,1) = 1;
-                    gradBasis(q,1,1,0) = 0;
-                    gradBasis(q,1,1,1) = 0;
-
-                    gradBasis(q,2,0,0) = 0;
-                    gradBasis(q,2,0,1) = 0;
-                    gradBasis(q,2,1,0) = -1;
-                    gradBasis(q,2,1,1) = 0;
-
-                    gradBasis(q,3,0,0) = 0;
-                    gradBasis(q,3,0,1) = 0;
-                    gradBasis(q,3,1,0) = 1;
-                    gradBasis(q,3,1,1) = 0;
-                } else if (Dim == 3) {
-                    T x = qPoints[q][0];
-                    T y = qPoints[q][1];
-                    T z = qPoints[q][2];
-
-                    gradBasis(q,0,0,0) = 0;
-                    gradBasis(q,0,0,1) = -1+z;
-                    gradBasis(q,0,0,2) = -1+y;
-                    gradBasis(q,0,1,0) = 0;
-                    gradBasis(q,0,1,1) = 0;
-                    gradBasis(q,0,1,2) = 0;
-                    gradBasis(q,0,2,0) = 0;
-                    gradBasis(q,0,2,1) = 0;
-                    gradBasis(q,0,2,2) = 0;
-
-                    gradBasis(q,1,0,0) = 0;
-                    gradBasis(q,1,0,1) = 1-z;
-                    gradBasis(q,1,0,2) = -y;
-                    gradBasis(q,1,1,0) = 0;
-                    gradBasis(q,1,1,1) = 0;
-                    gradBasis(q,1,1,2) = 0;
-                    gradBasis(q,1,2,0) = 0;
-                    gradBasis(q,1,2,1) = 0;
-                    gradBasis(q,1,2,2) = 0;
-
-                    gradBasis(q,2,0,0) = 0;
-                    gradBasis(q,2,0,1) = -z;
-                    gradBasis(q,2,0,2) = 1-y;
-                    gradBasis(q,2,1,0) = 0;
-                    gradBasis(q,2,1,1) = 0;
-                    gradBasis(q,2,1,2) = 0;
-                    gradBasis(q,2,2,0) = 0;
-                    gradBasis(q,2,2,1) = 0;
-                    gradBasis(q,2,2,2) = 0;
-
-                    gradBasis(q,3,0,0) = 0;
-                    gradBasis(q,3,0,1) = z;
-                    gradBasis(q,3,0,2) = y;
-                    gradBasis(q,3,1,0) = 0;
-                    gradBasis(q,3,1,1) = 0;
-                    gradBasis(q,3,1,2) = 0;
-                    gradBasis(q,3,2,0) = 0;
-                    gradBasis(q,3,2,1) = 0;
-                    gradBasis(q,3,2,2) = 0;
-
-                    gradBasis(q,4,0,0) = 0;
-                    gradBasis(q,4,0,1) = 0;
-                    gradBasis(q,4,0,2) = 0;
-                    gradBasis(q,4,1,0) = -1+z;
-                    gradBasis(q,4,1,1) = 0;
-                    gradBasis(q,4,1,2) = -1+x;
-                    gradBasis(q,4,2,0) = 0;
-                    gradBasis(q,4,2,1) = 0;
-                    gradBasis(q,4,2,2) = 0;
-
-                    gradBasis(q,5,0,0) = 0;
-                    gradBasis(q,5,0,1) = 0;
-                    gradBasis(q,5,0,2) = 0;
-                    gradBasis(q,5,1,0) = 1-z;
-                    gradBasis(q,5,1,1) = 0;
-                    gradBasis(q,5,1,2) = -x;
-                    gradBasis(q,5,2,0) = 0;
-                    gradBasis(q,5,2,1) = 0;
-                    gradBasis(q,5,2,2) = 0;
-
-                    gradBasis(q,6,0,0) = 0;
-                    gradBasis(q,6,0,1) = 0;
-                    gradBasis(q,6,0,2) = 0;
-                    gradBasis(q,6,1,0) = -z;
-                    gradBasis(q,6,1,1) = 0;
-                    gradBasis(q,6,1,2) = 1-x;
-                    gradBasis(q,6,2,0) = 0;
-                    gradBasis(q,6,2,1) = 0;
-                    gradBasis(q,6,2,2) = 0;
-
-                    gradBasis(q,7,0,0) = 0;
-                    gradBasis(q,7,0,1) = 0;
-                    gradBasis(q,7,0,2) = 0;
-                    gradBasis(q,7,1,0) = z;
-                    gradBasis(q,7,1,1) = 0;
-                    gradBasis(q,7,1,2) = x;
-                    gradBasis(q,7,2,0) = 0;
-                    gradBasis(q,7,2,1) = 0;
-                    gradBasis(q,7,2,2) = 0;
-
-                    gradBasis(q,8,0,0) = 0;
-                    gradBasis(q,8,0,1) = 0;
-                    gradBasis(q,8,0,2) = 0;
-                    gradBasis(q,8,1,0) = 0;
-                    gradBasis(q,8,1,1) = 0;
-                    gradBasis(q,8,1,2) = 0;
-                    gradBasis(q,8,2,0) = -1+y;
-                    gradBasis(q,8,2,1) = -1+x;
-                    gradBasis(q,8,2,2) = 0;
-
-                    gradBasis(q,9,0,0) = 0;
-                    gradBasis(q,9,0,1) = 0;
-                    gradBasis(q,9,0,2) = 0;
-                    gradBasis(q,9,1,0) = 0;
-                    gradBasis(q,9,1,1) = 0;
-                    gradBasis(q,9,1,2) = 0;
-                    gradBasis(q,9,2,0) = 1-y;
-                    gradBasis(q,9,2,1) = -x;
-                    gradBasis(q,9,2,2) = 0;
-
-                    gradBasis(q,10,0,0) = 0;
-                    gradBasis(q,10,0,1) = 0;
-                    gradBasis(q,10,0,2) = 0;
-                    gradBasis(q,10,1,0) = 0;
-                    gradBasis(q,10,1,1) = 0;
-                    gradBasis(q,10,1,2) = 0;
-                    gradBasis(q,10,2,0) = -y;
-                    gradBasis(q,10,2,1) = 1-x;
-                    gradBasis(q,10,2,2) = 0;
-
-                    gradBasis(q,11,0,0) = 0;
-                    gradBasis(q,11,0,1) = 0;
-                    gradBasis(q,11,0,2) = 0;
-                    gradBasis(q,11,1,0) = 0;
-                    gradBasis(q,11,1,1) = 0;
-                    gradBasis(q,11,1,2) = 0;
-                    gradBasis(q,11,2,0) = y;
-                    gradBasis(q,11,2,1) = x;
-                    gradBasis(q,11,2,2) = 0;
-                }
-            }
-        );
-        
-
-
-        auto f = [gradBasis] (size_t i, size_t j, size_t q) -> T {
-            point_t a = {gradBasis(q,j,2,1) - gradBasis(q,j,1,2),
-                      gradBasis(q,j,0,2) - gradBasis(q,j,2,0),
-                      gradBasis(q,j,1,0) - gradBasis(q,j,0,1)};
-            
-            point_t b = {gradBasis(q,i,2,1) - gradBasis(q,i,1,2),
-                      gradBasis(q,i,0,2) - gradBasis(q,i,2,0),
-                      gradBasis(q,i,1,0) - gradBasis(q,i,0,1)};
-
-
-            return a.dot(b);
-        };
-
-        
-
-        return f;
-        
+        // First get the global element position
+        indices_t elementPos = this->getElementNDIndex(elementIndex);
+        return getFEMVectorDOFIndices(elementPos, ldom);
     }
+
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
@@ -528,115 +336,6 @@ namespace ippl {
 
         return position;
     }
-
-
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
-              typename QuadratureType, typename FieldType>
-    KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> NedelecSpace<T, Dim, Order, ElementType,
-                        QuadratureType, FieldType>::massOperator() const {
-        
-        // The values of the basis functions at the different qudarature points.
-        // Dimensions go over quadrature points, DOFs.
-        Vector<Vector<point_t, this->numElementDOFs>,
-                    QuadratureType::numElementNodes> basisFunctions;
-
-        const Vector<point_t, QuadratureType::numElementNodes> qPoints =
-            this->quadrature_m.getIntegrationNodesForRefElement();
-
-        
-        for (size_t q = 0; q < QuadratureType::numElementNodes; ++q) {
-            if (Dim == 2) {
-                T x = qPoints[q][0];
-                T y = qPoints[q][1];
-                
-                basisFunctions[q][0] = {1.-y,0.};
-                basisFunctions[q][1] = {y, 0.};
-                basisFunctions[q][2] = {0.,1.-x};
-                basisFunctions[q][3] = {0.,x};
-            } else {
-                T x = qPoints[q][0];
-                T y = qPoints[q][1];
-                T z = qPoints[q][2];
-                
-                basisFunctions[q][0] = {y*z-y-z+1.,0.,0.};
-                basisFunctions[q][1] = {y*(1.-z),0.,0.};
-                basisFunctions[q][2] = {z*(1.-y),0.,0.};
-                basisFunctions[q][3] = {y*z,0.,0.};
-                basisFunctions[q][4] = {0.,x*z-x-z+1.,0.};
-                basisFunctions[q][5] = {0.,x*(1.-z),0.};
-                basisFunctions[q][6] = {0.,z*(1.-x),0.};
-                basisFunctions[q][7] = {0.,x*z,0.};
-                basisFunctions[q][8] = {0.,0.,x*y-x-y+1.};
-                basisFunctions[q][9] = {0.,0.,x*(1.-y)};
-                basisFunctions[q][10] = {0.,0.,y*(1.-x)};
-                basisFunctions[q][11] = {0.,0.,x*y};
-            }
-        }
-        
-
-
-        auto f = [basisFunctions] (size_t i, size_t j, size_t q) -> T {
-
-            return basisFunctions[q][j].dot(basisFunctions[q][i]);
-        };
-        
-        return f;
-
-    }
-
-    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
-              typename QuadratureType, typename FieldType>
-    template <typename Functor>
-    KOKKOS_FUNCTION std::function<T(size_t,size_t,ippl::Vector<T,Dim>)> NedelecSpace<T, Dim, Order,
-                        ElementType, QuadratureType, FieldType>::loadOperator(Functor f) const {
-        
-        ippl::Vector<ippl::Vector<point_t, this->numElementDOFs>,
-                        QuadratureType::numElementNodes> basisFunctions;
-
-        const Vector<point_t, QuadratureType::numElementNodes> qPoints =
-            this->quadrature_m.getIntegrationNodesForRefElement();
-
-        
-        for (size_t q = 0; q < QuadratureType::numElementNodes; ++q) {
-            if (Dim == 2) {
-                T x = qPoints[q][0];
-                T y = qPoints[q][1];
-                
-                basisFunctions[q][0] = {1.-y,0.};
-                basisFunctions[q][1] = {y, 0.};
-                basisFunctions[q][2] = {0.,1.-x};
-                basisFunctions[q][3] = {0.,x};
-            } else {
-                T x = qPoints[q][0];
-                T y = qPoints[q][1];
-                T z = qPoints[q][2];
-                
-                basisFunctions[q][0] = {y*z-y-z+1.,0.,0.};
-                basisFunctions[q][1] = {y*(1.-z),0.,0.};
-                basisFunctions[q][2] = {z*(1.-y),0.,0.};
-                basisFunctions[q][3] = {y*z,0.,0.};
-                basisFunctions[q][4] = {0.,x*z-x-z+1.,0.};
-                basisFunctions[q][5] = {0.,x*(1.-z),0.};
-                basisFunctions[q][6] = {0.,z*(1.-x),0.};
-                basisFunctions[q][7] = {0.,x*z,0.};
-                basisFunctions[q][8] = {0.,0.,x*y-x-y+1.};
-                basisFunctions[q][9] = {0.,0.,x*(1.-y)};
-                basisFunctions[q][10] = {0.,0.,y*(1.-x)};
-                basisFunctions[q][11] = {0.,0.,x*y};
-            }
-        }
-        
-
-
-        auto loadF = [basisFunctions,f] (size_t i, size_t q, point_t x) -> T {
-            return basisFunctions[q][i].dot(f(x));
-        };
-
-
-        return loadF;
-
-    }
-
 
 
 
@@ -902,8 +601,7 @@ namespace ippl {
                 typename QuadratureType, typename FieldType>
     template <typename F>
     FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                            ::evaluateLoadVectorFunctor(const FEMVector<NedelecSpace<T, Dim, Order, ElementType,
-                                QuadratureType, FieldType>::point_t>& model, const F& f) const {
+                            ::evaluateLoadVectorFunctor(const F& f) const {
         Inform m("");
 
         // start a timer
@@ -942,8 +640,7 @@ namespace ippl {
 
 
         // Get boundary conditions from field
-        FEMVector<T> resultVector = model.template skeletonCopy<T>();
-        resultVector = 0;
+        FEMVector<T> resultVector = createFEMVector();
 
         // Get field data and make it atomic,
         // since it will be added to during the kokkos loop
@@ -1127,6 +824,7 @@ namespace ippl {
         return gradient;
     }
 
+
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
     KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType,
@@ -1287,96 +985,17 @@ namespace ippl {
 
     }
 
-
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    FEMVector<Vector<T, Dim> > NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                                ::reconstructBasis(const FEMVector<T>& coef) const {
-        
-        // Loop over all the global degrees of freedom
-        FEMVector<Vector<T,Dim>> outVector = coef.template skeletonCopy<Vector<T,Dim>>();
-
-        const auto& ldom = layout_m.getLocalNDIndex();
-
-        indices_t extents(0);
-        extents = ldom.last() - ldom.first();
-        extents += 3;
-        size_t nx = extents[0];
-
-        auto coefView = coef.getView();
-        auto outView = outVector.getView();
-        
-        size_t n = coef.size();
-        Kokkos::parallel_for("reconstructBasis", n,
-            KOKKOS_CLASS_LAMBDA(size_t i){
-                // In order to do this we need to figure out to which axis we
-                // are parallel
-                bool onXAxis = i - (2*nx-1) * (i / (2*nx - 1)) < (nx-1);
-                if (onXAxis) {
-                    outView(i)[0] = coefView(i);
-                    T yVal = 0;
-                    int bval = getBoundarySide(i);
-                    switch (bval) {
-                    case -1:
-                        yVal += coefView(i - nx);
-                        yVal += coefView(i - (nx-1));
-                        yVal += coefView(i + nx-1);
-                        yVal += coefView(i + nx);
-                        yVal *= 0.25;
-                        break;
-                    case 0:
-                        yVal += coefView(i + nx-1);
-                        yVal += coefView(i + nx);
-                        yVal *= 0.5;
-                        break;
-                    case 2:
-                        yVal += coefView(i - nx);
-                        yVal += coefView(i - (nx-1));
-                        yVal *= 0.5;
-                        break;
-                    default:
-                        IpplException("reconstructBasis", "Wrong boundary");
-                        break;
-                    }
-                    outView(i)[1] = yVal;
-
-                } else {
-                    outView(i)[1] = coefView(i);
-                    T xVal = 0;
-                    int bval = getBoundarySide(i);
-                    switch (bval) {
-                    case -1:
-                        xVal += coefView(i - nx);
-                        xVal += coefView(i + nx-1);
-                        xVal += coefView(i - (nx-1));
-                        xVal += coefView(i + nx);
-                        xVal *= 0.25;
-                        break;
-                    case 1:
-                        xVal += coefView(i - (nx-1));
-                        xVal += coefView(i + nx);
-                        xVal *= 0.5;
-                        break;
-                    case 3:
-                        xVal += coefView(i - nx);
-                        xVal += coefView(i + nx-1);
-                        xVal *= 0.5;
-                        break;
-                    default:
-                        IpplException("reconstructBasis", "Wrong boundary");
-                        break;
-                    }
-                    outView(i)[0] = xVal;
-                }
-                
-                
-            }
-        );
-        
-        return outVector;
-    }
-
-
+    FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::createFEMVector() const {
+                            
+        if constexpr (Dim == 2) {
+            return createFEMVector2d();
+        } else {
+            return createFEMVector3d();
+        }
+    }                         
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
@@ -1584,6 +1203,8 @@ namespace ippl {
         return Kokkos::sqrt(global_error);
     }
 
+
+
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
     template <typename F>
@@ -1673,83 +1294,882 @@ namespace ippl {
         return Kokkos::sqrt(global_error);
     }
 
+
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    template <typename F>
-    T NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-                                ::computeErrorInf(const FieldType& u_h, const F& u_sol) const {
-        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
-            // throw exception
-            throw IpplException("NedelecSpace::computeError()",
-                "Order of quadrature rule for error computation should be > 2*p + 1");
+    bool NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::isDOFOnBoundary(const size_t& dofIdx) const {
+            
+        bool onBoundary = false;
+        if constexpr (Dim == 2) {
+            size_t nx = this->nr_m[0];
+            size_t ny = this->nr_m[1];
+            // South
+            bool sVal = (dofIdx < nx -1);
+            onBoundary = onBoundary || sVal;
+            // North
+            onBoundary = onBoundary || (dofIdx > nx*(ny-1) + ny*(nx-1) - nx);
+            // West
+            onBoundary = onBoundary || ((dofIdx >= nx-1) && (dofIdx - (nx-1)) % (2*nx - 1) == 0);
+            // East
+            onBoundary = onBoundary || ((dofIdx >= 2*nx-2) && ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0));    
         }
 
-        // List of quadrature weights
-        const Vector<T, QuadratureType::numElementNodes> w =
-            this->quadrature_m.getWeightsForRefElement();
+        if constexpr (Dim == 3) {
+            size_t nx = this->nr_m[0];
+            size_t ny = this->nr_m[1];
+            size_t nz = this->nr_m[2];
 
-        // List of quadrature nodes
-        const Vector<point_t, QuadratureType::numElementNodes> q =
-            this->quadrature_m.getIntegrationNodesForRefElement();
+            size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
 
-        // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
-        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+
+            if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                // we are parallel to z axis
+                // therefore we have halve a cell offset and can never be on the ground or in
+                // s
+                size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                    - (nx*(ny-1) + ny*(nx-1));
+                
+                size_t yOffset = f / nx;
+                // South
+                onBoundary = onBoundary || yOffset == 0;
+                // North
+                onBoundary = onBoundary || yOffset == ny-1;
+
+                size_t xOffset = f % nx;
+                // West
+                onBoundary = onBoundary || xOffset == 0;
+                // East
+                onBoundary = onBoundary || xOffset == nx-1;
+
+            } else {
+                // are parallel to one of the other axes
+                // Ground
+                onBoundary = onBoundary || zOffset == 0;
+                // Space
+                onBoundary = onBoundary || zOffset == nz-1;
+                
+                size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                size_t yOffset = f / (2*nx - 1);
+                size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                if (xOffset < (nx-1)) {
+                    // we are parallel to the x axis, therefore we cannot
+                    // be on an west or east boundary, but we still can
+                    // be on a north or south boundary
+                    
+                    // South
+                    onBoundary = onBoundary || yOffset == 0;
+                    // North
+                    onBoundary = onBoundary || yOffset == ny-1;
+                    
+                } else {
+                    // we are parallel to the y axis, therefore we cannot be
+                    // on a south or north boundary, but we still can be on
+                    // a west or east boundary
+                    if (xOffset >= nx-1) {
+                        xOffset -= (nx-1);
+                    }
+
+                    // West
+                    onBoundary = onBoundary || xOffset == 0;
+                    // East
+                    onBoundary = onBoundary || xOffset == nx-1;
+                }
             }
         }
 
-        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+        return onBoundary;
+    }
 
-        // Variable to sum the error to
-        T error = 0;
 
-        // Get domain information and ghost cells
-        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
-        const int nghost = u_h.getNghost();
 
-        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    int NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::getBoundarySide(const size_t& dofIdx) const {
 
-        // Loop over elements to compute contributions
-        Kokkos::parallel_reduce("Compute error over elements",
-            policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index, double& local_max) {
-                const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
-                auto dof_points =
-                    this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex));
+        if constexpr (Dim == 2) {
+            size_t nx = this->nr_m[0];
+            size_t ny = this->nr_m[1];
 
-                for (size_t i = 0; i < this->numElementDOFs; ++i) {
-                    size_t I           = global_dofs[i];
-                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+            // South
+            if (dofIdx < nx -1) return 0;
+            // West
+            if ((dofIdx - (nx-1)) % (2*nx - 1) == 0) return 1;
+            // North
+            if (dofIdx > nx*(ny-1) + ny*(nx-1) - nx) return 2;
+            // East
+            if ((dofIdx >= 2*nx-2) && (dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
+
+            return -1;
+        }
+
+        if constexpr (Dim == 3) {
+            size_t nx = this->nr_m[0];
+            size_t ny = this->nr_m[1];
+            size_t nz = this->nr_m[2];
+
+            size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
+
+
+            if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                // we are parallel to z axis
+                // therefore we have halve a cell offset and can never be on the ground or in
+                // s
+                size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                    - (nx*(ny-1) + ny*(nx-1));
+                
+                size_t yOffset = f / nx;
+                // South
+                return 0;
+                // North
+                return 2;
+
+                size_t xOffset = f % nx;
+                // West
+                return 1;
+                // East
+                return 3;
+
+            } else {
+                // are parallel to one of the other axes
+                // Ground
+                return 4;
+                // Space
+                return 5;
+                
+                size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                size_t yOffset = f / (2*nx - 1);
+                size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                if (xOffset < (nx-1)) {
+                    // we are parallel to the x axis, therefore we cannot
+                    // be on an west or east boundary, but we still can
+                    // be on a north or south boundary
+                    
+                    // South
+                    return 0;
+                    // North
+                    return 2;
+                    
+                } else {
+                    // we are parallel to the y axis, therefore we cannot be
+                    // on a south or north boundary, but we still can be on
+                    // a west or east boundary
+                    if (xOffset >= nx-1) {
+                        xOffset -= (nx-1);
                     }
 
-                    // computed field value at DOF
-                    T val_u_h = apply(u_h, dof_ndindex_I);
+                    // West
+                    return 1;
+                    // East
+                    return 3;
+                }
+            }
+            return -1;
+        }
 
-                    // solution field value at DOF
-                    T val_u_sol = u_sol(dof_points[i]);
+    }
 
-                    T local_norm = Kokkos::abs(val_u_h - val_u_sol);
 
-                    if (local_norm > local_max) {
-                        local_max = local_norm;
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::createFEMVector2d() const{
+
+        auto ldom = layout_m.getLocalNDIndex();
+        auto doms = layout_m.getHostLocalDomains();
+
+        // Create the temporaries and so on which will store the MPI information.
+        std::vector<size_t> neighbors;
+        std::vector< Kokkos::View<size_t*> > sendIdxs;
+        std::vector< Kokkos::View<size_t*> > recvIdxs;
+        std::vector< std::vector<size_t> > sendIdxsTemp;
+        std::vector< std::vector<size_t> > recvIdxsTemp;
+
+        // Here we loop thought all the domains to figure out how we are related to
+        // them and if we have to do any kind of exchange.
+        for (size_t i = 0; i < doms.extent(0); ++i) {
+            if (i == Comm->rank()) {
+                // We are looking at ourself
+                continue;
+            }
+            auto odom = doms(i);
+
+            // East boundary
+            if (ldom.last()[0] == odom.first()[0]-1 &&
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                // Extract the range of the boundary.
+                int begin = std::max(odom.first()[1], ldom.first()[1]);
+                int end = std::min(odom.last()[1], ldom.last()[1]);
+                int pos = ldom.last()[0];
+                
+                // Add this to the neighbour list.
+                neighbors.push_back(i);
+                sendIdxsTemp.push_back(std::vector<size_t>());
+                recvIdxsTemp.push_back(std::vector<size_t>());
+                size_t idx = neighbors.size() - 1;
+                
+                // Add all the halo
+                indices_t elementPosHalo(0);
+                elementPosHalo(0) = pos;
+                indices_t elementPosSend(0);
+                elementPosSend(0) = pos;
+                for (int k = begin; k <= end; ++k) {
+                    elementPosHalo(1) = k;
+                    elementPosSend(1) = k;
+                    
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[3]);
+
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+                }
+                // Check if on very north
+                if (end == layout_m.getDomain().last()[1] || ldom.last()[1] > odom.last()[1]) {
+                    elementPosSend(1) = end;
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    // also have to add dof 2
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[2]);
+                }
+            }
+
+            // West boundary
+            if (ldom.first()[0] == odom.last()[0]+1 &&
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                // Extract the range of the boundary.
+                int begin = std::max(odom.first()[1], ldom.first()[1]);
+                int end = std::min(odom.last()[1], ldom.last()[1]);
+                int pos = ldom.first()[0];
+                
+                // Add this to the neighbour list.
+                neighbors.push_back(i);
+                sendIdxsTemp.push_back(std::vector<size_t>());
+                recvIdxsTemp.push_back(std::vector<size_t>());
+                size_t idx = neighbors.size() - 1;
+                
+                // Add all the halo
+                indices_t elementPosHalo(0);
+                elementPosHalo(0) = pos-1;
+                indices_t elementPosSend(0);
+                elementPosSend(0) = pos;
+                for (int k = begin; k <= end; ++k) {
+                    elementPosHalo(1) = k;
+                    elementPosSend(1) = k;
+                    
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[0]);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[1]);
+
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+                }
+                // Check if on very north
+                if (end == layout_m.getDomain().last()[1] || odom.last()[1] > ldom.last()[1]) {
+                    elementPosHalo(1) = end;
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    // also have to add dof 2
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[2]);
+                }
+            }
+
+            // North boundary
+            if (ldom.last()[1] == odom.first()[1]-1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                // Extract the range of the boundary.
+                int begin = std::max(odom.first()[0], ldom.first()[0]);
+                int end = std::min(odom.last()[0], ldom.last()[0]);
+                int pos = ldom.last()[1];
+                
+                // Add this to the neighbour list.
+                neighbors.push_back(i);
+                sendIdxsTemp.push_back(std::vector<size_t>());
+                recvIdxsTemp.push_back(std::vector<size_t>());
+                size_t idx = neighbors.size() - 1;
+                
+                // Add all the halo
+                indices_t elementPosHalo(0);
+                elementPosHalo(1) = pos;
+                indices_t elementPosSend(0);
+                elementPosSend(1) = pos;
+                for (int k = begin; k <= end; ++k) {
+                    elementPosHalo(0) = k;
+                    elementPosSend(0) = k;
+                    
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[2]);
+
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[1]);
+                }
+                // Check if on very east
+                if (end == layout_m.getDomain().last()[0] || ldom.last()[0] > odom.last()[0]) {
+                    elementPosSend(0) = end;
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    // also have to add dof 3
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[3]);
+                }
+            }
+
+            // South boundary
+            if (ldom.first()[1] == odom.last()[1]+1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                // Extract the range of the boundary.
+                int begin = std::max(odom.first()[0], ldom.first()[0]);
+                int end = std::min(odom.last()[0], ldom.last()[0]);
+                int pos = ldom.first()[1];
+                
+                // Add this to the neighbour list.
+                neighbors.push_back(i);
+                sendIdxsTemp.push_back(std::vector<size_t>());
+                recvIdxsTemp.push_back(std::vector<size_t>());
+                size_t idx = neighbors.size() - 1;
+                
+                // Add all the halo
+                indices_t elementPosHalo(0);
+                elementPosHalo(1) = pos-1;
+                indices_t elementPosSend(0);
+                elementPosSend(1) = pos;
+                for (int k = begin; k <= end; ++k) {
+                    elementPosHalo(0) = k;
+                    elementPosSend(0) = k;
+                    
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[0]);
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[1]);
+
+                    auto dofIndicesSend = getFEMVectorDOFIndices(elementPosSend, ldom);
+                    sendIdxsTemp[idx].push_back(dofIndicesSend[0]);
+                }
+                // Check if on very east
+                if (end == layout_m.getDomain().last()[0] || odom.last()[0] > ldom.last()[0]) {
+                    elementPosHalo(0) = end;
+                    auto dofIndicesHalo = getFEMVectorDOFIndices(elementPosHalo, ldom);
+                    // also have to add dof 3
+                    recvIdxsTemp[idx].push_back(dofIndicesHalo[3]);
+                }
+            }
+        }
+
+
+
+        for (size_t i = 0; i < neighbors.size(); ++i) {
+            sendIdxs.push_back(Kokkos::View<size_t*>("FEMvector::sendIdxs[" + std::to_string(i) +
+                                                        "]", sendIdxsTemp[i].size()));
+            recvIdxs.push_back(Kokkos::View<size_t*>("FEMvector::recvIdxs[" + std::to_string(i) +
+                                                        "]", recvIdxsTemp[i].size()));
+            auto sendView = sendIdxs[i];
+            auto recvView = recvIdxs[i];
+            auto hSendView = Kokkos::create_mirror_view(sendView);
+            auto hRecvView = Kokkos::create_mirror_view(recvView);
+
+            for (size_t j = 0; j < sendIdxsTemp[i].size(); ++j) {
+                hSendView(j) = sendIdxsTemp[i][j];
+            }
+
+            for (size_t j = 0; j < recvIdxsTemp[i].size(); ++j) {
+                hRecvView(j) = recvIdxsTemp[i][j];
+            }
+
+            Kokkos::deep_copy(sendView, hSendView);
+            Kokkos::deep_copy(recvView, hRecvView);
+        }
+        
+
+        
+        // Now finaly create the FEMVector
+        indices_t extents(0);
+        extents = (ldom.last() - ldom.first()) + 3;
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        size_t n = nx*(ny-1) + ny*(nx-1);
+        FEMVector<T> vec(n, neighbors, sendIdxs, recvIdxs);
+        
+        return vec;
+    }
+
+
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+                                ::createFEMVector3d() const{
+        using indices_t = Vector<int, Dim>;
+
+        auto ldom = layout_m.getLocalNDIndex();
+        auto doms = layout_m.getHostLocalDomains();
+
+        // Create the temporaries and so on which will store the MPI information.
+        std::vector<size_t> neighbors;
+        std::vector< Kokkos::View<size_t*> > sendIdxs;
+        std::vector< Kokkos::View<size_t*> > recvIdxs;
+        std::vector< std::vector<size_t> > sendIdxsTemp;
+        std::vector< std::vector<size_t> > recvIdxsTemp;
+
+
+        auto flatBoundaryExchange = [this, &neighbors, &ldom](
+            size_t i, size_t a, size_t f, size_t s,
+            std::vector<std::vector<size_t> >& va, std::vector<std::vector<size_t> >& vb,
+            int posA, int posB,
+            const std::vector<size_t>& idxsA, const std::vector<size_t>& idxsB,
+            NDIndex<3>& adom, NDIndex<3>& bdom) {
+            
+            int beginF = std::max(bdom.first()[f], adom.first()[f]);
+            int endF = std::min(bdom.last()[f], adom.last()[f]);
+            int beginS = std::max(bdom.first()[s], adom.first()[s]);
+            int endS = std::min(bdom.last()[s], adom.last()[s]);
+            
+            neighbors.push_back(i);
+            va.push_back(std::vector<size_t>());
+            vb.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+
+            // Add all the halo
+            indices_t elementPosA(0);
+            elementPosA(a) = posA;
+            indices_t elementPosB(0);
+            elementPosB(a) = posB;
+            for (int k = beginF; k <= endF; ++k) {
+                elementPosA(f) = k;
+                elementPosB(f) = k;
+                for (int l = beginS; l <= endS; ++l) {
+                    elementPosA(s) = l;
+                    elementPosB(s) = l;
+
+                    auto dofIndicesA = this->getFEMVectorDOFIndices(elementPosA, ldom);
+                    va[idx].push_back(dofIndicesA[idxsA[0]]);
+                    va[idx].push_back(dofIndicesA[idxsA[1]]);
+
+                    auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
+                    vb[idx].push_back(dofIndicesB[idxsB[0]]);
+                    vb[idx].push_back(dofIndicesB[idxsB[1]]);
+                    vb[idx].push_back(dofIndicesB[idxsB[2]]);
+
+                    
+                    if (k == endF) {
+                        if (endF == layout_m.getDomain().last()[f] ||
+                                bdom.last()[f] > adom.last()[f]) {
+                            va[idx].push_back(dofIndicesA[idxsA[2]]);
+                        }
+                        // Check if we have to add some special stuff
+                        if (endF == layout_m.getDomain().last()[f] ||
+                                adom.last()[f] > bdom.last()[f]) {
+                            vb[idx].push_back(dofIndicesB[idxsB[3]]);
+                            vb[idx].push_back(dofIndicesB[idxsB[4]]);
+                        }
+
+                        // call this last, as modifies elementPosA(s) 
+                        if (bdom.first()[f] < adom.first()[f]) {
+                            indices_t tmpPos = elementPosA;
+                            tmpPos(f) = beginF-1;
+                            auto dofIndicestmp = this->getFEMVectorDOFIndices(tmpPos, ldom);
+                            va[idx].push_back(dofIndicestmp[idxsA[0]]);
+                            va[idx].push_back(dofIndicestmp[idxsA[1]]);
+                        }
                     }
                 }
-            },
-            Kokkos::Max<double>(error)
-        );
+                // Have to add space row to Halo
+                if (endS == layout_m.getDomain().last()[s] || bdom.last()[s] > adom.last()[s]) {
+                    elementPosA(s) = endS;
+                    auto dofIndicesA = this->getFEMVectorDOFIndices(elementPosA, ldom);
+                    va[idx].push_back(dofIndicesA[idxsA[3]]);
+                }
+                // Check if we have to add some special stuff
+                if (endS == layout_m.getDomain().last()[s] || adom.last()[s] > bdom.last()[s]) {
+                    elementPosB(s) = endS;
+                    auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
+                    vb[idx].push_back(dofIndicesB[idxsB[5]]);
+                    vb[idx].push_back(dofIndicesB[idxsB[6]]);
+                }
 
-        // MPI reduce
-        T global_error = 0.0;
-        Comm->allreduce(error, global_error, 1, std::greater<T>());
+                // call this last, as modifies elementPosA(f);
+                if (bdom.first()[f] < adom.first()[f]) {
+                    indices_t tmpPos = elementPosA;
+                    tmpPos(s) = beginS-1;
+                    auto dofIndicestmp = this->getFEMVectorDOFIndices(tmpPos, ldom);
+                    va[idx].push_back(dofIndicestmp[idxsA[0]]);
+                    va[idx].push_back(dofIndicestmp[idxsA[1]]);
+                }
+            }
+            // Check if we have to add some special stuff
+            if ((endF == layout_m.getDomain().last()[f] || adom.last()[f] > bdom.last()[f]) && 
+                (endS == layout_m.getDomain().last()[s] || adom.last()[s] > bdom.last()[s])) {
+                elementPosB(f) = endF;
+                elementPosB(s) = endS;
+                auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
+                vb[idx].push_back(dofIndicesB[idxsB[7]]);
+            }
+        };
 
-        return global_error;
+
+        auto negativeDiagonalExchange = [this, &neighbors, &ldom](
+            size_t i, size_t a, size_t f, size_t s, int ao, int bo,
+            std::vector<std::vector<size_t> >& va, std::vector<std::vector<size_t> >& vb,
+            const std::vector<size_t>& idxsA, const std::vector<size_t>& idxsB,
+            NDIndex<3>& odom) {
+            
+            neighbors.push_back(i);
+            va.push_back(std::vector<size_t>());
+            vb.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+
+            indices_t elementPosA(0);
+            elementPosA(f) = ldom.last()[f];
+            elementPosA(s) = ldom.first()[s] + ao;
+
+            indices_t elementPosB(0);
+            elementPosB(f) = ldom.last()[f];
+            elementPosB(s) = ldom.first()[s] + bo;
+
+            int begin = std::max(odom.first()[a], ldom.first()[a]);
+            int end = std::min(odom.last()[a], ldom.last()[a]);
+
+            for (int k = begin; k <= end; ++k) {
+                elementPosA(a) = k;
+                elementPosB(a) = k;
+
+                auto dofIndicesA = this->getFEMVectorDOFIndices(elementPosA, ldom);
+                va[idx].push_back(dofIndicesA[idxsA[0]]);
+                va[idx].push_back(dofIndicesA[idxsA[1]]);
+
+                auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
+                vb[idx].push_back(dofIndicesB[idxsB[0]]);
+                vb[idx].push_back(dofIndicesB[idxsB[1]]);
+            }
+        };
+
+        auto positiveDiagonalExchange = [this, &neighbors, &ldom](
+            size_t i, size_t a, size_t f, size_t s,
+            indices_t posA, indices_t posB,
+            std::vector<std::vector<size_t> >& va, std::vector<std::vector<size_t> >& vb,
+            const std::vector<size_t>& idxsA, const std::vector<size_t>& idxsB,
+            NDIndex<3>& odom) {
+            
+            neighbors.push_back(i);
+            va.push_back(std::vector<size_t>());
+            vb.push_back(std::vector<size_t>());
+            size_t idx = neighbors.size() - 1;
+
+            indices_t elementPosA(0);
+            elementPosA(f) = posA(f);
+            elementPosA(s) = posA(s);
+
+            indices_t elementPosB(0);
+            elementPosB(f) = posB(f);
+            elementPosB(s) = posB(s);
+
+            int begin = std::max(odom.first()[a], ldom.first()[a]);
+            int end = std::min(odom.last()[a], ldom.last()[a]);
+
+            for (int k = begin; k <= end; ++k) {
+                elementPosA(a) = k;
+                elementPosB(a) = k;
+
+                auto dofIndicesA = this->getFEMVectorDOFIndices(elementPosA, ldom);
+                va[idx].push_back(dofIndicesA[idxsA[0]]);
+                va[idx].push_back(dofIndicesA[idxsA[1]]);
+                va[idx].push_back(dofIndicesA[idxsA[2]]);
+
+                auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
+                vb[idx].push_back(dofIndicesB[idxsB[0]]);
+            }
+        };
+
+        // Here we loop thought all the domains to figure out how we are related to
+        // them and if we have to do any kind of exchange.
+        for (size_t i = 0; i < doms.extent(0); ++i) {
+            if (i == Comm->rank()) {
+                // We are looking at ourself
+                continue;
+            }
+            auto odom = doms(i);
+
+            // East boundary
+            if (ldom.last()[0] == odom.first()[0]-1 &&
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1]) && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                
+                int pos = ldom.last()[0];
+                flatBoundaryExchange(
+                    i, 0, 1, 2,
+                    recvIdxsTemp, sendIdxsTemp,
+                    pos, pos,
+                    {3,5,6,11}, {0,1,4,2,7,8,9,10},
+                    ldom, odom
+                );
+            }
+
+            // West boundary
+            if (ldom.first()[0] == odom.last()[0]+1 &&
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1]) && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                
+                int pos = ldom.first()[0];
+                flatBoundaryExchange(
+                    i, 0, 1, 2,
+                    sendIdxsTemp, recvIdxsTemp,
+                    pos, pos-1,
+                    {1,4,7,9}, {0,1,4,2,7,8,9,10},
+                    odom, ldom
+                );
+            }
+
+            // North boundary
+            if (ldom.last()[1] == odom.first()[1]-1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0]) &&
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+
+                int pos = ldom.last()[1];
+                flatBoundaryExchange(
+                    i, 1, 0, 2,
+                    recvIdxsTemp, sendIdxsTemp,
+                    pos, pos,
+                    {2,7,6,10}, {0,1,4,3,5,8,9,11},
+                    ldom, odom
+                );
+            }
+
+            // South boundary
+            if (ldom.first()[1] == odom.last()[1]+1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0]) &&
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                
+                int pos = ldom.first()[1];
+                flatBoundaryExchange(
+                    i, 1, 0, 2,
+                    sendIdxsTemp, recvIdxsTemp,
+                    pos, pos-1,
+                    {0,4,5,8}, {0,1,4,3,5,8,9,11},
+                    odom, ldom
+                );
+                
+            }
+
+            // Space boundary
+            if (ldom.last()[2] == odom.first()[2]-1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0]) && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                
+                int pos = ldom.last()[2];
+                flatBoundaryExchange(
+                    i, 2, 0, 1,
+                    recvIdxsTemp, sendIdxsTemp,
+                    pos, pos,
+                    {8,9,11,10}, {0,1,4,3,5,2,7,6},
+                    ldom, odom
+                );
+            }
+
+            // Ground boundary
+            if (ldom.first()[2] == odom.last()[2]+1 &&
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0]) && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+
+                int pos = ldom.first()[2];
+                flatBoundaryExchange(
+                    i, 2, 0, 1,
+                    sendIdxsTemp, recvIdxsTemp,
+                    pos, pos-1,
+                    {0,1,3,2}, {0,1,4,3,5,2,7,6},
+                    odom, ldom
+                );
+            }
+
+
+            
+            // Next up we handle all the anoying diagonals
+            // The negative ones
+            // Parallel to y from space to ground, west to east
+            if (ldom.last()[0] == odom.first()[0]-1 && ldom.first()[2] == odom.last()[2]+1 && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                
+                negativeDiagonalExchange(
+                    i, 1, 0, 2, 0, -1,
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,1}, {3,5},
+                    odom
+                );
+            }
+
+            // Parallel to y from ground to space, east to west
+            if (ldom.first()[0] == odom.last()[0]+1 && ldom.last()[2] == odom.first()[2]-1 && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                
+                negativeDiagonalExchange(
+                    i, 1, 2, 0, -1, 0,
+                    recvIdxsTemp, sendIdxsTemp,
+                    {8,9}, {1,4},
+                    odom
+                );
+            }
+
+
+            // Parallel to x from space to ground, south to north
+            if (ldom.last()[1] == odom.first()[1]-1 && ldom.first()[2] == odom.last()[2]+1 && 
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                negativeDiagonalExchange(
+                    i, 0, 1, 2, 0, -1,
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,1}, {2,7},
+                    odom
+                );
+            }
+
+            // Parallel to x from ground to space, north to south
+            if (ldom.first()[1] == odom.last()[1]+1 && ldom.last()[2] == odom.first()[2]-1 && 
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                negativeDiagonalExchange(
+                    i, 0, 2, 1, -1, 0,
+                    recvIdxsTemp, sendIdxsTemp,
+                    {8,9}, {0,4},
+                    odom
+                );
+            }
+
+
+            // Parallel to z from west to east, north to south
+            if (ldom.last()[0] == odom.first()[0]-1 && ldom.first()[1] == odom.last()[1]+1 && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                negativeDiagonalExchange(
+                    i, 2, 0, 1, 0, -1,
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,4}, {3,5},
+                    odom
+                );
+            }
+
+            // Parallel to z from east to west, south to north
+            if (ldom.first()[0] == odom.last()[0]+1 && ldom.last()[1] == odom.first()[1]-1 && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                negativeDiagonalExchange(
+                    i, 2, 1, 0, -1, 0,
+                    recvIdxsTemp, sendIdxsTemp,
+                    {2,7}, {1,4},
+                    odom
+                );
+            }
+
+
+
+            // The positive ones
+            // Parallel to y from ground to space, west to east
+            if (ldom.last()[0] == odom.first()[0]-1 && ldom.last()[2] == odom.first()[2]-1 && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                positiveDiagonalExchange(
+                    i, 1, 0, 2,
+                    ldom.last(), ldom.last(),
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,1,4}, {11},
+                    odom
+                );
+            }
+
+            // Parallel to y from space to ground, east to west
+            if (ldom.first()[0] == odom.last()[0]+1 && ldom.first()[2] == odom.last()[2]+1 && 
+                    !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {
+                positiveDiagonalExchange(
+                    i, 1, 0, 2,
+                    ldom.first()-1, ldom.first(),
+                    recvIdxsTemp, sendIdxsTemp,
+                    {0,1,4}, {1},
+                    odom
+                );
+            }
+
+
+            // Parallel to x from ground to space, south to north
+            if (ldom.last()[1] == odom.first()[1]-1 && ldom.last()[2] == odom.first()[2]-1 && 
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                positiveDiagonalExchange(
+                    i, 0, 1, 2,
+                    ldom.last(), ldom.last(),
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,1,4}, {10},
+                    odom
+                );
+            }
+
+            // Parallel to x from space to ground, north to south
+            if (ldom.first()[1] == odom.last()[1]+1 && ldom.first()[2] == odom.last()[2]+1 && 
+                    !(odom.last()[0] < ldom.first()[0] || odom.first()[0] > ldom.last()[0])) {
+                positiveDiagonalExchange(
+                    i, 0, 1, 2,
+                    ldom.first()-1, ldom.first(),
+                    recvIdxsTemp, sendIdxsTemp,
+                    {0,1,4}, {0},
+                    odom
+                );
+            }
+
+
+            // Parallel to z from west to east, south to north
+            if (ldom.last()[0] == odom.first()[0]-1 && ldom.last()[1] == odom.first()[1]-1 && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                positiveDiagonalExchange(
+                    i, 2, 0, 1,
+                    ldom.last(), ldom.last(),
+                    sendIdxsTemp, recvIdxsTemp,
+                    {0,1,4}, {6},
+                    odom
+                );
+            }
+
+            // Parallel to z from east to west, north to south
+            if (ldom.first()[0] == odom.last()[0]+1 && ldom.first()[1] == odom.last()[1]+1 && 
+                    !(odom.last()[2] < ldom.first()[2] || odom.first()[2] > ldom.last()[2])) {
+                positiveDiagonalExchange(
+                    i, 2, 0, 1,
+                    ldom.first()-1, ldom.first(),
+                    recvIdxsTemp, sendIdxsTemp,
+                    {0,1,4}, {4},
+                    odom
+                );
+            }
+            
+        }
+        
+
+
+        indices_t extents(0);
+        extents = (ldom.last() - ldom.first()) + 3;
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        size_t nz = extents(2);
+        size_t n = (nz-1)*(nx*(ny-1) + ny*(nx-1) + nx*ny) + nx*(ny-1) + ny*(nx-1);
+
+        for (size_t i = 0; i < neighbors.size(); ++i) {
+            sendIdxs.push_back(Kokkos::View<size_t*>("FEMvector::sendIdxs[" + std::to_string(i) +
+                                                        "]", sendIdxsTemp[i].size()));
+            recvIdxs.push_back(Kokkos::View<size_t*>("FEMvector::recvIdxs[" + std::to_string(i) +
+                                                        "]", recvIdxsTemp[i].size()));
+            auto sendView = sendIdxs[i];
+            auto recvView = recvIdxs[i];
+            auto hSendView = Kokkos::create_mirror_view(sendView);
+            auto hRecvView = Kokkos::create_mirror_view(recvView);
+            
+            for (size_t j = 0; j < sendIdxsTemp[i].size(); ++j) {
+                hSendView(j) = sendIdxsTemp[i][j];
+            }
+            
+            for (size_t j = 0; j < recvIdxsTemp[i].size(); ++j) {
+                hRecvView(j) = recvIdxsTemp[i][j];
+            }
+
+            Kokkos::deep_copy(sendView, hSendView);
+            Kokkos::deep_copy(recvView, hRecvView);
+        }
+        
+
+        
+        // Now finaly create the FEMVector
+        FEMVector<T> vec(n, neighbors, sendIdxs, recvIdxs);
+        
+        return vec;
     }
+
+
 
 }  // namespace ippl

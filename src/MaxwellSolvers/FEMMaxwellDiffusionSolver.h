@@ -26,19 +26,8 @@ namespace ippl {
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k, bool onBoundary) const {
             
-            //std::cout << "curl_val: " << dot(curl_b_q_k[j], curl_b_q_k[i]).apply() << "\n";
-            //std::cout << "non curl val: " << dot(DPhiInvT*val_b_q_k[j], DPhiInvT*val_b_q_k[i]).apply() << "\n";
-            //std::cout << absDetDPhi << "\n";
-            // 
-            T curlTerm = 0;
-            T massTerm = 0; 
-            if constexpr (Dim == 2) {
-                curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
-                massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
-            } else  {
-                curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
-                massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
-            }
+            T curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
+            T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
             return (curlTerm + massTerm)*absDetDPhi;
         }
     };
@@ -86,8 +75,7 @@ namespace ippl {
         {}
 
         template <typename F>
-        FEMMaxwellDiffusionSolver(FieldType& lhs, FieldType& rhs,
-            FEMVector<ippl::Vector<T,Dim>> rhsVectorField, const F& functor)
+        FEMMaxwellDiffusionSolver(FieldType& lhs, FieldType& rhs, const F& functor)
             : Base(lhs, lhs, rhs)
             , rhsVector_m(nullptr)
             , refElement_m()
@@ -101,28 +89,11 @@ namespace ippl {
             static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
             IpplTimings::startTimer(init);
             rhsVector_m =
-                //std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVectorField));
-                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(rhsVectorField, functor));
-            rhsVector_m->accumulateHalo();
-            rhsVector_m->fillHalo();
-            /*
-            rhs.fillHalo();
-            
-            // interpolate to the FEMVector
-            rhsVector_m = std::make_unique<FEMVector<T>>(
-                nedelecSpace_m.interpolateToFEMVector(rhs));
-            
-            // evaluate the rhs, this will fill the FEMVector
-            nedelecSpace_m.evaluateLoadVector(*rhsVector_m);
-            
-            // do some halo stuff
+                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(functor));
+
             rhsVector_m->accumulateHalo();
             rhsVector_m->fillHalo();
             
-            // reconstruct to the ippl field, such that this is already
-            // accessible before calling solve
-            nedelecSpace_m.reconstructToField(*rhsVector_m, rhs);
-            */
             IpplTimings::stopTimer(init);
         }
 
@@ -169,7 +140,6 @@ namespace ippl {
 
             // Compute Inverse Transpose Transformation Jacobian ()
             const Vector<T, Dim> DPhiInvT =
-                //refElement_m.getTransformationJacobian(firstElementVertexPoints);
                 refElement_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
 
             // Compute absolute value of the determinant of the transformation
@@ -259,14 +229,12 @@ namespace ippl {
         }
 
         template <typename F>
-        T getL2ErrorCoeff(const FEMVector<T>& u, const F& analytic) {
-            T error_norm = this->nedelecSpace_m.computeErrorCoeff(u, analytic);
+        T getL2ErrorCoeff(const F& analytic) {
+            T error_norm = this->nedelecSpace_m.computeErrorCoeff(*lhsVector_m, analytic);
             return error_norm;
         }
 
 
-        std::unique_ptr<FEMVector<T>> rhsVector_m;
-        std::unique_ptr<FEMVector<T>> lhsVector_m;
     protected:
         PCGSolverAlgorithm_t pcg_algo_m;
         
@@ -275,6 +243,10 @@ namespace ippl {
             this->params_m.add("max_iterations", 10);
             this->params_m.add("tolerance", (T)1e-13);
         }
+
+        std::unique_ptr<FEMVector<T>> rhsVector_m;
+
+        std::unique_ptr<FEMVector<T>> lhsVector_m;
 
         ElementType refElement_m;
         QuadratureType quadrature_m;

@@ -162,8 +162,18 @@ namespace ippl {
          * @return Vector<size_t, NumElementDOFs> - The global DOF indices
          */
         KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
-                                    const size_t& element_index) const override;
-
+                                    const size_t& elementIndex) const override;
+        
+        /**
+         * @brief Get the global DOF indices (vector of global DOF indices) of
+         * an element.
+         *
+         * @param elementIndex indices_t - The index of the element
+         *
+         * @return Vector<size_t, NumElementDOFs> - The global DOF indices
+         */
+        KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
+                                    const indices_t& elementIndex) const;
         
         /**
          * @brief Get the DOF indices (vector of indices) corresponding to the
@@ -174,7 +184,18 @@ namespace ippl {
          * @return Vector<size_t, NumElementDOFs> - The DOF indices
          */
         KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
-                                    const size_t& element_index, NDIndex<Dim> ldom) const;
+                                    const size_t& elementIndex, NDIndex<Dim> ldom) const;
+
+        /**
+         * @brief Get the DOF indices (vector of indices) corresponding to the
+         * position inside the FEMVector of an element
+         *
+         * @param elementIndex indices_t - The index of the element
+         *
+         * @return Vector<size_t, NumElementDOFs> - The DOF indices
+         */
+        KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
+                                    indices_t elementIndex, NDIndex<Dim> ldom) const;
 
         
         /**
@@ -190,36 +211,6 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
         /// Basis functions and gradients /////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Functor for evaluating a the bilinear form of
-         * $(\nabla \times b_j, \nabla \times b_i)$
-         * 
-         * @return std::function<T(size_t,size_t,size_t)> - The corresponding
-         * functor object
-         */
-        KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> curlCurlOperator() const;
-
-
-        /**
-         * @brief Functor for evaluating a the bilinear form of $(b_j, b_i)$
-         * 
-         * @return std::function<T(size_t,size_t,size_t)> - The corresponding
-         * functor object
-         */
-        KOKKOS_FUNCTION std::function<T(size_t,size_t,size_t)> massOperator() const;
-
-
-        /**
-         * @brief Functor for evaluating a the linear form of $(b_i, f(x))$
-         * 
-         * @param f function like T(point_t) - The load function object
-         * @return std::function<T(size_t,size_t,point_t)> - The corresponding
-         * functor object
-         */
-        template<typename Functor>
-        KOKKOS_FUNCTION std::function<T(size_t,size_t, Vector<T,Dim>)>
-                                    loadOperator(Functor f) const;
 
 
         /**
@@ -304,13 +295,12 @@ namespace ippl {
          * @return The resulting rhs b of the Galerkin discretization.
          */
         template <typename F>
-        FEMVector<T> evaluateLoadVectorFunctor(const FEMVector<NedelecSpace<T, Dim, Order, ElementType,
-            QuadratureType, FieldType>::point_t>& model, const F& f) const;
+        FEMVector<T> evaluateLoadVectorFunctor(const F& f) const;
 
 
 
         ///////////////////////////////////////////////////////////////////////
-        /// FEMVector conversion //////////////////////////////////////////////
+        /// FEMVector conversion and creation//////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
         /**
@@ -327,7 +317,18 @@ namespace ippl {
          * \p field at the appropriate DOF positions.
          */
         FEMVector<T> interpolateToFEMVector(const FieldType& field) const;
-
+        
+        /**
+         * @brief Creates and empty FEMVector.
+         * 
+         * Creates and empty FEMVector which corresponds to the domain this MPI
+         * rank owns (according to the ippl layout created for this mesh). To
+         * this extend it will also setup all the information needed to exchange
+         * halo cells.
+         * 
+         * @returns An empty FEMVector for this domain.
+         */
+        FEMVector<T> createFEMVector() const;
         
         /**
          * @brief Reconstruct a solution given the basis function coefficient
@@ -359,9 +360,10 @@ namespace ippl {
         
 
         /**
-         * @brief Given two fields, compute the L2 norm error
+         * @brief Given the Nedelec space DoF coefficients and an analytical
+         * solution computes the L2 norm error.
          *
-         * @param u_h The numerical solution found using FEM
+         * @param u_h The basis function coefficients obtained via FEM.
          * @param u_sol The analytical solution (functor)
          *
          * @return error - The error ||u_h - u_sol||_L2
@@ -372,195 +374,58 @@ namespace ippl {
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *
-         * @param ndindex The NDIndex of the DOF
+         * This function takes as input the global index of a DoF and returns
+         * if this DoF is on. If one would like to know which boundary this is
+         * the function \c NedelecSpace::getBoundarySide can be used.
+         * 
+         * @param dofIdx The global DoF index for which should be checked if it
+         * is on the boundary.
          *
-         * @return true - If the DOF is on the boundary
-         * @return false - If the DOF is not on the boundary
+         * @return true - If the DOF is on the domain boundary
+         * @return false - If the DOF is not on the domain boundary
          */
-        KOKKOS_FUNCTION bool isDOFOnBoundary(const size_t& dofIdx) const {
-            
-            bool onBoundary = false;
-            if constexpr (Dim == 2) {
-                size_t nx = this->nr_m[0];
-                size_t ny = this->nr_m[1];
-                // South
-                bool sVal = (dofIdx < nx -1);
-                onBoundary = onBoundary || sVal;
-                // North
-                onBoundary = onBoundary || (dofIdx > nx*(ny-1) + ny*(nx-1) - nx);
-                // West
-                onBoundary = onBoundary || ((dofIdx >= nx-1) && (dofIdx - (nx-1)) % (2*nx - 1) == 0);
-                // East
-                onBoundary = onBoundary || ((dofIdx >= 2*nx-2) && ((dofIdx - 2*nx + 2) % (2*nx - 1) == 0));    
-            }
-
-            if constexpr (Dim == 3) {
-                size_t nx = this->nr_m[0];
-                size_t ny = this->nr_m[1];
-                size_t nz = this->nr_m[2];
-
-                size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
-
-
-                if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
-                    // we are parallel to z axis
-                    // therefore we have halve a cell offset and can never be on the ground or in
-                    // s
-                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
-                        - (nx*(ny-1) + ny*(nx-1));
-                    
-                    size_t yOffset = f / nx;
-                    // South
-                    onBoundary = onBoundary || yOffset == 0;
-                    // North
-                    onBoundary = onBoundary || yOffset == ny-1;
-
-                    size_t xOffset = f % nx;
-                    // West
-                    onBoundary = onBoundary || xOffset == 0;
-                    // East
-                    onBoundary = onBoundary || xOffset == nx-1;
-
-                } else {
-                    // are parallel to one of the other axes
-                    // Ground
-                    onBoundary = onBoundary || zOffset == 0;
-                    // Space
-                    onBoundary = onBoundary || zOffset == nz-1;
-                    
-                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
-                    size_t yOffset = f / (2*nx - 1);
-                    size_t xOffset = f - (2*nx - 1)*yOffset;
-
-                    if (xOffset < (nx-1)) {
-                        // we are parallel to the x axis, therefore we cannot
-                        // be on an west or east boundary, but we still can
-                        // be on a north or south boundary
-                        
-                        // South
-                        onBoundary = onBoundary || yOffset == 0;
-                        // North
-                        onBoundary = onBoundary || yOffset == ny-1;
-                        
-                    } else {
-                        // we are parallel to the y axis, therefore we cannot be
-                        // on a south or north boundary, but we still can be on
-                        // a west or east boundary
-                        if (xOffset >= nx-1) {
-                            xOffset -= (nx-1);
-                        }
-
-                        // West
-                        onBoundary = onBoundary || xOffset == 0;
-                        // East
-                        onBoundary = onBoundary || xOffset == nx-1;
-                    }
-                }
-            }
-
-            return onBoundary;
-        }
+        KOKKOS_FUNCTION bool isDOFOnBoundary(const size_t& dofIdx) const;
 
         /** 
-        * @param boundarySide Which boundary we are on, west,... east,...
-        * mapping is: 0 = south
-        *             1 = west
-        *             2 = north
-        *             3 = east
-        *             4 = ground
-        *             5 = space
+        * @brief Returns which side the boundary is on.
+        * 
+        * This function takes as input the global index of a DoF and then
+        * returns on which side of the domain boundary it is on, in 2d that
+        * would be either south, north, west, east and in 3d space and ground is
+        * added. The mapping is as follows:
+        * 0 = south
+        * 1 = west
+        * 2 = north
+        * 3 = east
+        * 4 = ground
+        * 5 = space
+        * -1 = not on a boundary.
+        * 
+        * @param dofIdx the global DoF index for which the boundary side should
+        * be retrieved.
+        * 
+        * @returns Which boundary side the DoF is on or -1 if on no boundary.
         */
-        KOKKOS_FUNCTION int getBoundarySide(const size_t& dofIdx) const {
-
-            if constexpr (Dim == 2) {
-                size_t nx = this->nr_m[0];
-                size_t ny = this->nr_m[1];
-
-                // South
-                if (dofIdx < nx -1) return 0;
-                // West
-                if ((dofIdx - (nx-1)) % (2*nx - 1) == 0) return 1;
-                // North
-                if (dofIdx > nx*(ny-1) + ny*(nx-1) - nx) return 2;
-                // East
-                if ((dofIdx >= 2*nx-2) && (dofIdx - 2*nx + 2) % (2*nx - 1) == 0) return 3;
-
-                return -1;
-            }
-
-            if constexpr (Dim == 3) {
-                size_t nx = this->nr_m[0];
-                size_t ny = this->nr_m[1];
-                size_t nz = this->nr_m[2];
-
-                size_t zOffset = dofIdx / (nx*(ny-1) + ny*(nx-1) + nx*ny);
-
-
-                if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
-                    // we are parallel to z axis
-                    // therefore we have halve a cell offset and can never be on the ground or in
-                    // s
-                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
-                        - (nx*(ny-1) + ny*(nx-1));
-                    
-                    size_t yOffset = f / nx;
-                    // South
-                    return 0;
-                    // North
-                    return 2;
-
-                    size_t xOffset = f % nx;
-                    // West
-                    return 1;
-                    // East
-                    return 3;
-
-                } else {
-                    // are parallel to one of the other axes
-                    // Ground
-                    return 4;
-                    // Space
-                    return 5;
-                    
-                    size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
-                    size_t yOffset = f / (2*nx - 1);
-                    size_t xOffset = f - (2*nx - 1)*yOffset;
-
-                    if (xOffset < (nx-1)) {
-                        // we are parallel to the x axis, therefore we cannot
-                        // be on an west or east boundary, but we still can
-                        // be on a north or south boundary
-                        
-                        // South
-                        return 0;
-                        // North
-                        return 2;
-                        
-                    } else {
-                        // we are parallel to the y axis, therefore we cannot be
-                        // on a south or north boundary, but we still can be on
-                        // a west or east boundary
-                        if (xOffset >= nx-1) {
-                            xOffset -= (nx-1);
-                        }
-
-                        // West
-                        return 1;
-                        // East
-                        return 3;
-                    }
-                }
-                return -1;
-            }
-
-        }
+        KOKKOS_FUNCTION int getBoundarySide(const size_t& dofIdx) const;
 
 
     
     private:
-
+        FEMVector<T> createFEMVector2d() const;
+        FEMVector<T> createFEMVector3d() const;
+        /**
+         * @brief Stores which elements (squares or cubes) belong to the current
+         * MPI rank.
+         */
         Kokkos::View<size_t*> elementIndices;
-
+        
+        /**
+         * @brief The layout of the MPI ranks over the mesh.
+         * 
+         * Standart ippl layout which dictates how the MPI ranks are layed out
+         * over the mesh. It is used in order to be able to create FEMVectors,
+         * retreive correct DOF indices and intitalize the elementIndices.
+         */
         Layout_t layout_m;
 
     };
