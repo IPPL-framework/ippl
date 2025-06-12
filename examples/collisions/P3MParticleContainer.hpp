@@ -19,13 +19,13 @@
 template<typename T, unsigned Dim = 3>
 class P3MParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialOverlapLayout<T, Dim> > {
 public:
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialOverlapLayout<T, Dim> >;
+    template<typename U, unsigned dim>
+    using PLayout_t = ippl::ParticleSpatialOverlapLayout<U, dim, Mesh_t<dim> >;
+
+    using Base = ippl::ParticleBase<PLayout_t<T, Dim>>;
     using Vector = ippl::Vector<T, Dim>;
 
-    template<typename U, unsigned dim>
-    using PLayout_t = typename ippl::ParticleSpatialOverlapLayout<U, dim, Mesh_t<dim> >;
-
-    using PLayout_t<T, Dim>::particle_neighbor_list_type;
+    using particle_neighbor_list_type = typename PLayout_t<T, Dim>::particle_neighbor_list_type;
 
 public:
     ippl::ParticleAttrib<T> Q; // charge
