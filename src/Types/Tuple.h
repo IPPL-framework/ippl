@@ -1,6 +1,7 @@
 //
 // Class Tuple
-//   Tuple class used for fixed-size containers containing objects of different types, e.g. different KOKKOS_LAMBDAs
+//   Tuple class used for fixed-size containers containing objects of different types, e.g.
+//   different KOKKOS_LAMBDAs
 //
 #ifndef IPPL_Tuple_H
 #define IPPL_Tuple_H
@@ -35,7 +36,7 @@ namespace ippl {
      * @tparam Ts REMAINING Types of subsequent elements in the Tuple going forward from i.
      */
     template <std::size_t i, std::size_t N, typename T, typename R, typename... Ts>
-    struct TupleImpl<i, N, T, R, Ts...> /* : TupleImpl<i + 1, N, R, Ts...> */{
+    struct TupleImpl<i, N, T, R, Ts...> /* : TupleImpl<i + 1, N, R, Ts...> */ {
         T val;
         /**
          * @brief Remaining tuple elements:
@@ -83,7 +84,8 @@ namespace ippl {
         = default;
         template <typename CtorT, typename CtorR, typename... CtorTs>
         KOKKOS_INLINE_FUNCTION TupleImpl(CtorT&& t, CtorR&& r, CtorTs&&... ts)
-            : val(std::forward<T>(t)), next(std::forward<CtorR>(r), std::forward<CtorTs>(ts)...) {}
+            : val(std::forward<T>(t))
+            , next(std::forward<CtorR>(r), std::forward<CtorTs>(ts)...) {}
     };
     /*!
      * @struct TupleImpl<i, N, T>
@@ -107,11 +109,11 @@ namespace ippl {
         }
         TupleImpl()
             requires(std::is_default_constructible_v<T>)
-         = default;        
-        KOKKOS_INLINE_FUNCTION
-        TupleImpl(const T& t) : val(t){}
-        KOKKOS_INLINE_FUNCTION
-        TupleImpl(T&& t) : val(std::forward<T>(t)){}
+        = default;
+        KOKKOS_INLINE_FUNCTION TupleImpl(const T& t)
+            : val(t) {}
+        KOKKOS_INLINE_FUNCTION TupleImpl(T&& t)
+            : val(std::forward<T>(t)) {}
     };
     /*!
      * @class Tuple
@@ -120,9 +122,10 @@ namespace ippl {
      */
     template <typename... Ts>
     struct Tuple {
-        private:
+    private:
         TupleImpl<0, sizeof...(Ts), Ts...> tupleImpl_m;
-        public:
+
+    public:
         constexpr static std::size_t dim  = sizeof...(Ts);
         constexpr static std::size_t size = sizeof...(Ts);
         template <std::size_t Idx>
@@ -246,8 +249,7 @@ namespace ippl {
             return Tuple(Tuple(*this) /= other);
         }
         template <std::size_t Idx, std::size_t N, typename... OtherTs>
-        KOKKOS_INLINE_FUNCTION
-        bool lexicographicalLess(const Tuple& other) const {
+        KOKKOS_INLINE_FUNCTION bool lexicographicalLess(const Tuple& other) const {
             if constexpr (Idx == N) {
                 return false;
             } else {
@@ -257,8 +259,7 @@ namespace ippl {
             }
         }
         template <std::size_t Idx, std::size_t N, typename... OtherTs>
-        KOKKOS_INLINE_FUNCTION
-        bool lexicographicalEquals(const Tuple& other) const {
+        KOKKOS_INLINE_FUNCTION bool lexicographicalEquals(const Tuple& other) const {
             if constexpr (Idx == N) {
                 return true;
             } else {
@@ -349,17 +350,21 @@ namespace ippl {
 }  // namespace ippl
 
 namespace std {
-    template <typename... Ts> struct tuple_size<::ippl::Tuple<Ts...>> : std::integral_constant<size_t, sizeof...(Ts)> { };
+    template <typename... Ts>
+    struct tuple_size<::ippl::Tuple<Ts...>> : std::integral_constant<size_t, sizeof...(Ts)> {};
 
-    template <size_t Idx, typename... Ts> struct tuple_element<Idx, ::ippl::Tuple<Ts...>> { using type = typename ::ippl::TupleType<Idx, Ts...>; };
+    template <size_t Idx, typename... Ts>
+    struct tuple_element<Idx, ::ippl::Tuple<Ts...>> {
+        using type = typename ::ippl::TupleType<Idx, Ts...>;
+    };
 
-    template<size_t Idx, typename... Ts>
-    KOKKOS_INLINE_FUNCTION auto& get(::ippl::Tuple<Ts...>& t){
+    template <size_t Idx, typename... Ts>
+    KOKKOS_INLINE_FUNCTION auto& get(::ippl::Tuple<Ts...>& t) {
         return t.template get<Idx>();
     }
-    template<size_t Idx, typename... Ts>
-    KOKKOS_INLINE_FUNCTION const auto& get(const ::ippl::Tuple<Ts...>& t){
+    template <size_t Idx, typename... Ts>
+    KOKKOS_INLINE_FUNCTION const auto& get(const ::ippl::Tuple<Ts...>& t) {
         return t.template get<Idx>();
     }
-}
+}  // namespace std
 #endif

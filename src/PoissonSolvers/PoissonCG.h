@@ -31,7 +31,8 @@ namespace ippl {
         using LowerRet           = UnaryMinus<detail::meta_lower_laplace<lhs_type>>;
         using UpperRet           = UnaryMinus<detail::meta_upper_laplace<lhs_type>>;
         using UpperAndLowerRet   = UnaryMinus<detail::meta_upper_and_lower_laplace<lhs_type>>;
-        using InverseDiagonalRet = lhs_type;
+        using InverseDiagonalRet = double;
+        using DiagRet            = double;
 
         PoissonCG()
             : Base()
@@ -56,13 +57,14 @@ namespace ippl {
             if (solver_type == "preconditioned") {
                 algo_m = std::move(
                     std::make_unique<PCG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
-                                         InverseDiagonalRet, FieldLHS, FieldRHS>>());
+                                         InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
                 std::string preconditioner_type =
                     this->params_m.template get<std::string>("preconditioner_type");
-                int level  = this->params_m.template get<int>("newton_level");
-                int degree = this->params_m.template get<int>("chebyshev_degree");
-                int inner  = this->params_m.template get<int>("gauss_seidel_inner_iterations");
-                int outer  = this->params_m.template get<int>("gauss_seidel_outer_iterations");
+                int level    = this->params_m.template get<int>("newton_level");
+                int degree   = this->params_m.template get<int>("chebyshev_degree");
+                int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
+                int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
+                double omega = this->params_m.template get<double>("ssor_omega");
                 int richardson_iterations =
                     this->params_m.template get<int>("richardson_iterations");
                 int communication = this->params_m.template get<int>("communication");
@@ -97,8 +99,9 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
-                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
-                        inner, outer);
+                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
+                        preconditioner_type, level, degree, richardson_iterations, inner, outer,
+                        omega);
                 } else {
                     algo_m->setPreconditioner(
                         IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
@@ -106,13 +109,14 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_laplace_no_comm, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(-upper_and_lower_laplace_no_comm, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
-                        alpha, beta, preconditioner_type, level, degree, richardson_iterations,
-                        inner, outer);
+                        IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
+                        preconditioner_type, level, degree, richardson_iterations, inner, outer,
+                        omega);
                 }
             } else {
-                algo_m =
-                    std::move(std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
-                                                  InverseDiagonalRet, FieldLHS, FieldRHS>>());
+                algo_m = std::move(
+                    std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
+                                        InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
             }
         }
 
@@ -142,12 +146,13 @@ namespace ippl {
 
     protected:
         std::unique_ptr<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet, InverseDiagonalRet,
-                           FieldLHS, FieldRHS>>
+                           DiagRet, FieldLHS, FieldRHS>>
             algo_m;
 
         void setDefaultParameters() override {
             this->params_m.add("max_iterations", 2000);
             this->params_m.add("tolerance", (Tlhs)1e-13);
+            this->params_m.add("solver", "non-preconditioned");
         }
     };
 

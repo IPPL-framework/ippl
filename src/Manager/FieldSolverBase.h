@@ -1,13 +1,14 @@
 #ifndef IPPL_FIELD_SOLVER_BASE_H
 #define IPPL_FIELD_SOLVER_BASE_H
 
+#include <memory>
+
+#include "Manager/BaseManager.h"
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
-
-#include <memory>
-#include "Manager/BaseManager.h"
+#include "PoissonSolvers/NullSolver.h"
 
 template <unsigned Dim>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
@@ -41,6 +42,9 @@ using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
 template <typename T, unsigned Dim>
 using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
 
+template <typename T, unsigned Dim>
+using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
+
 using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
 
 template <typename T, unsigned Dim>
@@ -56,33 +60,35 @@ using OpenSolver_t =
 
 template <typename T, unsigned Dim>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             FFTTruncatedGreenSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+                                             FFTTruncatedGreenSolver_t<T, Dim>,
+                                             OpenSolver_t<T, Dim>, OpenSolver_t<T, Dim>,
+                                             NullSolver_t<T, Dim>>;
 
 // Define the FieldSolverBase class
 namespace ippl {
-  template <typename T, unsigned Dim>
-  class FieldSolverBase {
+    template <typename T, unsigned Dim>
+    class FieldSolverBase {
     private:
-      std::string stype_m;
-      Solver_t<T, Dim> solver_m;
+        std::string stype_m;
+        Solver_t<T, Dim> solver_m;
 
-   public:
-      FieldSolverBase(std::string solver)
-         : stype_m(solver) {}
+    public:
+        FieldSolverBase(std::string solver)
+            : stype_m(solver) {}
 
-      virtual void initSolver() = 0;
+        virtual void initSolver() = 0;
 
-      virtual void runSolver() = 0;
+        virtual void runSolver() = 0;
 
-      virtual ~FieldSolverBase() = default;
+        virtual ~FieldSolverBase() = default;
 
-      std::string& getStype() { return stype_m; }
+        std::string& getStype() { return stype_m; }
 
-      void setStype(std::string& solver) { stype_m = solver; }
+        void setStype(std::string& solver) { stype_m = solver; }
 
-      Solver_t<T, Dim>& getSolver() { return solver_m; }
+        Solver_t<T, Dim>& getSolver() { return solver_m; }
 
-      void setSolver(Solver_t<T, Dim>& solver) { solver_m = solver; }
-  };
-}
+        void setSolver(Solver_t<T, Dim>& solver) { solver_m = solver; }
+    };
+}  // namespace ippl
 #endif

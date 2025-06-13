@@ -264,7 +264,7 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     template <typename HashType>
-    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, int sendNum,
+    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag,
                                                   std::vector<MPI_Request>& requests,
                                                   const HashType& hash) {
         size_type nSends = hash.size();
@@ -280,7 +280,7 @@ namespace ippl {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_SEND + sendNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(bufSize);
 
             Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
@@ -288,15 +288,14 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, int recvNum,
-                                                    size_type nRecvs) {
+    void ParticleBase<PLayout, IP...>::recvFromRank(int rank, int tag, size_type nRecvs) {
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nRecvs);
             if (bufSize == 0) {
                 return;
             }
 
-            auto buf = Comm->getBuffer<MemorySpace>(mpi::tag::PARTICLE_RECV + recvNum, bufSize);
+            auto buf = Comm->getBuffer<MemorySpace>(bufSize);
 
             Comm->recv(rank, tag++, *this, *buf, bufSize, nRecvs);
             buf->resetReadPos();

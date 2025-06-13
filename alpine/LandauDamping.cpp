@@ -64,8 +64,17 @@ int main(int argc, char* argv[]) {
         double lbt              = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
 
+        std::vector<std::string> preconditioner_params;
+
         // Create an instance of a manger for the considered application
-        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        if (solver == "PCG") {
+            for (int i = 0; i < 5; i++) {
+                preconditioner_params.push_back(argv[arg++]);
+            }
+        }
+
+        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
+                                             preconditioner_params);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();

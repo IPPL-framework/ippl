@@ -71,8 +71,8 @@ public:
 };
 
 template <typename E1, typename E2>
-KOKKOS_FUNCTION VecSum<E1, E2> operator+(E1 const& u, E2 const& v) {
-    return VecSum<E1, E2>(u, v);
+KOKKOS_FUNCTION VecSum<E1, E2> operator+(Expression<E1> const& u, Expression<E2> const& v) {
+  return VecSum<E1, E2>(*static_cast<const E1*>(&u), *static_cast<const E2*>(&v));
 }
 
 int main() {

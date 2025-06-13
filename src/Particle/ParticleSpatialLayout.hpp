@@ -114,13 +114,12 @@ namespace ippl {
 
         int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
-        int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, hash);
 
-                pc.sendToRank(rank, tag, sends++, requests, hash);
+                pc.sendToRank(rank, tag, requests, hash);
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -132,15 +131,14 @@ namespace ippl {
         pc.internalDestroy(invalid, invalidCount);
         Kokkos::fence();
 
-
         IpplTimings::stopTimer(destroyTimer);
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
         // 4th step
-        int recvs = 0;
+
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nRecvs[rank] > 0) {
-                pc.recvFromRank(rank, tag, recvs++, nRecvs[rank]);
+                pc.recvFromRank(rank, tag, nRecvs[rank]);
             }
         }
         IpplTimings::stopTimer(recvTimer);
@@ -150,6 +148,8 @@ namespace ippl {
         if (requests.size() > 0) {
             MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
         }
+        Comm->freeAllBuffers();
+
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
@@ -215,7 +215,6 @@ namespace ippl {
                 }
             });
         Kokkos::fence();
-
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
