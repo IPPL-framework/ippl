@@ -74,9 +74,9 @@ namespace ippl::fixDefaultTemplateArgument {
         hash_type cellPermutationForward("cell permutation forward", totalCells_m);
         hash_type cellPermutationBackward("cell permutation backward", totalCells_m);
 
-        // Compute prefix sums
-        hash_type localPrefixSum("local_prefix", totalCells_m);
-        hash_type ghostPrefixSum("ghost_prefix", totalCells_m);
+        // Compute prefix sums using the permutation views to store it
+        hash_type localPrefixSum = cellPermutationForward;
+        hash_type ghostPrefixSum = cellPermutationBackward;
         const auto& numCells = numCells_m;
 
         Kokkos::parallel_scan(
