@@ -45,7 +45,7 @@ public:
 using Precisions = TestParams::Precisions;
 using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
 using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::type;
-TYPED_TEST_CASE(UniformCartesianTest, Tests);
+TYPED_TEST_SUITE(UniformCartesianTest, Tests);
 
 TYPED_TEST(UniformCartesianTest, Constructor) {
     using T                = typename TestFixture::value_type;

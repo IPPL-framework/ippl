@@ -18,7 +18,7 @@
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 3;
+constexpr unsigned Dim = 2;
 using T                = double;
 const char* TestName   = "LandauDamping";
 
@@ -34,7 +34,7 @@ const char* TestName   = "LandauDamping";
 #include <string>
 #include <vector>
 
-#include "datatypes.h"
+#include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
 
@@ -48,7 +48,9 @@ int main(int argc, char* argv[]) {
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
         IpplTimings::startTimer(mainTimer);
+        IpplTimings::startTimer(initializeTimer);
 
         // Read input parameters, assign them to the corresponding memebers of manager
         int arg = 1;
@@ -79,6 +81,8 @@ int main(int argc, char* argv[]) {
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
 
+        IpplTimings::stopTimer(initializeTimer);
+        
         manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;

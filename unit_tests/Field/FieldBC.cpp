@@ -109,7 +109,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(FieldBCTest, Tests);
+TYPED_TEST_SUITE(FieldBCTest, Tests);
 
 TYPED_TEST(FieldBCTest, PeriodicBC) {
     using T    = typename TestFixture::value_type;

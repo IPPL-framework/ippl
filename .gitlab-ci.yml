@@ -1,0 +1,15 @@
+stages:
+  - test
+  - debug
+  - generate
+  - deploy
+
+include:
+  - local: 'ci/tests.yml'
+  - local: 'ci/deploy/deploy.yml'
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "gitlab-pages"
+      when: never   # Do not trigger pipelines when pushing to gitlab-pages
+    - when: always  # Otherwise, run normally

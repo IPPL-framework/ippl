@@ -1,7 +1,17 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Particle/CMakeLists.txt
+#
+# Adds particle container and layout headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install Particle-related headers
+install(FILES
     ParticleAttribBase.h
     ParticleAttrib.h
     ParticleAttrib.hpp
@@ -14,23 +24,6 @@ set (_HDRS
     ParticleSpatialLayout.hpp
     ParticleSpatialOverlapLayout.h
     ParticleSpatialOverlapLayout.hpp
-    )
-
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Particle)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
+    DESTINATION include/Particle
+)
 

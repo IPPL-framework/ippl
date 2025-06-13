@@ -65,6 +65,8 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
+	const double pi = Kokkos::numbers::pi_v<T>;
+	
         if (this->solver_m == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -340,7 +342,7 @@ public:
 
         if (ippl::Comm->rank() == 0) {
             std::stringstream fname;
-            fname << "data_CG/FieldLandau_";
+            fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";

@@ -4,65 +4,7 @@
 #include <memory>
 
 #include "Manager/BaseManager.h"
-#include "PoissonSolvers/FFTOpenPoissonSolver.h"
-#include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
-#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
-#include "PoissonSolvers/PoissonCG.h"
-#include "PoissonSolvers/NullSolver.h"
-
-template <unsigned Dim>
-using Mesh_t = ippl::UniformCartesian<double, Dim>;
-
-template <typename T, unsigned Dim>
-using PLayout_t = typename ippl::ParticleSpatialLayout<T, Dim, Mesh_t<Dim>>;
-
-template <unsigned Dim>
-using Centering_t = typename Mesh_t<Dim>::DefaultCentering;
-
-template <unsigned Dim>
-using FieldLayout_t = ippl::FieldLayout<Dim>;
-
-using size_type = ippl::detail::size_type;
-
-template <typename T, unsigned Dim>
-using Vector = ippl::Vector<T, Dim>;
-
-template <typename T, unsigned Dim, class... ViewArgs>
-using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
-
-template <typename T, unsigned Dim>
-using Vector_t = ippl::Vector<T, Dim>;
-
-template <unsigned Dim, class... ViewArgs>
-using Field_t = Field<double, Dim, ViewArgs...>;
-
-template <typename T, unsigned Dim, class... ViewArgs>
-using VField_t = Field<Vector_t<T, Dim>, Dim, ViewArgs...>;
-
-template <typename T, unsigned Dim>
-using CGSolver_t = ippl::PoissonCG<Field<T, Dim>, Field_t<Dim>>;
-
-template <typename T, unsigned Dim>
-using NullSolver_t = ippl::NullSolver<VField_t<T, Dim>, Field_t<Dim>>;
-
-using ippl::detail::ConditionalType, ippl::detail::VariantFromConditionalTypes;
-
-template <typename T, unsigned Dim>
-using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
-                                    ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
-
-template <typename T, unsigned Dim>
-using FFTTruncatedGreenSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
-
-template <typename T, unsigned Dim>
-using OpenSolver_t =
-    ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
-
-template <typename T, unsigned Dim>
-using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             FFTTruncatedGreenSolver_t<T, Dim>,
-                                             OpenSolver_t<T, Dim>, OpenSolver_t<T, Dim>,
-                                             NullSolver_t<T, Dim>>;
+#include "datatypes.h"
 
 // Define the FieldSolverBase class
 namespace ippl {

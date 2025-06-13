@@ -21,7 +21,7 @@
 
 #include "FieldLayout/FieldLayout.h"
 
-#ifdef ENABLE_FFT
+#ifdef IPPL_ENABLE_FFT
 #include "FFT/FFT.h"
 #endif
 
@@ -35,5 +35,18 @@
 
 // // IPPL Load balancing
 #include "Decomposition/OrthogonalRecursiveBisection.h"
+
+// FEM
+// // FEM Elements
+#include "FEM/Elements/EdgeElement.h"
+#include "FEM/Elements/HexahedralElement.h"
+#include "FEM/Elements/QuadrilateralElement.h"
+
+// // FEM Quadrature
+#include "FEM/Quadrature/GaussJacobiQuadrature.h"
+#include "FEM/Quadrature/MidpointQuadrature.h"
+
+// // FEM Spaces
+#include "FEM/LagrangeSpace.h"
 
 #endif

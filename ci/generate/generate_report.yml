@@ -1,0 +1,56 @@
+generate_report:
+  variables:
+    GITLAB_ACCESS_TOKEN: "${CI_GITLAB_ACCESS_TOKEN}"  # Read from CI/CD variables
+  stage: generate 
+  tags:
+    - linux
+    - opensuse
+  image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
+  before_script:
+    - rm -rf pages-branch
+  script:
+    - git config --global user.email "gitlab-ci@localhost"
+    - git config --global user.name "GitLab CI"
+    - git remote set-url origin "https://oauth2:${GITLAB_ACCESS_TOKEN}@gitlab.jsc.fz-juelich.de/muralikrishnan1/ippl.git"
+
+    - git fetch origin gitlab-pages
+    - git worktree prune
+    - git worktree add pages-branch origin/gitlab-pages
+
+    - |
+      cat <<EOF > "metadata.json"
+      {
+        "commit_sha": "${CI_COMMIT_SHA}",
+        "branch": "${CI_COMMIT_REF_NAME}",
+        "pipeline_id": "${CI_PIPELINE_ID}",
+        "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+        "gitlab_url": "${CI_PROJECT_URL}/-/commit/${CI_COMMIT_SHA}",
+        "generated_by": "GitLab CI"
+      }
+      EOF
+
+    - ls -la $CI_PROJECT_DIR/results/
+    - python3 -m ci.test_results_processor.cli generate-allure results/"${CI_PIPELINE_ID}" allure-results
+    - allure generate --clean
+    - ls allure-report
+    - ls results/"${CI_PIPELINE_ID}/jobs"
+    
+    - mkdir -p pages-branch/public/"${CI_PIPELINE_ID}/allure-report"
+    - mv allure-report pages-branch/public/"${CI_PIPELINE_ID}"
+    - mkdir -p "pages-branch/pipeline-runs/${CI_PIPELINE_ID}"
+    - mv results/"${CI_PIPELINE_ID}/coverage" pages-branch/public/"${CI_PIPELINE_ID}"
+    - cp metadata.json pages-branch/public/"${CI_PIPELINE_ID}"
+    - mv results/"${CI_PIPELINE_ID}/" pages-branch/pipeline-runs/
+    - mv metadata.json pages-branch/pipeline-runs/"${CI_PIPELINE_ID}"
+
+    - cd pages-branch
+    - python3 generate_report.py
+    - git add .
+    - git commit -m "Report for commit ${CI_COMMIT_SHORT_SHA} from ${CI_COMMIT_REF_NAME}"
+    - git push origin HEAD:gitlab-pages
+    - cd ..
+    - rm -r pages-branch
+
+
+
+  allow_failure: true  

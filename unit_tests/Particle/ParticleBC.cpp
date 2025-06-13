@@ -74,7 +74,7 @@ public:
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(ParticleBCTest, Tests);
+TYPED_TEST_SUITE(ParticleBCTest, Tests);
 
 TYPED_TEST(ParticleBCTest, UpperPeriodicBC) {
     using T                = typename TestFixture::value_type;

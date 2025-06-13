@@ -1,0 +1,25 @@
+pages:
+  stage: deploy
+  image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
+  tags:
+    - linux
+    - opensuse
+  before_script:
+    - rm -rf public/
+  script:
+    - git config --global user.email "gitlab-ci@localhost"
+    - git config --global user.name "GitLab CI"
+    - git remote set-url origin "https://oauth2:${GITLAB_ACCESS_TOKEN}@gitlab.jsc.fz-juelich.de/muralikrishnan1/ippl.git"
+
+    - git fetch origin gitlab-pages
+    - git worktree prune
+    - git worktree add pages-branch origin/gitlab-pages
+    - mkdir -p public
+    - mv pages-branch/public ./
+
+
+  artifacts:
+    paths:
+      - public
+  variables:
+    GITLAB_ACCESS_TOKEN: "${CI_GITLAB_ACCESS_TOKEN}"  # Read from CI/CD variables

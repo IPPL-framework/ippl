@@ -109,7 +109,7 @@ public:
         }
 
     bool balance(size_type totalP, const unsigned int nstep) {
-        if (ippl::Comm->size() < 2) {
+        if (ippl::Comm->size() < 2 && loadbalancethreshold_m != 1.0) {
             return false;
         }
         if (std::strcmp(TestName, "UniformPlasmaTest") == 0) {

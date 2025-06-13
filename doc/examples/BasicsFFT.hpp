@@ -1,15 +1,17 @@
 /**
 @page basics_fft Basics: FFT
 @section fft Introduction
-The FFT(Fast Fourier Transform) class performs complex-to-complex, real-to-complex and real-to-real on IPPL Fields.
-Currently, we use heffte for taking the transforms and the class FFT serves as an interface between IPPL and heffte. In making this interface,
-we have referred Cabana library https://github.com/ECP-copa/Cabana.
+The FFT(Fast Fourier Transform) class performs complex-to-complex, real-to-complex and real-to-real
+on IPPL Fields. Currently, we use heffte for taking the transforms and the class FFT serves as an
+interface between IPPL and heffte. In making this interface, we have referred Cabana library
+https://github.com/ECP-copa/Cabana.
 
  * @subsection FFT Transformation Types
- * 
- * FFT is templated on the type of transform to be performed, the dimensionality of the Field to transform, and the
+ *
+ * FFT is templated on the type of transform to be performed, the dimensionality of the Field to
+transform, and the
  * floating-point precision type of the Field (float or double).
- * 
+ *
  * **Types of transformation**
  * - complex-to-complex FFT: 'ippl::CCTransform'
  * - real-to-complex FFT: 'ippl::RCTransform'
