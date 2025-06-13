@@ -46,9 +46,6 @@ namespace ippl::fixDefaultTemplateArgument {
 
         using typename Base::hash_type;
         using typename Base::locate_type;
-        using index_t = typename hash_type::value_type;
-        using locate_type_nd = Kokkos::View<index_t *[1 << Dim], position_memory_space>;
-        // the maximum number of overlapping ranks
         using typename Base::bool_type;
 
         using typename Base::vector_type;
@@ -57,6 +54,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
         using size_type = detail::size_type;
 
+        using index_t = typename hash_type::value_type;
         using particle_neighbor_list_type = hash_type;
         using typename Base::particle_position_type;
 
@@ -117,21 +115,10 @@ namespace ippl::fixDefaultTemplateArgument {
         void update(ParticleContainer &pc);
 
         template<typename ParticleContainer>
-        size_type locateParticles(const ParticleContainer &pc, locate_type_nd &ranks,
-                                  bool_type &invalid) const;
-
-        template<typename ParticleContainer>
         size_type locateParticles(const ParticleContainer &pc, locate_type &ranks, locate_type &offsets,
                                   bool_type &invalid) const;
 
-
-        size_t numberOfSends(int rank, const locate_type_nd &ranks);
-
         size_t numberOfSends(int rank, const locate_type &ranks);
-
-
-        void fillHash(int rank, const locate_type_nd &ranks, hash_type &hash);
-
 
         void fillHash(int rank, const locate_type &ranks, const locate_type &offsets, hash_type &hash);
 
@@ -165,10 +152,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
     public:
         template<class ParticleContainer>
-        void particleExchange1(ParticleContainer &pc);
-
-        template<class ParticleContainer>
-        void particleExchange2(ParticleContainer &pc);
+        void particleExchange(ParticleContainer &pc);
 
         template<class ParticleContainer>
         void buildCells(ParticleContainer &pc);
