@@ -173,15 +173,15 @@ namespace ippl::fixDefaultTemplateArgument {
         template<class ParticleContainer>
         void buildCells(ParticleContainer &pc);
 
-    protected:
-        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type &pos,
-                                                                       const region_type &region,
-                                                                       Vector_t<bool, Dim> periodic, T overlap);
-
         template<class ParticleContainer>
         void createPeriodicGhostParticles(ParticleContainer &pc);
 
         void initializeCells();
+
+    protected:
+        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type &pos,
+                                                                       const region_type &region,
+                                                                       Vector_t<bool, Dim> periodic, T overlap);
 
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
             const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
