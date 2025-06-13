@@ -2,18 +2,21 @@
 #define IPPL_PARTICLEINTERACTIONBASE_H
 
 #include <string>
+
 #include "Utility/ParameterList.h"
 
 namespace ippl {
-    template<typename ParticleContainer>
+    template <typename ParticleContainer>
     class ParticleInteractionBase {
     public:
-        ParticleInteractionBase(const ParticleContainer &pc, const ParameterList &params) : pc_m(pc) {
+        ParticleInteractionBase(const ParticleContainer& pc, const ParameterList& params)
+            : pc_m(pc) {
             ParticleInteractionBase::setDefaultParameters();
             params_m.merge(params);
         }
 
-        ParticleInteractionBase(const ParticleContainer &pc) : pc_m(pc) {
+        ParticleInteractionBase(const ParticleContainer& pc)
+            : pc_m(pc) {
             ParticleInteractionBase::setDefaultParameters();
         }
 
@@ -24,8 +27,8 @@ namespace ippl {
          * @param value The new value
          * @throw IpplException Fails if there is no existing parameter with the given key
          */
-        template<typename T>
-        void updateParameter(const std::string &key, const T &value) {
+        template <typename T>
+        void updateParameter(const std::string& key, const T& value) {
             params_m.update<T>(key, value);
         }
 
@@ -35,32 +38,31 @@ namespace ippl {
          * @throw IpplException Fails if the provided parameter list includes keys not already
          * present
          */
-        void updateParameters(const ParameterList &params) { params_m.update(params); }
+        void updateParameters(const ParameterList& params) { params_m.update(params); }
 
         /*!
          * Merges another parameter set into the solver's parameters, overwriting
          * existing parameters in case of conflict
          * @param params Parameter list with desired values
          */
-        void mergeParameters(const ParameterList &params) { params_m.merge(params); }
+        void mergeParameters(const ParameterList& params) { params_m.merge(params); }
 
         virtual void solve() = 0;
 
         virtual ~ParticleInteractionBase() = default;
 
     protected:
-        const ParticleContainer &pc_m;
+        const ParticleContainer& pc_m;
         ParameterList params_m;
 
         /*!
          * Utility function for initializing a solver's default
          * parameters (to be overridden for each base class)
          */
-        virtual void setDefaultParameters() {
-        }
+        virtual void setDefaultParameters() {}
 
     private:
     };
-}
+}  // namespace ippl
 
 #endif  // IPPL_PARTICLEINTERACTIONBASE_H
