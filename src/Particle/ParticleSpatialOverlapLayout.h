@@ -100,6 +100,7 @@ namespace ippl::fixDefaultTemplateArgument {
             hash_type cellPermutationForward;
             hash_type cellPermutationBackward;
         };
+
     public:
         // constructor: this one also takes a Mesh
         ParticleSpatialOverlapLayout(FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff);
@@ -110,7 +111,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
         ~ParticleSpatialOverlapLayout() = default;
 
-        void updateLayout(FieldLayout<Dim>&, Mesh&);
+        void updateLayout(FieldLayout<Dim> &, Mesh &);
 
         template<class ParticleContainer>
         void update(ParticleContainer &pc);
@@ -173,6 +174,13 @@ namespace ippl::fixDefaultTemplateArgument {
         void buildCells(ParticleContainer &pc);
 
     protected:
+        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type &pos,
+                                                                       const region_type &region,
+                                                                       Vector_t<bool, Dim> periodic, T overlap);
+
+        template<class ParticleContainer>
+        void createPeriodicGhostParticles(ParticleContainer &pc);
+
         void initializeCells();
 
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(

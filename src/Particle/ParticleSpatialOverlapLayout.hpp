@@ -42,6 +42,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
+        // TODO add an assertion that the overlap is small enough (half the region size in every dimension)?
         const auto rank = Comm->rank();
         const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
 
@@ -94,8 +95,8 @@ namespace ippl::fixDefaultTemplateArgument {
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchange1(ParticleContainer &pc) {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        this->applyBC(pc.R,
-                      this->rlayout_m.getDomain()); // TODO if Periodic boundaries are used, this
+        this->applyBC(pc.R, this->rlayout_m.getDomain());
+        createPeriodicGhostParticles(pc);
         // should be considered in the overlap
         IpplTimings::stopTimer(ParticleBCTimer);
 
@@ -205,14 +206,100 @@ namespace ippl::fixDefaultTemplateArgument {
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
 
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    KOKKOS_INLINE_FUNCTION constexpr bool ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties
+        ...>::isCloseToBoundary(const vector_type &pos, const region_type &globalRegion, Vector_t<bool, Dim> periodic,
+                                T overlap) {
+        return [&]<std::size_t ... Idx>(const std::index_sequence<Idx...> &) {
+            return ((periodic[Idx] && (pos[Idx] < globalRegion[Idx].min() + overlap || pos[Idx] > globalRegion[Idx].
+                                       max() - overlap)) || ...);
+        }(std::make_index_sequence<Dim>());
+    }
+
+    template<typename T, unsigned Dim, class Mesh, typename... Properties>
+    template<class ParticleContainer>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties
+        ...>::createPeriodicGhostParticles(ParticleContainer &pc) {
+        // TODO if Periodic boundaries are used, this
+        //  consider creating new particles outside of the region if close to boundary here?
+        //  they will be sent to other ranks which need them and destroyed here otherwise
+        //  but they will stay in ghost cells allways count number of particle close to boundary
+        //  -> create(numBDParticles) -> compute their positions and copy all attributes
+
+        Vector_t<bool, Dim> periodic;
+        // periodic boundary conditions come in pairs
+        for (unsigned d = 0; d < Dim; ++d) { periodic[d] = this->getParticleBC()[2 * d]; }
+        bool hasPeriodicBC = std::any_of(periodic.begin(), periodic.end(), [](auto bc) { return bc == BC::PERIODIC; });
+        if (!hasPeriodicBC) { return; }
+
+        const auto &globalRegion = this->rlayout_m.getDomain();
+        const auto overlap = rcutoff_m;
+
+        const auto numLoc = pc.getLocalNum();
+        const auto R = pc.R;
+
+        size_type numBoundaryParticles = 0;
+        Kokkos::parallel_reduce(
+            "count boundary particles", numLoc, KOKKOS_LAMBDA(const size_t &i, size_type &sum) {
+                if (isCloseToBoundary(R(i), globalRegion, periodic, overlap)) {
+                    ++sum;
+                }
+            }, Kokkos::Sum<size_type>(numBoundaryParticles)
+        );
+        if (numBoundaryParticles == 0) { return; }
+
+
+        hash_type boundaryIndices("boundaryIndices", numBoundaryParticles);
+        Kokkos::parallel_scan(
+            "count boundary particles", numLoc, KOKKOS_LAMBDA(const size_t &i, size_type &sum, bool final) {
+                if (isCloseToBoundary(R(i), globalRegion, periodic, overlap)) {
+                    if (final) {
+                        boundaryIndices[sum] = i;
+                    }
+                    ++sum;
+                }
+            }
+        );
+
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            size_t numAttributesInSpace = 0;
+            pc.template forAllAttributes<MemorySpace>(
+                [&]<typename Attribute>(Attribute &) {
+                    ++numAttributesInSpace;
+                });
+            if (numAttributesInSpace == 0) { return; }
+
+            auto boundaryIndicesMirror = Kokkos::create_mirror_view_and_copy(MemorySpace(), boundaryIndices);
+            pc.template forAllAttributes<MemorySpace>(
+                [&]<typename Attribute>(Attribute &att) {
+                    att->internalCopy(boundaryIndicesMirror);
+                });
+        });
+
+        // otherwise they will not be considered by exchangeParticles and buildCells
+        pc.setLocalNum(numLoc + numBoundaryParticles);
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            if (!periodic[d]) { continue; }
+            const auto min = globalRegion[d].min();
+            const auto length = globalRegion[d].length();
+            const auto middle = min + length / 2;
+            Kokkos::parallel_for(
+                "correct positions",
+                Kokkos::RangePolicy<position_execution_space>(numLoc, numLoc + numBoundaryParticles),
+                KOKKOS_LAMBDA(const size_t &i) {
+                    R(i)[d] += R(i)[d] > middle ? -length : length;
+                });
+        }
+    }
 
     template<typename T, unsigned Dim, class Mesh, typename... Properties>
     template<class ParticleContainer>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchange2(ParticleContainer &pc) {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        // TODO if Periodic boundaries are used, this should be considered in the overlap
         this->applyBC(pc.R, this->rlayout_m.getDomain());
+        createPeriodicGhostParticles(pc);
         IpplTimings::stopTimer(ParticleBCTimer);
 
         static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
@@ -339,7 +426,9 @@ namespace ippl::fixDefaultTemplateArgument {
         using policy_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
         Kokkos::parallel_reduce(
             "ParticleSpatialLayout::numberOfSends()", policy_type({0, 0}, {ranks.extent(0), ranks.extent(1)}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, size_t &num) { num += static_cast<size_t>(rank == ranks(i, j)); },
+            KOKKOS_LAMBDA(const size_t i, const size_t j, size_t &num) {
+                num += static_cast<size_t>(rank == ranks(i, j));
+            },
             nSends);
         Kokkos::fence();
         return nSends;
@@ -647,7 +736,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::deep_copy(cellParticleCount, 0);
         Kokkos::parallel_for(
             "CalcCellIndices", range_policy(0, nLoc),
-            KOKKOS_LAMBDA(const size_t& i) {
+            KOKKOS_LAMBDA(const size_t &i) {
                 const auto locCellIndex = getCellIndex(R(i), localRegion, cellWidth);
                 const auto locCellIndexFlat = toFlatCellIndex(locCellIndex, cellStrides, cellPermutationForward);
                 assert(locCellIndexFlat < totalCells && "Invalid Grid Position");
@@ -707,16 +796,14 @@ namespace ippl::fixDefaultTemplateArgument {
                 [&]<typename Attribute>(Attribute &) {
                     ++num_attributes_in_space;
                 });
-            if (num_attributes_in_space > 0) {
-                auto newIndexMirror =
-                        Kokkos::create_mirror_view_and_copy(MemorySpace(), newIndex);
+            if (num_attributes_in_space == 0) { return; }
+            auto newIndexMirror = Kokkos::create_mirror_view_and_copy(MemorySpace(), newIndex);
 
-                pc.template forAllAttributes<MemorySpace>(
-                    [&]<typename Attribute>(Attribute &att) {
-                        att->applyPermutation(newIndexMirror);
-                        // TODO instead could store the permutation but this could lead to a lot of cacheline trashing
-                    });
-            }
+            pc.template forAllAttributes<MemorySpace>(
+                [&]<typename Attribute>(Attribute &att) {
+                    att->applyPermutation(newIndexMirror);
+                    // TODO instead could store the permutation but this could lead to a lot of cacheline trashing
+                });
         });
         Kokkos::fence();
 
