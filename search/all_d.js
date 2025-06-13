@@ -49,6 +49,6 @@ var searchData=
   ['numelementvertices_46',['numElementVertices',['../classippl_1_1LagrangeSpace.html#aefd8cda13136bbd143e6998c7b01c1a5',1,'ippl::LagrangeSpace::numElementVertices()'],['../classippl_1_1FiniteElementSpace.html#a60db42bceccdd9d7466d66f41895879e',1,'ippl::FiniteElementSpace::numElementVertices()']]],
   ['numglobaldofs_47',['numGlobalDOFs',['../classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5',1,'ippl::LagrangeSpace::numGlobalDOFs()'],['../classippl_1_1FiniteElementSpace.html#a0235d95f9a425eab29a9f8d378463ffb',1,'ippl::FiniteElementSpace::numGlobalDOFs()']]],
   ['numnodes1d_48',['numNodes1D',['../classippl_1_1Quadrature.html#a667f52ecf501b53c2229754dc240752f',1,'ippl::Quadrature']]],
-  ['numvertices_49',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]],
-  ['numvertices_50',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]]
+  ['numvertices_49',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]],
+  ['numvertices_50',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]]
 ];
