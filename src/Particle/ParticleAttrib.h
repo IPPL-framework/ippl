@@ -132,6 +132,7 @@ namespace ippl {
         T prod();
 
         void applyPermutation(const hash_type& permutation);
+        void internalCopy(const hash_type& indices);
 
     private:
         view_type dview_m;

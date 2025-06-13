@@ -219,6 +219,25 @@ namespace ippl {
         Kokkos::deep_copy(Kokkos::subview(view, Kokkos::make_pair<size_type, size_type>(0, size)), temp);
     }
 
+    template<typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::internalCopy(
+        const hash_type &indices) {
+        auto copySize = indices.size();
+        create(copySize);
+
+        auto view = this->getView();
+        auto size = *(this->localNum_mp);
+
+        using policy_type = Kokkos::RangePolicy<execution_space>;
+        Kokkos::parallel_for(
+            "Copy to temp", policy_type(0, copySize),
+            KOKKOS_LAMBDA(const size_type &i) {
+            view(size + i) = view(i);
+        });
+
+        Kokkos::fence();
+    }
+
     /*
      * Non-class function
      *
