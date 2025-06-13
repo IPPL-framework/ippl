@@ -77,7 +77,7 @@ namespace ippl::fixDefaultTemplateArgument {
         // Compute prefix sums using the permutation views to store it
         hash_type localPrefixSum("local prefix sum", totalCells_m);
         hash_type ghostPrefixSum("ghost prefix sum", totalCells_m);
-        const auto& numCells     = numCells_m;
+        const auto& numCells = numCells_m;
 
         Kokkos::parallel_scan(
             "scan_local", Kokkos::RangePolicy(0, totalCells_m),
@@ -118,7 +118,6 @@ namespace ippl::fixDefaultTemplateArgument {
         cellPermutationForward_m  = cellPermutationForward;
         cellPermutationBackward_m = cellPermutationBackward;
     }
-
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_INLINE_FUNCTION constexpr bool
