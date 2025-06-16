@@ -27,4 +27,4 @@ add_subdirectory(region)
 add_subdirectory(random)
 add_subdirectory(serialization)
 add_subdirectory(FEM)
-
+add_subdirectory(cosmology)
