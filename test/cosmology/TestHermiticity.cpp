@@ -1,15 +1,32 @@
-#define IPPL_ENABLE_TESTS 
+constexpr unsigned Dim = 3;
+using T = double;
 
 #include "Ippl.h"
-#include <iostream>
-#include <limits>
-#include <cmath>
+
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+#include <Kokkos_Random.hpp>
 #include <Kokkos_Complex.hpp>
+#include <chrono>
+#include <iostream>
+#include <random>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "Utility/IpplTimings.h"
+
+#include "Manager/PicManager.h"
+
+#include "mc-4-Initializer/DataBase.h"
+#include "mc-4-Initializer/InputParser.h"
 
 #include "StructureFormationManager.h"
 
-// field accessor becomes visible
+using size_type = ippl::detail::size_type;
 
+template <typename T, unsigned Dim>
+using Vector_t = ippl::Vector<T, Dim>;
 
 // 1. Generate simple Fourier-space single mode field 
 template<class ComplexView>
@@ -99,11 +116,6 @@ void hermiticityTest(Manager& manager)
   std::cout<<"[4] broken cosine field: "
            <<(manager.isHermitian()?"FAIL":"PASS (expected)")<<'\n';
 }
-
-using size_type = ippl::detail::size_type;
-constexpr unsigned Dim = 3;
-using T = double;
-using Vector_t = ippl::Vector<int,Dim>;
 
 int main(int argc,char** argv)
 {
