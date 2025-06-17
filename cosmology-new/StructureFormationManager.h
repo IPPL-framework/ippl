@@ -89,7 +89,7 @@ public:
       
       int getGhostCells() const { return cfield_m.getNghost(); } 
       
-      const ippl::FieldLayout<Dim>& getLayout() const { return fcontainer_m->getFL(); }
+      const ippl::FieldLayout<Dim>& getLayout() const { return this->fcontainer_m->getFL(); }
       
       const ippl::Vector<int, Dim>& getNr() const noexcept {
         return this->nr_m;
