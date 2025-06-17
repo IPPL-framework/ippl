@@ -86,6 +86,15 @@ public:
 
 #ifdef IPPL_ENABLE_TESTS
       auto getCView() -> decltype(cfield_m.getView()) { return cfield_m.getView(); }
+      
+      int getGhostCells() const { return cfield_m.getNghost(); } 
+      
+      const ippl::FieldLayout<Dim>& getLayout() const { return fcontainer_m->getFL(); }
+      
+      const ippl::Vector<int, Dim>& getNr() const noexcept {
+        return this->nr_m;
+      }
+      
 #endif
 
   struct MinMaxSum {
@@ -456,12 +465,6 @@ public:
 
           if (i==0 && j==0 && k==0) return; // skip k = (0,0,0)
 
-          // map global to local indices 
-          const int li = i - lDom[0].first() + ngh;
-          const int lj = j - lDom[1].first() + ngh;
-          const int lk = k - lDom[2].first() + ngh;
-
-          Kokkos::complex<double> delta_k = field(li, lj, lk);
 
           // compute -k in global coordinates
           const int i_neg = (i==0 ? 0 : Nx-i);
@@ -481,10 +484,18 @@ public:
 
           if (neg_k_owner == myrank) {
             // neg_k is local - check hermiticity directly
+           
+            // local k indices 
+            const int li = i - lDom[0].first() + ngh;
+            const int lj = j - lDom[1].first() + ngh;
+            const int lk = k - lDom[2].first() + ngh;
+
+            // local neg_k indices
             const int lni = i_neg - lDom[0].first() + ngh;
             const int lnj = j_neg - lDom[1].first() + ngh;
             const int lnk = k_neg - lDom[2].first() + ngh;
 
+            Kokkos::complex<double> delta_k = field(li, lj, lk);
             Kokkos::complex<double> delta_neg_k = field(lni, lnj, lnk);
             auto delta_ck = Kokkos::conj(delta_k);
 
