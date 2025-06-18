@@ -615,7 +615,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::parallel_for(
             "fill_remaining", total_ranks, KOKKOS_LAMBDA(const size_t& i) {
                 if (is_remaining(i)) {
-                    const size_type idx     = Kokkos::atomic_fetch_inc(&counter());
+                    const size_type idx   = Kokkos::atomic_fetch_inc(&counter());
                     nonNeighborRanks(idx) = i;
                 }
             });
@@ -671,44 +671,80 @@ namespace ippl::fixDefaultTemplateArgument {
          */
         const T overlap = rcutoff_m;
 
-        Kokkos::parallel_scan(
-            "ParticleSpatialLayout::locateParticles()", Kokkos::RangePolicy<size_t>(0, localNum),
-            KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
-                /* Step 1
-                 * increment: Helper variable to update red_val.
-                 */
-                bool increment[2];
-
+        Kokkos::parallel_for(
+            "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_type i) {
                 const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
 
-                size_type count = inCurr;
+                size_type count = inCurr ? 1 : 0;
+                invalid(i)      = !inCurr;
 
-                invalid(i) = !inCurr;
-
-                /// Step 2
+                // Count neighboring regions
                 for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
-                    size_type rank = neighbors_view(j);
+                    const size_type rank = neighbors_view(j);
+                    if (positionInRegion(positions(i), Regions(rank), overlap)) {
+                        ++count;
+                    }
+                }
 
-                    count += positionInRegion(positions(i), Regions(rank), overlap);
-                }
-                if (final) {
-                    counts(i) = count;
-                }
-                /// Step 3
-                /* isOut: When the last thread has finished the search, checks whether the particle
-                 * has been found either in the current rank or in a neighboring one. Used to avoid
-                 * race conditions when updating outsideIds.
-                 */
+                counts(i) = count;
+            });
+        Kokkos::fence();
+
+        // Separate parallel_scan for outsideIds if needed
+        size_type numOutside = 0;
+        Kokkos::parallel_scan(
+            "count_outside", localNum,
+            KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
+                const bool inCurr = !invalid(i);
                 if (final && !inCurr) {
                     outsideIds(val.count[1]) = i;
                 }
+                bool increment[2];
                 increment[0] = invalid(i);
                 increment[1] = !inCurr;
                 val += increment;
             },
             red_val);
-
         Kokkos::fence();
+
+        // Kokkos::parallel_scan(
+        //     "ParticleSpatialLayout::locateParticles()", Kokkos::RangePolicy<size_t>(0, localNum),
+        //     KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
+        //         /* Step 1
+        //          * increment: Helper variable to update red_val.
+        //          */
+        //         bool increment[2];
+        //
+        //         const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
+        //
+        //         size_type count = inCurr;
+        //
+        //         invalid(i) = !inCurr;
+        //
+        //         /// Step 2
+        //         for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+        //             size_type rank = neighbors_view(j);
+        //
+        //             count += positionInRegion(positions(i), Regions(rank), overlap);
+        //         }
+        //         if (final) {
+        //             counts(i) = count;
+        //         }
+        //         /// Step 3
+        //         /* isOut: When the last thread has finished the search, checks whether the particle
+        //          * has been found either in the current rank or in a neighboring one. Used to avoid
+        //          * race conditions when updating outsideIds.
+        //          */
+        //         if (final && !inCurr) {
+        //             outsideIds(val.count[1]) = i;
+        //         }
+        //         increment[0] = invalid(i);
+        //         increment[1] = !inCurr;
+        //         val += increment;
+        //     },
+        //     red_val);
+        //
+        // Kokkos::fence();
 
         invalidCount = red_val.count[0];
         outsideCount = red_val.count[1];
