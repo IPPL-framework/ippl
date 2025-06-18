@@ -671,27 +671,34 @@ namespace ippl::fixDefaultTemplateArgument {
          */
         const T overlap = rcutoff_m;
 
+        using team_policy_t = Kokkos::TeamPolicy<position_execution_space>;
+        using team_t        = typename team_policy_t::member_type;
         Kokkos::parallel_for(
-            "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_type i) {
-                const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
-
-                size_type count = inCurr ? 1 : 0;
-                invalid(i)      = !inCurr;
+            "ParticleSpatialLayout::locateParticles()", team_policy_t(localNum, Kokkos::AUTO()),
+            KOKKOS_LAMBDA(const team_t& team) {
+                const auto i = team.league_rank();
 
                 // Count neighboring regions
-                for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
-                    const size_type rank = neighbors_view(j);
-                    if (positionInRegion(positions(i), Regions(rank), overlap)) {
-                        ++count;
-                    }
-                }
+                size_type count = 0;
+                Kokkos::parallel_reduce(
+                    Kokkos::TeamThreadRange(team, neighbors_view.extent(0)),
+                    [&](const size_t& j, size_type& sum) {
+                        const size_type rank = neighbors_view(j);
+                        if (positionInRegion(positions(i), Regions(rank), overlap)) {
+                            ++sum;
+                        }
+                    },
+                    Kokkos::Sum<size_type>(count));
 
-                counts(i) = count;
+                const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
+
+                count += inCurr;
+                invalid(i) = !inCurr;
+                counts(i)  = count;
             });
         Kokkos::fence();
 
         // Separate parallel_scan for outsideIds if needed
-        size_type numOutside = 0;
         Kokkos::parallel_scan(
             "count_outside", localNum,
             KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
@@ -731,8 +738,10 @@ namespace ippl::fixDefaultTemplateArgument {
         //             counts(i) = count;
         //         }
         //         /// Step 3
-        //         /* isOut: When the last thread has finished the search, checks whether the particle
-        //          * has been found either in the current rank or in a neighboring one. Used to avoid
+        //         /* isOut: When the last thread has finished the search, checks whether the
+        //         particle
+        //          * has been found either in the current rank or in a neighboring one. Used to
+        //          avoid
         //          * race conditions when updating outsideIds.
         //          */
         //         if (final && !inCurr) {
