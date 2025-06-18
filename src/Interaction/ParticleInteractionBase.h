@@ -15,7 +15,7 @@ namespace ippl {
             params_m.merge(params);
         }
 
-        ParticleInteractionBase(const ParticleContainer& pc)
+        explicit ParticleInteractionBase(const ParticleContainer& pc)
             : pc_m(pc) {
             ParticleInteractionBase::setDefaultParameters();
         }

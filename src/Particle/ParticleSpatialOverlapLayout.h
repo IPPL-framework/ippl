@@ -2,14 +2,9 @@
 // Class ParticleSpatialOverlapLayout
 //   Particle layout based on spatial decomposition.
 //
-//   This is a specialized version of ParticleLayout, which places particles
-//   on processors based on their spatial location relative to a fixed grid.
-//   In particular, this can maintain particles on processors based on a
-//   specified FieldLayout or RegionLayout, so that particles are always on
-//   the same node as the node containing the Field region to which they are
-//   local.  This may also be used if there is no associated Field at all,
-//   in which case a grid is selected based on an even distribution of
-//   particles among processors.
+//   This is a specialized version of ParticleSpatialLayout, which allows
+//   particles to be on multiple processes if they are close to the respective
+//   region.
 //
 //   After each 'time step' in a calculation, which is defined as a period
 //   in which the particle positions may change enough to affect the global
@@ -44,7 +39,8 @@ namespace ippl::fixDefaultTemplateArgument {
         : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
         using Base = ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...>;
-        using typename Base::position_memory_space, typename Base::position_execution_space;
+        using typename Base::position_memory_space;
+        using typename Base::position_execution_space;
 
         using typename Base::bool_type;
         using typename Base::hash_type;
@@ -69,10 +65,13 @@ namespace ippl::fixDefaultTemplateArgument {
 
     public:
 
-
         // the maximum number of overlapping ranks
         using locate_type_nd = Kokkos::View<index_t *[1 << Dim], position_memory_space>;
 
+        /*!
+         * Proxy class to store all necessary information needed to call getParticleNeighbors
+         * in Kokkos parallel regions
+         */
         class ParticleNeighborData {
         private:
             friend class ParticleSpatialOverlapLayout;
@@ -106,7 +105,11 @@ namespace ippl::fixDefaultTemplateArgument {
         };
 
     public:
-        // constructor: this one also takes a Mesh
+        /*!
+         * @param fl Field layout
+         * @param mesh Mesh
+         * @param rcutoff Overlap of the regions in each dimension
+         */
         ParticleSpatialOverlapLayout(FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff);
 
         ParticleSpatialOverlapLayout()
@@ -116,112 +119,297 @@ namespace ippl::fixDefaultTemplateArgument {
 
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
+        /*!
+         * @brief updates particles by exchanging them across ranks according to their positions.
+         *         then constructs the particle neighbor list structure
+         * @param pc particle container to update
+         */
         template <class ParticleContainer>
         void update(ParticleContainer& pc);
 
-
+        /*!
+         * @breif call functor for each combination i, j. make sure to call update first
+         * @tparam ExecutionSpace Space in which to generate all indices
+         * @tparam Functor type of loop body
+         * @param f loop body functor to call for all pair of indices i, j where i are all
+         * internal particle indices and j include ghost particles
+         */
         template <typename ExecutionSpace, typename Functor>
         void forEachPair(Functor&& f) const;
 
+        /*!
+         * @return the proxy of the particle neighbor list data needed to get particle neighbors
+         */
+        ParticleNeighborData getParticleNeighborData() const;
+
+        /*!
+         * @brief Function to get particle neighbors depending on index
+         *        (possible inside Kokkos parallel region) make sure to call update first
+         * @param particleIndex index of particle to get neighbors for
+         * @param particleNeighborData proxy of (own) data required for the calculation
+         * @return view of all indices of neighbor particles of particle with given particleIndex
+         */
+        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
+            index_t particleIndex, const ParticleNeighborData& particleNeighborData);
+
+        /*!
+         * @brief Function to get particle neighbors depending on position
+         *        (possible inside Kokkos parallel region) make sure to call update first
+         * @param pos position of particle to get neighbors for
+         * @param particleNeighborData proxy of (own) data required for the calculation
+         * @return view of all indices of neighbor particles of particle with given particleIndex
+         */
+        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
+            const vector_type& pos, const ParticleNeighborData& particleNeighborData);
+
     // private:
+        // methods needed for particleExchangeOld
+        /**
+         * @brief This function determines to which rank particles need to be sent after the iteration step.
+         *        It looks in all regions to determine where it belongs.
+         *
+         * @param pc           Particle Container
+         * @param ranks        A vector where each value refers to the new rank of the particle which rank values
+         *                      correspond to which particles is determined by rankOffsets
+         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of particle i in ranks start.
+         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
+         * @return the number of particles sent away
+         */
         template <typename ParticleContainer>
         size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
-                                  locate_type& offsets, bool_type& invalid) const;
+                                  locate_type& rankOffsets, bool_type& invalid) const;
 
-        template <typename ParticleContainer>
-        std::pair<detail::size_type, detail::size_type> locateParticles(
-            const ParticleContainer& pc, locate_type& ranks, locate_type& offsets,
-            bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const;
-
+        /*!
+         * @brief utility function to compute how many particles to sent to a given rank
+         * @param rank rank to send to
+         * @param ranks The view containing which rank each particle belongs to
+         * @return number of particles sent to rank
+         */
         size_type numberOfSends(int rank, const locate_type& ranks);
 
+        /*!
+        * @brief utility function to collect all indices of particles to send to given rank
+        * @param rank rank to send to
+        * @param ranks The view containing which rank each particle belongs to
+        * @param offsets The offsets to determine where the ranks of a particle start in ranks
+        * @param hash the view containing all particle indices to send
+        */
+        void fillHash(int rank, const locate_type& ranks, const locate_type& offsets, hash_type& hash);
+
+        // methods needed for particleExchangeNew
+        /**
+         * @brief This function determines to which rank particles need to be sent after the iteration step.
+         *        It starts by first scanning direct rank neighbors, and only does a global scan if particles are
+         *        far away from the current rank. It then calculates how many particles need to be sent to each rank
+         *        and how many ranks are sent to in total.
+         *
+         * @param pc           Particle Container
+         * @param ranks        A vector where each value refers to the new rank of the particle which rank values
+         *                      correspond to which particles is determined by rankOffsets
+         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of particle i in ranks start.
+         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
+         * @param nSends_dview Device view the length of number of ranks, where each value determines the number
+         *                      of particles sent to that rank from the current rank
+         * @param sends_dview  Device view for the number of ranks that are sent to from current rank
+         *
+         * @return tuple with the number of particles sent away and the number of ranks sent to
+         */
+        template <typename ParticleContainer>
+        std::pair<detail::size_type, detail::size_type> locateParticles(
+            const ParticleContainer& pc, locate_type& ranks, locate_type& rankOffsets,
+            bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const;
+
+        /*!
+         * @brief utility function to get a flat view of all neighbor processes
+         * @param neighbors FieldLayouts neighbor_list
+         * @return view of neighbor ranks
+         */
         locate_type getFlatNeighbors(const neighbor_list& neighbors) const;
 
+        /*!
+         * @brief utility function to get a view of all non-neighboring ranks
+         * @param neighbors_view view of all neighboring ranks
+         * @return view of all non-neighboring ranks
+         */
         locate_type getNonNeighborRanks(const locate_type& neighbors_view) const;
 
-        void fillHash(int rank, const locate_type& ranks, const locate_type& offsets,
-                      hash_type& hash);
-
+        // methods needed for particleExchangeNd
+        /**
+         * @brief This function determines to which rank particles need to be sent after the iteration step.
+         *        It looks in all regions to determine where it belongs.
+         *
+         * @param pc           Particle Container
+         * @param ranks        A 2D view of ranks, each row contains all ranks a particle belongs to, with -1 filled at the end
+         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
+         * @return the number of particles sent away
+         */
         template<typename ParticleContainer>
         size_type locateParticles(const ParticleContainer &pc, locate_type_nd &ranks,
                                   bool_type &invalid) const;
 
+        /*!
+         * @brief utility function to compute how many particles to sent to a given rank
+         * @param rank rank to send to
+         * @param ranks The 2D view containing which rank each particle belongs to
+         * @return number of particles sent to rank
+         */
         size_t numberOfSends(int rank, const locate_type_nd &ranks);
 
+        /*!
+         * @brief utility function to collect all indices of particles to send to given rank
+         * @param rank rank to send to
+         * @param ranks The view containing which rank each particle belongs to
+         * @param hash the view containing all particle indices to send
+         */
         void fillHash(int rank, const locate_type_nd &ranks, hash_type &hash);
 
-        ParticleNeighborData getParticleNeighborData() const;
-
-        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
-            index_t particleIndex, const ParticleNeighborData& neighborData);
-
-        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
-            const vector_type& pos, const ParticleNeighborData& neighborData);
-
     protected:
+        ///! overlap in each dimension
         const T rcutoff_m;
+        ///! number of cells in each dimension
         Vector_t<size_type, Dim> numCells_m;
+        ///! strides to compute cell indices
         Vector_t<size_type, Dim> cellStrides_m;
+        ///! width of cells in each dimension
         Vector_t<T, Dim> cellWidth_m;
+        /*!
+         * totalCells_m is the number of total cells
+         * numLocalCells_m is the number of interior cells
+         * numGhostCells_m is the number of ghost cells
+         * numLocalParticles_m is number of local particles (particles in local cells)
+         */
         size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
+        ///! number of ghost cells
         static constexpr size_type numGhostCellsPerDim_m = 1;
-        hash_type cellPermutationForward_m;  // given index from flattened indices gives cell index
+        /*!
+         * To ensure the interior particles are at indices 0, ..., numLocalParticles_m - 1 the cells
+         * need to be permuted such that local cells are at the beginning and ghost cells at the end.
+         * cellPermutationForward_m at cell index computed from actual position and cellStrides gives permuted index
+         * cellPermutationBackward_m is the inverse of cellPermutationForward_m
+         */
+        hash_type cellPermutationForward_m;
         hash_type cellPermutationBackward_m;
-        // given index in range [0, numLocCells) gives global index corresponding to flattened index
+        ///! cell i contains particles cellStartingIdx_m(i), ..., cellStartingIdx_m(i + 1) - 1
         hash_type cellStartingIdx_m;
+        ///! view storing the cell index of each particle (TODO not needed if getParticleNeighbors depending on index is not required)
         hash_type cellIndex_m;
+        ///! view of number of particles in each cell
         hash_type cellParticleCount_m;
 
         using CellIndex_t     = Vector_t<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
+        /*!
+         * @brief initializes all data necessary for the cells
+         */
+        void initializeCells();
+
     public:
-        // works in any case
+        /*!
+         * @brief exchanges particles by scanning all ranks. works no matter the overlap
+         * @param pc particle container of which to exchange particles
+         */
         template <class ParticleContainer>
         void particleExchangeOld(ParticleContainer& pc);
 
-        // works if rcutoff_m is smaller than half the smallest region width
+        /*!
+         * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if needed.
+         *         works if overlap is smaller than half the smallest region width
+         * @param pc particle container of which to exchange particles
+         */
         template <class ParticleContainer>
         void particleExchangeNew(ParticleContainer& pc);
 
-        // works if rcutoff_m is smaller than half the smallest region width
+        /*!
+         * @brief exchanges particles by scanning all ranks. works no matter the overlap
+         *         works if cutoff is smaller than half the smallest region width
+         * @param pc particle container of which to exchange particles
+         */
         template<class ParticleContainer>
         void particleExchangeNd(ParticleContainer &pc);
 
+        /*!
+         * @brief builds the cell structure, sorts the particles according to the cells and makes
+         *         sure only local particles are counted towards pc.getLocalNum()
+         * @param pc particle container of which to sort the particles
+         */
         template <class ParticleContainer>
         void buildCells(ParticleContainer& pc);
 
+        /*!
+         * @brief copies particles close to the boundary and offsets them to their closest periodic image
+         * @param pc particle container of which to construct periodic ghost particles
+         */
         template <class ParticleContainer>
         void createPeriodicGhostParticles(ParticleContainer& pc);
 
-        void initializeCells();
-
     protected:
+        /*!
+         * @brief determines whether a position is within overlap to the boundary of a region
+         * @param pos position to query
+         * @param region region of the position
+         * @param periodic vector determining which dimensions to consider (as they are periodic)
+         * @param overlap distance to consider as close
+         */
         KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type& pos,
                                                                        const region_type& region,
                                                                        Vector_t<bool, Dim> periodic,
                                                                        T overlap);
 
+        /*!
+         * @brief convert a nd-cell-index to flat cell index
+         * @param cellIndex to convert
+         * @param cellStrides cell strides to flatten the cell index with
+         * @param cellPermutationForward the permutation to apply to the flattened index
+         */
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
             const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
             hash_type cellPermutationForward);
 
+        /*!
+         * @brieg compute the nd-cell-index from a flattened (non-permuted) index
+         * @param nonPermutedIndex the flat index to transform
+         * @param numCells in each dimension
+         */
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(
             FlatCellIndex_t nonPermutedIndex, const Vector_t<size_type, Dim>& numCells);
 
+        /*!
+         * @brief determines whether cell index is local cell index
+         * @param index to test
+         * @param numCells in each dimension
+         */
         KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(
             const CellIndex_t& index, const Vector_t<size_type, Dim>& numCells);
 
+        /*!
+         * @brief determines whether a position is in a region including its overlap
+         * @param pos position to query
+         * @param region region to test
+         * @param overlap overlap of the region in every dimension
+         */
         KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(const vector_type& pos,
                                                                       const region_type& region,
                                                                       T overlap);
 
+        /*!
+         * @brief get the nd-cell-index of a position
+         * @param pos position to get the cell index for
+         * @param region region of the cells
+         * @param cellWidth in each dimension
+         */
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
             const vector_type& pos, const region_type& region, const Vector_t<T, Dim>& cellWidth);
 
         using cell_particle_neighbor_list_type =
             Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
 
+        /*!
+         * @brief get all indices of cell neighbors of a given nd-cell-index
+         * @param cellIndex to get the neighbors from
+         * @param cellStrides in each dimension
+         * @param cellPermutationForward the permutation to apply to all neighbors
+         */
         KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
             const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
             const hash_type& cellPermutationForward);

@@ -4,13 +4,12 @@
 #include <memory>
 
 #include "Decomposition/OrthogonalRecursiveBisection.h"
-#include "Manager/PicManager.h"
+#include "Interaction/TruncatedGreenParticleInteraction.h"
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
-#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
+#include "Manager/PicManager.h"
 #include "P3MParticleContainer.hpp"
-#include "Interaction/TruncatedGreenParticleInteraction.h"
-
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 
 /**
  * @class P3M3DManager
@@ -30,24 +29,28 @@ class P3M3DManager : public ippl::BaseManager {
     using pc = P3MParticleContainer<T, Dim>;
 
 public:
-    using PPInteraction = ippl::TruncatedGreenParticleInteraction<pc, decltype(pc::E), decltype(pc::Q)>; //TODO get better method for this type?
+    using PPInteraction =
+        ippl::TruncatedGreenParticleInteraction<pc, typename pc::particle_vector_type,
+                                                typename pc::particle_scalar_type>;
     P3M3DManager()
         : BaseManager() {}
 
     virtual ~P3M3DManager() = default;
 
     /**
-    * @brief Particle-to-grid operation.
-    *
-    * In a derived class, the user must override this method to perform particle-to-grid operations.
-    */
+     * @brief Particle-to-grid operation.
+     *
+     * In a derived class, the user must override this method to perform particle-to-grid
+     * operations.
+     */
     virtual void par2grid() = 0;
 
     /**
-    * @brief Grid-to-particle operation.
-    *
-    * In a derived class, the user must override this method to perform grid-to-particle operations.
-    */
+     * @brief Grid-to-particle operation.
+     *
+     * In a derived class, the user must override this method to perform grid-to-particle
+     * operations.
+     */
     virtual void grid2par() = 0;
 
     /**
@@ -57,47 +60,30 @@ public:
      */
     virtual void dump() = 0;
 
+    std::shared_ptr<pc> getParticleContainer() { return pcontainer_m; }
 
-    std::shared_ptr<pc> getParticleContainer() {
-        return pcontainer_m;
-    }
+    void setParticleContainer(std::shared_ptr<pc> pcontainer) { pcontainer_m = pcontainer; }
 
-    void setParticleContainer(std::shared_ptr<pc> pcontainer){
-        pcontainer_m = pcontainer;
-    }
+    std::shared_ptr<fc> getFieldContainer() { return fcontainer_m; }
 
-    std::shared_ptr<fc> getFieldContainer() {
-        return fcontainer_m;
-    }
+    void setFieldContainer(std::shared_ptr<fc> fcontainer) { fcontainer_m = fcontainer; }
 
-    void setFieldContainer(std::shared_ptr<fc> fcontainer){
-        fcontainer_m = fcontainer;
-    }
+    std::shared_ptr<P3MSolver_t<T, Dim> > getFieldSolver() { return fsolver_m; }
 
-    std::shared_ptr<P3MSolver_t<T, Dim> > getFieldSolver() {
-        return fsolver_m;
-    }
+    void setFieldSolver(std::shared_ptr<P3MSolver_t<T, Dim> > fsolver) { fsolver_m = fsolver; }
 
-    void setFieldSolver(std::shared_ptr<P3MSolver_t<T, Dim> > fsolver) {
-        fsolver_m = fsolver;
-    }
+    std::shared_ptr<PPInteraction> getInteractionSolver() { return isolver_m; }
 
-    std::shared_ptr<PPInteraction> getInteractionSolver() {
-        return isolver_m;
-    }
+    void setInteractionSolver(std::shared_ptr<PPInteraction> isolver) { isolver_m = isolver; }
 
-    void setInteractionSolver(std::shared_ptr<PPInteraction > isolver) {
-        isolver_m = isolver;
-    }
+protected:
+    std::shared_ptr<fc> fcontainer_m;
 
-    protected:
-        std::shared_ptr<fc> fcontainer_m;
+    std::shared_ptr<pc> pcontainer_m;
 
-        std::shared_ptr<pc> pcontainer_m;
+    std::shared_ptr<P3MSolver_t<T, Dim> > fsolver_m;
 
-        std::shared_ptr<P3MSolver_t<T, Dim> > fsolver_m;
-
-        std::shared_ptr<PPInteraction> isolver_m;
+    std::shared_ptr<PPInteraction> isolver_m;
 };
 
 #endif

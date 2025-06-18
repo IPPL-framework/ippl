@@ -833,7 +833,7 @@ namespace ippl::fixDefaultTemplateArgument {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleContainer>
     detail::size_type ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locateParticles(
-        const ParticleContainer& pc, locate_type& ranks, locate_type& rank_offsets,
+        const ParticleContainer& pc, locate_type& ranks, locate_type& rankOffsets,
         bool_type& invalid) const {
         auto& positions = pc.R.getView();
         auto regions    = this->rlayout_m.getdLocalRegions();
@@ -878,7 +878,7 @@ namespace ippl::fixDefaultTemplateArgument {
             });
         Kokkos::fence();
 
-        rank_offsets = offsets;
+        rankOffsets = offsets;
 
         // Get total number of assignments for allocation
         auto total_assignments = Kokkos::create_mirror_view(Kokkos::subview(offsets, numLoc));
@@ -893,7 +893,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::parallel_reduce(
             "fill_assignments", range_policy,
             KOKKOS_LAMBDA(size_t i, size_t& count) {
-                size_t offset   = rank_offsets(i);
+                size_t offset   = rankOffsets(i);
                 int local_count = 0;
                 for (size_t j = 0; j < regions.extent(0); ++j) {
                     bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
@@ -1141,17 +1141,17 @@ namespace ippl::fixDefaultTemplateArgument {
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
                                               Properties...>::particle_neighbor_list_type
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
-            const vector_type& pos, const ParticleNeighborData& neighborData) {
+            const vector_type& pos, const ParticleNeighborData& particleNeighborData) {
         // Get the cell of the particle
 
-        const auto locCellIndex = getCellIndex(pos, neighborData.region, neighborData.cellStrides,
-                                               neighborData.cellWidth);
-        const auto locCellIndexPermuted = neighborData.cellPermutationForward(locCellIndex);
+        const auto locCellIndex = getCellIndex(pos, particleNeighborData.region, particleNeighborData.cellStrides,
+                                               particleNeighborData.cellWidth);
+        const auto locCellIndexPermuted = particleNeighborData.cellPermutationForward(locCellIndex);
 
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
 
-        const auto neighbors = getCellNeighbors(locCellIndex, neighborData.cellStrides,
-                                                neighborData.cellPermutationForward);
+        const auto neighbors = getCellNeighbors(locCellIndex, particleNeighborData.cellStrides,
+                                                particleNeighborData.cellPermutationForward);
 
         size_type totalParticleInNeighbors = 0;
         size_type maxParticleInNeighbors   = 0;
@@ -1161,7 +1161,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
         // #pragma unroll
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
-            auto n                       = neighborData.cellParticleCount(neighbors[neighborIdx]);
+            auto n                       = particleNeighborData.cellParticleCount(neighbors[neighborIdx]);
             neighborSizes[neighborIdx]   = n;
             maxParticleInNeighbors       = std::max<size_type>(n, maxParticleInNeighbors);
             neighborOffsets[neighborIdx] = totalParticleInNeighbors;
@@ -1176,7 +1176,7 @@ namespace ippl::fixDefaultTemplateArgument {
             KOKKOS_LAMBDA(const size_type& i, const size_type& j) {
                 if (j < neighborSizes[i]) {
                     neighborList(neighborOffsets[i] + j) =
-                        neighborData.cellStartingIdx(neighbors[i]) + j;
+                        particleNeighborData.cellStartingIdx(neighbors[i]) + j;
                 }
             });
 
@@ -1190,19 +1190,19 @@ namespace ippl::fixDefaultTemplateArgument {
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
                                               Properties...>::particle_neighbor_list_type
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
-            index_t particleIndex, const ParticleNeighborData& neighborData) {
+            index_t particleIndex, const ParticleNeighborData& particleNeighborData) {
         // Get the cell of the particle
 
         assert(particleIndex < neighborData.numLocalParticles);
-        const auto locCellIndexFlat = neighborData.cellIndex(particleIndex);
+        const auto locCellIndexFlat = particleNeighborData.cellIndex(particleIndex);
 
         constexpr size_type numNeighbors = detail::countHypercubes(Dim);
 
         const auto locCellIndex = toCellIndex(
-            neighborData.cellPermutationBackward(locCellIndexFlat), neighborData.numCells);
+            particleNeighborData.cellPermutationBackward(locCellIndexFlat), particleNeighborData.numCells);
         assert(isLocalCellIndex(locCellIndex, neighborData.numCells));
-        const auto neighbors = getCellNeighbors(locCellIndex, neighborData.cellStrides,
-                                                neighborData.cellPermutationForward);
+        const auto neighbors = getCellNeighbors(locCellIndex, particleNeighborData.cellStrides,
+                                                particleNeighborData.cellPermutationForward);
 
         size_type totalParticleInNeighbors = 0;
         size_type maxParticleInNeighbors   = 0;
@@ -1212,7 +1212,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
         // #pragma unroll
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
-            auto n                       = neighborData.cellParticleCount(neighbors[neighborIdx]);
+            auto n                       = particleNeighborData.cellParticleCount(neighbors[neighborIdx]);
             maxParticleInNeighbors       = std::max<size_type>(n, maxParticleInNeighbors);
             neighborOffsets[neighborIdx] = totalParticleInNeighbors;
             totalParticleInNeighbors += n;
@@ -1228,7 +1228,7 @@ namespace ippl::fixDefaultTemplateArgument {
                 const auto numParticlesInCell = neighborOffsets[i + 1] - neighborOffsets[i];
                 if (j < numParticlesInCell) {
                     neighborList(neighborOffsets[i] + j) =
-                        neighborData.cellStartingIdx(neighbors[i]) + j;
+                        particleNeighborData.cellStartingIdx(neighbors[i]) + j;
                 }
             });
 
