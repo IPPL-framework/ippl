@@ -30,31 +30,33 @@
 #include "Region/RegionLayout.h"
 
 namespace ippl::fixDefaultTemplateArgument {
-    // This additional namespace is needed to allow for Mesh to have default argument UniformCartesian<T, Dim> via typedef at the end of the file. Compiling for cuda led to error when trying to do so directly...
+    // This additional namespace is needed to allow for Mesh to have default argument
+    // UniformCartesian<T, Dim> via typedef at the end of the file. Compiling for cuda led to error
+    // when trying to do so directly...
     /*!
      * ParticleSpatialOverlapLayout class definition.
      * @tparam T value type
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template<typename T, unsigned Dim, class Mesh,
-        typename... PositionProperties>
-    class ParticleSpatialOverlapLayout : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
+    template <typename T, unsigned Dim, class Mesh, typename... PositionProperties>
+    class ParticleSpatialOverlapLayout
+        : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
         using Base = ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...>;
         using typename Base::position_memory_space, typename Base::position_execution_space;
 
+        using typename Base::bool_type;
         using typename Base::hash_type;
         using typename Base::locate_type;
-        using typename Base::bool_type;
 
-        using typename Base::vector_type;
-        using typename Base::RegionLayout_t;
         using typename Base::FieldLayout_t;
+        using typename Base::RegionLayout_t;
+        using typename Base::vector_type;
 
         using size_type = detail::size_type;
 
-        using index_t = typename hash_type::value_type;
+        using index_t                     = typename hash_type::value_type;
         using particle_neighbor_list_type = hash_type;
         using typename Base::particle_position_type;
 
@@ -62,30 +64,34 @@ namespace ippl::fixDefaultTemplateArgument {
         using typename Base::region_view_type;
         //! Type of a single Region object.
         using typename Base::region_type;
+        //! Array of N rank lists, where N = number of hypercubes for the dimension Dim.
+        using neighbor_list = typename FieldLayout_t::neighbor_list;
 
     public:
-        class NeighborData {
+
+
+        // the maximum number of overlapping ranks
+        using locate_type_nd = Kokkos::View<index_t *[1 << Dim], position_memory_space>;
+
+        class ParticleNeighborData {
         private:
             friend class ParticleSpatialOverlapLayout;
 
-            NeighborData(size_type numLocalParticles,
-                         Vector_t<size_type, Dim> cellStrides,
-                         Vector_t<size_type, Dim> numCells,
-                         Vector_t<T, Dim> cellWidth,
-                         region_type region,
-                         hash_type cellStartingIdx,
-                         hash_type cellIndex,
-                         hash_type cellParticleCount,
-                         hash_type cellPermutationForward,
-                         hash_type cellPermutationBackward) : numLocalParticles(numLocalParticles),
-                                                              cellStrides(cellStrides), numCells(numCells),
-                                                              cellWidth(cellWidth), region(region),
-                                                              cellStartingIdx(cellStartingIdx),
-                                                              cellIndex(cellIndex),
-                                                              cellParticleCount(cellParticleCount),
-                                                              cellPermutationForward(cellPermutationForward),
-                                                              cellPermutationBackward(cellPermutationBackward) {
-            }
+            ParticleNeighborData(size_type numLocalParticles, Vector_t<size_type, Dim> cellStrides,
+                                 Vector_t<size_type, Dim> numCells, Vector_t<T, Dim> cellWidth,
+                                 region_type region, hash_type cellStartingIdx, hash_type cellIndex,
+                                 hash_type cellParticleCount, hash_type cellPermutationForward,
+                                 hash_type cellPermutationBackward)
+                : numLocalParticles(numLocalParticles)
+                , cellStrides(cellStrides)
+                , numCells(numCells)
+                , cellWidth(cellWidth)
+                , region(region)
+                , cellStartingIdx(cellStartingIdx)
+                , cellIndex(cellIndex)
+                , cellParticleCount(cellParticleCount)
+                , cellPermutationForward(cellPermutationForward)
+                , cellPermutationBackward(cellPermutationBackward) {}
 
             size_type numLocalParticles;
             Vector_t<size_type, Dim> cellStrides;
@@ -101,37 +107,56 @@ namespace ippl::fixDefaultTemplateArgument {
 
     public:
         // constructor: this one also takes a Mesh
-        ParticleSpatialOverlapLayout(FieldLayout<Dim> &fl, Mesh &mesh, const T &rcutoff);
+        ParticleSpatialOverlapLayout(FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff);
 
         ParticleSpatialOverlapLayout()
-            : ParticleSpatialLayout<T, Dim, PositionProperties...>() {
-        }
+            : ParticleSpatialLayout<T, Dim, PositionProperties...>() {}
 
         ~ParticleSpatialOverlapLayout() = default;
 
-        void updateLayout(FieldLayout<Dim> &, Mesh &);
+        void updateLayout(FieldLayout<Dim>&, Mesh&);
 
-        template<class ParticleContainer>
-        void update(ParticleContainer &pc);
+        template <class ParticleContainer>
+        void update(ParticleContainer& pc);
+
+
+        template <typename ExecutionSpace, typename Functor>
+        void forEachPair(Functor&& f) const;
+
+    // private:
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
+                                  locate_type& offsets, bool_type& invalid) const;
+
+        template <typename ParticleContainer>
+        std::pair<detail::size_type, detail::size_type> locateParticles(
+            const ParticleContainer& pc, locate_type& ranks, locate_type& offsets,
+            bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const;
+
+        size_type numberOfSends(int rank, const locate_type& ranks);
+
+        locate_type getFlatNeighbors(const neighbor_list& neighbors) const;
+
+        locate_type getNonNeighborRanks(const locate_type& neighbors_view) const;
+
+        void fillHash(int rank, const locate_type& ranks, const locate_type& offsets,
+                      hash_type& hash);
 
         template<typename ParticleContainer>
-        size_type locateParticles(const ParticleContainer &pc, locate_type &ranks, locate_type &offsets,
+        size_type locateParticles(const ParticleContainer &pc, locate_type_nd &ranks,
                                   bool_type &invalid) const;
 
-        size_t numberOfSends(int rank, const locate_type &ranks);
+        size_t numberOfSends(int rank, const locate_type_nd &ranks);
 
-        void fillHash(int rank, const locate_type &ranks, const locate_type &offsets, hash_type &hash);
+        void fillHash(int rank, const locate_type_nd &ranks, hash_type &hash);
 
-        NeighborData getNeighborData() const;
-
-        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
-            index_t particleIndex, const NeighborData &neighborData);
+        ParticleNeighborData getParticleNeighborData() const;
 
         KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
-            const vector_type &pos, const NeighborData &neighborData);
+            index_t particleIndex, const ParticleNeighborData& neighborData);
 
-        template<typename ExecutionSpace, typename Functor>
-        void forEachPair(Functor &&f) const;
+        KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
+            const vector_type& pos, const ParticleNeighborData& neighborData);
 
     protected:
         const T rcutoff_m;
@@ -140,67 +165,77 @@ namespace ippl::fixDefaultTemplateArgument {
         Vector_t<T, Dim> cellWidth_m;
         size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
         static constexpr size_type numGhostCellsPerDim_m = 1;
-        hash_type cellPermutationForward_m; // given index from flattened indices gives cell index
+        hash_type cellPermutationForward_m;  // given index from flattened indices gives cell index
         hash_type cellPermutationBackward_m;
         // given index in range [0, numLocCells) gives global index corresponding to flattened index
         hash_type cellStartingIdx_m;
         hash_type cellIndex_m;
         hash_type cellParticleCount_m;
 
-        using CellIndex_t = Vector_t<size_type, Dim>;
+        using CellIndex_t     = Vector_t<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
     public:
-        template<class ParticleContainer>
-        void particleExchange(ParticleContainer &pc);
+        // works in any case
+        template <class ParticleContainer>
+        void particleExchangeOld(ParticleContainer& pc);
 
-        template<class ParticleContainer>
-        void buildCells(ParticleContainer &pc);
+        // works if rcutoff_m is smaller than half the smallest region width
+        template <class ParticleContainer>
+        void particleExchangeNew(ParticleContainer& pc);
 
+        // works if rcutoff_m is smaller than half the smallest region width
         template<class ParticleContainer>
-        void createPeriodicGhostParticles(ParticleContainer &pc);
+        void particleExchangeNd(ParticleContainer &pc);
+
+        template <class ParticleContainer>
+        void buildCells(ParticleContainer& pc);
+
+        template <class ParticleContainer>
+        void createPeriodicGhostParticles(ParticleContainer& pc);
 
         void initializeCells();
 
     protected:
-        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type &pos,
-                                                                       const region_type &region,
-                                                                       Vector_t<bool, Dim> periodic, T overlap);
+        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type& pos,
+                                                                       const region_type& region,
+                                                                       Vector_t<bool, Dim> periodic,
+                                                                       T overlap);
 
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
-            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
+            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
             hash_type cellPermutationForward);
 
-        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(FlatCellIndex_t nonPermutedIndex,
-                                                                        const Vector_t<size_type, Dim> &numCells);
+        KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(
+            FlatCellIndex_t nonPermutedIndex, const Vector_t<size_type, Dim>& numCells);
 
-        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(const CellIndex_t &index,
-                                                                      const Vector_t<size_type, Dim> &numCells);
+        KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(
+            const CellIndex_t& index, const Vector_t<size_type, Dim>& numCells);
 
-        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
-            const vector_type &pos, const region_type &region,
-            T overlap);
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(const vector_type& pos,
+                                                                      const region_type& region,
+                                                                      T overlap);
 
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
-            const vector_type &pos, const region_type &region,
-            const Vector_t<T, Dim> &cellWidth);
+            const vector_type& pos, const region_type& region, const Vector_t<T, Dim>& cellWidth);
 
-
-        using cell_particle_neighbor_list_type = Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
+        using cell_particle_neighbor_list_type =
+            Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
 
         KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
-            const CellIndex_t &cellIndex, const Vector_t<size_type, Dim> &cellStrides,
-            const hash_type &cellPermutationForward);
+            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
+            const hash_type& cellPermutationForward);
     };
-}
-
+}  // namespace ippl::fixDefaultTemplateArgument
 
 #include "Particle/ParticleSpatialOverlapLayout.hpp"
 
 namespace ippl {
-    template<typename T, unsigned Dim, typename Mesh = UniformCartesian<T, Dim>, typename... PositionProperties>
-    using ParticleSpatialOverlapLayout = fixDefaultTemplateArgument::ParticleSpatialOverlapLayout<T, Dim, Mesh,
-        PositionProperties...>;
+    template <typename T, unsigned Dim, typename Mesh = UniformCartesian<T, Dim>,
+              typename... PositionProperties>
+    using ParticleSpatialOverlapLayout =
+        fixDefaultTemplateArgument::ParticleSpatialOverlapLayout<T, Dim, Mesh,
+                                                                 PositionProperties...>;
 }
 
 #endif  // IPPL_PARTICLE_SPATIAL_OVERLAP_LAYOUT_H

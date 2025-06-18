@@ -33,8 +33,6 @@ namespace ippl::fixDefaultTemplateArgument {
         : Base(fl, mesh)
         , rcutoff_m(rcutoff)
         , numLocalParticles_m(0) {
-        // TODO add an assertion that the overlap is small enough (half the region size in every
-        //  dimension)?
         initializeCells();
     }
 
@@ -49,6 +47,11 @@ namespace ippl::fixDefaultTemplateArgument {
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
         const auto rank          = Comm->rank();
         const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
+        for (unsigned d = 0; d < Dim; ++d) {
+            PAssert(rcutoff_m <= hLocalRegions(rank)[d].length() / 2 &&
+                "Cutoff is too big with respect to region. "
+                "Particle could be on 3 or more ranks ins one dimension");
+        }
 
         totalCells_m    = 1;
         numLocalCells_m = 1;
@@ -216,7 +219,162 @@ namespace ippl::fixDefaultTemplateArgument {
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <class ParticleContainer>
-    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchange(
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchangeNew(
+        ParticleContainer& pc) {
+        /* Apply Boundary Conditions */
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
+        IpplTimings::startTimer(ParticleBCTimer);
+        this->applyBC(pc.R, this->rlayout_m.getDomain());
+        createPeriodicGhostParticles(pc);
+        IpplTimings::stopTimer(ParticleBCTimer);
+
+        /* Update Timer for the rest of the function */
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
+        IpplTimings::startTimer(ParticleUpdateTimer);
+
+        int nRanks = Comm->size();
+        if (nRanks < 2) {
+            return;
+        }
+
+        /* particle MPI exchange:
+         *   1. figure out which particles need to go where -> locateParticles(...)
+         *   2. fill send buffer and send particles
+         *   3. delete invalidated particles
+         *   4. receive particles
+         */
+
+        // 1.  figure out which particles need to go where -> locateParticles(...) ============= //
+
+        static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(locateTimer);
+
+        /* Rank-local number of particles */
+        size_type localnum = pc.getLocalNum();
+
+        /* particleRanks are the indices correspond to the indices of the local particles,
+         * the values correspond to the ranks to which the particles need to be sent note that the
+         * size is not known yet
+         * particleRankOffsets are the offstes of each particle as a particle
+         * can be sent to multiple ranks
+         */
+        locate_type particleRanks("particles' MPI ranks");
+        locate_type particleRankOffsets("particles' MPI rank offsets", localnum + 1);
+
+        /* The indices are the indices of the particles,
+         * the boolean values describe whether the particle has left the current rank
+         * 0 --> particle valid (inside current rank)
+         * 1 --> particle invalid (left rank)
+         */
+        bool_type invalidParticles("validity of particles", localnum);
+
+        /* The indices are the MPI ranks,
+         * the values are the number of particles are sent to that rank from myrank
+         */
+        locate_type rankSendCount_dview("rankSendCount Device", nRanks);
+
+        /* The indices have no particluar meaning,
+         * the values are the MPI ranks to which we need to send
+         */
+        locate_type destinationRanks_dview("destinationRanks Device", nRanks);
+
+        /* nInvalid is the number of invalid particles
+         * nDestinationRanks is the number of MPI ranks we need to send to
+         */
+        auto [nInvalid, nDestinationRanks] =
+            locateParticles(pc, particleRanks, particleRankOffsets, invalidParticles,
+                            rankSendCount_dview, destinationRanks_dview);
+
+        /* Host space copy of rankSendCount_dview */
+        auto rankSendCount_hview =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), rankSendCount_dview);
+
+        /* Host Space copy of destinationRanks_dview */
+        auto destinationRanks_hview =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), destinationRanks_dview);
+
+        IpplTimings::stopTimer(locateTimer);
+
+        // 2. fill send buffer and send particles =============================================== //
+
+        // 2.1 Remote Memory Access window for one-sided communication
+
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
+        IpplTimings::startTimer(preprocTimer);
+
+        std::fill(this->nRecvs_m.begin(), this->nRecvs_m.end(), 0);
+
+        this->window_m.fence(0);
+
+        // Prepare RMA window for the ranks we need to send to
+        for (size_t ridx = 0; ridx < nDestinationRanks; ridx++) {
+            int rank = destinationRanks_hview[ridx];
+            if (rank == Comm->rank()) {
+                // we do not need to send to ourselves
+                continue;
+            }
+            this->window_m.template put<size_type>(rankSendCount_hview(rank), rank, Comm->rank());
+        }
+        this->window_m.fence(0);
+
+        IpplTimings::stopTimer(preprocTimer);
+
+        // 2.2 Particle Sends
+
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
+        IpplTimings::startTimer(sendTimer);
+
+        std::vector<MPI_Request> requests(0);
+
+        int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
+
+        for (size_t ridx = 0; ridx < nDestinationRanks; ridx++) {
+            int rank = destinationRanks_hview[ridx];
+            if (rank == Comm->rank()) {
+                continue;
+            }
+            hash_type hash("hash", rankSendCount_hview(rank));
+            fillHash(rank, particleRanks, particleRankOffsets, hash);
+            pc.sendToRank(rank, tag, requests, hash);
+        }
+
+        IpplTimings::stopTimer(sendTimer);
+
+        // 3. Internal destruction of invalid particles ======================================= //
+
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
+        IpplTimings::startTimer(destroyTimer);
+
+        pc.internalDestroy(invalidParticles, nInvalid);
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(destroyTimer);
+
+        // 4. Receive Particles ================================================================ //
+
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
+        IpplTimings::startTimer(recvTimer);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (this->nRecvs_m[rank] > 0) {
+                pc.recvFromRank(rank, tag, this->nRecvs_m[rank]);
+            }
+        }
+        IpplTimings::stopTimer(recvTimer);
+
+        IpplTimings::startTimer(sendTimer);
+
+        if (requests.size() > 0) {
+            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+        }
+        IpplTimings::stopTimer(sendTimer);
+
+        IpplTimings::stopTimer(ParticleUpdateTimer);
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <class ParticleContainer>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchangeOld(
         ParticleContainer& pc) {
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
@@ -263,13 +421,10 @@ namespace ippl::fixDefaultTemplateArgument {
         // figure out how many receives
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
         IpplTimings::startTimer(preprocTimer);
-        mpi::rma::Window<mpi::rma::Active> window;
-        std::vector<size_type> nRecvs(nRanks, 0);
-        window.create(*Comm, nRecvs.begin(), nRecvs.end());
-
         std::vector<size_type> nSends(nRanks, 0);
 
-        window.fence(0);
+        std::fill(this->nRecvs_m.begin(), this->nRecvs_m.end(), 0);
+        this->window_m.fence(0);
 
         for (int rank = 0; rank < nRanks; ++rank) {
             if (rank == Comm->rank()) {
@@ -277,9 +432,10 @@ namespace ippl::fixDefaultTemplateArgument {
                 continue;
             }
             nSends[rank] = numberOfSends(rank, ranks);  // independent of offsets
-            window.put<size_type>(nSends.data() + rank, rank, Comm->rank());
+            this->window_m.template put<size_type>(nSends[rank], rank, Comm->rank());
         }
-        window.fence(0);
+        this->window_m.fence(0);
+
         IpplTimings::stopTimer(preprocTimer);
 
         static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
@@ -289,13 +445,12 @@ namespace ippl::fixDefaultTemplateArgument {
 
         int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
-        int sends = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
             if (nSends[rank] > 0) {
                 hash_type hash("hash", nSends[rank]);
                 fillHash(rank, ranks, offsets, hash);
 
-                pc.sendToRank(rank, tag, sends++, requests, hash);
+                pc.sendToRank(rank, tag, requests, hash);
             }
         }
         IpplTimings::stopTimer(sendTimer);
@@ -311,10 +466,9 @@ namespace ippl::fixDefaultTemplateArgument {
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
         // 4th step
-        int recvs = 0;
         for (int rank = 0; rank < nRanks; ++rank) {
-            if (nRecvs[rank] > 0) {
-                pc.recvFromRank(rank, tag, recvs++, nRecvs[rank]);
+            if (this->nRecvs_m[rank] > 0) {
+                pc.recvFromRank(rank, tag, this->nRecvs_m[rank]);
             }
         }
         IpplTimings::stopTimer(recvTimer);
@@ -332,12 +486,27 @@ namespace ippl::fixDefaultTemplateArgument {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <class ParticleContainer>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::update(ParticleContainer& pc) {
-        particleExchange(pc);
+        enum class method {
+            New,
+            Old,
+            Nd
+        };
+        switch (constexpr auto m = method::New) {
+            case method::New:
+                particleExchangeNew(pc);
+                break;
+            case method::Old:
+                particleExchangeOld(pc);
+                break;
+            case method::Nd:
+                particleExchangeNd(pc);
+                break;
+        }
         buildCells(pc);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    size_t ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::numberOfSends(
+    detail::size_type ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::numberOfSends(
         int rank, const locate_type& ranks) {
         size_t nSends     = 0;
         using policy_type = Kokkos::RangePolicy<position_execution_space>;
@@ -381,6 +550,285 @@ namespace ippl::fixDefaultTemplateArgument {
                 }
             });
         Kokkos::fence();
+    }
+
+    /* Helper function to fill a view with neighbor ranks
+     */
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locate_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getFlatNeighbors(
+        const neighbor_list& neighbors) const {
+        std::set<int> neighborSet;
+
+        for (const auto& componentNeighbors : neighbors) {
+            for (const auto& nrank : componentNeighbors) {
+                neighborSet.insert(nrank);
+            }
+        }
+        locate_type flatNeighbors("Nearest neighbors IDs", neighborSet.size());
+        auto hostMirror = Kokkos::create_mirror_view(flatNeighbors);
+
+        size_type i = 0;
+        for (const auto& neighbor : neighborSet) {
+            hostMirror(i) = neighbor;
+            ++i;
+        }
+
+        Kokkos::deep_copy(hostMirror, flatNeighbors);
+        return flatNeighbors;
+    }
+
+    /* Helper function to get non-neighboring ranks
+     */
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locate_type
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNonNeighborRanks(
+        const locate_type& neighbors_view) const {
+        // crete view of remaining ranks
+        // exclude self as well
+        const auto numNonNeighborRanks = Comm->size() - neighbors_view.extent(0) - 1;
+        locate_type nonNeighborRanks("Non Neighbor Ranks", numNonNeighborRanks);
+        if (numNonNeighborRanks == 0) {
+            return nonNeighborRanks;
+        }
+
+        // Create a boolean mask first
+        const auto total_ranks = Comm->rank();
+        bool_type is_remaining("is_remaining", total_ranks);
+        Kokkos::deep_copy(is_remaining, true);
+        Kokkos::fence();
+
+        // Mark communicating ranks and self as false
+        const auto myRank = Comm->rank();
+        Kokkos::parallel_for(
+            "mark_comm_ranks", Kokkos::RangePolicy(myRank, myRank + 1),
+            KOKKOS_LAMBDA(const size_t& i) { is_remaining(i) = false; });
+        Kokkos::parallel_for(
+            "mark_comm_ranks", neighbors_view.extent(0),
+            KOKKOS_LAMBDA(const size_t& i) { is_remaining(neighbors_view(i)) = false; });
+        Kokkos::fence();
+
+        // Fill remaining ranks (requires exclusive scan or atomic counter)
+        Kokkos::View<size_type> counter("counter");
+        Kokkos::parallel_for(
+            "fill_remaining", total_ranks, KOKKOS_LAMBDA(const size_t& i) {
+                if (is_remaining(i)) {
+                    const size_type idx     = Kokkos::atomic_fetch_inc(&counter());
+                    nonNeighborRanks(idx) = i;
+                }
+            });
+        return nonNeighborRanks;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <typename ParticleContainer>
+    std::pair<detail::size_type, detail::size_type>
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locateParticles(
+        const ParticleContainer& pc, locate_type& ranks, locate_type& rankOffsets,
+        bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const {
+        auto positions           = pc.R.getView();
+        region_view_type Regions = this->rlayout_m.getdLocalRegions();
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
+
+        size_type myRank = Comm->rank();
+
+        const auto localNum = pc.getLocalNum();
+
+        /// outsideIds: Container of particle IDs that travelled outside of the neighborhood.
+        /// counts: count assignments per particle
+        locate_type counts("counts", localNum);
+        locate_type outsideIds("Particles outside of neighborhood", localNum);
+
+        /// outsideCount: Tracks the number of particles that travelled outside of the neighborhood.
+        size_type outsideCount = 0;
+        /// invalidCount: Tracks the number of particles that need to be sent to other ranks.
+        size_type invalidCount = 0;
+
+        /// neighbors_view: Kokkos view with the IDs of the neighboring MPI ranks.
+        locate_type neighbors_view = getFlatNeighbors(this->flayout_m.getNeighbors());
+
+        /* red_val: Used to reduce both the number of invalid particles and the number of particles
+         * outside of the neighborhood (Kokkos::parallel_scan doesn't allow multiple reduction
+         * values, so we use the helper class increment_type). First element updates InvalidCount,
+         * second one updates outsideCount.
+         */
+        increment_type red_val;
+        red_val.init();
+
+        /*! Begin Kokkos loop:
+         * Step 1: search in current rank
+         * Step 2: search in neighbors
+         * Step 3: save information on whether the particle was located
+         * Step 4: run additional loop on non-located particles
+         */
+        static IpplTimings::TimerRef neighborSearch = IpplTimings::getTimer("neighborSearch");
+        IpplTimings::startTimer(neighborSearch);
+
+        /* get the overlap
+         */
+        const T overlap = rcutoff_m;
+
+        Kokkos::parallel_scan(
+            "ParticleSpatialLayout::locateParticles()", Kokkos::RangePolicy<size_t>(0, localNum),
+            KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
+                /* Step 1
+                 * increment: Helper variable to update red_val.
+                 */
+                bool increment[2];
+
+                const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
+
+                size_type count = inCurr;
+
+                invalid(i) = !inCurr;
+
+                /// Step 2
+                for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+                    size_type rank = neighbors_view(j);
+
+                    count += positionInRegion(positions(i), Regions(rank), overlap);
+                }
+                if (final) {
+                    counts(i) = count;
+                }
+                /// Step 3
+                /* isOut: When the last thread has finished the search, checks whether the particle
+                 * has been found either in the current rank or in a neighboring one. Used to avoid
+                 * race conditions when updating outsideIds.
+                 */
+                if (final && !inCurr) {
+                    outsideIds(val.count[1]) = i;
+                }
+                increment[0] = invalid(i);
+                increment[1] = !inCurr;
+                val += increment;
+            },
+            red_val);
+
+        Kokkos::fence();
+
+        invalidCount = red_val.count[0];
+        outsideCount = red_val.count[1];
+
+        IpplTimings::stopTimer(neighborSearch);
+
+        /// Step 4
+        static IpplTimings::TimerRef nonNeighboringParticles =
+            IpplTimings::getTimer("nonNeighboringParticles");
+        IpplTimings::startTimer(nonNeighboringParticles);
+
+        locate_type outsideCounts("counts of outside neigbors", outsideCount);
+        locate_type non_neighbors_view = getNonNeighborRanks(neighbors_view);
+        if (outsideCount > 0 && non_neighbors_view.extent(0) > 0) {
+            Kokkos::deep_copy(outsideCounts, 0);
+            Kokkos::parallel_for(
+                "ParticleSpatialLayout::leftParticles()",
+                mdrange_type({0, 0}, {outsideCount, non_neighbors_view.extent(0)}),
+                KOKKOS_LAMBDA(const size_t i, const size_type j) {
+                    /// pID: (local) ID of the particle that is currently being searched.
+                    const size_type pId = outsideIds(i);
+                    const auto rank     = non_neighbors_view(j);
+
+                    /// inRegion: Checks whether particle pID is inside region j.
+                    if (positionInRegion(positions(pId), Regions(rank), overlap)) {
+                        Kokkos::atomic_increment(&outsideCounts(i));
+                    }
+                });
+            Kokkos::fence();
+            Kokkos::parallel_for(
+                "ParticleSpatialLayout::leftParticles()", outsideCount,
+                KOKKOS_LAMBDA(const size_t& i) { counts(outsideIds(i)) += outsideCounts(i); });
+            Kokkos::fence();
+        }
+        IpplTimings::stopTimer(nonNeighboringParticles);
+
+        // prefix sum for particle rank offsets
+        IpplTimings::startTimer(neighborSearch);
+        Kokkos::deep_copy(Kokkos::subview(rankOffsets, 0), 0);
+        Kokkos::parallel_scan(
+            "ParticleSpatialLayout::locateParticles()", localNum,
+            KOKKOS_LAMBDA(const size_t i, int& localSum, const bool final) {
+                const int count_i = counts(i);
+                if (final) {
+                    rankOffsets(i + 1) = localSum + count_i;
+                }
+                localSum += count_i;
+            });
+        Kokkos::fence();
+
+        // Get total number of assignments for allocation
+        auto total_assignments = Kokkos::create_mirror_view(Kokkos::subview(rankOffsets, localNum));
+        Kokkos::deep_copy(total_assignments, Kokkos::subview(rankOffsets, localNum));
+        Kokkos::resize(ranks, total_assignments());
+
+        // finally: fill the data
+        Kokkos::parallel_for(
+            "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_t& i) {
+                const size_t offset   = rankOffsets(i);
+                size_type local_count = 0;
+                if (positionInRegion(positions(i), Regions(myRank), overlap)) {
+                    ranks(offset) = myRank;
+                    local_count++;
+                }
+                for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+                    const auto nRank = neighbors_view(j);
+                    if (positionInRegion(positions(i), Regions(nRank), overlap)) {
+                        ranks(offset + local_count) = nRank;
+                        local_count++;
+                    }
+                }
+            });
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(neighborSearch);
+
+        // fill data of outside particles
+        IpplTimings::startTimer(nonNeighboringParticles);
+        if (outsideCount > 0) {
+            Kokkos::parallel_for(
+                "ParticleSpatialLayout::leftParticles()", outsideCount,
+                KOKKOS_LAMBDA(const size_t& i) {
+                    /// pID: (local) ID of the particle that is currently being searched.
+                    const size_type pId    = outsideIds(i);
+                    const size_type offset = rankOffsets(pId) + counts(pId);
+                    for (size_t local_count = 0, j = 0; j < non_neighbors_view.extent(0); ++j) {
+                        const auto rank = non_neighbors_view(j);
+                        if (positionInRegion(positions(i), Regions(rank), overlap)) {
+                            ranks(offset + local_count) = rank;
+                            local_count++;
+                        }
+                    }
+                });
+            Kokkos::fence();
+        }
+        IpplTimings::stopTimer(nonNeighboringParticles);
+
+        Kokkos::deep_copy(nSends_dview, 0);
+        Kokkos::parallel_for(
+            "Calculate nSends", Kokkos::RangePolicy<size_t>(0, ranks.extent(0)),
+            KOKKOS_LAMBDA(const size_t i) {
+                size_type rank = ranks(i);
+                Kokkos::atomic_increment(&nSends_dview(rank));
+            });
+        Kokkos::fence();
+
+        // Number of Ranks we need to send to
+        Kokkos::View<size_type> rankSends("Number of Ranks we need to send to");
+
+        Kokkos::parallel_for(
+            "Calculate sends", Kokkos::RangePolicy<size_t>(0, nSends_dview.extent(0)),
+            KOKKOS_LAMBDA(const size_t rank) {
+                if (nSends_dview(rank) != 0) {
+                    size_type index    = Kokkos::atomic_fetch_inc(&rankSends());
+                    sends_dview(index) = rank;
+                }
+            });
+        Kokkos::fence();
+        size_type temp;
+        Kokkos::deep_copy(temp, rankSends);
+
+        return {invalidCount, temp};
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -538,8 +986,8 @@ namespace ippl::fixDefaultTemplateArgument {
         static IpplTimings::TimerRef cellBuildTimer = IpplTimings::getTimer("cellBuildTimer");
         IpplTimings::startTimer(cellBuildTimer);
 
-        size_type nLoc = pc.getLocalNum();
-        auto R         = pc.R.getView();
+        const size_type nLoc = pc.getLocalNum();
+        auto R               = pc.R.getView();
 
         const auto totalCells    = totalCells_m;
         const auto numLocalCells = numLocalCells_m;
@@ -681,12 +1129,12 @@ namespace ippl::fixDefaultTemplateArgument {
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::NeighborData
-    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getNeighborData() const {
-        return NeighborData(numLocalParticles_m, cellStrides_m, numCells_m, cellWidth_m,
-                            this->rlayout_m.gethLocalRegions()(Comm->rank()), cellStartingIdx_m,
-                            cellIndex_m, cellParticleCount_m, cellPermutationForward_m,
-                            cellPermutationBackward_m);
+    typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleNeighborData
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighborData() const {
+        return ParticleNeighborData(numLocalParticles_m, cellStrides_m, numCells_m, cellWidth_m,
+                                    this->rlayout_m.gethLocalRegions()(Comm->rank()),
+                                    cellStartingIdx_m, cellIndex_m, cellParticleCount_m,
+                                    cellPermutationForward_m, cellPermutationBackward_m);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -694,7 +1142,7 @@ namespace ippl::fixDefaultTemplateArgument {
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
                                               Properties...>::particle_neighbor_list_type
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
-            const vector_type& pos, const NeighborData& neighborData) {
+            const vector_type& pos, const ParticleNeighborData& neighborData) {
         // Get the cell of the particle
 
         const auto locCellIndex = getCellIndex(pos, neighborData.region, neighborData.cellStrides,
@@ -743,7 +1191,7 @@ namespace ippl::fixDefaultTemplateArgument {
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
                                               Properties...>::particle_neighbor_list_type
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighbors(
-            index_t particleIndex, const NeighborData& neighborData) {
+            index_t particleIndex, const ParticleNeighborData& neighborData) {
         // Get the cell of the particle
 
         assert(particleIndex < neighborData.numLocalParticles);
@@ -890,4 +1338,207 @@ namespace ippl::fixDefaultTemplateArgument {
     //
     //     IpplTimings::stopTimer(interactionTimer);
     // }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <class ParticleContainer>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::particleExchangeNd(
+        ParticleContainer& pc) {
+        static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
+        IpplTimings::startTimer(ParticleBCTimer);
+        this->applyBC(pc.R, this->rlayout_m.getDomain());
+        createPeriodicGhostParticles(pc);
+        // should be considered in the overlap
+        IpplTimings::stopTimer(ParticleBCTimer);
+
+        static IpplTimings::TimerRef ParticleUpdateTimer = IpplTimings::getTimer("updateParticle");
+        IpplTimings::startTimer(ParticleUpdateTimer);
+        int nRanks = Comm->size();
+
+        if (nRanks < 2) {
+            return;
+        }
+
+        /* particle MPI exchange:
+         *   1. figure out which particles need to go where
+         *   2. fill send buffer and send particles
+         *   3. delete invalidated particles
+         *   4. receive particles
+         */
+
+        static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
+        IpplTimings::startTimer(locateTimer);
+        size_type localnum = pc.getLocalNum();
+
+        // 1st step
+
+        /* the values specify the rank where
+         * the particle with that index should go
+         */
+        locate_type_nd ranks("MPI ranks", localnum);
+
+        /* 0 --> particle valid
+         * 1 --> particle invalid
+         */
+        bool_type invalid("invalid", localnum);
+
+        size_type invalidCount = locateParticles(pc, ranks, invalid);
+
+        IpplTimings::stopTimer(locateTimer);
+
+        // 2nd step
+
+        // figure out how many receives
+        static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
+        IpplTimings::startTimer(preprocTimer);
+
+        std::vector<size_type> nSends(nRanks, 0);
+
+        std::fill(this->nRecvs_m.begin(), this->nRecvs_m.end(), 0);
+        this->window_m.fence(0);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (rank == Comm->rank()) {
+                // we do not need to send to ourselves
+                continue;
+            }
+            nSends[rank] = numberOfSends(rank, ranks);
+            this->window_m.template put<size_type>(nSends.data() + rank, rank, Comm->rank());
+        }
+        this->window_m.fence(0);
+        IpplTimings::stopTimer(preprocTimer);
+
+        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
+        IpplTimings::startTimer(sendTimer);
+        // send
+        std::vector<MPI_Request> requests(0);
+
+        int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
+
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (nSends[rank] > 0) {
+                hash_type hash("hash", nSends[rank]);
+                fillHash(rank, ranks, hash);
+
+                pc.sendToRank(rank, tag, requests, hash);
+            }
+        }
+        IpplTimings::stopTimer(sendTimer);
+
+        // 3rd step
+        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
+        IpplTimings::startTimer(destroyTimer);
+
+        pc.internalDestroy(invalid, invalidCount);
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(destroyTimer);
+        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
+        IpplTimings::startTimer(recvTimer);
+        // 4th step
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (this->nRecvs_m[rank] > 0) {
+                pc.recvFromRank(rank, tag, this->nRecvs_m[rank]);
+            }
+        }
+        IpplTimings::stopTimer(recvTimer);
+
+        IpplTimings::startTimer(sendTimer);
+
+        if (requests.size() > 0) {
+            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+        }
+        IpplTimings::stopTimer(sendTimer);
+
+        IpplTimings::stopTimer(ParticleUpdateTimer);
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    size_t ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::numberOfSends(
+        int rank, const locate_type_nd& ranks) {
+        size_t nSends     = 0;
+        using policy_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
+        Kokkos::parallel_reduce(
+            "ParticleSpatialLayout::numberOfSends()",
+            policy_type({0, 0}, {ranks.extent(0), ranks.extent(1)}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, size_t& num) {
+                num += static_cast<size_t>(rank == ranks(i, j));
+            },
+            nSends);
+        Kokkos::fence();
+        return nSends;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::fillHash(
+        int rank, const locate_type_nd& ranks, hash_type& hash) {
+        /* Compute the prefix sum and fill the hash
+         */
+        using policy_type = Kokkos::RangePolicy<position_execution_space>;
+        Kokkos::parallel_scan(
+            "ParticleSpatialLayout::fillHash()", policy_type(0, ranks.extent(0)),
+            KOKKOS_LAMBDA(const size_t i, int& idx, const bool final) {
+                // Count matches for this particle
+                bool belongs_to_rank = false;
+                // Check all rank slots for this particle
+                // #pragma unroll // or reduce this with template param pack reduction
+                for (size_t slot = 0; slot < ranks.extent(0); ++slot) {
+                    if (ranks(i, slot) == rank) {
+                        belongs_to_rank = true;
+                        break;  // Found it, no need to continue
+                    }
+                    // Early termination if we hit -1 (assuming ranks are packed)
+                    if (ranks(i, slot) == -1) {
+                        break;
+                    }
+                }
+
+                if (final && belongs_to_rank) {
+                    hash(idx) = i;
+                }
+
+                if (belongs_to_rank) {
+                    idx += 1;
+                }
+            });
+        Kokkos::fence();
+    }
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <typename ParticleContainer>
+    detail::size_type ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locateParticles(
+        const ParticleContainer& pc, locate_type_nd& ranks, bool_type& invalid) const {
+        auto& positions                            = pc.R.getView();
+        typename RegionLayout_t::view_type regions = this->rlayout_m.getdLocalRegions();
+
+        const size_type myRank = Comm->rank();
+
+        Kokkos::deep_copy(ranks, -1);
+
+        size_type invalidCount = 0;
+        const size_type numLoc = pc.getLocalNum();
+
+        const auto overlap = rcutoff_m;
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
+        Kokkos::parallel_reduce(
+            "ParticleSpatialLayout::locateParticles()",
+            mdrange_type({0, 0}, {numLoc, regions.extent(0)}),
+            KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
+                bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
+                if (xyz_bool) {
+                    size_t l = 0;
+                    for (; l < ranks.extent(1) && ranks(i, l) >= 0; ++l) {
+                    }
+                    ranks(i, l) = j;
+                }
+                if (j == myRank) {
+                    invalid(i) = !xyz_bool;
+                    count += !xyz_bool;
+                }
+            },
+            Kokkos::Sum<size_type>(invalidCount));
+        Kokkos::fence();
+
+        return invalidCount;
+    }
+
 }  // namespace ippl::fixDefaultTemplateArgument
