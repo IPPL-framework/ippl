@@ -575,7 +575,7 @@ namespace ippl::fixDefaultTemplateArgument {
             ++i;
         }
 
-        Kokkos::deep_copy(hostMirror, flatNeighbors);
+        Kokkos::deep_copy(flatNeighbors, hostMirror);
         Kokkos::fence();
         return flatNeighbors;
     }
@@ -671,30 +671,21 @@ namespace ippl::fixDefaultTemplateArgument {
          */
         const T overlap = rcutoff_m;
 
-        using team_policy_t = Kokkos::TeamPolicy<position_execution_space>;
-        using team_t        = typename team_policy_t::member_type;
         Kokkos::parallel_for(
-            "ParticleSpatialLayout::locateParticles()", team_policy_t(localNum, Kokkos::AUTO()),
-            KOKKOS_LAMBDA(const team_t& team) {
-                const auto i = team.league_rank();
-
-                // Count neighboring regions
-                size_type count = 0;
-                Kokkos::parallel_reduce(
-                    Kokkos::TeamThreadRange(team, neighbors_view.extent(0)),
-                    [&](const size_t& j, size_type& sum) {
-                        const size_type rank = neighbors_view(j);
-                        if (positionInRegion(positions(i), Regions(rank), overlap)) {
-                            ++sum;
-                        }
-                    },
-                    Kokkos::Sum<size_type>(count));
-
+            "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_t& i) {
                 const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
 
-                count += inCurr;
-                invalid(i) = !inCurr;
-                counts(i)  = count;
+                size_type count = inCurr;
+                invalid(i)      = !inCurr;
+                // Count neighboring regions
+                for (size_type j = 0; j < neighbors_view.extent(0); ++j) {
+                    const size_type rank = neighbors_view(j);
+                    if (positionInRegion(positions(i), Regions(rank), overlap)) {
+                        ++count;
+                    }
+                }
+
+                counts(i) = count;
             });
         Kokkos::fence();
 
@@ -713,47 +704,6 @@ namespace ippl::fixDefaultTemplateArgument {
             },
             red_val);
         Kokkos::fence();
-
-        // Kokkos::parallel_scan(
-        //     "ParticleSpatialLayout::locateParticles()", Kokkos::RangePolicy<size_t>(0, localNum),
-        //     KOKKOS_LAMBDA(const size_type i, increment_type& val, const bool final) {
-        //         /* Step 1
-        //          * increment: Helper variable to update red_val.
-        //          */
-        //         bool increment[2];
-        //
-        //         const bool inCurr = positionInRegion(positions(i), Regions(myRank), overlap);
-        //
-        //         size_type count = inCurr;
-        //
-        //         invalid(i) = !inCurr;
-        //
-        //         /// Step 2
-        //         for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
-        //             size_type rank = neighbors_view(j);
-        //
-        //             count += positionInRegion(positions(i), Regions(rank), overlap);
-        //         }
-        //         if (final) {
-        //             counts(i) = count;
-        //         }
-        //         /// Step 3
-        //         /* isOut: When the last thread has finished the search, checks whether the
-        //         particle
-        //          * has been found either in the current rank or in a neighboring one. Used to
-        //          avoid
-        //          * race conditions when updating outsideIds.
-        //          */
-        //         if (final && !inCurr) {
-        //             outsideIds(val.count[1]) = i;
-        //         }
-        //         increment[0] = invalid(i);
-        //         increment[1] = !inCurr;
-        //         val += increment;
-        //     },
-        //     red_val);
-        //
-        // Kokkos::fence();
 
         invalidCount = red_val.count[0];
         outsideCount = red_val.count[1];
