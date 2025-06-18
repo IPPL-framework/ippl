@@ -292,6 +292,7 @@ namespace ippl::fixDefaultTemplateArgument {
         /* Host Space copy of destinationRanks_dview */
         auto destinationRanks_hview =
             Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), destinationRanks_dview);
+        Kokkos::fence();
 
         IpplTimings::stopTimer(locateTimer);
 
@@ -575,6 +576,7 @@ namespace ippl::fixDefaultTemplateArgument {
         }
 
         Kokkos::deep_copy(hostMirror, flatNeighbors);
+        Kokkos::fence();
         return flatNeighbors;
     }
 
@@ -760,6 +762,7 @@ namespace ippl::fixDefaultTemplateArgument {
         // Get total number of assignments for allocation
         auto total_assignments = Kokkos::create_mirror_view(Kokkos::subview(rankOffsets, localNum));
         Kokkos::deep_copy(total_assignments, Kokkos::subview(rankOffsets, localNum));
+        Kokkos::fence();
         Kokkos::resize(ranks, total_assignments());
 
         // finally: fill the data
@@ -827,6 +830,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::fence();
         size_type temp;
         Kokkos::deep_copy(temp, rankSends);
+        Kokkos::fence();
 
         return {invalidCount, temp};
     }
