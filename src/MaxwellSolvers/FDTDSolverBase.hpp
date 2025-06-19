@@ -62,7 +62,6 @@ namespace ippl {
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     void FDTDSolverBase<EMField, SourceField, boundary_conditions>::timeShift() {
-        // TODO: should this comment stay?
         // Look into this, maybe cyclic swap is better
         Kokkos::deep_copy(this->A_nm1.getView(), this->A_n.getView());
         Kokkos::deep_copy(this->A_n.getView(), this->A_np1.getView());
@@ -110,9 +109,7 @@ namespace ippl {
                 dAdt[0] = (A_np1(i, j, k)[1] - A_n(i, j, k)[1]) * idt;
                 dAdt[1] = (A_np1(i, j, k)[2] - A_n(i, j, k)[2]) * idt;
                 dAdt[2] = (A_np1(i, j, k)[3] - A_n(i, j, k)[3]) * idt;
-                // TODO make this work with tail!!!
-                //ippl::Vector<scalar, 3> dAdt =
-                    //(A_n(i, j, k).template tail<3>() - A_nm1(i, j, k).template tail<3>()) * idt;
+
                 ippl::Vector<scalar, 4> dAdx =
                     (A_n(i + 1, j, k) - A_n(i - 1, j, k)) * inverse_2_spacing[0];
                 ippl::Vector<scalar, 4> dAdy =

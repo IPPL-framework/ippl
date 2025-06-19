@@ -117,5 +117,5 @@ if(IPPL_ENABLE_TESTS)
         https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
         "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h"
     )
-    message(STATUS "✅ stb_image_write loaded for free electron laster.")
+    message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
 endif()

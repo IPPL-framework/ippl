@@ -1,6 +1,9 @@
 /**
  * @file NonStandardFDTDSolver.h
  * @brief Defines the NonStandardFDTDSolver class for solving Maxwell's equations using a non-standard Finite-Difference Time-Domain (FDTD) method.
+ * The method and derivation of the discretization are based on:
+ * - A. Taflove, *Computational Electrodynamics: The Finite-difference Time-domain Method*, Artech House, 1995
+ * - A. Fallahi, MITHRA 2.0: *A Full-Wave Simulation Tool for Free Electron Lasers*, (2020)
  */
 
 #ifndef IPPL_NON_STANDARD_FDTD_SOLVER_H

@@ -62,7 +62,6 @@ namespace ippl {
         SourceField A_np1;                          // Field at the next time step.
         SourceField A_nm1;                          // Field at the previous time step.
         
-        // TODO make this private again
         /**
          * @brief Shifts the time for the fields.
          */

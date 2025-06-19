@@ -1,3 +1,5 @@
+// Check the README.md file in this directory for information about the test and how to run it.
+
 #include <cstddef>
 using std::size_t;
 #include <Kokkos_Core.hpp>
