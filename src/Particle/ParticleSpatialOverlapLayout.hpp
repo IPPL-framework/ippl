@@ -1270,8 +1270,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
                 /* iterate over all cell neighbors */
                 Kokkos::parallel_for(
-                    "for each cell neighbor", Kokkos::TeamThreadRange(team, numCellNeighbors),
-                    [&](const size_t& n) {
+                    Kokkos::TeamThreadRange(team, numCellNeighbors), [&](const size_t& n) {
                         const auto neighborCellIdx            = cellNeighbors[n];
                         const auto neighborCellParticleOffset = cellStartingIdx(neighborCellIdx);
                         const auto numNeighborCellParticles   = cellParticleCount(neighborCellIdx);
@@ -1279,8 +1278,7 @@ namespace ippl::fixDefaultTemplateArgument {
                         /* iterate over all combinations of this cell and neighboring cells
                          * particles
                          */
-                        Kokkos::parallel_for("for each particle combination",
-                                             Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
+                        Kokkos::parallel_for(Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
                                                  team, numCellParticles, numNeighborCellParticles),
                                              [&](const size_t& i, const size_t& j) {
                                                  const auto particleIdx = cellParticleOffset + i;

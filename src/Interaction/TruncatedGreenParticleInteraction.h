@@ -35,9 +35,9 @@ namespace ippl {
                                           const VectorAttribute& R, const ScalarAttribute& QM,
                                           const ParameterList& params)
             : Base(pc, params)
-            , F_m(&F)
-            , R_m(&R)
-            , QM_m(&QM) {}
+            , F_m(F)
+            , R_m(R)
+            , QM_m(QM) {}
 
         ~TruncatedGreenParticleInteraction() override = default;
 
@@ -57,9 +57,9 @@ namespace ippl {
                                                                    Scalar_t forceConstant,
                                                                    Scalar_t qm2 = 1);
 
-        VectorAttribute* F_m;
-        const VectorAttribute* R_m;
-        const ScalarAttribute* QM_m;
+        VectorAttribute& F_m;
+        const VectorAttribute& R_m;
+        const ScalarAttribute& QM_m;
     };
 }  // namespace ippl
 

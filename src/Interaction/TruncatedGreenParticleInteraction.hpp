@@ -26,9 +26,9 @@ namespace ippl {
             IpplTimings::getTimer("TruncatedGreenParticleInteraction::solve()");
         IpplTimings::startTimer(solveTimer);
         // get particle data
-        auto& F        = *F_m;
-        const auto& R  = *R_m;
-        const auto& QM = *QM_m;
+        auto& F        = F_m;
+        const auto& R  = R_m;
+        const auto& QM = QM_m;
 
         // get simulation specific data
         const auto rcut2 = std::pow<Scalar_t>(this->params_m.template get<Scalar_t>("rcut"), 2);
