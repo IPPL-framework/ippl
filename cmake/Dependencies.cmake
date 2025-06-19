@@ -110,3 +110,12 @@ if(IPPL_ENABLE_UNIT_TESTS)
     FetchContent_MakeAvailable(googletest)
     message(STATUS "✅ GoogleTest loaded for unit tests.")
 endif()
+
+if(IPPL_ENABLE_TESTS)
+    set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
+    file(DOWNLOAD
+        https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h"
+    )
+    message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
+endif()

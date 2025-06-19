@@ -8,7 +8,7 @@
 
 function(add_ippl_integration_test TEST_NAME)
     set(options)
-    set(oneValueArgs COMMAND)
+    set(oneValueArgs COMMAND LINK_DIRS)
     set(multiValueArgs LABELS ARGS)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -18,9 +18,16 @@ function(add_ippl_integration_test TEST_NAME)
         PRIVATE ippl ${MPI_CXX_LIBRARIES}
     )
 
-    target_include_directories(${TEST_NAME}
-        PRIVATE $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
-    )
+    if(TEST_LINK_DIRS)
+        target_include_directories(${TEST_NAME}
+            PRIVATE $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+            ${TEST_LINK_DIRS}
+        )
+    else()
+        target_include_directories(${TEST_NAME}
+            PRIVATE $<TARGET_PROPERTY:ippl,INTERFACE_INCLUDE_DIRECTORIES>
+        )
+    endif()
 
     if(TEST_COMMAND)
         add_test(NAME Integration.${TEST_NAME} COMMAND ${TEST_COMMAND})

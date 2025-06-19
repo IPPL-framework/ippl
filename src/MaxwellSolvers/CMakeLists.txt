@@ -13,6 +13,12 @@ target_include_directories(ippl
 # Install MaxwellSolvers header
 install(FILES
     Maxwell.h
+    FDTDSolverBase.h
+    FDTDSolverBase.hpp
+    StandardFDTDSolver.h
+    StandardFDTDSolver.hpp
+    NonStandardFDTDSolver.h
+    NonStandardFDTDSolver.hpp
     DESTINATION include/MaxwellSolvers
 )
 
