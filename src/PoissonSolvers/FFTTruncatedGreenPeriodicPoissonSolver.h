@@ -1,17 +1,16 @@
 //
-// Class P3MSolver
+// Class FFTTruncatedGreenPeriodicPoissonSolver
 //   Poisson solver for periodic boundaries, based on FFTs.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //   Uses a convolution with a Green's function given by:
-//      G(r) = ke * erf(alpha * r) / r,
-//   where ke = Coulomb constant,
+//      G(r) = forceConstant * erf(alpha * r) / r,
 //         alpha = controls long-range interaction.
 //
 //
 
-#ifndef IPPL_P3M_SOLVER_H_
-#define IPPL_P3M_SOLVER_H_
+#ifndef IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
+#define IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
 
 #include "Types/Vector.h"
 
@@ -24,7 +23,7 @@
 
 namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
-    class P3MSolver : public Poisson<FieldLHS, FieldRHS> {
+    class FFTTruncatedGreenPeriodicPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
         constexpr static unsigned Dim = FieldLHS::dim;
         using Trhs                    = typename FieldRHS::value_type;
         using mesh_type               = typename FieldRHS::Mesh_t;
@@ -51,10 +50,10 @@ namespace ippl {
         typedef FieldLayout<Dim> FieldLayout_t;
 
         // constructor and destructor
-        P3MSolver();
-        P3MSolver(rhs_type& rhs, ParameterList& params);
-        P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
-        ~P3MSolver() = default;
+        FFTTruncatedGreenPeriodicPoissonSolver();
+        FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params);
+        FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params);
+        ~FFTTruncatedGreenPeriodicPoissonSolver() = default;
 
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
@@ -69,6 +68,7 @@ namespace ippl {
 
         // compute standard Green's function
         void greensFunction();
+
 
     private:
         Field_t grn_m;  // the Green's function
@@ -100,13 +100,15 @@ namespace ippl {
         Vector<int, Dim> nr_m;
 
     protected:
-        virtual void setDefaultParameters() override {
+        void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
             heffte::plan_options opts = heffte::default_options<heffteBackend>();
             this->params_m.add("use_pencils", opts.use_pencils);
             this->params_m.add("use_reorder", opts.use_reorder);
             this->params_m.add("use_gpu_aware", opts.use_gpu_aware);
             this->params_m.add("r2c_direction", 0);
+            this->params_m.template add<Trhs>("alpha", 1);
+            this->params_m.template add<Trhs>("force_constant", 1);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:
@@ -122,12 +124,12 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("P3MSolver::setDefaultParameters",
+                    throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
                                         "Unrecognized heffte communication type");
             }
         }
     };
 }  // namespace ippl
 
-#include "PoissonSolvers/P3MSolver.hpp"
-#endif
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
+#endif // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_

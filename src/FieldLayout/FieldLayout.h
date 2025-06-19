@@ -41,7 +41,7 @@ namespace ippl {
          * @param dim the dimension
          * @return 3^n
          */
-        constexpr unsigned int countHypercubes(unsigned int dim) {
+        KOKKOS_INLINE_FUNCTION constexpr unsigned int countHypercubes(unsigned int dim) {
             unsigned int ret = 1;
             for (unsigned int d = 0; d < dim; d++) {
                 ret *= 3;
