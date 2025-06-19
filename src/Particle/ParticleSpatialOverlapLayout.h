@@ -299,12 +299,12 @@ namespace ippl::fixDefaultTemplateArgument {
         using CellIndex_t     = Vector_t<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
+    public:
         /*!
          * @brief initializes all data necessary for the cells
          */
         void initializeCells();
 
-    public:
         /*!
          * @brief exchanges particles by scanning all ranks. works no matter the overlap
          * @param pc particle container of which to exchange particles
