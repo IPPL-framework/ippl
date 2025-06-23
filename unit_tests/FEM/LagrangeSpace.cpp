@@ -894,8 +894,8 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
                 }
 
                 // reference field
-                if ((coords[0] == 0) || (coords[1] == 0) || 
-                    (coords[0] == 4) || (coords[1] == 4)) {
+                if ((coords[0] < 1) || (coords[1] < 1) || 
+                    (coords[0] > 3) || (coords[1] > 3)) {
                     mirror(args...) = 0.0;
                 } else {
                     mirror(args...) = 0.875;
