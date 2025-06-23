@@ -792,9 +792,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                 Kokkos::deep_copy(view_ref, mirror);
 
-                ref_field.write();
-                z.write();
-
                 // compare values with reference
                 z  = z - ref_field;
                 double err = ippl::norm(z);
