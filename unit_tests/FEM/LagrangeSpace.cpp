@@ -612,139 +612,48 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
         EvalFunctor<T, lagrangeSpace.dim, lagrangeSpace.numElementDOFs> eval(DPhiInvT, absDetDPhi);
 
         if (dim == 1) {
-            if (ippl::Comm->size() == 1) {
-                int nghost  = x.getNghost();
-                auto view_x = x.getView();
+            x = 1.25;
 
-                // 2. Build the discrete poisson eqation matrix to test the assembly function against
-                Kokkos::View<T**> A_ref("A_ref", numGlobalDOFs, numGlobalDOFs);
+            x.fillHalo();
+            lagrangeSpace.evaluateLoadVector(x);
+            x.fillHalo();
 
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        if ((i == 0 || i == numGlobalDOFs - 1) || (j == 0 || j == numGlobalDOFs - 1)) {
-                            // zero boundary conditions on the stiffness matrix (essential boundary
-                            // conditions)
-                            A_ref(i, j) = 0.0;
-                        } else if (i == j) {
-                            if (i == 0 || i == numGlobalDOFs - 1) {
-                                A_ref(i, j) = 1.0;
-                            } else {
-                                A_ref(i, j) = 2.0;
-                            }
-                        } else if (i + 1 == j || j + 1 == i) {
-                            A_ref(i, j) = -1.0;
+            z = lagrangeSpace.evaluateAx(x, eval);
+            z.fillHalo();
 
-                        } else {
-                            A_ref(i, j) = 0.0;
-                        }
-                    }
+            // set up for comparison
+            FieldType ref_field(mesh, layout, 1);
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            int nghost    = ref_field.getNghost();
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first() - nghost;
                 }
 
-                // compute the matrix A
-                Kokkos::View<T**> A("A", numGlobalDOFs, numGlobalDOFs);
-
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    if (i > 0) {
-                        ippl::Vector<int, lagrangeSpace.dim> idx =
-                            lagrangeSpace.getMeshVertexNDIndex(i - 1);
-                        idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
-
-                        ippl::apply(view_x, idx) = 0.0;
-                    }
-
-                    ippl::Vector<int, lagrangeSpace.dim> idx = lagrangeSpace.getMeshVertexNDIndex(i);
-                    idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
-
-                    ippl::apply(view_x, idx) = 1.0;
-
-                    x.fillHalo();
-
-                    z = lagrangeSpace.evaluateAx(x, eval);
-
-                    z.accumulateHalo();
-
-                    auto view_z = z.getView();
-
-                    // Set the the i-th row-vector of A to z
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        ippl::Vector<int, lagrangeSpace.dim> idx_z =
-                            lagrangeSpace.getMeshVertexNDIndex(j);
-                        idx_z[0] += nghost - (z.getLayout()).getLocalNDIndex()[0].first();
-
-                        A(j, i) += ippl::apply(view_z, idx_z);
-                    }
+                // reference field
+                if ((coords[0] == 1) || (coords[0] == 3)) {
+                    mirror(args...) = 1.25;
+                } else {
+                    mirror(args...) = 0.0;
                 }
+            });
+            Kokkos::fence();
 
-                // Debug prints (optional)
+            Kokkos::deep_copy(view_ref, mirror);
 
-                std::cout << "A = " << std::endl;
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        std::cout << A(i, j) << " ";
-                    }
-                    std::cout << std::endl;
-                }
-                std::cout << std::endl;
+            // compare values with reference
+            z  = z - ref_field;
+            double err = ippl::norm(z);
 
-                std::cout << "A_ref = " << std::endl;
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        std::cout << std::setw(2) << A_ref(i, j) << " ";
-                    }
-                    std::cout << std::endl;
-                }
-
-                // Test for equivalence of A and A_ref
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
-                    }
-                    std::cout << std::endl;
-                }
-            } else {
-                x = 1.25;
-
-                x.fillHalo();
-                lagrangeSpace.evaluateLoadVector(x);
-                x.fillHalo();
-
-                z = lagrangeSpace.evaluateAx(x, eval);
-                z.fillHalo();
-
-                // set up for comparison
-                FieldType ref_field(mesh, layout, 1);
-                auto view_ref = ref_field.getView();
-                auto mirror   = Kokkos::create_mirror_view(view_ref);
-
-                int nghost    = ref_field.getNghost();
-                auto ldom     = layout.getLocalNDIndex();
-
-                nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
-                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
-                    index_type coords[dim] = {args...};
-
-                    // global coordinates
-                    for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                        coords[d] += ldom[d].first() - nghost;
-                    }
-
-                    // reference field
-                    if ((coords[0] == 1) || (coords[0] == 3)) {
-                        mirror(args...) = 1.25;
-                    } else {
-                        mirror(args...) = 0.0;
-                    }
-                });
-                Kokkos::fence();
-
-                Kokkos::deep_copy(view_ref, mirror);
-
-                // compare values with reference
-                z  = z - ref_field;
-                double err = ippl::norm(z);
-
-                ASSERT_NEAR(err, 0.0, 1e-6);
-            }
+            ASSERT_NEAR(err, 0.0, 1e-6);
         } else if (dim == 2) {
             if (ippl::Comm->size() == 1) {
                 x = 1.0;
