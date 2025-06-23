@@ -87,6 +87,7 @@ using size_type = ippl::detail::size_type;
 
 template <typename T, unsigned Dim>
 using Vector_t = ippl::Vector<T, Dim>;
+using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 
 /**
  * @brief Performs a series of sanity checks to verify the Hermitian symmetry check
@@ -197,7 +198,7 @@ void hermiticityTest2(Manager& manager)
 
     // Initialize the Fourier density field for a real cosine wave
     // Each rank computes its local contribution based on global k-vectors
-    Kokkos::parallel_for("RealCosineFourierField", ippl::getRangePolicy(cview, ngh),
+    ippl::parallel_for("RealCosineFourierField", ippl::getRangePolicy(cview, ngh),
         KOKKOS_LAMBDA(const index_array_type& idx) {
             
             // Compute global coordinates (i,j,k) for this local index
@@ -271,7 +272,7 @@ void hermiticityTest3(Manager& manager)
 
 			 // DC mode (k=0 vector) set to 0 (no DC offset)
 			 if (i == 0 && j == 0 && k == 0) {
-			   ippl::apply(view, idx) = Kokkos::complex<double>(0.0, 0.0);
+			   ippl::apply(cview, idx) = Kokkos::complex<double>(0.0, 0.0);
 			 } else {
 			   // Compute the global “negative” indices for Hermitian pair
 			   int i_neg = (i == 0 ? 0 : Nx - i);
@@ -322,7 +323,7 @@ void hermiticityTest3(Manager& manager)
 			     val_im = -val_im;
 			   }
 			   // Assign the complex value to this local mode
-			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
+			   ippl::apply(cview, idx) = Kokkos::complex<double>(val_re, val_im);
                            }
 		       });
 
