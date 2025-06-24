@@ -20,6 +20,7 @@ endif()
 if (IPPL_ENABLE_SOLVERS)
     add_subdirectory(solver)
     add_subdirectory(solver/fem)
+    add_subdirectory(maxwell)
 endif()
 
 add_subdirectory(particle)
