@@ -11,5 +11,6 @@ var searchData=
   ['error_8',['Error',['../namespaceippl.html#a1c23081ab92decaede63ec51e273ff96',1,'ippl']]],
   ['estimate_5fm_9',['estimate_m',['../classippl_1_1random_1_1Distribution.html#a28210290d84f3a37c72179abbd996bad',1,'ippl::random::Distribution']]],
   ['eta_5fm_10',['eta_m',['../structippl_1_1polynomial__newton__preconditioner.html#a8289c494e0be3fa2acccf59b694b40f0',1,'ippl::polynomial_newton_preconditioner']]],
-  ['extent_5fm_11',['extent_m',['../structippl_1_1detail_1_1ParticleBC.html#aca3268269cb2bbd30ff91d4b12ba5747',1,'ippl::detail::ParticleBC']]]
+  ['eweights_11',['Eweights',['../structsecond__order__abc__edge.html#a77d6456a1fc8ac4b4c567bb119a7ff5a',1,'second_order_abc_edge']]],
+  ['extent_5fm_12',['extent_m',['../structippl_1_1detail_1_1ParticleBC.html#aca3268269cb2bbd30ff91d4b12ba5747',1,'ippl::detail::ParticleBC']]]
 ];

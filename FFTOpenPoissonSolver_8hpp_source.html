@@ -1525,7 +1525,7 @@ $(function() {
 <div class="line"><a id="l01445" name="l01445"></a><span class="lineno"> 1445</span> </div>
 <div class="line"><a id="l01446" name="l01446"></a><span class="lineno"> 1446</span>            <span class="keywordflow">if</span> (domain2.touches(x)) {</div>
 <div class="line"><a id="l01447" name="l01447"></a><span class="lineno"> 1447</span>                <span class="keyword">auto</span> intersection = domain2.intersect(x);</div>
-<div class="line"><a id="l01448" name="l01448"></a><span class="lineno"> 1448</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01448" name="l01448"></a><span class="lineno"> 1448</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01449" name="l01449"></a><span class="lineno"> 1449</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
 <div class="line"><a id="l01450" name="l01450"></a><span class="lineno"> 1450</span> </div>
 <div class="line"><a id="l01451" name="l01451"></a><span class="lineno"> 1451</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1543,7 +1543,7 @@ $(function() {
 <div class="line"><a id="l01463" name="l01463"></a><span class="lineno"> 1463</span> </div>
 <div class="line"><a id="l01464" name="l01464"></a><span class="lineno"> 1464</span>            <span class="keywordflow">if</span> (domain2.touches(y)) {</div>
 <div class="line"><a id="l01465" name="l01465"></a><span class="lineno"> 1465</span>                <span class="keyword">auto</span> intersection = domain2.intersect(y);</div>
-<div class="line"><a id="l01466" name="l01466"></a><span class="lineno"> 1466</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01466" name="l01466"></a><span class="lineno"> 1466</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01467" name="l01467"></a><span class="lineno"> 1467</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01468" name="l01468"></a><span class="lineno"> 1468</span> </div>
 <div class="line"><a id="l01469" name="l01469"></a><span class="lineno"> 1469</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1561,7 +1561,7 @@ $(function() {
 <div class="line"><a id="l01481" name="l01481"></a><span class="lineno"> 1481</span> </div>
 <div class="line"><a id="l01482" name="l01482"></a><span class="lineno"> 1482</span>            <span class="keywordflow">if</span> (domain2.touches(z)) {</div>
 <div class="line"><a id="l01483" name="l01483"></a><span class="lineno"> 1483</span>                <span class="keyword">auto</span> intersection = domain2.intersect(z);</div>
-<div class="line"><a id="l01484" name="l01484"></a><span class="lineno"> 1484</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01484" name="l01484"></a><span class="lineno"> 1484</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01485" name="l01485"></a><span class="lineno"> 1485</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01486" name="l01486"></a><span class="lineno"> 1486</span> </div>
 <div class="line"><a id="l01487" name="l01487"></a><span class="lineno"> 1487</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1579,9 +1579,9 @@ $(function() {
 <div class="line"><a id="l01499" name="l01499"></a><span class="lineno"> 1499</span> </div>
 <div class="line"><a id="l01500" name="l01500"></a><span class="lineno"> 1500</span>            <span class="keywordflow">if</span> (domain2.touches(xy)) {</div>
 <div class="line"><a id="l01501" name="l01501"></a><span class="lineno"> 1501</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xy);</div>
-<div class="line"><a id="l01502" name="l01502"></a><span class="lineno"> 1502</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01502" name="l01502"></a><span class="lineno"> 1502</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01503" name="l01503"></a><span class="lineno"> 1503</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01504" name="l01504"></a><span class="lineno"> 1504</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01504" name="l01504"></a><span class="lineno"> 1504</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01505" name="l01505"></a><span class="lineno"> 1505</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01506" name="l01506"></a><span class="lineno"> 1506</span> </div>
 <div class="line"><a id="l01507" name="l01507"></a><span class="lineno"> 1507</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1599,9 +1599,9 @@ $(function() {
 <div class="line"><a id="l01519" name="l01519"></a><span class="lineno"> 1519</span> </div>
 <div class="line"><a id="l01520" name="l01520"></a><span class="lineno"> 1520</span>            <span class="keywordflow">if</span> (domain2.touches(yz)) {</div>
 <div class="line"><a id="l01521" name="l01521"></a><span class="lineno"> 1521</span>                <span class="keyword">auto</span> intersection = domain2.intersect(yz);</div>
-<div class="line"><a id="l01522" name="l01522"></a><span class="lineno"> 1522</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01522" name="l01522"></a><span class="lineno"> 1522</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01523" name="l01523"></a><span class="lineno"> 1523</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01524" name="l01524"></a><span class="lineno"> 1524</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01524" name="l01524"></a><span class="lineno"> 1524</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01525" name="l01525"></a><span class="lineno"> 1525</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01526" name="l01526"></a><span class="lineno"> 1526</span> </div>
 <div class="line"><a id="l01527" name="l01527"></a><span class="lineno"> 1527</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1618,9 +1618,9 @@ $(function() {
 <div class="line"><a id="l01538" name="l01538"></a><span class="lineno"> 1538</span> </div>
 <div class="line"><a id="l01539" name="l01539"></a><span class="lineno"> 1539</span>            <span class="keywordflow">if</span> (domain2.touches(xz)) {</div>
 <div class="line"><a id="l01540" name="l01540"></a><span class="lineno"> 1540</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xz);</div>
-<div class="line"><a id="l01541" name="l01541"></a><span class="lineno"> 1541</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01541" name="l01541"></a><span class="lineno"> 1541</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01542" name="l01542"></a><span class="lineno"> 1542</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01543" name="l01543"></a><span class="lineno"> 1543</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01543" name="l01543"></a><span class="lineno"> 1543</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01544" name="l01544"></a><span class="lineno"> 1544</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01545" name="l01545"></a><span class="lineno"> 1545</span> </div>
 <div class="line"><a id="l01546" name="l01546"></a><span class="lineno"> 1546</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1637,11 +1637,11 @@ $(function() {
 <div class="line"><a id="l01557" name="l01557"></a><span class="lineno"> 1557</span> </div>
 <div class="line"><a id="l01558" name="l01558"></a><span class="lineno"> 1558</span>            <span class="keywordflow">if</span> (domain2.touches(xyz)) {</div>
 <div class="line"><a id="l01559" name="l01559"></a><span class="lineno"> 1559</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xyz);</div>
-<div class="line"><a id="l01560" name="l01560"></a><span class="lineno"> 1560</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01560" name="l01560"></a><span class="lineno"> 1560</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01561" name="l01561"></a><span class="lineno"> 1561</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01562" name="l01562"></a><span class="lineno"> 1562</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01562" name="l01562"></a><span class="lineno"> 1562</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01563" name="l01563"></a><span class="lineno"> 1563</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01564" name="l01564"></a><span class="lineno"> 1564</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01564" name="l01564"></a><span class="lineno"> 1564</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01565" name="l01565"></a><span class="lineno"> 1565</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01566" name="l01566"></a><span class="lineno"> 1566</span> </div>
 <div class="line"><a id="l01567" name="l01567"></a><span class="lineno"> 1567</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1673,7 +1673,7 @@ $(function() {
 <div class="line"><a id="l01593" name="l01593"></a><span class="lineno"> 1593</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(x)) {</div>
 <div class="line"><a id="l01594" name="l01594"></a><span class="lineno"> 1594</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(x);</div>
 <div class="line"><a id="l01595" name="l01595"></a><span class="lineno"> 1595</span> </div>
-<div class="line"><a id="l01596" name="l01596"></a><span class="lineno"> 1596</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01596" name="l01596"></a><span class="lineno"> 1596</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01597" name="l01597"></a><span class="lineno"> 1597</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
 <div class="line"><a id="l01598" name="l01598"></a><span class="lineno"> 1598</span> </div>
 <div class="line"><a id="l01599" name="l01599"></a><span class="lineno"> 1599</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1683,7 +1683,7 @@ $(function() {
 <div class="line"><a id="l01603" name="l01603"></a><span class="lineno"> 1603</span> </div>
 <div class="line"><a id="l01604" name="l01604"></a><span class="lineno"> 1604</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01605" name="l01605"></a><span class="lineno"> 1605</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01606" name="l01606"></a><span class="lineno"> 1606</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].first(),</div>
+<div class="line"><a id="l01606" name="l01606"></a><span class="lineno"> 1606</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01607" name="l01607"></a><span class="lineno"> 1607</span>                                             2 * size[0] - domain4[0].last(), -1);</div>
 <div class="line"><a id="l01608" name="l01608"></a><span class="lineno"> 1608</span> </div>
 <div class="line"><a id="l01609" name="l01609"></a><span class="lineno"> 1609</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1696,7 +1696,7 @@ $(function() {
 <div class="line"><a id="l01616" name="l01616"></a><span class="lineno"> 1616</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(y)) {</div>
 <div class="line"><a id="l01617" name="l01617"></a><span class="lineno"> 1617</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(y);</div>
 <div class="line"><a id="l01618" name="l01618"></a><span class="lineno"> 1618</span> </div>
-<div class="line"><a id="l01619" name="l01619"></a><span class="lineno"> 1619</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01619" name="l01619"></a><span class="lineno"> 1619</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01620" name="l01620"></a><span class="lineno"> 1620</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01621" name="l01621"></a><span class="lineno"> 1621</span> </div>
 <div class="line"><a id="l01622" name="l01622"></a><span class="lineno"> 1622</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1706,7 +1706,7 @@ $(function() {
 <div class="line"><a id="l01626" name="l01626"></a><span class="lineno"> 1626</span> </div>
 <div class="line"><a id="l01627" name="l01627"></a><span class="lineno"> 1627</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01628" name="l01628"></a><span class="lineno"> 1628</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01629" name="l01629"></a><span class="lineno"> 1629</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].first(),</div>
+<div class="line"><a id="l01629" name="l01629"></a><span class="lineno"> 1629</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01630" name="l01630"></a><span class="lineno"> 1630</span>                                             2 * size[1] - domain4[1].last(), -1);</div>
 <div class="line"><a id="l01631" name="l01631"></a><span class="lineno"> 1631</span> </div>
 <div class="line"><a id="l01632" name="l01632"></a><span class="lineno"> 1632</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1719,7 +1719,7 @@ $(function() {
 <div class="line"><a id="l01639" name="l01639"></a><span class="lineno"> 1639</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(z)) {</div>
 <div class="line"><a id="l01640" name="l01640"></a><span class="lineno"> 1640</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(z);</div>
 <div class="line"><a id="l01641" name="l01641"></a><span class="lineno"> 1641</span> </div>
-<div class="line"><a id="l01642" name="l01642"></a><span class="lineno"> 1642</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01642" name="l01642"></a><span class="lineno"> 1642</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01643" name="l01643"></a><span class="lineno"> 1643</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01644" name="l01644"></a><span class="lineno"> 1644</span> </div>
 <div class="line"><a id="l01645" name="l01645"></a><span class="lineno"> 1645</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1729,7 +1729,7 @@ $(function() {
 <div class="line"><a id="l01649" name="l01649"></a><span class="lineno"> 1649</span> </div>
 <div class="line"><a id="l01650" name="l01650"></a><span class="lineno"> 1650</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01651" name="l01651"></a><span class="lineno"> 1651</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01652" name="l01652"></a><span class="lineno"> 1652</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].first(),</div>
+<div class="line"><a id="l01652" name="l01652"></a><span class="lineno"> 1652</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01653" name="l01653"></a><span class="lineno"> 1653</span>                                             2 * size[2] - domain4[2].last(), -1);</div>
 <div class="line"><a id="l01654" name="l01654"></a><span class="lineno"> 1654</span> </div>
 <div class="line"><a id="l01655" name="l01655"></a><span class="lineno"> 1655</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1742,9 +1742,9 @@ $(function() {
 <div class="line"><a id="l01662" name="l01662"></a><span class="lineno"> 1662</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xy)) {</div>
 <div class="line"><a id="l01663" name="l01663"></a><span class="lineno"> 1663</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xy);</div>
 <div class="line"><a id="l01664" name="l01664"></a><span class="lineno"> 1664</span> </div>
-<div class="line"><a id="l01665" name="l01665"></a><span class="lineno"> 1665</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01665" name="l01665"></a><span class="lineno"> 1665</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01666" name="l01666"></a><span class="lineno"> 1666</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01667" name="l01667"></a><span class="lineno"> 1667</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01667" name="l01667"></a><span class="lineno"> 1667</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01668" name="l01668"></a><span class="lineno"> 1668</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01669" name="l01669"></a><span class="lineno"> 1669</span> </div>
 <div class="line"><a id="l01670" name="l01670"></a><span class="lineno"> 1670</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1754,9 +1754,9 @@ $(function() {
 <div class="line"><a id="l01674" name="l01674"></a><span class="lineno"> 1674</span> </div>
 <div class="line"><a id="l01675" name="l01675"></a><span class="lineno"> 1675</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01676" name="l01676"></a><span class="lineno"> 1676</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01677" name="l01677"></a><span class="lineno"> 1677</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].first(),</div>
+<div class="line"><a id="l01677" name="l01677"></a><span class="lineno"> 1677</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01678" name="l01678"></a><span class="lineno"> 1678</span>                                             2 * size[0] - domain4[0].last(), -1);</div>
-<div class="line"><a id="l01679" name="l01679"></a><span class="lineno"> 1679</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].first(),</div>
+<div class="line"><a id="l01679" name="l01679"></a><span class="lineno"> 1679</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01680" name="l01680"></a><span class="lineno"> 1680</span>                                             2 * size[1] - domain4[1].last(), -1);</div>
 <div class="line"><a id="l01681" name="l01681"></a><span class="lineno"> 1681</span> </div>
 <div class="line"><a id="l01682" name="l01682"></a><span class="lineno"> 1682</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1769,9 +1769,9 @@ $(function() {
 <div class="line"><a id="l01689" name="l01689"></a><span class="lineno"> 1689</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(yz)) {</div>
 <div class="line"><a id="l01690" name="l01690"></a><span class="lineno"> 1690</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(yz);</div>
 <div class="line"><a id="l01691" name="l01691"></a><span class="lineno"> 1691</span> </div>
-<div class="line"><a id="l01692" name="l01692"></a><span class="lineno"> 1692</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01692" name="l01692"></a><span class="lineno"> 1692</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01693" name="l01693"></a><span class="lineno"> 1693</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01694" name="l01694"></a><span class="lineno"> 1694</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01694" name="l01694"></a><span class="lineno"> 1694</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01695" name="l01695"></a><span class="lineno"> 1695</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01696" name="l01696"></a><span class="lineno"> 1696</span> </div>
 <div class="line"><a id="l01697" name="l01697"></a><span class="lineno"> 1697</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1781,9 +1781,9 @@ $(function() {
 <div class="line"><a id="l01701" name="l01701"></a><span class="lineno"> 1701</span> </div>
 <div class="line"><a id="l01702" name="l01702"></a><span class="lineno"> 1702</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01703" name="l01703"></a><span class="lineno"> 1703</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01704" name="l01704"></a><span class="lineno"> 1704</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].first(),</div>
+<div class="line"><a id="l01704" name="l01704"></a><span class="lineno"> 1704</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01705" name="l01705"></a><span class="lineno"> 1705</span>                                             2 * size[1] - domain4[1].last(), -1);</div>
-<div class="line"><a id="l01706" name="l01706"></a><span class="lineno"> 1706</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].first(),</div>
+<div class="line"><a id="l01706" name="l01706"></a><span class="lineno"> 1706</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01707" name="l01707"></a><span class="lineno"> 1707</span>                                             2 * size[2] - domain4[2].last(), -1);</div>
 <div class="line"><a id="l01708" name="l01708"></a><span class="lineno"> 1708</span> </div>
 <div class="line"><a id="l01709" name="l01709"></a><span class="lineno"> 1709</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1796,9 +1796,9 @@ $(function() {
 <div class="line"><a id="l01716" name="l01716"></a><span class="lineno"> 1716</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xz)) {</div>
 <div class="line"><a id="l01717" name="l01717"></a><span class="lineno"> 1717</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xz);</div>
 <div class="line"><a id="l01718" name="l01718"></a><span class="lineno"> 1718</span> </div>
-<div class="line"><a id="l01719" name="l01719"></a><span class="lineno"> 1719</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01719" name="l01719"></a><span class="lineno"> 1719</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01720" name="l01720"></a><span class="lineno"> 1720</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01721" name="l01721"></a><span class="lineno"> 1721</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01721" name="l01721"></a><span class="lineno"> 1721</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01722" name="l01722"></a><span class="lineno"> 1722</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01723" name="l01723"></a><span class="lineno"> 1723</span> </div>
 <div class="line"><a id="l01724" name="l01724"></a><span class="lineno"> 1724</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1808,9 +1808,9 @@ $(function() {
 <div class="line"><a id="l01728" name="l01728"></a><span class="lineno"> 1728</span> </div>
 <div class="line"><a id="l01729" name="l01729"></a><span class="lineno"> 1729</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01730" name="l01730"></a><span class="lineno"> 1730</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01731" name="l01731"></a><span class="lineno"> 1731</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].first(),</div>
+<div class="line"><a id="l01731" name="l01731"></a><span class="lineno"> 1731</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01732" name="l01732"></a><span class="lineno"> 1732</span>                                             2 * size[0] - domain4[0].last(), -1);</div>
-<div class="line"><a id="l01733" name="l01733"></a><span class="lineno"> 1733</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].first(),</div>
+<div class="line"><a id="l01733" name="l01733"></a><span class="lineno"> 1733</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01734" name="l01734"></a><span class="lineno"> 1734</span>                                             2 * size[2] - domain4[2].last(), -1);</div>
 <div class="line"><a id="l01735" name="l01735"></a><span class="lineno"> 1735</span> </div>
 <div class="line"><a id="l01736" name="l01736"></a><span class="lineno"> 1736</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1823,11 +1823,11 @@ $(function() {
 <div class="line"><a id="l01743" name="l01743"></a><span class="lineno"> 1743</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xyz)) {</div>
 <div class="line"><a id="l01744" name="l01744"></a><span class="lineno"> 1744</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xyz);</div>
 <div class="line"><a id="l01745" name="l01745"></a><span class="lineno"> 1745</span> </div>
-<div class="line"><a id="l01746" name="l01746"></a><span class="lineno"> 1746</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01746" name="l01746"></a><span class="lineno"> 1746</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01747" name="l01747"></a><span class="lineno"> 1747</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01748" name="l01748"></a><span class="lineno"> 1748</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01748" name="l01748"></a><span class="lineno"> 1748</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01749" name="l01749"></a><span class="lineno"> 1749</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01750" name="l01750"></a><span class="lineno"> 1750</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01750" name="l01750"></a><span class="lineno"> 1750</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01751" name="l01751"></a><span class="lineno"> 1751</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01752" name="l01752"></a><span class="lineno"> 1752</span> </div>
 <div class="line"><a id="l01753" name="l01753"></a><span class="lineno"> 1753</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain4;</div>
@@ -1837,11 +1837,11 @@ $(function() {
 <div class="line"><a id="l01757" name="l01757"></a><span class="lineno"> 1757</span> </div>
 <div class="line"><a id="l01758" name="l01758"></a><span class="lineno"> 1758</span>                <span class="keywordflow">if</span> (lDomains4[i].touches(domain4)) {</div>
 <div class="line"><a id="l01759" name="l01759"></a><span class="lineno"> 1759</span>                    domain4    = lDomains4[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain4);</div>
-<div class="line"><a id="l01760" name="l01760"></a><span class="lineno"> 1760</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].first(),</div>
+<div class="line"><a id="l01760" name="l01760"></a><span class="lineno"> 1760</span>                    domain4[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain4[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01761" name="l01761"></a><span class="lineno"> 1761</span>                                             2 * size[0] - domain4[0].last(), -1);</div>
-<div class="line"><a id="l01762" name="l01762"></a><span class="lineno"> 1762</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].first(),</div>
+<div class="line"><a id="l01762" name="l01762"></a><span class="lineno"> 1762</span>                    domain4[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain4[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01763" name="l01763"></a><span class="lineno"> 1763</span>                                             2 * size[1] - domain4[1].last(), -1);</div>
-<div class="line"><a id="l01764" name="l01764"></a><span class="lineno"> 1764</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].first(),</div>
+<div class="line"><a id="l01764" name="l01764"></a><span class="lineno"> 1764</span>                    domain4[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain4[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l01765" name="l01765"></a><span class="lineno"> 1765</span>                                             2 * size[2] - domain4[2].last(), -1);</div>
 <div class="line"><a id="l01766" name="l01766"></a><span class="lineno"> 1766</span> </div>
 <div class="line"><a id="l01767" name="l01767"></a><span class="lineno"> 1767</span>                    intersection = intersection.intersect(domain4);</div>
@@ -1928,7 +1928,7 @@ $(function() {
 <div class="line"><a id="l01848" name="l01848"></a><span class="lineno"> 1848</span> </div>
 <div class="line"><a id="l01849" name="l01849"></a><span class="lineno"> 1849</span>            <span class="keywordflow">if</span> (domain2.touches(x)) {</div>
 <div class="line"><a id="l01850" name="l01850"></a><span class="lineno"> 1850</span>                <span class="keyword">auto</span> intersection = domain2.intersect(x);</div>
-<div class="line"><a id="l01851" name="l01851"></a><span class="lineno"> 1851</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01851" name="l01851"></a><span class="lineno"> 1851</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01852" name="l01852"></a><span class="lineno"> 1852</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
 <div class="line"><a id="l01853" name="l01853"></a><span class="lineno"> 1853</span> </div>
 <div class="line"><a id="l01854" name="l01854"></a><span class="lineno"> 1854</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -1946,7 +1946,7 @@ $(function() {
 <div class="line"><a id="l01866" name="l01866"></a><span class="lineno"> 1866</span> </div>
 <div class="line"><a id="l01867" name="l01867"></a><span class="lineno"> 1867</span>            <span class="keywordflow">if</span> (domain2.touches(y)) {</div>
 <div class="line"><a id="l01868" name="l01868"></a><span class="lineno"> 1868</span>                <span class="keyword">auto</span> intersection = domain2.intersect(y);</div>
-<div class="line"><a id="l01869" name="l01869"></a><span class="lineno"> 1869</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01869" name="l01869"></a><span class="lineno"> 1869</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01870" name="l01870"></a><span class="lineno"> 1870</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01871" name="l01871"></a><span class="lineno"> 1871</span> </div>
 <div class="line"><a id="l01872" name="l01872"></a><span class="lineno"> 1872</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -1964,7 +1964,7 @@ $(function() {
 <div class="line"><a id="l01884" name="l01884"></a><span class="lineno"> 1884</span> </div>
 <div class="line"><a id="l01885" name="l01885"></a><span class="lineno"> 1885</span>            <span class="keywordflow">if</span> (domain2.touches(z)) {</div>
 <div class="line"><a id="l01886" name="l01886"></a><span class="lineno"> 1886</span>                <span class="keyword">auto</span> intersection = domain2.intersect(z);</div>
-<div class="line"><a id="l01887" name="l01887"></a><span class="lineno"> 1887</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01887" name="l01887"></a><span class="lineno"> 1887</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01888" name="l01888"></a><span class="lineno"> 1888</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01889" name="l01889"></a><span class="lineno"> 1889</span> </div>
 <div class="line"><a id="l01890" name="l01890"></a><span class="lineno"> 1890</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -1982,9 +1982,9 @@ $(function() {
 <div class="line"><a id="l01902" name="l01902"></a><span class="lineno"> 1902</span> </div>
 <div class="line"><a id="l01903" name="l01903"></a><span class="lineno"> 1903</span>            <span class="keywordflow">if</span> (domain2.touches(xy)) {</div>
 <div class="line"><a id="l01904" name="l01904"></a><span class="lineno"> 1904</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xy);</div>
-<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01906" name="l01906"></a><span class="lineno"> 1906</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01907" name="l01907"></a><span class="lineno"> 1907</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01907" name="l01907"></a><span class="lineno"> 1907</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01908" name="l01908"></a><span class="lineno"> 1908</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l01909" name="l01909"></a><span class="lineno"> 1909</span> </div>
 <div class="line"><a id="l01910" name="l01910"></a><span class="lineno"> 1910</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2002,9 +2002,9 @@ $(function() {
 <div class="line"><a id="l01922" name="l01922"></a><span class="lineno"> 1922</span> </div>
 <div class="line"><a id="l01923" name="l01923"></a><span class="lineno"> 1923</span>            <span class="keywordflow">if</span> (domain2.touches(yz)) {</div>
 <div class="line"><a id="l01924" name="l01924"></a><span class="lineno"> 1924</span>                <span class="keyword">auto</span> intersection = domain2.intersect(yz);</div>
-<div class="line"><a id="l01925" name="l01925"></a><span class="lineno"> 1925</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01925" name="l01925"></a><span class="lineno"> 1925</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01926" name="l01926"></a><span class="lineno"> 1926</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01927" name="l01927"></a><span class="lineno"> 1927</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01927" name="l01927"></a><span class="lineno"> 1927</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01928" name="l01928"></a><span class="lineno"> 1928</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01929" name="l01929"></a><span class="lineno"> 1929</span> </div>
 <div class="line"><a id="l01930" name="l01930"></a><span class="lineno"> 1930</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2022,9 +2022,9 @@ $(function() {
 <div class="line"><a id="l01942" name="l01942"></a><span class="lineno"> 1942</span> </div>
 <div class="line"><a id="l01943" name="l01943"></a><span class="lineno"> 1943</span>            <span class="keywordflow">if</span> (domain2.touches(xz)) {</div>
 <div class="line"><a id="l01944" name="l01944"></a><span class="lineno"> 1944</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xz);</div>
-<div class="line"><a id="l01945" name="l01945"></a><span class="lineno"> 1945</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01945" name="l01945"></a><span class="lineno"> 1945</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01946" name="l01946"></a><span class="lineno"> 1946</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01947" name="l01947"></a><span class="lineno"> 1947</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01947" name="l01947"></a><span class="lineno"> 1947</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01948" name="l01948"></a><span class="lineno"> 1948</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01949" name="l01949"></a><span class="lineno"> 1949</span> </div>
 <div class="line"><a id="l01950" name="l01950"></a><span class="lineno"> 1950</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2042,11 +2042,11 @@ $(function() {
 <div class="line"><a id="l01962" name="l01962"></a><span class="lineno"> 1962</span> </div>
 <div class="line"><a id="l01963" name="l01963"></a><span class="lineno"> 1963</span>            <span class="keywordflow">if</span> (domain2.touches(xyz)) {</div>
 <div class="line"><a id="l01964" name="l01964"></a><span class="lineno"> 1964</span>                <span class="keyword">auto</span> intersection = domain2.intersect(xyz);</div>
-<div class="line"><a id="l01965" name="l01965"></a><span class="lineno"> 1965</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l01965" name="l01965"></a><span class="lineno"> 1965</span>                <span class="keyword">auto</span> xdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01966" name="l01966"></a><span class="lineno"> 1966</span>                                                (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l01967" name="l01967"></a><span class="lineno"> 1967</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l01967" name="l01967"></a><span class="lineno"> 1967</span>                <span class="keyword">auto</span> ydom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01968" name="l01968"></a><span class="lineno"> 1968</span>                                                (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l01969" name="l01969"></a><span class="lineno"> 1969</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l01969" name="l01969"></a><span class="lineno"> 1969</span>                <span class="keyword">auto</span> zdom         = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l01970" name="l01970"></a><span class="lineno"> 1970</span>                                                (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l01971" name="l01971"></a><span class="lineno"> 1971</span> </div>
 <div class="line"><a id="l01972" name="l01972"></a><span class="lineno"> 1972</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2079,7 +2079,7 @@ $(function() {
 <div class="line"><a id="l01999" name="l01999"></a><span class="lineno"> 1999</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(x)) {</div>
 <div class="line"><a id="l02000" name="l02000"></a><span class="lineno"> 2000</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(x);</div>
 <div class="line"><a id="l02001" name="l02001"></a><span class="lineno"> 2001</span> </div>
-<div class="line"><a id="l02002" name="l02002"></a><span class="lineno"> 2002</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l02002" name="l02002"></a><span class="lineno"> 2002</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02003" name="l02003"></a><span class="lineno"> 2003</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
 <div class="line"><a id="l02004" name="l02004"></a><span class="lineno"> 2004</span> </div>
 <div class="line"><a id="l02005" name="l02005"></a><span class="lineno"> 2005</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2089,7 +2089,7 @@ $(function() {
 <div class="line"><a id="l02009" name="l02009"></a><span class="lineno"> 2009</span> </div>
 <div class="line"><a id="l02010" name="l02010"></a><span class="lineno"> 2010</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02011" name="l02011"></a><span class="lineno"> 2011</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02012" name="l02012"></a><span class="lineno"> 2012</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].first(),</div>
+<div class="line"><a id="l02012" name="l02012"></a><span class="lineno"> 2012</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02013" name="l02013"></a><span class="lineno"> 2013</span>                                               2 * size[0] - domain2n1[0].last(), -1);</div>
 <div class="line"><a id="l02014" name="l02014"></a><span class="lineno"> 2014</span> </div>
 <div class="line"><a id="l02015" name="l02015"></a><span class="lineno"> 2015</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2102,7 +2102,7 @@ $(function() {
 <div class="line"><a id="l02022" name="l02022"></a><span class="lineno"> 2022</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(y)) {</div>
 <div class="line"><a id="l02023" name="l02023"></a><span class="lineno"> 2023</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(y);</div>
 <div class="line"><a id="l02024" name="l02024"></a><span class="lineno"> 2024</span> </div>
-<div class="line"><a id="l02025" name="l02025"></a><span class="lineno"> 2025</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l02025" name="l02025"></a><span class="lineno"> 2025</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02026" name="l02026"></a><span class="lineno"> 2026</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l02027" name="l02027"></a><span class="lineno"> 2027</span> </div>
 <div class="line"><a id="l02028" name="l02028"></a><span class="lineno"> 2028</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2112,7 +2112,7 @@ $(function() {
 <div class="line"><a id="l02032" name="l02032"></a><span class="lineno"> 2032</span> </div>
 <div class="line"><a id="l02033" name="l02033"></a><span class="lineno"> 2033</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02034" name="l02034"></a><span class="lineno"> 2034</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02035" name="l02035"></a><span class="lineno"> 2035</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].first(),</div>
+<div class="line"><a id="l02035" name="l02035"></a><span class="lineno"> 2035</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02036" name="l02036"></a><span class="lineno"> 2036</span>                                               2 * size[1] - domain2n1[1].last(), -1);</div>
 <div class="line"><a id="l02037" name="l02037"></a><span class="lineno"> 2037</span> </div>
 <div class="line"><a id="l02038" name="l02038"></a><span class="lineno"> 2038</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2125,7 +2125,7 @@ $(function() {
 <div class="line"><a id="l02045" name="l02045"></a><span class="lineno"> 2045</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(z)) {</div>
 <div class="line"><a id="l02046" name="l02046"></a><span class="lineno"> 2046</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(z);</div>
 <div class="line"><a id="l02047" name="l02047"></a><span class="lineno"> 2047</span> </div>
-<div class="line"><a id="l02048" name="l02048"></a><span class="lineno"> 2048</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l02048" name="l02048"></a><span class="lineno"> 2048</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02049" name="l02049"></a><span class="lineno"> 2049</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l02050" name="l02050"></a><span class="lineno"> 2050</span> </div>
 <div class="line"><a id="l02051" name="l02051"></a><span class="lineno"> 2051</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2135,7 +2135,7 @@ $(function() {
 <div class="line"><a id="l02055" name="l02055"></a><span class="lineno"> 2055</span> </div>
 <div class="line"><a id="l02056" name="l02056"></a><span class="lineno"> 2056</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02057" name="l02057"></a><span class="lineno"> 2057</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02058" name="l02058"></a><span class="lineno"> 2058</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].first(),</div>
+<div class="line"><a id="l02058" name="l02058"></a><span class="lineno"> 2058</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02059" name="l02059"></a><span class="lineno"> 2059</span>                                               2 * size[2] - domain2n1[2].last(), -1);</div>
 <div class="line"><a id="l02060" name="l02060"></a><span class="lineno"> 2060</span> </div>
 <div class="line"><a id="l02061" name="l02061"></a><span class="lineno"> 2061</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2148,9 +2148,9 @@ $(function() {
 <div class="line"><a id="l02068" name="l02068"></a><span class="lineno"> 2068</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xy)) {</div>
 <div class="line"><a id="l02069" name="l02069"></a><span class="lineno"> 2069</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xy);</div>
 <div class="line"><a id="l02070" name="l02070"></a><span class="lineno"> 2070</span> </div>
-<div class="line"><a id="l02071" name="l02071"></a><span class="lineno"> 2071</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l02071" name="l02071"></a><span class="lineno"> 2071</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02072" name="l02072"></a><span class="lineno"> 2072</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l02073" name="l02073"></a><span class="lineno"> 2073</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l02073" name="l02073"></a><span class="lineno"> 2073</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02074" name="l02074"></a><span class="lineno"> 2074</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
 <div class="line"><a id="l02075" name="l02075"></a><span class="lineno"> 2075</span> </div>
 <div class="line"><a id="l02076" name="l02076"></a><span class="lineno"> 2076</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2160,9 +2160,9 @@ $(function() {
 <div class="line"><a id="l02080" name="l02080"></a><span class="lineno"> 2080</span> </div>
 <div class="line"><a id="l02081" name="l02081"></a><span class="lineno"> 2081</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02082" name="l02082"></a><span class="lineno"> 2082</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02083" name="l02083"></a><span class="lineno"> 2083</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].first(),</div>
+<div class="line"><a id="l02083" name="l02083"></a><span class="lineno"> 2083</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02084" name="l02084"></a><span class="lineno"> 2084</span>                                               2 * size[0] - domain2n1[0].last(), -1);</div>
-<div class="line"><a id="l02085" name="l02085"></a><span class="lineno"> 2085</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].first(),</div>
+<div class="line"><a id="l02085" name="l02085"></a><span class="lineno"> 2085</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02086" name="l02086"></a><span class="lineno"> 2086</span>                                               2 * size[1] - domain2n1[1].last(), -1);</div>
 <div class="line"><a id="l02087" name="l02087"></a><span class="lineno"> 2087</span> </div>
 <div class="line"><a id="l02088" name="l02088"></a><span class="lineno"> 2088</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2175,9 +2175,9 @@ $(function() {
 <div class="line"><a id="l02095" name="l02095"></a><span class="lineno"> 2095</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(yz)) {</div>
 <div class="line"><a id="l02096" name="l02096"></a><span class="lineno"> 2096</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(yz);</div>
 <div class="line"><a id="l02097" name="l02097"></a><span class="lineno"> 2097</span> </div>
-<div class="line"><a id="l02098" name="l02098"></a><span class="lineno"> 2098</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l02098" name="l02098"></a><span class="lineno"> 2098</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02099" name="l02099"></a><span class="lineno"> 2099</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l02100" name="l02100"></a><span class="lineno"> 2100</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l02100" name="l02100"></a><span class="lineno"> 2100</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02101" name="l02101"></a><span class="lineno"> 2101</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l02102" name="l02102"></a><span class="lineno"> 2102</span> </div>
 <div class="line"><a id="l02103" name="l02103"></a><span class="lineno"> 2103</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2187,9 +2187,9 @@ $(function() {
 <div class="line"><a id="l02107" name="l02107"></a><span class="lineno"> 2107</span> </div>
 <div class="line"><a id="l02108" name="l02108"></a><span class="lineno"> 2108</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02109" name="l02109"></a><span class="lineno"> 2109</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02110" name="l02110"></a><span class="lineno"> 2110</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].first(),</div>
+<div class="line"><a id="l02110" name="l02110"></a><span class="lineno"> 2110</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02111" name="l02111"></a><span class="lineno"> 2111</span>                                               2 * size[1] - domain2n1[1].last(), -1);</div>
-<div class="line"><a id="l02112" name="l02112"></a><span class="lineno"> 2112</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].first(),</div>
+<div class="line"><a id="l02112" name="l02112"></a><span class="lineno"> 2112</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02113" name="l02113"></a><span class="lineno"> 2113</span>                                               2 * size[2] - domain2n1[2].last(), -1);</div>
 <div class="line"><a id="l02114" name="l02114"></a><span class="lineno"> 2114</span> </div>
 <div class="line"><a id="l02115" name="l02115"></a><span class="lineno"> 2115</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2202,9 +2202,9 @@ $(function() {
 <div class="line"><a id="l02122" name="l02122"></a><span class="lineno"> 2122</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xz)) {</div>
 <div class="line"><a id="l02123" name="l02123"></a><span class="lineno"> 2123</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xz);</div>
 <div class="line"><a id="l02124" name="l02124"></a><span class="lineno"> 2124</span> </div>
-<div class="line"><a id="l02125" name="l02125"></a><span class="lineno"> 2125</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l02125" name="l02125"></a><span class="lineno"> 2125</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02126" name="l02126"></a><span class="lineno"> 2126</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l02127" name="l02127"></a><span class="lineno"> 2127</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l02127" name="l02127"></a><span class="lineno"> 2127</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02128" name="l02128"></a><span class="lineno"> 2128</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l02129" name="l02129"></a><span class="lineno"> 2129</span> </div>
 <div class="line"><a id="l02130" name="l02130"></a><span class="lineno"> 2130</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2214,9 +2214,9 @@ $(function() {
 <div class="line"><a id="l02134" name="l02134"></a><span class="lineno"> 2134</span> </div>
 <div class="line"><a id="l02135" name="l02135"></a><span class="lineno"> 2135</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02136" name="l02136"></a><span class="lineno"> 2136</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02137" name="l02137"></a><span class="lineno"> 2137</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].first(),</div>
+<div class="line"><a id="l02137" name="l02137"></a><span class="lineno"> 2137</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02138" name="l02138"></a><span class="lineno"> 2138</span>                                               2 * size[0] - domain2n1[0].last(), -1);</div>
-<div class="line"><a id="l02139" name="l02139"></a><span class="lineno"> 2139</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].first(),</div>
+<div class="line"><a id="l02139" name="l02139"></a><span class="lineno"> 2139</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02140" name="l02140"></a><span class="lineno"> 2140</span>                                               2 * size[2] - domain2n1[2].last(), -1);</div>
 <div class="line"><a id="l02141" name="l02141"></a><span class="lineno"> 2141</span> </div>
 <div class="line"><a id="l02142" name="l02142"></a><span class="lineno"> 2142</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2229,11 +2229,11 @@ $(function() {
 <div class="line"><a id="l02149" name="l02149"></a><span class="lineno"> 2149</span>            <span class="keywordflow">if</span> (ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a>(xyz)) {</div>
 <div class="line"><a id="l02150" name="l02150"></a><span class="lineno"> 2150</span>                <span class="keyword">auto</span> intersection = ldom.<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(xyz);</div>
 <div class="line"><a id="l02151" name="l02151"></a><span class="lineno"> 2151</span> </div>
-<div class="line"><a id="l02152" name="l02152"></a><span class="lineno"> 2152</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].first()),</div>
+<div class="line"><a id="l02152" name="l02152"></a><span class="lineno"> 2152</span>                <span class="keyword">auto</span> xdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[0] - intersection[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02153" name="l02153"></a><span class="lineno"> 2153</span>                                        (2 * size[0] - intersection[0].last()), -1);</div>
-<div class="line"><a id="l02154" name="l02154"></a><span class="lineno"> 2154</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].first()),</div>
+<div class="line"><a id="l02154" name="l02154"></a><span class="lineno"> 2154</span>                <span class="keyword">auto</span> ydom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[1] - intersection[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02155" name="l02155"></a><span class="lineno"> 2155</span>                                        (2 * size[1] - intersection[1].last()), -1);</div>
-<div class="line"><a id="l02156" name="l02156"></a><span class="lineno"> 2156</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].first()),</div>
+<div class="line"><a id="l02156" name="l02156"></a><span class="lineno"> 2156</span>                <span class="keyword">auto</span> zdom = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>((2 * size[2] - intersection[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>()),</div>
 <div class="line"><a id="l02157" name="l02157"></a><span class="lineno"> 2157</span>                                        (2 * size[2] - intersection[2].last()), -1);</div>
 <div class="line"><a id="l02158" name="l02158"></a><span class="lineno"> 2158</span> </div>
 <div class="line"><a id="l02159" name="l02159"></a><span class="lineno"> 2159</span>                <a class="code hl_class" href="classippl_1_1NDIndex.html">ippl::NDIndex&lt;Dim&gt;</a> domain2n1;</div>
@@ -2243,11 +2243,11 @@ $(function() {
 <div class="line"><a id="l02163" name="l02163"></a><span class="lineno"> 2163</span> </div>
 <div class="line"><a id="l02164" name="l02164"></a><span class="lineno"> 2164</span>                <span class="keywordflow">if</span> (lDomains2n1[i].touches(domain2n1)) {</div>
 <div class="line"><a id="l02165" name="l02165"></a><span class="lineno"> 2165</span>                    domain2n1    = lDomains2n1[i].<a class="code hl_function" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a>(domain2n1);</div>
-<div class="line"><a id="l02166" name="l02166"></a><span class="lineno"> 2166</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].first(),</div>
+<div class="line"><a id="l02166" name="l02166"></a><span class="lineno"> 2166</span>                    domain2n1[0] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[0] - domain2n1[0].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02167" name="l02167"></a><span class="lineno"> 2167</span>                                               2 * size[0] - domain2n1[0].last(), -1);</div>
-<div class="line"><a id="l02168" name="l02168"></a><span class="lineno"> 2168</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].first(),</div>
+<div class="line"><a id="l02168" name="l02168"></a><span class="lineno"> 2168</span>                    domain2n1[1] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[1] - domain2n1[1].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02169" name="l02169"></a><span class="lineno"> 2169</span>                                               2 * size[1] - domain2n1[1].last(), -1);</div>
-<div class="line"><a id="l02170" name="l02170"></a><span class="lineno"> 2170</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].first(),</div>
+<div class="line"><a id="l02170" name="l02170"></a><span class="lineno"> 2170</span>                    domain2n1[2] = <a class="code hl_class" href="classippl_1_1Index.html">ippl::Index</a>(2 * size[2] - domain2n1[2].<a class="code hl_function" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>(),</div>
 <div class="line"><a id="l02171" name="l02171"></a><span class="lineno"> 2171</span>                                               2 * size[2] - domain2n1[2].last(), -1);</div>
 <div class="line"><a id="l02172" name="l02172"></a><span class="lineno"> 2172</span> </div>
 <div class="line"><a id="l02173" name="l02173"></a><span class="lineno"> 2173</span>                    intersection = intersection.intersect(domain2n1);</div>
@@ -2264,6 +2264,7 @@ $(function() {
 <div class="line"><a id="l02184" name="l02184"></a><span class="lineno"> 2184</span>        <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">ippl::Comm</a>-&gt;freeAllBuffers();</div>
 <div class="line"><a id="l02185" name="l02185"></a><span class="lineno"> 2185</span>    };</div>
 <div class="line"><a id="l02186" name="l02186"></a><span class="lineno"> 2186</span>}  <span class="comment">// namespace ippl</span></div>
+<div class="ttc" id="aAbsorbingBC_8h_html_a58ce4b72dde36d8333e494948da516ba"><div class="ttname"><a href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a></div><div class="ttdeci">constexpr KOKKOS_INLINE_FUNCTION auto first()</div><div class="ttdef"><b>Definition:</b> AbsorbingBC.h:10</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
 <div class="ttc" id="aChargedParticles_8hpp_html_a43016d873124d39034edb8cd164794db"><div class="ttname"><a href="ChargedParticles_8hpp.html#a43016d873124d39034edb8cd164794db">pi</a></div><div class="ttdeci">const double pi</div><div class="ttdef"><b>Definition:</b> ChargedParticles.hpp:76</div></div>

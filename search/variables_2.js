@@ -7,5 +7,6 @@ var searchData=
   ['comm_4',['comm',['../classippl_1_1FieldLayout.html#a8d3132b3d1fec40ab7ba76c23bc9104d',1,'ippl::FieldLayout']]],
   ['comm_5',['Comm',['../namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486',1,'ippl']]],
   ['comm_5fm_6',['comm_m',['../classippl_1_1mpi_1_1Communicator.html#a6f7401cc8fe4de193f67aca1864c0bb7',1,'ippl::mpi::Communicator']]],
-  ['count_7',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type']]]
+  ['count_7',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type']]],
+  ['cweights_8',['Cweights',['../structsecond__order__abc__face.html#a465ba669a1c8dd1101a430fdb97e2ab9',1,'second_order_abc_face::Cweights()'],['../structsecond__order__abc__corner.html#a3f4467b0a15600bd2e2224dac8b6f3d1',1,'second_order_abc_corner::Cweights()']]]
 ];

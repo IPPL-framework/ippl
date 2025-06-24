@@ -1,0 +1,6 @@
+<map id="FDTDSolverBase.hpp" name="FDTDSolverBase.hpp">
+<area shape="rect" id="node1" title=" " alt="" coords="116,5,263,31"/>
+<area shape="rect" id="node2" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="123,79,256,104"/>
+<area shape="rect" id="node3" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="5,152,184,177"/>
+<area shape="rect" id="node4" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="208,152,363,177"/>
+</map>

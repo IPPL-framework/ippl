@@ -4,6 +4,8 @@ var searchData=
   ['ndindex_2ehpp_1',['NDIndex.hpp',['../NDIndex_8hpp.html',1,'']]],
   ['ndregion_2eh_2',['NDRegion.h',['../NDRegion_8h.html',1,'']]],
   ['ndregion_2ehpp_3',['NDRegion.hpp',['../NDRegion_8hpp.html',1,'']]],
-  ['normaldistribution_2eh_4',['NormalDistribution.h',['../NormalDistribution_8h.html',1,'']]],
-  ['nullsolver_2eh_5',['NullSolver.h',['../NullSolver_8h.html',1,'']]]
+  ['nonstandardfdtdsolver_2eh_4',['NonStandardFDTDSolver.h',['../NonStandardFDTDSolver_8h.html',1,'']]],
+  ['nonstandardfdtdsolver_2ehpp_5',['NonStandardFDTDSolver.hpp',['../NonStandardFDTDSolver_8hpp.html',1,'']]],
+  ['normaldistribution_2eh_6',['NormalDistribution.h',['../NormalDistribution_8h.html',1,'']]],
+  ['nullsolver_2eh_7',['NullSolver.h',['../NullSolver_8h.html',1,'']]]
 ];
