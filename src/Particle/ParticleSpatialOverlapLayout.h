@@ -76,8 +76,8 @@ namespace ippl::fixDefaultTemplateArgument {
         private:
             friend class ParticleSpatialOverlapLayout;
 
-            ParticleNeighborData(size_type numLocalParticles, Vector_t<size_type, Dim> cellStrides,
-                                 Vector_t<size_type, Dim> numCells, Vector_t<T, Dim> cellWidth,
+            ParticleNeighborData(size_type numLocalParticles, Vector<size_type, Dim> cellStrides,
+                                 Vector<size_type, Dim> numCells, Vector<T, Dim> cellWidth,
                                  region_type region, hash_type cellStartingIdx, hash_type cellIndex,
                                  hash_type cellParticleCount, hash_type cellPermutationForward,
                                  hash_type cellPermutationBackward)
@@ -90,12 +90,13 @@ namespace ippl::fixDefaultTemplateArgument {
                 , cellIndex(cellIndex)
                 , cellParticleCount(cellParticleCount)
                 , cellPermutationForward(cellPermutationForward)
-                , cellPermutationBackward(cellPermutationBackward) {}
+                , cellPermutationBackward(cellPermutationBackward) {
+            }
 
             size_type numLocalParticles;
-            Vector_t<size_type, Dim> cellStrides;
-            Vector_t<size_type, Dim> numCells;
-            Vector_t<T, Dim> cellWidth;
+            Vector<size_type, Dim> cellStrides;
+            Vector<size_type, Dim> numCells;
+            Vector<T, Dim> cellWidth;
             region_type region;
             hash_type cellStartingIdx;
             hash_type cellIndex;
@@ -267,11 +268,11 @@ namespace ippl::fixDefaultTemplateArgument {
         ///! overlap in each dimension
         const T rcutoff_m;
         ///! number of cells in each dimension
-        Vector_t<size_type, Dim> numCells_m;
+        Vector<size_type, Dim> numCells_m;
         ///! strides to compute cell indices
-        Vector_t<size_type, Dim> cellStrides_m;
+        Vector<size_type, Dim> cellStrides_m;
         ///! width of cells in each dimension
-        Vector_t<T, Dim> cellWidth_m;
+        Vector<T, Dim> cellWidth_m;
         /*!
          * totalCells_m is the number of total cells
          * numLocalCells_m is the number of interior cells
@@ -296,7 +297,7 @@ namespace ippl::fixDefaultTemplateArgument {
         ///! view of number of particles in each cell
         hash_type cellParticleCount_m;
 
-        using CellIndex_t     = Vector_t<size_type, Dim>;
+        using CellIndex_t     = Vector<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
 
     public:
@@ -353,7 +354,7 @@ namespace ippl::fixDefaultTemplateArgument {
          */
         KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type& pos,
                                                                        const region_type& region,
-                                                                       Vector_t<bool, Dim> periodic,
+                                                                       Vector<bool, Dim> periodic,
                                                                        T overlap);
 
         /*!
@@ -363,7 +364,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param cellPermutationForward the permutation to apply to the flattened index
          */
         KOKKOS_INLINE_FUNCTION constexpr static FlatCellIndex_t toFlatCellIndex(
-            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
+            const CellIndex_t& cellIndex, const Vector<size_type, Dim>& cellStrides,
             hash_type cellPermutationForward);
 
         /*!
@@ -372,7 +373,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param numCells in each dimension
          */
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t toCellIndex(
-            FlatCellIndex_t nonPermutedIndex, const Vector_t<size_type, Dim>& numCells);
+            FlatCellIndex_t nonPermutedIndex, const Vector<size_type, Dim>& numCells);
 
         /*!
          * @brief determines whether cell index is local cell index
@@ -380,7 +381,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param numCells in each dimension
          */
         KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(
-            const CellIndex_t& index, const Vector_t<size_type, Dim>& numCells);
+            const CellIndex_t& index, const Vector<size_type, Dim>& numCells);
 
         /*!
          * @brief determines whether a position is in a region including its overlap
@@ -399,7 +400,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param cellWidth in each dimension
          */
         KOKKOS_INLINE_FUNCTION constexpr static CellIndex_t getCellIndex(
-            const vector_type& pos, const region_type& region, const Vector_t<T, Dim>& cellWidth);
+            const vector_type& pos, const region_type& region, const Vector<T, Dim>& cellWidth);
 
         using cell_particle_neighbor_list_type =
             Kokkos::Array<size_type, detail::countHypercubes(Dim)>;
@@ -411,7 +412,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param cellPermutationForward the permutation to apply to all neighbors
          */
         KOKKOS_INLINE_FUNCTION constexpr static cell_particle_neighbor_list_type getCellNeighbors(
-            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
+            const CellIndex_t& cellIndex, const Vector<size_type, Dim>& cellStrides,
             const hash_type& cellPermutationForward);
     };
 }  // namespace ippl::fixDefaultTemplateArgument

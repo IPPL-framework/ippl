@@ -127,7 +127,7 @@ namespace ippl::fixDefaultTemplateArgument {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isCloseToBoundary(
-        const vector_type& pos, const region_type& globalRegion, Vector_t<bool, Dim> periodic,
+        const vector_type& pos, const region_type& globalRegion, Vector<bool, Dim> periodic,
         T overlap) {
         return [&]<std::size_t... Idx>(const std::index_sequence<Idx...>&) {
             return ((periodic[Idx]
@@ -146,7 +146,7 @@ namespace ippl::fixDefaultTemplateArgument {
         /* periodic boundary conditions come in pairs. Thus collect whether each dimension is
          * subject to periodic boundary conditions
          */
-        Vector_t<bool, Dim> periodic;
+        Vector<bool, Dim> periodic;
         for (unsigned d = 0; d < Dim; ++d) {
             periodic[d] = this->getParticleBC()[2 * d];
         }
@@ -943,7 +943,7 @@ namespace ippl::fixDefaultTemplateArgument {
     KOKKOS_INLINE_FUNCTION constexpr
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::FlatCellIndex_t
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::toFlatCellIndex(
-            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
+            const CellIndex_t& cellIndex, const Vector<size_type, Dim>& cellStrides,
             hash_type cellPermutationForward) {
         return cellPermutationForward(cellIndex.dot(cellStrides));
     }
@@ -952,7 +952,7 @@ namespace ippl::fixDefaultTemplateArgument {
     KOKKOS_INLINE_FUNCTION constexpr
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::CellIndex_t
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::toCellIndex(
-            FlatCellIndex_t nonPermutedIndex, const Vector_t<size_type, Dim>& numCells) {
+            FlatCellIndex_t nonPermutedIndex, const Vector<size_type, Dim>& numCells) {
         CellIndex_t ndIndex;
         // #pragma unroll
         for (size_type d = 0; d < Dim; ++d) {
@@ -966,7 +966,7 @@ namespace ippl::fixDefaultTemplateArgument {
     KOKKOS_INLINE_FUNCTION constexpr
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::CellIndex_t
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellIndex(
-            const vector_type& pos, const region_type& region, const Vector_t<T, Dim>& cellWidth) {
+            const vector_type& pos, const region_type& region, const Vector<T, Dim>& cellWidth) {
         CellIndex_t cellIndex;
         for (unsigned d = 0; d < Dim; ++d) {
             cellIndex[d] = static_cast<size_type>(
@@ -977,7 +977,7 @@ namespace ippl::fixDefaultTemplateArgument {
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     constexpr bool ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isLocalCellIndex(
-        const CellIndex_t& index, const Vector_t<size_type, Dim>& numCells) {
+        const CellIndex_t& index, const Vector<size_type, Dim>& numCells) {
         return [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             return !((index[Idx] == 0 || index[Idx] == numCells[Idx] - 1) || ...);
         }(std::make_index_sequence<Dim>());
@@ -1097,7 +1097,7 @@ namespace ippl::fixDefaultTemplateArgument {
         typename ParticleSpatialOverlapLayout<T, Dim, Mesh,
                                               Properties...>::cell_particle_neighbor_list_type
         ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getCellNeighbors(
-            const CellIndex_t& cellIndex, const Vector_t<size_type, Dim>& cellStrides,
+            const CellIndex_t& cellIndex, const Vector<size_type, Dim>& cellStrides,
             const hash_type& cellPermutationForward) {
         /* Generate all 3^Dim combinations of offsets (-1, 0, +1) for each dimension by using
          * "base-3" representation of neighbor index. in base-3 each digit is 0, 1, 2 subtracting
