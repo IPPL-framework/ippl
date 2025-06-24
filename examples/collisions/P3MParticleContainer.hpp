@@ -33,7 +33,6 @@ public:
     particle_scalar_type Q; // charge
     particle_vector_type P; // particle velocity
     particle_vector_type E; // electric field at particle position
-    // particle_scalar_type phi;  // electric potential at particle position
 
 private:
     PLayout_t<T, Dim> pl_m; // Particle layout
@@ -56,9 +55,6 @@ private:
         this->addAttribute(Q);
         this->addAttribute(P);
         this->addAttribute(E);
-        // this->addAttribute(phi);
-        // this->addAttribute(ID);
-        // this->addAttribute(F_sr);
     }
 };
 
