@@ -24,7 +24,7 @@
 #include "Particle/ParticleLayout.h"
 #include "Region/RegionLayout.h"
 
-namespace ippl::fixDefaultTemplateArgument {
+namespace ippl {
     // This additional namespace is needed to allow for Mesh to have default argument
     // UniformCartesian<T, Dim> via typedef at the end of the file. Compiling for cuda led to error
     // when trying to do so directly...
@@ -34,13 +34,14 @@ namespace ippl::fixDefaultTemplateArgument {
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim, class Mesh, typename... PositionProperties>
+    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
+              typename... PositionProperties>
     class ParticleSpatialOverlapLayout
         : public ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...> {
     public:
         using Base = ParticleSpatialLayout<T, Dim, Mesh, PositionProperties...>;
-        using typename Base::position_memory_space;
         using typename Base::position_execution_space;
+        using typename Base::position_memory_space;
 
         using typename Base::bool_type;
         using typename Base::hash_type;
@@ -64,9 +65,8 @@ namespace ippl::fixDefaultTemplateArgument {
         using neighbor_list = typename FieldLayout_t::neighbor_list;
 
     public:
-
         // the maximum number of overlapping ranks
-        using locate_type_nd = Kokkos::View<index_t *[1 << Dim], position_memory_space>;
+        using locate_type_nd = Kokkos::View<index_t * [1 << Dim], position_memory_space>;
 
         /*!
          * Proxy class to store all necessary information needed to call getParticleNeighbors
@@ -90,8 +90,7 @@ namespace ippl::fixDefaultTemplateArgument {
                 , cellIndex(cellIndex)
                 , cellParticleCount(cellParticleCount)
                 , cellPermutationForward(cellPermutationForward)
-                , cellPermutationBackward(cellPermutationBackward) {
-            }
+                , cellPermutationBackward(cellPermutationBackward) {}
 
             size_type numLocalParticles;
             Vector<size_type, Dim> cellStrides;
@@ -163,17 +162,20 @@ namespace ippl::fixDefaultTemplateArgument {
         KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
             const vector_type& pos, const ParticleNeighborData& particleNeighborData);
 
-    // private:
+        // private:
         // methods needed for particleExchangeOld
         /**
-         * @brief This function determines to which rank particles need to be sent after the iteration step.
-         *        It looks in all regions to determine where it belongs.
+         * @brief This function determines to which rank particles need to be sent after the
+         *        iteration step. It looks in all regions to determine where it belongs.
          *
          * @param pc           Particle Container
-         * @param ranks        A vector where each value refers to the new rank of the particle which rank values
-         *                      correspond to which particles is determined by rankOffsets
-         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of particle i in ranks start.
-         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
+         * @param ranks        A vector where each value refers to the new rank of the particle
+         *                      which rank values correspond to which particles is determined by
+         *                      rankOffsets
+         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of
+         *                      particle i in ranks start.
+         * @param invalid      A vector marking the particles that need to be sent away, and thus
+         *                      locally deleted
          * @return the number of particles sent away
          */
         template <typename ParticleContainer>
@@ -189,29 +191,36 @@ namespace ippl::fixDefaultTemplateArgument {
         size_type numberOfSends(int rank, const locate_type& ranks);
 
         /*!
-        * @brief utility function to collect all indices of particles to send to given rank
-        * @param rank rank to send to
-        * @param ranks The view containing which rank each particle belongs to
-        * @param offsets The offsets to determine where the ranks of a particle start in ranks
-        * @param hash the view containing all particle indices to send
-        */
-        void fillHash(int rank, const locate_type& ranks, const locate_type& offsets, hash_type& hash);
+         * @brief utility function to collect all indices of particles to send to given rank
+         * @param rank rank to send to
+         * @param ranks The view containing which rank each particle belongs to
+         * @param offsets The offsets to determine where the ranks of a particle start in ranks
+         * @param hash the view containing all particle indices to send
+         */
+        void fillHash(int rank, const locate_type& ranks, const locate_type& offsets,
+                      hash_type& hash);
 
         // methods needed for particleExchangeNew
         /**
-         * @brief This function determines to which rank particles need to be sent after the iteration step.
-         *        It starts by first scanning direct rank neighbors, and only does a global scan if particles are
-         *        far away from the current rank. It then calculates how many particles need to be sent to each rank
-         *        and how many ranks are sent to in total.
+         * @brief This function determines to which rank particles need to be sent after the
+         *        iteration step. It starts by first scanning direct rank neighbors, and only does a
+         *        global scan if particles are far away from the current rank. It then calculates
+         *        how many particles need to be sent to each rank and how many ranks are sent to in
+         *        total.
          *
          * @param pc           Particle Container
-         * @param ranks        A vector where each value refers to the new rank of the particle which rank values
-         *                      correspond to which particles is determined by rankOffsets
-         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of particle i in ranks start.
-         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
-         * @param nSends_dview Device view the length of number of ranks, where each value determines the number
-         *                      of particles sent to that rank from the current rank
-         * @param sends_dview  Device view for the number of ranks that are sent to from current rank
+         * @param ranks        A vector where each value refers to the new rank of the particle
+         *                      which rank values correspond to which particles is determined by
+         *                      rankOffsets
+         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of
+         *                      particle i in ranks start.
+         * @param invalid      A vector marking the particles that need to be sent away, and thus
+         *                      locally deleted
+         * @param nSends_dview Device view the length of number of ranks, where each value
+         *                      determines the number of particles sent to that rank from the
+         *                      current rank
+         * @param sends_dview  Device view for the number of ranks that are sent to from current
+         *                      rank
          *
          * @return tuple with the number of particles sent away and the number of ranks sent to
          */
@@ -236,17 +245,19 @@ namespace ippl::fixDefaultTemplateArgument {
 
         // methods needed for particleExchangeNd
         /**
-         * @brief This function determines to which rank particles need to be sent after the iteration step.
-         *        It looks in all regions to determine where it belongs.
+         * @brief This function determines to which rank particles need to be sent after the
+         *        iteration step. It looks in all regions to determine where it belongs.
          *
          * @param pc           Particle Container
-         * @param ranks        A 2D view of ranks, each row contains all ranks a particle belongs to, with -1 filled at the end
-         * @param invalid      A vector marking the particles that need to be sent away, and thus locally deleted
+         * @param ranks        A 2D view of ranks, each row contains all ranks a particle belongs
+         *                      to, with -1 filled at the end
+         * @param invalid      A vector marking the particles that need to be sent away, and thus
+         *                      locally deleted
          * @return the number of particles sent away
          */
-        template<typename ParticleContainer>
-        size_type locateParticles(const ParticleContainer &pc, locate_type_nd &ranks,
-                                  bool_type &invalid) const;
+        template <typename ParticleContainer>
+        size_type locateParticles(const ParticleContainer& pc, locate_type_nd& ranks,
+                                  bool_type& invalid) const;
 
         /*!
          * @brief utility function to compute how many particles to sent to a given rank
@@ -254,7 +265,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param ranks The 2D view containing which rank each particle belongs to
          * @return number of particles sent to rank
          */
-        size_t numberOfSends(int rank, const locate_type_nd &ranks);
+        size_t numberOfSends(int rank, const locate_type_nd& ranks);
 
         /*!
          * @brief utility function to collect all indices of particles to send to given rank
@@ -262,7 +273,7 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param ranks The view containing which rank each particle belongs to
          * @param hash the view containing all particle indices to send
          */
-        void fillHash(int rank, const locate_type_nd &ranks, hash_type &hash);
+        void fillHash(int rank, const locate_type_nd& ranks, hash_type& hash);
 
     protected:
         ///! overlap in each dimension
@@ -284,15 +295,17 @@ namespace ippl::fixDefaultTemplateArgument {
         static constexpr size_type numGhostCellsPerDim_m = 1;
         /*!
          * To ensure the interior particles are at indices 0, ..., numLocalParticles_m - 1 the cells
-         * need to be permuted such that local cells are at the beginning and ghost cells at the end.
-         * cellPermutationForward_m at cell index computed from actual position and cellStrides gives permuted index
+         * need to be permuted such that local cells are at the beginning and ghost cells at the end
+         * cellPermutationForward_m at cell index computed from actual position and cellStrides
+         * gives permuted index
          * cellPermutationBackward_m is the inverse of cellPermutationForward_m
          */
         hash_type cellPermutationForward_m;
         hash_type cellPermutationBackward_m;
         ///! cell i contains particles cellStartingIdx_m(i), ..., cellStartingIdx_m(i + 1) - 1
         hash_type cellStartingIdx_m;
-        ///! view storing the cell index of each particle (TODO not needed if getParticleNeighbors depending on index is not required)
+        ///! view storing the cell index of each particle (TODO not needed if getParticleNeighbors
+        ///                                                 depending on index is not required)
         hash_type cellIndex_m;
         ///! view of number of particles in each cell
         hash_type cellParticleCount_m;
@@ -314,8 +327,8 @@ namespace ippl::fixDefaultTemplateArgument {
         void particleExchangeOld(ParticleContainer& pc);
 
         /*!
-         * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if needed.
-         *         works if overlap is smaller than half the smallest region width
+         * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if
+         *         needed. works if overlap is smaller than half the smallest region width.
          * @param pc particle container of which to exchange particles
          */
         template <class ParticleContainer>
@@ -326,8 +339,8 @@ namespace ippl::fixDefaultTemplateArgument {
          *         works if cutoff is smaller than half the smallest region width
          * @param pc particle container of which to exchange particles
          */
-        template<class ParticleContainer>
-        void particleExchangeNd(ParticleContainer &pc);
+        template <class ParticleContainer>
+        void particleExchangeNd(ParticleContainer& pc);
 
         /*!
          * @brief builds the cell structure, sorts the particles according to the cells and makes
@@ -338,7 +351,8 @@ namespace ippl::fixDefaultTemplateArgument {
         void buildCells(ParticleContainer& pc);
 
         /*!
-         * @brief copies particles close to the boundary and offsets them to their closest periodic image
+         * @brief copies particles close to the boundary and offsets them to their closest periodic
+         *        image
          * @param pc particle container of which to construct periodic ghost particles
          */
         template <class ParticleContainer>
@@ -352,10 +366,10 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param periodic vector determining which dimensions to consider (as they are periodic)
          * @param overlap distance to consider as close
          */
-        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(const vector_type& pos,
-                                                                       const region_type& region,
-                                                                       Vector<bool, Dim> periodic,
-                                                                       T overlap);
+        template <std::size_t... Idx>
+        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(
+            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
+            Vector<bool, Dim> periodic, T overlap);
 
         /*!
          * @brief convert a nd-cell-index to flat cell index
@@ -380,8 +394,10 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param index to test
          * @param numCells in each dimension
          */
+        template <std::size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool isLocalCellIndex(
-            const CellIndex_t& index, const Vector<size_type, Dim>& numCells);
+            const std::index_sequence<Idx...>&, const CellIndex_t& index,
+            const Vector<size_type, Dim>& numCells);
 
         /*!
          * @brief determines whether a position is in a region including its overlap
@@ -389,9 +405,10 @@ namespace ippl::fixDefaultTemplateArgument {
          * @param region region to test
          * @param overlap overlap of the region in every dimension
          */
-        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(const vector_type& pos,
-                                                                      const region_type& region,
-                                                                      T overlap);
+        template <std::size_t... Idx>
+        KOKKOS_INLINE_FUNCTION constexpr static bool positionInRegion(
+            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
+            T overlap);
 
         /*!
          * @brief get the nd-cell-index of a position
@@ -415,16 +432,8 @@ namespace ippl::fixDefaultTemplateArgument {
             const CellIndex_t& cellIndex, const Vector<size_type, Dim>& cellStrides,
             const hash_type& cellPermutationForward);
     };
-}  // namespace ippl::fixDefaultTemplateArgument
+}  // namespace ippl
 
 #include "Particle/ParticleSpatialOverlapLayout.hpp"
-
-namespace ippl {
-    template <typename T, unsigned Dim, typename Mesh = UniformCartesian<T, Dim>,
-              typename... PositionProperties>
-    using ParticleSpatialOverlapLayout =
-        fixDefaultTemplateArgument::ParticleSpatialOverlapLayout<T, Dim, Mesh,
-                                                                 PositionProperties...>;
-}
 
 #endif  // IPPL_PARTICLE_SPATIAL_OVERLAP_LAYOUT_H

@@ -19,9 +19,10 @@
 
 #include "Utility/IpplTimings.h"
 
+#include "../../alpine/ParticleContainer.hpp"
 #include "Communicate/Window.h"
 
-namespace ippl::fixDefaultTemplateArgument {
+namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff)
@@ -83,11 +84,12 @@ namespace ippl::fixDefaultTemplateArgument {
         hash_type localPrefixSum("local prefix sum", totalCells_m);
         hash_type ghostPrefixSum("ghost prefix sum", totalCells_m);
         const auto& numCells = numCells_m;
+        constexpr auto is    = std::make_index_sequence<Dim>();
 
         Kokkos::parallel_scan(
             "scan_local", Kokkos::RangePolicy(0, totalCells_m),
             KOKKOS_LAMBDA(const size_type i, size_type& update, const bool final) {
-                const size_type val = isLocalCellIndex(toCellIndex(i, numCells), numCells);
+                const size_type val = isLocalCellIndex(is, toCellIndex(i, numCells), numCells);
                 if (final) {
                     localPrefixSum(i) = update;
                 }
@@ -96,7 +98,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::parallel_scan(
             "scan_ghost", Kokkos::RangePolicy(0, totalCells_m),
             KOKKOS_LAMBDA(const size_type i, size_type& update, const bool final) {
-                const size_type val = !isLocalCellIndex(toCellIndex(i, numCells), numCells);
+                const size_type val = !isLocalCellIndex(is, toCellIndex(i, numCells), numCells);
                 if (final) {
                     ghostPrefixSum(i) = update;
                 }
@@ -106,10 +108,10 @@ namespace ippl::fixDefaultTemplateArgument {
         /* Step 2. assign the cells at the correct locations of the permutations */
         const auto numLocalCells = numLocalCells_m;
         Kokkos::parallel_for(
-            "assign_permutations", Kokkos::RangePolicy<>(0, totalCells_m),
+            "assign_permutations", Kokkos::RangePolicy(0, totalCells_m),
             KOKKOS_LAMBDA(const size_type i) {
                 if (const auto cellIdx = toCellIndex(i, numCells);
-                    isLocalCellIndex(cellIdx, numCells)) {
+                    isLocalCellIndex(is, cellIdx, numCells)) {
                     const size_type localIdx          = localPrefixSum(i);
                     cellPermutationForward(i)         = localIdx;
                     cellPermutationBackward(localIdx) = i;
@@ -125,17 +127,40 @@ namespace ippl::fixDefaultTemplateArgument {
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <std::size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isCloseToBoundary(
-        const vector_type& pos, const region_type& globalRegion, Vector<bool, Dim> periodic,
-        T overlap) {
-        return [&]<std::size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return ((periodic[Idx]
-                     && (pos[Idx] < globalRegion[Idx].min() + overlap
-                         || pos[Idx] > globalRegion[Idx].max() - overlap))
-                    || ...);
-        }(std::make_index_sequence<Dim>());
+        const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& globalRegion,
+        Vector<bool, Dim> periodic, T overlap) {
+        return ((periodic[Idx]
+                 && (pos[Idx] < globalRegion[Idx].min() + overlap
+                     || pos[Idx] > globalRegion[Idx].max() - overlap))
+                || ...);
     }
+
+    namespace detail {
+
+        template <typename ParticleContainer, typename index_type>
+        inline void copyAttributes(ParticleContainer& pc, const index_type& boundaryIndices) {
+            detail::runForAllSpaces([&]<typename MemorySpace>() {
+                size_t numAttributesInSpace = 0;
+                pc.template forAllAttributes<MemorySpace>(
+                    [&numAttributesInSpace]<typename Attribute>(Attribute&) {
+                        ++numAttributesInSpace;
+                    });
+                if (numAttributesInSpace == 0) {
+                    return;
+                }
+
+                pc.template forAllAttributes<MemorySpace>(
+                    [boundaryIndicesMirror = Kokkos::create_mirror_view_and_copy(
+                         MemorySpace(), boundaryIndices)]<typename Attribute>(Attribute& att) {
+                        att->internalCopy(boundaryIndicesMirror);
+                    });
+            });
+            Kokkos::fence();
+        }
+    }  // namespace detail
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <class ParticleContainer>
@@ -162,12 +187,13 @@ namespace ippl::fixDefaultTemplateArgument {
         const auto numLoc        = pc.getLocalNum();
         const auto positions     = pc.R.getView();
 
+        constexpr auto is = std::make_index_sequence<Dim>();
         /* Step 1. Determine all particles which are close to the global domain boundary */
         size_type numBoundaryParticles = 0;
         Kokkos::parallel_reduce(
             "count boundary particles", numLoc,
             KOKKOS_LAMBDA(const size_t& i, size_type& sum) {
-                if (isCloseToBoundary(positions(i), globalRegion, periodic, overlap)) {
+                if (isCloseToBoundary(is, positions(i), globalRegion, periodic, overlap)) {
                     ++sum;
                 }
             },
@@ -181,7 +207,7 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::parallel_scan(
             "count boundary particles", numLoc,
             KOKKOS_LAMBDA(const size_t& i, size_type& sum, bool final) {
-                if (isCloseToBoundary(positions(i), globalRegion, periodic, overlap)) {
+                if (isCloseToBoundary(is, positions(i), globalRegion, periodic, overlap)) {
                     if (final) {
                         boundaryIndices(sum) = i;
                     }
@@ -189,22 +215,11 @@ namespace ippl::fixDefaultTemplateArgument {
                 }
             });
 
-        /* Step 3. copy given particles and all its attributes */
-        detail::runForAllSpaces([&]<typename MemorySpace>() {
-            size_t numAttributesInSpace = 0;
-            pc.template forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute&) {
-                ++numAttributesInSpace;
-            });
-            if (numAttributesInSpace == 0) {
-                return;
-            }
-
-            auto boundaryIndicesMirror =
-                Kokkos::create_mirror_view_and_copy(MemorySpace(), boundaryIndices);
-            pc.template forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute& att) {
-                att->internalCopy(boundaryIndicesMirror);
-            });
-        });
+        /* Step 3. copy given particles and all its attributes. A separate function is needed as
+         * lambdas with captures do not work with nvcc and template default argument ot the layout
+         * somehow.
+         */
+        detail::copyAttributes(pc, boundaryIndices);
 
         /* Step 4. set the position of the copied particles to their periodic image */
         for (unsigned d = 0; d < Dim; ++d) {
@@ -647,6 +662,7 @@ namespace ippl::fixDefaultTemplateArgument {
         const auto myRank    = Comm->rank();
         const auto localNum  = pc.getLocalNum();
         const T overlap      = rcutoff_m;
+        constexpr auto is    = std::make_index_sequence<Dim>();
 
         /// outsideIds: Container of particle IDs that travelled outside of the neighborhood.
         /// counts: count assignments per particle
@@ -681,14 +697,14 @@ namespace ippl::fixDefaultTemplateArgument {
         /* First Pass: count the numbers of neighbor ranks (including self) a particle belongs to */
         Kokkos::parallel_for(
             "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_t& i) {
-                const bool inCurr = positionInRegion(positions(i), regions(myRank), overlap);
+                const bool inCurr = positionInRegion(is, positions(i), regions(myRank), overlap);
 
                 size_type count = inCurr;
                 invalid(i)      = !inCurr;
                 // Count neighboring regions
                 for (size_type j = 0; j < neighbors_view.extent(0); ++j) {
                     const size_type rank = neighbors_view(j);
-                    if (positionInRegion(positions(i), regions(rank), overlap)) {
+                    if (positionInRegion(is, positions(i), regions(rank), overlap)) {
                         ++count;
                     }
                 }
@@ -742,7 +758,7 @@ namespace ippl::fixDefaultTemplateArgument {
                     const auto rank     = nonNeighborsView(j);
 
                     /// inRegion: Checks whether particle pID is inside region j.
-                    if (positionInRegion(positions(pId), regions(rank), overlap)) {
+                    if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
                         Kokkos::atomic_increment(&outsideCounts(i));
                     }
                 });
@@ -779,13 +795,13 @@ namespace ippl::fixDefaultTemplateArgument {
             "ParticleSpatialLayout::locateParticles()", localNum, KOKKOS_LAMBDA(const size_t& i) {
                 const size_t offset   = rankOffsets(i);
                 size_type local_count = 0;
-                if (positionInRegion(positions(i), regions(myRank), overlap)) {
+                if (positionInRegion(is, positions(i), regions(myRank), overlap)) {
                     ranks(offset) = myRank;
                     local_count++;
                 }
                 for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
                     const auto nRank = neighbors_view(j);
-                    if (positionInRegion(positions(i), regions(nRank), overlap)) {
+                    if (positionInRegion(is, positions(i), regions(nRank), overlap)) {
                         ranks(offset + local_count) = nRank;
                         local_count++;
                     }
@@ -806,7 +822,7 @@ namespace ippl::fixDefaultTemplateArgument {
                     const size_type offset = rankOffsets(pId) + counts(pId);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
-                        if (positionInRegion(positions(i), regions(rank), overlap)) {
+                        if (positionInRegion(is, positions(i), regions(rank), overlap)) {
                             ranks(offset + local_count) = rank;
                             local_count++;
                         }
@@ -853,6 +869,7 @@ namespace ippl::fixDefaultTemplateArgument {
         const auto regions     = this->rlayout_m.getdLocalRegions();
         const size_type numLoc = pc.getLocalNum();
         const auto overlap     = rcutoff_m;
+        constexpr auto is      = std::make_index_sequence<Dim>();
 
         // First pass: count assignments per particle
         locate_type counts("counts", numLoc);
@@ -862,7 +879,7 @@ namespace ippl::fixDefaultTemplateArgument {
             "count_assignments", range_policy, KOKKOS_LAMBDA(size_t i) {
                 int count = 0;
                 for (size_t j = 0; j < regions.extent(0); ++j) {
-                    if (positionInRegion(positions(i), regions(j), overlap)) {
+                    if (positionInRegion(is, positions(i), regions(j), overlap)) {
                         count++;
                     }
                 }
@@ -907,7 +924,7 @@ namespace ippl::fixDefaultTemplateArgument {
                 size_t offset   = rankOffsets(i);
                 int local_count = 0;
                 for (size_t j = 0; j < regions.extent(0); ++j) {
-                    bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
+                    bool xyz_bool = positionInRegion(is, positions(i), regions(j), overlap);
                     if (xyz_bool) {
                         rank_data(offset + local_count) = j;
                         local_count++;
@@ -930,13 +947,13 @@ namespace ippl::fixDefaultTemplateArgument {
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <std::size_t... Idx>
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::positionInRegion(
-        const vector_type& pos, const region_type& region, T overlap) {
-        return [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return ((pos[Idx] > region[Idx].min() - overlap) && ...)
-                   && ((pos[Idx] <= region[Idx].max() + overlap) && ...);
-        }(std::make_index_sequence<Dim>());
+        const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
+        T overlap) {
+        return ((pos[Idx] > region[Idx].min() - overlap) && ...)
+               && ((pos[Idx] <= region[Idx].max() + overlap) && ...);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -976,12 +993,34 @@ namespace ippl::fixDefaultTemplateArgument {
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <std::size_t... Idx>
     constexpr bool ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isLocalCellIndex(
-        const CellIndex_t& index, const Vector<size_type, Dim>& numCells) {
-        return [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return !((index[Idx] == 0 || index[Idx] == numCells[Idx] - 1) || ...);
-        }(std::make_index_sequence<Dim>());
+        const std::index_sequence<Idx...>&, const CellIndex_t& index,
+        const Vector<size_type, Dim>& numCells) {
+        return !((index[Idx] == 0 || index[Idx] == numCells[Idx] - 1) || ...);
     }
+
+    namespace detail {
+        template <typename ParticleContainer, typename index_type>
+        inline void sortParticles(ParticleContainer& pc, const index_type& newIndex) {
+            detail::runForAllSpaces([&]<typename MemorySpace>() {
+                size_t num_attributes_in_space = 0;
+                pc.template forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute&) {
+                    ++num_attributes_in_space;
+                });
+                if (num_attributes_in_space == 0) {
+                    return;
+                }
+
+                pc.template forAllAttributes<MemorySpace>(
+                    [newIndexMirror = Kokkos::create_mirror_view_and_copy(
+                         MemorySpace(), newIndex)]<typename Attribute>(Attribute& att) {
+                        att->applyPermutation(newIndexMirror);
+                    });
+            });
+            Kokkos::fence();
+        }
+    }  // namespace detail
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <class ParticleContainer>
@@ -1059,23 +1098,10 @@ namespace ippl::fixDefaultTemplateArgument {
         Kokkos::fence();
 
         /* Step 4. Sort all particles (and all their attributes) according to then new indices
-         * (maybe there is a better solution)
+         * (maybe there is a better solution). A separate function is needed as lambdas with
+         * captures do not work with nvcc and template default argument ot the layout somehow.
          */
-        detail::runForAllSpaces([&]<typename MemorySpace>() {
-            size_t num_attributes_in_space = 0;
-            pc.template forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute&) {
-                ++num_attributes_in_space;
-            });
-            if (num_attributes_in_space == 0) {
-                return;
-            }
-
-            auto newIndexMirror = Kokkos::create_mirror_view_and_copy(MemorySpace(), newIndex);
-            pc.template forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute& att) {
-                att->applyPermutation(newIndexMirror);
-            });
-        });
-        Kokkos::fence();
+        detail::sortParticles(pc, newIndex);
 
         /* Step 5. set local number of particles (excluding ghost particles) is the value of
          * cellStartingIdx at index numLocalCells*/
@@ -1465,8 +1491,9 @@ namespace ippl::fixDefaultTemplateArgument {
     template <typename ParticleContainer>
     detail::size_type ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::locateParticles(
         const ParticleContainer& pc, locate_type_nd& ranks, bool_type& invalid) const {
-        auto& positions                            = pc.R.getView();
-        typename RegionLayout_t::view_type regions = this->rlayout_m.getdLocalRegions();
+        const auto& positions = pc.R.getView();
+        const auto regions    = this->rlayout_m.getdLocalRegions();
+        constexpr auto is     = std::make_index_sequence<Dim>();
 
         const size_type myRank = Comm->rank();
 
@@ -1482,7 +1509,7 @@ namespace ippl::fixDefaultTemplateArgument {
             "ParticleSpatialLayout::locateParticles()",
             mdrange_type({0, 0}, {numLoc, regions.extent(0)}),
             KOKKOS_LAMBDA(const size_t i, const size_type j, size_type& count) {
-                bool xyz_bool = positionInRegion(positions(i), regions(j), overlap);
+                bool xyz_bool = positionInRegion(is, positions(i), regions(j), overlap);
                 if (xyz_bool) {
                     size_t l = 0;
                     for (; l < ranks.extent(1) && ranks(i, l) >= 0; ++l) {
@@ -1500,4 +1527,4 @@ namespace ippl::fixDefaultTemplateArgument {
         return invalidCount;
     }
 
-}  // namespace ippl::fixDefaultTemplateArgument
+}  // namespace ippl
