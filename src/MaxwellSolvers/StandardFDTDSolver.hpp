@@ -7,21 +7,24 @@ namespace ippl {
 
     /**
      * @brief Constructor for the StandardFDTDSolver class.
-     * 
-     * This constructor initializes the StandardFDTDSolver with the given source field and electromagnetic fields and initializes the solver.
-     * 
+     *
+     * This constructor initializes the StandardFDTDSolver with the given source field and
+     * electromagnetic fields and initializes the solver.
+     *
      * @param source The source field.
      * @param E The electric field.
      * @param B The magnetic field.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
-    StandardFDTDSolver<EMField, SourceField, boundary_conditions>::StandardFDTDSolver(SourceField& source, EMField& E, EMField& B) : FDTDSolverBase<EMField, SourceField, boundary_conditions>(source, E, B) {
+    StandardFDTDSolver<EMField, SourceField, boundary_conditions>::StandardFDTDSolver(
+        SourceField& source, EMField& E, EMField& B)
+        : FDTDSolverBase<EMField, SourceField, boundary_conditions>(source, E, B) {
         initialize();
     }
 
     /**
      * @brief Advances the simulation by one time step.
-     * 
+     *
      * This function updates the fields by one time step using the FDTD method.
      * It calculates the new field values based on the current and previous field values,
      * as well as the source field. The boundary conditions are applied after the update.
@@ -36,8 +39,10 @@ namespace ippl {
         const auto source_view = Maxwell<EMField, SourceField>::JN_mp->getView();
 
         // Calculate the coefficients for the nondispersive update
-        const scalar a1 =
-            scalar(2) * (scalar(1) - Kokkos::pow(this->dt / this->hr_m[0], 2) - Kokkos::pow(this->dt / this->hr_m[1], 2) - Kokkos::pow(this->dt / this->hr_m[2], 2));
+        const scalar a1 = scalar(2)
+                          * (scalar(1) - Kokkos::pow(this->dt / this->hr_m[0], 2)
+                             - Kokkos::pow(this->dt / this->hr_m[1], 2)
+                             - Kokkos::pow(this->dt / this->hr_m[2], 2));
         const scalar a2               = Kokkos::pow(this->dt / this->hr_m[0], 2);
         const scalar a4               = Kokkos::pow(this->dt / this->hr_m[1], 2);
         const scalar a6               = Kokkos::pow(this->dt / this->hr_m[2], 2);
@@ -45,9 +50,11 @@ namespace ippl {
         Vector<uint32_t, Dim> true_nr = this->nr_m;
         true_nr += (nghost * 2);
         constexpr uint32_t one_if_absorbing_otherwise_0 =
-            boundary_conditions == absorbing ? 1 : 0;       // 1 if absorbing, 0 otherwise, indicates the start index of the field
+            boundary_conditions == absorbing
+                ? 1
+                : 0;  // 1 if absorbing, 0 otherwise, indicates the start index of the field
 
-        // Update the field values 
+        // Update the field values
         Kokkos::parallel_for(
             "Source field update", ippl::getRangePolicy(aview, nghost),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
@@ -66,10 +73,10 @@ namespace ippl {
                 // update the interior field values
                 if (val == 0) {
                     SourceVector_t interior = -anm1view(i, j, k) + a1 * aview(i, j, k)
-                        + a2 * (aview(i + 1, j, k) + aview(i - 1, j, k))
-                        + a4 * (aview(i, j + 1, k) + aview(i, j - 1, k))
-                        + a6 * (aview(i, j, k + 1) + aview(i, j, k - 1))
-                        + a8 * source_view(i, j, k);
+                                              + a2 * (aview(i + 1, j, k) + aview(i - 1, j, k))
+                                              + a4 * (aview(i, j + 1, k) + aview(i, j - 1, k))
+                                              + a6 * (aview(i, j, k + 1) + aview(i, j, k - 1))
+                                              + a8 * source_view(i, j, k);
                     anp1view(i, j, k) = interior;
                 }
             });
@@ -80,7 +87,7 @@ namespace ippl {
 
     /**
      * @brief Initializes the solver.
-     * 
+     *
      * This function initializes the solver by setting up the layout, mesh, and fields.
      * It retrieves the mesh spacing, domain, and mesh size, and initializes the fields to zero.
      */
@@ -109,5 +116,10 @@ namespace ippl {
         this->A_nm1 = 0.0;
         this->A_n   = 0.0;
         this->A_np1 = 0.0;
+
+        // set the mesh domain
+        if constexpr (boundary_conditions == periodic) {
+            this->setPeriodicBoundaryConditions();
+        }
     }
-}
+}  // namespace ippl

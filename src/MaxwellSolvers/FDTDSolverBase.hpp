@@ -7,23 +7,26 @@ namespace ippl {
 
     /**
      * @brief Constructor for the FDTDSolverBase class.
-     * 
+     *
      * Initializes the solver by setting the source and electromagnetic fields.
-     * 
+     *
      * @param source Reference to the source field.
      * @param E Reference to the electric field.
      * @param B Reference to the magnetic field.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
-    FDTDSolverBase<EMField, SourceField, boundary_conditions>::FDTDSolverBase(SourceField& source, EMField& E, EMField& B) {
+    FDTDSolverBase<EMField, SourceField, boundary_conditions>::FDTDSolverBase(SourceField& source,
+                                                                              EMField& E,
+                                                                              EMField& B) {
         Maxwell<EMField, SourceField>::setSources(source);
         Maxwell<EMField, SourceField>::setEMFields(E, B);
     }
 
     /**
      * @brief Solves the FDTD equations.
-     * 
-     * Advances the simulation by one time step, shifts the time for the fields, and evaluates the electric and magnetic fields at the new time.
+     *
+     * Advances the simulation by one time step, shifts the time for the fields, and evaluates the
+     * electric and magnetic fields at the new time.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     void FDTDSolverBase<EMField, SourceField, boundary_conditions>::solve() {
@@ -34,12 +37,13 @@ namespace ippl {
 
     /**
      * @brief Sets periodic boundary conditions.
-     * 
-     * Configures the solver to use periodic boundary conditions by setting the appropriate boundary conditions for the fields.
+     *
+     * Configures the solver to use periodic boundary conditions by setting the appropriate boundary
+     * conditions for the fields.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
-    void FDTDSolverBase<EMField, SourceField, boundary_conditions>::setPeriodicBoundaryConditions() {
-        periodic_bc = true;
+    void
+    FDTDSolverBase<EMField, SourceField, boundary_conditions>::setPeriodicBoundaryConditions() {
         typename SourceField::BConds_t vector_bcs;
         auto bcsetter_single = [&vector_bcs]<size_t Idx>(const std::index_sequence<Idx>&) {
             vector_bcs[Idx] = std::make_shared<ippl::PeriodicFace<SourceField>>(Idx);
@@ -56,9 +60,10 @@ namespace ippl {
     }
 
     /**
-     * @brief Shifts the time for the fields.
-     * 
-     * Copies the current field values to the previous time step field and the next time step field values to the current field.
+     * @brief Shifts the saved fields in time.
+     *
+     * Copies the current field values to the previous time step field and the next time step field
+     * values to the current field.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     void FDTDSolverBase<EMField, SourceField, boundary_conditions>::timeShift() {
@@ -69,7 +74,7 @@ namespace ippl {
 
     /**
      * @brief Applies the boundary conditions.
-     * 
+     *
      * Applies the specified boundary conditions (periodic or absorbing) to the fields.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
@@ -88,21 +93,25 @@ namespace ippl {
 
     /**
      * @brief Evaluates the electric and magnetic fields.
-     * 
-     * Computes the electric and magnetic fields based on the current, previous, and next time step field values, as well as the source field.
+     *
+     * Computes the electric and magnetic fields based on the current, previous, and next time step
+     * field values, as well as the source field.
      */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     void FDTDSolverBase<EMField, SourceField, boundary_conditions>::evaluate_EB() {
-        *(Maxwell<EMField, SourceField>::En_mp)     = typename EMField::value_type(0);
-        *(Maxwell<EMField, SourceField>::Bn_mp)     = typename EMField::value_type(0);
+        *(Maxwell<EMField, SourceField>::En_mp)   = typename EMField::value_type(0);
+        *(Maxwell<EMField, SourceField>::Bn_mp)   = typename EMField::value_type(0);
         ippl::Vector<scalar, 3> inverse_2_spacing = ippl::Vector<scalar, 3>(0.5) / hr_m;
         const scalar idt                          = scalar(1.0) / dt;
         auto A_np1 = this->A_np1.getView(), A_n = this->A_n.getView(),
-                A_nm1  = this->A_nm1.getView();
+             A_nm1  = this->A_nm1.getView();
         auto source = Maxwell<EMField, SourceField>::JN_mp->getView();
         auto Eview  = Maxwell<EMField, SourceField>::En_mp->getView();
         auto Bview  = Maxwell<EMField, SourceField>::Bn_mp->getView();
 
+        // Calculate the electric and magnetic fields
+        // Curl and grad of ippl are not used here, because we have a 4-component vector and we need
+        // it for the last three components
         Kokkos::parallel_for(
             this->A_n.getFieldRangePolicy(), KOKKOS_LAMBDA(size_t i, size_t j, size_t k) {
                 ippl::Vector<scalar, 3> dAdt;
@@ -129,5 +138,4 @@ namespace ippl {
         Kokkos::fence();
     }
 
-
-} // namespace ippl
+}  // namespace ippl
