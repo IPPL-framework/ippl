@@ -1,7 +1,7 @@
 file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding index test found in ${_relPath}")
+message(STATUS "🔧 Adding index test found in ${_relPath}")
 
-add_ippl_integration_test(TestLaplace 
+add_ippl_integration_test(TestLaplace
   LABELS integration field
   ARGS 10 10 --info 10
 )
@@ -15,7 +15,7 @@ add_ippl_integration_test(TestCurl
     ARGS 10 0 --info 10
 )
 
-add_ippl_integration_test(TestHessian 
+add_ippl_integration_test(TestHessian
     LABELS integration field
     ARGS 10 0 --info 10
 )
