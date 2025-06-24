@@ -162,26 +162,6 @@ namespace ippl {
         KOKKOS_FUNCTION static particle_neighbor_list_type getParticleNeighbors(
             const vector_type& pos, const ParticleNeighborData& particleNeighborData);
 
-        // private:
-        // methods needed for particleExchangeOld
-        /**
-         * @brief This function determines to which rank particles need to be sent after the
-         *        iteration step. It looks in all regions to determine where it belongs.
-         *
-         * @param pc           Particle Container
-         * @param ranks        A vector where each value refers to the new rank of the particle
-         *                      which rank values correspond to which particles is determined by
-         *                      rankOffsets
-         * @param rankOffsets  A vector of offsets where rankOffset(i) determines where the ranks of
-         *                      particle i in ranks start.
-         * @param invalid      A vector marking the particles that need to be sent away, and thus
-         *                      locally deleted
-         * @return the number of particles sent away
-         */
-        template <typename ParticleContainer>
-        size_type locateParticles(const ParticleContainer& pc, locate_type& ranks,
-                                  locate_type& rankOffsets, bool_type& invalid) const;
-
         /*!
          * @brief utility function to compute how many particles to sent to a given rank
          * @param rank rank to send to
@@ -200,7 +180,6 @@ namespace ippl {
         void fillHash(int rank, const locate_type& ranks, const locate_type& offsets,
                       hash_type& hash);
 
-        // methods needed for particleExchangeNew
         /**
          * @brief This function determines to which rank particles need to be sent after the
          *        iteration step. It starts by first scanning direct rank neighbors, and only does a
@@ -242,38 +221,6 @@ namespace ippl {
          * @return view of all non-neighboring ranks
          */
         locate_type getNonNeighborRanks(const locate_type& neighbors_view) const;
-
-        // methods needed for particleExchangeNd
-        /**
-         * @brief This function determines to which rank particles need to be sent after the
-         *        iteration step. It looks in all regions to determine where it belongs.
-         *
-         * @param pc           Particle Container
-         * @param ranks        A 2D view of ranks, each row contains all ranks a particle belongs
-         *                      to, with -1 filled at the end
-         * @param invalid      A vector marking the particles that need to be sent away, and thus
-         *                      locally deleted
-         * @return the number of particles sent away
-         */
-        template <typename ParticleContainer>
-        size_type locateParticles(const ParticleContainer& pc, locate_type_nd& ranks,
-                                  bool_type& invalid) const;
-
-        /*!
-         * @brief utility function to compute how many particles to sent to a given rank
-         * @param rank rank to send to
-         * @param ranks The 2D view containing which rank each particle belongs to
-         * @return number of particles sent to rank
-         */
-        size_t numberOfSends(int rank, const locate_type_nd& ranks);
-
-        /*!
-         * @brief utility function to collect all indices of particles to send to given rank
-         * @param rank rank to send to
-         * @param ranks The view containing which rank each particle belongs to
-         * @param hash the view containing all particle indices to send
-         */
-        void fillHash(int rank, const locate_type_nd& ranks, hash_type& hash);
 
     protected:
         ///! overlap in each dimension
@@ -320,27 +267,12 @@ namespace ippl {
         void initializeCells();
 
         /*!
-         * @brief exchanges particles by scanning all ranks. works no matter the overlap
-         * @param pc particle container of which to exchange particles
-         */
-        template <class ParticleContainer>
-        void particleExchangeOld(ParticleContainer& pc);
-
-        /*!
          * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if
-         *         needed. works if overlap is smaller than half the smallest region width.
+         *         needed. assumes overlap is smaller than half the smallest region width.
          * @param pc particle container of which to exchange particles
          */
         template <class ParticleContainer>
-        void particleExchangeNew(ParticleContainer& pc);
-
-        /*!
-         * @brief exchanges particles by scanning all ranks. works no matter the overlap
-         *         works if cutoff is smaller than half the smallest region width
-         * @param pc particle container of which to exchange particles
-         */
-        template <class ParticleContainer>
-        void particleExchangeNd(ParticleContainer& pc);
+        void particleExchange(ParticleContainer& pc);
 
         /*!
          * @brief builds the cell structure, sorts the particles according to the cells and makes
