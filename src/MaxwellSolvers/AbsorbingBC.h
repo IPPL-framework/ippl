@@ -98,7 +98,7 @@ struct second_order_abc_face {
             ippl::Vector<uint32_t, 3>{side_axes[0] == 0, side_axes[0] == 1, side_axes[0] == 2};
         ippl::Vector<uint32_t, 3> side_axis2_onehot =
             ippl::Vector<uint32_t, 3>{side_axes[1] == 0, side_axes[1] == 1, side_axes[1] == 2};
-        // Create a vector in the direciton of the main axis, the sign is used to determine the
+        // Create a vector in the direction of the main axis, the sign is used to determine the
         // direction of the offset depending on which side of the boundary we are at
         ippl::Vector<uint32_t, 3> mainaxis_off = ippl::Vector<int32_t, 3>{
             (main_axis == 0) * sign, (main_axis == 1) * sign, (main_axis == 2) * sign};

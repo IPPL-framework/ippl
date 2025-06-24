@@ -1,4 +1,4 @@
-// TestStandardFDTDSolver_convergence
+// TestNonStandardFDTDSolver_convergence
 // Check the README.md file in this directory for information about the test and how to run it.
 
 #include <cstddef>
@@ -10,7 +10,7 @@ using std::size_t;
 
 #include "Field/Field.h"
 
-#include "MaxwellSolvers/StandardFDTDSolver.h"
+#include "MaxwellSolvers/NonStandardFDTDSolver.h"
 
 template <typename scalar1, typename... scalar>
     requires((std::is_floating_point_v<scalar1>))
@@ -35,15 +35,15 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
     using EMField     = ippl::Field<vector_type, dim, ippl::UniformCartesian<scalar, dim>,
                                     typename ippl::UniformCartesian<scalar, dim>::DefaultCentering>;
 
-    // Get variable for direction (0 for x, 1 for y and 2 for z)
+    // Get variable for direction (1 for x, 2 for y and 3 for z)
     const int dir = (direction == 'x') ? 1 : (direction == 'y') ? 2 : 3;
 
     // Specifie number of gridpoints in each direction (more gridpoints in z needed for CFL
     // condition)
-    ippl::Vector<uint32_t, 3> nr{np, np, np};
+    ippl::Vector<uint32_t, 3> nr{np / 2, np / 2, 2 * np};
     ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);
 
-    // specifies decomposition; here all dimensions are parallel
+    // specifies decomposition;
     std::array<bool, 3> isParallel;
     isParallel.fill(true);
 
@@ -64,8 +64,8 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
     EMField B(mesh, layout);
     source = vector4_type(0);
 
-    // Create the StandardFDTDSolver object
-    ippl::StandardFDTDSolver<EMField, SourceField, ippl::periodic> sfdsolver(source, E, B);
+    // Create the NonStandardFDTDSolver object
+    ippl::NonStandardFDTDSolver<EMField, SourceField, ippl::periodic> sfdsolver(source, E, B);
 
     // Initialize the source field with a Gaussian distribution in the given direction and zeros in
     // the other directions
@@ -103,7 +103,7 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
             am1view(i, j, k)      = vector4_type{scalar(0), scalar(0), scalar(0), scalar(0)};
             am1view(i, j, k)[dir] = magnitude;
 
-            // Calculate the sum of the squared magnitudes for L2 norm error calculation later
+            // Calculate the sum of the squared magnitudes for error calculation later
             ref += magnitude * magnitude;
         },
         sum_norm);
@@ -118,7 +118,7 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
 
     // Run the simulation for 1s, with periodic boundary conditions this should be the same state as
     // at time 0
-    for (size_t s = 0; s < 1. / sfdsolver.dt; s++) {
+    for (size_t s = 0; s < 1. / sfdsolver.getDt(); s++) {
         // Solve the FDTD equations
         sfdsolver.solve();
     }
@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
         std::array<char, 3> directions = {'x', 'y', 'z'};
 
         // Create outputfile and plot header
-        std::string fname = "StandardFDTDSolver_convergence.csv";
+        std::string fname = "NonStandardFDTDSolver_convergence.csv";
 
         Inform csvout(NULL, fname.c_str(), Inform::OVERWRITE);
         csvout.precision(16);

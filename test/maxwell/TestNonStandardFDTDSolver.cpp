@@ -1,4 +1,4 @@
-// TestStandardFDTDSolver
+// TestNonStandardFDTDSolver
 // Check the README.md file in this directory for information about the test and how to run it.
 
 #include <cstddef>
@@ -10,7 +10,7 @@ using std::size_t;
 
 #include "Field/Field.h"
 
-#include "MaxwellSolvers/StandardFDTDSolver.h"
+#include "MaxwellSolvers/NonStandardFDTDSolver.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 template <typename scalar1, typename... scalar>
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
         // Specifie number of gridpoints in each direction (more gridpoints in z needed for CFL
         // condition)
         constexpr size_t n = 100;
-        ippl::Vector<uint32_t, 3> nr{n, n, n};
+        ippl::Vector<uint32_t, 3> nr{n / 2, n / 2, 2 * n};
         ippl::NDIndex<3> owned(nr[0], nr[1], nr[2]);
 
         // specifies decomposition;
@@ -73,8 +73,8 @@ int main(int argc, char* argv[]) {
         EMField B(mesh, layout);
         source = vector4_type(0);
 
-        // Create the StandardFDTDSolver object
-        ippl::StandardFDTDSolver<EMField, SourceField, ippl::periodic> sfdsolver(source, E, B);
+        // Create the NonStandardFDTDSolver object
+        ippl::NonStandardFDTDSolver<EMField, SourceField, ippl::periodic> sfdsolver(source, E, B);
 
         // Initialize the source field with a Gaussian distribution in the z-direction and zeros in
         // the x and y directions
@@ -111,8 +111,8 @@ int main(int argc, char* argv[]) {
                 am1view(i, j, k)      = vector4_type{scalar(0), scalar(0), scalar(0), scalar(0)};
                 am1view(i, j, k)[dir] = magnitude;
 
-                // Accumulate the squared magnitude for error calculation later
-                ref += magnitude * magnitude;
+                ref += magnitude
+                       * magnitude;  // Accumulate the squared magnitude for error calculation
             },
             sum_norm);
         Kokkos::fence();
@@ -133,9 +133,9 @@ int main(int argc, char* argv[]) {
         std::fill(imagedata, imagedata + img_width * img_height * 3, 0.0f);
         uint8_t* imagedata_final = new uint8_t[img_width * img_height * 3];
 
-        // Run the simulation for a duration of 1, with periodic boundary conditions the wave will
-        // return to the initial state
-        for (size_t s = 0; s < 1. / sfdsolver.dt; s++) {
+        // Run the simulation for 1s, with periodic boundary conditions this should be the same
+        // state as at time 0
+        for (size_t s = 0; s < 1. / sfdsolver.getDt(); s++) {
             auto ebh = sfdsolver.A_n.getHostMirror();
             Kokkos::deep_copy(ebh, sfdsolver.A_n.getView());
             for (int i = 1; i < img_width; i++) {
@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
                                return (unsigned char)std::min(255.0f, std::max(0.0f, x));
                            });
             char output[1024] = {0};
-            snprintf(output, 1023, "%soutimage%.05lu.bmp", "renderdataStandard/", s);
+            snprintf(output, 1023, "%soutimage%.05lu.bmp", "renderdataNonStandard/", s);
 
             // Save the image every 4th step
             if (s % 4 == 0)
@@ -195,6 +195,7 @@ int main(int argc, char* argv[]) {
                 (void)x;
                 (void)y;
                 (void)z;
+
                 // Get coordinate in the right direction
                 const scalar coord = (dir == 1) ? x : (dir == 2) ? y : z;
 

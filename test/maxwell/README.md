@@ -75,7 +75,7 @@ for filename in filenames:
 
     plt.plot(df.loc[df["GaussianPulseDir"] == 'x']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'x']["ConverganceError"], 'b-', label='L_2 error for x wave')
     plt.plot(df.loc[df["GaussianPulseDir"] == 'y']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'y']["ConverganceError"], 'c--',  label='L_2 error for y wave')
-    plt.plot(df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'z']["ConverganceError"], 'm-', label='L_2 error for z wave')
+    plt.plot(df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'z']["ConverganceError"], 'm:', label='L_2 error for z wave')
     plt.plot(df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"].astype(float)**(-2) * 2*max(df["ConverganceError"]), 'k-', linewidth=0.5, label=r'O($\Delta x^{2}$)')
     plt.plot(df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"], df.loc[df["GaussianPulseDir"] == 'z']["NGridpoints"].astype(float)**(-1) * 2*max(df["ConverganceError"]), 'k--', linewidth=0.5, label=r'O($\Delta x$)')
     plt.yscale('log', base=2)

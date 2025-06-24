@@ -67,13 +67,6 @@ namespace ippl {
          */
         void timeShift();
 
-    protected:
-        /**
-         * @brief Applies the boundary conditions.
-         */
-        void applyBCs();
-
-    public:
         /**
          * @brief Steps the solver forward in time. This is a pure virtual function.
          */
@@ -82,11 +75,17 @@ namespace ippl {
          * @brief Evaluates the electric and magnetic fields.
          */
         void evaluate_EB();
-
+    
         /**
          * @brief Initializes the solver. This is a pure virtual function.
          */
         virtual void initialize() = 0;
+
+    protected:
+        /**
+         * @brief Applies the boundary conditions.
+         */
+        void applyBCs();
 
         typename SourceField::Mesh_t* mesh_mp;  // Pointer to the mesh.
         FieldLayout<Dim>* layout_mp;            // Pointer to the layout
