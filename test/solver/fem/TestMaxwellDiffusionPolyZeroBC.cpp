@@ -17,6 +17,7 @@
 //
 
 #include "Ippl.h"
+#include <Kokkos_Random.hpp>
 
 #include "Meshes/Centering.h"
 #include "MaxwellSolvers/FEMMaxwellDiffusionSolver.h"
@@ -90,6 +91,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     using Field_t  = ippl::Field<ippl::Vector<T,Dim>, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
     using point_t =  ippl::Vector<T, Dim>;
+    using indices_t =  ippl::Vector<size_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
@@ -122,11 +124,108 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Rhs<T, Dim> rhsFunc;
     Analytical<T, Dim> analytical;
 
+    // create the FEMVector for the rhs
+    size_t n = 1;
+    auto ldom = layout.getLocalNDIndex();
+    indices_t extents = (ldom.last() - ldom.first()) + 3;
+        
+    if constexpr (Dim == 2) {
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        n = nx*(ny-1) + ny*(nx-1);
+    } else {
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        size_t nz = extents(2);
+        n = (nz-1)*(nx*(ny-1) + ny*(nx-1) + nx*ny) + nx*(ny-1) + ny*(nx-1);
+    }
+    ippl::FEMVector<point_t> rhsVector(n);
+    auto viewRhs = rhsVector.getView();
+
+    if constexpr (Dim == 2) {
+        Kokkos::parallel_for("Assign RHS", rhsVector.size(),
+            KOKKOS_LAMBDA(size_t i) {
+                size_t nx = extents(0);
+                size_t ny = extents(1);
+
+                size_t yOffset = i / (2*nx - 1);
+                size_t xOffset = i - (2*nx -1)*yOffset;
+                T x = xOffset*cellSpacing[0];
+                T y = yOffset*cellSpacing[1];
+                if (xOffset < (nx-1)) {
+                    // we are parallel to the x axis
+                    x += cellSpacing[0]/2.;
+                } else {
+                    // we are parallel to the y axis
+                    y += cellSpacing[1]/2.;
+                    x -= (nx-1)*cellSpacing[0];
+                }
+                // have to subtract one cellspacing for the ghost cells
+                x += origin[0] + ldom.first()[0]*cellSpacing[0] - cellSpacing[0];
+                y += origin[1] + ldom.first()[1]*cellSpacing[1] - cellSpacing[1];
+                
+                viewRhs(i) = rhsFunc(point_t(x,y));
+            }
+        );
+
+    } else {
+        Kokkos::parallel_for("Assign RHS", rhsVector.size(),
+            KOKKOS_LAMBDA(size_t i) {
+                size_t nx = extents(0);
+                size_t ny = extents(1);
+                size_t nz = extents(2);
+                
+                size_t zOffset = i / (nx*(ny-1) + ny*(nx-1) + nx*ny);
+                T z = zOffset*cellSpacing[2];
+                T x = 0;
+                T y = 0;
+
+                if (i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                    // we are parallel to z axis
+                    size_t f = i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                        - (nx*(ny-1) + ny*(nx-1));
+                    z += cellSpacing[2]/2;
+                    
+                    size_t yOffset = f / nx;
+                    y = yOffset*cellSpacing[1];
+
+                    size_t xOffset = f % nx;
+                    x = xOffset*cellSpacing[0];
+                } else {
+                    // are parallel to one of the other axes
+                    size_t f = i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                    size_t yOffset = f / (2*nx - 1);
+                    size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                    x = xOffset*cellSpacing[0];
+                    y = yOffset*cellSpacing[1];
+
+                    if (xOffset < (nx-1)) {
+                        // we are parallel to the x axis
+                        x += cellSpacing[0]/2.;
+                    } else {
+                        // we are parallel to the y axis
+                        y += cellSpacing[1]/2.;
+                        x -= (nx-1)*cellSpacing[0];
+                    }
+                }
+
+                // have to subtract one cellspacing for the ghost cells
+                x += origin[0] + ldom.first()[0]*cellSpacing[0] - cellSpacing[0];
+                y += origin[1] + ldom.first()[1]*cellSpacing[1] - cellSpacing[1];
+                z += origin[2] + ldom.first()[2]*cellSpacing[2] - cellSpacing[2];
+                
+                viewRhs(i) = rhsFunc(point_t(x,y,z));
+
+            }
+        );
+    }
+
 
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsFunc);
+    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector);
 
     // set the parameters
     ippl::ParameterList params;
@@ -137,13 +236,77 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // solve the problem
     ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
 
+    // retrive values at random positions
+    // we will take 100 points out of which 97 will be random and the last 3
+    // we be manually chosen.
+    Kokkos::Random_XorShift64_Pool<> randomPool(42);
+    Kokkos::View<point_t*> positions("positions", 100);
+
+    Kokkos::parallel_for("assign positions", 97,
+        KOKKOS_LAMBDA(size_t i) <%
+            positions;
+            ldom;
+            domain_start;
+            auto gen = randomPool.get_state();
+            T cellWidth = (domain_end - domain_start) / numCellsPerDim;
+            if constexpr (Dim == 2) <%
+                positions(i) =
+                    point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
+                            ldom.last()<:0:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:1:>*cellWidth+domain_start,
+                            ldom.last()<:1:>*cellWidth+domain_start)));
+            %> else <%
+                positions(i) =
+                    point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
+                            ldom.last()<:0:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:1:>*cellWidth+domain_start,
+                            ldom.last()<:1:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:2:>*cellWidth+domain_start,
+                            ldom.last()<:2:>*cellWidth+domain_start)));
+            %>
+
+
+            if (i == 96) <%
+                positions(97) = ldom.first()*cellWidth+domain_start;
+                positions(98) = ldom.last()*cellWidth+domain_start;
+                // This point belongs to an edge
+                if constexpr (Dim == 2) <%
+                positions(99) =
+                    point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
+                        ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth);
+                %> else <%
+                    positions(99) =
+                        point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
+                            ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth,
+                            ldom.first()<:2:>*cellWidth+domain_start + 0.5*cellWidth);
+                %>
+            %>
+            randomPool.free_state(gen);
+        %>
+    );
+
+    
+    Kokkos::View funcVals = solver.reconstructToPoints(positions);
+
+    // calculate the error
+    T linfError = 0;
+    Kokkos::parallel_reduce( "calc l infinity", 100,
+        KOKKOS_LAMBDA (size_t i, T& lmax) {
+            point_t dif = funcVals(i) - analytical(positions(i));
+            T val = Kokkos::sqrt(dif.dot(dif));
+            if( val > lmax ) lmax = val; 
+        },
+        Kokkos::Max<T>(linfError)
+    );
+
     
     // print information and error
-    T coefError = solver.getL2ErrorCoeff(analytical);
+    T coefError = solver.getL2Error(analytical);
     if (ippl::Comm->rank() == 0) {
         std::cout << std::setw(10) << numNodesPerDim;
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
         std::cout << std::setw(25) << std::setprecision(16) << coefError;
+        std::cout << std::setw(25) << std::setprecision(16) << linfError;
         std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
         std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
         std::cout << "\n";
@@ -178,21 +341,33 @@ int main(int argc, char* argv[]) {
             std::cout << std::setw(10) << "num_nodes"
                       << std::setw(25) << "cell_spacing"
                       << std::setw(25) << "interp_error_coef"
+                      << std::setw(25) << "recon_error"
                       << std::setw(25) << "solver_residue"
                       << std::setw(15) << "num_it\n";
         }
         
-       if (dim == 2) {
-            // 2D
-            for (unsigned n = 8; n <= 256; n += 1) {
+        if (argc > 2) <%
+            size_t n = std::atoi(argv<:2:>);
+            if (dim == 2) {
+                // 2D
                 testFEMSolver<T, 2>(n, -1.0, 1.0);
-            }
-        } else {
-            // 3D
-            for (unsigned n = 8; n <= 256; n += 1) {
+            } else {
+                // 3D
                 testFEMSolver<T, 3>(n, -1.0, 1.0);
             }
-        }
+        %> else <%
+            if (dim == 2) {
+                // 2D Sinusoidal
+                for (unsigned n = 16; n <= 512; n *= 1.5) {
+                    testFEMSolver<T, 2>(n, -1.0, 1.0);
+                }
+            } else {
+                // 3D Sinusoidal
+                for (unsigned n = 16; n <= 400; n *= 1.5) {
+                    testFEMSolver<T, 3>(n, -1.0, 1.0);
+                }
+            }
+        %>
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);

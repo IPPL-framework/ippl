@@ -225,20 +225,6 @@ namespace ippl {
          */
         KOKKOS_FUNCTION point_t evaluateRefElementShapeFunction(const size_t& localDOF,
                                     const point_t& localPoint) const;
-
-        /**
-         * @brief Evaluate the gradient of the shape function of a local degree
-         * of freedom at a given point in the reference element
-         *
-         * @param localDOF size_t - The local degree of freedom index
-         * @param localPoint point_t (Vector<T, Dim>) - The point in the
-         * reference element
-         *
-         * @return point_t (Vector<T, Dim>) - The gradient of the shape function
-         * at the given point
-         */
-        KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(const size_t& localDOF,
-                                    const point_t& localPoint) const override;
         
 
         /**
@@ -302,21 +288,6 @@ namespace ippl {
         ///////////////////////////////////////////////////////////////////////
         /// FEMVector conversion and creation//////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Interpolates data from a field to a \c ippl::FEMVector.
-         * 
-         * Given a field defined on the vertices of a mesh (e.g. ippl::Field)
-         * will interpolate the values to the Nédélec DOF positions and return
-         * a \c ippl::FEMVector with the appropriate values.
-         * 
-         * @param field The field from which to interpolate to the
-         * \c ippl::FEMVector
-         * 
-         * @return A \c ippl::FEMVector holding the interpolated data of
-         * \p field at the appropriate DOF positions.
-         */
-        FEMVector<T> interpolateToFEMVector(const FieldType& field) const;
         
         /**
          * @brief Creates and empty FEMVector.
@@ -330,33 +301,39 @@ namespace ippl {
          */
         FEMVector<T> createFEMVector() const;
         
+
         /**
-         * @brief Reconstruct a solution given the basis function coefficient
-         * vector \p x.
+         * @brief Reconstructs functino values at arbitrary points in the mesh
+         * given the Nedelec DOF coefficients.
          * 
-         * Given the basis function coefficient vector \p x for the Nédélec
-         * basis functions this function returns the values of the corresponding
-         * field at the mesh vertices.
+         * This function can be used to retrieve the values of a solution
+         * function at arbitrary points inside of the mesh given the Nedelec
+         * DOF coefficients which solved the problem using FEM.
          * 
-         * @param x The coefficient vector.
-         * @param field The field to which the solution should be written to.
+         * @note Currently the function is able to handle both cases, where we
+         * have that \p positions only contains positions which are inside of
+         * local domain of this MPI rank (i.e. each rank gets its own unique
+         * \p position ) and where \p positions contains the positions of all
+         * ranks (i.e. \p positions is the same for all ranks). If in the future
+         * it can be guaranteed, that each rank will get its own \p positions
+         * then certain parts of the function implementation can be removed.
+         * Instructions for this are given in the implementation itself.
          * 
+         * @param positions The points at which the function should be
+         * evaluated. A \c Kokkos::View which stores in each element a 2D/3D 
+         * point.
+         * @param coef The basis function coefficients obtained via FEM.
+         * 
+         * @return The function evaluated at the given points, stored inside of
+         * \c Kokkos::View where each element corresponts to the function value
+         * at the point described by the same element inside of \p positions.
          */
-        void reconstructSolution(const FEMVector<T>& x, FieldType& field) const;
+        Kokkos::View<point_t*> reconstructToPoints(const Kokkos::View<point_t*>& positions,
+            const FEMVector<T>& coef) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Given two fields, compute the L2 norm error
-         *
-         * @param u_h The numerical solution found using FEM
-         * @param u_sol The analytical solution (functor)
-         *
-         * @return error - The error ||u_h - u_sol||_L2
-         */
-        template <typename F> T computeError(const FEMVector<Vector<T,Dim> >& u_h, const F& u_sol) const;
         
 
         /**
@@ -368,7 +345,7 @@ namespace ippl {
          *
          * @return error - The error ||u_h - u_sol||_L2
          */
-        template <typename F> T computeErrorCoeff(const FEMVector<T>& u_h, const F& u_sol) const;
+        template <typename F> T computeError(const FEMVector<T>& u_h, const F& u_sol) const;
 
 
         /**

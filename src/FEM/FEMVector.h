@@ -83,7 +83,7 @@ namespace ippl {
         
         /**
          * @brief Constructor only taking size, does not create any MPI/boundary
-         * infromation.
+         * information.
          * 
          * This constructor only takes the size of the vector and allocates the
          * appropriate number of elements, it does not sotre any MPI

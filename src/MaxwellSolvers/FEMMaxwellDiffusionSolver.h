@@ -48,6 +48,8 @@ namespace ippl {
         // vector data represented by an ippl::Vector
         using T = typename FieldType::value_type::value_type;
 
+        typedef Vector<T,Dim> point_t;
+
     public:
         using Base = Maxwell<FieldType, FieldType>;
         using MeshType = typename FieldType::Mesh_t;
@@ -74,8 +76,7 @@ namespace ippl {
                                 Vector<T, Dim>(0))), refElement_m, quadrature_m)
         {}
 
-        template <typename F>
-        FEMMaxwellDiffusionSolver(FieldType& lhs, FieldType& rhs, const F& functor)
+        FEMMaxwellDiffusionSolver(FieldType& lhs, FieldType& rhs, const FEMVector<point_t>& rhsVector)
             : Base(lhs, lhs, rhs)
             , rhsVector_m(nullptr)
             , refElement_m()
@@ -86,15 +87,13 @@ namespace ippl {
             setDefaultParameters();
 
             // start a timer
-            static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
-            IpplTimings::startTimer(init);
             rhsVector_m =
-                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(functor));
+                //std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(functor));
+                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVector));
 
             rhsVector_m->accumulateHalo();
             rhsVector_m->fillHalo();
             
-            IpplTimings::stopTimer(init);
         }
 
         void setRhs(FieldType& rhs) {
@@ -127,9 +126,6 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         FEMVector<Vector<T,Dim> > solve() {
-            // start a timer
-            static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
-            IpplTimings::startTimer(solve);
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -152,17 +148,12 @@ namespace ippl {
 
             const auto algoOperator = [maxwellDiffusionEval, this](FEMVector<T> vector)
                                                                             -> FEMVector<T> {
-                // start a timer
-                static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
-                IpplTimings::startTimer(opTimer);
 
                 vector.fillHalo();
 
                 FEMVector<T> return_vector = nedelecSpace_m.evaluateAx(vector,maxwellDiffusionEval);
 
                 return_vector.accumulateHalo();
-                
-                IpplTimings::stopTimer(opTimer);
 
                 return return_vector;
             };
@@ -172,10 +163,6 @@ namespace ippl {
             
                 
 
-
-            // start a timer
-            static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
-            IpplTimings::startTimer(pcgTimer);
 
             //FEMVector<T> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp));
             FEMVector<T> lhsVector = rhsVector_m->deepCopy();
@@ -193,14 +180,11 @@ namespace ippl {
 
             // set the boundary values to the correct values.
 
-            IpplTimings::stopTimer(pcgTimer);
-
             
             //lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
             //nedelecSpace_m.reconstructSolution(lhsVector, *(this->En_mp));
             //lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
 
-            IpplTimings::stopTimer(solve);
             lhsVector_m = std::make_unique<FEMVector<T>>(lhsVector);
             return lhsVector.template skeletonCopy<Vector<T,Dim> >();//nedelecSpace_m.reconstructBasis(lhsVector);
         }
@@ -219,18 +203,44 @@ namespace ippl {
         T getResidue() const { return pcg_algo_m.getResidue(); }
 
         /**
-         * Query the L2-norm error compared to a given (analytical) sol
-         * @return L2 error after last solve
+         * @brief Reconstructs function values at arbitrary points in the mesh.
+         * 
+         * This function can be used to retrieve the values of a solution
+         * function at arbitrary points inside of the mesh.
+         * 
+         * @note Currently the function is able to handle both cases, where we
+         * have that \p positions only contains positions which are inside of
+         * local domain of this MPI rank (i.e. each rank gets its own unique
+         * \p position ) and where \p positions contains the positions of all
+         * ranks (i.e. \p positions is the same for all ranks). If in the future
+         * it can be guaranteed, that each rank will get its own \p positions
+         * then certain parts of the function implementation can be removed.
+         * Instructions for this are given in the implementation itself.
+         * 
+         * @param positions The points at which the function should be
+         * evaluated. A \c Kokkos::View which stores in each element a 2D/3D 
+         * point.
+         * 
+         * @return The function evaluated at the given points, stored inside of
+         * \c Kokkos::View where each element corresponts to the function value
+         * at the point described by the same element inside of \p positions.
+         */
+        Kokkos::View<point_t*> reconstructToPoints(const Kokkos::View<point_t*>& positions) <%
+            return this->nedelecSpace_m.reconstructToPoints(positions, *lhsVector_m);
+        %>
+
+
+        
+        /**
+         * @brief Given an analytical solution computes the L2 norm error.
+         *
+         * @param analytical The analytical solution (functor)
+         *
+         * @return error - The error ||u - analytical||_L2
          */
         template <typename F>
-        T getL2Error(const FEMVector<Vector<T,Dim>>& u, const F& analytic) {
-            T error_norm = this->nedelecSpace_m.computeError(u, analytic);
-            return error_norm;
-        }
-
-        template <typename F>
-        T getL2ErrorCoeff(const F& analytic) {
-            T error_norm = this->nedelecSpace_m.computeErrorCoeff(*lhsVector_m, analytic);
+        T getL2Error(const F& analytic) {
+            T error_norm = this->nedelecSpace_m.computeError(*lhsVector_m, analytic);
             return error_norm;
         }
 

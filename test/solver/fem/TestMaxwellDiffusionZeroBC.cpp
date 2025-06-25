@@ -18,11 +18,13 @@
 //
 
 #include "Ippl.h"
+#include <Kokkos_Random.hpp>
 
 #include "Meshes/Centering.h"
 #include "MaxwellSolvers/FEMMaxwellDiffusionSolver.h"
 
 #include <fstream>
+#include <random>
 
 template <typename T, unsigned Dim>
 struct Analytical{
@@ -72,8 +74,6 @@ template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
     // start the timer
-    static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
-    IpplTimings::startTimer(initTimer);
 
     Inform m("");
     Inform msg2all("", INFORM_ALL_NODES);
@@ -82,6 +82,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     using Field_t  = ippl::Field<ippl::Vector<T,Dim>, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
     using point_t =  ippl::Vector<T, Dim>;
+    using indices_t =  ippl::Vector<size_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
     const unsigned numGhosts      = 1;
@@ -114,28 +115,223 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Analytical<T,Dim> analytical(k);
     Rhs<T,Dim> rhsFunc(k);
 
+    // create the FEMVector for the rhs
+    size_t n = 1;
+    auto ldom = layout.getLocalNDIndex();
+    indices_t extents = (ldom.last() - ldom.first()) + 3;
+        
+    if constexpr (Dim == 2) {
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        n = nx*(ny-1) + ny*(nx-1);
+    } else {
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        size_t nz = extents(2);
+        n = (nz-1)*(nx*(ny-1) + ny*(nx-1) + nx*ny) + nx*(ny-1) + ny*(nx-1);
+    }
+    ippl::FEMVector<point_t> rhsVector(n);
+    auto viewRhs = rhsVector.getView();
 
-    IpplTimings::stopTimer(initTimer);
+    if constexpr (Dim == 2) {
+        Kokkos::parallel_for("Assign RHS", rhsVector.size(),
+            KOKKOS_LAMBDA(size_t i) {
+                size_t nx = extents(0);
+                size_t ny = extents(1);
+
+                size_t yOffset = i / (2*nx - 1);
+                size_t xOffset = i - (2*nx -1)*yOffset;
+                T x = xOffset*cellSpacing[0];
+                T y = yOffset*cellSpacing[1];
+                if (xOffset < (nx-1)) {
+                    // we are parallel to the x axis
+                    x += cellSpacing[0]/2.;
+                } else {
+                    // we are parallel to the y axis
+                    y += cellSpacing[1]/2.;
+                    x -= (nx-1)*cellSpacing[0];
+                }
+                // have to subtract one cellspacing for the ghost cells
+                x += origin[0] + ldom.first()[0]*cellSpacing[0] - cellSpacing[0];
+                y += origin[1] + ldom.first()[1]*cellSpacing[1] - cellSpacing[1];
+                
+                viewRhs(i) = rhsFunc(point_t(x,y));
+            }
+        );
+
+    } else {
+        Kokkos::parallel_for("Assign RHS", rhsVector.size(),
+            KOKKOS_LAMBDA(size_t i) {
+                size_t nx = extents(0);
+                size_t ny = extents(1);
+                size_t nz = extents(2);
+                
+                size_t zOffset = i / (nx*(ny-1) + ny*(nx-1) + nx*ny);
+                T z = zOffset*cellSpacing[2];
+                T x = 0;
+                T y = 0;
+
+                if (i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
+                    // we are parallel to z axis
+                    size_t f = i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
+                        - (nx*(ny-1) + ny*(nx-1));
+                    z += cellSpacing[2]/2;
+                    
+                    size_t yOffset = f / nx;
+                    y = yOffset*cellSpacing[1];
+
+                    size_t xOffset = f % nx;
+                    x = xOffset*cellSpacing[0];
+                } else {
+                    // are parallel to one of the other axes
+                    size_t f = i - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
+                    size_t yOffset = f / (2*nx - 1);
+                    size_t xOffset = f - (2*nx - 1)*yOffset;
+
+                    x = xOffset*cellSpacing[0];
+                    y = yOffset*cellSpacing[1];
+
+                    if (xOffset < (nx-1)) {
+                        // we are parallel to the x axis
+                        x += cellSpacing[0]/2.;
+                    } else {
+                        // we are parallel to the y axis
+                        y += cellSpacing[1]/2.;
+                        x -= (nx-1)*cellSpacing[0];
+                    }
+                }
+
+                // have to subtract one cellspacing for the ghost cells
+                x += origin[0] + ldom.first()[0]*cellSpacing[0] - cellSpacing[0];
+                y += origin[1] + ldom.first()[1]*cellSpacing[1] - cellSpacing[1];
+                z += origin[2] + ldom.first()[2]*cellSpacing[2] - cellSpacing[2];
+                
+                viewRhs(i) = rhsFunc(point_t(x,y,z));
+
+            }
+        );
+    }
+
 
     // initialize the solver
-    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsFunc);
+    IpplTimings::TimerRef timerSolverInit = IpplTimings::getTimer("solver init");
+    IpplTimings::startTimer(timerSolverInit);
 
+    ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector);
+
+    IpplTimings::stopTimer(timerSolverInit);
+    
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 10000);
     solver.mergeParameters(params);
     
+
+    IpplTimings::TimerRef timerSolverSolve = IpplTimings::getTimer("solver solve");
+    IpplTimings::startTimer(timerSolverSolve);
+    
     // solve the problem
     ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
 
+    IpplTimings::stopTimer(timerSolverSolve);
+
     // Calculate error
-    T coefError = solver.getL2ErrorCoeff(analytical);
+    T coefError = solver.getL2Error(analytical);
+
+    // retrive values at random positions
+    // we will take 100 points out of which 97 will be random and the last 3
+    // we be manually chosen.
+    Kokkos::Random_XorShift64_Pool<> randomPool(42);
+    size_t numPoints = 1000;
+    Kokkos::View<point_t*> positions("positions", numPoints);
+
+    Kokkos::parallel_for("assign positions", numPoints-3,
+        KOKKOS_LAMBDA(size_t i) <%
+            positions;
+            ldom;
+            domain_start;
+            auto gen = randomPool.get_state();
+            T cellWidth = (domain_end - domain_start) / numCellsPerDim;
+            if constexpr (Dim == 2) <%
+                positions(i) =
+                    point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
+                            ldom.last()<:0:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:1:>*cellWidth+domain_start,
+                            ldom.last()<:1:>*cellWidth+domain_start)));
+            %> else <%
+                positions(i) =
+                    point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
+                            ldom.last()<:0:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:1:>*cellWidth+domain_start,
+                            ldom.last()<:1:>*cellWidth+domain_start)),
+                        T(gen.drand(ldom.first()<:2:>*cellWidth+domain_start,
+                            ldom.last()<:2:>*cellWidth+domain_start)));
+            %>
+
+
+            if (i == numPoints-4) <%
+                positions(numPoints-3) = ldom.first()*cellWidth+domain_start;
+                positions(numPoints-2) = ldom.last()*cellWidth+domain_start;
+                // This point belongs to an edge
+                if constexpr (Dim == 2) <%
+                    positions(numPoints-1) =
+                        point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
+                            ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth);
+                %> else <%
+                    positions(numPoints-1) =
+                        point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
+                            ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth,
+                            ldom.first()<:2:>*cellWidth+domain_start + 0.5*cellWidth);
+                %>
+            %>
+            randomPool.free_state(gen);
+        %>
+    );
+
+    
+    Kokkos::View funcVals = solver.reconstructToPoints(positions);
+    auto hFuncVals = Kokkos::create_mirror_view(funcVals);
+    auto hPositions = Kokkos::create_mirror_view(positions);
+    Kokkos::deep_copy(hFuncVals, funcVals);
+    Kokkos::deep_copy(hPositions, positions);
+
+
+    for (size_t r = 0; r < ippl::Comm->size(); ++r) <%
+        if (ippl::Comm->rank() == r) <%
+            std::ofstream file;
+            if (r == 0) <%
+                file.open("field.csv");
+                file << "x,y,vx,vy\n";
+            %> else <%
+                file.open("field.csv", std::ios::app);
+            %>
+            for (size_t i = 0; i < hPositions.extent(0); ++i) <%
+                file << hPositions(i)<:0:> << "," << hPositions(i)<:1:> << ","
+                     << hFuncVals(i)<:0:> << "," << hFuncVals(i)<:1:> << "\n";
+            %>
+
+            file.close();
+        %>
+        ippl::Comm->barrier();
+    %>
+
+    // calculate the error
+    T linfError = 0;
+    Kokkos::parallel_reduce( "calc l infinity", numPoints,
+        KOKKOS_LAMBDA (size_t i, T& lmax) {
+            point_t dif = funcVals(i) - analytical(positions(i));
+            T val = Kokkos::sqrt(dif.dot(dif));
+            if( val > lmax ) lmax = val; 
+        },
+        Kokkos::Max<T>(linfError)
+    );
 
     if (ippl::Comm->rank() == 0) {
         std::cout << std::setw(10) << numNodesPerDim;
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
         std::cout << std::setw(25) << std::setprecision(16) << coefError;
+        std::cout << std::setw(25) << std::setprecision(16) << linfError;
         std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
         std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
         std::cout << "\n";
@@ -151,15 +347,9 @@ int main(int argc, char* argv[]) {
 
         unsigned dim = 3;
 
-        if (argc > 1 && std::atoi(argv[1]) == 1) {
-            dim = 1;
-        } else if (argc > 1 && std::atoi(argv[1]) == 2) {
+        if (argc > 1 && std::atoi(argv[1]) == 2) {
             dim = 2;
         }
-
-        // start the timer
-        static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
-        IpplTimings::startTimer(allTimer);
 
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
@@ -174,28 +364,39 @@ int main(int argc, char* argv[]) {
                       //<< std::setw(25) << "value_error"
                       //<< std::setw(25) << "interp_error"
                       << std::setw(25) << "interp_error_coef"
+                      << std::setw(25) << "recon_error"
                       << std::setw(25) << "solver_residue"
                       << std::setw(15) << "num_it\n";
         }
         
-        if (dim == 2) {
-            // 2D Sinusoidal
-            for (unsigned n = 32; n <= 256; n += 1) {
+        if (argc > 2 && std::atoi(argv[2]) != 0) <%
+            size_t n = std::atoi(argv<:2:>);
+            if (dim == 2) {
+                // 2D
                 testFEMSolver<T, 2>(n, 1.0, 3.0);
-            }
-        } else {
-            // 3D Sinusoidal
-            for (unsigned n = 32; n <= 256; n += 1) {
+            } else {
+                // 3D
                 testFEMSolver<T, 3>(n, 1.0, 3.0);
             }
-        }
-
-        // stop the timer
-        IpplTimings::stopTimer(allTimer);
+        %> else <%
+            if (dim == 2) {
+                // 2D Sinusoidal
+                for (unsigned n = 16; n <= 512; n *= 1.5) {
+                    testFEMSolver<T, 2>(n, 1.0, 3.0);
+                }
+            } else {
+                // 3D Sinusoidal
+                for (unsigned n = 16; n <= 400; n *= 1.5) {
+                    testFEMSolver<T, 3>(n, 1.0, 3.0);
+                }
+            }
+        %>
 
         // print the timers
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
+
+        msg.outputMessage();
     }
     ippl::finalize();
 

@@ -237,19 +237,6 @@ namespace ippl {
         //KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(
         //    const size_t& localDOF, const point_t& localPoint) const = 0;
 
-        /**
-         * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
-         * given point in the reference element
-         *
-         * @param localDOF size_t - The local degree of freedom index
-         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
-         *
-         * @return point_t (Vector<T, Dim>) - The gradient of the shape function at the given
-         * point
-         */
-        KOKKOS_FUNCTION virtual point_t evaluateRefElementShapeFunctionGradient(
-            const size_t& localDOF, const point_t& localPoint) const = 0;
-
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
