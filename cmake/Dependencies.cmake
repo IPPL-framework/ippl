@@ -33,7 +33,6 @@ message(STATUS "✅ Kokkos ready")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(Heffte_ENABLE_AVX2 OFF CACHE BOOL "" FORCE)
-    set(Heffte_ENABLE_CUDA OFF CACHE BOOL "" FORCE)
     message(STATUS "❗ Disabling AVX2 and CUDA in Debug build")
 endif()
 
