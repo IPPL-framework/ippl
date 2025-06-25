@@ -24,7 +24,7 @@ namespace ippl {
      * @tparam SourceField The type representing the source field.
      * @tparam boundary_conditions The boundary conditions to be applied (default is periodic).
      */
-    template <typename EMField, typename SourceField, fdtd_bc boundary_conditions = periodic>
+    template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     class FDTDSolverBase : public Maxwell<EMField, SourceField> {
     public:
         constexpr static unsigned Dim = EMField::dim;
