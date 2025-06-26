@@ -31,6 +31,11 @@ typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
 typedef Field<Kokkos::complex<double>, Dim> CField_t;
 typedef Field<double, Dim> RField_t; 
 
+struct HermitianPkg {
+  int    kx, ky, kz;
+  double re, im;
+};
+
 /**
  * @brief Construct a new StructureFormationManager object.
  *
@@ -78,6 +83,19 @@ public:
      * @brief Destructor for StructureFormationManager.
      */
     ~StructureFormationManager() {}
+
+#ifdef IPPL_ENABLE_TESTS
+      auto getCView() -> decltype(cfield_m.getView()) { return cfield_m.getView(); }
+      
+      int getGhostCells() const { return cfield_m.getNghost(); } 
+      
+      const ippl::FieldLayout<Dim>& getLayout() const { return this->fcontainer_m->getFL(); }
+      
+      const ippl::Vector<int, Dim>& getNr() const noexcept {
+        return this->nr_m;
+      }
+      
+#endif
 
   struct MinMaxSum {
     double min;
@@ -313,29 +331,31 @@ public:
 		       });
 
     IpplTimings::stopTimer(fourDenTimer);
-    
+
     // Check whether the generated density field is Hermitian before proceeding
+    static IpplTimings::TimerRef hermiticityTimer = IpplTimings::getTimer("Hermiticity Timer");     
+    IpplTimings::startTimer(hermiticityTimer);
+
     if (isHermitian()) {
-      msg << "Fourier density field is Hermitian." << endl;
+        msg << "Fourier density field is Hermitian." << endl;
     } else {
-      std::cerr << "Fourier density field is NOT Hermitian!" << endl;
+        std::cerr << "Fourier density field is NOT Hermitian!" << std::endl;
     }
 
+    IpplTimings::stopTimer(hermiticityTimer);
+
     static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
-    
     // Store delta(k) for reuse 
     auto tmpcfield = cfield_m; 
     typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
-
     /*
       Now we can delete Pk and allocate the particles
-      
+
     */
-    
+
     const unsigned int nx = lDom[0].length();
     const unsigned int ny = lDom[1].length();
     const Vector_t<double,3> hr = this->hr_m;
-    
     // 2–4. Loop over displacement components x(0), y(1), z(2)
     for (int dim = 0; dim < 3; ++dim) {
       IpplTimings::startTimer(fourDisplTimer);
@@ -363,7 +383,6 @@ public:
 			     : I * (k_comp / k2) * delta;
 			   ippl::apply(view, idx) = result;
 			 });
-	
 	// Inverse FFT to real space
 	Cfft_m->transform(ippl::BACKWARD, cfield_m);
 	IpplTimings::stopTimer(fourDisplTimer);
@@ -371,7 +390,10 @@ public:
 	static IpplTimings::TimerRef posvelInitTimer = IpplTimings::getTimer("Position/Velocity init");
 	IpplTimings::startTimer(posvelInitTimer);
 
-	Kokkos::parallel_for("ComputeWorldCoordinates",lgridsize,
+        // segfault fix : only loop over the cells you own
+        index_type n_local = static_cast<index_type>( rView.extent(0) );
+
+	Kokkos::parallel_for("ComputeWorldCoordinates",n_local,
 			     KOKKOS_LAMBDA(const index_type n) {
 			       // Convert 1D index n back to 3D indices (i, j, k)
 			       const unsigned int i = n % nx;
@@ -384,100 +406,294 @@ public:
 			     });
 	
 	IpplTimings::stopTimer(posvelInitTimer);
-    }	        
+    }
   }
 
- /**
-     * @brief Check whether the complex density field delta(k) is Hermitian
-     *
-     * A real‑space density field requires its Fourier coefficients
-     * to be Hermitian, satisfying
-     * \f[
-     *     \delta(-\mathbf k) = \delta^*(\mathbf k) ,
-     * \f]
-     * where the asterisk denotes complex conjugation.
-     *
-     * This function loops through the indices of the complex field accessed as
-     * a Kokkos view holding the complex Fourier amplitudes and returns false
-     * in the case that any of the fourier modes are not Hermitian.
-     *
-     * @return true if the complex density field is Hermitian, false otherwise
-     */
-
+  /**
+       * @brief Check whether the complex density field delta(k) is Hermitian
+       *        Compatible with multiple CPU Ranks
+       *
+       * A real‑space density field requires its Fourier coefficients
+       * to be Hermitian, satisfying
+       * \f[
+       *     \delta(-\mathbf k) = \delta^*(\mathbf k) ,
+       * \f]
+       * where the asterisk denotes complex conjugation.
+       *
+       * This function loops through the indices of the complex field accessed as
+       * a Kokkos view holding the complex Fourier amplitudes and returns false
+       * in the case that any of the fourier modes are not Hermitian.
+       *
+       * @return true if the complex density field is Hermitian, false otherwise
+       */
   bool isHermitian() const {
+    Inform msg("isHermitian ");
 
-    const auto& field = cfield_m.getView(); // Complex density field view
-    const int Nx = this->nr_m[0];
-    const int Ny = this->nr_m[1];
-    const int Nz = this->nr_m[2];
+    const auto& field = cfield_m.getView();
+    const int Nx = this->nr_m[0], Ny = this->nr_m[1], Nz = this->nr_m[2];
     const int ngh = cfield_m.getNghost();
-    const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
-
-
-    // flag to track result on current rank
-    int localHermitian = 1; 
-
-    // Iterate over the field indices and check whether each fourier coefficient is Hermitian
-    // TODO: Right now the code assumes that the negative index can be found on the same rank.
-    //       To make the code parallelizable for multi-ranks, this needs to be accounted for.
-    ippl::parallel_reduce("isHermitian", ippl::getRangePolicy(field, ngh),
-                       KOKKOS_LAMBDA(const index_array_type& idx, int& isHermitian) {
-
-                         // Converts the local idx into the global coordinate in the FFT grid.
-                         int i = idx[0] - ngh + lDom[0].first();
-                         int j = idx[1] - ngh + lDom[1].first();
-                         int k = idx[2] - ngh + lDom[2].first();
-
-                         // The DC mode (k = 0) is always real and can be excluded from the Hermitian check.
-                         if (i == 0 && j == 0 && k == 0) return;
-
-                         // Compute the global “negative” indices for Hermitian pair
-                         int i_neg = (i == 0 ? 0 : Nx - i);
-                         int j_neg = (j == 0 ? 0 : Ny - j);
-                         int k_neg = (k == 0 ? 0 : Nz - k);
-
-                         index_array_type neg_idx = {i_neg + ngh - lDom[0].first(),
-                                                     j_neg + ngh - lDom[1].first(),
-                                                     k_neg + ngh - lDom[2].first()};
-                         
-                         // store delta(k), delta(-k), complex conjugate conj[delta(k)]
-                         Kokkos::complex<double> delta_k = ippl::apply(field, idx);
-                         Kokkos::complex<double> delta_minus_k = ippl::apply(field, neg_idx);
-                         Kokkos::complex<double> conjugate_delta_k = Kokkos::conj(delta_k);
-                         
-                         // set the tolerance for comparison based on the value type
-                         const double tol = std::numeric_limits<double>::epsilon();
-
-
-                         // uncomment for debugging
-                         /*
-                         printf("[Hermitian‑check]  k=(%d,%d,%d)  , "
-                                 "delta(k)=(% .3e%+.3ei)   ,"
-                                 "delta(-k)=(% .3e%+.3ei)  ,"
-                                 "conj[delta(k)] = (% .3e%+.3ei)\n",
-                                  i, j, k,
-                                  val_k.real(), val_k.imag(),
-                                  val_minus_k.real(), val_minus_k.imag(),
-                                  conjugate_val_k.real(),  conjugate_val_k.imag());
-                         */
-
-                         // If delta(-k) != conj[delta(k)], field is not hermitian
-                         bool hermitian =
-                              std::abs(delta_minus_k.real() - conjugate_delta_k.real()) <= tol &&
-                              std::abs(delta_minus_k.imag() - conjugate_delta_k.imag()) <= tol;
-
-                         if (!hermitian)
-                              isHermitian = 0; 
-                     }, 
-                     Kokkos::Min<int>(localHermitian)); // if any value becomes 0, final result is 0 on this rank
-
-    // Then do the global MPI reduction across ranks
-    int globalHermitian = 0;
-    MPI_Allreduce(&localHermitian, &globalHermitian, 1, MPI_INT, MPI_MIN, ippl::Comm->getCommunicator());
-
-    return globalHermitian != 0;
-  }
+    const auto& layout = this->fcontainer_m->getFL();
+    const ippl::NDIndex<Dim>& lDom = layout.getLocalNDIndex();
   
+    const double tol = std::numeric_limits<double>::epsilon();
+    const int nranks = ippl::Comm->size();
+    const int myrank = ippl::Comm->rank();
+  
+    using ExecSpace = Kokkos::DefaultExecutionSpace;
+    using MemSpace  = typename ExecSpace::memory_space;
+
+    if (nranks > 1) {
+      // device view of the global index layout
+      const auto& global_domains = layout.getDeviceLocalDomains();   
+  
+      Kokkos::View<int*, MemSpace> sendCount("sendCount", nranks);
+      Kokkos::deep_copy(sendCount, 0); // zero-init in device mem
+    
+      // local Hermitian flag - shared across both device reductions
+      int localHermitianFlag = 1;
+
+      //Walk over local k‑space and do 2 things:
+      //    (i) test Hermiticity when -k is on the same rank
+      //    (ii) add count to sendCount -k lives elsewhere.
+      using MDPolicy = Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>;
+      MDPolicy mdp({lDom[0].first(), lDom[1].first(), lDom[2].first()},
+                   {lDom[0].last()+1, lDom[1].last()+1, lDom[2].last()+1});
+
+      Kokkos::parallel_reduce("isHermitian_countSends", mdp,
+        KOKKOS_LAMBDA(const int i, const int j, const int k, int& isHermitianFlag)
+        {
+
+          if (i==0 && j==0 && k==0) return; // skip k = (0,0,0)
+
+
+          // compute -k in global coordinates
+          const int i_neg = (i==0 ? 0 : Nx-i);
+          const int j_neg = (j==0 ? 0 : Ny-j);
+          const int k_neg = (k==0 ? 0 : Nz-k);
+
+          // figure out which rank owns -k
+          int neg_k_owner = -1;
+          for (int rank = 0; rank < nranks; rank++) {
+            const auto& dom = global_domains(rank);   // NDIndex on the device
+            if (dom[0].first() <= i_neg && i_neg <= dom[0].last() &&
+                dom[1].first() <= j_neg && j_neg <= dom[1].last() &&
+                dom[2].first() <= k_neg && k_neg <= dom[2].last())
+              neg_k_owner = rank;
+          }
+
+
+          if (neg_k_owner == myrank) {
+            // neg_k is local - check hermiticity directly
+           
+            // local k indices 
+            const int li = i - lDom[0].first() + ngh;
+            const int lj = j - lDom[1].first() + ngh;
+            const int lk = k - lDom[2].first() + ngh;
+
+            // local neg_k indices
+            const int lni = i_neg - lDom[0].first() + ngh;
+            const int lnj = j_neg - lDom[1].first() + ngh;
+            const int lnk = k_neg - lDom[2].first() + ngh;
+
+            Kokkos::complex<double> delta_k = field(li, lj, lk);
+            Kokkos::complex<double> delta_neg_k = field(lni, lnj, lnk);
+            auto delta_ck = Kokkos::conj(delta_k);
+
+            if (Kokkos::abs(delta_neg_k.real()-delta_ck.real()) > tol ||
+                Kokkos::abs(delta_neg_k.imag()-delta_ck.imag()) > tol) {
+              isHermitianFlag = 0;
+            }
+          } else if (neg_k_owner >= 0) {
+            // -k belongs to another rank - make space in sendcount
+            Kokkos::atomic_fetch_add(&sendCount(neg_k_owner), 1);
+          } else {
+            // Domain decomposition bug
+            if (myrank == 0) printf("Hermiticity check: no found owner rank for neg_k\n");
+            isHermitianFlag = 0;
+          }
+        },
+        Kokkos::Min<int>(localHermitianFlag));
+    
+      Kokkos::fence(); // make sure sendCount is ready
+    
+      // Build per‑rank send counts on HOST – device to host copy
+      Kokkos::View<int*, Kokkos::HostSpace> sendCount_h("sendCount_h", nranks);
+      Kokkos::deep_copy(sendCount_h, sendCount);
+
+                        
+      // Prefix sums to get displacements (still on host)
+      std::vector<size_t> send_disp(nranks,0);
+      for (int rank = 1; rank < nranks; rank++) {
+        send_disp[rank] = send_disp[rank-1] + static_cast<size_t>(sendCount_h[rank-1]);
+      }
+    
+      const size_t total_sends = send_disp.back() + sendCount_h(nranks - 1);
+
+      // Allocate send and receive buffer on the GPU (total_sends=total_recvs)
+      Kokkos::View<HermitianPkg*, MemSpace> send_buffer_d("send_buffer_d", total_sends);
+      Kokkos::View<HermitianPkg*, MemSpace> recv_buffer_d("recv_buffer_d", total_sends);
+    
+      // Device copy of the displacements per destination ranks
+      Kokkos::View<size_t*,Kokkos::HostSpace> send_disp_h("send_disp_h", nranks);
+      for(int r=0;r<nranks;++r){
+           send_disp_h(r)=send_disp[r];
+      }
+      Kokkos::View<size_t*, MemSpace> send_disp_d("send_disp_d", nranks);
+      Kokkos::deep_copy(send_disp_d, send_disp_h);
+    
+      // per-dest ‘how many already packed’ counters
+      Kokkos::deep_copy(sendCount, 0);   // resets device view
+    
+      // pack each +k message into its unique slot = base+local
+      Kokkos::parallel_for("isHermitian_pack_send_buffer", mdp,
+        KOKKOS_LAMBDA(const int i, const int j, const int k)
+        {
+          if (i==0 && j==0 && k==0) return;
+
+          // ----- same local computations as first kernel -----
+          const int li = i - lDom[0].first() + ngh;
+          const int lj = j - lDom[1].first() + ngh;
+          const int lk = k - lDom[2].first() + ngh;
+          Kokkos::complex<double> delta_k = field(li, lj, lk);
+
+          const int i_neg = (i==0 ? 0 : Nx-i);
+          const int j_neg = (j==0 ? 0 : Ny-j);
+          const int k_neg = (k==0 ? 0 : Nz-k);
+
+          int neg_k_owner = -1;
+          for (int rank = 0; rank < nranks; ++rank) {
+            const auto& dom = global_domains(rank);
+            if (dom[0].first() <= i_neg && i_neg <= dom[0].last() &&
+                dom[1].first() <= j_neg && j_neg <= dom[1].last() &&
+                dom[2].first() <= k_neg && k_neg <= dom[2].last())
+              neg_k_owner = rank;
+          }
+        
+          if (neg_k_owner != myrank) {
+              if (neg_k_owner >= 0) {
+                  // unique slot: bucket offset + per-bucket atomic increment
+                  const size_t base  = send_disp_d(neg_k_owner);
+                  const int    local = Kokkos::atomic_fetch_add(&sendCount(neg_k_owner), 1);
+                  const size_t slot  = base + static_cast<size_t>(local);
+
+                  send_buffer_d(slot).kx = i;
+                  send_buffer_d(slot).ky = j;
+                  send_buffer_d(slot).kz = k;
+                  send_buffer_d(slot).re = delta_k.real();
+                  send_buffer_d(slot).im = delta_k.imag();
+              } else {
+                  if (myrank == 0) printf("Hermiticity check error: no found owner rank for neg_k\n");
+              }
+          }
+      });
+      Kokkos::fence();    // ensure send_buffer_d is filled
+
+      // Communication
+      std::vector<MPI_Request> mpi_requests;
+
+      // Post all receives directly into device memory
+      for (int rank = 0; rank < nranks; rank++) {
+        if (sendCount_h[rank] == 0) continue;
+        mpi_requests.emplace_back();
+        void* recv_ptr = static_cast<void*>(recv_buffer_d.data() + send_disp[rank]);
+        MPI_Irecv(recv_ptr, sendCount_h[rank] * sizeof(HermitianPkg), MPI_BYTE, rank, 
+                  0, ippl::Comm->getCommunicator(), &mpi_requests.back());
+      }
+
+      // Send out packages directly from device memory
+      for (int rank = 0; rank < nranks; rank++) {
+        if (sendCount_h[rank] == 0) continue;
+        mpi_requests.emplace_back();
+        const void* send_ptr = static_cast<void*>(send_buffer_d.data() + send_disp[rank]);
+        MPI_Isend(send_ptr, sendCount_h[rank] * sizeof(HermitianPkg), MPI_BYTE, rank,
+                  0, ippl::Comm->getCommunicator(), &mpi_requests.back());
+      }
+
+
+      MPI_Waitall(static_cast<int>(mpi_requests.size()),
+                  mpi_requests.data(), MPI_STATUSES_IGNORE);
+      Kokkos::fence(); // ensure GPU sees new data
+
+      // Perform final hermiticity check on remaining values
+      Kokkos::parallel_reduce("finalHermiticityCheck",
+        Kokkos::RangePolicy<ExecSpace>(0, static_cast<int>(total_sends)),
+        KOKKOS_LAMBDA(const int idx, int& isHermitianFlag)
+        {
+          // unpack the package
+          const HermitianPkg p = recv_buffer_d(idx);
+
+          // compute k coordinates (this point lies on current rank)
+          const int i = (p.kx==0 ? 0 : Nx - p.kx);
+          const int j = (p.ky==0 ? 0 : Ny - p.ky);
+          const int k = (p.kz==0 ? 0 : Nz - p.kz);
+        
+          // convert to local coordinates
+          const int li = i - lDom[0].first() + ngh;
+          const int lj = j - lDom[1].first() + ngh;
+          const int lk = k - lDom[2].first() + ngh;
+
+          Kokkos::complex<double> delta_k = field(li, lj, lk);
+          Kokkos::complex<double> delta_neg_k     = { p.re, p.im };
+          auto delta_ck = Kokkos::conj(delta_k);
+
+          if (Kokkos::abs(delta_neg_k.real() - delta_ck.real()) > tol ||
+              Kokkos::abs(delta_neg_k.imag() - delta_ck.imag()) > tol) {
+            isHermitianFlag = 0;
+          }
+        },
+        Kokkos::Min<int>(localHermitianFlag));
+      Kokkos::fence();
+    
+      // global reduction of hermiticity value
+      int globalResult = 1;
+      MPI_Allreduce(&localHermitianFlag, &globalResult, 1, MPI_INT, MPI_MIN,
+                    ippl::Comm->getCommunicator());
+
+      return globalResult != 0;
+
+    } else { // single rank branch
+      int localHermitian = 1;
+      // Iterate over the field indices and check whether each fourier coefficient is Hermitian
+      ippl::parallel_reduce("isHermitian_single_rank",
+        ippl::getRangePolicy(field,ngh),
+        KOKKOS_LAMBDA(const index_array_type& idx,int& isHermitian)
+        {
+          // Converts the local idx into the global coordinate in the FFT grid.
+          int i = idx[0] - ngh + lDom[0].first();
+          int j = idx[1] - ngh + lDom[1].first();
+          int k = idx[2] - ngh + lDom[2].first();
+        
+          // The DC mode (k = 0) is always real and can be excluded from the Hermitian check.
+          if(i == 0 && j == 0 && k == 0) return;
+        
+          // Compute the global “negative” indices for Hermitian pair
+          int i_neg = (i == 0 ? 0 : Nx - i);
+          int j_neg = ( j== 0 ? 0 : Ny - j);
+          int k_neg = (k == 0 ? 0 : Nz - k);
+
+          index_array_type neg_idx = {i_neg + ngh - lDom[0].first(),
+                                      j_neg + ngh - lDom[1].first(),
+                                      k_neg + ngh - lDom[2].first()};
+        
+          // store delta(k), delta(-k), complex conjugate conj[delta(k)]
+          Kokkos::complex<double> delta_k  = ippl::apply(field,idx);
+          Kokkos::complex<double> delta_neg_k = ippl::apply(field,neg_idx);
+          Kokkos::complex<double> delta_ck = Kokkos::conj(delta_k);
+
+          // If delta(-k) != conj[delta(k)], field is not hermitian
+          if(std::abs(delta_neg_k.real() - delta_ck.real()) > tol ||
+             std::abs(delta_neg_k.imag() - delta_ck.imag()) > tol) { 
+              isHermitian=0;
+          }
+
+        },
+        Kokkos::Min<int>(localHermitian));
+      return localHermitian!=0;
+    }
+  }
+
+
+
   /**
      * @brief Create particles using Zarijas initializer
      */

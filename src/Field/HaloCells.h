@@ -45,7 +45,8 @@ namespace ippl {
 
             enum SendOrder {
                 HALO_TO_INTERNAL,
-                INTERNAL_TO_HALO
+                INTERNAL_TO_HALO,
+                HALO_TO_INTERNAL_NOGHOST
             };
 
             HaloCells();
@@ -57,6 +58,16 @@ namespace ippl {
              * @param layout the field layout storing the domain decomposition
              */
             void accumulateHalo(view_type& view, Layout_t* layout);
+
+            /*!
+             * Send halo data to internal cells for only the physical cells
+             * along that dimension. The halo cells on the corners are not sent.
+             * This operation uses assign_plus functor to assign the data.
+             * @param view the original field data
+             * @param layout the field layout storing the domain decomposition
+             * @param nghost the number of ghost cells
+             */
+            void accumulateHalo_noghost(view_type& view, Layout_t* layout, int nghost);
 
             /*!
              * Send interal data to halo cells. This operation uses
@@ -128,7 +139,7 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order);
+            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
 
             /*!
              * Extract the subview of the original data. This does not copy.
