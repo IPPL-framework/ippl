@@ -9,9 +9,6 @@
 // established during the manager's construction and `pre_run()` method.
 //
 // Usage:
-//   This test is designed to be run on a single MPI rank for simplicity and directness
-//   of data manipulation, as it directly sets specific Fourier coefficients.
-//
 //   srun -np 1 ./TestHermiticity <inputfile> <tfFn> <outFn> <outDir> <fsType> <lbthres> <integrator>
 //
 //   <inputfile>: describes the simulation parameters (e.g. np, box_size, cosmology)
@@ -90,12 +87,10 @@ using Vector_t = ippl::Vector<T, Dim>;
 using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 
 /**
- * @brief Performs a multi-rank test by initializing a Fourier field with a
- * real cosine wave and verifying its Hermitian symmetry.
- *
- * This test uses a specific global k-vector to define the cosine wave.
- * The Fourier transform of a real cosine wave is known to be real and
- * symmetric about k=0 (i.e., F(k) = F(-k), and both are real).
+ * @brief Performs a multi-rank hermiticity test by initializing a
+ * Fourier field with two points at index k and -k which are each
+ * others complex conjugate and then calling the isHermitian function
+ * from the cosmology StructureFormationManager class.
  *
  * @tparam Manager The type of the manager class, expected to be StructureFormationManager<T, Dim>.
  * @param manager An instance of the StructureFormationManager class, providing
@@ -105,6 +100,7 @@ using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 template<class Manager>
 void hermiticityTest1(Manager& manager)
 {
+    Inform msg("hermiticityTest1");
     auto cview = manager.getCView(); // Local view of the distributed field
     auto particles = manager.getNr(); // Global dimensions (Nx, Ny, Nz)
     const int Nx = particles[0], Ny = particles[1], Nz = particles[2];
@@ -115,7 +111,7 @@ void hermiticityTest1(Manager& manager)
     const int myrank = ippl::Comm->rank(); // Get current MPI rank
 
     // Define the global k-vector for our cosine wave
-    // Choose a non-zero k-vector that is unlikely to be self-conjugate
+    // Choose an arbitrary non-zero k-vector
     const int global_kx0 = 2;
     const int global_ky0 = 1;
     const int global_kz0 = 0;
@@ -125,11 +121,11 @@ void hermiticityTest1(Manager& manager)
     // Clear the entire distributed field to zeros
     Kokkos::deep_copy(cview, Kokkos::complex<double>(0, 0));
 
-    // Initialize the Fourier density field for a real cosine wave
+    // Initialize the Fourier density field with two real numbers which are
+    // complex conjugate points 
     // Each rank computes its local contribution based on global k-vectors
-    ippl::parallel_for("RealCosineFourierField", ippl::getRangePolicy(cview, ngh),
+    ippl::parallel_for("InitHermitianField", ippl::getRangePolicy(cview, ngh),
         KOKKOS_LAMBDA(const index_array_type& idx) {
-            
             // Compute global coordinates (i,j,k) for this local index
             int i = idx[0] - ngh + lDom[0].first();
             int j = idx[1] - ngh + lDom[1].first();
@@ -140,32 +136,31 @@ void hermiticityTest1(Manager& manager)
             int global_ky_neg = (global_ky0 == 0 ? 0 : Ny - global_ky0);
             int global_kz_neg= (global_kz0 == 0 ? 0 : Nz - global_kz0);
 
-            // Value to set for the cosine mode components.
-            // For A*cos(k.x), the Fourier components at k and -k are both A/2, and purely real.
-            Kokkos::complex<double> cos_val = Kokkos::complex<double>(0.5, 0.0);
+            // Value to set for the mode components.
+            Kokkos::complex<double> val = Kokkos::complex<double>(0.5, 0.0);
 
             // Check if this global (i,j,k) corresponds to our target k-vector or its negative
             if (i == global_kx0 && j == global_ky0 && k == global_kz0) {
-                cview(idx[0], idx[1], idx[2]) = cos_val;
+                cview(idx[0], idx[1], idx[2]) = val;
             } else if (i == global_kx_neg && j == global_ky_neg && k == global_kz_neg) {
-                cview(idx[0], idx[1], idx[2]) = cos_val; // For real cosine, conjugate is same value
+                cview(idx[0], idx[1], idx[2]) = val; // for real value, conjugate is same value
             }
         });
 
-    if (myrank == 0) {
-        std::cout << "[3] Real Cosine Fourier field (Multi-Rank Init): "
-                  << (manager.isHermitian() ? "TRUE" : "FALSE") << '\n';
-        std::cout << "--- End hermiticityTest2 Hermitian ---\n";
-    }
-    
+    auto hermitian1 = manager.isHermitian();
+
     ippl::Comm->barrier();  
+
+    if (myrank == 0) {
+        msg << "[1/4] Real Fourier field (Multi-Rank Init): "
+                  << (hermitian1 ? "TRUE" : "FALSE") << endl ;
+    }
     
     // Clear the entire distributed field to zeros
     Kokkos::deep_copy(cview, Kokkos::complex<double>(0, 0));
-
-    // Initialize the Fourier density field for a real cosine wave
-    // Each rank computes its local contribution based on global k-vectors
-    ippl::parallel_for("RealCosineFourierField", ippl::getRangePolicy(cview, ngh),
+    
+    // Initialize a non-hermitian field
+    ippl::parallel_for("InitNonHermitianField", ippl::getRangePolicy(cview, ngh),
         KOKKOS_LAMBDA(const index_array_type& idx) {
             
             // Compute global coordinates (i,j,k) for this local index
@@ -178,22 +173,21 @@ void hermiticityTest1(Manager& manager)
             int global_ky_neg = (global_ky0 == 0 ? 0 : Ny - global_ky0);
             int global_kz_neg= (global_kz0 == 0 ? 0 : Nz - global_kz0);
 
-            // Value to set for the cosine mode components.
-            // For A*cos(k.x), the Fourier components at k and -k are both A/2, and purely real.
-            Kokkos::complex<double> cos_val = Kokkos::complex<double>(0.5, 0.0);
+            Kokkos::complex<double> val = Kokkos::complex<double>(0.5, 0.0);
 
             // Check if this global (i,j,k) corresponds to our target k-vector or its negative
             if (i == global_kx0 && j == global_ky0 && k == global_kz0) {
-                cview(idx[0], idx[1], idx[2]) = cos_val;
+                cview(idx[0], idx[1], idx[2]) = val;
             } else if (i == global_kx_neg && j == global_ky_neg && k == global_kz_neg) {
-                cview(idx[0], idx[1], idx[2]) = -2 * cos_val; // Make sure conjugate does not match
+                cview(idx[0], idx[1], idx[2]) = -2 * val; // Make sure conjugate does not match
             }
         });
 
+    auto hermitian2 = manager.isHermitian();
+
     if (myrank == 0) {
-        std::cout << "[3] Real Cosine Fourier field (Multi-Rank Init): "
-                  << (manager.isHermitian() ? "TRUE" : "FALSE (expected)") << '\n';
-        std::cout << "--- End hermiticityTest2 Not Hermitian ---\n";
+        msg << "[2/4] Real Fourier field (Multi-Rank Init): "
+                  << (hermitian2 ? "TRUE" : "FALSE (expected)") << endl;
     }
     
     ippl::Comm->barrier();  
@@ -201,9 +195,8 @@ void hermiticityTest1(Manager& manager)
 
 /**
  * @brief Performs a multi-rank test by initializing a random gaussian field that fills
- * the entire fourier space to check that the hermiticity check works correctly.
- *
- * 
+ * the entire fourier space and then uses the isHermitian() function from the 
+ * StructureFormationManager class to check hermiticity of this field.
  *
  * @tparam Manager The type of the manager class, expected to be StructureFormationManager<T, Dim>.
  * @param manager An instance of the StructureFormationManager class, providing
@@ -213,6 +206,7 @@ void hermiticityTest1(Manager& manager)
 template<class Manager>
 void hermiticityTest2(Manager& manager)
 {
+    Inform msg("hermiticityTest2");
     auto cview = manager.getCView(); // Local view of the distributed field
     auto particles = manager.getNr(); // Global dimensions (Nx, Ny, Nz)
     const int Nx = particles[0], Ny = particles[1], Nz = particles[2];
@@ -230,7 +224,7 @@ void hermiticityTest2(Manager& manager)
     const uint64_t global_seed = 12345ULL;  // Shared global seed for reproducibility
 
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
-    ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(cview, ngh),
+    ippl::parallel_for("InitGaussianHermitian", ippl::getRangePolicy(cview, ngh),
 		       KOKKOS_LAMBDA(const index_array_type& idx) {
 			 const double pi = Kokkos::numbers::pi_v<double>;
 			 // Compute global coordinates (i,j,k) for this local index
@@ -295,10 +289,11 @@ void hermiticityTest2(Manager& manager)
                            }
 		       });
 
+    auto hermitian3 = manager.isHermitian();
+
     if (myrank == 0) {
-        std::cout << "[4] Random Gaussian Field (Multi-Rank Init): "
-                  << (manager.isHermitian() ? "TRUE" : "FALSE") << '\n';
-        std::cout << "--- End hermiticityTest3 Hermitian ---\n";
+        msg << "[3/4] Random Gaussian Field (Multi-Rank Init): "
+                  << (hermitian3 ? "TRUE" : "FALSE") << endl;
     }
     
     ippl::Comm->barrier(); 
@@ -307,7 +302,7 @@ void hermiticityTest2(Manager& manager)
     Kokkos::deep_copy(cview, Kokkos::complex<double>(0, 0));
 
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
-    ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(cview, ngh),
+    ippl::parallel_for("InitGaussianNonHermitian", ippl::getRangePolicy(cview, ngh),
 		       KOKKOS_LAMBDA(const index_array_type& idx) {
 			 const double pi = Kokkos::numbers::pi_v<double>;
 			 // Compute global coordinates (i,j,k) for this local index
@@ -372,10 +367,11 @@ void hermiticityTest2(Manager& manager)
                            }
 		       });
 
+    auto hermitian4 = manager.isHermitian();
+    
     if (myrank == 0) {
-        std::cout << "[4] Random Gaussian Field (Multi-Rank Init): "
-                  << (manager.isHermitian() ? "TRUE" : "FALSE (expected) ") << '\n';
-        std::cout << "--- End hermiticityTest3 Not Hermitian ---\n";
+        msg << "[4/4] Random Gaussian Field (Multi-Rank Init): "
+                  << (hermitian4 ? "TRUE" : "FALSE (expected) ") << endl;
     }
     
     ippl::Comm->barrier(); 
@@ -389,61 +385,58 @@ int main(int argc,char** argv)
   {
         Inform msg(argv[0]);
         Inform msg2all(argv[0], INFORM_ALL_NODES);
+
+	std::string indatName = argv[1];
+	std::string tfName = argv[2];
+	std::string outBase = argv[3];
+	std::string ic_folder = argv[4];
+
+	int arg = 5;
+	initializer::InputParser par(indatName);
+	initializer::GlobalStuff::instance().GetParameters(par);
+	// Number of gridpoints in each dimension
+
+	Vector_t<int, Dim> nr;
+	for (unsigned d = 0; d < Dim; d++) {
+	  nr[d] = initializer::GlobalStuff::instance().ngrid;
+	}
+	// Total number of particles
+	size_type totalP = nr[0]*nr[1]*nr[2];
+
+	// Number of time steps
+	int nt = 0;
+	par.getByName("nt", nt);
+
+	int readInParticles = 0;
+	par.getByName("ReadInParticles", readInParticles);
+	bool readICs = (readInParticles == 0);
+		
+	// Solver method
+	std::string solver = argv[arg++];
+	// Check if the solver type is valid
+	if (solver != "CG" && solver != "FFT") {
+	    throw std::invalid_argument("Invalid solver type. Supported types are 'CG' and 'FFT'.");
+	}
+		
+	// Load Balance Threshold
+	double lbt = std::atof(argv[arg++]);
+		
+	// Time stepping method
+	std::string step_method = argv[arg++];
+
+	// Create an instance of a manager for the hermiticity test
+	StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par, tfName, readICs);
+
+	// set initial conditions folder
+	manager.setIC(ic_folder);
+		
+	// Perform pre-run operations, including creating mesh, particles,...
+	manager.pre_run();
         
-        if (ippl::Comm->size() == 1){
-		std::string indatName = argv[1];
-		std::string tfName = argv[2];
-		std::string outBase = argv[3];
-		std::string ic_folder = argv[4];
-	       	
-		int arg = 5;
-		initializer::InputParser par(indatName);
-		initializer::GlobalStuff::instance().GetParameters(par);
-			
-		// Number of gridpoints in each dimension
-		Vector_t<int, Dim> nr;
-		for (unsigned d = 0; d < Dim; d++) {
-		  nr[d] = initializer::GlobalStuff::instance().ngrid;
-		}
-		// Total number of particles
-		size_type totalP = nr[0]*nr[1]*nr[2];
-
-		// Number of time steps
-		int nt = 0;
-		par.getByName("nt", nt);
-
-		int readInParticles = 0;
-		par.getByName("ReadInParticles", readInParticles);
-		bool readICs = (readInParticles == 0);
-		
-		// Solver method
-		std::string solver = argv[arg++];
-		// Check if the solver type is valid
-		if (solver != "CG" && solver != "FFT") {
-		    throw std::invalid_argument("Invalid solver type. Supported types are 'CG' and 'FFT'.");
-		}
-		
-		// Load Balance Threshold
-		double lbt = std::atof(argv[arg++]);
-		
-		// Time stepping method
-		std::string step_method = argv[arg++];
-
-		// Create an instance of a manager for the hermiticity test
-		StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par, tfName, readICs);
-
-		// set initial conditions folder
-		manager.setIC(ic_folder);
-		
-		// Perform pre-run operations, including creating mesh, particles,...
-		manager.pre_run();
-
-		hermiticityTest1(manager);
-		hermiticityTest2(manager);
-	} else {
-	    std::cerr << "Error: Attempting to run multirank. This test is designed to only work on 1 rank / CPU node." << std::endl;
-	} 
+        hermiticityTest1(manager);
+	hermiticityTest2(manager);
   }
+
   ippl::finalize();
   return 0;
 }
