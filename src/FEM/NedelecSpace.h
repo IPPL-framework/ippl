@@ -388,8 +388,18 @@ namespace ippl {
 
     
     private:
+        /**
+         * @brief Implementation of the \c NedelecSpace::createFEMVector
+         * function for 2d.
+         */
         FEMVector<T> createFEMVector2d() const;
+
+        /**
+         * @brief Implementation of the \c NedelecSpace::createFEMVector
+         * function for 3d.
+         */
         FEMVector<T> createFEMVector3d() const;
+        
         /**
          * @brief Stores which elements (squares or cubes) belong to the current
          * MPI rank.

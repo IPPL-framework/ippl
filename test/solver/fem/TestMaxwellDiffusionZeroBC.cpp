@@ -243,7 +243,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // we will take 100 points out of which 97 will be random and the last 3
     // we be manually chosen.
     Kokkos::Random_XorShift64_Pool<> randomPool(42);
-    size_t numPoints = 1000;
+    size_t numPoints = 100;
     Kokkos::View<point_t*> positions("positions", numPoints);
 
     Kokkos::parallel_for("assign positions", numPoints-3,
@@ -291,30 +291,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     
     Kokkos::View funcVals = solver.reconstructToPoints(positions);
-    auto hFuncVals = Kokkos::create_mirror_view(funcVals);
-    auto hPositions = Kokkos::create_mirror_view(positions);
-    Kokkos::deep_copy(hFuncVals, funcVals);
-    Kokkos::deep_copy(hPositions, positions);
-
-
-    for (size_t r = 0; r < ippl::Comm->size(); ++r) <%
-        if (ippl::Comm->rank() == r) <%
-            std::ofstream file;
-            if (r == 0) <%
-                file.open("field.csv");
-                file << "x,y,vx,vy\n";
-            %> else <%
-                file.open("field.csv", std::ios::app);
-            %>
-            for (size_t i = 0; i < hPositions.extent(0); ++i) <%
-                file << hPositions(i)<:0:> << "," << hPositions(i)<:1:> << ","
-                     << hFuncVals(i)<:0:> << "," << hFuncVals(i)<:1:> << "\n";
-            %>
-
-            file.close();
-        %>
-        ippl::Comm->barrier();
-    %>
 
     // calculate the error
     T linfError = 0;
@@ -351,18 +327,9 @@ int main(int argc, char* argv[]) {
             dim = 2;
         }
 
-        msg << std::setw(10) << "Size";
-        msg << std::setw(25) << "Spacing";
-        msg << std::setw(25) << "Relative Error";
-        msg << std::setw(25) << "Residue";
-        msg << std::setw(15) << "Iterations";
-        msg << endl;
-
         if (ippl::Comm->rank() == 0) {
             std::cout << std::setw(10) << "num_nodes"
                       << std::setw(25) << "cell_spacing"
-                      //<< std::setw(25) << "value_error"
-                      //<< std::setw(25) << "interp_error"
                       << std::setw(25) << "interp_error_coef"
                       << std::setw(25) << "recon_error"
                       << std::setw(25) << "solver_residue"
@@ -381,12 +348,12 @@ int main(int argc, char* argv[]) {
         %> else <%
             if (dim == 2) {
                 // 2D Sinusoidal
-                for (unsigned n = 16; n <= 512; n *= 1.5) {
+                for (unsigned n = 16; n <= 1024; n = std::sqrt(2)*n) {
                     testFEMSolver<T, 2>(n, 1.0, 3.0);
                 }
             } else {
                 // 3D Sinusoidal
-                for (unsigned n = 16; n <= 400; n *= 1.5) {
+                for (unsigned n = 16; n <= 1024; n = std::sqrt(2)*n) {
                     testFEMSolver<T, 3>(n, 1.0, 3.0);
                 }
             }

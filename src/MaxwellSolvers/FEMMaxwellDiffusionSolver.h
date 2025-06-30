@@ -13,18 +13,62 @@
 
 namespace ippl {
 
+    /**
+     * @brief Representation of the lhs of the problem we are trying to solve.
+     * 
+     * In our case this corresponds to the variational formulation of the 
+     * curl(curl(E)) + E and is curl(b_i)*curl(b_j) + b_i*b_j.
+     * 
+     * @tparam T The type we are working with.
+     * @tparam Dim the dimension of the space.
+     * @tparam numElementDOFs the number of DOFs per element that we have.
+     */
     template <typename T, unsigned Dim, unsigned numElementDOFs>
     struct EvalFunctor {
+        /**
+         * @brief The inverse transpose Jacobian.
+         * 
+         * As we have a unirectangular grid it is the same for all the differnt
+         * Elements and we therefore have to store it only once.
+         */
         const Vector<T, Dim> DPhiInvT;
+
+        /**
+         * @brief The determinant of the Jacobian.
+         * 
+         * As we have a unirectangular grid it is the same for all the differnt
+         * Elements and we therefore have to store it only once.
+         */
         const T absDetDPhi;
 
+        /**
+         * @brief Constructor.
+         */
         EvalFunctor(Vector<T, Dim> DPhiInvT, T absDetDPhi)
             : DPhiInvT(DPhiInvT)
             , absDetDPhi(absDetDPhi) {}
 
+        /**
+         * @brief Returns the evaluation of
+         * (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi.
+         * 
+         * This function takes as input the basis function values and their curl
+         * for the different DOFs and returns the evaluation of the inner part
+         * of the integral of the variational formuation, which corresponds to
+         * (curl(b_i)*curl(b_j) + b_i*b_j), but note that we additionally also
+         * multiply this with absDetDPhi, which is required by the quadrature
+         * rule. In theroy this could also be done outside of this.
+         * 
+         * @param i The first DOF index.
+         * @param j The second DOF index.
+         * @param curl_b_q_k The curl of the DOFs.
+         * @param val_b_q_k The values of the DOFs.
+         * 
+         * @returns (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi
+         */
         KOKKOS_FUNCTION const auto operator()(size_t i, size_t j,
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
-            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k, bool onBoundary) const {
+            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
             
             T curlTerm = dot(DPhiInvT*curl_b_q_k[j], DPhiInvT*curl_b_q_k[i]).apply();
             T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
@@ -86,9 +130,8 @@ namespace ippl {
             static_assert(std::is_floating_point<T>::value, "Not a floating point type");
             setDefaultParameters();
 
-            // start a timer
+            // Calcualte the rhs, using the Nedelec space
             rhsVector_m =
-                //std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVectorFunctor(functor));
                 std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVector));
 
             rhsVector_m->accumulateHalo();
@@ -96,36 +139,22 @@ namespace ippl {
             
         }
 
-        void setRhs(FieldType& rhs) {
-            /*
+        void setRhs(FieldType& rhs, const FEMVector<point_t>& rhsVector) {
+            
             Base::setRhs(rhs);
 
-            nedelecSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
+            // Calcualte the rhs, using the Nedelec space
+            rhsVector_m =
+                std::make_unique<FEMVector<T>>(nedelecSpace_m.evaluateLoadVector(rhsVector));
 
-            rhs.fillHalo();
-            
-            // interpolate to the FEMVector
-            rhsVector_m = std::make_unique<FEMVector<T>>(
-                nedelecSpace_m.interpolateToFEMVector(rhs));
-            
-            // evaluate the rhs, this will fill the FEMVector
-            nedelecSpace_m.evaluateLoadVector(*rhsVector_m);
-            
-            // do some halo stuff
             rhsVector_m->accumulateHalo();
             rhsVector_m->fillHalo();
-            
-            // reconstruct to the ippl field, such that this is already
-            // accessible before calling solve
-            nedelecSpace_m.reconstructToField(*rhsVector_m, rhs);
-            */
         }
 
         /**
-         * @brief Solve the poisson equation using finite element methods.
-         * The problem is described by -laplace(lhs) = rhs
+         * @brief Solve the equation using finite element methods.
          */
-        FEMVector<Vector<T,Dim> > solve() {
+        void solve() {
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -143,9 +172,12 @@ namespace ippl {
             const T absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
+            // Create the functor object which stores the function we have to
+            // solve for the lhs
             EvalFunctor<T, Dim, this->nedelecSpace_m.numElementDOFs> maxwellDiffusionEval(
                 DPhiInvT, absDetDPhi);
-
+            
+            // The Ax operator
             const auto algoOperator = [maxwellDiffusionEval, this](FEMVector<T> vector)
                                                                             -> FEMVector<T> {
 
@@ -158,16 +190,13 @@ namespace ippl {
                 return return_vector;
             };
 
+            // setup the CG solver
             pcg_algo_m.setOperator(algoOperator);
-
             
-                
-
-
-            //FEMVector<T> lhsVector = lagrangeSpace_m.interpolateToFEMVector(*(this->lhs_mp));
+            // Create the coefficient vector for the solution
             FEMVector<T> lhsVector = rhsVector_m->deepCopy();
-            lhsVector = 0;
             
+            // Solve the system using CG
             try {
                 pcg_algo_m(lhsVector, *rhsVector_m, this->params_m);
             } catch (IpplException& e) {
@@ -176,17 +205,9 @@ namespace ippl {
                 exit(-1);
             }
             
+            // set the boundary values to the correct values.
             lhsVector.fillHalo();
 
-            // set the boundary values to the correct values.
-
-            
-            //lagrangeSpace_m.reconstructToField(lhsVector, *(this->lhs_mp));
-            //nedelecSpace_m.reconstructSolution(lhsVector, *(this->En_mp));
-            //lagrangeSpace_m.reconstructToField(*rhsVector_m, *(this->rhs_mp));
-
-            lhsVector_m = std::make_unique<FEMVector<T>>(lhsVector);
-            return lhsVector.template skeletonCopy<Vector<T,Dim> >();//nedelecSpace_m.reconstructBasis(lhsVector);
         }
 
         /**
@@ -246,20 +267,51 @@ namespace ippl {
 
 
     protected:
+
+        /**
+         * @brief The CG Solver we use
+         */
         PCGSolverAlgorithm_t pcg_algo_m;
         
-
+        /**
+         * @brief Sets the default values for the CG solver.
+         * Defaults are: max Iterations = 10, tolerance = 1e-13
+         */
         virtual void setDefaultParameters() {
             this->params_m.add("max_iterations", 10);
             this->params_m.add("tolerance", (T)1e-13);
         }
 
+        /**
+         * @brief FEM represenation of the rhs
+         * We use this to store the rhs b of the System Ax = b used in the
+         * Galerkin FEM scheme.
+         */
         std::unique_ptr<FEMVector<T>> rhsVector_m;
 
+        /**
+         * @brief FEM represenation of the solution vector
+         * We use this to store the solution x of the System Ax = b used in the
+         * Galerkin FEM scheme.
+         */
         std::unique_ptr<FEMVector<T>> lhsVector_m;
 
+        /**
+         * @brief the reference element we have.
+         */
         ElementType refElement_m;
+
+        /**
+         * @brief The quadrature rule we use.
+         */
         QuadratureType quadrature_m;
+
+        /**
+         * @brief The Nedelec Space object.
+         * 
+         * This is the representation of the Nedelec space that we have and
+         * which we use to interact with all the Nedelec stuff.
+         */
         NedelecType nedelecSpace_m;
     };
 

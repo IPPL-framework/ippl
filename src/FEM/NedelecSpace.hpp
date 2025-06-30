@@ -133,20 +133,16 @@ namespace ippl {
                                     const size_t& globalDOFIndex) const {
 
         static_assert(Dim == 2 || Dim == 3, "Dim must be 2 or 3");
-        // TODO fix not order independent, only works for order 1
-        static_assert(Order == 1, "Only order 1 is supported at the moment");
 
         // Get all the global DOFs for the element
         const Vector<size_t, this->numElementDOFs> global_dofs =
             this->getGlobalDOFIndices(elementIndex);
 
         ippl::Vector<size_t, this->numElementDOFs> dof_mapping;
-        if (Dim == 1) {
-            dof_mapping = {0, 1};
-        } else if (Dim == 2) {
-            dof_mapping = {0, 1, 3, 2};
+        if (Dim == 2) {
+            dof_mapping = {0, 1, 2, 3};
         } else if (Dim == 3) {
-            dof_mapping = {0, 1, 3, 2, 4, 5, 7, 6};
+            dof_mapping = {0, 1, 2, 3, 4, 5, 7, 6, 8, 9, 10, 11};
         }
 
         // Find the global DOF in the vector and return the local DOF index
@@ -194,8 +190,12 @@ namespace ippl {
                             ::getGlobalDOFIndices(const NedelecSpace<T, Dim, Order, ElementType,
                                 QuadratureType, FieldType>::indices_t& elementIndex) const {
 
+        
+        // These are simply some manual caclualtions that need to be done.
+        
         Vector<size_t, this->numElementDOFs> globalDOFs(0);
 
+        // Initialize a helper vector v
         Vector<size_t, Dim> v(1);
         if constexpr (Dim == 2) {
             size_t nx = this->nr_m[0];
@@ -207,6 +207,7 @@ namespace ippl {
             v(2) = 3*nx*ny - nx - ny;
         }
 
+        // For both 2D and 3D the first few DOF indices are the same
         size_t nx = this->nr_m[0];
         globalDOFs(0) = v.dot(elementIndex);
         globalDOFs(1) = globalDOFs(0) + nx - 1;
@@ -252,18 +253,26 @@ namespace ippl {
                             ::getFEMVectorDOFIndices(NedelecSpace<T, Dim, Order, ElementType,
                                 QuadratureType, FieldType>::indices_t elementIndex,
                                 NDIndex<Dim> ldom) const {
+                            
+
+        // This function here is pretty much the same as getGlobalDOFIndices()
+        // the only difference is the domain size and that we have an offset
+        // of the subdomain of the rank to the global one, else it is the same
 
         Vector<size_t, this->numElementDOFs> FEMVectorDOFs(0);
         
-        // Then we can subtract from it the starting position and add the ghost
-        // things
+        // This corresponds to translating a global element position to one in
+        // the subdomain of the rank. For this we subtract the starting position
+        // the rank subdomain and add the "ghost" hyperplane.
         elementIndex -= ldom.first();
         elementIndex += 1;
         
         indices_t dif(0);
         dif = ldom.last() - ldom.first();
         dif += 1 + 2; // plus 1 for last still being in +2 for ghosts.
-
+        
+        // From here on out it is pretty much the same as the
+        // getGlobalDOFIndices() function.
         Vector<size_t, Dim> v(1);
         if constexpr (Dim == 2) {
             size_t nx = dif[0];
@@ -317,9 +326,10 @@ namespace ippl {
     KOKKOS_FUNCTION NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
         NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
             ::getLocalDOFPosition(size_t localDOFIndex) const {
-            
+        
+        // Hardcoded center of edges. If the DOF position of an edge element
+        // actually is the center of the edge is a different question...
         point_t position(0);
-
         switch (localDOFIndex) {
             case 0: position(0) = 0.5; break;
             case 1: position(1) = 0.5; break;
@@ -354,10 +364,9 @@ namespace ippl {
         IpplTimings::TimerRef timerAxInit = IpplTimings::getTimer("Ax init");
         IpplTimings::startTimer(timerAxInit);
 
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FEMVector<T> resultVector = x.deepCopy();
-        resultVector = 0;
+        // create a new field for result, default initialized to zero thanks to
+        // the Kokkos::View
+        FEMVector<T> resultVector = x.template skeletonCopy();
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -366,10 +375,9 @@ namespace ippl {
         // List of quadrature nodes
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
-
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
         
+        // Get the values of the basis functions and their curl at the
+        // quadrature points.
         Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> curl_b_q;
         Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> val_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
@@ -392,24 +400,38 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
 
-
-        // information to translate the ndindices to FEMVector positions.
-        // We add the plus one, because we have that last does not correspond
-        // to the position end+1, but simply to end
-        ippl::Vector<size_t, Dim> extents = (ldom.last()+1) - ldom.first() + 2;
-        ippl::Vector<size_t, Dim> v(1);
-        v(1) = 2*extents[0] - 1;
-
         IpplTimings::stopTimer(timerAxInit);
+
+        // Here we assemble the local matrix of an element. In theory this would
+        // have to be done for each element individually, but because we have
+        // that in the case of IPPL all the elements have the same shape we can
+        // also just do it once and then use if all the time.
+        IpplTimings::TimerRef timerAxLocalMatrix = IpplTimings::getTimer("Ax local matrix");
+        IpplTimings::startTimer(timerAxLocalMatrix);
+        Vector<Vector<T,this->numElementDOFs>, this->numElementDOFs> A;
+        for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t j = 0; j < this->numElementDOFs; ++j) {
+                A[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k]);
+                }
+            }
+        }
+        IpplTimings::stopTimer(timerAxLocalMatrix);
+
 
         IpplTimings::TimerRef timerAxLoo = IpplTimings::getTimer("Ax Loo");
         IpplTimings::startTimer(timerAxLoo);
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
                 const Vector<size_t, this->numElementDOFs> local_dof = this->getLocalDOFIndices();
+                
+                // Here we now retrieve the global DOF indices and their
+                // position inside of the FEMVector
                 const Vector<size_t, this->numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
                 
@@ -420,56 +442,27 @@ namespace ippl {
                 // local DOF indices
                 size_t i, j;
 
-                // Element matrix
-                Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
-
-                IpplTimings::TimerRef timerAxLocalMatrix = IpplTimings::getTimer("Ax local matrix");
-                IpplTimings::startTimer(timerAxLocalMatrix);
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
-                    for (j = 0; j < this->numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        size_t I = global_dofs[i];
-                        size_t J = global_dofs[j];
-                        bool onBoundary = false;//this->isDOFOnBoundary(I) || this->isDOFOnBoundary(J);
-                        IpplTimings::TimerRef timerAxEvalFunctor = IpplTimings::getTimer("Ax eval functor");
-                        IpplTimings::startTimer(timerAxEvalFunctor);
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k], onBoundary);
-                        }
-                        IpplTimings::stopTimer(timerAxEvalFunctor);
-                    }
-                }
-                IpplTimings::stopTimer(timerAxLocalMatrix);
-
                 // global DOF n-dimensional indices (Vector of N indices
                 // representing indices in each dimension)
                 size_t I, J;
-                // 2. Compute the contribution to resultAx = A*x with A_K
+                
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I = global_dofs[i];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
 
-                    // get the appropriate index for the Kokkos view of the
-                    // field
-
                     for (j = 0; j < this->numElementDOFs; ++j) {
                         J = global_dofs[j];
 
-                        // Skip boundary DOFs (Zero Dirichlet BCs)
-                        
+                        // Skip boundary DOFs (Zero Dirichlet BCs)        
                         if (this->isDOFOnBoundary(J)) {
                             continue;
                         }
 
-                        // get the appropriate index for the Kokkos view of the
-                        // field
-                        resultView(vectorIndices[i]) += A_K[i][j] * view(vectorIndices[j]);
+                        resultView(vectorIndices[i]) += A[i][j] * view(vectorIndices[j]);
                     }
                 }
             }
@@ -508,6 +501,9 @@ namespace ippl {
         }
 
 
+        // Get the distance between the quadrature nodes and the DOFs 
+        // we assume that the dofs are at the center of an edge, this is then
+        // going to be used to implement a very crude interpolation scheme.
         Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes>
             quadratureDOFDistances;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
@@ -551,13 +547,11 @@ namespace ippl {
 
                 size_t i;
 
-                // 1. Compute b_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     if (this->isDOFOnBoundary(I)) {
                         continue;
                     }
-                    
                         
 
                     // calculate the contribution of this element
@@ -572,7 +566,10 @@ namespace ippl {
 
                             // the distance
                             T dist = quadratureDOFDistances[k][j];
+                            
+                            // running variable used for normalization
                             distSum += 1/dist;
+                            
                             // get field value at DOF and interpolate to q_k
                             interpolatedVal += 1./dist * view(vectorIndices<:j:>);
                         }
@@ -580,6 +577,7 @@ namespace ippl {
                         // normalize it
                         interpolatedVal /= distSum;
 
+                        // update contribution
                         contrib += w[k] * basis_q[k][i].dot(interpolatedVal) * absDetDPhi;
                     }
 
@@ -616,10 +614,6 @@ namespace ippl {
             }
         }
 
-        Vector<point_t, QuadratureType::numElementNodes> rhsValues;
-        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            rhsValues[k] = f(q[k]);
-        }
 
         // Absolute value of det Phi_K
         const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
@@ -655,33 +649,30 @@ namespace ippl {
 
                 size_t i, I;
 
-                // 1. Compute b_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I = global_dofs[i];
 
                     
                     if (this->isDOFOnBoundary(I)) {
-                        //int side  = getBoundarySide(I);
-                        //atomic_view(vectorIndices[i]) = -10;
                         continue;
                     }
                     
                     // calculate the contribution of this element
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                        // We now have to interpolate the value of the field
-                        // given at the DOF positions to the quadrature point
-                        
+                        // Get the global position of the quadrature point                        
                         point_t pos = this->ref_element_m.localToGlobal(
                             this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
                             q[k]); 
                         
+                        // evaluate the rhs function at this global position
                         point_t interpolatedVal = f(pos);
-
+                        
+                        // update contribution
                         contrib += w[k] * basis_q[k][i].dot(interpolatedVal) * absDetDPhi;
                     }
 
-                    // add the contribution of the element to the field
+                    // add the contribution of the element to the vector
                     atomic_view(vectorIndices[i]) += contrib;
                 
                 }    
@@ -704,15 +695,16 @@ namespace ippl {
                                 const NedelecSpace<T, Dim, Order, ElementType,
                                     QuadratureType, FieldType>::point_t& localPoint) const {
 
-        static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < this->numElementDOFs && "The local vertex index is invalid"); 
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
             && "Point is not in reference element");
+        
 
+
+        // Simply hardcoded
         point_t result(0);
-
         if constexpr (Dim == 2) {
             T x = localPoint(0);
             T y = localPoint(1);
@@ -758,6 +750,7 @@ namespace ippl {
                                     const NedelecSpace<T, Dim, Order, ElementType,
                                         QuadratureType, FieldType>::point_t& localPoint) const {
         
+        // Hard coded.
         point_t result(0);
 
         if constexpr (Dim == 2) {
@@ -808,13 +801,15 @@ namespace ippl {
               typename QuadratureType, typename FieldType>
     FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::createFEMVector() const {
-                            
+        // This function will simply call one of the other two depending on the
+        // dimension of the space
         if constexpr (Dim == 2) {
             return createFEMVector2d();
         } else {
             return createFEMVector3d();
         }
     }
+
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
@@ -824,12 +819,14 @@ namespace ippl {
         const Kokkos::View<typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
         FieldType>::point_t*>& positions, const FEMVector<T>& coef) const {
         
-
+        // The domain information of the subdomain of the MPI rank
         auto ldom = layout_m.getLocalNDIndex(); 
-
+        
+        // The domain information of the global domain
         auto gdom = layout_m.getDomain();
         indices_t gextent = gdom.last() - gdom.first();
-
+        
+        // The size of the global domain.
         point_t domainSize = (this->nr_m-1) * this->hr_m;
 
 
@@ -957,17 +954,21 @@ namespace ippl {
                 // contribution of this element to the error
                 T contrib = 0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    // Evaluate the analystical solution at the global position
+                    // of the quadrature point
                     point_t val_u_sol = u_sol(this->ref_element_m.localToGlobal(
                         this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
                             q[k]));
-
+                    
+                    // Here we now reconstruct the solution given the basis
+                    // functions.
                     point_t val_u_h = 0;
                     for (size_t j = 0; j < this->numElementDOFs; ++j) {
                         // get field index corresponding to this DOF
-
                         val_u_h += basis_q[k][j] * view(vectorIndices[j]);
                     }
 
+                    // calculate error and add to sum.
                     point_t dif = (val_u_sol -  val_u_h);
                     T x = dif.dot(dif);
                     contrib += w[k] * x * absDetDPhi;
@@ -989,8 +990,6 @@ namespace ippl {
     bool NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::isDOFOnBoundary(const size_t& dofIdx) const {
         
-        IpplTimings::TimerRef timerDOFBoundary = IpplTimings::getTimer("dof boundary");
-        IpplTimings::startTimer(timerDOFBoundary);
         bool onBoundary = false;
         if constexpr (Dim == 2) {
             size_t nx = this->nr_m[0];
@@ -1069,8 +1068,6 @@ namespace ippl {
                 }
             }
         }
-        IpplTimings::stopTimer(timerDOFBoundary);
-
         return onBoundary;
     }
 
@@ -1348,6 +1345,9 @@ namespace ippl {
 
 
 
+        // Here we now have to translate the sendIdxsTemp and recvIdxsTemp which
+        // are std::vectors<std::vector> into the correct list type which
+        // is std::vector<Kokkos::View>
         for (size_t i = 0; i < neighbors.size(); ++i) {
             sendIdxs.push_back(Kokkos::View<size_t*>("FEMvector::sendIdxs[" + std::to_string(i) +
                                                         "]", sendIdxsTemp[i].size()));
@@ -1825,13 +1825,10 @@ namespace ippl {
         
 
 
-        indices_t extents(0);
-        extents = (ldom.last() - ldom.first()) + 3;
-        size_t nx = extents(0);
-        size_t ny = extents(1);
-        size_t nz = extents(2);
-        size_t n = (nz-1)*(nx*(ny-1) + ny*(nx-1) + nx*ny) + nx*(ny-1) + ny*(nx-1);
 
+        // Here we now have to translate the sendIdxsTemp and recvIdxsTemp which
+        // are std::vectors<std::vector> into the correct list type which
+        // is std::vector<Kokkos::View>
         for (size_t i = 0; i < neighbors.size(); ++i) {
             sendIdxs.push_back(Kokkos::View<size_t*>("FEMvector::sendIdxs[" + std::to_string(i) +
                                                         "]", sendIdxsTemp[i].size()));
@@ -1857,6 +1854,12 @@ namespace ippl {
 
         
         // Now finaly create the FEMVector
+        indices_t extents(0);
+        extents = (ldom.last() - ldom.first()) + 3;
+        size_t nx = extents(0);
+        size_t ny = extents(1);
+        size_t nz = extents(2);
+        size_t n = (nz-1)*(nx*(ny-1) + ny*(nx-1) + nx*ny) + nx*(ny-1) + ny*(nx-1);
         FEMVector<T> vec(n, neighbors, sendIdxs, recvIdxs);
         
         return vec;
