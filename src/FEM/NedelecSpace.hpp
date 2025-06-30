@@ -366,7 +366,7 @@ namespace ippl {
 
         // create a new field for result, default initialized to zero thanks to
         // the Kokkos::View
-        FEMVector<T> resultVector = x.template skeletonCopy();
+        FEMVector<T> resultVector = x.template skeletonCopy<T>();
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =

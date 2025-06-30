@@ -205,6 +205,9 @@ namespace ippl {
                 exit(-1);
             }
             
+            // sore solution.
+            lhsVector_m = std::make_unique<FEMVector<T>>(lhsVector);
+
             // set the boundary values to the correct values.
             lhsVector.fillHalo();
 

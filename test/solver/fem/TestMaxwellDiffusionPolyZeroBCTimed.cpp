@@ -236,7 +236,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     solver.mergeParameters(params);
     
     // solve the problem
-    ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
+    solver.solve();
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> duration = end - start;

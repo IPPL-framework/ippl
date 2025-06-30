@@ -232,7 +232,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::startTimer(timerSolverSolve);
     
     // solve the problem
-    ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
+    solver.solve();
 
     IpplTimings::stopTimer(timerSolverSolve);
 

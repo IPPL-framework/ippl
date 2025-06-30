@@ -226,20 +226,16 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    auto start = std::chrono::high_resolution_clock::now();
     ippl::FEMMaxwellDiffusionSolver<Field_t> solver(lhs, rhs, rhsVector);
 
     // set the parameters
     ippl::ParameterList params;
-    params.add("tolerance", -1.);
-    params.add("max_iterations", 100);
+    params.add("tolerance", 10e-13);
+    params.add("max_iterations", 10000);
     solver.mergeParameters(params);
     
     // solve the problem
-    ippl::FEMVector<ippl::Vector<T,Dim> > result = solver.solve();
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> duration = end - start;
+    solver.solve();
 
     // retrive values at random positions
     // we will take 100 points out of which 97 will be random and the last 3
@@ -309,13 +305,11 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     T coefError = solver.getL2Error(analytical);
     if (ippl::Comm->rank() == 0) {
         std::cout << std::setw(10) << numNodesPerDim;
-        std::cout << std::setw(10) << ippl::Comm->size();
         std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
         std::cout << std::setw(25) << std::setprecision(16) << coefError;
         std::cout << std::setw(25) << std::setprecision(16) << linfError;
         std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
         std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
-        std::cout << std::setw(25) << std::setprecision(16) << duration.count();
         std::cout << "\n";
     }
 }
@@ -344,7 +338,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        if (ippl::Comm->rank() == -1) {
+        if (ippl::Comm->rank() == 0) {
             std::cout << std::setw(10) << "num_nodes"
                       << std::setw(25) << "cell_spacing"
                       << std::setw(25) << "interp_error_coef"
