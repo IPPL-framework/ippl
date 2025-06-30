@@ -149,7 +149,7 @@ struct FieldVal {
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(FieldTest, Tests);
+TYPED_TEST_SUITE(FieldTest, Tests);
 
 TYPED_TEST(FieldTest, DeepCopy) {
     auto& field = this->field;

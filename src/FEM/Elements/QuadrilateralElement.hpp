@@ -3,6 +3,8 @@ namespace ippl {
     template <typename T>
     KOKKOS_FUNCTION typename QuadrilateralElement<T>::vertex_points_t
     QuadrilateralElement<T>::getLocalVertices() const {
+        // For the ordering of local vertices, see section 3.3.1:
+        // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/phys/bachelor_thesis_buehlluk.pdf
         QuadrilateralElement::vertex_points_t vertices = {
             {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
 

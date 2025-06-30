@@ -188,6 +188,17 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim>
+    KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::Pnorm(const int p) const {
+
+        T val = 0.0;
+        for(unsigned i = 0; i < Dim; ++i) {
+            val += Kokkos::pow(Kokkos::abs(data_m[i]), p);
+        }
+
+        return Kokkos::pow(val, T(1.0) / T(p));
+    }
+
+    template <typename T, unsigned Dim>
     inline std::ostream& operator<<(std::ostream& out, const Vector<T, Dim>& v) {
         std::streamsize sw = out.width();
         out << std::setw(1);

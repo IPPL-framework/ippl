@@ -1,15 +1,19 @@
 // Tests the FEM Poisson solver by solving the problem:
 //
-// -Laplacian(u) = 2.0, x in [-1,1]
-// u(-1) = u(1) = 0
+// -Laplacian(u) = -2(y^2 - y^4 + x^4(-1 + 6y^2) + x^2(1 - 12y^2 + 6x^4))
+// where x,y in [0,1]^2 and u(0,0) = u(1,1) = 0.
 //
-// Exact solution is u(x) = 1 - (x * x)
+// Exact solution is u(x,y) = x^2(1 - x^2) + y^2(1 - y^2).
 //
 // BCs: Homogeneous Dirichlet BCs (Zero).
-// This is only 1D!
+// This is only 2D!
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
 //
 // Usage:
-//    ./TestZeroBC_constant --info 5
+//    ./TestZeroBC_polynomial2d --info 5
 
 #include "Ippl.h"
 
@@ -142,7 +146,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+        for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
             testFEMSolver<T, 2>(n, 0.0, 1.0);
         }
 

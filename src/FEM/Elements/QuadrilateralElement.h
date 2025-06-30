@@ -9,6 +9,7 @@
 
 namespace ippl {
 
+    // this is the basic square 2D element with 4 vertices
     template <typename T>
     class QuadrilateralElement : public Element2D<T, 4> {
     public:

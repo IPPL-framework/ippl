@@ -1,16 +1,32 @@
-set (_SRCS
-    Communicator.cpp
-    CommunicatorLogging.cpp
-    Environment.cpp
-    Buffers.cpp
-    Request.cpp
-    LogEntry.cpp
-    )
+# -----------------------------------------------------------------------------
+# src/Communicate/CMakeLists.txt
+#
+# Adds all Communicate-related sources and headers to the IPPL library.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_sources(ippl
+    PRIVATE
+        Communicator.cpp
+        CommunicatorLogging.cpp
+        Environment.cpp
+        Buffers.cpp
+        Request.cpp
+        LogEntry.cpp
+)
+
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install public headers
+install(FILES
     LogEntry.h
     BufferHandler.h
+    BufferHandler.hpp
     LoggingBufferHandler.h
+    LoggingBufferHandler.hpp
     Archive.h
     Archive.hpp
     Buffers.hpp
@@ -29,22 +45,6 @@ set (_HDRS
     Window.hpp
     PointToPoint.hpp
     CommunicatorLogging.hpp
-    )
+    DESTINATION include/Communicate
+)
 
-include_directories (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Communicate)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

@@ -3,7 +3,14 @@
 // -Laplacian(u) = pi^2 * sin(pi * x), x in [-1,1]
 // u(-1) = u(1) = 0
 //
-// Exact solution is u(x) = sin(pi * x)
+// Exact solution is u(x) = sin(pi * x).
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
+//
+// The test is available in 1D (problem above),
+// as well as 2D and 3D with analogous test cases.
 //
 // Here we use periodic BCs, so this should work
 // for other domains too as long as the domain 
@@ -119,6 +126,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // solve the problem
     solver.solve();
 
+    // average to 0 since constant null space (there can be any additive constant)
+    lhs = lhs - solver.getAvg(true);
+
     // start the timer
     static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
     IpplTimings::startTimer(errorTimer);
@@ -170,17 +180,17 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, -1.5, 2.5);
+                testFEMSolver<T, 1>(n, 0.0, 2.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, -1.5, 2.5);
+                testFEMSolver<T, 2>(n, 0.0, 2.0);
             }
         } else {
             // 3D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                testFEMSolver<T, 3>(n, -1.5, 2.5);
+                testFEMSolver<T, 3>(n, 0.0, 2.0);
             }
         }
 

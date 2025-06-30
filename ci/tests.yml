@@ -1,0 +1,29 @@
+# Add tests in ci/tests/<test-name>.yml and include here
+# Comment out tests you don't want to run
+
+include:
+  - local: 'ci/tests/serial_unit.yml'
+#  - local: 'ci/tests/dummy_test.yml'
+#  - local: 'ci/tests/test_jedi.yml'
+  - local: 'ci/generate/generate_report.yml'
+
+# Template for tests
+.test_template:
+  variables:
+    RESULTS_DIR: "$CI_PROJECT_DIR/results/${CI_PIPELINE_ID}/jobs/${CI_JOB_ID}"  # Unique directory per job
+    GITLAB_ACCESS_TOKEN: "${CI_GITLAB_ACCESS_TOKEN}"  # Read from CI/CD variables
+
+  before_script:
+    - rm -rf "${RESULTS_DIR}" # remove potential artifacts from previous runs
+    - mkdir -p "${RESULTS_DIR}"  # Create results directory
+    - echo "Writing results to ${RESULTS_DIR}"  
+
+  after_script:
+    - ls -la "${RESULTS_DIR}"  # Debug: Ensure artifacts exist
+  artifacts:
+    paths:
+      - results/${CI_PIPELINE_ID}/
+    expire_in: 1 week
+  id_tokens: # needed for jacamar
+    SITE_ID_TOKEN: 
+      aud: https://gitlab.jsc.fz-juelich.de

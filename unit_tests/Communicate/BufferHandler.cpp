@@ -31,7 +31,7 @@ protected:
     std::unique_ptr<TestableBufferHandler> handler;
 };
 
-TYPED_TEST_CASE(TypedBufferHandlerTest, MemorySpaces);
+TYPED_TEST_SUITE(TypedBufferHandlerTest, MemorySpaces);
 
 // Test: Allocating a buffer when no free buffers are available
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {

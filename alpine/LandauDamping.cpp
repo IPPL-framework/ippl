@@ -34,7 +34,7 @@ const char* TestName   = "LandauDamping";
 #include <string>
 #include <vector>
 
-#include "datatypes.h"
+#include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
 
@@ -48,7 +48,9 @@ int main(int argc, char* argv[]) {
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
         IpplTimings::startTimer(mainTimer);
+        IpplTimings::startTimer(initializeTimer);
 
         // Read input parameters, assign them to the corresponding memebers of manager
         int arg = 1;
@@ -64,12 +66,23 @@ int main(int argc, char* argv[]) {
         double lbt              = std::atof(argv[arg++]);
         std::string step_method = argv[arg++];
 
+        std::vector<std::string> preconditioner_params;
+
         // Create an instance of a manger for the considered application
-        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method);
+        if (solver == "PCG") {
+            for (int i = 0; i < 5; i++) {
+                preconditioner_params.push_back(argv[arg++]);
+            }
+        }
+
+        LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
+                                             preconditioner_params);
 
         // Perform pre-run operations, including creating mesh, particles,...
         manager.pre_run();
 
+        IpplTimings::stopTimer(initializeTimer);
+        
         manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;

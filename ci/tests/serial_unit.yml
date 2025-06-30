@@ -1,0 +1,82 @@
+serial-unit-tests-and-coverage:
+  extends: .test_template
+  stage: test
+  image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
+  tags:
+    - linux
+    - opensuse
+  script: |
+    echo "Building IPPL with tests and coverage enabled"
+    echo "Running tests"
+    
+    mkdir -p build
+    cd build
+
+    cmake .. \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_CXX_STANDARD=20 \
+      -DIPPL_ENABLE_TESTS=True \
+      -DIPPL_ENABLE_SOLVERS=ON \
+      -DIPPL_ENABLE_FFT=ON \
+      -DIPPL_ENABLE_UNIT_TESTS=True \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+      -DIPPL_ENABLE_COVERAGE=ON \
+      -DKokkos_VERSION=4.5.00
+
+    ASAN_OPTIONS="detect_leaks=0" make -j 4 
+
+
+    ASAN_OPTIONS="detect_leaks=0" ctest -L unit -j 16 --output-on-failure --output-junit tests/test_results.xml || EXIT_CODE=$?
+
+    if [ "$EXIT_CODE" -eq 8 ]; then echo "Internal CTest error (OOM?)"; fi
+
+
+    echo "Generage coverage report"
+
+    cd ..
+
+    lcov \
+      --capture \
+      --directory . \
+      --initial \
+      --output-file baseline.info \
+      --rc branch_coverage=1 \
+      --ignore-errors inconsistent \
+      --ignore-errors mismatch \
+      --ignore-errors unused \
+      --exclude '/usr/*' \
+      --exclude '_deps/*' \
+      --exclude 'unit_tests/*' \
+      --exclude 'test/*'
+
+    lcov \
+      --capture \
+      --directory . \
+      --exclude '/usr/*' \
+      --exclude '_deps/*' \
+      --exclude 'unit_tests/*' \
+      --output-file coverage.info \
+      --rc geninfo_unexecuted_blocks=1 \
+      --rc branch_coverage=1 \
+      --ignore-errors mismatch
+
+    lcov \
+      --add-tracefile baseline.info \
+      --add-tracefile coverage.info \
+      --output-file report.info \
+      --ignore-errors inconsistent \
+      --rc branch_coverage=1
+
+    genhtml \
+      --rc genhtml_branch_coverage=1 \
+      report.info \
+      --ignore-errors inconsistent \
+      --output-directory coverage_report
+
+    mkdir -p "${RESULTS_DIR}/gcc-xml"
+    echo "Test results will be stored in: ${RESULTS_DIR}/gcc-xml"
+    mv build/tests/* "${RESULTS_DIR}/gcc-xml"
+
+    mkdir -p "$CI_PROJECT_DIR/results/${CI_PIPELINE_ID}/coverage"
+    mv coverage_report/* "$CI_PROJECT_DIR/results/${CI_PIPELINE_ID}/coverage"
+

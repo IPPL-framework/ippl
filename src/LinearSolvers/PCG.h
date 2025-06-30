@@ -12,7 +12,8 @@
 
 namespace ippl {
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
-              typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
+              typename InverseDiagRet, typename DiagRet, typename FieldLHS,
+              typename FieldRHS = FieldLHS>
     class CG : public SolverAlgorithm<FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
@@ -24,6 +25,7 @@ namespace ippl {
         using UpperF       = std::function<UpperRet(lhs_type)>;
         using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
+        using DiagF        = std::function<DiagRet(lhs_type)>;
 
         virtual ~CG() = default;
 
@@ -34,14 +36,15 @@ namespace ippl {
         virtual void setOperator(OperatorF op) { op_m = std::move(op); }
         virtual void setPreconditioner(
             [[maybe_unused]] OperatorF&& op,  // Operator passed to chebyshev and newton
-            [[maybe_unused]] LowerF&& lower,  // Operator passed to 2-step gauss-seidel
-            [[maybe_unused]] UpperF&& upper,  // Operator passed to 2-step gauss-seidel
+            [[maybe_unused]] LowerF&& lower,  // Operator passed to 2-step gauss-seidel and ssor
+            [[maybe_unused]] UpperF&& upper,  // Operator passed to 2-step gauss-seidel and ssor
             [[maybe_unused]] UpperLowerF&&
                 upper_and_lower,  // Operator passed to 2-step gauss-seidel
             [[maybe_unused]] InverseDiagF&&
-                inverse_diagonal,           // Operator passed to jacobi and 2-step gauss-seidel
-            [[maybe_unused]] double alpha,  // smallest eigenvalue of the operator
-            [[maybe_unused]] double beta,   // largest eigenvalue of the operator
+                inverse_diagonal,  // Operator passed to jacobi, 2-step gauss-seidel and ssor
+            [[maybe_unused]] DiagF&& diagonal,  // Operator passed to SSOR
+            [[maybe_unused]] double alpha,      // smallest eigenvalue of the operator
+            [[maybe_unused]] double beta,       // largest eigenvalue of the operator
             [[maybe_unused]] std::string preconditioner_type =
                 "",  // Name of the preconditioner that should be used
             [[maybe_unused]] int level =
@@ -56,8 +59,11 @@ namespace ippl {
             [[maybe_unused]] int inner =
                 5,  // This is a dummy default parameter, actual default parameter should be
             // set in main
-            [[maybe_unused]] int outer = 1  // This is a dummy default parameter, actual default
-                                            // parameter should be set in main
+            [[maybe_unused]] int outer =
+                1,  // This is a dummy default parameter, actual default parameter should be
+            [[maybe_unused]] double omega =
+                1  // This is a dummy default parameter, actual default parameter should be
+                   // set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -297,9 +303,10 @@ namespace ippl {
 
 
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
-              typename InverseDiagRet, typename FieldLHS, typename FieldRHS = FieldLHS>
-    class PCG : public CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS,
-                          FieldRHS> {
+              typename InverseDiagRet, typename DiagRet, typename FieldLHS,
+              typename FieldRHS = FieldLHS>
+    class PCG : public CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet,
+                          FieldLHS, FieldRHS> {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
@@ -310,9 +317,10 @@ namespace ippl {
         using UpperF       = std::function<UpperRet(lhs_type)>;
         using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
+        using DiagF        = std::function<DiagRet(lhs_type)>;
 
         PCG()
-            : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FieldLHS,
+            : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                  FieldRHS>()
             , preconditioner_m(nullptr){};
 
@@ -326,6 +334,7 @@ namespace ippl {
             UpperF&& upper,                   // Operator passed to 2-step gauss-seidel
             UpperLowerF&& upper_and_lower,    // Operator passed to 2-step gauss-seidel
             InverseDiagF&& inverse_diagonal,  // Operator passed to jacobi and 2-step gauss-seidel
+            DiagF&& diagonal,                 // Operator passed to ssor
             double alpha,                     // smallest eigenvalue of the operator
             double beta,                      // largest eigenvalue of the operator
             std::string preconditioner_type = "",  // Name of the preconditioner that should be used
@@ -333,12 +342,16 @@ namespace ippl {
             // set in main
             int degree = 31,  // This is a dummy default parameter, actual default parameter should
             // be set in main
-            int richardson_iterations = 1,  // This is a dummy default parameter, actual default
+            int richardson_iterations = 4,  // This is a dummy default parameter, actual default
             // parameter should be set in main
-            int inner = 5,  // This is a dummy default parameter, actual default parameter should be
+            int inner = 2,  // This is a dummy default parameter, actual default parameter should be
             // set in main
-            int outer = 1  // This is a dummy default parameter, actual default parameter should be
-                           // set in main
+            int outer = 2,  // This is a dummy default parameter, actual default parameter should be
+            // set in main
+            double omega = 1.57079632679  // This is a dummy default parameter, actual default
+            // parameter should be set in main
+            // default = pi/2 as this was found optimal during hyperparameter scan for test case 
+            // (see https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
             ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -369,6 +382,12 @@ namespace ippl {
                     std::make_unique<gs_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF>>(
                         std::move(lower), std::move(upper), std::move(inverse_diagonal), inner,
                         outer));
+            } else if (preconditioner_type == "ssor") {
+                preconditioner_m =
+                    std::move(std::make_unique<
+                              ssor_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF, DiagF>>(
+                        std::move(lower), std::move(upper), std::move(inverse_diagonal),
+                        std::move(diagonal), inner, outer, omega));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }
@@ -394,6 +413,8 @@ namespace ippl {
             lhs_type d(mesh, layout);
             lhs_type s(mesh, layout);
             lhs_type q(mesh, layout);
+
+            preconditioner_m->init_fields(lhs);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
