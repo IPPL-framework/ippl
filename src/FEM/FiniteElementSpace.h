@@ -219,37 +219,6 @@ namespace ippl {
         KOKKOS_FUNCTION virtual Vector<size_t, NumElementDOFs> getGlobalDOFIndices(
             const size_t& elementIndex) const = 0;
 
-        ///////////////////////////////////////////////////////////////////////
-        /// Basis functions and gradients /////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Evaluate the shape function of a local degree of freedom at a given point in the
-         * reference element
-         *
-         * @param localDOF size_t - The local degree of freedom index
-         * @param localPoint point_t (Vector<T, Dim>) - The point in the reference element
-         *
-         * @return T - The value of the shape function at the given point
-         */
-        // WE REMOVE THIS, BECAUSE FOR NÉDÉLEC SPACE WE DO NOT HAVE TYPE T, BUT
-        // A VECTOR.
-        //KOKKOS_FUNCTION virtual T evaluateRefElementShapeFunction(
-        //    const size_t& localDOF, const point_t& localPoint) const = 0;
-
-        ///////////////////////////////////////////////////////////////////////
-        /// Assembly operations ///////////////////////////////////////////////
-        ///////////////////////////////////////////////////////////////////////
-
-        /**
-         * @brief Assemble the load vector b of the system Ax = b
-         *
-         * @param rhs_field The field to set with the load vector
-         * @param f The source function
-         *
-         * @return FieldRHS - The RHS field containing b
-         */
-        //virtual void evaluateLoadVector(FieldRHS& rhs_field) const = 0;
 
         ///////////////////////////////////////////////////////////////////////
         /// Member variables //////////////////////////////////////////////////

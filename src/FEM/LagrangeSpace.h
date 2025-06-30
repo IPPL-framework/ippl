@@ -190,7 +190,7 @@ namespace ippl {
          * point
          */
         KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
-            const size_t& localDOF, const point_t& localPoint) const override;
+            const size_t& localDOF, const point_t& localPoint) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
