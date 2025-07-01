@@ -6,14 +6,15 @@ namespace ippl {
         typename TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
                                                    VectorAttribute>::Vector_t
         TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
-                                          VectorAttribute>::pairForce(const Vector_t& dist,
-                                                                      Scalar_t r2, Scalar_t alpha,
-                                                                      Scalar_t forceConstant,
-                                                                      Scalar_t qm2) {
+                                          VectorAttribute>::fieldFromPair(const Vector_t& dist,
+                                                                          Scalar_t r2,
+                                                                          Scalar_t alpha,
+                                                                          Scalar_t forceConstant,
+                                                                          Scalar_t qm) {
         const Scalar_t r = Kokkos::sqrt(r2);
 
         // F = - q * forceConstant grad [(1 - erf(alpha * r)) / r].
-        return forceConstant * qm2 * (dist / r)
+        return forceConstant * qm * (dist / r)
                * (2.0 * alpha * Kokkos::exp(-alpha * alpha * r2)
                       / (Kokkos::sqrt(Kokkos::numbers::pi) * r)
                   + (1.0 - Kokkos::erf(alpha * r)) / r2);
@@ -26,7 +27,7 @@ namespace ippl {
             IpplTimings::getTimer("TruncatedGreenParticleInteraction::solve()");
         IpplTimings::startTimer(solveTimer);
         // get particle data
-        auto& F        = F_m;
+        auto& Field    = Field_m;
         const auto& R  = R_m;
         const auto& QM = QM_m;
 
@@ -46,12 +47,11 @@ namespace ippl {
                     return;
                 }
 
-                const auto F_ij = pairForce(dist_ij, rsq_ij, alpha, forceConstant);
+                const auto F_ij = fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j));
 
-                // TODO is energy nonetheless? in anycase its F/QM(i)
-                // add force to particle i, dont do it for j as the ranges of i and j are asymmetric
-                Kokkos::atomic_sub(&F(i), F_ij * QM(j));
-                // Kokkos::atomic_add(&F(j), F_ij * QM(i));
+                // add force to particle i, don't do it for j as the ranges of i and j are
+                // asymmetric
+                Kokkos::atomic_sub(&Field(i), F_ij);
             });
         IpplTimings::stopTimer(solveTimer);
     }
