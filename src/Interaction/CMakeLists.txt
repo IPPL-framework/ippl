@@ -1,27 +1,19 @@
-set (_SRCS
+# -----------------------------------------------------------------------------
+# src/Interaction/CMakeLists.txt
+#
+# Adds ParticleParticle Interactions to the IPPL target.
+# -----------------------------------------------------------------------------
+
+target_include_directories(ippl
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install Interaction-related headers
+install(FILES
         ParticleInteractionBase.h
         TruncatedGreenParticleInteraction.h
         TruncatedGreenParticleInteraction.hpp
+        DESTINATION include/Interaction
 )
-
-set (_HDRS
-)
-
-include_directories (
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/ShortRange)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:
-
