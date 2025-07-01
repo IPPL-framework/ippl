@@ -18,17 +18,3 @@ target_link_libraries (
         ${IPPL_LIBS}
         ${MPI_CXX_LIBRARIES}
 )
-
-add_executable(BenchP3M BenchP3M.cpp)
-target_link_libraries (
-        BenchP3M
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-)
-
-add_executable(DistHeating DistHeating.cpp)
-target_link_libraries (
-        DistHeating
-        ${IPPL_LIBS}
-        ${MPI_CXX_LIBRARIES}
-)
