@@ -19,10 +19,10 @@ namespace ippl {
     Quadrature<T, NumNodes1D, ElementType>::getWeightsForRefElement() const {
         Vector<T, NumNodes1D> w = this->getWeights1D(0.0, 1.0);
 
-        Vector<T, this->numElementNodes> tensor_prod_w;
+        Vector<T, std::remove_reference_t<decltype(*this)>::numElementNodes> tensor_prod_w;
 
         Vector<unsigned, ElementType::dim> nd_index(0);
-        for (unsigned i = 0; i < this->numElementNodes; ++i) {
+        for (unsigned i = 0; i < std::remove_reference_t<decltype(*this)>::numElementNodes; ++i) {
             tensor_prod_w[i] = 1.0;
             for (unsigned d = 0; d < ElementType::dim; ++d) {
                 tensor_prod_w[i] *= w[nd_index[d]];
@@ -47,10 +47,10 @@ namespace ippl {
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
         Vector<T, NumNodes1D> q = this->getIntegrationNodes1D(0.0, 1.0);
 
-        Vector<Vector<T, ElementType::dim>, this->numElementNodes> tensor_prod_q;
+        Vector<Vector<T, ElementType::dim>, std::remove_reference_t<decltype(*this)>::numElementNodes> tensor_prod_q;
 
         Vector<unsigned, ElementType::dim> nd_index(0);
-        for (unsigned i = 0; i < this->numElementNodes; ++i) {
+        for (unsigned i = 0; i < std::remove_reference_t<decltype(*this)>::numElementNodes; ++i) {
             for (unsigned d = 0; d < ElementType::dim; ++d) {
                 tensor_prod_q[i][d] = q[nd_index[d]];
             }
