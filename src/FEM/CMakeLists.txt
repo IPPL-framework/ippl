@@ -37,12 +37,6 @@ install(FILES
     LagrangeSpace.hpp
     NedelecSpace.h
     NedelecSpace.hpp
-    LagrangeSpaceFEMVector.h
-    LagrangeSpaceFEMVector.hpp
-
-    # Solvers
-    FEMSolver.h
-    FEMSolver.hpp
 
     DESTINATION include/FEM
 )
