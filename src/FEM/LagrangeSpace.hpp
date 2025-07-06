@@ -396,6 +396,20 @@ namespace ippl {
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
 
+        // Here we assemble the local matrix of an element. In theory this would
+        // have to be done for each element individually, but because we have
+        // that in the case of IPPL all the elements have the same shape we can
+        // also just do it once and then use if all the time.
+        Vector<Vector<T,this->numElementDOFs>, this->numElementDOFs> A_K;
+        for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t j = 0; j < this->numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
@@ -420,24 +434,11 @@ namespace ippl {
                 // local DOF indices
                 size_t i, j;
 
-                // Element matrix
-                Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
-                    for (j = 0; j < this->numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
-
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
                 indices_t I_nd, J_nd;
 
-                // 2. Compute the contribution to resultAx = A*x with A_K
+                // Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < this->numElementDOFs; ++i) {
                     I_nd = global_dof_ndindices[i];
 
