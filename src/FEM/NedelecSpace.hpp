@@ -1016,7 +1016,7 @@ namespace ippl {
             if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
                 // we are parallel to z axis
                 // therefore we have halve a cell offset and can never be on the ground or in
-                // s
+                // space
                 size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
                     - (nx*(ny-1) + ny*(nx-1));
                 
@@ -1105,28 +1105,28 @@ namespace ippl {
             if (dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset >= (nx*(ny-1) + ny*(nx-1))) {
                 // we are parallel to z axis
                 // therefore we have halve a cell offset and can never be on the ground or in
-                // s
+                // space
                 size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset
                     - (nx*(ny-1) + ny*(nx-1));
                 
                 size_t yOffset = f / nx;
                 // South
-                return 0;
+                if (yOffset == 0) return 0;
                 // North
-                return 2;
+                if (yOffset == ny-1) return 2;
 
                 size_t xOffset = f % nx;
                 // West
-                return 1;
+                if (xOffset == 0) return 1;
                 // East
-                return 3;
+                if (xOffset == nx-1) return 3;
 
             } else {
                 // are parallel to one of the other axes
                 // Ground
-                return 4;
+                if (zOffset == 0) return 4;
                 // Space
-                return 5;
+                if (zOffset == nz-1) return 5;
                 
                 size_t f = dofIdx - (nx*(ny-1) + ny*(nx-1) + nx*ny)*zOffset;
                 size_t yOffset = f / (2*nx - 1);
@@ -1138,9 +1138,9 @@ namespace ippl {
                     // be on a north or south boundary
                     
                     // South
-                    return 0;
+                    if (yOffset == 0) return 0;
                     // North
-                    return 2;
+                    if (yOffset == ny-1) return 2;
                     
                 } else {
                     // we are parallel to the y axis, therefore we cannot be
@@ -1151,9 +1151,9 @@ namespace ippl {
                     }
 
                     // West
-                    return 1;
+                    if (xOffset == 0) return 1;
                     // East
-                    return 3;
+                    if (xOffset == nx-1) return 3;
                 }
             }
             return -1;
