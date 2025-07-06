@@ -43,12 +43,6 @@ install(FILES
     # Solvers
     FEMSolver.h
     FEMSolver.hpp
-)
-
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
 
     DESTINATION include/FEM
 )
-

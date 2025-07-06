@@ -18,43 +18,11 @@ add_ippl_integration_test(TestNonhomDirichlet_3d LABELS solver fem integration)
 add_ippl_integration_test(TestNonhomDirichlet_1dcos LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_ZeroBC_sin LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin LABELS solver fem integration)
-
-
-add_executable(TestFEMSolverZeroBC_sin TestFEMSolverZeroBC_sin.cpp)
-target_link_libraries(
-    TestFEMSolverZeroBC_sin
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable(TestFEMVectorZeroBC_sin TestFEMVectorZeroBC_sin.cpp)
-target_link_libraries(
-    TestFEMVectorZeroBC_sin
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable(TestMaxwellDiffusionZeroBC TestMaxwellDiffusionZeroBC.cpp)
-target_link_libraries(
-    TestMaxwellDiffusionZeroBC
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable(TestMaxwellDiffusionPolyZeroBC TestMaxwellDiffusionPolyZeroBC.cpp)
-target_link_libraries(
-    TestMaxwellDiffusionPolyZeroBC
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
-add_executable(TestMaxwellDiffusionPolyZeroBCTimed TestMaxwellDiffusionPolyZeroBCTimed.cpp)
-target_link_libraries(
-    TestMaxwellDiffusionPolyZeroBCTimed
-    ${IPPL_LIBS}
-    ${MPI_CXX_LIBRARIES}
-)
-
+add_ippl_integration_test(TestFEMSolverZeroBC_sin LABELS solver fem integration)
+add_ippl_integration_test(TestFEMVectorZeroBC_sin LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionZeroBC LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBC LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBCTimed LABELS solver fem integration)
 
 # vi: set et ts=4 sw=4 sts=4:
 
