@@ -71,8 +71,8 @@ public:
         layout                   = flayout_type(MPI_COMM_WORLD, owned, isParallel, isAllPeriodic);
         mesh                     = mesh_type(owned, hx, origin);
         field                    = std::make_shared<field_type>(mesh, layout);
-        playout                  = playout_type(layout, mesh);
-        bunch                    = std::make_shared<bunch_type>(playout);
+        playout_ptr              = std::make_shared<playout_type>(layout, mesh);
+        bunch                    = std::make_shared<bunch_type>(*playout_ptr);
 
         int nRanks = ippl::Comm->size();
         if (nParticles % nRanks > 0) {
@@ -118,12 +118,12 @@ public:
 
     flayout_type layout;
     mesh_type mesh;
-    playout_type playout;
+    std::shared_ptr<playout_type> playout_ptr;
     ORB orb;
 };
 
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
-TYPED_TEST_CASE(ORBTest, Tests);
+TYPED_TEST_SUITE(ORBTest, Tests);
 
 TYPED_TEST(ORBTest, Volume) {
     constexpr unsigned Dim = TestFixture::dim;

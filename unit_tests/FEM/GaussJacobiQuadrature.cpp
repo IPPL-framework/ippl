@@ -148,3 +148,14 @@ TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
         EXPECT_NEAR(w[k], w_k, tol);
     }
 }
+
+int main(int argc, char* argv[]) {
+    int success = 1;
+    ippl::initialize(argc, argv);
+    {
+        ::testing::InitGoogleTest(&argc, argv);
+        success = RUN_ALL_TESTS();
+    }
+    ippl::finalize();
+    return success;
+}

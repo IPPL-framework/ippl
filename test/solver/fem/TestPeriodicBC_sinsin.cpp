@@ -1,10 +1,24 @@
-// Tests the FEMPoissonSolver with periodic BCs
-// using the problem sin(sin(pi x)).
-// A convergence study is done by increasing the
-// problem size and looking at the relative error.
+// Tests the FEM Poisson solver by solving the problem:
+//
+// -Laplacian(u) = f(x), x in [-1,1]
+// u(-1) = u(1) = 0
+//
+// where f(x) is such that the exact solution is 
+// u(x) = sin(sin(pi * x)).
+//
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
+//
+// The test is available in 1D (problem above),
+// as well as 2D and 3D with analogous test cases.
+//
+// Here we use periodic BCs, so this should work
+// for other domains too as long as the domain 
+// length is the size of the period i.e. 2.
 //
 // Usage:
-//      ./TestFEMPoissonSolver_periodic_sinsin --info 5
+//     ./TestPeriodicBC_sinsin <dim> --info 5
 
 #include "Ippl.h"
 

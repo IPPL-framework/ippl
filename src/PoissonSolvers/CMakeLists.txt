@@ -1,28 +1,36 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/PoissonSolvers/CMakeLists.txt
+#
+# Adds Poisson solver headers to the IPPL target, optionally with FFT backends.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Default Poisson solver headers
+set(poisson_headers
     PoissonCG.h
     Poisson.h
     NullSolver.h
     LaplaceHelpers.h
+    FEMPoissonSolver.h
 )
-if (ENABLE_FFT)
-    list (APPEND _HDRS
-                 FFTOpenPoissonSolver.h
-                 FFTOpenPoissonSolver.hpp
-                 FFTPeriodicPoissonSolver.h
-                 FFTPeriodicPoissonSolver.hpp
-                 P3MSolver.h
-                 P3MSolver.hpp
+
+# Add FFT-based solver headers conditionally
+if(IPPL_ENABLE_FFT)
+    list(APPEND poisson_headers
+        FFTOpenPoissonSolver.h
+        FFTOpenPoissonSolver.hpp
+        FFTPeriodicPoissonSolver.h
+        FFTPeriodicPoissonSolver.hpp
+        P3MSolver.h
+        P3MSolver.hpp
     )
-endif ()
+endif()
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+# Install Poisson solver headers
+install(FILES ${poisson_headers} DESTINATION include/PoissonSolvers)
 
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/PoissonSolvers)

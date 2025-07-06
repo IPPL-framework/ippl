@@ -82,7 +82,9 @@ private:
 public:
     void pre_run() override {
         Inform m("Pre Run");
-
+	
+	const double pi = Kokkos::numbers::pi_v<T>;
+	
         if (this->solver_m == "OPEN") {
             throw IpplException("BumpOnTailInstability",
                                 "Open boundaries solver incompatible with this simulation!");

@@ -1,7 +1,18 @@
-set (_SRCS
-    )
+# -----------------------------------------------------------------------------
+# src/Field/CMakeLists.txt
+#
+# Adds core Field data structure headers to the IPPL target.
+# -----------------------------------------------------------------------------
 
-set (_HDRS
+# Add this directory to public include path
+target_include_directories(ippl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install Field-related headers
+install(FILES
     BareField.hpp
     BareField.h
     BareFieldOperations.hpp
@@ -14,22 +25,6 @@ set (_HDRS
     FieldOperations.hpp
     HaloCells.h
     HaloCells.hpp
-    )
+    DESTINATION include/Field
+)
 
-include_DIRECTORIES (
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-
-add_ippl_sources (${_SRCS})
-add_ippl_headers (${_HDRS})
-
-install (FILES ${_HDRS} DESTINATION include/Field)
-
-# vi: set et ts=4 sw=4 sts=4:
-
-# Local Variables:
-# mode: cmake
-# cmake-tab-width: 4
-# indent-tabs-mode: nil
-# require-final-newline: nil
-# End:

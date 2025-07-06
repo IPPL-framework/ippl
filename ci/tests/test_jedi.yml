@@ -1,0 +1,34 @@
+test_jedi:
+  extends: .test_template
+  tags:
+    - jedi 
+    - compute 
+  script:
+    - echo "Executing dummy test..."
+    - echo "Dummy test log entry" > "${RESULTS_DIR}/dummy_test.log"
+    - ls -la
+
+    - module load Stages/2025  GCC
+    - module load CMake
+    - module load UCX 
+    - module load NCCL
+    - module load OpenMPI
+
+    - mkdir -p build
+
+    - cd build
+    - | 
+      cmake .. \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DKokkos_ARCH_HOPPER90=ON \
+      -DCMAKE_CXX_STANDARD=20 \
+      -DIPPL_ENABLE_FFT=ON \
+      -DIPPL_ENABLE_UNIT_TESTS=ON \
+      -DUSE_ALTERNATIVE_VARIANT=ON \
+      -DIPPL_ENABLE_SOLVERS=ON \
+      -DIPPL_PLATFORMS=cuda
+
+    - make -j 20
+    - ctest -j 16 --output-on-failure --output-junit tests/test_results.xml
+    - cd ..
+    - mv build/tests/test_results.xml "${RESULTS_DIR}/gcc-xml" 

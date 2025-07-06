@@ -39,8 +39,8 @@ using Spaces     = TestParams::Spaces;
 using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
 using Combos     = CreateCombinations<Precisions, Spaces, Spaces, Ranks>::type;
 using Tests      = TestForTypes<Combos>::type;
-TYPED_TEST_CASE(ParticleBaseTest, Tests);
-TYPED_TEST_CASE(InitializationTest, Tests);
+TYPED_TEST_SUITE(ParticleBaseTest, Tests);
+TYPED_TEST_SUITE(InitializationTest, Tests);
 
 TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
     if (ippl::Comm->size() > 1) {

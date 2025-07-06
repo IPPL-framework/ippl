@@ -1,15 +1,19 @@
 // Tests the FEM Poisson solver by solving the problem:
 //
 // -Laplacian(u) = 2.0, x in [-1,1]
-// u(-1) = u(1) = 0
+// with u(-1) = u(1) = 0.
 //
-// Exact solution is u(x) = 1 - (x * x)
+// Exact solution is u(x) = 1 - (x * x).
 //
 // BCs: Homogeneous Dirichlet BCs (Zero).
 // This is only 1D!
 //
+// The test prints out the relative error as we refine
+// the mesh spacing i.e. it is a convergence study. 
+// The order of convergence should be 2. 
+//
 // Usage:
-//    ./TestZeroBC_constant --info 5
+//    ./TestZeroBC_constant1d --info 5
 
 #include "Ippl.h"
 

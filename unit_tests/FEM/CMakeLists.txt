@@ -1,10 +1,13 @@
 file (RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message (STATUS "Adding unit tests found in ${_relPath}")
 
-include_directories (
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
+add_ippl_test(EdgeElement)
+add_ippl_test(QuadrilateralElement)
+add_ippl_test(HexahedralElement)
+add_ippl_test(FiniteElementSpace)
+add_ippl_test(LagrangeSpace)
+add_ippl_test(Quadrature)
+add_ippl_test(GaussJacobiQuadrature)
 
 link_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -133,6 +136,7 @@ target_link_libraries(
     GTest::gtest_main
     ${MPI_CXX_LIBRARIES}
 )
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:
