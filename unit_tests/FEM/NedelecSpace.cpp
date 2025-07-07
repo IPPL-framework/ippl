@@ -14,7 +14,7 @@ struct DummyFunctor {
     KOKKOS_FUNCTION const T operator()(size_t i, size_t j,
         const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
         const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
-        return 1.0;
+        return i==j; //val_b_q_k<:i:>.dot(val_b_q_k<:j:>);
     }
 };
 
@@ -37,6 +37,7 @@ public:
     using QuadratureType = ippl::GaussJacobiQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
+    using Layout               = ippl::FieldLayout<Dim>;
 
     NedelecSpaceTest()
         : ref_element()
@@ -45,14 +46,12 @@ public:
         , meshSmall(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
             ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , quadrature(ref_element, 0.0, 0.0)
-        , nedelecSpace(mesh, ref_element, quadrature,
-                        ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                                               ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
-                                               std::array<bool, Dim>{true}))
-        , nedelecSpaceSmall(meshSmall, ref_element, quadrature,
-                        ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                                               ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
-                                               std::array<bool, Dim>{true})) {
+        , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
+                                               std::array<bool, Dim>{true})
+        , layoutSmall(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
+                                               std::array<bool, Dim>{true})
+        , nedelecSpace(mesh, ref_element, quadrature,layout)
+        , nedelecSpaceSmall(meshSmall, ref_element, quadrature, layoutSmall) {
         // fill the global reference DOFs
     }
 
@@ -60,6 +59,8 @@ public:
     MeshType mesh;
     MeshType meshSmall;
     const QuadratureType quadrature;
+    Layout layout;
+    Layout layoutSmall;
     const ippl::NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType> nedelecSpace;
     const ippl::NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
         nedelecSpaceSmall;
@@ -526,49 +527,847 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunctionCurl) {
 }
 
 
-TYPED_TEST(NedelecSpaceTest, evaluateAx) {
-    using T         = typename TestFixture::value_t;
 
-    if (this->nedelecSpace.dim == 2) {
-        auto f = DummyFunctor<T, this->nedelecSpace.dim, this->nedelecSpace.numElementDOFs>();
 
-        ippl::FEMVector<T> x(this->nedelecSpace.numGlobalDOFs());
-        x = 1;
-        std::cout << "Start ax\n";
-        ippl::FEMVector<T> out = this->nedelecSpace.evaluateAx(x,f);
-        std::cout << "End ax\n";
 
-        auto view = out.getView();
+TYPED_TEST(NedelecSpaceTest, createFEMVector) {
+    // Note that this test will start to fail in case the implementation of the
+    // layout is changed and therefore the split into the different subdomains
+    // becomes different. Also be aware of the domain boundaries, as there the halo cells
+    // are not necessearly uniquly defined. All in all this test is custom
+    // tailored to the current way we have implemented it and if in the future
+    // changes to the logic is made this test needs to be adjusted. 
+
+    using T = typename TestFixture::value_t;
+    
+    if constexpr (this->nedelecSpace.dim == 2) {
+        auto vec = this->nedelecSpace.createFEMVector();
+        vec = ippl::Comm->rank();
+        vec.fillHalo();
+        vec.accumulateHalo();
+        auto view = vec.getView();
         auto hView = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(hView, view);
 
-        for (size_t i = 0; i < hView.extent(0); ++i) {
-            std::cout << i << ": " << hView(i) << "\n";
-        }
+
+        if (ippl::Comm->size() == 1) <%
+            ASSERT_EQ(vec.size(), 84);
+            for (size_t i = 0; i < hView.extent(0); ++i) <%
+                ASSERT_EQ(hView(i),0);
+            %>
+        %>
+        if (ippl::Comm->size() == 2) <%
+            if (ippl::Comm->rank() == 0) <%
+                ASSERT_EQ(vec.size(), 45);
+
+                ASSERT_EQ(hView(0),0);
+                ASSERT_EQ(hView(1),0);
+                ASSERT_EQ(hView(2),0);
+                ASSERT_EQ(hView(3),0);
+                ASSERT_EQ(hView(4),0);
+                ASSERT_EQ(hView(5),0);
+                ASSERT_EQ(hView(6),0);
+                ASSERT_EQ(hView(7),0);
+                ASSERT_EQ(hView(8),0);
+                ASSERT_EQ(hView(9),0);
+                ASSERT_EQ(hView(10),0);
+                ASSERT_EQ(hView(11),0);
+                ASSERT_EQ(hView(12),0);
+                ASSERT_EQ(hView(13),1);
+                ASSERT_EQ(hView(14),0);
+                ASSERT_EQ(hView(15),0);
+                ASSERT_EQ(hView(16),0);
+                ASSERT_EQ(hView(17),0);
+                ASSERT_EQ(hView(18),0);
+                ASSERT_EQ(hView(19),0);
+                ASSERT_EQ(hView(20),1);
+                ASSERT_EQ(hView(21),0);
+                ASSERT_EQ(hView(22),0);
+                ASSERT_EQ(hView(23),0);
+                ASSERT_EQ(hView(24),0);
+                ASSERT_EQ(hView(25),0);
+                ASSERT_EQ(hView(26),0);
+                ASSERT_EQ(hView(27),1);
+                ASSERT_EQ(hView(28),0);
+                ASSERT_EQ(hView(29),0);
+                ASSERT_EQ(hView(30),0);
+                ASSERT_EQ(hView(31),0);
+                ASSERT_EQ(hView(32),0);
+                ASSERT_EQ(hView(33),0);
+                ASSERT_EQ(hView(34),1);
+                ASSERT_EQ(hView(35),0);
+                ASSERT_EQ(hView(36),0);
+                ASSERT_EQ(hView(37),0);
+                ASSERT_EQ(hView(38),0);
+                ASSERT_EQ(hView(39),0);
+                ASSERT_EQ(hView(40),0);
+                ASSERT_EQ(hView(41),1);
+                ASSERT_EQ(hView(42),0);
+                ASSERT_EQ(hView(43),0);
+                ASSERT_EQ(hView(44),0);
+
+            %>
+            if (ippl::Comm->rank() == 1) <%
+                ASSERT_EQ(vec.size(), 58);
+
+                ASSERT_EQ(hView(0),1);
+                ASSERT_EQ(hView(1),1);
+                ASSERT_EQ(hView(2),1);
+                ASSERT_EQ(hView(3),1);
+                ASSERT_EQ(hView(4),1);
+                ASSERT_EQ(hView(5),1);
+                ASSERT_EQ(hView(6),1);
+                ASSERT_EQ(hView(7),1);
+                ASSERT_EQ(hView(8),1);
+                ASSERT_EQ(hView(9),0);
+                ASSERT_EQ(hView(10),1);
+                ASSERT_EQ(hView(11),1);
+                ASSERT_EQ(hView(12),1);
+                ASSERT_EQ(hView(13),0);
+                ASSERT_EQ(hView(14),2);
+                ASSERT_EQ(hView(15),1);
+                ASSERT_EQ(hView(16),1);
+                ASSERT_EQ(hView(17),1);
+                ASSERT_EQ(hView(18),0);
+                ASSERT_EQ(hView(19),1);
+                ASSERT_EQ(hView(20),1);
+                ASSERT_EQ(hView(21),1);
+                ASSERT_EQ(hView(22),0);
+                ASSERT_EQ(hView(23),2);
+                ASSERT_EQ(hView(24),1);
+                ASSERT_EQ(hView(25),1);
+                ASSERT_EQ(hView(26),1);
+                ASSERT_EQ(hView(27),0);
+                ASSERT_EQ(hView(28),1);
+                ASSERT_EQ(hView(29),1);
+                ASSERT_EQ(hView(30),1);
+                ASSERT_EQ(hView(31),0);
+                ASSERT_EQ(hView(32),2);
+                ASSERT_EQ(hView(33),1);
+                ASSERT_EQ(hView(34),1);
+                ASSERT_EQ(hView(35),1);
+                ASSERT_EQ(hView(36),0);
+                ASSERT_EQ(hView(37),1);
+                ASSERT_EQ(hView(38),1);
+                ASSERT_EQ(hView(39),1);
+                ASSERT_EQ(hView(40),0);
+                ASSERT_EQ(hView(41),2);
+                ASSERT_EQ(hView(42),1);
+                ASSERT_EQ(hView(43),1);
+                ASSERT_EQ(hView(44),1);
+                ASSERT_EQ(hView(45),0);
+                ASSERT_EQ(hView(46),1);
+                ASSERT_EQ(hView(47),1);
+                ASSERT_EQ(hView(48),1);
+                ASSERT_EQ(hView(49),0);
+                ASSERT_EQ(hView(50),2);
+                ASSERT_EQ(hView(51),1);
+                ASSERT_EQ(hView(52),1);
+                ASSERT_EQ(hView(53),1);
+                ASSERT_EQ(hView(54),0);
+                ASSERT_EQ(hView(55),1);
+                ASSERT_EQ(hView(56),1);
+                ASSERT_EQ(hView(57),1);
+
+            %>
+        %>
+        if (ippl::Comm->size() == 3) <%
+            if (ippl::Comm->rank() == 0) <%
+                ASSERT_EQ(vec.size(), 45);
+
+                ASSERT_EQ(hView(0),0);
+                ASSERT_EQ(hView(1),0);
+                ASSERT_EQ(hView(2),0);
+                ASSERT_EQ(hView(3),0);
+                ASSERT_EQ(hView(4),0);
+                ASSERT_EQ(hView(5),0);
+                ASSERT_EQ(hView(6),0);
+                ASSERT_EQ(hView(7),0);
+                ASSERT_EQ(hView(8),0);
+                ASSERT_EQ(hView(9),0);
+                ASSERT_EQ(hView(10),0);
+                ASSERT_EQ(hView(11),0);
+                ASSERT_EQ(hView(12),0);
+                ASSERT_EQ(hView(13),1);
+                ASSERT_EQ(hView(14),0);
+                ASSERT_EQ(hView(15),0);
+                ASSERT_EQ(hView(16),0);
+                ASSERT_EQ(hView(17),0);
+                ASSERT_EQ(hView(18),0);
+                ASSERT_EQ(hView(19),0);
+                ASSERT_EQ(hView(20),1);
+                ASSERT_EQ(hView(21),0);
+                ASSERT_EQ(hView(22),0);
+                ASSERT_EQ(hView(23),0);
+                ASSERT_EQ(hView(24),0);
+                ASSERT_EQ(hView(25),0);
+                ASSERT_EQ(hView(26),0);
+                ASSERT_EQ(hView(27),1);
+                ASSERT_EQ(hView(28),0);
+                ASSERT_EQ(hView(29),0);
+                ASSERT_EQ(hView(30),0);
+                ASSERT_EQ(hView(31),0);
+                ASSERT_EQ(hView(32),0);
+                ASSERT_EQ(hView(33),0);
+                ASSERT_EQ(hView(34),1);
+                ASSERT_EQ(hView(35),0);
+                ASSERT_EQ(hView(36),0);
+                ASSERT_EQ(hView(37),0);
+                ASSERT_EQ(hView(38),0);
+                ASSERT_EQ(hView(39),0);
+                ASSERT_EQ(hView(40),0);
+                ASSERT_EQ(hView(41),1);
+                ASSERT_EQ(hView(42),0);
+                ASSERT_EQ(hView(43),0);
+                ASSERT_EQ(hView(44),0);
+            %>
+            if (ippl::Comm->rank() == 1) <%
+                ASSERT_EQ(vec.size(), 45);
+
+                ASSERT_EQ(hView(0),1);
+                ASSERT_EQ(hView(1),1);
+                ASSERT_EQ(hView(2),1);
+                ASSERT_EQ(hView(3),1);
+                ASSERT_EQ(hView(4),1);
+                ASSERT_EQ(hView(5),1);
+                ASSERT_EQ(hView(6),1);
+                ASSERT_EQ(hView(7),0);
+                ASSERT_EQ(hView(8),1);
+                ASSERT_EQ(hView(9),2);
+                ASSERT_EQ(hView(10),0);
+                ASSERT_EQ(hView(11),2);
+                ASSERT_EQ(hView(12),2);
+                ASSERT_EQ(hView(13),2);
+                ASSERT_EQ(hView(14),0);
+                ASSERT_EQ(hView(15),1);
+                ASSERT_EQ(hView(16),2);
+                ASSERT_EQ(hView(17),0);
+                ASSERT_EQ(hView(18),2);
+                ASSERT_EQ(hView(19),2);
+                ASSERT_EQ(hView(20),2);
+                ASSERT_EQ(hView(21),0);
+                ASSERT_EQ(hView(22),1);
+                ASSERT_EQ(hView(23),2);
+                ASSERT_EQ(hView(24),0);
+                ASSERT_EQ(hView(25),2);
+                ASSERT_EQ(hView(26),2);
+                ASSERT_EQ(hView(27),2);
+                ASSERT_EQ(hView(28),0);
+                ASSERT_EQ(hView(29),1);
+                ASSERT_EQ(hView(30),2);
+                ASSERT_EQ(hView(31),0);
+                ASSERT_EQ(hView(32),2);
+                ASSERT_EQ(hView(33),2);
+                ASSERT_EQ(hView(34),2);
+                ASSERT_EQ(hView(35),0);
+                ASSERT_EQ(hView(36),1);
+                ASSERT_EQ(hView(37),2);
+                ASSERT_EQ(hView(38),0);
+                ASSERT_EQ(hView(39),2);
+                ASSERT_EQ(hView(40),2);
+                ASSERT_EQ(hView(41),2);
+                ASSERT_EQ(hView(42),0);
+                ASSERT_EQ(hView(43),1);
+                ASSERT_EQ(hView(44),2);
+
+
+            %>
+            if (ippl::Comm->rank() == 2) <%
+                ASSERT_EQ(vec.size(), 32);
+
+                ASSERT_EQ(hView(0),2);
+                ASSERT_EQ(hView(1),2);
+                ASSERT_EQ(hView(2),2);
+                ASSERT_EQ(hView(3),2);
+                ASSERT_EQ(hView(4),2);
+                ASSERT_EQ(hView(5),1);
+                ASSERT_EQ(hView(6),2);
+                ASSERT_EQ(hView(7),1);
+                ASSERT_EQ(hView(8),4);
+                ASSERT_EQ(hView(9),2);
+                ASSERT_EQ(hView(10),1);
+                ASSERT_EQ(hView(11),2);
+                ASSERT_EQ(hView(12),1);
+                ASSERT_EQ(hView(13),4);
+                ASSERT_EQ(hView(14),2);
+                ASSERT_EQ(hView(15),1);
+                ASSERT_EQ(hView(16),2);
+                ASSERT_EQ(hView(17),1);
+                ASSERT_EQ(hView(18),4);
+                ASSERT_EQ(hView(19),2);
+                ASSERT_EQ(hView(20),1);
+                ASSERT_EQ(hView(21),2);
+                ASSERT_EQ(hView(22),1);
+                ASSERT_EQ(hView(23),4);
+                ASSERT_EQ(hView(24),2);
+                ASSERT_EQ(hView(25),1);
+                ASSERT_EQ(hView(26),2);
+                ASSERT_EQ(hView(27),1);
+                ASSERT_EQ(hView(28),4);
+                ASSERT_EQ(hView(29),2);
+                ASSERT_EQ(hView(30),1);
+                ASSERT_EQ(hView(31),2);
+            %>
+        %>
     }
-} 
+
+    if constexpr (this->nedelecSpace.dim == 3) <%
+        // Due to the fact, that for the 3D case we have a lot of values we now
+        // do not check all the values in the FEMVector, but only the ones which
+        // are involved in the halo exchange operations.
+        auto vec = this->nedelecSpaceSmall.createFEMVector();
+        vec = ippl::Comm->rank();
+        vec.fillHalo();
+        vec.accumulateHalo();
+        auto view = vec.getView();
+        auto hView = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(hView, view);
+
+        if (ippl::Comm->size() == 1) <%
+            ASSERT_EQ(vec.size(), 300);
+            for (size_t i = 0; i < hView.extent(0); ++i) <%
+                ASSERT_EQ(hView(i),0);
+            %>
+        %>
+        if (ippl::Comm->size() == 2) <%
+            if (ippl::Comm->rank() == 0) <%
+                ASSERT_EQ(vec.size(), 170);
+
+                ASSERT_EQ(hView(43),0);
+                ASSERT_EQ(hView(45),0);
+                ASSERT_EQ(hView(46),1);
+                ASSERT_EQ(hView(48),0);
+                ASSERT_EQ(hView(50),0);
+                ASSERT_EQ(hView(51),1);
+                ASSERT_EQ(hView(53),0);
+                ASSERT_EQ(hView(55),0);
+                ASSERT_EQ(hView(56),1);
+                ASSERT_EQ(hView(58),0);
+                ASSERT_EQ(hView(63),0);
+                ASSERT_EQ(hView(64),1);
+                ASSERT_EQ(hView(66),0);
+                ASSERT_EQ(hView(67),1);
+                ASSERT_EQ(hView(69),0);
+                ASSERT_EQ(hView(70),1);
+                ASSERT_EQ(hView(72),0);
+                ASSERT_EQ(hView(73),1);
+                ASSERT_EQ(hView(80),0);
+                ASSERT_EQ(hView(82),0);
+                ASSERT_EQ(hView(83),1);
+                ASSERT_EQ(hView(85),0);
+                ASSERT_EQ(hView(87),0);
+                ASSERT_EQ(hView(88),1);
+                ASSERT_EQ(hView(90),0);
+                ASSERT_EQ(hView(92),0);
+                ASSERT_EQ(hView(93),1);
+                ASSERT_EQ(hView(95),0);
+                ASSERT_EQ(hView(100),0);
+                ASSERT_EQ(hView(101),1);
+                ASSERT_EQ(hView(103),0);
+                ASSERT_EQ(hView(104),1);
+                ASSERT_EQ(hView(106),0);
+                ASSERT_EQ(hView(107),1);
+                ASSERT_EQ(hView(109),0);
+                ASSERT_EQ(hView(110),1);
+                ASSERT_EQ(hView(117),0);
+                ASSERT_EQ(hView(119),0);
+                ASSERT_EQ(hView(120),1);
+                ASSERT_EQ(hView(122),0);
+                ASSERT_EQ(hView(124),0);
+                ASSERT_EQ(hView(125),1);
+                ASSERT_EQ(hView(127),0);
+                ASSERT_EQ(hView(129),0);
+                ASSERT_EQ(hView(130),1);
+                ASSERT_EQ(hView(132),0);
+                ASSERT_EQ(hView(137),0);
+                ASSERT_EQ(hView(138),1);
+                ASSERT_EQ(hView(140),0);
+                ASSERT_EQ(hView(141),1);
+                ASSERT_EQ(hView(143),0);
+                ASSERT_EQ(hView(144),1);
+                ASSERT_EQ(hView(146),0);
+                ASSERT_EQ(hView(147),1);
+                ASSERT_EQ(hView(154),0);
+                ASSERT_EQ(hView(156),0);
+                ASSERT_EQ(hView(157),1);
+                ASSERT_EQ(hView(159),0);
+                ASSERT_EQ(hView(161),0);
+                ASSERT_EQ(hView(162),1);
+                ASSERT_EQ(hView(164),0);
+                ASSERT_EQ(hView(166),0);
+                ASSERT_EQ(hView(167),1);
+                ASSERT_EQ(hView(169),0);
+
+            %>
+            if (ippl::Comm->rank() == 1) <%
+                ASSERT_EQ(vec.size(), 235);
+
+                ASSERT_EQ(hView(58),0);
+                ASSERT_EQ(hView(61),0);
+                ASSERT_EQ(hView(62),2);
+                ASSERT_EQ(hView(65),0);
+                ASSERT_EQ(hView(68),0);
+                ASSERT_EQ(hView(69),2);
+                ASSERT_EQ(hView(72),0);
+                ASSERT_EQ(hView(75),0);
+                ASSERT_EQ(hView(76),2);
+                ASSERT_EQ(hView(79),0);
+                ASSERT_EQ(hView(86),0);
+                ASSERT_EQ(hView(87),2);
+                ASSERT_EQ(hView(90),0);
+                ASSERT_EQ(hView(91),2);
+                ASSERT_EQ(hView(94),0);
+                ASSERT_EQ(hView(95),2);
+                ASSERT_EQ(hView(98),0);
+                ASSERT_EQ(hView(99),2);
+                ASSERT_EQ(hView(109),0);
+                ASSERT_EQ(hView(112),0);
+                ASSERT_EQ(hView(113),2);
+                ASSERT_EQ(hView(116),0);
+                ASSERT_EQ(hView(119),0);
+                ASSERT_EQ(hView(120),2);
+                ASSERT_EQ(hView(123),0);
+                ASSERT_EQ(hView(126),0);
+                ASSERT_EQ(hView(127),2);
+                ASSERT_EQ(hView(130),0);
+                ASSERT_EQ(hView(137),0);
+                ASSERT_EQ(hView(138),2);
+                ASSERT_EQ(hView(141),0);
+                ASSERT_EQ(hView(142),2);
+                ASSERT_EQ(hView(145),0);
+                ASSERT_EQ(hView(146),2);
+                ASSERT_EQ(hView(149),0);
+                ASSERT_EQ(hView(150),2);
+                ASSERT_EQ(hView(160),0);
+                ASSERT_EQ(hView(163),0);
+                ASSERT_EQ(hView(164),2);
+                ASSERT_EQ(hView(167),0);
+                ASSERT_EQ(hView(170),0);
+                ASSERT_EQ(hView(171),2);
+                ASSERT_EQ(hView(174),0);
+                ASSERT_EQ(hView(177),0);
+                ASSERT_EQ(hView(178),2);
+                ASSERT_EQ(hView(181),0);
+                ASSERT_EQ(hView(188),0);
+                ASSERT_EQ(hView(189),2);
+                ASSERT_EQ(hView(192),0);
+                ASSERT_EQ(hView(193),2);
+                ASSERT_EQ(hView(196),0);
+                ASSERT_EQ(hView(197),2);
+                ASSERT_EQ(hView(200),0);
+                ASSERT_EQ(hView(201),2);
+                ASSERT_EQ(hView(211),0);
+                ASSERT_EQ(hView(214),0);
+                ASSERT_EQ(hView(215),2);
+                ASSERT_EQ(hView(218),0);
+                ASSERT_EQ(hView(221),0);
+                ASSERT_EQ(hView(222),2);
+                ASSERT_EQ(hView(225),0);
+                ASSERT_EQ(hView(228),0);
+                ASSERT_EQ(hView(229),2);
+                ASSERT_EQ(hView(232),0);            
+            %>
+        %>
+        if (ippl::Comm->size() == 3) <%
+            if (ippl::Comm->rank() == 0) <%
+                ASSERT_EQ(vec.size(), 170);
+
+                ASSERT_EQ(hView(43),0);
+                ASSERT_EQ(hView(45),0);
+                ASSERT_EQ(hView(46),1);
+                ASSERT_EQ(hView(48),0);
+                ASSERT_EQ(hView(50),0);
+                ASSERT_EQ(hView(51),1);
+                ASSERT_EQ(hView(53),0);
+                ASSERT_EQ(hView(55),0);
+                ASSERT_EQ(hView(56),1);
+                ASSERT_EQ(hView(58),0);
+                ASSERT_EQ(hView(63),0);
+                ASSERT_EQ(hView(64),1);
+                ASSERT_EQ(hView(66),0);
+                ASSERT_EQ(hView(67),1);
+                ASSERT_EQ(hView(69),0);
+                ASSERT_EQ(hView(70),1);
+                ASSERT_EQ(hView(72),0);
+                ASSERT_EQ(hView(73),1);
+                ASSERT_EQ(hView(80),0);
+                ASSERT_EQ(hView(82),0);
+                ASSERT_EQ(hView(83),1);
+                ASSERT_EQ(hView(85),0);
+                ASSERT_EQ(hView(87),0);
+                ASSERT_EQ(hView(88),1);
+                ASSERT_EQ(hView(90),0);
+                ASSERT_EQ(hView(92),0);
+                ASSERT_EQ(hView(93),1);
+                ASSERT_EQ(hView(95),0);
+                ASSERT_EQ(hView(100),0);
+                ASSERT_EQ(hView(101),1);
+                ASSERT_EQ(hView(103),0);
+                ASSERT_EQ(hView(104),1);
+                ASSERT_EQ(hView(106),0);
+                ASSERT_EQ(hView(107),1);
+                ASSERT_EQ(hView(109),0);
+                ASSERT_EQ(hView(110),1);
+                ASSERT_EQ(hView(117),0);
+                ASSERT_EQ(hView(119),0);
+                ASSERT_EQ(hView(120),1);
+                ASSERT_EQ(hView(122),0);
+                ASSERT_EQ(hView(124),0);
+                ASSERT_EQ(hView(125),1);
+                ASSERT_EQ(hView(127),0);
+                ASSERT_EQ(hView(129),0);
+                ASSERT_EQ(hView(130),1);
+                ASSERT_EQ(hView(132),0);
+                ASSERT_EQ(hView(137),0);
+                ASSERT_EQ(hView(138),1);
+                ASSERT_EQ(hView(140),0);
+                ASSERT_EQ(hView(141),1);
+                ASSERT_EQ(hView(143),0);
+                ASSERT_EQ(hView(144),1);
+                ASSERT_EQ(hView(146),0);
+                ASSERT_EQ(hView(147),1);
+                ASSERT_EQ(hView(154),0);
+                ASSERT_EQ(hView(156),0);
+                ASSERT_EQ(hView(157),1);
+                ASSERT_EQ(hView(159),0);
+                ASSERT_EQ(hView(161),0);
+                ASSERT_EQ(hView(162),1);
+                ASSERT_EQ(hView(164),0);
+                ASSERT_EQ(hView(166),0);
+                ASSERT_EQ(hView(167),1);
+                ASSERT_EQ(hView(169),0);
+            %>
+            if (ippl::Comm->rank() == 1) <%
+                ASSERT_EQ(vec.size(), 170);
+
+                ASSERT_EQ(hView(42),0);
+                ASSERT_EQ(hView(43),2);
+                ASSERT_EQ(hView(44),0);
+                ASSERT_EQ(hView(45),3);
+                ASSERT_EQ(hView(46),2);
+                ASSERT_EQ(hView(47),0);
+                ASSERT_EQ(hView(48),2);
+                ASSERT_EQ(hView(49),0);
+                ASSERT_EQ(hView(50),3);
+                ASSERT_EQ(hView(51),2);
+                ASSERT_EQ(hView(52),0);
+                ASSERT_EQ(hView(53),2);
+                ASSERT_EQ(hView(54),0);
+                ASSERT_EQ(hView(55),3);
+                ASSERT_EQ(hView(56),2);
+                ASSERT_EQ(hView(57),0);
+                ASSERT_EQ(hView(58),2);
+                ASSERT_EQ(hView(62),0);
+                ASSERT_EQ(hView(63),3);
+                ASSERT_EQ(hView(64),2);
+                ASSERT_EQ(hView(65),0);
+                ASSERT_EQ(hView(66),3);
+                ASSERT_EQ(hView(67),2);
+                ASSERT_EQ(hView(68),0);
+                ASSERT_EQ(hView(69),3);
+                ASSERT_EQ(hView(70),2);
+                ASSERT_EQ(hView(71),0);
+                ASSERT_EQ(hView(72),3);
+                ASSERT_EQ(hView(73),2);
+                ASSERT_EQ(hView(79),0);
+                ASSERT_EQ(hView(80),2);
+                ASSERT_EQ(hView(81),0);
+                ASSERT_EQ(hView(82),3);
+                ASSERT_EQ(hView(83),2);
+                ASSERT_EQ(hView(84),0);
+                ASSERT_EQ(hView(85),2);
+                ASSERT_EQ(hView(86),0);
+                ASSERT_EQ(hView(87),3);
+                ASSERT_EQ(hView(88),2);
+                ASSERT_EQ(hView(89),0);
+                ASSERT_EQ(hView(90),2);
+                ASSERT_EQ(hView(91),0);
+                ASSERT_EQ(hView(92),3);
+                ASSERT_EQ(hView(93),2);
+                ASSERT_EQ(hView(94),0);
+                ASSERT_EQ(hView(95),2);
+                ASSERT_EQ(hView(99),0);
+                ASSERT_EQ(hView(100),3);
+                ASSERT_EQ(hView(101),2);
+                ASSERT_EQ(hView(102),0);
+                ASSERT_EQ(hView(103),3);
+                ASSERT_EQ(hView(104),2);
+                ASSERT_EQ(hView(105),0);
+                ASSERT_EQ(hView(106),3);
+                ASSERT_EQ(hView(107),2);
+                ASSERT_EQ(hView(108),0);
+                ASSERT_EQ(hView(109),3);
+                ASSERT_EQ(hView(110),2);
+                ASSERT_EQ(hView(116),0);
+                ASSERT_EQ(hView(117),2);
+                ASSERT_EQ(hView(118),0);
+                ASSERT_EQ(hView(119),3);
+                ASSERT_EQ(hView(120),2);
+                ASSERT_EQ(hView(121),0);
+                ASSERT_EQ(hView(122),2);
+                ASSERT_EQ(hView(123),0);
+                ASSERT_EQ(hView(124),3);
+                ASSERT_EQ(hView(125),2);
+                ASSERT_EQ(hView(126),0);
+                ASSERT_EQ(hView(127),2);
+                ASSERT_EQ(hView(128),0);
+                ASSERT_EQ(hView(129),3);
+                ASSERT_EQ(hView(130),2);
+                ASSERT_EQ(hView(131),0);
+                ASSERT_EQ(hView(132),2);
+                ASSERT_EQ(hView(136),0);
+                ASSERT_EQ(hView(137),3);
+                ASSERT_EQ(hView(138),2);
+                ASSERT_EQ(hView(139),0);
+                ASSERT_EQ(hView(140),3);
+                ASSERT_EQ(hView(141),2);
+                ASSERT_EQ(hView(142),0);
+                ASSERT_EQ(hView(143),3);
+                ASSERT_EQ(hView(144),2);
+                ASSERT_EQ(hView(145),0);
+                ASSERT_EQ(hView(146),3);
+                ASSERT_EQ(hView(147),2);
+                ASSERT_EQ(hView(153),0);
+                ASSERT_EQ(hView(154),2);
+                ASSERT_EQ(hView(155),0);
+                ASSERT_EQ(hView(156),3);
+                ASSERT_EQ(hView(157),2);
+                ASSERT_EQ(hView(158),0);
+                ASSERT_EQ(hView(159),2);
+                ASSERT_EQ(hView(160),0);
+                ASSERT_EQ(hView(161),3);
+                ASSERT_EQ(hView(162),2);
+                ASSERT_EQ(hView(163),0);
+                ASSERT_EQ(hView(164),2);
+                ASSERT_EQ(hView(165),0);
+                ASSERT_EQ(hView(166),3);
+                ASSERT_EQ(hView(167),2);
+                ASSERT_EQ(hView(168),0);
+                ASSERT_EQ(hView(169),2);
+            %>
+            if (ippl::Comm->rank() == 2) <%
+                ASSERT_EQ(vec.size(), 170);
+
+                ASSERT_EQ(hView(42),1);
+                ASSERT_EQ(hView(44),1);
+                ASSERT_EQ(hView(45),4);
+                ASSERT_EQ(hView(47),1);
+                ASSERT_EQ(hView(49),1);
+                ASSERT_EQ(hView(50),4);
+                ASSERT_EQ(hView(52),1);
+                ASSERT_EQ(hView(54),1);
+                ASSERT_EQ(hView(55),4);
+                ASSERT_EQ(hView(57),1);
+                ASSERT_EQ(hView(62),1);
+                ASSERT_EQ(hView(63),4);
+                ASSERT_EQ(hView(65),1);
+                ASSERT_EQ(hView(66),4);
+                ASSERT_EQ(hView(68),1);
+                ASSERT_EQ(hView(69),4);
+                ASSERT_EQ(hView(71),1);
+                ASSERT_EQ(hView(72),4);
+                ASSERT_EQ(hView(79),1);
+                ASSERT_EQ(hView(81),1);
+                ASSERT_EQ(hView(82),4);
+                ASSERT_EQ(hView(84),1);
+                ASSERT_EQ(hView(86),1);
+                ASSERT_EQ(hView(87),4);
+                ASSERT_EQ(hView(89),1);
+                ASSERT_EQ(hView(91),1);
+                ASSERT_EQ(hView(92),4);
+                ASSERT_EQ(hView(94),1);
+                ASSERT_EQ(hView(99),1);
+                ASSERT_EQ(hView(100),4);
+                ASSERT_EQ(hView(102),1);
+                ASSERT_EQ(hView(103),4);
+                ASSERT_EQ(hView(105),1);
+                ASSERT_EQ(hView(106),4);
+                ASSERT_EQ(hView(108),1);
+                ASSERT_EQ(hView(109),4);
+                ASSERT_EQ(hView(116),1);
+                ASSERT_EQ(hView(118),1);
+                ASSERT_EQ(hView(119),4);
+                ASSERT_EQ(hView(121),1);
+                ASSERT_EQ(hView(123),1);
+                ASSERT_EQ(hView(124),4);
+                ASSERT_EQ(hView(126),1);
+                ASSERT_EQ(hView(128),1);
+                ASSERT_EQ(hView(129),4);
+                ASSERT_EQ(hView(131),1);
+                ASSERT_EQ(hView(136),1);
+                ASSERT_EQ(hView(137),4);
+                ASSERT_EQ(hView(139),1);
+                ASSERT_EQ(hView(140),4);
+                ASSERT_EQ(hView(142),1);
+                ASSERT_EQ(hView(143),4);
+                ASSERT_EQ(hView(145),1);
+                ASSERT_EQ(hView(146),4);
+                ASSERT_EQ(hView(153),1);
+                ASSERT_EQ(hView(155),1);
+                ASSERT_EQ(hView(156),4);
+                ASSERT_EQ(hView(158),1);
+                ASSERT_EQ(hView(160),1);
+                ASSERT_EQ(hView(161),4);
+                ASSERT_EQ(hView(163),1);
+                ASSERT_EQ(hView(165),1);
+                ASSERT_EQ(hView(166),4);
+                ASSERT_EQ(hView(168),1);
+
+            %>
+        %>
+
+    %>
+}
 
 
 TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
     using T = typename TestFixture::value_t;
+    T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
+    
+    if (ippl::Comm->size() ==1) <%
+        if (this->nedelecSpace.dim == 2)<%
+            auto fModel = this->nedelecSpace.createFEMVector();
+            
+            auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpace.dim>>();
+            f = ippl::Vector<T,this->nedelecSpace.dim>(1.);
+            
+            ippl::FEMVector<T> out = this->nedelecSpace.evaluateLoadVector(f);
 
-    if constexpr (this->nedelecSpace.dim == 2) {
-        ippl::FEMVector<ippl::Vector<T,2>> f(this->nedelecSpace.numGlobalDOFs());
-        f = ippl::Vector<T,2>(1.);
-        
-        std::cout << "Start eval\n";
-        ippl::FEMVector<T> out = this->nedelecSpace.evaluateLoadVector(f);
-        std::cout << "End eval\n";
+            auto view = out.getView();
+            auto hView = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hView, view);
 
-        auto view = out.getView();
-        auto hView = Kokkos::create_mirror_view(view);
-        Kokkos::deep_copy(hView, view);
+            auto ldom = this->layout.getLocalNDIndex();
+            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) <%
+                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
+                    this->nedelecSpace.getGlobalDOFIndices(elementIndex);
 
-        for (size_t i = 0; i < hView.extent(0); ++i) {
-            std::cout << i << ": " << hView(i) << "\n";
-        }
-    }
+                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> vectorIndices =
+                    this->nedelecSpace.getFEMVectorDOFIndices(elementIndex, ldom);
+
+
+                for (size_t i = 0; i < this->nedelecSpace.numElementDOFs; ++i) {
+                    size_t I = global_dofs[i];
+                    if (this->nedelecSpace.isDOFOnBoundary(I)) {
+                        continue;
+                    } else <%
+                        ASSERT_NEAR(hView(vectorIndices<:i:>), 1., tolerance);
+                    %>
+
+                %>
+            %>
+        %>
+
+        if (this->nedelecSpaceSmall.dim == 3)<%
+            auto fModel = this->nedelecSpaceSmall.createFEMVector();
+            
+            auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpaceSmall.dim>>();
+            f = ippl::Vector<T,this->nedelecSpaceSmall.dim>(1.);
+            
+            ippl::FEMVector<T> out = this->nedelecSpaceSmall.evaluateLoadVector(f);
+
+            auto view = out.getView();
+            auto hView = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hView, view);
+
+            auto ldom = this->layoutSmall.getLocalNDIndex();
+            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) <%
+                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
+                    this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
+
+                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> vectorIndices =
+                    this->nedelecSpaceSmall.getFEMVectorDOFIndices(elementIndex, ldom);
+
+
+                for (size_t i = 0; i < this->nedelecSpaceSmall.numElementDOFs; ++i) {
+                    size_t I = global_dofs[i];
+                    if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
+                        continue;
+                    } else <%
+                        ASSERT_NEAR(hView(vectorIndices<:i:>), 1., tolerance);
+                    %>
+
+                %>
+            %>
+        %>
+    %> else <%
+        GTEST_SKIP();
+    %>
 }
+
+
+TYPED_TEST(NedelecSpaceTest, evaluateAx) {
+    using T         = typename TestFixture::value_t;
+    T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
+
+
+    if (ippl::Comm->size() ==1) <%
+        if (this->nedelecSpace.dim == 2) {
+            auto f = DummyFunctor<T, this->nedelecSpace.dim, this->nedelecSpace.numElementDOFs>();
+
+            auto x = this->nedelecSpace.createFEMVector();
+            x = 1;
+            ippl::FEMVector<T> out = this->nedelecSpace.evaluateAx(x,f);
+
+            auto view = out.getView();
+            auto hView = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hView, view);
+
+            auto ldom = this->layout.getLocalNDIndex();
+            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) <%
+                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
+                    this->nedelecSpace.getGlobalDOFIndices(elementIndex);
+
+                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> vectorIndices =
+                    this->nedelecSpace.getFEMVectorDOFIndices(elementIndex, ldom);
+
+
+                for (size_t i = 0; i < this->nedelecSpace.numElementDOFs; ++i) {
+                    size_t I = global_dofs[i];
+                    if (this->nedelecSpace.isDOFOnBoundary(I)) {
+                        continue;
+                    } else <%
+                        ASSERT_NEAR(hView(vectorIndices<:i:>), 2., tolerance);
+                    %>
+                %>
+            %>
+        }
+        if (this->nedelecSpaceSmall.dim == 3) {
+            auto f = DummyFunctor<T, this->nedelecSpaceSmall.dim, this->nedelecSpaceSmall.numElementDOFs>();
+
+            auto x = this->nedelecSpaceSmall.createFEMVector();
+            x = 1;
+            ippl::FEMVector<T> out = this->nedelecSpaceSmall.evaluateAx(x,f);
+
+            auto view = out.getView();
+            auto hView = Kokkos::create_mirror_view(view);
+            Kokkos::deep_copy(hView, view);
+
+            auto ldom = this->layoutSmall.getLocalNDIndex();
+            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) <%
+                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
+                    this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
+
+                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> vectorIndices =
+                    this->nedelecSpaceSmall.getFEMVectorDOFIndices(elementIndex, ldom);
+
+
+                for (size_t i = 0; i < this->nedelecSpaceSmall.numElementDOFs; ++i) {
+                    size_t I = global_dofs[i];
+                    if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
+                        continue;
+                    } else <%
+                        ASSERT_NEAR(hView(vectorIndices<:i:>), 4., tolerance);
+                    %>
+                %>
+            %>
+
+        }
+    %> else <%
+        GTEST_SKIP();
+    %>
+} 
+
 
 
 
