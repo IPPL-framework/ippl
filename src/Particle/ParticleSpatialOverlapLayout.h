@@ -128,7 +128,7 @@ namespace ippl {
         void update(ParticleContainer& pc);
 
         /*!
-         * @breif call functor for each combination i, j. make sure to call update first
+         * @brief call functor for each combination i, j. make sure to call update first
          * @tparam ExecutionSpace Space in which to generate all indices
          * @tparam Functor type of loop body
          * @param f loop body functor to call for all pair of indices i, j where i are all
@@ -231,13 +231,14 @@ namespace ippl {
         Vector<size_type, Dim> cellStrides_m;
         ///! width of cells in each dimension
         Vector<T, Dim> cellWidth_m;
-        /*!
-         * totalCells_m is the number of total cells
-         * numLocalCells_m is the number of interior cells
-         * numGhostCells_m is the number of ghost cells
-         * numLocalParticles_m is number of local particles (particles in local cells)
-         */
-        size_type totalCells_m, numGhostCells_m, numLocalCells_m, numLocalParticles_m;
+        ///! the number of total cells
+        size_type totalCells_m;
+        ///! the number of interior cells
+        size_type numGhostCells_m;
+        ///! the number of ghost cells
+        size_type numLocalCells_m;
+        ///! the number of local particles (particles in local cells)
+        size_type numLocalParticles_m;
         ///! number of ghost cells
         static constexpr size_type numGhostCellsPerDim_m = 1;
         /*!
@@ -245,9 +246,9 @@ namespace ippl {
          * need to be permuted such that local cells are at the beginning and ghost cells at the end
          * cellPermutationForward_m at cell index computed from actual position and cellStrides
          * gives permuted index
-         * cellPermutationBackward_m is the inverse of cellPermutationForward_m
          */
         hash_type cellPermutationForward_m;
+        ///! the inverse of cellPermutationForward_m
         hash_type cellPermutationBackward_m;
         ///! cell i contains particles cellStartingIdx_m(i), ..., cellStartingIdx_m(i + 1) - 1
         hash_type cellStartingIdx_m;
