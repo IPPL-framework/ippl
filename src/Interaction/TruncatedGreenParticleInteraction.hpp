@@ -1,8 +1,8 @@
 //
 // Class TruncatedGreenParticleInteraction
-//   This class implements the short range interaction part of the green function splitting:
-//   forceConstant * (1 - erf(alpha * r)) / r. The long range part is handled by
-//   FFTTruncatedGreenPeriodicSolver.
+//   This class implements the short range interaction part of the green function splitting obtained
+//   by taking the gradient of [forceConstant * (1 - erf(alpha * r)) / r]. The long range part is
+//   handled by FFTTruncatedGreenPeriodicSolver.
 //
 //   It assumes that ParticleContainer implements a function forAllPairs() to iterate over all
 //   relevant particle pairs.
