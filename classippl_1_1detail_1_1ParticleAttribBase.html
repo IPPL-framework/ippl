@@ -97,7 +97,7 @@ Collaboration diagram for ippl::detail::ParticleAttribBase&lt; MemorySpace &gt;:
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1ParticleAttribBase__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1ParticleAttribBase_3_01MemorySpace_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1ParticleAttribBase_3_01MemorySpace_01_4_coll__map" id="aippl_1_1detail_1_1ParticleAttribBase_3_01MemorySpace_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,169,236"/>
+<area shape="rect" title=" " alt="" coords="5,5,169,265"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -137,6 +137,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2caa92cf2c0eb13f9fff95d04ae286a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4872bc5ed2316fcfe6c3e40041a15e38"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a4872bc5ed2316fcfe6c3e40041a15e38">getParticleCount</a> () const</td></tr>
 <tr class="separator:a4872bc5ed2316fcfe6c3e40041a15e38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a057fb2620a8877c3e265fafd6c839e29"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a057fb2620a8877c3e265fafd6c839e29">applyPermutation</a> (const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;)=0</td></tr>
+<tr class="separator:a057fb2620a8877c3e265fafd6c839e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff760b400a93ff9c980dd5d236a0ebf3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#aff760b400a93ff9c980dd5d236a0ebf3">internalCopy</a> (const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;)=0</td></tr>
+<tr class="separator:aff760b400a93ff9c980dd5d236a0ebf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -239,6 +243,34 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a057fb2620a8877c3e265fafd6c839e29" name="a057fb2620a8877c3e265fafd6c839e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a057fb2620a8877c3e265fafd6c839e29">&#9670;&#160;</a></span>applyPermutation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::applyPermutation </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a4f1a5faf43003db8179f5df24bb776b7" name="a4f1a5faf43003db8179f5df24bb776b7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4f1a5faf43003db8179f5df24bb776b7">&#9670;&#160;</a></span>create()</h2>
 
@@ -370,6 +402,34 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aff760b400a93ff9c980dd5d236a0ebf3" name="aff760b400a93ff9c980dd5d236a0ebf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff760b400a93ff9c980dd5d236a0ebf3">&#9670;&#160;</a></span>internalCopy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::internalCopy </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

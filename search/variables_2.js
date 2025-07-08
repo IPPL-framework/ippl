@@ -1,12 +1,19 @@
 var searchData=
 [
   ['cdf_5fm_0',['cdf_m',['../classippl_1_1random_1_1Distribution.html#acc97631f21fa872af533a92163e06155',1,'ippl::random::Distribution']]],
-  ['centeringenum_5fnames_1',['CenteringEnum_Names',['../classCentering.html#a2aa4ed884a4f8eb8570b74054c06886e',1,'Centering']]],
-  ['centeringname_2',['CenteringName',['../classCartesianCentering.html#a5f43f6452274bb2014dca8a343d12846',1,'CartesianCentering::CenteringName()'],['../classCell.html#a54acb1f92cefa8ca36a3a5e181058c4c',1,'Cell::CenteringName()'],['../classVert.html#a7604afa48d6efea36ce7997f75f85be7',1,'Vert::CenteringName()'],['../classEdge.html#a8c378f01fed4a92aef748fcb0ba616f9',1,'Edge::CenteringName()']]],
-  ['changephysical_5fm_3',['changePhysical_m',['../classippl_1_1detail_1_1BCondBase.html#acaa663521cccaba2389643dada0f9a71',1,'ippl::detail::BCondBase']]],
-  ['comm_4',['comm',['../classippl_1_1FieldLayout.html#a8d3132b3d1fec40ab7ba76c23bc9104d',1,'ippl::FieldLayout']]],
-  ['comm_5',['Comm',['../namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486',1,'ippl']]],
-  ['comm_5fm_6',['comm_m',['../classippl_1_1mpi_1_1Communicator.html#a6f7401cc8fe4de193f67aca1864c0bb7',1,'ippl::mpi::Communicator']]],
-  ['count_7',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type']]],
-  ['cweights_8',['Cweights',['../structsecond__order__abc__face.html#a465ba669a1c8dd1101a430fdb97e2ab9',1,'second_order_abc_face::Cweights()'],['../structsecond__order__abc__corner.html#a3f4467b0a15600bd2e2224dac8b6f3d1',1,'second_order_abc_corner::Cweights()']]]
+  ['cellindex_5fm_1',['cellIndex_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a950e476532e2bf8216a9c92e2d28ce72',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellparticlecount_5fm_2',['cellParticleCount_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a7f98d669633c9798fab24708b982979b',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellpermutationbackward_5fm_3',['cellPermutationBackward_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a6c088ab73dd0a3efc1e103883d1d5046',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellpermutationforward_5fm_4',['cellPermutationForward_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#ade7a223fdb151056b15b5007fc81ad74',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellstartingidx_5fm_5',['cellStartingIdx_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a8fc5854b75b74d4210f7c008c473ea6d',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellstrides_5fm_6',['cellStrides_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a123b05a84259380b1e759a6ec978d9b3',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['cellwidth_5fm_7',['cellWidth_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#afad3bf340f6a16a996a270980f83c0e9',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['centeringenum_5fnames_8',['CenteringEnum_Names',['../classCentering.html#a2aa4ed884a4f8eb8570b74054c06886e',1,'Centering']]],
+  ['centeringname_9',['CenteringName',['../classCell.html#a54acb1f92cefa8ca36a3a5e181058c4c',1,'Cell::CenteringName()'],['../classEdge.html#a8c378f01fed4a92aef748fcb0ba616f9',1,'Edge::CenteringName()'],['../classVert.html#a7604afa48d6efea36ce7997f75f85be7',1,'Vert::CenteringName()'],['../classCartesianCentering.html#a5f43f6452274bb2014dca8a343d12846',1,'CartesianCentering::CenteringName()']]],
+  ['changephysical_5fm_10',['changePhysical_m',['../classippl_1_1detail_1_1BCondBase.html#acaa663521cccaba2389643dada0f9a71',1,'ippl::detail::BCondBase']]],
+  ['comm_11',['comm',['../classippl_1_1FieldLayout.html#a8d3132b3d1fec40ab7ba76c23bc9104d',1,'ippl::FieldLayout']]],
+  ['comm_12',['Comm',['../namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486',1,'ippl']]],
+  ['comm_5fm_13',['comm_m',['../classippl_1_1mpi_1_1Communicator.html#a6f7401cc8fe4de193f67aca1864c0bb7',1,'ippl::mpi::Communicator']]],
+  ['count_14',['count',['../structippl_1_1increment__type.html#a196db89306cb973925d3afe96a551cd9',1,'ippl::increment_type']]],
+  ['cweights_15',['Cweights',['../structsecond__order__abc__face.html#a465ba669a1c8dd1101a430fdb97e2ab9',1,'second_order_abc_face::Cweights()'],['../structsecond__order__abc__corner.html#a3f4467b0a15600bd2e2224dac8b6f3d1',1,'second_order_abc_corner::Cweights()']]]
 ];

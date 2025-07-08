@@ -8,6 +8,7 @@ var searchData=
   ['time_5fm_5',['time_m',['../classChargedParticles.html#a8822d66a88920bc1a2d01db4a53376cd',1,'ChargedParticles::time_m()'],['../classAlpineManager.html#a337a4f053a1edd90458e2610f78d8cfb',1,'AlpineManager::time_m()']]],
   ['timestamp_6',['timestamp',['../structippl_1_1LogEntry.html#a5f06150e92eb3f1b7d9915066ad9b84d',1,'ippl::LogEntry']]],
   ['tol_7',['tol',['../structNewton1D.html#a74a7f81fed39f4935d2c4fec2c9577c4',1,'Newton1D']]],
-  ['totalp_5fm_8',['totalP_m',['../classAlpineManager.html#ae30749f6c0fc99167e35ae2c58038891',1,'AlpineManager']]],
-  ['type_5fm_9',['type_m',['../structippl_1_1preconditioner.html#a5539cc2d97e30473afcbc9e55e175503',1,'ippl::preconditioner']]]
+  ['totalcells_5fm_8',['totalCells_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#aaab2d1adf807a0124e2fbf08fc5829dd',1,'ippl::ParticleSpatialOverlapLayout']]],
+  ['totalp_5fm_9',['totalP_m',['../classAlpineManager.html#ae30749f6c0fc99167e35ae2c58038891',1,'AlpineManager']]],
+  ['type_5fm_10',['type_m',['../structippl_1_1preconditioner.html#a5539cc2d97e30473afcbc9e55e175503',1,'ippl::preconditioner']]]
 ];

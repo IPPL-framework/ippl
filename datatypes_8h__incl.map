@@ -2,9 +2,9 @@
 <area shape="rect" id="node1" title=" " alt="" coords="1792,5,1880,31"/>
 <area shape="rect" id="node2" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="951,79,1169,119"/>
 <area shape="rect" id="node43" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1530,79,1718,119"/>
-<area shape="rect" id="node45" href="$P3MSolver_8h.html" title=" " alt="" coords="1954,86,2145,111"/>
-<area shape="rect" id="node47" href="$PoissonCG_8h.html" title=" " alt="" coords="2477,86,2670,111"/>
-<area shape="rect" id="node50" href="$NullSolver_8h.html" title=" " alt="" coords="1743,86,1929,111"/>
+<area shape="rect" id="node45" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1954,79,2153,119"/>
+<area shape="rect" id="node47" href="$NullSolver_8h.html" title=" " alt="" coords="1743,86,1929,111"/>
+<area shape="rect" id="node48" href="$PoissonCG_8h.html" title=" " alt="" coords="2485,86,2678,111"/>
 <area shape="rect" id="node3" title=" " alt="" coords="1224,174,1459,199"/>
 <area shape="rect" id="node4" title=" " alt="" coords="5,174,237,199"/>
 <area shape="rect" id="node5" href="$Vector_8h.html" title=" " alt="" coords="1935,621,2044,647"/>
@@ -46,7 +46,7 @@
 <area shape="rect" id="node39" title=" " alt="" coords="1971,255,2067,280"/>
 <area shape="rect" id="node40" title=" " alt="" coords="2091,255,2213,280"/>
 <area shape="rect" id="node44" href="$FFTPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="1585,167,1773,207"/>
-<area shape="rect" id="node46" href="$P3MSolver_8hpp.html" title=" " alt="" coords="2541,174,2747,199"/>
-<area shape="rect" id="node48" href="$LaplaceHelpers_8h.html" title=" " alt="" coords="2771,174,2893,199"/>
-<area shape="rect" id="node49" href="$PCG_8h.html" title=" " alt="" coords="2917,174,3061,199"/>
+<area shape="rect" id="node46" href="$FFTTruncatedGreenPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="2542,167,2754,207"/>
+<area shape="rect" id="node49" href="$LaplaceHelpers_8h.html" title=" " alt="" coords="2779,174,2901,199"/>
+<area shape="rect" id="node50" href="$PCG_8h.html" title=" " alt="" coords="2925,174,3069,199"/>
 </map>

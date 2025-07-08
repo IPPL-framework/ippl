@@ -186,6 +186,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a344019e1a886e1148fc2834f714f0abb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6">prod</a> ()</td></tr>
 <tr class="separator:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeec70774adc80870d3f240c529423fd6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeec70774adc80870d3f240c529423fd6">applyPermutation</a> (const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;permutation)</td></tr>
+<tr class="memdesc:aeec70774adc80870d3f240c529423fd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sort the attribute according to a permutation.  <a href="classippl_1_1ParticleAttrib.html#aeec70774adc80870d3f240c529423fd6">More...</a><br /></td></tr>
+<tr class="separator:aeec70774adc80870d3f240c529423fd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdb471e503b50e7259ff4ee54bc078c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#abdb471e503b50e7259ff4ee54bc078c2">internalCopy</a> (const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;indices)</td></tr>
+<tr class="memdesc:abdb471e503b50e7259ff4ee54bc078c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy and create values of given indices.  <a href="classippl_1_1ParticleAttrib.html#abdb471e503b50e7259ff4ee54bc078c2">More...</a><br /></td></tr>
+<tr class="separator:abdb471e503b50e7259ff4ee54bc078c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7fcae16912897c88dec544afea3563c"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT , typename policy_type &gt; </td></tr>
 <tr class="memitem:ae7fcae16912897c88dec544afea3563c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae7fcae16912897c88dec544afea3563c">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; PT, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, policy_type iteration_policy, <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> hash_array) const</td></tr>
 <tr class="separator:ae7fcae16912897c88dec544afea3563c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -359,6 +365,36 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aeec70774adc80870d3f240c529423fd6" name="aeec70774adc80870d3f240c529423fd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeec70774adc80870d3f240c529423fd6">&#9670;&#160;</a></span>applyPermutation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::applyPermutation </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>permutation</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sort the attribute according to a permutation. </p>
+<p >This function sorts the attribute according to a given permutation such that afterward attr(permutation(i)) = attr(i).</p>
+<dl class="section note"><dt>Note</dt><dd>this cannot be done inplace and is not very cache efficient</dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">permutation</td><td>The permutation to apply </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a245c7868a65cc159d2107c89be7d9728" name="a245c7868a65cc159d2107c89be7d9728"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a245c7868a65cc159d2107c89be7d9728">&#9670;&#160;</a></span>create()</h2>
 
@@ -612,6 +648,35 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="abdb471e503b50e7259ff4ee54bc078c2" name="abdb471e503b50e7259ff4ee54bc078c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdb471e503b50e7259ff4ee54bc078c2">&#9670;&#160;</a></span>internalCopy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::internalCopy </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>indices</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Copy and create values of given indices. </p>
+<p >This functions creates new particles with the values copied from the given indices. The values will be at the highest new indices.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">indices</td><td>The indices to copy. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
