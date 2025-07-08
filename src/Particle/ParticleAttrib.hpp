@@ -220,8 +220,8 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::applyPermutation(
         const hash_type& permutation) {
 
-        auto view = this->getView();
-        auto size = *(this->localNum_mp);
+        const auto view = this->getView();
+        const auto size = this->getParticleCount();
 
         view_type temp("copy", size);
 
@@ -242,7 +242,7 @@ namespace ippl {
         create(copySize);
 
         auto view = this->getView();
-        auto size = *(this->localNum_mp);
+        const auto size = this->getParticleCount();
 
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
