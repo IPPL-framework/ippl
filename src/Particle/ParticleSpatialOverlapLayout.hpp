@@ -142,6 +142,8 @@ namespace ippl {
 
         template <typename ParticleContainer, typename index_type>
         inline void copyAttributes(ParticleContainer& pc, const index_type& boundaryIndices) {
+            const auto numLoc               = pc.getLocalNum();
+            const auto numBoundaryParticles = boundaryIndices.size();
             detail::runForAllSpaces([&]<typename MemorySpace>() {
                 size_t numAttributesInSpace = 0;
                 pc.template forAllAttributes<MemorySpace>(
@@ -159,6 +161,11 @@ namespace ippl {
                     });
             });
             Kokkos::fence();
+            /* make sure other functions (particleExchange and buildCells) know about the ghost
+             * particles. They will not stay pc's particle as their positions are outside the global
+             * domain but are needed as ghost particles.
+             */
+            pc.setLocalNum(numLoc + numBoundaryParticles);
         }
     }  // namespace detail
 
@@ -217,7 +224,7 @@ namespace ippl {
 
         /* Step 3. copy given particles and all its attributes. A separate function is needed as
          * lambdas with captures do not work with nvcc and template default argument ot the layout
-         * somehow.
+         * somehow. NOTE numLoc will change after this call.
          */
         detail::copyAttributes(pc, boundaryIndices);
 
@@ -239,11 +246,6 @@ namespace ippl {
                 });
         }
 
-        /* make sure following functions (particleExchange and buildCells) know about the ghost
-         * particles. They will not stay pc's particle as their positions are outside the global
-         * domain but will be ghost particles.
-         */
-        pc.setLocalNum(numLoc + numBoundaryParticles);
         IpplTimings::stopTimer(timer);
     }
 
