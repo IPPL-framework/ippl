@@ -1,3 +1,12 @@
+//
+// Class ParticleInteractionBase
+//   Base class for all particle-particle interactions.
+//
+//   Inheriting classes need to implement solve(), which evaluates all pairwise interactions between
+//   particles. These (short-range) interaction happen on the particle container and its attributes
+//   and not on a field.
+//
+
 #ifndef IPPL_PARTICLEINTERACTIONBASE_H
 #define IPPL_PARTICLEINTERACTIONBASE_H
 

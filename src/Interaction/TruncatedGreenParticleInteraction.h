@@ -1,3 +1,13 @@
+//
+// Class TruncatedGreenParticleInteraction
+//   This class implements the short range interaction part of the green function splitting:
+//   forceConstant * (1 - erf(alpha * r)) / r. The long range part is handled by
+//   FFTTruncatedGreenPeriodicSolver.
+//
+//   It assumes that ParticleContainer implements a function forAllPairs() to iterate over all
+//   relevant particle pairs.
+//
+
 #ifndef IPPL_TRUNCATEDGREEN_SHORTRANGE_H
 #define IPPL_TRUNCATEDGREEN_SHORTRANGE_H
 
@@ -24,7 +34,7 @@ namespace ippl {
     public:
         /*!
          * @param pc Particle container
-         * @param F Force attribute, where the evaluated force will be added to
+         * @param F Field attribute, where the evaluated field will be added to
          * @param R Position attribute
          * @param QM Charge or Mass like attribute determining the force magnitued
          * @param params Parameters, containing at least 'alpha', 'force_constant' and 'rcut'. alpha
