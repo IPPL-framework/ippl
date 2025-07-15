@@ -1,3 +1,20 @@
+namespace Kokkos { //reduction identity must be defined in Kokkos namespace
+    template<>
+    struct reduction_identity< ippl::Vector<double, 3> > {
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<double, 3> sum() {
+	  return ippl::Vector<double, 3>();
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<double, 3> max() {
+	  return ippl::Vector<double, 3>();
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<double, 3> min() {
+	  return ippl::Vector<double, 3>();
+        }
+        KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<double, 3> prod() {
+	  return ippl::Vector<double, 3>();
+        }
+    };
+}
 //
 // Class ParticleAttrib
 //   Templated class for all particle attribute classes.

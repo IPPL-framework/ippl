@@ -13,6 +13,23 @@ namespace ippl {
         struct isExpression<Vector<T, Dim>> : std::true_type {};
     }  // namespace detail
 
+
+    template <typename T, unsigned Dim>
+        KOKKOS_INLINE_FUNCTION bool operator<(const Vector<T, Dim>& lhs, const Vector<T, Dim>& rhs) {
+        for (unsigned i = 0; i < Dim; ++i) {
+            if (!(lhs[i] < rhs[i])) return false;
+        }
+        return true;
+    }
+
+        template <typename T, unsigned Dim>
+        KOKKOS_INLINE_FUNCTION bool operator>(const Vector<T, Dim>& lhs, const Vector<T, Dim>& rhs) {
+        for (unsigned i = 0; i < Dim; ++i) {
+            if (!(lhs[i] > rhs[i])) return false;
+        }
+        return true;
+    }
+    
     template <typename T, unsigned Dim>
     template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
@@ -141,7 +158,7 @@ namespace ippl {
     template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator-=(const T& val) {
         return this->operator+=(-val);
-    }
+    }    
 
     template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<T, Dim>& Vector<T, Dim>::operator*=(const T& val) {

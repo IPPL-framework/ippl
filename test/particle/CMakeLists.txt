@@ -15,6 +15,11 @@ add_ippl_integration_test(PICnd
     ARGS 128 128 128 10000 10 --info 10
 )
 
+add_ippl_integration_test(attribute-reduction                   
+    LABELS attribute reduction
+    ARGS 10000  --info 5
+)
+
 add_ippl_integration_test(benchmarkParticleUpdate 
   LABELS integration particle
   ARGS 128 128 128 10000 10 --info 10
