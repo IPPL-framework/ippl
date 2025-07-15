@@ -341,9 +341,10 @@ public:
 			     // If this index is the "conjugate partner" (lexicographically larger), flip the imaginary sign
 			     val_im = -val_im;
 			   }
-			   if (((i*100)+(j*10)+k)<5) {
-			     Kokkos::printf("Gauss: vre= %g, vim= %g \n",val_re,val_im);
-			   }
+#ifdef KOKKOS_PRINT		   			   
+			   Kokkos::printf("Gauss: vre= %g, vim= %g \n",val_re,val_im);
+#endif
+		    
 			   // Assign the complex value to this local mode
 			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
                            }
@@ -402,10 +403,11 @@ public:
 			     : I * (k_comp / k2) * delta;
 			   
 			   ippl::apply(view, idx) = result;
-
-			   if (((i*100)+(j*10)+k)<5) {
-			     Kokkos::printf("mult by -I: vre= %g, vim= %g \n",result.real(),result.imag());
-			   }
+#ifdef KOKKOS_PRINT		   
+			   Kokkos::printf("delta        re= %g,  im= %g \n",delta.real(),delta.imag());
+			   Kokkos::printf("k2           k2= %g          \n",k2);
+			   Kokkos::printf("mult by -I: vre= %g, vim= %g \n",result.real(),result.imag());
+#endif	
 
 			 });
 	// Inverse FFT to real space
@@ -428,14 +430,20 @@ public:
 			       unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
 			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) + disp;
 			       vView(n)[dim] = disp;
-			       if (n<5) {
-				 Kokkos::printf("WorldCo: d=%i, r= %g, v= %g \n",dim,rView(n)[dim],vView(n)[dim]);
-			       }
-
 			     });
-	
 	IpplTimings::stopTimer(posvelInitTimer);
     }
+
+#ifdef KOKKOS_PRINT		   
+    index_type n_local = static_cast<index_type>( rView.extent(0) );
+    Kokkos::parallel_for(
+			 "PrintComputeWorldCoordinates", n_local, KOKKOS_LAMBDA(const index_type n) {
+			   Kokkos::printf("WorldCo: i=%i t x=%g \t y=%g \t z=%g \t vx=%g \t vy=%g \t vz=%g\n", n,
+					  rView(n)[0], rView(n)[1], rView(n)[2], vView(n)[0], vView(n)[1],
+					  vView(n)[2]);
+			 });
+#endif
+    
   }
 
   /**
@@ -1328,7 +1336,11 @@ void gravity_potential(){
         static IpplTimings::TimerRef updateTimer         = IpplTimings::getTimer("update");
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
+	
+	Inform msg("LF ", INFORM_ALL_NODES );
 
+	//	msg << "max(r)= " << max(pc->R) << endl; 
+	
         // Time step size is calculated according to Blanca's thesis:
         // "For the cosmological simulations, it was decided to adjust the timestep to the expansion
         // of the universe. Instead of using a fixed ∆t, a fixed ∆ log a was implemented."

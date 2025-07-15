@@ -313,6 +313,8 @@ public:
         Vector_t<double, Dim> rmax               = rmax_m;
         Vector_t<double, Dim> hr                 = hr_m;
 
+	//	mes << "Rmin= " << R->min() << endl;
+	
         scatter(*m, *rho, *R);
         double relError = std::fabs((M_m - (*rho).sum()) / M_m);
 
