@@ -22,6 +22,8 @@ install(FILES
     ParticleLayout.hpp
     ParticleSpatialLayout.h
     ParticleSpatialLayout.hpp
+    ParticleSpatialOverlapLayout.h
+    ParticleSpatialOverlapLayout.hpp
     DESTINATION include/Particle
 )
 
