@@ -21,7 +21,7 @@ namespace ippl {
             : DPhiInvT(DPhiInvT)
             , absDetDPhi(absDetDPhi) {}
 
-        KOKKOS_FUNCTION const auto operator()(
+        KOKKOS_FUNCTION auto operator()(
             const size_t& i, const size_t& j,
             const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
             return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
@@ -126,7 +126,7 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
+            EvalFunctor<Tlhs, Dim, LagrangeType::numElementDOFs> poissonEquationEval(
                 DPhiInvT, absDetDPhi);
 
             // get BC type of our RHS
@@ -260,7 +260,7 @@ namespace ippl {
          */
         template <typename F>
         Tlhs getL2Error(const F& analytic) {
-            Tlhs error_norm = this->lagrangeSpace_m.computeError(*(this->lhs_mp), analytic);
+            Tlhs error_norm = this->lagrangeSpace_m.computeErrorL2(*(this->lhs_mp), analytic);
             return error_norm;
         }
 
