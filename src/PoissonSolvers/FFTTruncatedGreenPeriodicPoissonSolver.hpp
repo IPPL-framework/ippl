@@ -1,11 +1,10 @@
 //
-// Class P3MSolver
+// Class FFTTruncatedGreenPeriodicPoissonSolver
 //   Poisson solver for periodic boundaries, based on FFTs.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //   Uses a convolution with a Green's function given by:
-//      G(r) = ke * erf(alpha * r) / r,
-//   where ke = Coulomb constant,
+//      G(r) = forceConstant * erf(alpha * r) / r,
 //         alpha = controls long-range interaction.
 //
 //
@@ -16,45 +15,45 @@ namespace ippl {
     // constructor and destructor
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver()
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-        setDefaultParameters();
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-        setDefaultParameters();
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
 
         this->params_m.merge(params);
         this->params_m.update("output_type", Base::SOL);
 
-        this->setRhs(rhs);
+        FFTTruncatedGreenPeriodicPoissonSolver::setRhs(rhs);
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    P3MSolver<FieldLHS, FieldRHS>::P3MSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
         , layoutComplex_m(nullptr) {
-        setDefaultParameters();
+        FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters();
 
         this->params_m.merge(params);
 
         this->setLhs(lhs);
-        this->setRhs(rhs);
+        FFTTruncatedGreenPeriodicPoissonSolver::setRhs(rhs);
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::setRhs(rhs_type& rhs) {
         Base::setRhs(rhs);
         initializeFields();
     }
@@ -63,8 +62,8 @@ namespace ippl {
     // initializeFields method, called in constructor
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::initializeFields() {
-        static_assert(Dim == 3, "Dimension other than 3 not supported in P3MSolver!");
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
+        static_assert(Dim == 3, "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
 
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
@@ -188,7 +187,7 @@ namespace ippl {
     /////////////////////////////////////////////////////////////////////////
     // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::solve() {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 
@@ -305,18 +304,16 @@ namespace ippl {
     // calculate FFT of the Green's function
 
     template <typename FieldLHS, typename FieldRHS>
-    void P3MSolver<FieldLHS, FieldRHS>::greensFunction() {
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         grn_m = 0.0;
-
-        // define pi
-        Trhs pi = Kokkos::numbers::pi_v<Trhs>;
 
         // This alpha parameter is a choice for the Green's function
         // it controls the "range" of the Green's function (e.g.
-        // for the P3M collision modelling method, it indicates
+        // for the collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        Trhs alpha = 1e6;
+        const Trhs alpha = this->params_m. template get<Trhs>("alpha");
+        const Trhs forceConstant = this->params_m. template get<Trhs>("force_constant");
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);
@@ -342,7 +339,7 @@ namespace ippl {
                 const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
 
                 Trhs r        = Kokkos::real(Kokkos::sqrt(view(i, j, k)));
-                view(i, j, k) = (!isOrig) * (-1.0 / (4.0 * pi)) * (Kokkos::erf(alpha * r) / r);
+                view(i, j, k) = (!isOrig) * forceConstant * (Kokkos::erf(alpha * r) / r);
             });
 
         // perform the FFT of the Green's function for the convolution

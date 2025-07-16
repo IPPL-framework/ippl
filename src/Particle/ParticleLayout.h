@@ -73,6 +73,12 @@ namespace ippl {
             void setParticleBC(bc_container_type bcs) { bcs_m = bcs; }
 
             /*!
+             * Copy over the given boundary conditions.
+             * @param bcs are the boundary conditions
+             */
+            const bc_container_type& getParticleBC() const { return bcs_m; }
+
+            /*!
              * Use the same boundary condition on each face
              * @param bcs are the boundary conditions
              */
