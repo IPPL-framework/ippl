@@ -2,7 +2,7 @@ serial-unit-tests-and-coverage:
   extends: .test_template
   stage: test
   rules:
-    - if: '$RUN_COMPILE_JURECA == "true" || $RUN_ALL_TESTS == "true"'
+    - if: '$RUN_UNIT_TESTS == "true" || $RUN_ALL_TESTS == "true"'
   image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
   tags:
     - linux
