@@ -42,7 +42,7 @@ lcov --add-tracefile baseline.info --add-tracefile tests.info \
 
 log "Extracting main source code..."
 lcov --extract full_report.info "$CI_PROJECT_DIR/src/*" \
-     --output-file final_report.info >> "$LOG_FILE" 2>&1
+     --output-file final_report.info $LCOV_IGNORE_OPTS $LCOV_IGNORE_OPTS >> "$LOG_FILE" 2>&1
 
 
 log "Generating HTML report..."
@@ -50,7 +50,7 @@ genhtml final_report.info \
         --output-directory coverage_report \
         --prefix "$CI_PROJECT_DIR" \
         --ignore-errors source \
-        --rc genhtml_branch_coverage=1 >> "$LOG_FILE" 2>&1
+        --rc genhtml_branch_coverage=1 $LCOV_IGNORE_OPTS >> "$LOG_FILE" 2>&1
 
 
 log "Cleaning up intermediate files..."
