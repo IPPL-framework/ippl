@@ -27,6 +27,9 @@ function(add_ippl_test TEST_NAME)
 
     set(FINAL_LABELS unit ${TEST_LABELS})
 
+    set_property(TARGET ${TEST_NAME} PROPERTY
+             TEST_LAUNCHER
+             "${MPIEXEC_EXECUTABLE};${MPIEXEC_NUMPROC_FLAG};4")
 
     gtest_discover_tests(${TEST_NAME}
         DISCOVERY_MODE PRE_TEST
