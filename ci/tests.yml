@@ -12,7 +12,7 @@ variables:
     options: ["true", "false"]
     description: "Run the serial unit tests and generate coverage."
   RUN_COMPILE_GCC_DEBUG:
-    value: "false"
+    value: "true"
     options: ["true", "false"]
     description: "Run the GCC debug compilation test."
   RUN_COMPILE_GCC_RELEASE:
