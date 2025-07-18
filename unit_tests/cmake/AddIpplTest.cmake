@@ -31,7 +31,7 @@ function(add_ippl_test TEST_NAME)
 
     add_test(
       NAME ${TEST_NAME}
-      COMMAND ${MPIEXEC_EXECUTABLE};${MPIEXEC_NUMPROC_FLAG};${TEST_NUM_PROCS} $<TARGET_FILE:${TEST_NAME}>
+      COMMAND ${MPIEXEC_EXECUTABLE};${MPIEXEC_NUMPROC_FLAG};${TEST_NUM_PROCS} "--allow-run-as-root" $<TARGET_FILE:${TEST_NAME}>
     )
 
     set(FINAL_LABELS unit ${TEST_LABELS})
