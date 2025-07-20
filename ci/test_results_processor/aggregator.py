@@ -1,5 +1,6 @@
 from typing import List
 from .model import TestSuite, TestResult, PipelineResult
+from typing import Optional, Dict, Any
 
 def group_tests_by_suite(test_results: List[TestResult]) -> List[TestSuite]:
     """
@@ -23,11 +24,11 @@ def group_tests_by_suite(test_results: List[TestResult]) -> List[TestSuite]:
     # Create TestSuite objects
     return [TestSuite(name=name, tests=tests) for name, tests in suites.items()]
 
-def aggregate_pipeline(pipeline_id: str, test_results: List[TestResult]) -> PipelineResult:
+def aggregate_pipeline(pipeline_id: str, test_results: List[TestResult], metadata: Optional[Dict[str, Any]]) -> PipelineResult:
     """
     Aggregate a list of TestResults into a PipelineResult.
     Group tests into suites and wrap everything into PipelineResult.
     """
     suites = group_tests_by_suite(test_results)
-    return PipelineResult(pipeline_id=pipeline_id, suites=suites)
+    return PipelineResult(pipeline_id=pipeline_id, suites=suites, metadata=metadata or {})
 

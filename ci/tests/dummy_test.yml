@@ -1,9 +1,0 @@
-dummy_test:
-  extends: .test_template
-  tags:
-    - test
-  image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
-  script:
-    - echo "Executing dummy test..."
-    - mv /results/272912/coverage "${CI_PROJECT_DIR}/results/${CI_PIPELINE_ID}"
-    - mv /results/272912/jobs/1423216/gcc-xml "${RESULTS_DIR}"
