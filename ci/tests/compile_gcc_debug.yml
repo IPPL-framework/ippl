@@ -21,7 +21,6 @@ compile-gcc-debug:
     TEST_RESULTS_DIR="${RESULTS_DIR}/${RESULTS_SUBDIR}/"
     mkdir -p "${TEST_RESULTS_DIR}"
 
-    printenv | sort
     
     # --- Compilation Step ---
     # The '|| true' ensures the CI script step doesn't fail if 'make' returns an error.
