@@ -19,7 +19,7 @@ struct EvalFunctor {
         : DPhiInvT(DPhiInvT)
         , absDetDPhi(absDetDPhi) {}
 
-    KOKKOS_FUNCTION const auto operator()(const size_t& i, const size_t& j,
+    KOKKOS_FUNCTION auto operator()(const size_t& i, const size_t& j,
                     const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
         return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
     }
@@ -32,6 +32,7 @@ protected:
 
 public:
     using value_t = T;
+    static constexpr unsigned dim = Dim;
 
     static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
 
@@ -44,6 +45,9 @@ public:
     using BetterQuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
+
+    using LagrangeType = ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>;
+    using LagrangeTypeBetter = ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>;
 
     LagrangeSpaceTest()
         : ref_element()
@@ -78,11 +82,9 @@ public:
     MeshType symmetricMesh;
     const QuadratureType quadrature;
     const BetterQuadratureType betterQuadrature;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType> lagrangeSpace;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>
-        lagrangeSpaceBigger;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>
-        symmetricLagrangeSpace;
+    const LagrangeType lagrangeSpace;
+    const LagrangeType lagrangeSpaceBigger;
+    const LagrangeTypeBetter symmetricLagrangeSpace;
 };
 
 using Precisions = TestParams::Precisions;
@@ -382,7 +384,7 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
 
 TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
     auto& lagrangeSpace      = this->lagrangeSpace;
-    const std::size_t& dim   = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order = lagrangeSpace.order;
     using T                  = typename TestFixture::value_t;
 
@@ -396,7 +398,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                 ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(1, x), x, tolerance);
             }
         } else if (dim == 2) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -412,7 +414,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                 }
             }
         } else if (dim == 3) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -448,7 +450,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
 
 TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
     auto& lagrangeSpace      = this->lagrangeSpace;
-    const std::size_t& dim   = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order = lagrangeSpace.order;
     using T                  = typename TestFixture::value_t;
 
@@ -464,7 +466,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                 ASSERT_NEAR(grad_1[0], 1.0, tolerance);
             }
         } else if (dim == 2) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -493,7 +495,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                 }
             }
         } else if (dim == 3) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -564,24 +566,25 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using T         = typename TestFixture::value_t;
     using FieldType = typename TestFixture::FieldType;
     using BCType    = typename TestFixture::BCType;
+    using LagrangeType = typename TestFixture::LagrangeType;
 
     const auto& refElement           = this->ref_element;
     const auto& lagrangeSpace        = this->lagrangeSpaceBigger;
     auto mesh                        = this->biggerMesh;
-    const std::size_t& dim           = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order         = lagrangeSpace.order;
     const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
     if (order == 1) {
         // create layout
-        ippl::NDIndex<lagrangeSpace.dim> domain(
-            ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
+        ippl::NDIndex<dim> domain(
+            ippl::Vector<unsigned, dim>(mesh.getGridsize(0)));
 
         // specifies decomposition; here all dimensions are parallel
-        std::array<bool, lagrangeSpace.dim> isParallel;
+        std::array<bool, dim> isParallel;
         isParallel.fill(true);
 
-        ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
         FieldType x(mesh, layout, 1);
         FieldType z(mesh, layout, 1);
@@ -596,11 +599,11 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
         // 1. Define the eval function for the evaluateAx function
 
-        const ippl::Vector<std::size_t, lagrangeSpace.dim> zeroNdIndex =
-            ippl::Vector<std::size_t, lagrangeSpace.dim>(0);
+        const ippl::Vector<std::size_t, dim> zeroNdIndex =
+            ippl::Vector<std::size_t, dim>(0);
 
         // Inverse Transpose Transformation Jacobian
-        const ippl::Vector<T, lagrangeSpace.dim> DPhiInvT =
+        const ippl::Vector<T, dim> DPhiInvT =
             refElement.getInverseTransposeTransformationJacobian(
                 lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex));
 
@@ -609,7 +612,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex)));
 
         // Poisson equation eval function (based on the weak form)
-        EvalFunctor<T, lagrangeSpace.dim, lagrangeSpace.numElementDOFs> eval(DPhiInvT, absDetDPhi);
+        EvalFunctor<T, dim, LagrangeType::numElementDOFs> eval(DPhiInvT, absDetDPhi);
 
         if (dim == 1) {
             x = 1.25;
@@ -786,20 +789,20 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
-    const std::size_t& dim    = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order  = lagrangeSpace.order;
 
     if (order == 1) {
 
         // initialize the RHS field
-        ippl::NDIndex<lagrangeSpace.dim> domain(
-            ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
+        ippl::NDIndex<dim> domain(
+            ippl::Vector<unsigned, dim>(mesh.getGridsize(0)));
 
         // specifies decomposition; here all dimensions are parallel
-        std::array<bool, lagrangeSpace.dim> isParallel;
+        std::array<bool, dim> isParallel;
         isParallel.fill(true);
 
-        ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
         FieldType rhs_field(mesh, layout, 1);
         FieldType ref_field(mesh, layout, 1);
