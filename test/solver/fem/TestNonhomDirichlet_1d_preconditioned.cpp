@@ -109,8 +109,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     // set the parameters
     ippl::ParameterList params;
-    params.add("tolerance", 1e-7);
-    params.add("max_iterations", 5000);
+    params.add("tolerance", 1e-13);
+    params.add("max_iterations", 2000);
     // preconditioner params
     params.add("preconditioner_type", preconditioner_type);
     params.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
