@@ -8,6 +8,7 @@ file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding FEM solver integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestZeroBC_sin LABELS solver fem integration)
+add_ippl_integration_test(TestZeroBC_sin_preconditioned LABELS solver fem integration)
 add_ippl_integration_test(TestZeroBC_constant1d LABELS solver fem integration)
 add_ippl_integration_test(TestZeroBC_constant1d_preconditioned LABELS solver fem integration)
 add_ippl_integration_test(TestZeroBC_polynomial2d LABELS solver fem integration)
