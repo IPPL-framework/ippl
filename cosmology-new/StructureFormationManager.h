@@ -464,7 +464,6 @@ public:
     const auto& layout = this->fcontainer_m->getFL();
     const ippl::NDIndex<Dim>& lDom = layout.getLocalNDIndex();
   
-    const double tol = std::numeric_limits<double>::epsilon();
     const int nranks = ippl::Comm->size();
     const int myrank = ippl::Comm->rank();
   
@@ -491,7 +490,7 @@ public:
     Kokkos::parallel_reduce("isHermitian_countSends", mdp,
       KOKKOS_LAMBDA(const int i, const int j, const int k, int& isHermitianFlag)
       {
-
+        
         if (i==0 && j==0 && k==0) return; // skip k = (0,0,0)
 
 
@@ -527,7 +526,9 @@ public:
           Kokkos::complex<double> delta_k = field(li, lj, lk);
           Kokkos::complex<double> delta_neg_k = field(lni, lnj, lnk);
           auto delta_ck = Kokkos::conj(delta_k);
-
+          
+          // perform hermiticity check
+          constexpr double tol = Kokkos::Experimental::epsilon_v<double>;          
           if (Kokkos::abs(delta_neg_k.real()-delta_ck.real()) > tol ||
               Kokkos::abs(delta_neg_k.imag()-delta_ck.imag()) > tol) {
             isHermitianFlag = 0;
@@ -675,6 +676,9 @@ public:
         Kokkos::complex<double> delta_k = field(li, lj, lk);
         Kokkos::complex<double> delta_neg_k     = { p.re, p.im };
         auto delta_ck = Kokkos::conj(delta_k);
+        
+        // perform hermiticity check
+        constexpr double tol = Kokkos::Experimental::epsilon_v<double>;
 
         if (Kokkos::abs(delta_neg_k.real() - delta_ck.real()) > tol ||
             Kokkos::abs(delta_neg_k.imag() - delta_ck.imag()) > tol) {
