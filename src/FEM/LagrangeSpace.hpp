@@ -126,10 +126,10 @@ namespace ippl {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
 
         // Get all the global DOFs for the element
-        const Vector<size_t, this->numElementDOFs> global_dofs =
+        const Vector<size_t, numElementDOFs> global_dofs =
             this->getGlobalDOFIndices(elementIndex);
 
-        ippl::Vector<size_t, this->numElementDOFs> dof_mapping;
+        ippl::Vector<size_t, numElementDOFs> dof_mapping;
         if (Dim == 1) {
             dof_mapping = {0, 1};
         } else if (Dim == 2) {
@@ -182,7 +182,7 @@ namespace ippl {
                                                  FieldLHS, FieldRHS>::numElementDOFs>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                   FieldRHS>::getGlobalDOFIndices(const size_t& elementIndex) const {
-        Vector<size_t, this->numElementDOFs> globalDOFs(0);
+        Vector<size_t, numElementDOFs> globalDOFs(0);
 
         // get element pos
         indices_t elementPos = this->getElementNDIndex(elementIndex);
@@ -266,7 +266,7 @@ namespace ippl {
                                 FieldRHS>::point_t& localPoint) const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
-        assert(localDOF < this->numElementDOFs
+        assert(localDOF < numElementDOFs
                && "The local vertex index is invalid");  // TODO assumes 1st order Lagrange
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
@@ -303,7 +303,7 @@ namespace ippl {
         static_assert(Order == 1 && "Only order 1 is supported at the moment");
 
         // Assert that the local vertex index is valid.
-        assert(localDOF < this->numElementDOFs && "The local vertex index is invalid");
+        assert(localDOF < numElementDOFs && "The local vertex index is invalid");
 
         assert(this->ref_element_m.isPointInRefElement(localPoint)
                && "Point is not in reference element");
@@ -377,9 +377,9 @@ namespace ippl {
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -408,12 +408,12 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dof = this->getLocalDOFIndices();
-                const Vector<size_t, this->numElementDOFs> global_dofs =
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
-                Vector<indices_t, this->numElementDOFs> global_dof_ndindices;
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
-                for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                for (size_t i = 0; i < numElementDOFs; ++i) {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
@@ -421,11 +421,11 @@ namespace ippl {
                 size_t i, j;
 
                 // Element matrix
-                Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
 
                 // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
-                    for (j = 0; j < this->numElementDOFs; ++j) {
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
                         A_K[i][j] = 0.0;
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
@@ -438,7 +438,7 @@ namespace ippl {
                 indices_t I_nd, J_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
+                for (i = 0; i < numElementDOFs; ++i) {
                     I_nd = global_dof_ndindices[i];
 
                     // Handle boundary DOFs
@@ -459,7 +459,7 @@ namespace ippl {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
 
-                    for (j = 0; j < this->numElementDOFs; ++j) {
+                    for (j = 0; j < numElementDOFs; ++j) {
                         J_nd = global_dof_ndindices[j];
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
@@ -516,9 +516,9 @@ namespace ippl {
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
         // Gradients of the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<point_t, this->numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -539,12 +539,12 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dof = this->getLocalDOFIndices();
-                const Vector<size_t, this->numElementDOFs> global_dofs =
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
-                Vector<indices_t, this->numElementDOFs> global_dof_ndindices;
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
-                for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                for (size_t i = 0; i < numElementDOFs; ++i) {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
@@ -552,11 +552,11 @@ namespace ippl {
                 size_t i, j;
 
                 // Element matrix
-                Vector<Vector<T, this->numElementDOFs>, this->numElementDOFs> A_K;
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
 
                 // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
-                    for (j = 0; j < this->numElementDOFs; ++j) {
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
                         A_K[i][j] = 0.0;
                         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                             A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
@@ -569,7 +569,7 @@ namespace ippl {
                 indices_t I_nd, J_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
+                for (i = 0; i < numElementDOFs; ++i) {
                     I_nd = global_dof_ndindices[i];
 
                     // Skip if on a row of the matrix
@@ -582,7 +582,7 @@ namespace ippl {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
 
-                    for (j = 0; j < this->numElementDOFs; ++j) {
+                    for (j = 0; j < numElementDOFs; ++j) {
                         J_nd = global_dof_ndindices[j];
 
                         // Contribute to lifting only if on a boundary DOF
@@ -624,9 +624,9 @@ namespace ippl {
         const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
             }
         }
@@ -665,14 +665,14 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
-                const Vector<size_t, this->numElementDOFs> global_dofs =
+                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
 
                 size_t i, I;
 
                 // 1. Compute b_K
-                for (i = 0; i < this->numElementDOFs; ++i) {
+                for (i = 0; i < numElementDOFs; ++i) {
                     I = global_dofs[i];
 
                     // TODO fix for higher order
@@ -688,7 +688,7 @@ namespace ippl {
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         T val = 0;
-                        for (size_t j = 0; j < this->numElementDOFs; ++j) {
+                        for (size_t j = 0; j < numElementDOFs; ++j) {
                             // get field index corresponding to this DOF
                             size_t J           = global_dofs[j];
                             auto dof_ndindex_J = this->getMeshVertexNDIndex(J);
@@ -748,9 +748,9 @@ namespace ippl {
             this->quadrature_m.getIntegrationNodesForRefElement();
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
             }
         }
@@ -776,7 +776,7 @@ namespace ippl {
             "Compute error over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs =
+                const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
@@ -787,7 +787,7 @@ namespace ippl {
                         q[k]));
 
                     T val_u_h = 0;
-                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                    for (size_t i = 0; i < numElementDOFs; ++i) {
                         // get field index corresponding to this DOF
                         size_t I           = global_dofs[i];
                         auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
@@ -832,9 +832,9 @@ namespace ippl {
             this->quadrature_m.getIntegrationNodesForRefElement();
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
                 basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
             }
         }
@@ -860,14 +860,14 @@ namespace ippl {
             "Compute average over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, this->numElementDOFs> global_dofs =
+                const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                     T val_u_h = 0;
-                    for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                    for (size_t i = 0; i < numElementDOFs; ++i) {
                         // get field index corresponding to this DOF
                         size_t I           = global_dofs[i];
                         auto dof_ndindex_I = this->getMeshVertexNDIndex(I);

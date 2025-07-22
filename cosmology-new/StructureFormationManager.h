@@ -135,7 +135,7 @@ public:
      * @brief Pre-run setup for the simulation.
      */
     void pre_run() override {
-        Inform mes("Pre Run");
+        Inform msg("Pre Run");
 
         if (this->solver_m == "OPEN") {
             throw IpplException("StructureFormation",
@@ -168,14 +168,14 @@ public:
         double Vol =
             std::reduce(this->rmax_m.begin(), this->rmax_m.end(), 1., std::multiplies<double>());
         this->M_m = this->rho_crit0 * Vol * this->O_m;  // 1e10 M_Sun
-        mes << "total mass: " << this->M_m << endl;
-        mes << "mass of a single particle " << this->M_m / this->totalP_m << endl;
+        msg << "total mass: " << this->M_m << endl;
+        msg << "mass of a single particle " << this->M_m / this->totalP_m << endl;
 
         this->hr_m     = this->rmax_m / this->nr_m;
         this->origin_m = this->rmin_m;
         this->it_m     = 0;
 
-        mes << "Discretization:" << endl
+        msg << "Discretization:" << endl
             << "nt " << this->nt_m << ", Np = " << this->totalP_m << ", grid = " << this->nr_m
             << endl;
 
@@ -199,9 +199,12 @@ public:
         this->setLoadBalancer(std::make_shared<LoadBalancer_t>(
             this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m));
 
+	msg << "About to generate ... readICs_m= " << readICs_m << endl; 
+	
 	if (readICs_m) {
+	  msg << "Now read particles ..." << endl;
 	  readParticlesDomain();  // defines particle positions, velocities
-
+	  msg << "Read particles done" << endl;
 	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
 	  IpplTimings::startTimer(DummySolveTimer);
 
@@ -221,14 +224,27 @@ public:
 	  this->dump();
 	}
 	else {
+	  msg << "Create Particles" << endl; 
 	  ippl::ParameterList fftParams;
 	  fftParams.add("use_heffte_defaults", true);
 	  Cfft_m = std::make_unique<CFFT_type>(this->fcontainer_m->getFL(), fftParams);
 	  cfield_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
+	  msg << "Now create particles ..." << endl;
 	  createParticles();
+	  msg << "Create particles done   " << endl;
+          /**
+             calc statistics on the host for sanity check
+
+
+          auto rViewDevice  = this->pcontainer_m->R.getView();
+          auto rView = Kokkos::create_mirror_view(rViewDevice);
+          Kokkos::deep_copy(rView,rViewDevice);
+          auto rsum = sum(rViewDevice);
+          msg << "rsum= " << rsum << endl;
+	  */
 	}
-        mes << "Done";
+        msg << "pre_run done";
     }
 
 
@@ -240,7 +256,7 @@ public:
     // After creating the field layout (cfield_m) and determining global grid sizes Nx, Ny, Nz:
     Inform msg("LinearZeldoInitMP ");
     
-    typename CField_t::view_type& view = cfield_m.getView();
+    typename CField_t::view_type& view   = cfield_m.getView();
     typename RField_t::view_type& pkview = Pk_m.getView();
       
     auto rView = this->pcontainer_m->R.getView();
@@ -325,6 +341,9 @@ public:
 			     // If this index is the "conjugate partner" (lexicographically larger), flip the imaginary sign
 			     val_im = -val_im;
 			   }
+			   if (((i*100)+(j*10)+k)<5) {
+			     Kokkos::printf("Gauss: vre= %g, vim= %g \n",val_re,val_im);
+			   }
 			   // Assign the complex value to this local mode
 			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
                            }
@@ -337,9 +356,9 @@ public:
     IpplTimings::startTimer(hermiticityTimer);
 
     if (isHermitian()) {
-        msg << "Fourier density field is Hermitian." << endl;
+      msg << "Fourier density field is Hermitian." << endl;
     } else {
-        std::cerr << "Fourier density field is NOT Hermitian!" << std::endl;
+      msg << "Fourier density field is NOT Hermitian!" << endl;
     }
 
     IpplTimings::stopTimer(hermiticityTimer);
@@ -381,7 +400,13 @@ public:
 			   double k_comp = (dim == 0) ? kx : (dim == 1) ? ky : kz;
 			   Kokkos::complex<double> result = (k2 == 0.0) ? Kokkos::complex<double>(0.0, 0.0)
 			     : I * (k_comp / k2) * delta;
+			   
 			   ippl::apply(view, idx) = result;
+
+			   if (((i*100)+(j*10)+k)<5) {
+			     Kokkos::printf("mult by -I: vre= %g, vim= %g \n",result.real(),result.imag());
+			   }
+
 			 });
 	// Inverse FFT to real space
 	Cfft_m->transform(ippl::BACKWARD, cfield_m);
@@ -403,6 +428,10 @@ public:
 			       unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
 			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) + disp;
 			       vView(n)[dim] = disp;
+			       if (n<5) {
+				 Kokkos::printf("WorldCo: d=%i, r= %g, v= %g \n",dim,rView(n)[dim],vView(n)[dim]);
+			       }
+
 			     });
 	
 	IpplTimings::stopTimer(posvelInitTimer);
@@ -700,21 +729,25 @@ public:
 
     pc->update();
     m2a << "local number of galaxies after initializer " << pc->getLocalNum() << endl;
-
-
-    
-    /*  this was the old way of ding it i.e. mc4
-    indens();
-
-    test_reality();
-
-    gravity_potential();
-
-    set_particles();
-    */  
-
+    this->dumpParticles();
 
 }
+
+  /**
+     bbks  hardcoded TFFLAG==4
+
+   */
+
+  KOKKOS_FUNCTION static double bbks(double k, double kh_tmp) {
+    double qkh, t_f;
+   
+   if (k == 0.0) return(0.0);
+   qkh = k/kh_tmp;
+   t_f = Kokkos::log(1.0+2.34*qkh)/(2.34*qkh) * Kokkos::pow(1.0+3.89*qkh+
+	 Kokkos::pow(16.1*qkh, 2.0) + Kokkos::pow(5.46*qkh, 3.0) + Kokkos::pow(6.71*qkh, 4.0), -0.25);
+   return(t_f);
+
+  }
 
   /**
      hu_sugiyama hardcoded TFFLAG==2
@@ -760,7 +793,7 @@ public:
     const int nq=ngrid/2;
     const double tpiL=tpi/initializer::GlobalStuff::instance().box_size; // k0, physical units
 
-    // TFFlag == 2) Hu-Sugiyama transfer function
+/* TFFlag == 2) Hu-Sugiyama transfer function
     const double Omega_m = initializer::GlobalStuff::instance().Omega_m;
     const double Omega_bar = initializer::GlobalStuff::instance().Omega_bar;
     const double h = initializer::GlobalStuff::instance().Hubble;
@@ -768,13 +801,19 @@ public:
     const double akh2=pow(12.0*Omega_m*h*h, 0.424)*(1.0+pow(45.0*Omega_m*h*h, -0.582));
     const double alpha=pow(akh1, -1.0*Omega_bar/Omega_m)*pow(akh2, pow(-1.0*Omega_bar/Omega_m, 3.0));
     const double kh_tmp = Omega_m*h*Kokkos::sqrt(alpha);
+*/
+    // TFFlag == 4 BBKS  transfer function
+
+    const double Omega_m = initializer::GlobalStuff::instance().Omega_m;
+    const double h       = initializer::GlobalStuff::instance().Hubble;    
+    double kh_tmp        = Omega_m*h;
     
     /* Set P(k)=T^2*k^n array.
        Linear array, taking care of the mirror symmetry
        (reality condition for the density field). 
     */
     
-    msg << "Pulled all needed phyice quantities" << endl;
+    msg << "Pulled all needed physics quantities" << endl;
     msg << "kh_tmp= " << kh_tmp << " n_s= " << n_s << " tpiL= " << tpiL << endl;
     
     auto pkview                    = Pk_m.getView();
@@ -797,8 +836,8 @@ public:
 			 // without if but not sure if that is correct! 
 			 // k_k -= (k_k >= nq) * ngrid;
 			 
-			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);
-			 double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
+			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);			
+			 double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp); // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
 			 double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
 			 ippl::apply(pkview, args) = val;
 			 
@@ -814,7 +853,7 @@ public:
 			 */
 		       });
 
-    msg << "Pk created using hu_sugiyama TFFlag ==2" << endl;
+    msg << "Pk created using BBKS TFFlag ==4" << endl;
     
     double s8 = cosmo_m.Sigma_r(8.0, 1.0);                                                    
     const double norm = sigma8*sigma8/(s8*s8);                                                     
@@ -1097,124 +1136,7 @@ void gravity_potential(){
     msg << "Particle update done ... " << endl;
   } 
 
-
-  
-    /**
-     * @brief Read particle data from a file.
-     */
-    void readParticles() {
-        Inform mes("Reading Particles");
-
-        size_type nloc = this->totalP_m / ippl::Comm->size();
-        mes << "Local number of particles: " << nloc << endl;
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-        pc->create(nloc);
-        pc->m = this->M_m / this->totalP_m;
-
-        this->fcontainer_m->getRho() = 0.0;
-
-        // Load Balancer Initialisation
-        auto* mesh = &this->fcontainer_m->getMesh();
-        auto* FL   = &this->fcontainer_m->getFL();
-        if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
-            mes << "Starting first repartition" << endl;
-            this->isFirstRepartition_m = true;
-            this->loadbalancer_m->initializeORB(FL, mesh);
-            this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
-        }
-
-        static IpplTimings::TimerRef ReadingTimer = IpplTimings::getTimer("readData");
-        IpplTimings::startTimer(ReadingTimer);
-
-        std::ifstream file(this->folder + "Data.csv");
-
-        // Check if the file is opened successfully
-        if (!file.is_open()) {
-            std::cerr << "Error opening IC file!" << std::endl;
-        }
-
-        // Vector to store data read from the CSV file
-        std::vector<std::vector<double>> ParticlePositions;
-        std::vector<std::vector<double>> ParticleVelocities;
-        double MaxPos;
-        double MinPos;
-
-        // Read the file line by line
-        std::string line;
-        int i = 0;
-        while (std::getline(file, line)) {
-            std::stringstream ss(line);
-            if (i % ippl::Comm->size() == ippl::Comm->rank()) {
-                // Read each comma-separated value into the row vector
-                std::string cell;
-                int j = 0;
-                std::vector<double> PosRow;
-                std::vector<double> VelRow;
-                while (j < 6 && std::getline(ss, cell, ',')) {
-                    if (j < 3) {
-                        double Pos = std::stod(cell);
-                        PosRow.push_back(Pos);
-                        ++j;
-                        // Find Boundaries (x, y, z)
-                        if (i + j > ippl::Comm->rank()) {
-                            MaxPos = std::max(Pos, MaxPos);
-                            MinPos = std::min(Pos, MinPos);
-                        } else {  // very first input
-                            MaxPos = Pos;
-                            MinPos = Pos;
-                        }
-                    } else {
-                        double Vel = std::stod(cell);
-                        VelRow.push_back(Vel);
-                        ++j;
-                    }
-                }
-                ParticlePositions.push_back(PosRow);
-                ParticleVelocities.push_back(VelRow);
-            }
-            ++i;
-        }
-
-        // Boundaries of Particle Positions
-        mes << "Minimum Position: " << MinPos << endl;
-        mes << "Maximum Position: " << MaxPos << endl;
-        mes << "Defined maximum:  " << this->rmax_m << endl;
-
-        // Number of Particles
-        if (nloc != ParticlePositions.size()) {
-            std::cerr << "Error: Simulation number of particles does not match input!" << std::endl;
-            std::cerr << "Input N = " << ParticlePositions.size() << ", Local N = " << nloc
-                      << std::endl;
-        } else
-            // Particle positions and velocities, which are read in above from the initial
-            // conditions file, are assigned to the particle attributes R and V in the particle
-            // container.
-            mes << "successfully done." << endl;
-
-        auto R_host = pc->R.getHostMirror();
-        auto V_host = pc->V.getHostMirror();
-
-        double a = this->a_m;
-        for (unsigned int i = 0; i < nloc; ++i) {
-            R_host(i)[0] = ParticlePositions[i][0];
-            R_host(i)[1] = ParticlePositions[i][1];
-            R_host(i)[2] = ParticlePositions[i][2];
-            V_host(i)[0] = ParticleVelocities[i][0] * pow(a, 1.5);
-            V_host(i)[1] = ParticleVelocities[i][1] * pow(a, 1.5);
-            V_host(i)[2] = ParticleVelocities[i][2] * pow(a, 1.5);
-        }
-
-        Kokkos::fence();
-        ippl::Comm->barrier();
-        Kokkos::deep_copy(pc->R.getView(), R_host);
-        Kokkos::deep_copy(pc->V.getView(), V_host);
-        Kokkos::fence();
-        ippl::Comm->barrier();
-        IpplTimings::stopTimer(ReadingTimer);
-
-        // Since the particles have moved spatially update them to correct processors
-        pc->update();
-
+  /*
         bool isFirstRepartition              = false;
         std::shared_ptr<FieldContainer_t> fc = this->fcontainer_m;
         if (this->loadbalancer_m->balance(this->totalP_m)) {
@@ -1223,9 +1145,7 @@ void gravity_potential(){
             this->loadbalancer_m->repartition(FL, mesh, isFirstRepartition);
             printf("first repartition works \n");
         }
-
-        mes << "Assignment of positions and velocities done." << endl;
-    }
+  */
 
     /**
      * @brief Read particle data from a file and assign to the domain.
@@ -1513,6 +1433,38 @@ void gravity_potential(){
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
+
+  
+    void dumpParticles() {
+      // ADA
+      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+      auto rViewDevice  = pc->R.getView();
+      auto rView = Kokkos::create_mirror_view(rViewDevice);
+      auto vViewDevice  = pc->V.getView();
+      auto vView = Kokkos::create_mirror_view(vViewDevice);
+
+      if (ippl::Comm->rank() == 0) {
+	std::stringstream fname;
+	fname << this->folder + "/PhaseSpace_";
+	fname << ippl::Comm->size();
+	fname << ".csv";
+	Inform csvout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+	csvout.precision(16);
+	csvout.setf(std::ios::scientific, std::ios::floatfield);
+	csvout << "# x,y,z,vx,vy,vz" <<  endl;
+	
+	for (ippl::detail::size_type i=0; i<pc->getLocalNum(); i++)
+	  csvout << rView(i)[0] << " \t"
+		 << rView(i)[1] << " \t"
+		 << rView(i)[2] << " \t"
+		 << vView(i)[0] << " \t"
+		 << vView(i)[1] << " \t"
+		 << vView(i)[2] << endl;
+      }
+      ippl::Comm->barrier();      
+    }
+
+  
     /**
      * @brief Analyzes and logs the structure of the given field view.
      *

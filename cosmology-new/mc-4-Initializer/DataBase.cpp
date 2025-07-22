@@ -66,6 +66,11 @@ namespace initializer {
    if(!par.getByName("Omega_nu", Omega_nu))
        msg << "Error: Omega_nu not found!" << endl;
 
+   if(!par.getByName("Omega_r", Omega_r))
+     msg << "Error: Omega_r not found set Omega_r to zero!" << endl;
+   else
+     Omega_r = 0.0;
+   
    if(!par.getByName("Sigma_8", Sigma_8))
        msg << "Error: Sigma_8 not found!" << endl;
    

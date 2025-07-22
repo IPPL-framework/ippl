@@ -48,6 +48,8 @@ public :
   real Omega_m;    // Total matter fraction (today)
   real Omega_bar;  // Baryon fraction (today)
   real Omega_nu;   // neutrino fraction
+  real Omega_r;    // radiation fraction
+
   real Hubble;     // Hubble constant
   real Sigma_8;    // Mass RMS in 8Mpc/h spheres
   real n_s;        // Spectral index

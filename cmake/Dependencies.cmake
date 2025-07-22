@@ -33,7 +33,6 @@ message(STATUS "✅ Kokkos ready")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(Heffte_ENABLE_AVX2 OFF CACHE BOOL "" FORCE)
-    set(Heffte_ENABLE_CUDA OFF CACHE BOOL "" FORCE)
     message(STATUS "❗ Disabling AVX2 and CUDA in Debug build")
 endif()
 
@@ -109,4 +108,13 @@ if(IPPL_ENABLE_UNIT_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     message(STATUS "✅ GoogleTest loaded for unit tests.")
+endif()
+
+if(IPPL_ENABLE_TESTS)
+    set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
+    file(DOWNLOAD
+        https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h"
+    )
+    message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
 endif()
