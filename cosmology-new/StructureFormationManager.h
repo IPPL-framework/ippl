@@ -435,7 +435,7 @@ public:
     const auto& layout = this->fcontainer_m->getFL();
     const ippl::NDIndex<Dim>& lDom = layout.getLocalNDIndex();
   
-    const double tol = std::numeric_limits<double>::epsilon();
+    const double tol = Kokkos::Experimental::epsilon_v<double>;
     const int nranks = ippl::Comm->size();
     const int myrank = ippl::Comm->rank();
   
