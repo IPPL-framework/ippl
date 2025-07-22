@@ -14,7 +14,7 @@ jobs:
   check_permission:
     runs-on: ubuntu-latest
     if: >-
-        (github.repository_owner == 'JoMee') &&
+        (github.repository_owner == 'aaadelmann') &&
         ((github.event_name == 'push') ||
          (github.event_name == 'schedule') ||
          ((github.event_name == 'pull_request_target') &&
@@ -53,7 +53,7 @@ jobs:
   mirror_to_gitlab:
     runs-on: ubuntu-latest
     if: >-
-        (github.repository_owner == 'JoMee') &&
+        (github.repository_owner == 'aaadelmann') &&
         ((github.event_name == 'push') ||
          (github.event_name == 'schedule') ||
          ((github.event_name == 'pull_request_target') &&
