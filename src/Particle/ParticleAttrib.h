@@ -185,7 +185,7 @@ namespace ippl {
          *
          * @param permutation The permutation to apply
          */
-        void applyPermutation(const hash_type& permutation);
+        void applyPermutation(const hash_type& permutation) override;
 
         /*!
          * @brief Copy and create values of given indices.
@@ -195,7 +195,7 @@ namespace ippl {
          *
          * @param indices The indices to copy.
          */
-        void internalCopy(const hash_type& indices);
+        void internalCopy(const hash_type& indices) override;
 
     private:
         view_type dview_m;
