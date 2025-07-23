@@ -132,18 +132,12 @@ namespace ippl {
             FieldBC bcType = bcField[0]->getBCType();
 
             const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
-                // start a timer
-                static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
-                IpplTimings::startTimer(opTimer);
-
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
-
-                IpplTimings::stopTimer(opTimer);
 
                 return return_field;
             };

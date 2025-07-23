@@ -231,6 +231,12 @@ namespace ippl {
 
             (this->lhs_mp)->fillHalo();
 
+            // added for BCs to be imposed properly
+            // (they are not propagated through the preconditioner)
+            if (bcType == CONSTANT_FACE) {
+                bcField.assignGhostToPhysical(*(this->lhs_mp));
+            }
+
             IpplTimings::stopTimer(pcgTimer);
 
             int output = this->params_m.template get<int>("output_type");
