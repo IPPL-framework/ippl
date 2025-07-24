@@ -139,10 +139,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
-                // debug 
-                std::cout << "algoOp it:" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -158,17 +154,9 @@ namespace ippl {
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
 
-            // debug 
-            std::cout << "initial rhs going in:" << std::endl;
-            this->rhs_mp->write();
-
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
-
-            // debug 
-            std::cout << "lhs result::" << std::endl;
-            this->lhs_mp->write();
 
             IpplTimings::stopTimer(pcgTimer);
 

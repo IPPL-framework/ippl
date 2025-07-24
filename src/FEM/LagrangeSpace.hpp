@@ -1065,6 +1065,12 @@ namespace ippl {
                 }
             });
 
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
         // apply the inverse diagonal after already summed all contributions from element matrices
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         ippl::parallel_for("Loop over result view to apply inverse", field.getFieldRangePolicy(),
@@ -1076,11 +1082,8 @@ namespace ippl {
         IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
-            resultField.accumulateHalo();
             bcField.apply(resultField);
             bcField.assignGhostToPhysical(resultField);
-        } else {
-            resultField.accumulateHalo_noghost();
         }
 
         IpplTimings::stopTimer(evalAx);

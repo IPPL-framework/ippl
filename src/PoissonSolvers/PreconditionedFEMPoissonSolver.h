@@ -141,10 +141,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
-                // debug 
-                std::cout << "algoOp it:" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -155,10 +151,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_lower(field, poissonEquationEval);
-
-                // debug 
-                std::cout << "algoOp lower:" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -171,10 +163,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx_upper(field, poissonEquationEval);
 
-                // debug 
-                std::cout << "algoOp upper:" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -185,10 +173,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_upperlower(field, poissonEquationEval);
-
-                // debug 
-                std::cout << "algoOp upper lower:" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -201,10 +185,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx_inversediag(field, poissonEquationEval);
 
-                // debug 
-                std::cout << "algoOp inverse diag:" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -215,10 +195,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_diag(field, poissonEquationEval);
-
-                // debug 
-                std::cout << "algoOp diag:" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -250,18 +226,10 @@ namespace ippl {
             static IpplTimings::TimerRef pcgTimer = IpplTimings::getTimer("pcg");
             IpplTimings::startTimer(pcgTimer);
 
-            // debug 
-            std::cout << "initial rhs going in:" << std::endl;
-            this->rhs_mp->write();
-
             // run PCG -> lhs contains solution
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
             (this->lhs_mp)->fillHalo();
-
-            // debug 
-            std::cout << "lhs result::" << std::endl;
-            this->lhs_mp->write();
 
             // added for BCs to be imposed properly
             // (they are not propagated through the preconditioner)
