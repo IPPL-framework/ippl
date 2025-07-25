@@ -14,6 +14,7 @@ add_ippl_integration_test(TestZeroBC_constant1d_preconditioned LABELS solver fem
 add_ippl_integration_test(TestZeroBC_polynomial2d LABELS solver fem integration)
 add_ippl_integration_test(TestZeroBC_polynomial2d_preconditioned LABELS solver fem integration)
 add_ippl_integration_test(TestPeriodicBC_sin LABELS solver fem integration)
+add_ippl_integration_test(TestPeriodicBC_sin_preconditioned LABELS solver fem integration)
 add_ippl_integration_test(TestPeriodicBC_sinsin LABELS solver fem integration)
 add_ippl_integration_test(TestNonhomDirichlet_1d LABELS solver fem integration)
 add_ippl_integration_test(TestNonhomDirichlet_2d LABELS solver fem integration)

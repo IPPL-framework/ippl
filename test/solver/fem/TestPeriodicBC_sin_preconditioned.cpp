@@ -22,7 +22,7 @@
 #include "Ippl.h"
 
 #include "Meshes/Centering.h"
-#include "PoissonSolvers/FEMPoissonSolver.h"
+#include "PoissonSolvers/PreconditionedFEMPoissonSolver.h"
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
@@ -115,12 +115,29 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+    ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+
+    // parameters for the preconditioner
+    std::string preconditioner_type = "richardson";
+    int gauss_seidel_inner_iterations = 4;
+    int gauss_seidel_outer_iterations = 2;
+    int newton_level;
+    int chebyshev_degree;
+    int richardson_iterations = 4;
+    double ssor_omega = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 2000);
+    // preconditioner params
+    params.add("preconditioner_type", preconditioner_type);
+    params.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
+    params.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
+    params.add("newton_level", newton_level);
+    params.add("chebyshev_degree", chebyshev_degree);
+    params.add("richardson_iterations", richardson_iterations);
+    params.add("ssor_omega", ssor_omega);
     solver.mergeParameters(params);
 
     // solve the problem
