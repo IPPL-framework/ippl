@@ -2,6 +2,32 @@
 [![License](https://img.shields.io/github/license/IPPL-framework/ippl)](https://github.com/IPPL-framework/ippl/blob/master/LICENSE)
 
 # Independent Parallel Particle Layer (IPPL)
+
+## Table of Contents
+- [Independent Parallel Particle Layer (IPPL)](#independent-parallel-particle-layer-ippl)
+  - [Table of Contents](#table-of-contents)
+- [CI/CD](#cicd)
+- [Installing IPPL and its dependencies](#installing-ippl-and-its-dependencies)
+  - [Requirements](#requirements)
+    - [Optional requirements](#optional-requirements)
+  - [Compilation](#compilation)
+      - [None of the options have to be set explicitly, all have a default.](#none-of-the-options-have-to-be-set-explicitly-all-have-a-default)
+    - [Examples](#examples)
+      - [Serial debug build with tests and newest Kokkos](#serial-debug-build-with-tests-and-newest-kokkos)
+      - [OpenMP release build with alpine and FFTW](#openmp-release-build-with-alpine-and-fftw)
+      - [Cuda alpine release build](#cuda-alpine-release-build)
+      - [HIP release build (LUMI)](#hip-release-build-lumi)
+- [Contributions](#contributions)
+  - [Citing IPPL](#citing-ippl)
+- [Job scripts for running on Merlin and Gwendolen (at PSI)](#job-scripts-for-running-on-merlin-and-gwendolen-at-psi)
+  - [Merlin CPU (MPI + OpenMP)](#merlin-cpu-mpi--openmp)
+  - [Gwendolen GPU](#gwendolen-gpu)
+  - [LUMI GPU partition](#lumi-gpu-partition)
+- [Profiling IPPL MPI calls](#profiling-ippl-mpi-calls)
+- [Build Instructions](#build-instructions)
+  - [MERLIN 7 (PSI)](#merlin-7-psi)
+  - [ALPS (CSCS)](#alps-cscs)
+
 Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of Kokkos (https://github.com/kokkos/kokkos), HeFFTe (https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
 All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the `variant` header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the [GNU Standard Library](https://github.com/gcc-mirror/gcc); note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.
@@ -144,7 +170,7 @@ $ git remote add upstream git@github.com:IPPL-framework/ippl.git
 You can then easily pull by typing
 ```bash
 $ git pull upstream master
-````
+```
 All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please
 take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).
 
@@ -271,6 +297,63 @@ Here we compile links to recipies for easy build on various HPC systems.
 [IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
 
 ## ALPS (CSCS)
-comming soon
+Start by loading a `uenv` that contains most of the tools we want. Note that in future an `official` uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...
 
-Happy building!
+```bash
+uenv start --view=develop /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
+```
+or, look for a newer one and pick the one with the latest date in the name using
+```bash
+ls -al /capstor/scratch/cscs/biddisco/uenvs/gh200-opalx*.squashfs
+``` 
+At the time of writing, the uenv provides (as well as many other packages)
+```yaml
+cmake@4.1.1         ~doc+ncurses+ownlibs~qtgui 
+cray-mpich@9.0.0    +cuda+cxi~rocm 
+cuda@12.8.1         ~allow-unsupported-compilers~dev 
+eigen@3.4.0         ~ipo~nightly~rocm 
+fftw@3.3.10         +mpi~openmp~pfft_patches+shared 
+gcc@13.4.0          ~binutils+bootstrap~graphite~mold~nvptx~piclibs+profiled+strip 
+googletest@1.17.0   ~absl+gmock~ipo+pthreads+shared 
+gsl@2.8             ~external-cblas+pic+shared 
+h5hut@master        ~fortran+mpi 
+hdf5@1.14.6         +cxx~fortran+hl~ipo~java~map+mpi+shared~subfiling+szip~threadsafe+tools api=default 
+heffte@2.4.1        +cuda+fftw~fortran~ipo~magma~mkl~python~rocm+shared 
+hpctoolkit@2025.0.1 +cuda~docs~level_zero~mpi~opencl+papi~python~rocm~strip+viewer 
+hwloc@2.11.1        ~cairo~cuda~gl~level_zero~libudev~libxml2~nvml~opencl+pci~rocm 
+kokkos@4.7.00       ~aggressive_vectorization~alloc_async~cmake_lang~compiler_warnings+complex_align+cuda~cuda_constexpr~cuda_lambda~cuda_ldg_intrinsic~cuda_relocatable_device_code~cuda_uvm~debug~debug_bounds_check~debug_dualview_modify_check~deprecated_code~examples~hip_relocatable_device_code~hpx~hpx_async_dispatch~hwloc~ipo~memkind~numactl+openmp~openmptarget~pic~rocm+serial+shared~sycl~tests~threads~tuning+wrapper build_system=cmake build_type=Release cuda_arch=90 cxxstd=20 generator=make intel_gpu_arch=none 
+ninja@1.13.0        +re2c 
+```
+You can check what is inside the uenv by executing the command
+```bash
+# This will show all packages installed by spack (including any ones you might have installed yourself outside of a uenv)
+spack find -flv
+
+# use this to only show packages inside the uenv (ie. not any you have installed elsewhere)
+spack -C /user-environment/config find -flv
+```
+It is important to use the `--view=develop` when loading the uenv as this sets-up the paths to packages in the spack environment ready for you to use them (without needing to manually `spack load xxx` packages individually) (In fact it will also add `/user-environment/env/develop/` to your `CMAKE_PREFIX_PATH`) which makes cmake-built packages 'just work'. 
+
+To build, try the following which uses default CMake settings (`release-testing`) taken from `CMakeUserPresets.json` (in the root ippl source of the alps-cmake branch - it is not required to use this branch, but cmake support has been cleaned up)
+```bash
+ssh daint
+uenv start --view=develop /capstor/scratch/cscs/biddisco/uenvs/gh200-opalxgccmpich-2025-07-23.squashfs
+
+# clone IPPL
+mkdir -p $HOME/src/ippl
+cd $HOME/src
+git clone https://github.com/IPPL-framework/ippl
+
+# (optionally) checkout the alps-cmake branch since it is not yet merged to master
+cd $HOME/src/ippl
+git remote add biddisco https://github.com/biddisco/ippl.git
+git fetch biddisco alps-cmake
+git checkout alps-cmake
+
+# create a build dir
+mkdir -p $HOME/build/ippl
+cd $HOME/build/ippl
+
+# run cmake (note that ninja is available in the uenv and "cmake -G Ninja" can be used)
+cmake --preset=release-testing -DCMAKE_INSTALL_PREFIX=$HOME/apps/ippl -DCMAKE_CUDA_ARCHITECTURES=90 $HOME/src/ippl/
+```
