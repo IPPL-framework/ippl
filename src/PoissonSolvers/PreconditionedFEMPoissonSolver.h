@@ -141,10 +141,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
 
-                // debug
-                std::cout << "algoOp it" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -155,10 +151,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_lower(field, poissonEquationEval);
-
-                // debug
-                std::cout << "algoOp lower" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -171,10 +163,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx_upper(field, poissonEquationEval);
 
-                // debug
-                std::cout << "algoOp upper" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -185,10 +173,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_upperlower(field, poissonEquationEval);
-
-                // debug
-                std::cout << "algoOp upper-lower" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -201,10 +185,6 @@ namespace ippl {
 
                 auto return_field = lagrangeSpace_m.evaluateAx_inversediag(field, poissonEquationEval);
 
-                // debug
-                std::cout << "algoOp inverse diag" << std::endl;
-                return_field.write();
-
                 return return_field;
             };
 
@@ -215,10 +195,6 @@ namespace ippl {
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx_diag(field, poissonEquationEval);
-
-                // debug
-                std::cout << "algoOp diag" << std::endl;
-                return_field.write();
 
                 return return_field;
             };
@@ -253,25 +229,12 @@ namespace ippl {
             // run PCG -> lhs contains solution
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
-            (this->lhs_mp)->fillHalo();
-
             // added for BCs to be imposed properly
             // (they are not propagated through the preconditioner)
             if (bcType == CONSTANT_FACE) {
                 bcField.assignGhostToPhysical(*(this->lhs_mp));
             }
-
-            // debug 
-            if (ippl::Comm->rank() == 0) {
-                std::cout << "lhs result rank 0" << std::endl;
-                this->lhs_mp->write();
-            }
-            ippl::Comm->barrier();
-            if (ippl::Comm->rank() == 1) {
-                std::cout << "lhs result rank 1" << std::endl;
-                this->lhs_mp->write();
-            }
-            ippl::Comm->barrier();
+            (this->lhs_mp)->fillHalo();
 
             IpplTimings::stopTimer(pcgTimer);
 
