@@ -224,15 +224,16 @@ public:
 	  this->dump();
 	}
 	else {
-	  msg << "Create Particles" << endl; 
 	  ippl::ParameterList fftParams;
 	  fftParams.add("use_heffte_defaults", true);
 	  Cfft_m = std::make_unique<CFFT_type>(this->fcontainer_m->getFL(), fftParams);
 	  cfield_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
-	  msg << "Now create particles ..." << endl;
 	  createParticles();
 	  msg << "Create particles done   " << endl;
+	  msg << "max(r)= " << this->pcontainer_m->R.max() << endl;
+	  msg << "min(r)= " << this->pcontainer_m->R.min() << endl; 
+	  
           /**
              calc statistics on the host for sanity check
 
@@ -251,6 +252,7 @@ public:
   /**
      * @brief 
      */
+#define KOKKOS_PRINT 
   
   void LinearZeldoInitMP() {
     // After creating the field layout (cfield_m) and determining global grid sizes Nx, Ny, Nz:
@@ -274,12 +276,17 @@ public:
     const int Nx = this->nr_m[0];
     const int Ny = this->nr_m[1];
     const int Nz = this->nr_m[2];
+    const unsigned int nx = lDom[0].length();
+    const unsigned int ny = lDom[1].length();
+    const Vector_t<double,3> hr = this->hr_m;
     const double Lx = this->rmax_m[0];
     const double Ly = this->rmax_m[1];
     const double Lz = this->rmax_m[2];
 
-    static IpplTimings::TimerRef fourDenTimer = IpplTimings::getTimer("Fourier Density");
-    IpplTimings::startTimer(fourDenTimer);
+    msg << "Lx= " << Lx << " Ly= " << Ly << " Lz= " << Lz << endl;
+    msg << "Nx= " << Nx << " Ny= " << Ny << " Nz= " << Nz << endl;
+    msg << "h = " << this->hr_m << endl;
+    
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
     ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(view, ngh),
 		       KOKKOS_LAMBDA(const index_array_type& idx) {
@@ -328,8 +335,7 @@ public:
 			   double theta = 2.0 * pi * u2;
 			   double gauss_re = R * Kokkos::cos(theta);   // Gaussian(0,1) for real part
 			   double gauss_im = R * Kokkos::sin(theta);   // Gaussian(0,1) for imaginary part
-			   double Pk = 1;
-                           // double Pk = ippl::apply(pkview, idx);       // power spectrum P(k) 
+                           double Pk = ippl::apply(pkview, idx);       // power spectrum P(k) 
 			   // Set amplitude: for self-conjugate modes use sqrt(Pk), otherwise sqrt(Pk/2)
 			   double amp = self ? Kokkos::sqrt(Pk) : Kokkos::sqrt(Pk / 2.0);
 			   double val_re = amp * gauss_re;
@@ -342,81 +348,95 @@ public:
 			     val_im = -val_im;
 			   }
 #ifdef KOKKOS_PRINT		   			   
-			   Kokkos::printf("Gauss: vre= %g, vim= %g \n",val_re,val_im);
+			   Kokkos::printf("rho1 %g %g \n",val_re,val_im);
 #endif
-		    
 			   // Assign the complex value to this local mode
 			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
-                           }
+			 }
 		       });
 
-    IpplTimings::stopTimer(fourDenTimer);
-
-    // Check whether the generated density field is Hermitian before proceeding
-    static IpplTimings::TimerRef hermiticityTimer = IpplTimings::getTimer("Hermiticity Timer");     
-    IpplTimings::startTimer(hermiticityTimer);
-
-    if (isHermitian()) {
-      msg << "Fourier density field is Hermitian." << endl;
-    } else {
-      msg << "Fourier density field is NOT Hermitian!" << endl;
-    }
-
-    IpplTimings::stopTimer(hermiticityTimer);
-
-    static IpplTimings::TimerRef fourDisplTimer = IpplTimings::getTimer("Fourier Displacement");
     // Store delta(k) for reuse 
-    auto tmpcfield = cfield_m; 
+    auto tmpcfield = cfield_m.deepCopy(); 
     typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
+
+    /*
+    ippl::parallel_for("InitDeltaField2", ippl::getRangePolicy(viewtmpcfield, ngh),
+                       KOKKOS_LAMBDA(const index_array_type& idx) {
+                         Kokkos::complex<double> x = ippl::apply(viewtmpcfield, idx);
+                         Kokkos::printf("rho2 %g %g \n", x.real(), x.imag());
+                       });
+
+
+    ippl::parallel_for("InitDeltaField2", ippl::getRangePolicy(view, ngh),
+                       KOKKOS_LAMBDA(const index_array_type& idx) {
+                         Kokkos::complex<double> x = ippl::apply(view, idx);
+                         Kokkos::printf("rho3 %g %g \n", x.real(), x.imag());
+                       });
+
+    */
+
+    
     /*
       Now we can delete Pk and allocate the particles
 
     */
 
-    const unsigned int nx = lDom[0].length();
-    const unsigned int ny = lDom[1].length();
-    const Vector_t<double,3> hr = this->hr_m;
+
     // 2–4. Loop over displacement components x(0), y(1), z(2)
+    double xx,yy,zz;
+    int nq = Nx/2;
+
     for (int dim = 0; dim < 3; ++dim) {
-      IpplTimings::startTimer(fourDisplTimer);
+      switch (dim) {
+      case 0:
+	xx = 1.0;
+	yy = 0.0;
+	zz = 0.0;
+	break;
+      case 1:
+	xx = 0.0;
+	yy = 1.0;
+	zz = 0.0;
+	break;
+      case 2:
+	xx = 0.0;
+	yy = 0.0;
+	zz = 1.0;
+	break;
+      }
+      
       // Compute displacement component in k-space
-      ippl::parallel_for("ComputeDisplacementComponentK", ippl::getRangePolicy(view, ngh),
-			 KOKKOS_LAMBDA(const index_array_type& idx) {
+      ippl::parallel_for("GradMultGreen", ippl::getRangePolicy(view, ngh),
+                         KOKKOS_LAMBDA(const index_array_type& idx){
 			   const double pi = Kokkos::numbers::pi_v<double>;
 			   int i = idx[0] - ngh + lDom[0].first();
 			   int j = idx[1] - ngh + lDom[1].first();
 			   int k = idx[2] - ngh + lDom[2].first();
-			   
-			   int kx_i = (i <= Nx / 2) ? i : i - Nx;
-			   int ky_i = (j <= Ny / 2) ? j : j - Ny;
-			   int kz_i = (k <= Nz / 2) ? k : k - Nz;
-			   
-			   double kx = 2.0 * pi * kx_i / Lx;
-			   double ky = 2.0 * pi * ky_i / Ly;
-			   double kz = 2.0 * pi * kz_i / Lz;
-			   double k2 = kx * kx + ky * ky + kz * kz;
-			   
-			   Kokkos::complex<double> delta = ippl::apply(viewtmpcfield, idx);
-			   Kokkos::complex<double> I(0.0, 1.0);
-			   double k_comp = (dim == 0) ? kx : (dim == 1) ? ky : kz;
-			   Kokkos::complex<double> result = (k2 == 0.0) ? Kokkos::complex<double>(0.0, 0.0)
-			     : I * (k_comp / k2) * delta;
-			   
-			   ippl::apply(view, idx) = result;
-#ifdef KOKKOS_PRINT		   
-			   Kokkos::printf("delta        re= %g,  im= %g \n",delta.real(),delta.imag());
-			   Kokkos::printf("k2           k2= %g          \n",k2);
-			   Kokkos::printf("mult by -I: vre= %g, vim= %g \n",result.real(),result.imag());
-#endif	
 
+			   int k_i = (i >= nq) ? -(nq-i % nq) : i;
+			   int k_j = (j >= nq) ? -(nq-j % nq) : j;
+			   int k_k = (k >= nq) ? -(nq-k % nq) : k;
+			   
+			   int k2 = k_i * k_i + k_j * k_j + k_k * k_k;
+			   double Grad = -2*pi/Nx*(k_i*xx+k_j*yy+k_k*zz);
+			   double kk = 2*pi/Nx*sqrt(k2);
+			   double Green = (kk!=0.0) ? -1.0/(kk*kk) : 0.0;
+			   
+			   Kokkos::complex<double> tmp = ippl::apply(tmpcfield, idx);
+			   Kokkos::complex<double> res (-Grad * Green * tmp.imag(), Grad * Green * tmp.real());
+			   ippl::apply(view, idx) = res;
+			   Kokkos::printf("feval: %i %g %g %g %g %g  %g \n", dim, Grad, Green, tmp.imag(), tmp.real(), res.real(), res.imag());
 			 });
-	// Inverse FFT to real space
+
+      // Inverse FFT to real space
 	Cfft_m->transform(ippl::BACKWARD, cfield_m);
-	IpplTimings::stopTimer(fourDisplTimer);
 
-	static IpplTimings::TimerRef posvelInitTimer = IpplTimings::getTimer("Position/Velocity init");
-	IpplTimings::startTimer(posvelInitTimer);
-
+	ippl::parallel_for("rhoinvfft", ippl::getRangePolicy(view, ngh),
+			   KOKKOS_LAMBDA(const index_array_type& idx){
+			   Kokkos::complex<double> tmp = ippl::apply(view, idx);
+			   Kokkos::printf("rhoinvfft: %i %g %g \n", dim, tmp.real(), tmp.imag());
+                           });
+	
         // segfault fix : only loop over the cells you own
         index_type n_local = static_cast<index_type>( rView.extent(0) );
 
@@ -428,22 +448,21 @@ public:
 			       const unsigned int k = n / (nx * ny);
 			       double disp = view(i, j, k).real();
 			       unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
-			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) + disp;
+			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) ; //  + disp;
 			       vView(n)[dim] = disp;
 			     });
-	IpplTimings::stopTimer(posvelInitTimer);
     }
 
 #ifdef KOKKOS_PRINT		   
     index_type n_local = static_cast<index_type>( rView.extent(0) );
     Kokkos::parallel_for(
 			 "PrintComputeWorldCoordinates", n_local, KOKKOS_LAMBDA(const index_type n) {
-			   Kokkos::printf("WorldCo: i=%i t x=%g \t y=%g \t z=%g \t vx=%g \t vy=%g \t vz=%g\n", n,
+			   Kokkos::printf("WorldCo: x=%g , y=%g , z=%g , vx=%g , vy=%g , vz=%g\n",
 					  rView(n)[0], rView(n)[1], rView(n)[2], vView(n)[0], vView(n)[1],
 					  vView(n)[2]);
 			 });
 #endif
-    
+
   }
 
   /**
@@ -874,21 +893,20 @@ public:
 			 // without if but not sure if that is correct! 
 			 // k_k -= (k_k >= nq) * ngrid;
 			 
-			 double kk = tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);			
-			 double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp); // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
+			 double kk = 0.5*tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);			
+			 double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp);
+		      // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
 			 double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
 			 ippl::apply(pkview, args) = val;
 			 
-			 /* for debugging 
 			 int index = (k_i)
 			 + (k_j) * ldom[0].length()
 			 + (k_k) * ldom[0].length() * ldom[1].length();
-			 
+#ifdef KOKKOS_PRINT
 			 if ((k_i==0) && (k_j==0) && (k_k==0))
-			   printf("i \t j \t k \t index \t kk \t transf \t Pk \n");
-			   if ((k_i<2) && (k_j<2) && (k_k<2))
-			   printf("%d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
-			 */
+			   Kokkos::printf("Pk: i \t j \t k \t index \t kk \t transf \t Pk \n");
+			 Kokkos::printf("Pk: %d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
+#endif		
 		       });
 
     msg << "Pk created using BBKS TFFlag ==4" << endl;
@@ -1337,9 +1355,7 @@ void gravity_potential(){
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
 	
-	Inform msg("LF ", INFORM_ALL_NODES );
-
-	//	msg << "max(r)= " << max(pc->R) << endl; 
+	Inform msg("LF ");
 	
         // Time step size is calculated according to Blanca's thesis:
         // "For the cosmological simulations, it was decided to adjust the timestep to the expansion
@@ -1356,6 +1372,7 @@ void gravity_potential(){
 
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         std::shared_ptr<FieldContainer_t> fc    = this->fcontainer_m;
+
         // kick (update V)
         IpplTimings::startTimer(VTimer);
         d_kick = 1. / 4 * (1 / (H_i * a_i) + 1 / (H_half * a_half)) * this->Dloga;
