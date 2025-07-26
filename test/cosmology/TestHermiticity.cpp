@@ -87,7 +87,7 @@ using Vector_t = ippl::Vector<T, Dim>;
 using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
 
 /**
- * @brief Performs a multi-rank hermiticity test by initializing a
+ * @brief Performs a parallel hermiticity test by initializing a
  * Fourier field with two points at index k and -k which are each
  * others complex conjugate and then calling the isHermitian function
  * from the cosmology StructureFormationManager class.
@@ -152,7 +152,7 @@ void hermiticityTest1(Manager& manager)
     ippl::Comm->barrier();  
 
     if (myrank == 0) {
-        msg << "[1/4] Real Fourier field (Multi-Rank Init): "
+        msg << "[1/4] Real Fourier field : "
                   << (hermitian1 ? "TRUE" : "FALSE") << endl ;
     }
     
@@ -186,7 +186,7 @@ void hermiticityTest1(Manager& manager)
     auto hermitian2 = manager.isHermitian();
 
     if (myrank == 0) {
-        msg << "[2/4] Real Fourier field (Multi-Rank Init): "
+        msg << "[2/4] Real Fourier field : "
                   << (hermitian2 ? "TRUE" : "FALSE (expected)") << endl;
     }
     
@@ -194,7 +194,7 @@ void hermiticityTest1(Manager& manager)
 }
 
 /**
- * @brief Performs a multi-rank test by initializing a random gaussian field that fills
+ * @brief Performs a (parallel) test by initializing a random gaussian field that fills
  * the entire fourier space and then uses the isHermitian() function from the 
  * StructureFormationManager class to check hermiticity of this field.
  *
@@ -292,13 +292,13 @@ void hermiticityTest2(Manager& manager)
     auto hermitian3 = manager.isHermitian();
 
     if (myrank == 0) {
-        msg << "[3/4] Random Gaussian Field (Multi-Rank Init): "
+        msg << "[3/4] Random Gaussian Field : "
                   << (hermitian3 ? "TRUE" : "FALSE") << endl;
     }
     
     ippl::Comm->barrier(); 
     
-        // Clear the entire distributed field to zeros
+    // Clear the entire distributed field to zeros
     Kokkos::deep_copy(cview, Kokkos::complex<double>(0, 0));
 
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
@@ -370,7 +370,7 @@ void hermiticityTest2(Manager& manager)
     auto hermitian4 = manager.isHermitian();
     
     if (myrank == 0) {
-        msg << "[4/4] Random Gaussian Field (Multi-Rank Init): "
+        msg << "[4/4] Random Gaussian Field : "
                   << (hermitian4 ? "TRUE" : "FALSE (expected) ") << endl;
     }
     
