@@ -24,6 +24,9 @@
 #include "mc-4-Initializer/DataBase.h"
 #include "mc-4-Initializer/Cosmology.h"
 
+
+// #define KOKKOS_PRINT    // Kokkos::printf of interesting quantities. Does not work multirank
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t<Dim>, Mesh_t<Dim>::DefaultCentering> field_type;
@@ -231,8 +234,6 @@ public:
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  createParticles();
 	  msg << "Create particles done   " << endl;
-	  msg << "max(r)= " << this->pcontainer_m->R.max() << endl;
-	  msg << "min(r)= " << this->pcontainer_m->R.min() << endl; 
 	  
           /**
              calc statistics on the host for sanity check
@@ -252,8 +253,6 @@ public:
   /**
      * @brief 
      */
-#define KOKKOS_PRINT 
-  
   void LinearZeldoInitMP() {
     // After creating the field layout (cfield_m) and determining global grid sizes Nx, Ny, Nz:
     Inform msg("LinearZeldoInitMP ");
@@ -286,6 +285,12 @@ public:
     msg << "Lx= " << Lx << " Ly= " << Ly << " Lz= " << Lz << endl;
     msg << "Nx= " << Nx << " Ny= " << Ny << " Nz= " << Nz << endl;
     msg << "h = " << this->hr_m << endl;
+
+    float d_z;
+    float ddot;
+    float z_in = initializer::GlobalStuff::instance().z_in;
+    cosmo_m.GrowthFactor(z_in, &d_z, &ddot);
+    msg << "z_in= " << z_in << " d_z= " << d_z << " ddot= " << ddot << endl;
     
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
     ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(view, ngh),
@@ -358,29 +363,10 @@ public:
     // Store delta(k) for reuse 
     auto tmpcfield = cfield_m.deepCopy(); 
     typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
-
-    /*
-    ippl::parallel_for("InitDeltaField2", ippl::getRangePolicy(viewtmpcfield, ngh),
-                       KOKKOS_LAMBDA(const index_array_type& idx) {
-                         Kokkos::complex<double> x = ippl::apply(viewtmpcfield, idx);
-                         Kokkos::printf("rho2 %g %g \n", x.real(), x.imag());
-                       });
-
-
-    ippl::parallel_for("InitDeltaField2", ippl::getRangePolicy(view, ngh),
-                       KOKKOS_LAMBDA(const index_array_type& idx) {
-                         Kokkos::complex<double> x = ippl::apply(view, idx);
-                         Kokkos::printf("rho3 %g %g \n", x.real(), x.imag());
-                       });
-
-    */
-
     
     /*
       Now we can delete Pk and allocate the particles
-
     */
-
 
     // 2–4. Loop over displacement components x(0), y(1), z(2)
     double xx,yy,zz;
@@ -406,7 +392,7 @@ public:
       }
       
       // Compute displacement component in k-space
-      ippl::parallel_for("GradMultGreen", ippl::getRangePolicy(view, ngh),
+      ippl::parallel_for("force_in_k_space", ippl::getRangePolicy(view, ngh),
                          KOKKOS_LAMBDA(const index_array_type& idx){
 			   const double pi = Kokkos::numbers::pi_v<double>;
 			   int i = idx[0] - ngh + lDom[0].first();
@@ -425,44 +411,47 @@ public:
 			   Kokkos::complex<double> tmp = ippl::apply(tmpcfield, idx);
 			   Kokkos::complex<double> res (-Grad * Green * tmp.imag(), Grad * Green * tmp.real());
 			   ippl::apply(view, idx) = res;
-			   Kokkos::printf("feval: %i %g %g %g %g %g  %g \n", dim, Grad, Green, tmp.imag(), tmp.real(), res.real(), res.imag());
+#ifdef KOKKOS_PRINT
+                           Kokkos::printf("feval: %i %g %g %g %g %g  %g \n", dim, Grad, Green, tmp.imag(), tmp.real(), res.real(), res.imag());
+#endif
 			 });
 
       // Inverse FFT to real space
-	Cfft_m->transform(ippl::BACKWARD, cfield_m);
+      Cfft_m->transform(ippl::BACKWARD, cfield_m);
 
-	ippl::parallel_for("rhoinvfft", ippl::getRangePolicy(view, ngh),
-			   KOKKOS_LAMBDA(const index_array_type& idx){
-			   Kokkos::complex<double> tmp = ippl::apply(view, idx);
-			   Kokkos::printf("rhoinvfft: %i %g %g \n", dim, tmp.real(), tmp.imag());
-                           });
-	
-        // segfault fix : only loop over the cells you own
-        index_type n_local = static_cast<index_type>( rView.extent(0) );
+      const double scale = Kokkos::pow(initializer::GlobalStuff::instance().ngrid, 1.5); 
+      ippl::parallel_for("scale_rho_inv", ippl::getRangePolicy(view, ngh),
+			 KOKKOS_LAMBDA(const index_array_type& idx){
+			   const Kokkos::complex<double> tmp = ippl::apply(view, idx);
+                           ippl::apply(view, idx) = Kokkos::complex<double>(tmp.real()/scale, tmp.imag()/scale);
+#ifdef KOKKOS_PRINT
+                           Kokkos::printf("rhoinvfft: %i %g %g \n", dim, tmp.real()/scale, tmp.imag()/scale);
+#endif
+			 });
 
-	Kokkos::parallel_for("ComputeWorldCoordinates",n_local,
-			     KOKKOS_LAMBDA(const index_type n) {
-			       // Convert 1D index n back to 3D indices (i, j, k)
-			       const unsigned int i = n % nx;
-			       const unsigned int j = (n / nx) % ny;
-			       const unsigned int k = n / (nx * ny);
-			       double disp = view(i, j, k).real();
-			       unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
-			       rView(n)[dim] = ((idx + 0.5) * hr[dim]) ; //  + disp;
-			       vView(n)[dim] = disp;
-			     });
+      index_type n_local = static_cast<index_type>( rView.extent(0) );
+      Kokkos::parallel_for("set_particles",n_local,
+			   KOKKOS_LAMBDA(const index_type n) {
+			     // Convert 1D index n back to 3D indices (i, j, k)
+			     const unsigned int i = n % nx;
+			     const unsigned int j = (n / nx) % ny;
+			     const unsigned int k = n / (nx * ny);
+			     const Kokkos::complex<double> x = view(i, j, k);
+			     unsigned int idx = (dim == 0) ? i : (dim == 1) ? j : k;
+			     rView(n)[dim] = (((idx + 0.5) * hr[dim]) - d_z*x.real());
+			     vView(n)[dim] = -ddot*x.imag();;
+			   });
     }
 
-#ifdef KOKKOS_PRINT		   
+#ifdef KOKKOS_PRINT
     index_type n_local = static_cast<index_type>( rView.extent(0) );
     Kokkos::parallel_for(
-			 "PrintComputeWorldCoordinates", n_local, KOKKOS_LAMBDA(const index_type n) {
+			 "PrintWorldCoordinates", n_local, KOKKOS_LAMBDA(const index_type n) {
 			   Kokkos::printf("WorldCo: x=%g , y=%g , z=%g , vx=%g , vy=%g , vz=%g\n",
 					  rView(n)[0], rView(n)[1], rView(n)[2], vView(n)[0], vView(n)[1],
 					  vView(n)[2]);
 			 });
 #endif
-
   }
 
   /**
@@ -999,7 +988,7 @@ public:
     msg << "FFT inv. done" << endl;
 
     double scale = Kokkos::pow(initializer::GlobalStuff::instance().box_size, 1.5); // inverse FFT scaling
-    
+
     ippl::parallel_for("scale rho field after inv. FFT", ippl::getRangePolicy(cfview),
 		       KOKKOS_LAMBDA(const index_array_type& args) {
 			 Kokkos::complex<double> tmp = ippl::apply(cfview, args);
@@ -1469,13 +1458,19 @@ void gravity_potential(){
 
   
     void dumpParticles() {
+      Inform msg("dumpParticles ");
       // ADA
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-      auto rViewDevice  = pc->R.getView();
-      auto rView = Kokkos::create_mirror_view(rViewDevice);
-      auto vViewDevice  = pc->V.getView();
-      auto vView = Kokkos::create_mirror_view(vViewDevice);
 
+      auto Rview = this->pcontainer_m->R.getView();
+      auto Vview = this->pcontainer_m->V.getView();
+
+      auto rhost = this->pcontainer_m->R.getHostMirror();
+      auto vhost = this->pcontainer_m->V.getHostMirror();
+
+      Kokkos::deep_copy(rhost, Rview);
+      Kokkos::deep_copy(vhost, Vview);
+      
       if (ippl::Comm->rank() == 0) {
 	std::stringstream fname;
 	fname << this->folder + "/PhaseSpace_";
@@ -1487,16 +1482,15 @@ void gravity_potential(){
 	csvout << "# x,y,z,vx,vy,vz" <<  endl;
 	
 	for (ippl::detail::size_type i=0; i<pc->getLocalNum(); i++)
-	  csvout << rView(i)[0] << " \t"
-		 << rView(i)[1] << " \t"
-		 << rView(i)[2] << " \t"
-		 << vView(i)[0] << " \t"
-		 << vView(i)[1] << " \t"
-		 << vView(i)[2] << endl;
+	  csvout << rhost(i)[0] << " \t"
+		 << rhost(i)[1] << " \t"
+		 << rhost(i)[2] << " \t"
+		 << vhost(i)[0] << " \t"
+		 << vhost(i)[1] << " \t"
+		 << vhost(i)[2] << endl;
       }
       ippl::Comm->barrier();      
     }
-
   
     /**
      * @brief Analyzes and logs the structure of the given field view.
