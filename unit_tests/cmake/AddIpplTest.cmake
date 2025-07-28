@@ -13,6 +13,10 @@ function(add_ippl_test TEST_NAME)
 
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp)
 
+    if(NOT TEST_NUM_PROCS)
+        set(TEST_NUM_PROCS 2)
+    endif()
+
     target_link_libraries(${TEST_NAME}
         PRIVATE
             ippl
@@ -25,14 +29,18 @@ function(add_ippl_test TEST_NAME)
             ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 
+    add_test(
+      NAME ${TEST_NAME}
+      COMMAND ${MPIEXEC_EXECUTABLE};${MPIEXEC_NUMPROC_FLAG};${TEST_NUM_PROCS} "--allow-run-as-root" $<TARGET_FILE:${TEST_NAME}>
+    )
+
     set(FINAL_LABELS unit ${TEST_LABELS})
 
-
-    gtest_discover_tests(${TEST_NAME}
-        DISCOVERY_MODE PRE_TEST
-        PROPERTIES
-            TIMEOUT 600
-            LABELS "${FINAL_LABELS}"
+    set_tests_properties(${TEST_NAME} PROPERTIES
+        TIMEOUT 300
+        LABELS "${FINAL_LABELS}"
     )
+
+
 endfunction()
 

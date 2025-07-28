@@ -7,6 +7,7 @@ name: Mirror to Gitlab to trigger CI
 on:
   push:
   pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
   schedule:
     - cron: '1 5 2 * *'
 
@@ -14,7 +15,7 @@ jobs:
   check_permission:
     runs-on: ubuntu-latest
     if: >-
-        (github.repository_owner == 'JoMee') &&
+        (github.repository_owner == 'IPPL-framework') &&
         ((github.event_name == 'push') ||
          (github.event_name == 'schedule') ||
          ((github.event_name == 'pull_request_target') &&
@@ -53,7 +54,7 @@ jobs:
   mirror_to_gitlab:
     runs-on: ubuntu-latest
     if: >-
-        (github.repository_owner == 'JoMee') &&
+        (github.repository_owner == 'IPPL-framework') &&
         ((github.event_name == 'push') ||
          (github.event_name == 'schedule') ||
          ((github.event_name == 'pull_request_target') &&
