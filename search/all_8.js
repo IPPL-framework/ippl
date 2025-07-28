@@ -48,7 +48,7 @@ var searchData=
   ['installing_20ippl_20on_20euler_45',['Installing IPPL on EULER',['../Installation.html',1,'']]],
   ['integration_5fnodes_5fm_46',['integration_nodes_m',['../classippl_1_1Quadrature.html#a13784a9379f001e78faf96abbb302e2a',1,'ippl::Quadrature']]],
   ['internal_5fto_5fhalo_47',['INTERNAL_TO_HALO',['../classippl_1_1detail_1_1HaloCells.html#a608d4b766782192817f1f0a19b6d98ffabc37306303fba7e7af196e71822cd2be',1,'ippl::detail::HaloCells']]],
-  ['internalcopy_48',['internalCopy',['../classippl_1_1ParticleAttrib.html#abdb471e503b50e7259ff4ee54bc078c2',1,'ippl::ParticleAttrib::internalCopy()'],['../classippl_1_1detail_1_1ParticleAttribBase.html#aff760b400a93ff9c980dd5d236a0ebf3',1,'ippl::detail::ParticleAttribBase::internalCopy()']]],
+  ['internalcopy_48',['internalCopy',['../classippl_1_1ParticleAttrib.html#a584e0a79d49fb365f756cd893f3c8e99',1,'ippl::ParticleAttrib::internalCopy()'],['../classippl_1_1detail_1_1ParticleAttribBase.html#aff760b400a93ff9c980dd5d236a0ebf3',1,'ippl::detail::ParticleAttribBase::internalCopy()']]],
   ['internaldestroy_49',['internalDestroy',['../classippl_1_1ParticleBase.html#a2fe367c841ac657314d7d6e3dc60809a',1,'ippl::ParticleBase']]],
   ['interpolationindex_50',['interpolationIndex',['../namespaceippl_1_1detail.html#ac41737d6c8ee585b9747c0fcede95095',1,'ippl::detail']]],
   ['interpolationweight_51',['interpolationWeight',['../namespaceippl_1_1detail.html#aa053a9f96c639720079afc6af72ee51f',1,'ippl::detail']]],

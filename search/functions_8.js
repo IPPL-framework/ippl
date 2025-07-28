@@ -23,7 +23,7 @@ var searchData=
   ['inittgsolver_20',['initTGSolver',['../classChargedParticles.html#a6dd487de17b2ea8b1f61cf0c4904004d',1,'ChargedParticles::initTGSolver()'],['../classFieldSolver.html#a0bb078bdd30b4a29edaf5136e5d00f3e',1,'FieldSolver::initTGSolver()']]],
   ['innerproduct_21',['innerProduct',['../namespaceippl.html#a5754d2f87258a654d9acdce876fc9aa8',1,'ippl']]],
   ['insist_22',['insist',['../PAssert_8h.html#a512ef25fe578a7b7a18067ff48c59d85',1,'insist(const char *cond, const char *msg, const char *file, int line):&#160;PAssert.cpp'],['../PAssert_8cpp.html#a512ef25fe578a7b7a18067ff48c59d85',1,'insist(const char *cond, const char *msg, const char *file, int line):&#160;PAssert.cpp']]],
-  ['internalcopy_23',['internalCopy',['../classippl_1_1ParticleAttrib.html#abdb471e503b50e7259ff4ee54bc078c2',1,'ippl::ParticleAttrib::internalCopy()'],['../classippl_1_1detail_1_1ParticleAttribBase.html#aff760b400a93ff9c980dd5d236a0ebf3',1,'ippl::detail::ParticleAttribBase::internalCopy()']]],
+  ['internalcopy_23',['internalCopy',['../classippl_1_1ParticleAttrib.html#a584e0a79d49fb365f756cd893f3c8e99',1,'ippl::ParticleAttrib::internalCopy()'],['../classippl_1_1detail_1_1ParticleAttribBase.html#aff760b400a93ff9c980dd5d236a0ebf3',1,'ippl::detail::ParticleAttribBase::internalCopy()']]],
   ['internaldestroy_24',['internalDestroy',['../classippl_1_1ParticleBase.html#a2fe367c841ac657314d7d6e3dc60809a',1,'ippl::ParticleBase']]],
   ['interpolationindex_25',['interpolationIndex',['../namespaceippl_1_1detail.html#ac41737d6c8ee585b9747c0fcede95095',1,'ippl::detail']]],
   ['interpolationweight_26',['interpolationWeight',['../namespaceippl_1_1detail.html#aa053a9f96c639720079afc6af72ee51f',1,'ippl::detail']]],
