@@ -25,7 +25,7 @@
 #include "mc-4-Initializer/Cosmology.h"
 
 
-// #define KOKKOS_PRINT    // Kokkos::printf of interesting quantities. Does not work multirank
+#define KOKKOS_PRINT    // Kokkos::printf of interesting quantities. Does not work multirank
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -758,13 +758,13 @@ public:
 
    */
 
-  KOKKOS_FUNCTION static double bbks(double k, double kh_tmp) {
-    double qkh, t_f;
+  KOKKOS_FUNCTION static float bbks(float k, float kh_tmp) {
+    float qkh, t_f;
    
-   if (k == 0.0) return(0.0);
-   qkh = k/kh_tmp;
-   t_f = Kokkos::log(1.0+2.34*qkh)/(2.34*qkh) * Kokkos::pow(1.0+3.89*qkh+
-	 Kokkos::pow(16.1*qkh, 2.0) + Kokkos::pow(5.46*qkh, 3.0) + Kokkos::pow(6.71*qkh, 4.0), -0.25);
+    if (k == 0.0) return(0.0);
+    qkh = k/kh_tmp;
+    t_f = Kokkos::log(1.0+2.34*qkh)/(2.34*qkh) * Kokkos::pow(1.0+3.89*qkh+
+	  Kokkos::pow(16.1*qkh, 2.0) + Kokkos::pow(5.46*qkh, 3.0) + Kokkos::pow(6.71*qkh, 4.0), -0.25);
    return(t_f);
 
   }
@@ -824,9 +824,9 @@ public:
 */
     // TFFlag == 4 BBKS  transfer function
 
-    const double Omega_m = initializer::GlobalStuff::instance().Omega_m;
-    const double h       = initializer::GlobalStuff::instance().Hubble;    
-    double kh_tmp        = Omega_m*h;
+    const float Omega_m = initializer::GlobalStuff::instance().Omega_m;
+    const float h       = initializer::GlobalStuff::instance().Hubble;    
+    const float kh_tmp   = Omega_m*h;
     
     /* Set P(k)=T^2*k^n array.
        Linear array, taking care of the mirror symmetry
@@ -840,35 +840,31 @@ public:
     auto* FL                       = &this->fcontainer_m->getFL();
     const ippl::NDIndex<Dim>& ldom = FL->getLocalNDIndex();  // local processor domain coordinates    
     const int nghost               = Pk_m.getNghost();
-    
+
     ippl::parallel_for("Compute Pk_m", ippl::getRangePolicy(pkview, nghost),
-		       KOKKOS_LAMBDA (const index_array_type& args) {
-			 int k_i    = args[0] - nghost + ldom[0].first();
-			 int k_j    = args[1] - nghost + ldom[1].first();
-			 int k_k    = args[2] - nghost + ldom[2].first();
+                       KOKKOS_LAMBDA(const index_array_type& idx){
+			   int i = idx[0] - nghost + ldom[0].first();
+			   int j = idx[1] - nghost + ldom[1].first();
+			   int k = idx[2] - nghost + ldom[2].first();
+
+			   int k_i = (i >= nq) ? -(nq-i % nq) : i;
+			   int k_j = (j >= nq) ? -(nq-j % nq) : j;
+			   int k_k = (k >= nq) ? -(nq-k % nq) : k;
+			   
+			   int   k2 = k_i * k_i + k_j * k_j + k_k * k_k;
+			   float kk = tpiL*Kokkos::sqrt(k2);
+			   double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp);
+			   // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
+			   double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
+			   ippl::apply(pkview, idx) = val;
 			 
-			 /*
-			  * we do not use symmetry
-			  */
-			 // if (k_k >= nq) {
-			 //  k_k = -MOD(ngrid-k_k,ngrid);
-			 //}
-			 // without if but not sure if that is correct! 
-			 // k_k -= (k_k >= nq) * ngrid;
-			 
-			 double kk = 0.5*tpiL*Kokkos::sqrt(k_i*k_i+k_j*k_j+k_k*k_k);			
-			 double trans_f = StructureFormationManager<double,3>::bbks(kk, kh_tmp);
-		      // double trans_f = StructureFormationManager<double,3>::hu_sugiyama(kk, kh_tmp);
-			 double val = trans_f*trans_f*Kokkos::pow(kk, n_s);
-			 ippl::apply(pkview, args) = val;
-			 
-			 int index = (k_i)
-			 + (k_j) * ldom[0].length()
-			 + (k_k) * ldom[0].length() * ldom[1].length();
+			   int index = (k_i)
+			     + (k_j) * ldom[0].length()
+			     + (k_k) * ldom[0].length() * ldom[1].length();
 #ifdef KOKKOS_PRINT
-			 if ((k_i==0) && (k_j==0) && (k_k==0))
-			   Kokkos::printf("Pk: i \t j \t k \t index \t kk \t transf \t Pk \n");
-			 Kokkos::printf("Pk: %d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
+			   if ((k_i==0) && (k_j==0) && (k_k==0))
+			     Kokkos::printf("Pk: i \t j \t k \t index \t kk \t transf \t Pk \n");
+			   Kokkos::printf("Pk: %d \t %d \t %d \t %d \t %f \t %f \t %f \n",k_i,k_j,k_k,index,kk,trans_f,val);
 #endif		
 		       });
 
