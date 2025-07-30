@@ -291,6 +291,9 @@ public:
     float z_in = initializer::GlobalStuff::instance().z_in;
     cosmo_m.GrowthFactor(z_in, &d_z, &ddot);
     msg << "z_in= " << z_in << " d_z= " << d_z << " ddot= " << ddot << endl;
+
+    Kokkos::Random_XorShift64_Pool<> rand_pool(global_seed);
+
     
     // Initialize the Fourier density field with Gaussian random modes (Hermitian symmetric)
     ippl::parallel_for("InitDeltaField", ippl::getRangePolicy(view, ngh),
@@ -316,24 +319,13 @@ public:
 			   bool is_conjugate = (!self && 
 						(i_neg < i || (i_neg == i && j_neg < j) || 
 						 (i_neg == i && j_neg == j && k_neg < k)));
-			   // Choose the "key" coordinates (the global smaller of the pair) for random generation
-			   int key_i = is_conjugate ? i_neg : i;
-			   int key_j = is_conjugate ? j_neg : j;
-			   int key_k = is_conjugate ? k_neg : k;
 
-			   // Deterministically generate two uniform [0,1) random numbers from the key
-			   uint64_t key_index = ((uint64_t)key_i * Ny + key_j) * Nz + key_k;
-			   uint64_t x = key_index ^ global_seed;
-			   if (x == 0ull) x = 1ull;  // avoid zero state
-			   // XorShift64 steps to produce pseudorandom 64-bit values
-			   x ^= x << 13;  x ^= x >> 7;  x ^= x << 17;
-			   uint64_t r1 = x;
-			   x ^= x << 13;  x ^= x >> 7;  x ^= x << 17;
-			   uint64_t r2 = x;
-			   // Map the 53 most significant bits of r1,r2 to double in [0,1)
-			   const double norm = 1.0 / 9007199254740992.0;  // 1/2^53
-			   double u1 = (double)(r1 >> 11) * norm;
-			   double u2 = (double)(r2 >> 11) * norm;
+			   auto rand_gen = rand_pool.get_state();
+			   // Generate a uniform random number in [0,1)
+			   double u1 = rand_gen.drand();
+			   double u2 = rand_gen.drand();
+			   // Return the state to the pool
+			   rand_pool.free_state(rand_gen);
 			   
 			   // Convert uniforms to Gaussian via Box-Muller
 			   double R     = Kokkos::sqrt(-2.0 * Kokkos::log(u1));
@@ -353,7 +345,7 @@ public:
 			     val_im = -val_im;
 			   }
 #ifdef KOKKOS_PRINT		   			   
-			   Kokkos::printf("rho1 %g %g \n",val_re,val_im);
+			   Kokkos::printf("rho: %g %g \n",val_re,val_im);
 #endif
 			   // Assign the complex value to this local mode
 			   ippl::apply(view, idx) = Kokkos::complex<double>(val_re, val_im);
@@ -361,9 +353,8 @@ public:
 		       });
 
     // Store delta(k) for reuse 
-    auto tmpcfield = cfield_m.deepCopy(); 
-    typename CField_t::view_type& viewtmpcfield = tmpcfield.getView();
-    
+    auto tmpcfield = cfield_m.deepCopy();
+
     /*
       Now we can delete Pk and allocate the particles
     */
@@ -443,6 +434,7 @@ public:
 			   });
     }
 
+
 #ifdef KOKKOS_PRINT
     index_type n_local = static_cast<index_type>( rView.extent(0) );
     Kokkos::parallel_for(
@@ -452,6 +444,8 @@ public:
 					  vView(n)[2]);
 			 });
 #endif
+
+
   }
 
   /**
