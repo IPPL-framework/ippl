@@ -573,7 +573,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     auto mesh                        = this->biggerMesh;
     static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order         = lagrangeSpace.order;
-    const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
     if (order == 1) {
         // create layout
@@ -629,7 +628,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = ref_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -637,12 +635,17 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
                 index_type coords[dim] = {args...};
 
                 // global coordinates
+                // We don't take into account nghost as this causes
+                // coords to be negative, which causes an overflow due
+                // to the index type.
+                // All below indices for setting the ref_field are 
+                // shifted by 1 to include the ghost (applies to all tests).
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
 
                 // reference field
-                if ((coords[0] == 1) || (coords[0] == 3)) {
+                if ((coords[0] == 2) || (coords[0] == 4)) {
                     mirror(args...) = 1.25;
                 } else {
                     mirror(args...) = 0.0;
@@ -673,7 +676,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
                 auto view_ref = ref_field.getView();
                 auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-                int nghost    = ref_field.getNghost();
                 auto ldom     = layout.getLocalNDIndex();
 
                 nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -682,19 +684,19 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                     // global coordinates
                     for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                        coords[d] += ldom[d].first() - nghost;
+                        coords[d] += ldom[d].first();
                     }
                     
                     // reference field
-                    if (((coords[0] == 1) && (coords[1] == 1)) ||
-                        ((coords[0] == 1) && (coords[1] == 3)) ||
-                        ((coords[0] == 3) && (coords[1] == 1)) ||
-                        ((coords[0] == 3) && (coords[1] == 3))) {
+                    if (((coords[0] == 2) && (coords[1] == 2)) ||
+                        ((coords[0] == 2) && (coords[1] == 4)) ||
+                        ((coords[0] == 4) && (coords[1] == 2)) ||
+                        ((coords[0] == 4) && (coords[1] == 4))) {
                         mirror(args...) = 1.5;
-                    } else if (((coords[0] == 1) && (coords[1] == 2)) ||
-                        ((coords[0] == 2) && (coords[1] == 1)) ||
-                        ((coords[0] == 2) && (coords[1] == 3)) ||
-                        ((coords[0] == 3) && (coords[1] == 2))) {
+                    } else if (((coords[0] == 2) && (coords[1] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 2)) ||
+                        ((coords[0] == 3) && (coords[1] == 4)) ||
+                        ((coords[0] == 4) && (coords[1] == 3))) {
                         mirror(args...) = 1.0;
                     } else {
                         mirror(args...) = 0.0;
@@ -725,7 +727,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = ref_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -734,30 +735,30 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                 // global coordinates
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
-                
+
                 // reference field
-                if (((coords[0] > 0) && (coords[0] < 4)) && 
-                    ((coords[1] > 0) && (coords[1] < 4)) && 
-                    ((coords[2] > 0) && (coords[2] < 4))) {
+                if (((coords[0] > 1) && (coords[0] < 5)) && 
+                    ((coords[1] > 1) && (coords[1] < 5)) && 
+                    ((coords[2] > 1) && (coords[2] < 5))) {
                     
                     mirror(args...) = 2.53125;
                     
-                    if ((coords[0] == 2) || (coords[1] == 2) || (coords[2] == 2)) {
+                    if ((coords[0] == 3) || (coords[1] == 3) || (coords[2] == 3)) {
                         mirror(args...) = 2.25;
                     }
 
-                    if (((coords[0] == 2) && (coords[1] == 2) && (coords[2] == 1)) ||
-                        ((coords[0] == 2) && (coords[1] == 1) && (coords[2] == 2)) ||
-                        ((coords[0] == 1) && (coords[1] == 2) && (coords[2] == 2)) ||
-                        ((coords[0] == 3) && (coords[1] == 2) && (coords[2] == 2)) ||
-                        ((coords[0] == 2) && (coords[1] == 3) && (coords[2] == 2)) ||
-                        ((coords[0] == 2) && (coords[1] == 2) && (coords[2] == 3))) {
+                    if (((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 2)) ||
+                        ((coords[0] == 3) && (coords[1] == 2) && (coords[2] == 3)) ||
+                        ((coords[0] == 2) && (coords[1] == 3) && (coords[2] == 3)) ||
+                        ((coords[0] == 4) && (coords[1] == 3) && (coords[2] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 4) && (coords[2] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 4))) {
                         mirror(args...) = 1.5;
                     }
                     
-                    if ((coords[0] == 2) && (coords[1] == 2) && (coords[2] == 2)) {
+                    if ((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 3)) {
                         mirror(args...) = 0.0;
                     }
                 } else {
@@ -815,7 +816,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
         rhs_field.setFieldBC(bcField);
 
         if (dim == 1) {
-
             rhs_field = 2.75;
 
             // call evaluateLoadVector
@@ -827,7 +827,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = rhs_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -836,17 +835,13 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
                 // global coordinates
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
 
                 // reference field
-
                 switch (coords[0]) {
-                    case 0:
-                        mirror(args...) = 0.0;
-                        break;
                     case 1:
-                        mirror(args...) = 1.375;
+                        mirror(args...) = 0.0;
                         break;
                     case 2:
                         mirror(args...) = 1.375;
@@ -855,6 +850,9 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
                         mirror(args...) = 1.375;
                         break;
                     case 4:
+                        mirror(args...) = 1.375;
+                        break;
+                    case 5:
                         mirror(args...) = 0.0;
                         break;
                     default:
@@ -870,9 +868,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             double err = ippl::norm(rhs_field);
 
             ASSERT_NEAR(err, 0.0, 1e-6);
-
         } else if (dim == 2) {
-
             rhs_field = 3.5;
 
             // call evaluateLoadVector
@@ -884,7 +880,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = rhs_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -893,12 +888,12 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
                 // global coordinates
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
 
                 // reference field
-                if ((coords[0] < 1) || (coords[1] < 1) || 
-                    (coords[0] > 3) || (coords[1] > 3)) {
+                if ((coords[0] < 2) || (coords[1] < 2) || 
+                    (coords[0] > 4) || (coords[1] > 4)) {
                     mirror(args...) = 0.0;
                 } else {
                     mirror(args...) = 0.875;
@@ -927,7 +922,6 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = rhs_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -936,12 +930,12 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
                 // global coordinates
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
 
                 // reference field
-                if ((coords[0] == 0) || (coords[1] == 0) || (coords[2] == 0) ||
-                    (coords[0] == 4) || (coords[1] == 4) || (coords[2] == 4)) {
+                if ((coords[0] == 1) || (coords[1] == 1) || (coords[2] == 1) ||
+                    (coords[0] == 5) || (coords[1] == 5) || (coords[2] == 5)) {
                     mirror(args...) = 0.0;
                 } else {
                     mirror(args...) = 0.15625;
