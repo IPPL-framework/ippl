@@ -18,7 +18,7 @@
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
 
-constexpr unsigned Dim = 2;
+constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "LandauDamping";
 

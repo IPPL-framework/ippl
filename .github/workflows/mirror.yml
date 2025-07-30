@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2022 Jakob Fritz <j.fritz@fz-juelich.de>
+#
+# SPDX-License-Identifier: MIT
+
+name: Mirror to Gitlab to trigger CI
+
+on:
+  push:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    - cron: '1 5 2 * *'
+
+jobs:
+  check_permission:
+    runs-on: ubuntu-latest
+    if: >-
+        (github.repository_owner == 'IPPL-framework') &&
+        ((github.event_name == 'push') ||
+         (github.event_name == 'schedule') ||
+         ((github.event_name == 'pull_request_target') &&
+          (contains(github.event.pull_request.labels.*.name, 'gitlab-mirror'))
+         )
+        )
+    steps:
+      - name: Query permissions of triggering actor
+        id: query_permission_triggering_actor
+        if: github.event_name == 'pull_request_target'
+        uses: actions-cool/check-user-permission@v2
+        with:
+          username: ${{ github.triggering_actor }}
+          require: 'write'
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Interpret the queried result
+        if: github.event_name == 'pull_request_target'
+        run: |
+          echo "Current permission level is ${{ steps.query_permission_triggering_actor.outputs.user-permission }}"
+          echo "Job originally triggered by ${{ github.actor }}"
+          echo "Checking permission returned ${{ steps.query_permission_triggering_actor.outputs.require-result }}"
+          if ${{ steps.query_permission_triggering_actor.outputs.require-result }}
+            then
+              echo 'Permissions granted'
+              exit 0
+            else
+              echo 'Not enough permissions'
+              exit 1
+          fi
+      - name: Pass if workflow from push or schedule
+        if: >-
+          (github.event_name == 'push') ||
+          (github.event_name == 'schedule')
+        run: exit 0
+      
+  mirror_to_gitlab:
+    runs-on: ubuntu-latest
+    if: >-
+        (github.repository_owner == 'IPPL-framework') &&
+        ((github.event_name == 'push') ||
+         (github.event_name == 'schedule') ||
+         ((github.event_name == 'pull_request_target') &&
+          (contains(github.event.pull_request.labels.*.name, 'gitlab-mirror'))
+         )
+        )
+    needs:
+      - check_permission
+    steps:
+      - name: set proper sha
+        run: |
+          echo "${{ github.event_name }}"
+          if [ "${{ github.event_name }}" == 'push' ] || [ "${{ github.event_name }}" == 'schedule' ]
+          then
+            echo "USED_SHA=${{ github.sha }}" >> "$GITHUB_ENV"
+          fi
+          if [ "${{ github.event_name }}" == 'pull_request_target' ]
+          then
+            echo "USED_SHA=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: "${{ env.USED_SHA }}"
+          persist-credentials: false
+      - name: Mirror and wait for Gitlab-CI
+        uses: jakob-fritz/github2lab_action@main
+        env:
+          MODE: 'mirror' # Either 'mirror', 'get_status', 'get_artifact', or 'all'
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          FORCE_PUSH: "true"
+          GITLAB_HOSTNAME: "gitlab.jsc.fz-juelich.de"
+          GITLAB_PROJECT_ID: "6975"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
