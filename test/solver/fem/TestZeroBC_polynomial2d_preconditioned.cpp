@@ -106,8 +106,8 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     std::string preconditioner_type = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level;
-    int chebyshev_degree;
+    int newton_level = 1; // unused
+    int chebyshev_degree = 1; // unused
     int richardson_iterations = 4;
     double ssor_omega = 1.57079632679;
 
