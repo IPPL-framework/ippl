@@ -298,9 +298,9 @@ namespace ippl {
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
             this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
-            const T tolerance = params.get<T>("tolerance") * delta1;
+            const T tolerance = params.get<T>("tolerance") * this->residueNorm;
 
-            while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
+            while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
                 q       = this->op_m(d);
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
