@@ -206,6 +206,21 @@ namespace ippl {
         template <typename F>
         FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
 
+        template <typename F>
+        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction) const;
+
         /**
          * @brief Assemble the left stiffness matrix A of the system 
          * but only for the boundary values, so that they can be 
