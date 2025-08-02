@@ -27,14 +27,19 @@ variables:
     value: "false"
     options: ["true", "false"]
     description: "Run the compilation test for the Jureca supercomputer."
+  RUN_COMPILE_JURECA_AMPERE80:
+    value: "true"
+    options: ["true", "false"]
+    description: "Run the compilation test for the Jureca ampere80 architecture."
 
 include:
   - local: 'ci/tests/serial_unit.yml'
   - local: 'ci/generate/generate_report.yml'
-  - local: 'ci/tests/compile_gcc_debug.yml'
   - local: 'ci/tests/compile_gcc_release.yml'
   - local: 'ci/tests/compile_clang_debug.yml'
   - local: 'ci/tests/compile_jureca_release.yml'
+  - local: 'ci/tests/compile_jureca_ampere80.yml'
+  - local: 'ci/tests/compile_jureca_debug_gcc.yml'
 
 # Template for tests
 .test_template:
