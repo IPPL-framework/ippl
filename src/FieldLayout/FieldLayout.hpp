@@ -96,7 +96,7 @@ namespace ippl {
 
         if (totparelems < nRanks) {
             throw std::runtime_error("FieldLayout:initialize: domain can only be partitioned in to "
-                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, increase the number of possible local domains.");
+                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, decrease the number of ranks or increase the domain.");
         }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
