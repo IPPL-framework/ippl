@@ -1,11 +1,11 @@
 # This job tests the default GCC compilation.
 # It is designed to always pass from a CI perspective, reporting
 # success or failure in the Allure report instead.
-compile-jureca-release:
+compile-jureca-debug-gcc:
   extends: .test_template 
   stage: test
   rules:
-    - if: '$RUN_COMPILE_JURECA == "true" || $RUN_ALL_TESTS == "true"'
+    - if: '$RUN_COMPILE_GCC_DEBUG == "true" || $RUN_ALL_TESTS == "true"'
   image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
   tags:
     - jureca
@@ -17,7 +17,7 @@ compile-jureca-release:
     set -e
     echo "Starting jureca GCC compilation test..."
     
-    TEST_NAME="Compile GCC - CUDA Release Mode (JURECA)"
+    TEST_NAME="Compile GCC - CUDA Debug Mode Serial"
     RESULTS_SUBDIR="compile-test" 
     
     TEST_RESULTS_DIR="${RESULTS_DIR}/${RESULTS_SUBDIR}/"
@@ -35,16 +35,14 @@ compile-jureca-release:
 
       mkdir -p build && cd build &&
       cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DKokkos_ARCH_AMPERE80=ON \
+        -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_CXX_STANDARD=20 \
         -DIPPL_ENABLE_FFT=ON \
         -DIPPL_ENABLE_TESTS=ON \
         -DIPPL_ENABLE_UNIT_TESTS=True \
         -DUSE_ALTERNATIVE_VARIANT=ON \
         -DIPPL_ENABLE_SOLVERS=ON \
-        -DIPPL_ENABLE_ALPINE=True \
-        -DIPPL_PLATFORMS=cuda &&
+        -DIPPL_ENABLE_ALPINE=True &&
       make -j 8
     } > "${TEST_RESULTS_DIR}/stdout.log" 2> "${TEST_RESULTS_DIR}/stderr.log" || COMPILE_STATUS=$?
 
@@ -61,8 +59,6 @@ compile-jureca-release:
     else
       echo "Compilation successful."
     fi
-
-
 
     RESULT_FILE="${TEST_RESULTS_DIR}/result.json"
     echo "{" > "${RESULT_FILE}"
