@@ -497,6 +497,747 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx_lower(FieldLHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
+        // get number of ghost cells in field
+        const int nghost = field.getNghost();
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
+
+        // Get boundary conditions from field
+        BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get domain information
+        auto ldom = (field.getLayout()).getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
+
+                for (size_t i = 0; i < numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                // local DOF indices
+                size_t i, j;
+
+                // Element matrix
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+                // 1. Compute the Galerkin element matrix A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        A_K[i][j] = 0.0;
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                        }
+                    }
+                }
+
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
+                indices_t I_nd, J_nd;
+
+                // 2. Compute the contribution to resultAx = A*x with A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I_nd = global_dof_ndindices[i];
+
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                        }
+                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        continue;
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        continue;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        J_nd = global_dof_ndindices[j];
+
+                        if (global_dofs[i] >= global_dofs[j]) {
+                            continue;
+                        }
+
+                        // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                            && this->isDOFOnBoundary(J_nd)) {
+                            continue;
+                        }
+
+                        // get the appropriate index for the Kokkos view of the field
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                        }
+
+                        apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                    }
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+            bcField.apply(resultField);
+            bcField.assignGhostToPhysical(resultField);
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
+        IpplTimings::stopTimer(evalAx);
+
+        return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx_upper(FieldLHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
+        // get number of ghost cells in field
+        const int nghost = field.getNghost();
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
+
+        // Get boundary conditions from field
+        BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get domain information
+        auto ldom = (field.getLayout()).getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
+
+                for (size_t i = 0; i < numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                // local DOF indices
+                size_t i, j;
+
+                // Element matrix
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+                // 1. Compute the Galerkin element matrix A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        A_K[i][j] = 0.0;
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                        }
+                    }
+                }
+
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
+                indices_t I_nd, J_nd;
+
+                // 2. Compute the contribution to resultAx = A*x with A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I_nd = global_dof_ndindices[i];
+
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                        }
+                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        continue;
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        continue;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        J_nd = global_dof_ndindices[j];
+
+                        if (global_dofs[i] <= global_dofs[j]) {
+                            continue;
+                        }
+
+                        // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                            && this->isDOFOnBoundary(J_nd)) {
+                            continue;
+                        }
+
+                        // get the appropriate index for the Kokkos view of the field
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                        }
+
+                        apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                    }
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+            bcField.apply(resultField);
+            bcField.assignGhostToPhysical(resultField);
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
+        IpplTimings::stopTimer(evalAx);
+
+        return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
+        // get number of ghost cells in field
+        const int nghost = field.getNghost();
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
+
+        // Get boundary conditions from field
+        BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get domain information
+        auto ldom = (field.getLayout()).getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
+
+                for (size_t i = 0; i < numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                // local DOF indices
+                size_t i, j;
+
+                // Element matrix
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+                // 1. Compute the Galerkin element matrix A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        A_K[i][j] = 0.0;
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                        }
+                    }
+                }
+
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
+                indices_t I_nd, J_nd;
+
+                // 2. Compute the contribution to resultAx = A*x with A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I_nd = global_dof_ndindices[i];
+
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                        }
+                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        continue;
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        continue;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        J_nd = global_dof_ndindices[j];
+
+                        if (global_dofs[i] == global_dofs[j]) {
+                            continue;
+                        }
+
+                        // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                            && this->isDOFOnBoundary(J_nd)) {
+                            continue;
+                        }
+
+                        // get the appropriate index for the Kokkos view of the field
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                        }
+
+                        apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                    }
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+            bcField.apply(resultField);
+            bcField.assignGhostToPhysical(resultField);
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
+        IpplTimings::stopTimer(evalAx);
+
+        return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
+        // get number of ghost cells in field
+        const int nghost = field.getNghost();
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
+
+        // Get boundary conditions from field
+        BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get domain information
+        auto ldom = (field.getLayout()).getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
+
+                for (size_t i = 0; i < numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                // local DOF indices
+                size_t i, j;
+
+                // Element matrix
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+                // 1. Compute the Galerkin element matrix A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        A_K[i][j] = 0.0;
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                        }
+                    }
+                }
+
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
+                indices_t I_nd, J_nd;
+
+                // 2. Compute the contribution to resultAx = A*x with A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I_nd = global_dof_ndindices[i];
+
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                        }
+                        apply(resultView, I_nd) = 1.0;
+                        continue;
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        continue;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        if (global_dofs[i] == global_dofs[j]) {
+                            J_nd = global_dof_ndindices[j];
+
+                            // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                            if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                                && this->isDOFOnBoundary(J_nd)) {
+                                continue;
+                            }
+
+                            // get the appropriate index for the Kokkos view of the field
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                            }
+
+                            // sum up all contributions of element matrix
+                            apply(resultView, I_nd) += A_K[i][j];
+                        }
+                    }
+                }
+            });
+
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+            bcField.apply(resultField);
+            bcField.assignGhostToPhysical(resultField);
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
+        // apply the inverse diagonal after already summed all contributions from element matrices
+        using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
+        ippl::parallel_for("Loop over result view to apply inverse", field.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                if (apply(resultView, args) != 0.0) {
+                    apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        IpplTimings::stopTimer(evalAx);
+
+        return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::evaluateAx_diag(FieldLHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        IpplTimings::startTimer(evalAx);
+
+        // get number of ghost cells in field
+        const int nghost = field.getNghost();
+
+        // create a new field for result with view initialized to zero (views are initialized to
+        // zero by default)
+        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // Gradients of the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
+            }
+        }
+
+        // Get field data and atomic result data,
+        // since it will be added to during the kokkos loop
+        ViewType view             = field.getView();
+        AtomicViewType resultView = resultField.getView();
+
+        // Get boundary conditions from field
+        BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get domain information
+        auto ldom = (field.getLayout()).getLocalNDIndex();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+                Vector<indices_t, numElementDOFs> global_dof_ndindices;
+
+                for (size_t i = 0; i < numElementDOFs; ++i) {
+                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                }
+
+                // local DOF indices
+                size_t i, j;
+
+                // Element matrix
+                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+                // 1. Compute the Galerkin element matrix A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        A_K[i][j] = 0.0;
+                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                        }
+                    }
+                }
+
+                // global DOF n-dimensional indices (Vector of N indices representing indices in
+                // each dimension)
+                indices_t I_nd, J_nd;
+
+                // 2. Compute the contribution to resultAx = A*x with A_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I_nd = global_dof_ndindices[i];
+
+                    // Handle boundary DOFs
+                    // If Zero Dirichlet BCs, skip this DOF
+                    // If Constant Dirichlet BCs, identity
+                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                        }
+                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        continue;
+                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                        continue;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
+                    }
+
+                    for (j = 0; j < numElementDOFs; ++j) {
+                        if (global_dofs[i] == global_dofs[j]) {
+                            J_nd = global_dof_ndindices[j];
+
+                            // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                            if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                                && this->isDOFOnBoundary(J_nd)) {
+                                continue;
+                            }
+
+                            // get the appropriate index for the Kokkos view of the field
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
+                            }
+
+                            apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                        }
+                    }
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        if (bcType == PERIODIC_FACE) {
+            resultField.accumulateHalo();
+            bcField.apply(resultField);
+            bcField.assignGhostToPhysical(resultField);
+        } else {
+            resultField.accumulateHalo_noghost();
+        }
+
+        IpplTimings::stopTimer(evalAx);
+
+        return resultField;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                            FieldRHS>::evaluateAx_lift(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
