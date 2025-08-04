@@ -1,43 +1,50 @@
 # This job tests the default GCC compilation.
 # It is designed to always pass from a CI perspective, reporting
 # success or failure in the Allure report instead.
-compile-gcc-debug:
+compile-jureca-ampere80:
   extends: .test_template 
   stage: test
   rules:
-    - if: '$RUN_COMPILE_GCC_DEBUG == "true" || $RUN_ALL_TESTS == "true"'
+    - if: '$RUN_COMPILE_JURECA_AMPERE80 == "true" || $RUN_ALL_TESTS == "true"'
   image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
   tags:
-    - linux
-    - opensuse
+    - jureca
+    - jacamar
+    - login
+    - shell
   allow_failure: true 
   script: |
     set -e
-    echo "Starting default GCC compilation test..."
+    echo "Starting jureca GCC compilation test..."
     
-    TEST_NAME="Compile GCC - Serial Debug Mode"
+    TEST_NAME="Compile GCC - CUDA Release Mode Ampere80"
     RESULTS_SUBDIR="compile-test" 
     
     TEST_RESULTS_DIR="${RESULTS_DIR}/${RESULTS_SUBDIR}/"
     mkdir -p "${TEST_RESULTS_DIR}"
-
     
     # --- Compilation Step ---
     # The '|| true' ensures the CI script step doesn't fail if 'make' returns an error.
     # The exit code is captured to determine the test status.
     COMPILE_STATUS=0
     {
+      module load Stages/2025  GCC
+      module load CMake
+      module load NCCL
+      module load OpenMPI
+
       mkdir -p build && cd build &&
-    cmake .. \
-      -DCMAKE_BUILD_TYPE=Debug \
-      -DCMAKE_CXX_STANDARD=20 \
-      -DIPPL_ENABLE_TESTS=True \
-      -DIPPL_ENABLE_SOLVERS=ON \
-      -DIPPL_ENABLE_FFT=ON \
-      -DIPPL_ENABLE_UNIT_TESTS=True \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DKokkos_VERSION=4.5.00 &&
-      ASAN_OPTIONS="detect_leaks=0" make -j 2
+      cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DKokkos_ARCH_AMPERE80=ON \
+        -DCMAKE_CXX_STANDARD=20 \
+        -DIPPL_ENABLE_FFT=ON \
+        -DIPPL_ENABLE_TESTS=ON \
+        -DUSE_ALTERNATIVE_VARIANT=ON \
+        -DIPPL_ENABLE_SOLVERS=ON \
+        -DIPPL_ENABLE_ALPINE=True \
+        -DIPPL_PLATFORMS=cuda &&
+      make -j 8
     } > "${TEST_RESULTS_DIR}/stdout.log" 2> "${TEST_RESULTS_DIR}/stderr.log" || COMPILE_STATUS=$?
 
     cd ..
