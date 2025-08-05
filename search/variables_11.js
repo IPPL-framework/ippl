@@ -7,7 +7,7 @@ var searchData=
   ['rank_5fm_4',['rank_m',['../classippl_1_1mpi_1_1Communicator.html#a2aeaf56983bf8a8fa5708a6762c5fa86',1,'ippl::mpi::Communicator']]],
   ['rcutoff_5fm_5',['rcutoff_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a69f8e795e10193994bcfbeb4312ed07a',1,'ippl::ParticleSpatialOverlapLayout']]],
   ['ref_5felement_5fm_6',['ref_element_m',['../classippl_1_1FiniteElementSpace.html#a6ce9c625a922cfb4d36a0e6475de52b9',1,'ippl::FiniteElementSpace::ref_element_m()'],['../classippl_1_1Quadrature.html#a0c3a23ba2e2ddce8dbe2c3b437619fe3',1,'ippl::Quadrature::ref_element_m()']]],
-  ['refelement_5fm_7',['refElement_m',['../classippl_1_1FEMPoissonSolver.html#abb50a86b929c55893ad04e1b1898c672',1,'ippl::FEMPoissonSolver']]],
+  ['refelement_5fm_7',['refElement_m',['../classippl_1_1PreconditionedFEMPoissonSolver.html#afb0f93df0ce8cfd1921cc938486a3b6c',1,'ippl::PreconditionedFEMPoissonSolver::refElement_m()'],['../classippl_1_1FEMPoissonSolver.html#abb50a86b929c55893ad04e1b1898c672',1,'ippl::FEMPoissonSolver::refElement_m()']]],
   ['residuenorm_8',['residueNorm',['../classippl_1_1CG.html#a02d0a0ded3e939a6d49e2330f4732085',1,'ippl::CG']]],
   ['rho_5fm_9',['rho_m',['../structippl_1_1polynomial__chebyshev__preconditioner.html#ad1a216f2a9a7e579e12e4ac99b487215',1,'ippl::polynomial_chebyshev_preconditioner::rho_m()'],['../classChargedParticles.html#af1100e3bd25868d7b8d234df72459a57',1,'ChargedParticles::rho_m()']]],
   ['rhonorm_5fm_10',['rhoNorm_m',['../classAlpineManager.html#af5dd034a48f21be278d3d0ee0a4124f9',1,'AlpineManager::rhoNorm_m()'],['../classChargedParticles.html#a0e2f29f01cf4acd7e426e0793110211c',1,'ChargedParticles::rhoNorm_m()']]],

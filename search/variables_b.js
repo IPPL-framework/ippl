@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['lagrangespace_5fm_0',['lagrangeSpace_m',['../classippl_1_1FEMPoissonSolver.html#ab53225d2c764827d2e03a8044bbec1c3',1,'ippl::FEMPoissonSolver']]],
+  ['lagrangespace_5fm_0',['lagrangeSpace_m',['../classippl_1_1FEMPoissonSolver.html#ab53225d2c764827d2e03a8044bbec1c3',1,'ippl::FEMPoissonSolver::lagrangeSpace_m()'],['../classippl_1_1PreconditionedFEMPoissonSolver.html#a4a3b59d0c945915c44ee9eb2d55538d6',1,'ippl::PreconditionedFEMPoissonSolver::lagrangeSpace_m()']]],
   ['layout_5fmp_1',['layout_mp',['../classippl_1_1FDTDSolverBase.html#a1b81aedaddafd2ee11e0ec82b6a79c03',1,'ippl::FDTDSolverBase']]],
   ['lbt_5fm_2',['lbt_m',['../classAlpineManager.html#ad3677f3d77d7c2ba482963266c14866b',1,'AlpineManager']]],
   ['level_5fm_3',['level_m',['../structippl_1_1polynomial__newton__preconditioner.html#a2323880ca0e146e7708261d1c7bb85bc',1,'ippl::polynomial_newton_preconditioner']]],

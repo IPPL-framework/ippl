@@ -182,6 +182,21 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6e111421322e57595e63e303b7e34103"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a6e111421322e57595e63e303b7e34103">evaluateAx</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
 <tr class="memdesc:a6e111421322e57595e63e303b7e34103"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assembly operations ///////////////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a6e111421322e57595e63e303b7e34103">More...</a><br /></td></tr>
 <tr class="separator:a6e111421322e57595e63e303b7e34103"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af495338a17bb32c6de0d1a8270f8992a"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:af495338a17bb32c6de0d1a8270f8992a"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#af495338a17bb32c6de0d1a8270f8992a">evaluateAx_lower</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
+<tr class="separator:af495338a17bb32c6de0d1a8270f8992a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6e1a3d82267265f355d7303ba15b406"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:ae6e1a3d82267265f355d7303ba15b406"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#ae6e1a3d82267265f355d7303ba15b406">evaluateAx_upper</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
+<tr class="separator:ae6e1a3d82267265f355d7303ba15b406"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20b57c71ff42450c59f8fc9d97f9f850"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a20b57c71ff42450c59f8fc9d97f9f850"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a20b57c71ff42450c59f8fc9d97f9f850">evaluateAx_upperlower</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
+<tr class="separator:a20b57c71ff42450c59f8fc9d97f9f850"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37afd7504f75446e2a4d41c3cc82cddb"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a37afd7504f75446e2a4d41c3cc82cddb"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a37afd7504f75446e2a4d41c3cc82cddb">evaluateAx_inversediag</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
+<tr class="separator:a37afd7504f75446e2a4d41c3cc82cddb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9e3b699582dfd87fe7cc2e4fda5e119"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:ab9e3b699582dfd87fe7cc2e4fda5e119"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#ab9e3b699582dfd87fe7cc2e4fda5e119">evaluateAx_diag</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
+<tr class="separator:ab9e3b699582dfd87fe7cc2e4fda5e119"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39bcc1594f6560788a58fe99970ae0e8"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
 <tr class="memitem:a39bcc1594f6560788a58fe99970ae0e8"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a39bcc1594f6560788a58fe99970ae0e8">evaluateAx_lift</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
 <tr class="memdesc:a39bcc1594f6560788a58fe99970ae0e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assemble the left stiffness matrix A of the system but only for the boundary values, so that they can be subtracted from the RHS for treatment of Dirichlet BCs.  <a href="classippl_1_1LagrangeSpace.html#a39bcc1594f6560788a58fe99970ae0e8">More...</a><br /></td></tr>
@@ -616,6 +631,70 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="ab9e3b699582dfd87fe7cc2e4fda5e119" name="ab9e3b699582dfd87fe7cc2e4fda5e119"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9e3b699582dfd87fe7cc2e4fda5e119">&#9670;&#160;</a></span>evaluateAx_diag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FieldLHS <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateAx_diag </td>
+          <td>(</td>
+          <td class="paramtype">FieldLHS &amp;&#160;</td>
+          <td class="paramname"><em>field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&#160;</td>
+          <td class="paramname"><em>evalFunction</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a37afd7504f75446e2a4d41c3cc82cddb" name="a37afd7504f75446e2a4d41c3cc82cddb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37afd7504f75446e2a4d41c3cc82cddb">&#9670;&#160;</a></span>evaluateAx_inversediag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FieldLHS <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateAx_inversediag </td>
+          <td>(</td>
+          <td class="paramtype">FieldLHS &amp;&#160;</td>
+          <td class="paramname"><em>field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&#160;</td>
+          <td class="paramname"><em>evalFunction</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a39bcc1594f6560788a58fe99970ae0e8" name="a39bcc1594f6560788a58fe99970ae0e8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a39bcc1594f6560788a58fe99970ae0e8">&#9670;&#160;</a></span>evaluateAx_lift()</h2>
 
@@ -655,6 +734,102 @@ template&lt;typename F &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>FieldLHS - The LHS field containing A*x </dd></dl>
+
+</div>
+</div>
+<a id="af495338a17bb32c6de0d1a8270f8992a" name="af495338a17bb32c6de0d1a8270f8992a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af495338a17bb32c6de0d1a8270f8992a">&#9670;&#160;</a></span>evaluateAx_lower()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FieldLHS <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateAx_lower </td>
+          <td>(</td>
+          <td class="paramtype">FieldLHS &amp;&#160;</td>
+          <td class="paramname"><em>field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&#160;</td>
+          <td class="paramname"><em>evalFunction</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae6e1a3d82267265f355d7303ba15b406" name="ae6e1a3d82267265f355d7303ba15b406"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6e1a3d82267265f355d7303ba15b406">&#9670;&#160;</a></span>evaluateAx_upper()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FieldLHS <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateAx_upper </td>
+          <td>(</td>
+          <td class="paramtype">FieldLHS &amp;&#160;</td>
+          <td class="paramname"><em>field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&#160;</td>
+          <td class="paramname"><em>evalFunction</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a20b57c71ff42450c59f8fc9d97f9f850" name="a20b57c71ff42450c59f8fc9d97f9f850"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20b57c71ff42450c59f8fc9d97f9f850">&#9670;&#160;</a></span>evaluateAx_upperlower()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<div class="memtemplate">
+template&lt;typename F &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">FieldLHS <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateAx_upperlower </td>
+          <td>(</td>
+          <td class="paramtype">FieldLHS &amp;&#160;</td>
+          <td class="paramname"><em>field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">F &amp;&#160;</td>
+          <td class="paramname"><em>evalFunction</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

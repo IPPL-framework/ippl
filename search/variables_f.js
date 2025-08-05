@@ -5,7 +5,7 @@ var searchData=
   ['parameters_2',['parameters',['../structippl_1_1LogEntry.html#a1cf29df3fa51b87d11ddb9be79be6566',1,'ippl::LogEntry']]],
   ['params_5fm_3',['params_m',['../classippl_1_1ParticleInteractionBase.html#a6706e7cd0a53fd9285079647d045b962',1,'ippl::ParticleInteractionBase::params_m()'],['../classippl_1_1Poisson.html#a73eae524c9fa61e6d71d4e1edc045500',1,'ippl::Poisson::params_m()'],['../classippl_1_1ParameterList.html#a93fd3a92b33cb5ee955aab5e185fee1f',1,'ippl::ParameterList::params_m()']]],
   ['pc_5fm_4',['pc_m',['../classippl_1_1ParticleInteractionBase.html#ac41c9b0d32c732af172d5033ae76f778',1,'ippl::ParticleInteractionBase']]],
-  ['pcg_5falgo_5fm_5',['pcg_algo_m',['../classippl_1_1FEMPoissonSolver.html#afe47990355d10cb211d70809c71377f1',1,'ippl::FEMPoissonSolver']]],
+  ['pcg_5falgo_5fm_5',['pcg_algo_m',['../classippl_1_1FEMPoissonSolver.html#afe47990355d10cb211d70809c71377f1',1,'ippl::FEMPoissonSolver::pcg_algo_m()'],['../classippl_1_1PreconditionedFEMPoissonSolver.html#ac211205503fb8eebc2914bbf06c224a3',1,'ippl::PreconditionedFEMPoissonSolver::pcg_algo_m()']]],
   ['pcontainer_5fm_6',['pcontainer_m',['../classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6',1,'ippl::PicManager']]],
   ['pdf_5fm_7',['pdf_m',['../classippl_1_1random_1_1Distribution.html#af8b5d39981a5352c7ddd61946335a9f4',1,'ippl::random::Distribution']]],
   ['phi_5fm_8',['phi_m',['../classChargedParticles.html#a3b5db5a63a8fc61daf1b5fbef69ee5bb',1,'ChargedParticles']]],

@@ -1,7 +1,9 @@
 <map id="ippl::SolverAlgorithm&lt; FieldLHS, FieldRHS &gt;" name="ippl::SolverAlgorithm&lt; FieldLHS, FieldRHS &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="241,5,404,75"/>
+<area shape="rect" id="node1" title=" " alt="" coords="345,5,508,75"/>
 <area shape="rect" id="node2" href="$classippl_1_1CG.html" title=" " alt="" coords="5,123,221,339"/>
 <area shape="rect" id="node3" href="$classippl_1_1CG.html" title=" " alt="" coords="246,123,399,339"/>
-<area shape="rect" id="node4" href="$classippl_1_1CG.html" title=" " alt="" coords="424,123,640,339"/>
-<area shape="rect" id="node5" href="$classippl_1_1PCG.html" title=" " alt="" coords="421,387,643,529"/>
+<area shape="rect" id="node4" href="$classippl_1_1CG.html" title=" " alt="" coords="423,123,638,339"/>
+<area shape="rect" id="node5" href="$classippl_1_1CG.html" title=" " alt="" coords="663,123,879,339"/>
+<area shape="rect" id="node6" href="$classippl_1_1PCG.html" title=" " alt="" coords="587,387,741,529"/>
+<area shape="rect" id="node7" href="$classippl_1_1PCG.html" title=" " alt="" coords="765,387,987,529"/>
 </map>

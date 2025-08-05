@@ -27,8 +27,9 @@ var searchData=
   ['pointtopoint_2ehpp_24',['PointToPoint.hpp',['../PointToPoint_8hpp.html',1,'']]],
   ['poisson_2eh_25',['Poisson.h',['../Poisson_8h.html',1,'']]],
   ['poissoncg_2eh_26',['PoissonCG.h',['../PoissonCG_8h.html',1,'']]],
-  ['preconditioner_2eh_27',['Preconditioner.h',['../Preconditioner_8h.html',1,'']]],
-  ['pregion_2eh_28',['PRegion.h',['../PRegion_8h.html',1,'']]],
-  ['pregion_2ehpp_29',['PRegion.hpp',['../PRegion_8hpp.html',1,'']]],
-  ['profiling_2emd_30',['Profiling.md',['../Profiling_8md.html',1,'']]]
+  ['preconditionedfempoissonsolver_2eh_27',['PreconditionedFEMPoissonSolver.h',['../PreconditionedFEMPoissonSolver_8h.html',1,'']]],
+  ['preconditioner_2eh_28',['Preconditioner.h',['../Preconditioner_8h.html',1,'']]],
+  ['pregion_2eh_29',['PRegion.h',['../PRegion_8h.html',1,'']]],
+  ['pregion_2ehpp_30',['PRegion.hpp',['../PRegion_8hpp.html',1,'']]],
+  ['profiling_2emd_31',['Profiling.md',['../Profiling_8md.html',1,'']]]
 ];
