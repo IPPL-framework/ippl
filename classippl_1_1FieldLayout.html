@@ -147,8 +147,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a32e69ffe1470d02d04b4d7b879421152"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4089a93c74132863690cfe3ab3a49c04"><td class="memItemLeft" align="right" valign="top">std::array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a4089a93c74132863690cfe3ab3a49c04">isParallel</a> () const</td></tr>
 <tr class="separator:a4089a93c74132863690cfe3ab3a49c04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c9a7b8dec5ecc6519afc374b45c3a21"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a2c9a7b8dec5ecc6519afc374b45c3a21">getLocalNDIndex</a> (int rank=-1) const</td></tr>
-<tr class="separator:a2c9a7b8dec5ecc6519afc374b45c3a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6253ab771218767c4f930840ca3c627b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a6253ab771218767c4f930840ca3c627b">getLocalNDIndex</a> () const</td></tr>
+<tr class="separator:a6253ab771218767c4f930840ca3c627b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3943afb07740e4c18fd39c17f5383011"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a3943afb07740e4c18fd39c17f5383011">getLocalNDIndex</a> (int rank) const</td></tr>
+<tr class="separator:a3943afb07740e4c18fd39c17f5383011"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15ae640bcad7c263b2abc9b3c768fac8"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1FieldLayout.html#a0482dfee24c5ea97ba64ff30d890ef00">host_mirror_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a15ae640bcad7c263b2abc9b3c768fac8">getHostLocalDomains</a> () const</td></tr>
 <tr class="separator:a15ae640bcad7c263b2abc9b3c768fac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a289229f77d5465bd6e38db88fabf00d9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1FieldLayout.html#a4c4f63ae860189fbafe62bedcdaf7eb3">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a289229f77d5465bd6e38db88fabf00d9">getDeviceLocalDomains</a> () const</td></tr>
@@ -644,8 +646,24 @@ template&lt;unsigned Dim&gt; </div>
 
 </div>
 </div>
-<a id="a2c9a7b8dec5ecc6519afc374b45c3a21" name="a2c9a7b8dec5ecc6519afc374b45c3a21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c9a7b8dec5ecc6519afc374b45c3a21">&#9670;&#160;</a></span>getLocalNDIndex()</h2>
+<a id="a6253ab771218767c4f930840ca3c627b" name="a6253ab771218767c4f930840ca3c627b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6253ab771218767c4f930840ca3c627b">&#9670;&#160;</a></span>getLocalNDIndex() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">::NDIndex_t</a> &amp; <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getLocalNDIndex</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3943afb07740e4c18fd39c17f5383011" name="a3943afb07740e4c18fd39c17f5383011"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3943afb07740e4c18fd39c17f5383011">&#9670;&#160;</a></span>getLocalNDIndex() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -656,7 +674,7 @@ template&lt;unsigned Dim&gt; </div>
           <td class="memname">const <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">::NDIndex_t</a> &amp; <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getLocalNDIndex </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>rank</em> = <code>-1</code></td><td>)</td>
+          <td class="paramname"><em>rank</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
