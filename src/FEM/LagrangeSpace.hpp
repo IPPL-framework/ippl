@@ -384,6 +384,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -417,21 +431,8 @@ namespace ippl {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
-                // local DOF indices
+                // local DOF indices (both i and j go from 0 to numDOFs-1 in the element)
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -527,6 +528,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -562,19 +577,6 @@ namespace ippl {
 
                 // local DOF indices
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -674,6 +676,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -709,19 +725,6 @@ namespace ippl {
 
                 // local DOF indices
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -821,6 +824,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -856,19 +873,6 @@ namespace ippl {
 
                 // local DOF indices
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -968,6 +972,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -1003,19 +1021,6 @@ namespace ippl {
 
                 // local DOF indices
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -1123,6 +1128,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -1158,19 +1177,6 @@ namespace ippl {
 
                 // local DOF indices
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
@@ -1264,6 +1270,20 @@ namespace ippl {
             }
         }
 
+        // Make local element matrix -- does not change through the element mesh
+        // Element matrix
+        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+
+        // 1. Compute the Galerkin element matrix A_K
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            for (size_t j = 0; j < numElementDOFs; ++j) {
+                A_K[i][j] = 0.0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                }
+            }
+        }
+
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
@@ -1289,21 +1309,8 @@ namespace ippl {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
-                // local DOF indices
+                // local DOF indices (both i and j go from 0 to numDOFs-1 in the element)
                 size_t i, j;
-
-                // Element matrix
-                Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
-
-                // 1. Compute the Galerkin element matrix A_K
-                for (i = 0; i < numElementDOFs; ++i) {
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        A_K[i][j] = 0.0;
-                        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                            A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                        }
-                    }
-                }
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
