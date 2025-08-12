@@ -50,16 +50,48 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         
+        // #ifdef IPPL_ENABLE_CATALYST
+        // for (int i = 1; i < argc; ++i) {
+        //     if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+        //         // reduce the argument list
+        //         char* reducedArgv[] = { argv[0], argv[i + 1] };
+        //         CatalystAdaptor::Initialize(2, reducedArgv);
+        //         break;
+        //     }
+        // }
+        // #endif
+
+
         #ifdef IPPL_ENABLE_CATALYST
-        for (int i = 1; i < argc; ++i) {
-            if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
-                // reduce the argument list
-                char* reducedArgv[] = { argv[0], argv[i + 1] };
-                CatalystAdaptor::Initialize(2, reducedArgv);
-                break;
+            char* script = nullptr;
+            char* proxy = nullptr;
+            for (int i = 1; i < argc; ++i) {
+                if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+                    script = argv[i+1]; 
+                    i++;
+                }   
+                if (std::string(argv[i]) == "--pvproxy" && i+1 < argc) {
+                    proxy = argv[i+1];
+                    i++;
+                }
             }
-        }
+            char* reducedArgv[] = { argv[0], script, proxy};
+            CatalystAdaptor::Initialize(2, reducedArgv);
         #endif
+        
+        // #ifdef IPPL_ENABLE_ASCENT
+        //         int frequency = 1;
+        //         for (int i = 1; i < argc; ++i) {
+        //             if (std::string(argv[i]) == "--frequency" && i + 1 < argc) {
+        //                 frequency = atoi(argv[i+1]); 
+        //                 std::cout << "Frequency: " << frequency << std::endl;
+        //                 i++;
+        //             } 
+        //         }
+            
+        //         AscentAdaptor::Initialize(frequency);
+        // #endif
+
         
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
@@ -103,7 +135,7 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
-        #ifdef ENABLE_CATALYST
+        #ifdef IPPL_ENABLE_CATALYST
         CatalystAdaptor::Finalize();
         #endif
         IpplTimings::stopTimer(mainTimer);
