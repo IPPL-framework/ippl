@@ -49,10 +49,6 @@
 // // FEM Spaces
 #include "FEM/LagrangeSpace.h"
 #include "FEM/NedelecSpace.h"
-#include "FEM/LagrangeSpaceFEMVector.h"
-
-// // FEM Solver
-#include "FEM/FEMSolver.h"
 
 // // FEM Vector
 #include "FEM/FEMVector.h"
