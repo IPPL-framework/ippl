@@ -3,10 +3,10 @@
 
 #include <memory>
 
-#include "AlpineManager.h"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "AlpineManager.h"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -15,30 +15,41 @@
 #include "Random/Randn.h"
 
 #ifdef IPPL_ENABLE_CATALYST
-#include <optional>
 #include "Stream/InSitu/CatalystAdaptor.h"
+// #include <vtkSMProxyManager.h>
+// #include "CatalystAdaptor.h"
 #endif
+
+
+// #ifdef IPPL_ENABLE_ASCENT
+// #include "AscentAdaptor.h"
+// #endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
 class PenningTrapManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>;
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    using FieldContainer_t = FieldContainer<T, Dim>;
+    using FieldSolver_t= FieldSolver<T, Dim>;
+    using LoadBalancer_t= LoadBalancer<T, Dim>;
+    double scaleFactor;
 
-    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                       std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_, double lbt_,
+                         std::string& solver_, std::string& stepMethod_)
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),scaleFactor(30){}
+
+    // PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+    //                    std::string& solver_, std::string& stepMethod_)
+    //     : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                        std::string& solver_, std::string& stepMethod_,
                        std::vector<std::string> preconditioner_params_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
-                                preconditioner_params_) {}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_) {}
 
-    ~PenningTrapManager() {}
+    ~PenningTrapManager(){}
 
 private:
     Vector_t<double, Dim> length_m;
@@ -49,6 +60,7 @@ private:
     double DrInv_m;
 
 public:
+
     void pre_run() override {
         Inform m("Pre Run");
         for (unsigned i = 0; i < Dim; i++) {
@@ -68,7 +80,7 @@ public:
 
         nrMax_m    = 2048;  // Max grid size in our studies
         dxFinest_m = length_m[0] / nrMax_m;
-        this->dt_m = 0.5 * dxFinest_m;  // size of timestep
+        this->dt_m = 0.05;//0.5 * dxFinest_m;  // size of timestep
 
         this->it_m   = 0;
         this->time_m = 0.0;
@@ -129,7 +141,7 @@ public:
 
         this->dump();
 
-        m << "Done";
+        m << "Done\n\n\n";
     }
 
     void initializeParticles() {
@@ -272,7 +284,7 @@ public:
                 Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
                 Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
                 Pview(j)[2] += alpha * Eext_z;
-            });
+        });
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);
@@ -300,19 +312,48 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
-        #ifdef IPPL_ENABLE_CATALYST
-        std::optional<conduit_cpp::Node> node = std::nullopt;
-        CatalystAdaptor::Execute_Particle(it, this->time_m, ippl::Comm->rank(),  pc, node);
-        //auto *rho               = &this->fcontainer_m->getRho();
-        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *rho, node);
-        //auto *E               = &this->fcontainer_m->getE();
-        //CatalystAdaptor::Execute_Field(it, this->time_m, ippl::Comm->rank(),  *E, node);
-        //CatalystAdaptor::Execute_Field_Particle(it, this->time_m, ippl::Comm->rank(),  *E, pc);
-        #endif 
-       
+
+
+        // /* Field solve */
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
+
+
+#ifdef IPPL_ENABLE_CATALYST
+        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields = {
+            {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            {"scalar", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            /* when using the FFT solver this contained can't return anything ... */
+            // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+            // {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+        };
+        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields, scaleFactor);
+#endif
+
+
+// #ifdef IPPL_ENABLE_ASCENT
+
+//         std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles = {
+//             {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+//         };
+//         std::vector<AscentAdaptor::FieldPair<T, Dim>> fields = {
+//             {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+//             // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+//             // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+//         };
+//         AscentAdaptor::Execute(it, this->time_m ,  particles, fields);
+
+// #endif
+
+
+        // // // Field solve
+        // IpplTimings::startTimer(SolveTimer);
+        // this->fsolver_m->runSolver();
+        // IpplTimings::stopTimer(SolveTimer); 
 
         // gather E field
         this->grid2par();
@@ -322,29 +363,28 @@ public:
         auto P2view = pc->P.getView();
         auto E2view = pc->E.getView();
         Kokkos::parallel_for(
-            "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
-                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
-                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
-                                * (V0 / (Kokkos::pow(length[2], 2)));
+           "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
+           double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
+                         * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
+                          * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
+                           * (V0 / (Kokkos::pow(length[2], 2)));
 
-                Eext_x += E2view(j)[0];
-                Eext_y += E2view(j)[1];
-                Eext_z += E2view(j)[2];
+           Eext_x += E2view(j)[0];
+           Eext_y += E2view(j)[1];
+           Eext_z += E2view(j)[2];
 
-                P2view(j)[0] = DrInv
-                               * (P2view(j)[0]
-                                  + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
-                P2view(j)[1] = DrInv
-                               * (P2view(j)[1]
-                                  + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
-                P2view(j)[2] += alpha * Eext_z;
-            });
+           P2view(j)[0] = DrInv * (P2view(j)[0] + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+           P2view(j)[1] = DrInv * (P2view(j)[1] + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+           P2view(j)[2] += alpha * Eext_z;
+        });
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);
+        
+        // std::cout << "\n\nsleeping a bitz..........." << std::endl;
+        // sleep(3);
     }
 
     void dump() override {
@@ -359,8 +399,7 @@ public:
         double kinEnergy             = 0.0;
         double potEnergy             = 0.0;
         this->fcontainer_m->getRho() = dot(this->fcontainer_m->getE(), this->fcontainer_m->getE());
-        potEnergy                    = 0.5 * this->hr_m[0] * this->hr_m[1] * this->hr_m[2]
-                    * this->fcontainer_m->getRho().sum();
+        potEnergy = 0.5 * this->hr_m[0] * this->hr_m[1] * this->hr_m[2] * this->fcontainer_m->getRho().sum();
 
         Kokkos::parallel_reduce(
             "Particle Kinetic Energy", this->pcontainer_m->getLocalNum(),
@@ -392,7 +431,7 @@ public:
                 },
                 Kokkos::Sum<T>(temp));
             Kokkos::fence();
-            T globaltemp = 0.0;
+            T globaltemp          = 0.0;
             ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
 
             normE[d] = std::sqrt(globaltemp);
@@ -410,7 +449,7 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (std::fabs(this->time_m) < 1e-14) {
+            if ( std::fabs(this->time_m) < 1e-14 ) {
                 csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";

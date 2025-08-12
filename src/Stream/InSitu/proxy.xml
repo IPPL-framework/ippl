@@ -1,0 +1,92 @@
+<ServerManagerConfiguration>
+    <!--
+      ProxyGroup: sources
+      This group defines the data sources available to ParaView Catalyst for in situ visualization. 
+      In this context, it provides a custom source proxy 'SteerableParameters' that exposes simulation parameters 
+      (such as scaleFactor) to be steered at runtime from the ParaView Catalyst UI. These parameters can be adjusted 
+      interactively, allowing users to influence the running C++ simulation without restarting it. 
+      The properties in this group are mapped to simulation-side variables and are updated via Catalyst's steering interface.
+    -->
+    <ProxyGroup name="sources">
+        <SourceProxy name="SteerableParameters" class="vtkSteeringDataGenerator" >
+            <!--
+              Property: PartitionType
+              Controls the partitioning strategy for the simulation data. Hidden from the UI (panel_visibility="never").
+            -->
+            <IntVectorProperty name="PartitionType"
+                               command="SetPartitionType"
+                               number_of_elements="1"
+                               default_values="1"
+                               panel_visibility="never">
+            </IntVectorProperty>
+
+            <!--
+              Property: FieldAssociation
+              Specifies the association of the steered field (e.g., point or cell data). Hidden from the UI.
+            -->
+            <IntVectorProperty name="FieldAssociation"
+                               command="SetFieldAssociation"
+                               number_of_elements="1"
+                               default_values="0"
+                               panel_visibility="never">
+            </IntVectorProperty>
+
+            <!--
+              Property: scaleFactor
+              A steerable double parameter exposed to the user, allowing runtime adjustment of a simulation variable.
+              This property is linked to the simulation via Catalyst and can be changed interactively in ParaView.
+            -->
+            <DoubleVectorProperty name="scaleFactor"
+                             command="SetTuple1Double"
+                             clean_command="Clear"
+                             use_index="1"
+                             initial_string="scalefactor"
+                             number_of_elements_per_command="1"
+                             repeat_command="1">
+            </DoubleVectorProperty>
+
+            <!--
+              PropertyGroup: SteerableParametersFLAAAG
+              Groups steerable properties for display in the ParaView UI as a collection.
+              The 'scaleFactor' property is mapped to the prototype property 'PrototypescaleFactor'.
+            -->
+            <PropertyGroup label="SteerableParametersFLAAAG" panel_widget="PropertyCollection">
+                <Property name="scaleFactor" function="PrototypescaleFactor" />
+                <!-- here, "name" identifies the property on this proxy, while
+                     "function" identifies the property on the prototype proxy. If
+                     "function" is not specified, same value as "name" is assumed. -->
+                <Hints>
+                  <PropertyCollectionWidgetPrototype group="misc" name="SteerableParametersPrototype" />
+                </Hints>
+            </PropertyGroup>
+            <Hints>
+              <CatalystInitializePropertiesWithMesh mesh="steerable">
+                <Property name="scaleFactor" association="point" array="steerable" />
+              </CatalystInitializePropertiesWithMesh>
+            </Hints>
+            
+        </SourceProxy>
+    </ProxyGroup>
+
+
+    <!--
+      ProxyGroup: misc
+      This group defines prototype proxies used for property grouping and UI representation.
+      The 'SteerableParametersPrototype' proxy provides a template for steerable properties,
+      such as 'PrototypescaleFactor', which can be mapped to actual simulation parameters.
+    -->
+    <ProxyGroup name="misc">
+      <Proxy name="SteerableParametersPrototype" label="SteerableParameters" >
+        <!--
+          Property: PrototypescaleFactor
+          Prototype for a steerable double parameter, used for UI grouping and mapping to actual simulation properties.
+        -->
+        <DoubleVectorProperty name="PrototypescaleFactor"
+                           label="scaleFactor"
+                           number_of_elements="1"
+                           default_values="1">
+        </DoubleVectorProperty>
+
+      </Proxy>
+    </ProxyGroup>
+</ServerManagerConfiguration>
