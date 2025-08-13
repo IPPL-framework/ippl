@@ -245,7 +245,11 @@ namespace ippl {
         // be SERIAL or PARALLEL
         std::array<bool, Dim> isParallel() const { return isParallelDim_m; }
 
-        const NDIndex_t& getLocalNDIndex(int rank = -1) const;
+        // Get the local domain for the current rank.
+        const NDIndex_t& getLocalNDIndex() const;
+
+        // Get the local domain for a specific rank.
+        const NDIndex_t& getLocalNDIndex(int rank) const;
 
         const host_mirror_type getHostLocalDomains() const;
 

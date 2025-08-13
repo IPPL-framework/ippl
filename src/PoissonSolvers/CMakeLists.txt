@@ -17,6 +17,7 @@ set(poisson_headers
     NullSolver.h
     LaplaceHelpers.h
     FEMPoissonSolver.h
+    PreconditionedFEMPoissonSolver.h
 )
 
 # Add FFT-based solver headers conditionally
