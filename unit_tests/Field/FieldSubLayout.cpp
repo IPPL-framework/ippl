@@ -36,14 +36,17 @@ public:
         // In this test we use a domain of +1 Point in each direction,
         // which is the domain of the origin layout,
         // used to determine the distribution of the sub-domains on the ranks
+
+        unsigned int subDomainReduction = 1;
+
         for (unsigned d = 0; d < Dim; d++) {
-            domain[d] = (nPoints[d]+1) / 32.;
+            domain[d] = (nPoints[d]+subDomainReduction) / 32.;
         }
 
         std::array<ippl::Index, Dim> originIndices;
         std::array<ippl::Index, Dim> indices;
         for (unsigned d = 0; d < Dim; d++) {
-            originIndices[d] = ippl::Index(nPoints[d]+1);
+            originIndices[d] = ippl::Index(nPoints[d]+subDomainReduction);
             indices[d] = ippl::Index(nPoints[d]);
         }
         auto originOwned = std::make_from_tuple<ippl::NDIndex<Dim>>(originIndices);
@@ -56,7 +59,7 @@ public:
         isParallel.fill(true);
 
         for (unsigned d = 0; d < Dim; d++) {
-            hx[d]     = domain[d] / (nPoints[d]+1);
+            hx[d]     = domain[d] / (nPoints[d]+subDomainReduction);
             origin[d] = 0;
         }
 

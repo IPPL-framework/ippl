@@ -24,14 +24,17 @@ public:
 
     HaloTest()
         : nPoints(getGridSizes<Dim>()) {
+
+        unsigned int subDomainReduction = 1;
+
         for (unsigned d = 0; d < Dim; d++) {
-            domain[d] = (nPoints[d]+4) / 10;
+            domain[d] = (nPoints[d]+subDomainReduction) / 10;
         }
 
         std::array<ippl::Index, Dim> originIndices;
         std::array<ippl::Index, Dim> indices;
         for (unsigned d = 0; d < Dim; d++) {
-            originIndices[d] = ippl::Index(nPoints[d]+4);
+            originIndices[d] = ippl::Index(nPoints[d]+subDomainReduction);
             indices[d] = ippl::Index(nPoints[d]);
         }
         auto originOwned = std::make_from_tuple<ippl::NDIndex<Dim>>(originIndices);
@@ -43,7 +46,7 @@ public:
         std::array<bool, Dim> isParallel;
         isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
         for (unsigned d = 0; d < Dim; d++) {
-            hx[d]     = domain[d] / (nPoints[d]+4);
+            hx[d]     = domain[d] / (nPoints[d]+subDomainReduction);
             origin[d] = 0;
         }
 
