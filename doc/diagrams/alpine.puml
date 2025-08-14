@@ -1,0 +1,450 @@
+@startuml
+
+
+
+
+/' COLOUR DESIGN '/
+skinparam class {
+BackgroundColor<<ippl>> Wheat
+BorderColor<<ippl>> Tomato
+
+BackgroundColor<<alpine>> GreenYellow
+BorderColor<<alpine>> ForestGreen
+
+
+' BackgroundColor<<invisible>> Transparent
+' BorderColor<<invisible>> Transparent
+' LineColor<<invisible>> Transparent
+' FontColor<<invisible>> Transparent 
+
+}
+
+ 
+<style>
+diamond {
+BackgroundColor Transparent
+LineColor Transparent
+' FontColor green
+' FontName arial
+' FontSize 15
+} 
+
+
+' circle {??????
+' BackgroundColor Transparent
+' LineColor Transparent
+' FontColor Transparent
+' ' FontName arial
+' ' FontSize 15
+' }  
+<style>
+
+
+
+
+
+package legend{
+
+<> x1 
+<> x2
+' <> z1
+' <> z2
+' <> a1
+' <> a2
+<> b1
+<> b2
+<> c1
+<> c2
+
+
+x1 -[#blue]r-> x2 : Pointer
+b1 -right-* b2  : Composition
+c1 -right-o c2  : Aggregation
+' z1 .right.|> z2 : Realisation  
+' a1 -right-|> a2 : Generalisation \n(Inheritance) 
+
+}
+
+
+
+
+
+
+
+abstract class   BaseManager <<ippl>> {
+    virt. prerun()
+    virt. prestep()
+    virt. poststep()
+    virt. advance()
+    run()
+}
+
+abstract class  PICManager <<ippl>> {
+    virt. part2grid()
+    virt. grid2part()
+
+    protected:
+    <fc> p_container
+    <pc> f_container
+    <lb> l_balancer
+    FieldSolverBase* f_solver
+
+}
+
+
+
+
+
+
+package alpine {
+        
+    class AlpineManager <<alpine>>{
+        
+    }
+       
+        entity f_solver
+
+        ' ()
+        entity fs{
+
+        }
+    
+        entity f_container
+        entity p_container
+        entity l_balancer
+
+
+        class FieldContainer <<alpine>>{
+        }
+
+        class ParticleContainer <<alpine>>{
+        }
+
+        class LoadBalancer <<alpine>>{
+        }
+        
+
+    
+        class FieldSolver <<alpine>>{
+            <T> solver_t
+        }
+
+}
+
+
+' {
+'                 BackgroundColor<<invisible>> Transparent
+'                 BorderColor<<invisible>> Transparent
+'         }
+
+
+
+package _m{
+
+    dataclass phi_m
+    dataclass rho_m
+    dataclass E_m
+
+    entity fl_m
+    entity mesh_m
+
+    entity layout_m
+    entity attributes_m
+
+
+
+    entity pl_m
+
+}
+
+
+dataclass q
+dataclass p
+dataclass E
+
+
+
+
+
+
+/' Particle Related '/
+abstract class  ParticleBase <<ippl>> {
+
+}
+
+abstract class  ParticleAttributeBase <<ippl>> {
+}
+
+class  ParticleAttribute <<ippl>> {
+}
+
+
+
+
+
+
+class ParticleLayout <<ippl>> {
+    setParticleBC()
+    applyBC()
+    update()
+}
+
+class ParticleSpatialLayout <<ippl>>{
+    * flayout_m
+    * rlayout_m
+
+
+}
+
+
+
+abstract class  FieldSolverBase <<ippl>> {
+}
+
+
+
+abstract class  BareField <<ippl>> {}
+class Field <<ippl>>
+
+
+abstract "Expression<E,N>" <<ippl>>{
+
+    []()
+}
+
+
+
+class FieldLayout <<ippl>>
+abstract class Mesh <<ippl>>
+class UniformCartesian <<ippl>>
+
+
+
+struct ContainerForAllSpaces <<ippl>>
+
+class RegionLayout <<ippl>>
+
+
+
+
+
+
+
+
+
+
+/' ########################################################### '/
+/' RELATIONS ... '/
+/' ########################################################### '/
+
+
+
+
+
+
+BaseManager <|-- PICManager
+'  --|> 
+PICManager <|-- AlpineManager
+
+AlpineManager o-- p_container
+AlpineManager o-- f_container
+AlpineManager o-- l_balancer
+AlpineManager o-- f_solver
+
+
+
+
+/' LoadBalancer ########################### '/
+
+l_balancer ...|> LoadBalancer
+LoadBalancer -[#blue]-> rho_m
+LoadBalancer -[#blue]-> E_m
+LoadBalancer -[#blue]-> phi_m
+
+
+
+/' Solvers  ########################### '/
+
+FieldSolverBase <|-down-- FieldSolver
+
+' f_solver   -[#blue]d-> fs
+' fs -down-|> FieldSolver  
+' f_solver   -[#blue]-> FieldSolver  
+f_solver  ...|> FieldSolver 
+
+
+
+
+
+/' Fields ########################### '/
+f_container ...|> FieldContainer
+
+
+FieldContainer o-- rho_m
+FieldContainer o-- phi_m
+FieldContainer o-- E_m
+FieldContainer o-- fl_m
+FieldContainer o-- mesh_m
+
+rho_m ..down.|> Field 
+phi_m ..down.|> Field 
+E_m   ..down.|> Field 
+
+Field     --|> BareField
+BareField --|> "Expression<E,N>"
+
+
+
+mesh_m ...|> UniformCartesian
+UniformCartesian --|> Mesh
+
+
+
+/' Particles ########################### '/
+
+
+p_container ...|> ParticleContainer
+
+ParticleBase  o-- layout_m : private
+ParticleBase o-- attributes_m : private
+ParticleBase  <|-d-- ParticleContainer
+
+
+ParticleAttribute --|> ParticleAttributeBase
+attributes_m ...|> ContainerForAllSpaces
+
+
+attributes_m o-- q
+attributes_m o-- p
+attributes_m o-- E
+
+
+q -down-|> ParticleAttribute  
+p -down-|> ParticleAttribute  
+E -down-|> ParticleAttribute  
+
+
+
+
+
+/' Layouts ############################## '/
+
+ParticleSpatialLayout --|> ParticleLayout
+
+ParticleSpatialLayout o-- RegionLayout
+ParticleSpatialLayout -[#Blue]->FieldLayout
+ParticleContainer o-- pl_m : private
+
+pl_m ...|> ParticleSpatialLayout
+
+
+
+
+
+layout_m -[#blue]l-> pl_m
+pl_m .[#blue]l.> mesh_m 
+
+pl_m -[#blue]r-> fl_m
+
+
+
+' layout_m -[#blue]l-> pl_m
+' pl_m     .[#blue].> mesh_m 
+' mesh_m   -[#green]-> fl_m
+
+' pl_m     -[#blue]-> fl_m
+
+' why does this mess up everything
+
+
+
+
+
+fl_m   ...|> FieldLayout
+
+
+
+
+RegionLayout -[#Blue]-> FieldLayout
+RegionLayout -[#Blue]-> Mesh
+
+
+
+p_container <-d[#blue]- LoadBalancer
+f_solver    <-d[#blue]- LoadBalancer
+' lb <-l[#blue]- LoadBalancer
+
+' lb -r> fs
+
+
+' LoadBalancer -[#blue]u-> p_container
+' LoadBalancer -[#blue]u-> f_solver
+
+
+' lb -[#blue]u-> 
+' lb -[#blue]u-> f_solver
+
+
+
+' lb -[#blue]u-> p_container
+' lb -[#blue]u-> f_solver
+
+
+
+
+
+
+/' ###################################### '/
+/' LAYOUT HELP/ENFORCEMENT '/
+/' ###################################### '/
+
+/' Try to keep it minimal '/
+
+layout_m -[hidden]l> attributes_m
+
+
+
+
+
+
+
+
+
+
+' l_balancer  -[#red]r> f_container
+' f_container -[#red]r> f_solver
+' f_solver    -[#red]r> p_container
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+' f_container-[#red]r> l_balancer  
+' l_balancer  -[#red]r> f_solver
+' f_solver    -[#red]r> p_container
+
+
+' p_container -[hidden]r-> f_container
+' f_container -[hidden]r> f_solver
+' f_solver -[hidden]l-> l_balancer
+' fl_m -[hidden]r-> mesh_m
+
+' ParticleContainer -[#red]l-> FieldSolver
+' FieldSolver -[hidden]r->  ParticleContainer 
+' FieldSolver -[#red]r->  ParticleContainer 
+
+' f_solver   -[hidden]-> FieldSolver  
+
+@endluml

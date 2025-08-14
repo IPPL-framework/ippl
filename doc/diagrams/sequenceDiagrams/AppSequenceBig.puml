@@ -1,0 +1,192 @@
+@startuml
+!pragma teoz true
+actor Terminal
+Database Disk
+
+participant main
+collections "ippl::" as ippl
+
+participant "Inform::" as inform
+participant msg
+
+participant "timings::" as timings
+participant "mainTimer" as timer
+
+participant "AppManager::" as AppManager
+participant manager
+
+
+
+
+
+
+
+
+
+Terminal -> main : ./APP
+activate main #LightGreen
+
+
+' group Setup #LightBlue something
+' end
+' Alice -> Bob: Authentication Request
+' alt#Gold #LightBlue Successful case
+'     Bob -> Alice: Authentication Accepted
+' else #Pink Failure
+'     Bob -> Alice: Authentication Rejected
+' end
+
+== Initialization  == 
+
+    ' main -\ ippl
+    main -> ippl : initialize()
+    activate ippl #LightBlue
+        ippl -->
+        ippl <--
+        ||3||
+    deactivate ippl
+    
+    
+    main  ->>o ippl
+    &ippl ->> inform   : 
+    activate inform #LightBlue
+    &inform -> msg **: <<create>><
+    ' inform -> main
+    deactivate inform
+    
+    
+    
+    main  ->>o ippl
+    &ippl ->> timings   : 
+    activate timings #LightBlue
+    &timings -> timer **: <<create>>("total")
+    ' timings -> main
+    deactivate timings
+
+    
+== Simulation Setup ==
+
+    main -> timer : startTimer()
+    
+    
+    main        ->>o ippl
+    &ippl       ->>o AppManager: 
+    activate AppManager #LightGreen
+    &AppManager -> manager ** : <<create>>(xxx)
+    deactivate AppManager
+
+    main -> manager : void prerun()
+    activate manager #LightGreen
+        ||20||
+        manager -[#DarkRed]>
+        manager --> Terminal : feedback
+    deactivate manager
+
+    main -> manager : void settime()
+    activate manager #LightGreen
+    deactivate manager
+
+    main -> manager : void getNt()
+    activate manager #LightGreen
+    manager -> main : Nt
+    deactivate manager
+
+       
+        
+
+    
+    
+== Simulation Run ==
+    
+    main -> manager : void run(Nt)
+    activate manager #LightBlue
+
+        loop Nt times
+                manager->manager : prestep()
+                activate manager #LightGreen
+                    manager --> Terminal : feedback
+                    ||2||
+                deactivate manager
+
+
+                manager->manager : advance()
+                activate manager #LightGreen
+                    manager -[#DarkRed]>
+                    manager <-> timings : safe timing infos
+                    manager --> Terminal : feedback
+                    ||30||
+                deactivate manager
+
+                manager->manager : poststep()
+                activate manager #LightGreen
+                    manager -> Disk : dump()
+                    manager ->>o msg : 
+                    & msg --> Terminal : feedback
+                    ||2||
+                deactivate manager
+
+            ||5||
+        end
+
+    deactivate manager
+
+    
+    main -> timer : stopTimer()
+    activate timer #LightBlue
+        timer -> timings : safe timing info
+    deactivate timer
+    main -> timings : print(), print(file)
+    activate  timings #LightBlue
+        timings -> Disk : save timer info to file
+        timings -> Terminal : print timer info to std::out
+        ||3||
+    deactivate timings
+
+||50||
+    
+== Finalization ==
+    
+
+
+main -> msg ++:  <<destroy>>
+main -[hidden]-> msg !!:
+main -> timer ++:  <<destroy>>
+main -[hidden]-> timer !!:
+main -> manager ++:  <<destroy>>
+main -[hidden]-> manager !!:
+
+
+' end_of_scope}
+
+/' cant destroy deacticvated object?? or bug '/
+' main -> msg !!: <<destroy>>
+' main -> timer !!: <<destroy>>
+' main -> manager !!: <<destroy>>
+/' alternative .. '/
+    ' main -[#red]->x msg     :
+    ' main -[#red]->x timer   :
+    ' main -[#red]->x manager :
+
+
+main -> ippl : finalize()
+activate ippl #LightBlue
+
+    ippl -->
+    ippl <--
+    ||3||
+deactivate ippl
+main -> Terminal : return(0);
+
+deactivate main
+
+@enduml
+
+
+' -\\ 
+' -//
+
+' Immediately after specifying the target participant, the following syntax can be used:
+' ++ Activate the target (optionally a color may follow this)
+' -- Deactivate the source
+' ** Create an instance of the target
+' !! Destroy an instance of the target
