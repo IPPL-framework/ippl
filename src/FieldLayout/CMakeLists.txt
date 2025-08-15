@@ -20,6 +20,8 @@ target_include_directories(ippl
 install(FILES
     FieldLayout.h
     FieldLayout.hpp
+    SubFieldLayout.h
+    SubFieldLayout.hpp
     DESTINATION include/FieldLayout
 )
 

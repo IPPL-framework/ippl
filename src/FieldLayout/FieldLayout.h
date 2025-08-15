@@ -355,7 +355,10 @@ namespace ippl {
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 
-    private:
+        neighbor_list neighbors_m;
+        neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
+
+    protected:
         //! Global domain
         NDIndex_t gDomain_m;
 
@@ -368,9 +371,6 @@ namespace ippl {
         std::array<bool, Dim> isParallelDim_m;
 
         unsigned int minWidth_m[Dim];
-
-        neighbor_list neighbors_m;
-        neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
 
         void calcWidths();
     };

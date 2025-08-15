@@ -20,6 +20,7 @@
 // #include "Index/NDIndex.h"
 
 #include "FieldLayout/FieldLayout.h"
+#include "FieldLayout/SubFieldLayout.h"
 
 #ifdef IPPL_ENABLE_FFT
 #include "FFT/FFT.h"
