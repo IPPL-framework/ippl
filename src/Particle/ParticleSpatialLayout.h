@@ -82,11 +82,12 @@ namespace ippl {
         //! The FieldLayout containing information on nearest neighbors
         FieldLayout_t& flayout_m;
         
-        // MPI RMA window for one-sided communication
-        mpi::rma::Window<mpi::rma::Active> window_m;
         
         // Vector keeping track of the recieves from all ranks
         std::vector<size_type> nRecvs_m;
+  
+        // MPI RMA window for one-sided communication
+        mpi::rma::Window<mpi::rma::Active> window_m;
         
         //! Type of the Kokkos view containing the local regions.
         using region_view_type = typename RegionLayout_t::view_type;
