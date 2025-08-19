@@ -92,20 +92,18 @@ package undefined  #GreenYellow/LightGoldenRodYellow {
 
 
 
-
+entity fl_m
 entity layout_m
 entity attributes_m
+entity pl_m
 
 
 
-' entity fl_m
-' entity pl_m
     ' dataclass phi_m
     ' dataclass rho_m
     ' dataclass E_m
     ' entity mesh_m
 
-' bc_s ..|>  BConds
 
 
 
@@ -143,12 +141,6 @@ class ParticleSpatialLayout <<ippl>>{
 
 
 abstract class  FieldSolverBase <<ippl>> {
-}
-abstract class Poisson <<ippl>> {
-}
-abstract class Maxwell <<ippl>> {
-}
-abstract class FiniteElementSpace <<ippl>> {
 }
 
 
@@ -207,10 +199,7 @@ BareField  <|-- Field
 
 ' f_solver -[#blue]-|> FieldSolverBase
 f_solver *..> fs
-fs .[#red]. FieldSolverBase
-fs .[#red]. Poisson
-fs ..[#red]. Maxwell
-fs ..[#red]. FiniteElementSapce
+fs -[#red]- FieldSolverBase
 
 
 
@@ -221,8 +210,7 @@ pc -[#red]- ParticleBase
 
 
 f_container *..> fc
-' fc -[#red]- BareField
-fc -[#red]- Field
+fc -[#red]- BareField
 
 l_balancer  *..> lb
 
@@ -231,6 +219,7 @@ Field --> Mesh_m
 Field --> bcs_m
 
 Mesh_m -[#blue]-> Mesh
+bc_s ..|>  BConds
 
 
 /' LoadBalancer ########################### '/

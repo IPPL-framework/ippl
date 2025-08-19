@@ -1,0 +1,153 @@
+@startuml
+!pragma teoz true
+actor Terminal
+Database Disk
+
+participant main
+collections "ippl::" as ippl
+
+
+participant "AppManager::" as AppManager
+participant manager
+
+
+
+
+
+participant "VisBase::" as VisBase
+participant VisManager
+
+
+
+
+
+
+
+Terminal -> main : ./APP
+activate main #LightGreen
+
+
+' group Setup #LightBlue something
+' end
+' Alice -> Bob: Authentication Request
+' alt#Gold #LightBlue Successful case
+'     Bob -> Alice: Authentication Accepted
+' else #Pink Failure
+'     Bob -> Alice: Authentication Rejected
+' end
+
+== Initialization  == 
+
+    ' main -\ ippl
+    main -> ippl : initialize()
+    activate ippl #LightBlue
+        ippl -->
+        ippl <--
+        ||3||
+    deactivate ippl
+    
+    
+    
+== Simulation Setup ==
+    
+    
+    main        ->>o ippl
+    &ippl       ->>o AppManager: ()
+    activate AppManager #LightGreen
+        &AppManager -> manager **: <<create>>
+        manager -> VisManager **: <<create>>
+    deactivate AppManager
+
+    main -> manager : void prerun()
+    activate manager #LightGreen
+        manager -[#DarkRed]>
+        ||20||
+        manager --> Terminal : feedback
+    deactivate manager
+
+
+       
+        
+
+    
+    
+== Simulation Run ==
+    
+    main -> manager : void run(Nt)
+    activate manager #LightBlue
+
+
+            manager -> VisManager  : initialize()
+            activate VisManager #LightBlue
+                VisManager -[#Tomato]-> : visualizer.initialize()
+                ||2||
+            deactivate VisManager
+
+
+            ||10|| 
+
+        loop Nt times
+            manager->manager : prestep()
+            activate manager #LightGreen
+                manager --> Terminal : feedback
+                ||2||
+            deactivate manager
+
+
+            manager->manager : advance()
+            activate manager #LightGreen
+                manager -[#DarkRed]>
+                manager --> Terminal : feedback
+                ||30||
+            deactivate manager
+
+            manager -> VisManager  : execute()
+            activate VisManager #LightBlue
+                VisManager -[#Tomato]-> : visualizer.execute()
+                ||2||
+            deactivate VisManager
+
+            manager->manager : poststep()
+            activate manager #LightGreen
+            manager -> Disk : dump()
+            manager --> Terminal :  feedback
+            ||2||
+            deactivate manager
+
+
+
+            ||10|| 
+
+        end
+            manager -> VisManager  : finalize()
+            activate VisManager #LightBlue
+                VisManager -[#Tomato]-> : visualizer.finalize()
+                ||2||
+            deactivate VisManager
+
+        ' manager --> Terminal :  print timing info
+
+    deactivate manager
+
+
+||100||
+    
+== Finalization ==
+    
+    main -> manager ++:  <<destroy>>
+    main -[hidden]-> manager !!:
+
+
+    main -> ippl : finalize()
+    activate ippl #LightBlue
+
+        ippl -->
+        ippl <--
+        ||3||
+    deactivate ippl
+    main -> Terminal : return(0);
+
+    deactivate main
+
+@enduml
+
