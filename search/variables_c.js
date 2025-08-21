@@ -16,5 +16,6 @@ var searchData=
   ['minbound_5fm_13',['minbound_m',['../structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a73f05efff9aeaa381d59fb82106e67bc',1,'ippl::random::InverseTransformSampling::fill_random']]],
   ['minu_14',['minU',['../structgenerate__random.html#a8454d9ef29d36e4f2e66436140d2086d',1,'generate_random']]],
   ['minval_5fm_15',['minval_m',['../structippl_1_1detail_1_1ParticleBC.html#af57f419279ee26cf03df31bf905297fa',1,'ippl::detail::ParticleBC']]],
-  ['mu_16',['mu',['../structippl_1_1random_1_1randn.html#aad032d70e65cee022f5ee6bef27ffe74',1,'ippl::random::randn']]]
+  ['minwidth_5fm_16',['minWidth_m',['../classippl_1_1FieldLayout.html#a18e6ea906d50790af20fb2459759de32',1,'ippl::FieldLayout']]],
+  ['mu_17',['mu',['../structippl_1_1random_1_1randn.html#aad032d70e65cee022f5ee6bef27ffe74',1,'ippl::random::randn']]]
 ];

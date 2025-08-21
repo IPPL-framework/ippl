@@ -87,6 +87,8 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classippl_1_1FieldLayout-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FieldLayout&lt; Dim &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -94,13 +96,23 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="FieldLayout_8h_source.html">FieldLayout.h</a>&gt;</code></p>
 <div class="dynheader">
+Inheritance diagram for ippl::FieldLayout&lt; Dim &gt;:</div>
+<div class="dyncontent">
+<div class="center"><img src="classippl_1_1FieldLayout__inherit__graph.png" border="0" usemap="#aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map" alt="Inheritance graph"/></div>
+<map name="aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map" id="aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map">
+<area shape="rect" title=" " alt="" coords="5,5,148,353"/>
+<area shape="rect" href="classippl_1_1SubFieldLayout.html" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="5,401,148,588"/>
+</map>
+</div>
+<div class="dynheader">
 Collaboration diagram for ippl::FieldLayout&lt; Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FieldLayout__coll__graph.png" border="0" usemap="#aippl_1_1FieldLayout_3_01Dim_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FieldLayout_3_01Dim_01_4_coll__map" id="aippl_1_1FieldLayout_3_01Dim_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="15,520,158,765"/>
+<area shape="rect" title=" " alt="" coords="149,520,291,839"/>
 <area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="5,197,168,457"/>
 <area shape="rect" href="classTagMaker.html" title=" " alt="" coords="25,5,148,148"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="192,300,339,355"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -183,6 +195,27 @@ Public Attributes</h2></td></tr>
 <tr class="separator:afc5e9a88daa7e5768833d393c2354988"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d3132b3d1fec40ab7ba76c23bc9104d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1mpi_1_1Communicator.html">mpi::Communicator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a8d3132b3d1fec40ab7ba76c23bc9104d">comm</a></td></tr>
 <tr class="separator:a8d3132b3d1fec40ab7ba76c23bc9104d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a4b1c9845b4d40518f146de6bf335487a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a4b1c9845b4d40518f146de6bf335487a">calcWidths</a> ()</td></tr>
+<tr class="separator:a4b1c9845b4d40518f146de6bf335487a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:ade8894f2430c1e840ed398ef91e958d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#ade8894f2430c1e840ed398ef91e958d9">gDomain_m</a></td></tr>
+<tr class="memdesc:ade8894f2430c1e840ed398ef91e958d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Global domain.  <a href="classippl_1_1FieldLayout.html#ade8894f2430c1e840ed398ef91e958d9">More...</a><br /></td></tr>
+<tr class="separator:ade8894f2430c1e840ed398ef91e958d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a01d75c9400e48b9234c1e85a3dac91"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#a4c4f63ae860189fbafe62bedcdaf7eb3">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a9a01d75c9400e48b9234c1e85a3dac91">dLocalDomains_m</a></td></tr>
+<tr class="memdesc:a9a01d75c9400e48b9234c1e85a3dac91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Local domains (device view)  <a href="classippl_1_1FieldLayout.html#a9a01d75c9400e48b9234c1e85a3dac91">More...</a><br /></td></tr>
+<tr class="separator:a9a01d75c9400e48b9234c1e85a3dac91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2b8b1bb173c1ea37c79fef4249b0c0c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#a0482dfee24c5ea97ba64ff30d890ef00">host_mirror_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#aa2b8b1bb173c1ea37c79fef4249b0c0c">hLocalDomains_m</a></td></tr>
+<tr class="memdesc:aa2b8b1bb173c1ea37c79fef4249b0c0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Local domains (host mirror view)  <a href="classippl_1_1FieldLayout.html#aa2b8b1bb173c1ea37c79fef4249b0c0c">More...</a><br /></td></tr>
+<tr class="separator:aa2b8b1bb173c1ea37c79fef4249b0c0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a000e94613c174702c6d81034ceda703c"><td class="memItemLeft" align="right" valign="top">std::array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a000e94613c174702c6d81034ceda703c">isParallelDim_m</a></td></tr>
+<tr class="separator:a000e94613c174702c6d81034ceda703c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18e6ea906d50790af20fb2459759de32"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a18e6ea906d50790af20fb2459759de32">minWidth_m</a> [<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>]</td></tr>
+<tr class="separator:a18e6ea906d50790af20fb2459759de32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a156b68940741d389450ef1d613a287ed" name="a156b68940741d389450ef1d613a287ed"></a>
@@ -451,6 +484,30 @@ template&lt;unsigned Dim&gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a4b1c9845b4d40518f146de6bf335487a" name="a4b1c9845b4d40518f146de6bf335487a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b1c9845b4d40518f146de6bf335487a">&#9670;&#160;</a></span>calcWidths()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::calcWidths</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -948,6 +1005,84 @@ template&lt;unsigned Dim&gt; </div>
 
 </div>
 </div>
+<a id="a9a01d75c9400e48b9234c1e85a3dac91" name="a9a01d75c9400e48b9234c1e85a3dac91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a01d75c9400e48b9234c1e85a3dac91">&#9670;&#160;</a></span>dLocalDomains_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#a4c4f63ae860189fbafe62bedcdaf7eb3">view_type</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::dLocalDomains_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Local domains (device view) </p>
+
+</div>
+</div>
+<a id="ade8894f2430c1e840ed398ef91e958d9" name="ade8894f2430c1e840ed398ef91e958d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade8894f2430c1e840ed398ef91e958d9">&#9670;&#160;</a></span>gDomain_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::gDomain_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Global domain. </p>
+
+</div>
+</div>
+<a id="aa2b8b1bb173c1ea37c79fef4249b0c0c" name="aa2b8b1bb173c1ea37c79fef4249b0c0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2b8b1bb173c1ea37c79fef4249b0c0c">&#9670;&#160;</a></span>hLocalDomains_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#a0482dfee24c5ea97ba64ff30d890ef00">host_mirror_type</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::hLocalDomains_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Local domains (host mirror view) </p>
+
+</div>
+</div>
 <a id="afc5e9a88daa7e5768833d393c2354988" name="afc5e9a88daa7e5768833d393c2354988"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afc5e9a88daa7e5768833d393c2354988">&#9670;&#160;</a></span>isAllPeriodic_m</h2>
 
@@ -960,6 +1095,54 @@ template&lt;unsigned Dim&gt; </div>
           <td class="memname">bool <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::isAllPeriodic_m</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a000e94613c174702c6d81034ceda703c" name="a000e94613c174702c6d81034ceda703c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a000e94613c174702c6d81034ceda703c">&#9670;&#160;</a></span>isParallelDim_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::isParallelDim_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a18e6ea906d50790af20fb2459759de32" name="a18e6ea906d50790af20fb2459759de32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18e6ea906d50790af20fb2459759de32">&#9670;&#160;</a></span>minWidth_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::minWidth_m[<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>]</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

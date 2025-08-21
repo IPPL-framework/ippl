@@ -59,10 +59,11 @@ var searchData=
   ['_7eregionlayout_56',['~RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html#a2be0bbdb23464e0bd0c6917b7e2c1d23',1,'ippl::detail::RegionLayout']]],
   ['_7erequest_57',['~Request',['../classippl_1_1mpi_1_1Request.html#a4557f6d98280dd082af7a07ee804463c',1,'ippl::mpi::Request']]],
   ['_7esinkbc_58',['~SinkBC',['../structippl_1_1detail_1_1SinkBC.html#a35d945c72965ae6c6cb09371b49b3a49',1,'ippl::detail::SinkBC']]],
-  ['_7etagmaker_59',['~TagMaker',['../classTagMaker.html#afb577de2282429955dcf7a3c067a5958',1,'TagMaker']]],
-  ['_7etiming_60',['~Timing',['../structTiming.html#aaf3987e7b8e62851ad94c1ef03550854',1,'Timing']]],
-  ['_7etruncatedgreenparticleinteraction_61',['~TruncatedGreenParticleInteraction',['../classippl_1_1TruncatedGreenParticleInteraction.html#ae6f41f6a5639bd973ff54425b02b4ca1',1,'ippl::TruncatedGreenParticleInteraction']]],
-  ['_7euniformcartesian_62',['~UniformCartesian',['../classippl_1_1UniformCartesian.html#a54713650e4078512049e59ce25b67f7a',1,'ippl::UniformCartesian']]],
-  ['_7evector_63',['~Vector',['../classippl_1_1Vector.html#a0834e8dd008e5fac28613c53ecb247df',1,'ippl::Vector']]],
-  ['_7ewindow_64',['~Window',['../classippl_1_1mpi_1_1rma_1_1Window.html#af50887b9bab992af455bb15d9cdc5605',1,'ippl::mpi::rma::Window']]]
+  ['_7esubfieldlayout_59',['~SubFieldLayout',['../classippl_1_1SubFieldLayout.html#ae8bfd554b6d96dc4297b26766309c250',1,'ippl::SubFieldLayout']]],
+  ['_7etagmaker_60',['~TagMaker',['../classTagMaker.html#afb577de2282429955dcf7a3c067a5958',1,'TagMaker']]],
+  ['_7etiming_61',['~Timing',['../structTiming.html#aaf3987e7b8e62851ad94c1ef03550854',1,'Timing']]],
+  ['_7etruncatedgreenparticleinteraction_62',['~TruncatedGreenParticleInteraction',['../classippl_1_1TruncatedGreenParticleInteraction.html#ae6f41f6a5639bd973ff54425b02b4ca1',1,'ippl::TruncatedGreenParticleInteraction']]],
+  ['_7euniformcartesian_63',['~UniformCartesian',['../classippl_1_1UniformCartesian.html#a54713650e4078512049e59ce25b67f7a',1,'ippl::UniformCartesian']]],
+  ['_7evector_64',['~Vector',['../classippl_1_1Vector.html#a0834e8dd008e5fac28613c53ecb247df',1,'ippl::Vector']]],
+  ['_7ewindow_65',['~Window',['../classippl_1_1mpi_1_1rma_1_1Window.html#af50887b9bab992af455bb15d9cdc5605',1,'ippl::mpi::rma::Window']]]
 ];

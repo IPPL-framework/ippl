@@ -10,7 +10,8 @@ var searchData=
   ['isallperiodic_5fm_7',['isAllPeriodic_m',['../classippl_1_1FieldLayout.html#afc5e9a88daa7e5768833d393c2354988',1,'ippl::FieldLayout::isAllPeriodic_m()'],['../classAlpineManager.html#a50909b38000fd7d53cde38fcae28a798',1,'AlpineManager::isAllPeriodic_m()']]],
   ['isfirstrepartition_5fm_8',['isFirstRepartition_m',['../classAlpineManager.html#ab46d6399d5699935202db745432d6c66',1,'AlpineManager']]],
   ['isparallel_5fm_9',['isParallel_m',['../classChargedParticles.html#a18666d5e1baaa16fc443d13474412217',1,'ChargedParticles']]],
-  ['isupper_5fm_10',['isUpper_m',['../structippl_1_1detail_1_1ParticleBC.html#a3f0ad19fdefe8767496f6704631b5400',1,'ippl::detail::ParticleBC']]],
-  ['it_5fm_11',['it_m',['../classAlpineManager.html#a330aa855ec7d4488e6cbc380f9c67cf7',1,'AlpineManager']]],
-  ['iterations_5fm_12',['iterations_m',['../classippl_1_1CG.html#a9ecb18123a087339856d1ecbf62c4459',1,'ippl::CG']]]
+  ['isparalleldim_5fm_10',['isParallelDim_m',['../classippl_1_1FieldLayout.html#a000e94613c174702c6d81034ceda703c',1,'ippl::FieldLayout']]],
+  ['isupper_5fm_11',['isUpper_m',['../structippl_1_1detail_1_1ParticleBC.html#a3f0ad19fdefe8767496f6704631b5400',1,'ippl::detail::ParticleBC']]],
+  ['it_5fm_12',['it_m',['../classAlpineManager.html#a330aa855ec7d4488e6cbc380f9c67cf7',1,'AlpineManager']]],
+  ['iterations_5fm_13',['iterations_m',['../classippl_1_1CG.html#a9ecb18123a087339856d1ecbf62c4459',1,'ippl::CG']]]
 ];
