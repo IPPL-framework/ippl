@@ -10,22 +10,32 @@
 # -----------------------------------------------------------------------------
 message(STATUS "📄 Generating IpplVersions.h")
 
-execute_process(
-    COMMAND date
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE IPPL_COMPILE_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+# Make embedded metadata optional (reduces rebuild churn).
+option(IPPL_EMBED_BUILD_METADATA "Embed user/machine/date in IpplVersions.h" OFF)
 
-execute_process(
-    COMMAND uname -a
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE IPPL_COMPILE_MACHINE OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(IPPL_EMBED_BUILD_METADATA)
 
-execute_process(
-    COMMAND whoami
-    OUTPUT_VARIABLE IPPL_COMPILE_USER OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+  execute_process(
+      COMMAND date
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE IPPL_COMPILE_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  execute_process(
+      COMMAND uname -a
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE IPPL_COMPILE_MACHINE OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  execute_process(
+      COMMAND whoami
+      OUTPUT_VARIABLE IPPL_COMPILE_USER OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+else()
+  set(IPPL_COMPILE_DATE "unknown")
+  set(IPPL_COMPILE_MACHINE "unknown")
+  set(IPPL_COMPILE_USER "unknown")
+endif()
 
 set(IPPL_COMPILE_ARCH "$ENV{IPPL_ARCH}")
 set(IPPL_COMPILE_LINE "${CMAKE_CXX_FLAGS}")
