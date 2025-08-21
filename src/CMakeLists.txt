@@ -78,7 +78,7 @@ target_include_directories(ippl
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
 )
 
 add_subdirectory (Communicate)
@@ -115,6 +115,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 target_link_libraries(ippl
     PUBLIC
         Kokkos::kokkos
+        MPI::MPI_CXX
 )
 
 if(IPPL_ENABLE_FFT AND TARGET Heffte::heffte)

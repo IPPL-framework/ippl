@@ -7,17 +7,27 @@ set(IPPL_INSTALL_CMAKEDIR
     "${CMAKE_INSTALL_LIBDIR}/cmake/ippl"
     CACHE PATH "Directory for ippl CMake package files")
 
-# Install public headers
+install(DIRECTORY ${IPPL_SOURCE_DIR}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ippl
+        FILES_MATCHING
+          PATTERN "*.h"   PATTERN "*.hpp"   PATTERN "*.hh"   PATTERN "*.H"
+          PATTERN "*.cuh" PATTERN "*.tpp"
+        # Exclude build/system files and sources
+          PATTERN "CMakeFiles" EXCLUDE
+          PATTERN "CMakeLists.txt" EXCLUDE
+          PATTERN "*.c" EXCLUDE
+          PATTERN "*.cc" EXCLUDE
+          PATTERN "*.cpp" EXCLUDE
+          PATTERN "*.cu" EXCLUDE)
+
 install(FILES
-    ${IPPL_SOURCE_DIR}/Ippl.h
-    ${IPPL_SOURCE_DIR}/IpplCore.h
     ${IPPL_BINARY_DIR}/IpplVersions.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # Install the actual library target
 install(TARGETS ippl
-    EXPORT IpplTargets
+    EXPORT ipplTargets
     ARCHIVE     DESTINATION ${CMAKE_INSTALL_LIBDIR}     # static libs, import libs
     LIBRARY     DESTINATION ${CMAKE_INSTALL_LIBDIR}     # shared libs
     RUNTIME     DESTINATION ${CMAKE_INSTALL_BINDIR}     # executables (if any)
@@ -25,9 +35,9 @@ install(TARGETS ippl
 )
 
 # Export the CMake target for find_package()
-install(EXPORT IpplTargets
-    FILE IpplTargets.cmake
-    NAMESPACE Ippl::
+install(EXPORT ipplTargets
+    FILE ipplTargets.cmake
+    NAMESPACE ippl::
     DESTINATION ${IPPL_INSTALL_CMAKEDIR}
 )
 
@@ -40,14 +50,14 @@ write_basic_package_version_file(
 )
 
 configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/IpplConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/IpplConfig.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/ipplConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfig.cmake"
     INSTALL_DESTINATION ${IPPL_INSTALL_CMAKEDIR}
 )
 
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/IpplConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/IpplConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfigVersion.cmake"
     DESTINATION ${IPPL_INSTALL_CMAKEDIR}
 )
 

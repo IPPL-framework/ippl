@@ -14,6 +14,9 @@
 # -----------------------------------------------------------------------------
 include(FetchContent)
 
+# === MPI ===
+find_package(MPI REQUIRED COMPONENTS CXX)
+
 # === Kokkos ===
 set(Kokkos_VERSION "4.5.00")
 message(STATUS "🔍 Looking for Kokkos ${Kokkos_VERSION}")
