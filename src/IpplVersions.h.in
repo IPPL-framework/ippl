@@ -4,12 +4,12 @@
 #ifndef IPPL_VERSIONS_H
 #define IPPL_VERSIONS_H
 
-const char *ippl_version_name = "${IPPL_VERSION_NAME}";
-const char *ippl_compile_arch = "${IPPL_COMPILE_ARCH}";
-const char *ippl_compile_line = "${IPPL_COMPILE_LINE}";
-const char *ippl_compile_date = "${IPPL_COMPILE_DATE}";
-const char *ippl_compile_machine = "${IPPL_COMPILE_MACHINE}";
-const char *ippl_compile_options = "${IPPL_COMPILE_OPTIONS}";
-const char *ippl_compile_user = "${IPPL_COMPILE_USER}";
+const char *ippl_version_name = "@IPPL_VERSION_NAME@";
+const char *ippl_compile_arch = "@IPPL_COMPILE_ARCH@";
+const char *ippl_compile_line = "@IPPL_COMPILE_LINE@";
+const char *ippl_compile_date = "@IPPL_COMPILE_DATE@";
+const char *ippl_compile_machine = "@IPPL_COMPILE_MACHINE@";
+const char *ippl_compile_options = "@IPPL_COMPILE_OPTIONS@";
+const char *ippl_compile_user = "@IPPL_COMPILE_USER@";
 
 #endif
