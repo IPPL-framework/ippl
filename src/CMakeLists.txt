@@ -40,7 +40,7 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
-add_library(ippl)
+add_library(ippl::ippl ALIAS ippl)
 
 target_compile_features(ippl PUBLIC cxx_std_20)
 
