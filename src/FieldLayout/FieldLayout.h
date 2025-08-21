@@ -355,7 +355,11 @@ namespace ippl {
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 
+        // List of all the neighboring ranks, arranged by ternary encoding
         neighbor_list neighbors_m;
+
+        // Lower and upper bounds of the regions to send and receive to and from neighbors,
+        // arranged by ternary encoding
         neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
 
     protected:
@@ -370,6 +374,7 @@ namespace ippl {
 
         std::array<bool, Dim> isParallelDim_m;
 
+        // Minimum width of all the local domains for each dimension
         unsigned int minWidth_m[Dim];
 
         void calcWidths();
