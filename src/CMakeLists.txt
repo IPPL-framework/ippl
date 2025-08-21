@@ -36,7 +36,22 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
-add_library(ippl ${IPPL_LIB_TYPE})
+add_library(ippl)
+
+get_target_property(_ippl_type ippl TYPE)
+if(_ippl_type)
+  string(REPLACE "_LIBRARY" "" _ippl_type "${_ippl_type}")  # -> STATIC / SHARED / OBJECT / INTERFACE
+else()
+  set(_ippl_type "UNKNOWN")
+endif()
+
+# Query PIC state (may inherit from CMAKE_POSITION_INDEPENDENT_CODE)
+get_target_property(_ippl_pic ippl POSITION_INDEPENDENT_CODE)
+if(NOT DEFINED _ippl_pic)
+  set(_ippl_pic "DEFAULT(${CMAKE_POSITION_INDEPENDENT_CODE})")
+endif()
+
+message(STATUS "🔧 Target 'ippl': type=${_ippl_type}, POSITION_INDEPENDENT_CODE=${_ippl_pic}")
 
 target_sources(ippl
     PRIVATE

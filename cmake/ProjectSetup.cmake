@@ -37,10 +37,6 @@ set(IPPL_LIB_TYPE STATIC)
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 option (Heffte_ENABLE_GPU_AWARE_MPI "Is a issue ... " OFF)
 
-if(IPPL_DYL)
-    set(IPPL_LIB_TYPE SHARED)
-endif()
-message(STATUS "🔧 IPPL will be built as a ${IPPL_LIB_TYPE} library (IPPL_DYL = ${IPPL_DYL})")
 
 # === Default Build Type ===
 set(_allowed_build_types Debug Release RelWithDebInfo MinSizeRel)
