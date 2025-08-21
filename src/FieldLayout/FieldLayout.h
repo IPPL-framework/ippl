@@ -223,10 +223,22 @@ namespace ippl {
         // false:
         template <unsigned Dim2>
         bool operator==(const FieldLayout<Dim2>& x) const {
+
+            // Throw exception if the domains are not the same
+            if (gDomain_m != x.getDomain()) {
+                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
+            }
+
             return gDomain_m == x.getDomain();
         }
 
         bool operator==(const FieldLayout<Dim>& x) const {
+
+            // Throw exception if the domains are not the same
+            if (gDomain_m != x.getDomain()) {
+                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
+            }
+
             for (unsigned int i = 0; i < Dim; ++i) {
                 if (hLocalDomains_m(comm.rank())[i] != x.getLocalNDIndex()[i]) {
                     return false;
