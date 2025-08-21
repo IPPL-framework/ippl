@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELEASE_INIT "-O3")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "-O3 -g")
+add_compile_options(
+  $<$<CONFIG:Debug>:-O0 -g>
+  $<$<CONFIG:Release>:-O3>
+  $<$<CONFIG:RelWithDebInfo>:-O3 -g>
+)
 
 project(IPPL LANGUAGES CXX VERSION 3.0.2)
 
