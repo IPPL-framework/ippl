@@ -31,24 +31,30 @@ option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required fo
 
 include(ProjectSetup)
 include(Version)
-add_subdirectory(src)
-include(CompilerOptions)
-include(Platforms)
 include(Dependencies)
 
+add_subdirectory(src)
 
-if (IPPL_ENABLE_UNIT_TESTS OR IPPL_ENABLE_TESTS)
-    include(CTest)
-    enable_testing()
+include(CompilerOptions)
+include(Platforms)
+
+if(NOT DEFINED BUILD_TESTING)
+  set(BUILD_TESTING OFF CACHE BOOL "Enable tests via CTest")
 endif()
 
-if(IPPL_ENABLE_UNIT_TESTS)
+if(IPPL_ENABLE_UNIT_TESTS OR IPPL_ENABLE_TESTS)
+  set(BUILD_TESTING ON CACHE BOOL "" FORCE)
+endif()
+
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
+  include(CTest)
+  if(IPPL_ENABLE_UNIT_TESTS)
     add_subdirectory(unit_tests)
-endif()
-
-if (IPPL_ENABLE_TESTS)
+  endif()
+  if(IPPL_ENABLE_TESTS)
     add_subdirectory(test)
-endif ()
+  endif()
+endif()
 
 if(IPPL_ENABLE_ALPINE)
     add_subdirectory(alpine)
