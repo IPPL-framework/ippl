@@ -7,7 +7,7 @@ set(IPPL_INSTALL_CMAKEDIR
     "${CMAKE_INSTALL_LIBDIR}/cmake/ippl"
     CACHE PATH "Directory for ippl CMake package files")
 
-install(DIRECTORY ${IPPL_SOURCE_DIR}/
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ippl
         FILES_MATCHING
           PATTERN "*.h"   PATTERN "*.hpp"   PATTERN "*.hh"   PATTERN "*.H"
@@ -21,7 +21,7 @@ install(DIRECTORY ${IPPL_SOURCE_DIR}/
           PATTERN "*.cu" EXCLUDE)
 
 install(FILES
-    ${IPPL_BINARY_DIR}/IpplVersions.h
+    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
