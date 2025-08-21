@@ -7,18 +7,27 @@ set(IPPL_INSTALL_CMAKEDIR
     "${CMAKE_INSTALL_LIBDIR}/cmake/ippl"
     CACHE PATH "Directory for ippl CMake package files")
 
+set(_ippl_install_excludes
+  PATTERN "CMakeFiles"     EXCLUDE
+  PATTERN "CMakeLists.txt" EXCLUDE
+  PATTERN "*.c"            EXCLUDE
+  PATTERN "*.cc"           EXCLUDE
+  PATTERN "*.cpp"          EXCLUDE
+  PATTERN "*.cu"           EXCLUDE
+)
+if(NOT IPPL_ENABLE_FFT)
+  list(APPEND _ippl_install_excludes
+    PATTERN "FFT/*"                    EXCLUDE
+    PATTERN "PoissonSolvers/FFT*"      EXCLUDE  # match your filenames if needed
+  )
+endif()
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ippl
         FILES_MATCHING
           PATTERN "*.h"   PATTERN "*.hpp"   PATTERN "*.hh"   PATTERN "*.H"
           PATTERN "*.cuh" PATTERN "*.tpp"
-        # Exclude build/system files and sources
-          PATTERN "CMakeFiles" EXCLUDE
-          PATTERN "CMakeLists.txt" EXCLUDE
-          PATTERN "*.c" EXCLUDE
-          PATTERN "*.cc" EXCLUDE
-          PATTERN "*.cpp" EXCLUDE
-          PATTERN "*.cu" EXCLUDE)
+          ${_ippl_install_excludes})
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
