@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-add_compile_options(
-  $<$<CONFIG:Debug>:-O0 -g>
-  $<$<CONFIG:Release>:-O3>
-  $<$<CONFIG:RelWithDebInfo>:-O3 -g>
-)
-
 project(IPPL LANGUAGES CXX VERSION 3.0.2)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

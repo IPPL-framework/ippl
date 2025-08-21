@@ -35,16 +35,22 @@ else()
   set(IPPL_COMPILE_USER "unknown")
 endif()
 
-set(IPPL_COMPILE_ARCH "$ENV{IPPL_ARCH}")
-set(IPPL_COMPILE_LINE "${CMAKE_CXX_FLAGS}")
-set(IPPL_COMPILE_OPTIONS "${CMAKE_CXX_FLAGS}")
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
 add_library(ippl)
+
+target_compile_features(ippl PUBLIC cxx_std_20)
+
+target_compile_options(ippl PUBLIC
+  $<$<COMPILE_LANGUAGE:CXX>:
+    $<$<CONFIG:Debug>:-O0 -g>
+    $<$<CONFIG:RelWithDebInfo>:-O3 -g>
+    $<$<CONFIG:Release>:-O3>
+  >
+)
 
 get_target_property(_ippl_type ippl TYPE)
 if(_ippl_type)
