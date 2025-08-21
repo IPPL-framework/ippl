@@ -40,6 +40,8 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
 )
 
+add_library(ippl)
+
 add_library(ippl::ippl ALIAS ippl)
 
 target_compile_features(ippl PUBLIC cxx_std_20)
@@ -76,7 +78,7 @@ target_include_directories(ippl
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 add_subdirectory (Communicate)

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(IPPL LANGUAGES CXX VERSION 3.0.2)
 
+include(GNUInstallDirs)
+
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(IPPL_ENABLE_UNIT_TESTS "Enable unit tests using GoogleTest" OFF)
