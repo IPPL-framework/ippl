@@ -31,11 +31,11 @@ option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required fo
 
 include(ProjectSetup)
 include(Version)
+add_subdirectory(src)
 include(CompilerOptions)
 include(Platforms)
 include(Dependencies)
 
-add_subdirectory(src)
 
 if (IPPL_ENABLE_UNIT_TESTS OR IPPL_ENABLE_TESTS)
     include(CTest)
