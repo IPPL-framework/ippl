@@ -25,6 +25,11 @@ option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(USE_ALTERNATIVE_VARIANT "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 
 
+add_compile_options(
+  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>
+  $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>
+)
+
 include(ProjectSetup)
 include(Version)
 include(Dependencies)
@@ -33,6 +38,13 @@ add_subdirectory(src)
 
 include(CompilerOptions)
 include(Platforms)
+
+if(DEFINED FETCHCONTENT_BASE_DIR)
+  add_compile_options(
+    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
+    $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
+  )
+endif()
 
 if(NOT DEFINED BUILD_TESTING)
   set(BUILD_TESTING OFF CACHE BOOL "Enable tests via CTest")

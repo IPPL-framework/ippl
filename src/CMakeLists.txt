@@ -78,8 +78,9 @@ target_sources(ippl
 target_include_directories(ippl
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 add_subdirectory (Communicate)

@@ -17,3 +17,5 @@ build*/
 
 # ignore .vscode directory
 .vscode
+.fc-cache
+.cache

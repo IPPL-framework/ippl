@@ -41,6 +41,9 @@ function(add_ippl_integration_test TEST_NAME)
   add_executable(${TEST_NAME} ${_sources})
 
   target_link_libraries(${TEST_NAME} PRIVATE ippl::ippl ${TEST_LINK_LIBS})
+  if(TARGET ippl_build_flags)
+    target_link_libraries(${TEST_NAME} PRIVATE ippl_build_flags)
+  endif()
 
   target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_INCLUDE_DIRS})
 
