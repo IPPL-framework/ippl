@@ -17,7 +17,7 @@ namespace ippl {
      * This class represents a 1D vector which stores elements of type \p T and
      * provides functionalities to handle halo cells and their exchanges.
      * It can conceptually be though of being a mathemtical vector, and to this
-     * extend is used during fem to represent the vectors \f$a\f$, \f$b\f$ when
+     * extend is used during fem to represent the vectors \f$x\f$, \f$b\f$ when
      * solving the linear system \f$Ax = b\f$.
      * 
      * We use this instead of an \c ippl::Field, because for basis
@@ -56,12 +56,12 @@ namespace ippl {
         /**
          * @brief Constructor taking size, neighbors, and halo exchange indices.
          * 
-         * Constrcutor of a FEMVector taking in the size and information about
+         * Constructor of a FEMVector taking in the size and information about
          * the neighboring MPI ranks. 
          * 
          * @param n The size of the vector.
          * @param neighbors The ranks of the neighboring MPI tasks.
-         * @param sendIdxs The indices for which the data should be send to the
+         * @param sendIdxs The indices for which the data should be sent to the
          * MPI neighbors.
          * @param recvIdxs The halo cell indices.
          */
@@ -97,8 +97,8 @@ namespace ippl {
         /**
          * @brief Copy values from neighboring ranks into local halo.
          * 
-         * This function takes local values and copies to them to the
-         * corresponding halo cells of the neighbors.
+         * This function takes local values (internal boundary values) and
+         * copies to them to the corresponding halo cells of the neighbors.
          */
         void fillHalo();
 
@@ -135,7 +135,7 @@ namespace ippl {
          * 
          * Set the values of this vector to the values of \p expr
          * 
-         * @param otherVector The expression from which to copy the values
+         * @param expr The expression from which to copy the values
          * 
          * @note Here we have to check how efficient this is, because in theory
          * we are copying a FEMVector onto the device when we are calling the
@@ -242,7 +242,7 @@ namespace ippl {
          * This function takes data from the vector accoding to \p idxStore and
          * stores it inside of \p BoundaryInfo::commBuffer_m.
          * 
-         * @param idxStore A 2D Kokkos view which stores the the indices for
+         * @param idxStore A 1D Kokkos view which stores the the indices for
          * \p FEMVector::data_m which we want to send.
          */
         void pack(const Kokkos::View<size_t*>& idxStore);
@@ -308,7 +308,7 @@ namespace ippl {
              * \c BoundaryInfo.
              * 
              * @param neighbors The ranks of the neighboring MPI tasks.
-             * @param sendIdxs The indices for which the data should be send to
+             * @param sendIdxs The indices for which the data should be sent to
              * the MPI neighbors.
              * @param recvIdxs The halo cell indices. 
              */
@@ -333,9 +333,9 @@ namespace ippl {
              * send to the MPI neighbors.
              * 
              * This is a 2D list which stores the indices of the
-             * \p FEMVector::data_m variable which need to be send to the MPI
+             * \p FEMVector::data_m variable which need to be sent to the MPI
              * neighbors. The first dimension goes over all the neighbors and
-             * should be used in combination with \p BounderyInfo::neighbors_m
+             * should be used in combination with \p BoundaryInfo::neighbors_m
              * while the second dimension goes over the actual indices.
              * 
              * This corresponds to the indices which belong to this rank but are
@@ -383,9 +383,9 @@ namespace ippl {
 
 
         /**
-         * @brief Struct holding all the MPI and boundary infromation.
+         * @brief Struct holding all the MPI and boundary information.
          * 
-         * Pointer to a struct holding all the infromation required for MPI
+         * Pointer to a struct holding all the information required for MPI
          * communication and general boundary information. The reason for it
          * beeing a pointer, is such that when this \c FEMVector object is
          * copied to device only a pointer and not all the data needs to be 

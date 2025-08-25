@@ -122,13 +122,13 @@ namespace ippl{
             archive->resetWritePos();
         }
 
-        // Recieve loop
+        // Receive loop
         for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
             size_t neighborRank = boundaryInfo_m->neighbors_m[i];
             size_t nrecvs = boundaryInfo_m->sendIdxs_m[i].extent(0);
             size_t tag = mpi::tag::FEMVECTOR + boundaryInfo_m->neighbors_m[i];
 
-            // ippl MPI communication which will recive data from neighbors,
+            // ippl MPI communication which will receive data from neighbors,
             // will put data into commBuffer_m
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nrecvs);

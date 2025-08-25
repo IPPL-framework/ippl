@@ -303,7 +303,7 @@ namespace ippl {
         
 
         /**
-         * @brief Reconstructs functino values at arbitrary points in the mesh
+         * @brief Reconstructs function values at arbitrary points in the mesh
          * given the Nedelec DOF coefficients.
          * 
          * This function can be used to retrieve the values of a solution

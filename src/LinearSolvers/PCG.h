@@ -229,29 +229,6 @@ namespace ippl {
             lhs_type d = lhs.deepCopy();
             d = 0;
             
-            /*
-            using bc_type  = BConds<lhs_type, Dim>;
-            bc_type lhsBCs = lhs.getFieldBC();
-            bc_type bc;
-
-            bool allFacesPeriodic = true;
-            for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                FieldBC bcType = lhsBCs[i]->getBCType();
-                if (bcType == PERIODIC_FACE) {
-                    // If the LHS has periodic BCs, so does the residue
-                    bc[i] = std::make_shared<PeriodicFace<lhs_type>>(i);
-                } else if (bcType & CONSTANT_FACE) {
-                    // If the LHS has constant BCs, the residue is zero on the BCs
-                    // Bitwise AND with CONSTANT_FACE will succeed for ZeroFace or ConstantFace
-                    bc[i]            = std::make_shared<ZeroFace<lhs_type>>(i);
-                    allFacesPeriodic = false;
-                } else {
-                    throw IpplException("PCG::operator()",
-                                        "Only periodic or constant BCs for LHS supported.");
-                    return;
-                }
-            }
-            */
            
             r = rhs - op_m(lhs);
             r.setHalo(0);

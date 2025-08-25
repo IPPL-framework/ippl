@@ -36,7 +36,7 @@ namespace ippl {
 
     // NedelecSpace initializer, to be made available to the FEMPoissonSolver 
     // such that we can call it from setRhs.
-    // Sets the correct mesh ad decomposes the elements among ranks according to layout.
+    // Sets the correct mesh and decomposes the elements among ranks according to layout.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
     void NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
@@ -420,8 +420,8 @@ namespace ippl {
         IpplTimings::stopTimer(timerAxLocalMatrix);
 
 
-        IpplTimings::TimerRef timerAxLoo = IpplTimings::getTimer("Ax Loo");
-        IpplTimings::startTimer(timerAxLoo);
+        IpplTimings::TimerRef timerAxLoop = IpplTimings::getTimer("Ax Loop");
+        IpplTimings::startTimer(timerAxLoop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -467,7 +467,7 @@ namespace ippl {
                 }
             }
         );
-        IpplTimings::stopTimer(timerAxLoo);
+        IpplTimings::stopTimer(timerAxLoop);
         
         return resultVector;
     
@@ -1570,7 +1570,7 @@ namespace ippl {
             }
         };
 
-        // Here we loop thought all the domains to figure out how we are related to
+        // Here we loop through all the domains to figure out how we are related to
         // them and if we have to do any kind of exchange.
         for (size_t i = 0; i < doms.extent(0); ++i) {
             if (i == Comm->rank()) {

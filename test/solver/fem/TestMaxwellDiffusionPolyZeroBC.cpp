@@ -237,9 +237,11 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // solve the problem
     solver.solve();
 
-    // retrive values at random positions
+    // retrieve values at random positions
     // we will take 100 points out of which 97 will be random and the last 3
-    // we be manually chosen.
+    // will be manually chosen. The last three are manually chosen to lie on the
+    // origin of the domain, the end of the domain and on an edge, to also check
+    // these situations.
     Kokkos::Random_XorShift64_Pool<> randomPool(42);
     Kokkos::View<point_t*> positions("positions", 100);
 

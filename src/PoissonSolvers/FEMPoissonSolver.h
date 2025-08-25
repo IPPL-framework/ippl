@@ -7,7 +7,6 @@
 
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
-#include <iomanip>
 
 namespace ippl {
 
