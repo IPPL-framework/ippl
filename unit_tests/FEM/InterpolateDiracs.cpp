@@ -264,8 +264,6 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
   auto coeffs = TestFixture::make_zero_field(mesh, layout);
   TestFixture::set_field_from_function(coeffs, u);
 
-  const size_t nghost = coeffs.getNghost();
-
   auto view  = coeffs.getView();
 
   auto space = TestFixture::make_space(mesh, layout);
