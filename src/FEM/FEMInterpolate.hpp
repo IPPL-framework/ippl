@@ -167,7 +167,7 @@ namespace ippl {
 
             if constexpr (Dim == 1) return v(I[0]);
             if constexpr (Dim == 2) return v(I[0], I[1]);
-            return v(I[0], I[1], I[2]);
+            if constexpr (Dim == 3) return v(I[0], I[1], I[2]);
         };
 
 
