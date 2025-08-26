@@ -118,7 +118,88 @@ namespace ippl {
 
     }
 
+    /**
+     * @brief Interpolate a P1 FEM field to particle positions.
+     *
+     * For each particle position x, locate the owning element (ND index e_nd) and
+     * reference coordinate xi. Evaluate P1 Lagrange shape functions at xi to
+     * combine nodal coefficients and write u(x) to the particle attribute.
+     *
+     * @tparam AttribOut   Particle attribute type with getView()(p) -> scalar
+     * @tparam Field       ippl::Field with rank=Dim nodal coefficients
+     * @tparam PosAttrib   Particle position attribute with getView()(p) -> Vector<T,Dim>
+     * @tparam Space       Lagrange space providing element/DOF/topology queries
+     * @tparam policy_type Kokkos execution policy (defaults to Field::execution_space)
+     */
+    template <typename AttribOut, typename Field, typename PosAttrib, typename Space,
+              typename policy_type = Kokkos::RangePolicy<typename Field::execution_space>>
+    inline void interpolate_to_diracs(AttribOut& attrib_out,
+                                               const Field& coeffs,
+                                               const PosAttrib& pp,
+                                               const Space& space,
+                                               policy_type iteration_policy)
+    {
+        constexpr unsigned Dim = Field::dim;
+        using T                 = typename AttribOut::value_type;
+        using field_value_type  = typename Field::value_type;
+        using view_type         = typename Field::view_type;
+        using mesh_type         = typename Field::Mesh_t;
+
+        static IpplTimings::TimerRef timer =
+            IpplTimings::getTimer("interpolate_field_to_particles(P1)");
+        IpplTimings::startTimer(timer);
+
+        view_type view     = coeffs.getView();
+        const mesh_type& M = coeffs.get_mesh();
 
 
+        const ippl::FieldLayout<Dim>& layout = coeffs.getLayout();
+        const ippl::NDIndex<Dim>&     lDom   = layout.getLocalNDIndex();
+        const int                     nghost = coeffs.getNghost();
+
+        // Particle device views
+        auto d_pos = pp.getView();
+        auto d_out = attrib_out.getView();
+
+        // Small device helper to read a rank-Dim view at ND indices
+        auto read_view = KOKKOS_LAMBDA(const view_type& v,
+                const ippl::Vector<size_t,Dim>& I) -> field_value_type {
+
+            if constexpr (Dim == 1) return v(I[0]);
+            if constexpr (Dim == 2) return v(I[0], I[1]);
+            return v(I[0], I[1], I[2]);
+        };
+
+
+        Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
+                KOKKOS_LAMBDA(const size_t p) {
+
+            const Vector<T,Dim> x   = d_pos(p);
+
+            ippl::Vector<size_t,Dim> e_nd;
+            ippl::Vector<T,Dim>      xi;
+            locate_element_nd_and_xi<T,Dim>(M, x, e_nd, xi);
+            const size_t e_lin = space.getElementIndex(e_nd);
+
+            const auto verts = space.getElementMeshVertexIndices(e_nd);
+            const auto dofs  = space.getGlobalDOFIndices(e_lin);
+
+            field_value_type up = field_value_type(0);
+
+            for (size_t a = 0; a < dofs.dim; ++a) {
+                const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]);
+                const field_value_type w = space.evaluateRefElementShapeFunction(local, xi);
+
+                const auto v_nd = space.getMeshVertexNDIndex(verts[a]);
+                ippl::Vector<size_t,Dim> I;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
+                }
+
+                up += read_view(view, I) * w;
+            }
+            d_out(p) = static_cast<T>(up);
+        });
+    }
 } // namespace ippl
 #endif

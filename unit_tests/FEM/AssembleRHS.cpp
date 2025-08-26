@@ -214,8 +214,6 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
   const int    n_local = 1000;
   const double local_w = TestFixture::fill_uniform_particles(bunch, n_local, xmin, xmax);
 
-  
-
   auto policy = Kokkos::RangePolicy<exec_space>(0, bunch.getLocalNum());
   ippl::assemble_rhs_from_particles(bunch.Q, rhs, bunch.R, space, policy);
 
@@ -239,60 +237,6 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
     << "  allowed (abs+rel * scale)     = " << allow << "\n";
 }
 
-
-TYPED_TEST(AssembleRHSTest, Linearity) {
-  using T   = typename TestFixture::value_type;
-  constexpr unsigned Dim = TestFixture::dim;
-
-  using bunch_t = typename TestFixture::bunch_t;
-  using playout_t = typename TestFixture::playout_t;
-  using field_t = typename TestFixture::field_t;
-  using exec_space = typename field_t::view_type::execution_space;
-
-
-  int nx = 32;
-
-  ippl::Vector<T, Dim> origin;
-  for (unsigned d=0; d<Dim; ++d) {
-    origin[d] = T(-0.7 + 0.11*d);
-  }
-
-  ippl::Vector<T, Dim> h;
-  for (unsigned d=0; d<Dim; ++d) {
-    h[d] = T(0.31 + 0.07*d);
-  }
-
-  auto owned  = TestFixture::make_owned_nd(nx);
-  auto layout = TestFixture::make_layout(owned);
-  auto mesh   = TestFixture::make_mesh(owned, h, origin);
-
-  auto rhs_a    = TestFixture::make_zero_field(mesh, layout);
-  auto rhs_b    = TestFixture::make_zero_field(mesh, layout);
-  auto rhs_ab   = TestFixture::make_zero_field(mesh, layout);
-  auto space  = TestFixture::make_space(mesh);
-
-  playout_t playout(layout, mesh);
-  bunch_t   bunch_a(playout);
-  bunch_t   bunch_b(playout);
-
-  ippl::Vector<T, Dim> xmin, xmax;
-  TestFixture::domain_bounds(mesh, nx, xmin, xmax);
-
-  const int    n_local = 1000;
-  TestFixture::fill_uniform_particles(bunch_a, n_local, xmin, xmax, 42);
-  TestFixture::fill_uniform_particles(bunch_b, n_local, xmin, xmax, 43);
-
-  bunch_t bunch_ab = bunch_a + bunch_b;
-
-  auto policy_a = Kokkos::RangePolicy<exec_space>(0, bunch_a.getLocalNum());
-  auto policy_b = Kokkos::RangePolicy<exec_space>(0, bunch_b.getLocalNum());
-  auto policy_ab = Kokkos::RangePolicy<exec_space>(0, bunch_ab.getLocalNum());
-  ippl::assemble_rhs_from_particles(bunch_a.Q, rhs_a, bunch_a.R, space, policy_a);
-  ippl::assemble_rhs_from_particles(bunch_b.Q, rhs_b, bunch_b.R, space, policy_b);
-  ippl::assemble_rhs_from_particles(bunch_ab.Q, rhs_ab, bunch_ab.R, space, policy_ab);
-
-
-}
 
 int main(int argc, char* argv[]) {
   ippl::initialize(argc, argv);
