@@ -17,6 +17,7 @@ set(poisson_headers
     NullSolver.h
     LaplaceHelpers.h
     FEMPoissonSolver.h
+    PreconditionedFEMPoissonSolver.h
 )
 
 # Add FFT-based solver headers conditionally
@@ -26,8 +27,8 @@ if(IPPL_ENABLE_FFT)
         FFTOpenPoissonSolver.hpp
         FFTPeriodicPoissonSolver.h
         FFTPeriodicPoissonSolver.hpp
-        P3MSolver.h
-        P3MSolver.hpp
+        FFTTruncatedGreenPeriodicPoissonSolver.h
+        FFTTruncatedGreenPeriodicPoissonSolver.hpp
     )
 endif()
 

@@ -1,6 +1,8 @@
 serial-unit-tests-and-coverage:
   extends: .test_template
   stage: test
+  rules:
+    - if: '$RUN_UNIT_TESTS == "true" || $RUN_ALL_TESTS == "true"'
   image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
   tags:
     - linux
@@ -11,6 +13,7 @@ serial-unit-tests-and-coverage:
     
     mkdir -p build
     cd build
+
 
     cmake .. \
       -DCMAKE_BUILD_TYPE=Debug \
@@ -23,59 +26,24 @@ serial-unit-tests-and-coverage:
       -DIPPL_ENABLE_COVERAGE=ON \
       -DKokkos_VERSION=4.5.00
 
-    ASAN_OPTIONS="detect_leaks=0" make -j 4 
+    make -j 8
 
-
-    ASAN_OPTIONS="detect_leaks=0" ctest -L unit -j 16 --output-on-failure --output-junit tests/test_results.xml || EXIT_CODE=$?
+    ctest -L unit -j 16 --output-on-failure --output-junit tests/test_results.xml || EXIT_CODE=$?
 
     if [ "$EXIT_CODE" -eq 8 ]; then echo "Internal CTest error (OOM?)"; fi
-
 
     echo "Generage coverage report"
 
     cd ..
 
-    lcov \
-      --capture \
-      --directory . \
-      --initial \
-      --output-file baseline.info \
-      --rc branch_coverage=1 \
-      --ignore-errors inconsistent \
-      --ignore-errors mismatch \
-      --ignore-errors unused \
-      --exclude '/usr/*' \
-      --exclude '_deps/*' \
-      --exclude 'unit_tests/*' \
-      --exclude 'test/*'
-
-    lcov \
-      --capture \
-      --directory . \
-      --exclude '/usr/*' \
-      --exclude '_deps/*' \
-      --exclude 'unit_tests/*' \
-      --output-file coverage.info \
-      --rc geninfo_unexecuted_blocks=1 \
-      --rc branch_coverage=1 \
-      --ignore-errors mismatch
-
-    lcov \
-      --add-tracefile baseline.info \
-      --add-tracefile coverage.info \
-      --output-file report.info \
-      --ignore-errors inconsistent \
-      --rc branch_coverage=1
-
-    genhtml \
-      --rc genhtml_branch_coverage=1 \
-      report.info \
-      --ignore-errors inconsistent \
-      --output-directory coverage_report
+    chmod +x ci/scripts/generate_coverage.sh
+    bash ci/scripts/generate_coverage.sh
 
     mkdir -p "${RESULTS_DIR}/gcc-xml"
     echo "Test results will be stored in: ${RESULTS_DIR}/gcc-xml"
     mv build/tests/* "${RESULTS_DIR}/gcc-xml"
+
+    echo '{"name": "Serial Unit"}' > "${RESULTS_DIR}/gcc-xml/context.json"
 
     mkdir -p "$CI_PROJECT_DIR/results/${CI_PIPELINE_ID}/coverage"
     mv coverage_report/* "$CI_PROJECT_DIR/results/${CI_PIPELINE_ID}/coverage"

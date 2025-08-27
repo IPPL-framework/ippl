@@ -106,10 +106,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     IpplTimings::stopTimer(initTimer);
 
-    //if (ippl::Comm->rank() == 0) {
-    //    rhs.write();
-    //}
-
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
@@ -130,14 +126,12 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     AnalyticSol<T, Dim> analytic;
     const T relError = solver.getL2Error(analytic);
 
-    if (ippl::Comm->rank() == 0) {
-        std::cout << std::setw(10) << numNodesPerDim;
-        std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
-        std::cout << std::setw(25) << std::setprecision(16) << relError;
-        std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
-        std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
-        std::cout << "\n";
-    }
+    m << std::setw(10) << numNodesPerDim;
+    m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
+    m << std::setw(25) << std::setprecision(16) << relError;
+    m << std::setw(25) << std::setprecision(16) << solver.getResidue();
+    m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
+    m << endl;
 
     IpplTimings::stopTimer(errorTimer);
 }
@@ -168,7 +162,6 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
@@ -176,7 +169,7 @@ int main(int argc, char* argv[]) {
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 12; n = n << 1) {
+            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
                 testFEMSolver<T, 2>(n, 1.0, 3.0);
             }
         } else {
@@ -185,7 +178,6 @@ int main(int argc, char* argv[]) {
                 testFEMSolver<T, 3>(n, 1.0, 3.0);
             }
         }
-        
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);

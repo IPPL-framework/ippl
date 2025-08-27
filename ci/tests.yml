@@ -1,11 +1,45 @@
 # Add tests in ci/tests/<test-name>.yml and include here
-# Comment out tests you don't want to run
+# Add variables for your tests in order to determine what
+# is being run.
+
+variables:
+  RUN_ALL_TESTS:
+    value: "false"
+    options: ["true", "false"]
+    description: "Set to 'true' to run all possible tests."
+  RUN_UNIT_TESTS:
+    value: "true"
+    options: ["true", "false"]
+    description: "Run the serial unit tests and generate coverage."
+  RUN_COMPILE_GCC_DEBUG:
+    value: "true"
+    options: ["true", "false"]
+    description: "Run the GCC debug compilation test."
+  RUN_COMPILE_GCC_RELEASE:
+    value: "false"
+    options: ["true", "false"]
+    description: "Run the GCC release compilation test."
+  RUN_COMPILE_CLANG_DEBUG:
+    value: "false"
+    options: ["true", "false"]
+    description: "Run the Clang debug compilation test."
+  RUN_COMPILE_JURECA:
+    value: "false"
+    options: ["true", "false"]
+    description: "Run the compilation test for the Jureca supercomputer."
+  RUN_COMPILE_JURECA_AMPERE80:
+    value: "true"
+    options: ["true", "false"]
+    description: "Run the compilation test for the Jureca ampere80 architecture."
 
 include:
   - local: 'ci/tests/serial_unit.yml'
-#  - local: 'ci/tests/dummy_test.yml'
-#  - local: 'ci/tests/test_jedi.yml'
   - local: 'ci/generate/generate_report.yml'
+  - local: 'ci/tests/compile_gcc_release.yml'
+  - local: 'ci/tests/compile_clang_debug.yml'
+  - local: 'ci/tests/compile_jureca_release.yml'
+  - local: 'ci/tests/compile_jureca_ampere80.yml'
+  - local: 'ci/tests/compile_jureca_debug_gcc.yml'
 
 # Template for tests
 .test_template:

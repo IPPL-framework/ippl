@@ -8,7 +8,7 @@
 //     nz       = No. cell-centered points in the z-direction
 //     Np       = Total no. of macro-particles in the simulation
 //     Nt       = Number of time steps
-//     stype    = Field solver type (FFT, CG, P3M, and OPEN supported)
+//     stype    = Field solver type (FFT, CG, TG, and OPEN supported)
 //     lbthres  = Load balancing threshold i.e., lbthres*100 is the maximum load imbalance
 //                percentage which can be tolerated and beyond which
 //                particle load balancing occurs. A value of 0.01 is good for many typical

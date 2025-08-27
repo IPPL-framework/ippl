@@ -41,7 +41,7 @@ namespace ippl {
          * @param dim the dimension
          * @return 3^n
          */
-        constexpr unsigned int countHypercubes(unsigned int dim) {
+        KOKKOS_INLINE_FUNCTION constexpr unsigned int countHypercubes(unsigned int dim) {
             unsigned int ret = 1;
             for (unsigned int d = 0; d < dim; d++) {
                 ret *= 3;
@@ -223,10 +223,22 @@ namespace ippl {
         // false:
         template <unsigned Dim2>
         bool operator==(const FieldLayout<Dim2>& x) const {
+
+            // Throw exception if the domains are not the same
+            if (gDomain_m != x.getDomain()) {
+                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
+            }
+
             return gDomain_m == x.getDomain();
         }
 
         bool operator==(const FieldLayout<Dim>& x) const {
+
+            // Throw exception if the domains are not the same
+            if (gDomain_m != x.getDomain()) {
+                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
+            }
+
             for (unsigned int i = 0; i < Dim; ++i) {
                 if (hLocalDomains_m(comm.rank())[i] != x.getLocalNDIndex()[i]) {
                     return false;
@@ -245,7 +257,11 @@ namespace ippl {
         // be SERIAL or PARALLEL
         std::array<bool, Dim> isParallel() const { return isParallelDim_m; }
 
-        const NDIndex_t& getLocalNDIndex(int rank = -1) const;
+        // Get the local domain for the current rank.
+        const NDIndex_t& getLocalNDIndex() const;
+
+        // Get the local domain for a specific rank.
+        const NDIndex_t& getLocalNDIndex(int rank) const;
 
         const host_mirror_type getHostLocalDomains() const;
 
@@ -351,7 +367,14 @@ namespace ippl {
 
         int getPeriodicOffset(const NDIndex_t& nd, const unsigned int d, const int k);
 
-    private:
+        // List of all the neighboring ranks, arranged by ternary encoding
+        neighbor_list neighbors_m;
+
+        // Lower and upper bounds of the regions to send and receive to and from neighbors,
+        // arranged by ternary encoding
+        neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
+
+    protected:
         //! Global domain
         NDIndex_t gDomain_m;
 
@@ -363,10 +386,8 @@ namespace ippl {
 
         std::array<bool, Dim> isParallelDim_m;
 
+        // Minimum width of all the local domains for each dimension
         unsigned int minWidth_m[Dim];
-
-        neighbor_list neighbors_m;
-        neighbor_range_list neighborsSendRange_m, neighborsRecvRange_m;
 
         void calcWidths();
     };

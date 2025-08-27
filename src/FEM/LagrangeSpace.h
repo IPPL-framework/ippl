@@ -67,8 +67,6 @@ namespace ippl {
         typedef typename detail::ViewType<T, Dim>::view_type ViewType;
         typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type
             AtomicViewType;
-        
-        typedef QuadratureType Quadrature_t;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
@@ -208,6 +206,21 @@ namespace ippl {
         template <typename F>
         FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
 
+        template <typename F>
+        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const;
+
+        template <typename F>
+        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction) const;
+
         /**
          * @brief Assemble the left stiffness matrix A of the system 
          * but only for the boundary values, so that they can be 
@@ -229,13 +242,6 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         void evaluateLoadVector(FieldRHS& field) const;
-
-
-        std::function<T(size_t,size_t,size_t)> diffusionOperator() const;
-
-
-        template<typename Functor>
-        std::function<T(size_t,size_t, Vector<T,Dim>)> loadOperator(Functor f) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
@@ -261,7 +267,7 @@ namespace ippl {
          */
         T computeAvg(const FieldLHS& u_h) const;
 
-    
+    private:
         /**
          * @brief Check if a DOF is on the boundary of the mesh
          *
@@ -278,7 +284,7 @@ namespace ippl {
             }
             return false;
         }
-    private:
+
         Kokkos::View<size_t*> elementIndices;
     };
 

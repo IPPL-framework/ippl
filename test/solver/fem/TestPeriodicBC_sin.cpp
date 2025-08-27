@@ -180,17 +180,17 @@ int main(int argc, char* argv[]) {
         if (dim == 1) {
             // 1D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, 0.0, 2.0);
+                testFEMSolver<T, 1>(n, -1.5, 0.5);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, 0.0, 2.0);
+                testFEMSolver<T, 2>(n, -1.5, 0.5);
             }
         } else {
             // 3D Sinusoidal
             for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                testFEMSolver<T, 3>(n, 0.0, 2.0);
+                testFEMSolver<T, 3>(n, -1.5, 0.5);
             }
         }
 

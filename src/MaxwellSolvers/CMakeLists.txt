@@ -24,6 +24,7 @@ install(FILES
     StandardFDTDSolver.hpp
     NonStandardFDTDSolver.h
     NonStandardFDTDSolver.hpp
+    AbsorbingBC.h
     DESTINATION include/MaxwellSolvers
 )
 
