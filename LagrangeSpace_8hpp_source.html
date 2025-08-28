@@ -285,14 +285,14 @@ $(function() {
 <div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        globalDOFs[1] = smallestGlobalDOF + Order;</div>
 <div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
 <div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;= 2) {</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            globalDOFs[2] = globalDOFs[1] + this-&gt;nr_m[1] * Order;</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            globalDOFs[3] = globalDOFs[0] + this-&gt;nr_m[1] * Order;</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            globalDOFs[2] = globalDOFs[1] + this-&gt;nr_m[0] * Order;</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            globalDOFs[3] = globalDOFs[0] + this-&gt;nr_m[0] * Order;</div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno"><a class="line" href="classippl_1_1LagrangeSpace.html#a6e111421322e57595e63e303b7e34103">  207</a></span>        }</div>
 <div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;= 3) {</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            globalDOFs[4] = globalDOFs[0] + this-&gt;nr_m[1] * this-&gt;nr_m[2] * Order;</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="classippl_1_1LagrangeSpace.html#af495338a17bb32c6de0d1a8270f8992a">  210</a></span>            globalDOFs[5] = globalDOFs[1] + this-&gt;nr_m[1] * this-&gt;nr_m[2] * Order;</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            globalDOFs[6] = globalDOFs[2] + this-&gt;nr_m[1] * this-&gt;nr_m[2] * Order;</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            globalDOFs[7] = globalDOFs[3] + this-&gt;nr_m[1] * this-&gt;nr_m[2] * Order;</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            globalDOFs[4] = globalDOFs[0] + this-&gt;nr_m[1] * this-&gt;nr_m[0] * Order;</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="classippl_1_1LagrangeSpace.html#af495338a17bb32c6de0d1a8270f8992a">  210</a></span>            globalDOFs[5] = globalDOFs[1] + this-&gt;nr_m[1] * this-&gt;nr_m[0] * Order;</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            globalDOFs[6] = globalDOFs[2] + this-&gt;nr_m[1] * this-&gt;nr_m[0] * Order;</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            globalDOFs[7] = globalDOFs[3] + this-&gt;nr_m[1] * this-&gt;nr_m[0] * Order;</div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno"><a class="line" href="classippl_1_1LagrangeSpace.html#ae6e1a3d82267265f355d7303ba15b406">  213</a></span>        }</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        <span class="keywordflow">if</span> (Order &gt; 1) {</div>
