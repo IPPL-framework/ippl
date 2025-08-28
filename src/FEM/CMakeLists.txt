@@ -35,7 +35,8 @@ install(FILES
     FiniteElementSpace.hpp
     LagrangeSpace.h
     LagrangeSpace.hpp
+    NedelecSpace.h
+    NedelecSpace.hpp
 
     DESTINATION include/FEM
 )
-

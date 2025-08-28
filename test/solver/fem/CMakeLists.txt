@@ -25,9 +25,11 @@ add_ippl_integration_test(TestNonhomDirichlet_3d_preconditioned LABELS solver fe
 add_ippl_integration_test(TestNonhomDirichlet_1dcos LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_ZeroBC_sin LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionZeroBC LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBC LABELS solver fem integration)
+add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBCTimed LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_ZeroBC_sin_precon LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin_precon LABELS solver fem integration)
-
 
 # vi: set et ts=4 sw=4 sts=4:
 

@@ -49,5 +49,9 @@
 
 // // FEM Spaces
 #include "FEM/LagrangeSpace.h"
+#include "FEM/NedelecSpace.h"
+
+// // FEM Vector
+#include "FEM/FEMVector.h"
 
 #endif
