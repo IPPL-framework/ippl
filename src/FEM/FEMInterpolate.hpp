@@ -85,8 +85,7 @@ namespace ippl {
                 // Convert to the element's linear index
                 const size_t e_lin = space.getElementIndex(e_nd);
 
-                // Vertex indices and DOFs for this element
-                const auto verts = space.getElementMeshVertexIndices(e_nd);
+                // DOFs for this element
                 const auto dofs  = space.getGlobalDOFIndices(e_lin);
 
                 // Deposit into each vertex/DOF
@@ -94,7 +93,7 @@ namespace ippl {
                     const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]); 
                     const T w = space.evaluateRefElementShapeFunction(local, xi);
 
-                    const auto v_nd = space.getMeshVertexNDIndex(verts[a]); // ND coords (global, vertex-centered)
+                    const auto v_nd = space.getMeshVertexNDIndex(dofs[a]); // ND coords (global, vertex-centered)
                     ippl::Vector<size_t,Dim> I;                             // indices into view
 
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -181,7 +180,6 @@ namespace ippl {
             locate_element_nd_and_xi<T,Dim>(M, x, e_nd, xi);
             const size_t e_lin = space.getElementIndex(e_nd);
 
-            const auto verts = space.getElementMeshVertexIndices(e_nd);
             const auto dofs  = space.getGlobalDOFIndices(e_lin);
 
             field_value_type up = field_value_type(0);
@@ -190,7 +188,7 @@ namespace ippl {
                 const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]);
                 const field_value_type w = space.evaluateRefElementShapeFunction(local, xi);
 
-                const auto v_nd = space.getMeshVertexNDIndex(verts[a]);
+                const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
                 ippl::Vector<size_t,Dim> I;
                 for (unsigned d = 0; d < Dim; ++d) {
                     I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);

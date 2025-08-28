@@ -141,8 +141,8 @@ namespace ippl {
         // Find the global DOF in the vector and return the local DOF index
         // TODO this can be done faster since the global DOFs are sorted
         for (size_t i = 0; i < dof_mapping.dim; ++i) {
-            if (global_dofs[dof_mapping[i]] == globalDOFIndex) {
-                return dof_mapping[i];
+            if (global_dofs[i] == globalDOFIndex) {
+                return i;
             }
         }
         return std::numeric_limits<size_t>::quiet_NaN();
@@ -202,8 +202,8 @@ namespace ippl {
         globalDOFs[1] = smallestGlobalDOF + Order;
 
         if (Dim >= 2) {
-            globalDOFs[2] = globalDOFs[0] + this->nr_m[1] * Order;
-            globalDOFs[3] = globalDOFs[1] + this->nr_m[1] * Order;
+            globalDOFs[2] = globalDOFs[1] + this->nr_m[1] * Order;
+            globalDOFs[3] = globalDOFs[0] + this->nr_m[1] * Order;
         }
         if (Dim >= 3) {
             globalDOFs[4] = globalDOFs[0] + this->nr_m[1] * this->nr_m[2] * Order;
