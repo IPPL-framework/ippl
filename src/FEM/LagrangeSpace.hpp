@@ -202,14 +202,14 @@ namespace ippl {
         globalDOFs[1] = smallestGlobalDOF + Order;
 
         if (Dim >= 2) {
-            globalDOFs[2] = globalDOFs[1] + this->nr_m[1] * Order;
-            globalDOFs[3] = globalDOFs[0] + this->nr_m[1] * Order;
+            globalDOFs[2] = globalDOFs[1] + this->nr_m[0] * Order;
+            globalDOFs[3] = globalDOFs[0] + this->nr_m[0] * Order;
         }
         if (Dim >= 3) {
-            globalDOFs[4] = globalDOFs[0] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[5] = globalDOFs[1] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[6] = globalDOFs[2] + this->nr_m[1] * this->nr_m[2] * Order;
-            globalDOFs[7] = globalDOFs[3] + this->nr_m[1] * this->nr_m[2] * Order;
+            globalDOFs[4] = globalDOFs[0] + this->nr_m[1] * this->nr_m[0] * Order;
+            globalDOFs[5] = globalDOFs[1] + this->nr_m[1] * this->nr_m[0] * Order;
+            globalDOFs[6] = globalDOFs[2] + this->nr_m[1] * this->nr_m[0] * Order;
+            globalDOFs[7] = globalDOFs[3] + this->nr_m[1] * this->nr_m[0] * Order;
         }
 
         if (Order > 1) {
