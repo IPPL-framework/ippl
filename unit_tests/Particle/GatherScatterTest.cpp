@@ -57,7 +57,7 @@ public:
     static const unsigned dim = Dim;
     using flayout_type   = ippl::FieldLayout<Dim>;
     using mesh_type      = ippl::UniformCartesian<T, Dim>;
-    using playout_type   = ippl::ParticleSpatialLayout<T, Dim>;
+    using playout_type   = ippl::ParticleSpatialLayout<T, Dim, mesh_type, ExecSpace>;
     using bunch_type     = Bunch<playout_type>;
 
     // Domain parameters: use a high resolution grid so that cells are small.
@@ -146,7 +146,7 @@ using TestTypes = ::testing::Types<
     //Parameters<double, Kokkos::DefaultExecutionSpace, Rank<5>>,
     //Parameters<double, Kokkos::DefaultExecutionSpace, Rank<6>>
 >;
-TYPED_TEST_CASE(GatherScatterTest, TestTypes);
+TYPED_TEST_SUITE(GatherScatterTest, TestTypes);
 
 //
 // GatherTest: 
@@ -161,7 +161,7 @@ TYPED_TEST(GatherScatterTest, GatherTestReplace) {
     this->fillAttributeQ(10.0);
 
     using Mesh_t   = typename TestFixture::mesh_type;
-    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering>;
+    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::ExecSpace>;
     FieldType field;
     field.initialize(this->mesh, this->layout);
     field = 1.0;
