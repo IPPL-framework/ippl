@@ -115,6 +115,18 @@ namespace ippl {
 
     }
 
+    template<class View, class IVec, std::size_t... Is>
+    KOKKOS_INLINE_FUNCTION
+    decltype(auto) view_ref_impl(View& v, const IVec& I, std::index_sequence<Is...>) {
+        return v(I[Is]...);
+    }
+
+    template<int D, class View, class IVec>
+    KOKKOS_INLINE_FUNCTION
+    decltype(auto) view_ref(View& v, const IVec& I) {
+        return view_ref_impl(v, I, std::make_index_sequence<D>{});
+    }
+
     /**
      * @brief Interpolate a P1 FEM field to particle positions.
      *
@@ -158,16 +170,6 @@ namespace ippl {
         auto d_pos = pp.getView();
         auto d_out = attrib_out.getView();
 
-        // Small device helper to read a rank-Dim view at ND indices
-        auto read_view = KOKKOS_LAMBDA(const view_type& v,
-                const ippl::Vector<size_t,Dim>& I) -> field_value_type {
-
-            if constexpr (Dim == 1) return v(I[0]);
-            if constexpr (Dim == 2) return v(I[0], I[1]);
-            if constexpr (Dim == 3) return v(I[0], I[1], I[2]);
-        };
-
-
         Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
                 KOKKOS_LAMBDA(const size_t p) {
 
@@ -192,7 +194,7 @@ namespace ippl {
                     I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
                 }
 
-                up += read_view(view, I) * w;
+                up += view_ref<Dim>(view, I) * w;
             }
             d_out(p) = static_cast<T>(up);
         });

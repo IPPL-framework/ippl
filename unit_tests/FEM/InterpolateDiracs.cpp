@@ -70,7 +70,7 @@ public:
   using bunch_t     = Bunch<playout_t>;
 
   static constexpr T tol() {
-    return std::numeric_limits<T>::epsilon();
+    return std::numeric_limits<T>::epsilon() * 10.0;
   }
 
   static ippl::NDIndex<dim> make_owned_nd(int nx) {

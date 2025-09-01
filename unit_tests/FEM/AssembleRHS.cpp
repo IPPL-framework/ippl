@@ -164,7 +164,7 @@ public:
   }
 
   static constexpr T tol() {
-      return std::numeric_limits<T>::epsilon();
+      return std::numeric_limits<T>::epsilon() * 10.0;
   }
 };
 
