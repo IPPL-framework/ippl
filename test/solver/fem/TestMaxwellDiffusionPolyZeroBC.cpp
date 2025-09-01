@@ -85,9 +85,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);
 
-    Inform m("");
-    Inform msg2all("", INFORM_ALL_NODES);
-
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<ippl::Vector<T,Dim>, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
@@ -246,19 +243,19 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Kokkos::View<point_t*> positions("positions", 100);
 
     Kokkos::parallel_for("assign positions", 97,
-        KOKKOS_LAMBDA(size_t i) <%
+        KOKKOS_LAMBDA(size_t i) {
             positions;
             ldom;
             domain_start;
             auto gen = randomPool.get_state();
             T cellWidth = (domain_end - domain_start) / numCellsPerDim;
-            if constexpr (Dim == 2) <%
+            if constexpr (Dim == 2) {
                 positions(i) =
                     point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
                             ldom.last()<:0:>*cellWidth+domain_start)),
                         T(gen.drand(ldom.first()<:1:>*cellWidth+domain_start,
                             ldom.last()<:1:>*cellWidth+domain_start)));
-            %> else <%
+            } else {
                 positions(i) =
                     point_t(T(gen.drand(ldom.first()<:0:>*cellWidth+domain_start,
                             ldom.last()<:0:>*cellWidth+domain_start)),
@@ -266,26 +263,26 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                             ldom.last()<:1:>*cellWidth+domain_start)),
                         T(gen.drand(ldom.first()<:2:>*cellWidth+domain_start,
                             ldom.last()<:2:>*cellWidth+domain_start)));
-            %>
+            }
 
 
-            if (i == 96) <%
+            if (i == 96) {
                 positions(97) = ldom.first()*cellWidth+domain_start;
                 positions(98) = ldom.last()*cellWidth+domain_start;
                 // This point belongs to an edge
-                if constexpr (Dim == 2) <%
+                if constexpr (Dim == 2) {
                 positions(99) =
                     point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
                         ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth);
-                %> else <%
+                } else {
                     positions(99) =
                         point_t(ldom.first()<:0:>*cellWidth+domain_start + cellWidth,
                             ldom.first()<:1:>*cellWidth+domain_start + 0.5*cellWidth,
                             ldom.first()<:2:>*cellWidth+domain_start + 0.5*cellWidth);
-                %>
-            %>
+                }
+            }
             randomPool.free_state(gen);
-        %>
+        }
     );
 
     
@@ -305,21 +302,21 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     
     // print information and error
     T coefError = solver.getL2Error(analytical);
-    if (ippl::Comm->rank() == 0) {
-        std::cout << std::setw(10) << numNodesPerDim;
-        std::cout << std::setw(25) << std::setprecision(16) << cellSpacing[0];
-        std::cout << std::setw(25) << std::setprecision(16) << coefError;
-        std::cout << std::setw(25) << std::setprecision(16) << linfError;
-        std::cout << std::setw(25) << std::setprecision(16) << solver.getResidue();
-        std::cout << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
-        std::cout << "\n";
-    }
+    Inform m(0, 0);
+    m << std::setw(10) << numNodesPerDim;
+    m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
+    m << std::setw(25) << std::setprecision(16) << coefError;
+    m << std::setw(25) << std::setprecision(16) << linfError;
+    m << std::setw(25) << std::setprecision(16) << solver.getResidue();
+    m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
+    m << endl;
+
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform msg("");
+        Inform msg(0, 0);
 
         using T = double;
 
@@ -333,23 +330,16 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef allTimer = IpplTimings::getTimer("allTimer");
         IpplTimings::startTimer(allTimer);
 
-        msg << std::setw(10) << "Size";
-        msg << std::setw(25) << "Spacing";
-        msg << std::setw(25) << "Relative Error";
-        msg << std::setw(25) << "Residue";
-        msg << std::setw(15) << "Iterations";
-        msg << endl;
-
-        if (ippl::Comm->rank() == 0) {
-            std::cout << std::setw(10) << "num_nodes"
-                      << std::setw(25) << "cell_spacing"
-                      << std::setw(25) << "interp_error_coef"
-                      << std::setw(25) << "recon_error"
-                      << std::setw(25) << "solver_residue"
-                      << std::setw(15) << "num_it\n";
-        }
+        msg << std::setw(10) << "num_nodes"
+            << std::setw(25) << "cell_spacing"
+            << std::setw(25) << "interp_error_coef"
+            << std::setw(25) << "recon_error"
+            << std::setw(25) << "solver_residue"
+            << std::setw(15) << "num_it"
+            << endl;
         
-        if (argc > 2) <%
+        
+        if (argc > 2 && std::atoi(argv[2]) != 0) {
             size_t n = std::atoi(argv<:2:>);
             if (dim == 2) {
                 // 2D
@@ -358,7 +348,7 @@ int main(int argc, char* argv[]) {
                 // 3D
                 testFEMSolver<T, 3>(n, -1.0, 1.0);
             }
-        %> else <%
+        } else {
             if (dim == 2) {
                 // 2D Sinusoidal
                 for (unsigned n = 16; n <= 1024; n = std::sqrt(2)*n) {
@@ -370,13 +360,12 @@ int main(int argc, char* argv[]) {
                     testFEMSolver<T, 3>(n, -1.0, 1.0);
                 }
             }
-        %>
+        }
 
         // stop the timer
         IpplTimings::stopTimer(allTimer);
 
-        // print the timers
-        IpplTimings::print();
+        // write the timers
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();

@@ -97,16 +97,18 @@ namespace ippl {
         /**
          * @brief Copy values from neighboring ranks into local halo.
          * 
-         * This function takes local values (internal boundary values) and
-         * copies to them to the corresponding halo cells of the neighbors.
+         * This function takes the local values which are part of other ranks
+         * halos and copies them to the corresponding halo cells of those
+         * neighbors.
          */
         void fillHalo();
 
         /**
          * @brief Accumulate halo values in neighbor.
          * 
-         * This function takes the local halo values and sums them to the
-         * corresponding values of the neighbor ranks.
+         * This function takes the local halo values (which are part of another
+         * ranks values) and sums them to these corresponding values of the
+         * neighbor ranks.
          */
         void accumulateHalo();
 
@@ -187,17 +189,6 @@ namespace ippl {
          * device.
          */
         const Kokkos::View<T*>& getView() const;
-
-
-        /**
-         * @brief Dummy function used such that the CG with periodic boundary
-         * compiles.
-         * 
-         * @todo implement properly.
-         * 
-         * Currently this is a dummy function such that the CG code compiles.
-         */
-        T getVolumeAverage() const;
 
 
         /**

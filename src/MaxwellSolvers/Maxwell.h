@@ -65,9 +65,7 @@ namespace ippl {
         /*!
          * Solve the electromagnetic problem (Maxwell's eqs)
          */
-        // WE COMMENT THIS OUT, SUCH THAT THE CODE USING A FEM VECTOR CAN RUN
-        // CORRECTLY.
-        //virtual void solve() = 0;
+        virtual void solve() = 0;
 
         virtual ~Maxwell() {}
 

@@ -47,6 +47,23 @@ namespace ippl {
 
         // Initialize the elementIndices view
         initializeElementIndices(layout);
+
+        // set the local DOF position vector
+        localDofPositions_m(0)(0) = 0.5; 
+        localDofPositions_m(1)(1) = 0.5;
+        localDofPositions_m(2)(0) = 0.5; localDofPositions_m(2)(1) = 1;
+        localDofPositions_m(3)(0) = 1;   localDofPositions_m(3)(1) = 0.5;
+        localDofPositions_m(4)(2) = 0.5;
+        localDofPositions_m(5)(0) = 1;   localDofPositions_m(5)(2) = 0.5;
+        localDofPositions_m(6)(0) = 1;   localDofPositions_m(6)(1) = 1;
+            localDofPositions_m(6)(2) = 0.5;
+        localDofPositions_m(7)(1) = 1;   localDofPositions_m(7)(2) = 0.5;
+        localDofPositions_m(8)(0) = 0.5; localDofPositions_m(8)(2) = 1;
+        localDofPositions_m(9)(1) = 0.5; localDofPositions_m(9)(2) = 1;
+        localDofPositions_m(10)(0) = 0.5; localDofPositions_m(10)(1) = 1;
+            localDofPositions_m(10)(2) = 1;
+        localDofPositions_m(11)(0) = 1;   localDofPositions_m(11)(1) = 0.5;
+            localDofPositions_m(11)(2) = 1;
     }
 
     // Initialize element indices Kokkos View
@@ -327,25 +344,10 @@ namespace ippl {
         NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
             ::getLocalDOFPosition(size_t localDOFIndex) const {
         
-        // Hardcoded center of edges. If the DOF position of an edge element
-        // actually is the center of the edge is a different question...
-        point_t position(0);
-        switch (localDOFIndex) {
-            case 0: position(0) = 0.5; break;
-            case 1: position(1) = 0.5; break;
-            case 2: position(0) = 0.5; position(1) = 1;   break;
-            case 3: position(0) = 1;   position(1) = 0.5; break;
-            case 4: position(2) = 0.5; break;
-            case 5: position(0) = 1; position(2) = 0.5; break;
-            case 6: position(0) = 1; position(1) = 1; position(2) = 0.5; break;
-            case 7: position(1) = 1; position(2) = 0.5; break;
-            case 8: position(0) = 0.5; position(2) = 1; break;
-            case 9: position(1) = 0.5; position(2) = 1; break;
-            case 10: position(0) = 0.5; position(1) = 1;   position(2) = 1; break;
-            case 11: position(0) = 1;   position(1) = 0.5; position(2) = 1; break;
-        }
-
-        return position;
+        // Hardcoded center of edges which are stored in the localDofPositions_m
+        // vector. If the DOF position of an edge element actually is the center
+        // of the edge is a different question...
+        return localDofPositions_m(localDOFIndex);
     }
 
 
@@ -835,7 +837,7 @@ namespace ippl {
         Kokkos::View<point_t*> outView("reconstructed Func values at points", positions.extent(0));
 
         Kokkos::parallel_for("reconstructToPoints", positions.extent(0),
-            KOKKOS_CLASS_LAMBDA(size_t i) <%
+            KOKKOS_CLASS_LAMBDA(size_t i) {
                 // get the current position and for it figure out to which
                 // element it belongs
                 point_t pos = positions<:i:>;
@@ -847,11 +849,11 @@ namespace ippl {
                 // local domain, because in this case we have that the above
                 // transformation gives back an element which is somewhat in the
                 // halo. In order to fix this we simply subtract one.
-                for (size_t d = 0; d < Dim; ++d) <%
-                    if (elemIdx<:d:> >= ldom.last()<:d:>) <%
+                for (size_t d = 0; d < Dim; ++d) {
+                    if (elemIdx<:d:> >= ldom.last()<:d:>) {
                         elemIdx<:d:> -= 1;
-                    %>
-                %>
+                    }
+                }
 
 
                 // get correct indices
@@ -867,22 +869,22 @@ namespace ippl {
                 // a point is on an edge this becomes marginally larger that 1 
                 // or slightly negative which triggers an assertion. So this
                 // simply is to prevent this.
-                for (size_t d = 0; d < Dim; ++d) <%
+                for (size_t d = 0; d < Dim; ++d) {
                     locPos<:d:> = Kokkos::min(T(1), locPos<:d:>);
                     locPos<:d:> = Kokkos::max(T(0), locPos<:d:>);
-                %>
+                }
 
 
                 // interpolate the function value to the position, using the
                 // basis functions.
                 point_t val(0);
-                for (size_t j = 0; j < this->numElementDOFs; ++j) <%
+                for (size_t j = 0; j < this->numElementDOFs; ++j) {
                     point_t funcVal = this->evaluateRefElementShapeFunction(j, locPos);
                     val += funcVal*coefView(vectorIndices<:j:>);
-                %>
+                }
                 outView(i) = val;
 
-            %>
+            }
         );
         
 
@@ -1167,18 +1169,42 @@ namespace ippl {
     FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::createFEMVector2d() const{
 
+        // Here we will create an empty FEMVector for the case of the domain
+        // being 2D.
+        // The largest part of this is going to be the handling of the halo
+        // cells, more specifically figuring out which entries of the vector are
+        // part of the sendIdxs and which are part of the recvIdxs. For this we
+        // loop through all the other domains and for each of them figure out if
+        // we share a boundary with them. If we share a boundary we then have to
+        // figure out which entries of the vector are part of this boundary. To
+        // do this we loop though all the mesh elements which are on this
+        // boundary and then for each of these elements we take the DOFs which
+        // should be part of the sendIdxs and the ones which are part of the
+        // recvIdxs. Currently in this step we have to manually select the
+        // correct DOFs of the reference element corresponding to that specific
+        // boundary type (north, south, west, east). This manual selection of
+        // the correct DOFs might lead to an "out of the blue" feeling on why
+        // exactly we selected those DOFs, but it should be easily verifyable
+        // that those are the correct DOFs.
+        // Also note that we are not exchanging any boundary information over 
+        // corners, test showed that this does not have any impact on the 
+        // correctness.
+        // For more information regarding the domain decomposition refer to the
+        // report available at: TODO add reference to report on AMAS website
+
         auto ldom = layout_m.getLocalNDIndex();
         auto doms = layout_m.getHostLocalDomains();
 
-        // Create the temporaries and so on which will store the MPI information.
+        // Create the temporaries and so on which will store the MPI
+        // information.
         std::vector<size_t> neighbors;
         std::vector< Kokkos::View<size_t*> > sendIdxs;
         std::vector< Kokkos::View<size_t*> > recvIdxs;
         std::vector< std::vector<size_t> > sendIdxsTemp;
         std::vector< std::vector<size_t> > recvIdxsTemp;
 
-        // Here we loop thought all the domains to figure out how we are related to
-        // them and if we have to do any kind of exchange.
+        // Here we loop thought all the domains to figure out how we are related
+        // to them and if we have to do any kind of exchange.
         for (size_t i = 0; i < doms.extent(0); ++i) {
             if (i == Comm->rank()) {
                 // We are looking at ourself
@@ -1389,19 +1415,77 @@ namespace ippl {
               typename QuadratureType, typename FieldType>
     FEMVector<T> NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::createFEMVector3d() const{
+
+
+
+        
+        // Here we will create an empty FEMVector for the case of the domain
+        // being 3D.
+        // It follows the same principle as the 2D case (check comment there).
+        // The major difference now is that we have more types of boundaries.
+        // Namely we have 6 directions: west, east, south, north, ground, and
+        // space. Where west-east is on the x-axis, south-north on the y-axis,
+        // and ground-space on the z-axis. For this we have 3 major types of
+        // boundaries, namely "flat" boundaries which are along the coordinate
+        // axes (your standard west-east, south-north, and ground-space
+        // exchanges), then we have two different types of diagonal exchanges,
+        // which we will call "positive" and "negative", we have two types as
+        // a diagonal exchange always happens over an edge and this edges is 
+        // shared by 4 different ranks, so we have two different diagonal 
+        // exchanges per edge, which we differentiate with "positive" and 
+        // "negative".
+        // If we now look at these types independently we have that the code
+        // needed to perform one such exchange is large going to be independent
+        // of the direction of the exchange (i.e. is the "flat" exchange
+        // happening over a west-est or a ground-space boundary) the major
+        // difference is the DOF indices we have to chose for the elements on
+        // the boundary (check the 2D case for more info). 
+        // We therefore create 3 lambdas for these different types of boundaries
+        // which we then call with appropriate arguments for the direction of the
+        // exchange.
+        // Note that like with the 2D case we do not consider any exchanges over
+        // corners.
+        // For more information regarding the domain decomposition refer to the
+        // report available at: TODO add reference to report on AMAS website
+
         using indices_t = Vector<int, Dim>;
 
         auto ldom = layout_m.getLocalNDIndex();
         auto doms = layout_m.getHostLocalDomains();
 
-        // Create the temporaries and so on which will store the MPI information.
+        // Create the temporaries and so on which will store the MPI
+        // information.
         std::vector<size_t> neighbors;
         std::vector< Kokkos::View<size_t*> > sendIdxs;
         std::vector< Kokkos::View<size_t*> > recvIdxs;
         std::vector< std::vector<size_t> > sendIdxsTemp;
         std::vector< std::vector<size_t> > recvIdxsTemp;
 
-
+        // The parameters are:
+        // i: The index of the other dom we are looking at (according to doms).
+        // a: Along which axis the exchange happens, 0 = x-axis, 1 = y-axis,
+        //      2 = z-axis.
+        // f,s: While the exchange happens over the axis "a" we have that
+        //        elements which are part of the boundary are on a plane spanned
+        //        by the other two axes, these other two axes are then given by
+        //        these two variables "f" and "s" (they then also define the
+        //        order in which we go though these axes).
+        // va,vb: These are the placeholders for the sendIdxs and recvIdxs
+        //          arrays, note that depending on if an exchange happens from,
+        //          e.g. west to east or from east to west the role of which of 
+        //          these placeholders stores the sendIdxs and which one stores
+        //          the recvIdxs changes.
+        // posA, posB: The "a"-axis coordinate of the elements which are part of
+        //               the boundary, we have two of them as the coordinate
+        //               can be different depending on if we are looking at the
+        //               sendIdxs or the recvIdxs.
+        // idxsA, idxsB: These are going to be the local DOF indices of the
+        //                 elements which are part of the boundary and which
+        //                 need to be exchanged. Again we have two as the
+        //                 indices are going to depend on if we are looking at
+        //                 the sendIdxs or the recvIdxs
+        // adom, bdom: The domain extents of the two domains which are part of
+        //               this exchange.
         auto flatBoundaryExchange = [this, &neighbors, &ldom](
             size_t i, size_t a, size_t f, size_t s,
             std::vector<std::vector<size_t> >& va, std::vector<std::vector<size_t> >& vb,
@@ -1419,11 +1503,14 @@ namespace ippl {
             vb.push_back(std::vector<size_t>());
             size_t idx = neighbors.size() - 1;
 
-            // Add all the halo
+
             indices_t elementPosA(0);
             elementPosA(a) = posA;
             indices_t elementPosB(0);
             elementPosB(a) = posB;
+
+            // Here we now have the double loop that goes though all the
+            // elements spanned by the plane given by the "f" and "s" axis.
             for (int k = beginF; k <= endF; ++k) {
                 elementPosA(f) = k;
                 elementPosB(f) = k;
@@ -1441,18 +1528,26 @@ namespace ippl {
                     vb[idx].push_back(dofIndicesB[idxsB[2]]);
 
                     
+                    // We now have reached the end of the first axis and have to
+                    // figure out if we need to add any additional DOFs. If we 
+                    // need to add DOFs depends on if we are at the mesh
+                    // boundary and if one of the two domains does not end here
+                    // and "overlaps" the other one.
                     if (k == endF) {
                         if (endF == layout_m.getDomain().last()[f] ||
                                 bdom.last()[f] > adom.last()[f]) {
                             va[idx].push_back(dofIndicesA[idxsA[2]]);
                         }
-                        // Check if we have to add some special stuff
+                        
                         if (endF == layout_m.getDomain().last()[f] ||
                                 adom.last()[f] > bdom.last()[f]) {
                             vb[idx].push_back(dofIndicesB[idxsB[3]]);
                             vb[idx].push_back(dofIndicesB[idxsB[4]]);
                         }
-
+                        
+                        // This is a modification to the beginning of the f axis
+                        // we still put it on here as we are guaranteed that
+                        // like this it only gets called once
                         // call this last, as modifies elementPosA(s) 
                         if (bdom.first()[f] < adom.first()[f]) {
                             indices_t tmpPos = elementPosA;
@@ -1463,20 +1558,29 @@ namespace ippl {
                         }
                     }
                 }
-                // Have to add space row to Halo
+                
+                // We now have reached the end of the second axis and have to
+                // figure out if we need to add any additional DOFs. If we need
+                // to add DOFs depends on if we are at the mesh boundary and if
+                // one of the two domains does not end here and "overlaps" the
+                // other one.
+
                 if (endS == layout_m.getDomain().last()[s] || bdom.last()[s] > adom.last()[s]) {
                     elementPosA(s) = endS;
                     auto dofIndicesA = this->getFEMVectorDOFIndices(elementPosA, ldom);
                     va[idx].push_back(dofIndicesA[idxsA[3]]);
                 }
-                // Check if we have to add some special stuff
+                
                 if (endS == layout_m.getDomain().last()[s] || adom.last()[s] > bdom.last()[s]) {
                     elementPosB(s) = endS;
                     auto dofIndicesB = this->getFEMVectorDOFIndices(elementPosB, ldom);
                     vb[idx].push_back(dofIndicesB[idxsB[5]]);
                     vb[idx].push_back(dofIndicesB[idxsB[6]]);
                 }
-
+                
+                // This is a modification to the beginning of the s axis
+                // we still put it on here as we are guaranteed that
+                // like this it only gets called once
                 // call this last, as modifies elementPosA(f);
                 if (bdom.first()[f] < adom.first()[f]) {
                     indices_t tmpPos = elementPosA;
@@ -1486,7 +1590,8 @@ namespace ippl {
                     va[idx].push_back(dofIndicestmp[idxsA[1]]);
                 }
             }
-            // Check if we have to add some special stuff
+            // At this point we have reached the end of both axes f and s and 
+            // therefore now have to make one final check.
             if ((endF == layout_m.getDomain().last()[f] || adom.last()[f] > bdom.last()[f]) && 
                 (endS == layout_m.getDomain().last()[s] || adom.last()[s] > bdom.last()[s])) {
                 elementPosB(f) = endF;
@@ -1496,7 +1601,25 @@ namespace ippl {
             }
         };
 
-
+        // The parameters are:
+        // i: The index of the other dom we are looking at (according to doms).
+        // a: Along which axis the edge is over which the exchange happens,
+        //      0 = x-axis, 1 = y-axis, 2 = z-axis.
+        // f,s: While the exchange happens over the edge along the  axis "a" we
+        //        have store in those two the other two axes.
+        // ao,bo: These are offset variables as certain exchanges require
+        //          offsets to certain values.
+        // va,vb: These are the placeholders for the sendIdxs and recvIdxs
+        //          arrays, note that depending on if an exchange happens from,
+        //          e.g. west to east or from east to west the role of which of 
+        //          these placeholders stores the sendIdxs and which one stores
+        //          the recvIdxs changes.
+        // idxsA, idxsB: These are going to be the local DOF indices of the
+        //                 elements which are part of the boundary and which
+        //                 need to be exchanged. Again we have two as the
+        //                 indices are going to depend on if we are looking at
+        //                 the sendIdxs or the recvIdxs
+        // odom: The other domain we are exchanging to.
         auto negativeDiagonalExchange = [this, &neighbors, &ldom](
             size_t i, size_t a, size_t f, size_t s, int ao, int bo,
             std::vector<std::vector<size_t> >& va, std::vector<std::vector<size_t> >& vb,
@@ -1518,7 +1641,7 @@ namespace ippl {
 
             int begin = std::max(odom.first()[a], ldom.first()[a]);
             int end = std::min(odom.last()[a], ldom.last()[a]);
-
+            // Loop through all the elements along the edge.
             for (int k = begin; k <= end; ++k) {
                 elementPosA(a) = k;
                 elementPosB(a) = k;
@@ -1533,6 +1656,24 @@ namespace ippl {
             }
         };
 
+
+        // The parameters are:
+        // i: The index of the other dom we are looking at (according to doms).
+        // a: Along which axis the edge is over which the exchange happens,
+        //      0 = x-axis, 1 = y-axis, 2 = z-axis.
+        // f,s: While the exchange happens over the edge along the  axis "a" we
+        //        have store in those two the other two axes.
+        // va,vb: These are the placeholders for the sendIdxs and recvIdxs
+        //          arrays, note that depending on if an exchange happens from,
+        //          e.g. west to east or from east to west the role of which of 
+        //          these placeholders stores the sendIdxs and which one stores
+        //          the recvIdxs changes.
+        // idxsA, idxsB: These are going to be the local DOF indices of the
+        //                 elements which are part of the boundary and which
+        //                 need to be exchanged. Again we have two as the
+        //                 indices are going to depend on if we are looking at
+        //                 the sendIdxs or the recvIdxs
+        // odom: The other domain we are exchanging to.
         auto positiveDiagonalExchange = [this, &neighbors, &ldom](
             size_t i, size_t a, size_t f, size_t s,
             indices_t posA, indices_t posB,
@@ -1570,8 +1711,13 @@ namespace ippl {
             }
         };
 
-        // Here we loop through all the domains to figure out how we are related to
-        // them and if we have to do any kind of exchange.
+        // After we now have defined the code required for each of the exchanges
+        // we can look at all the exchanges we need to make and call the lambdas
+        // with the appropriate parameters.
+
+
+        // Here we loop through all the domains to figure out how we are related
+        // to them and if we have to do any kind of exchange.
         for (size_t i = 0; i < doms.extent(0); ++i) {
             if (i == Comm->rank()) {
                 // We are looking at ourself
@@ -1672,8 +1818,8 @@ namespace ippl {
 
 
             
-            // Next up we handle all the anoying diagonals
-            // The negative ones
+            // Next up we handle all the annoying diagonals.
+            // The negative ones:
             // Parallel to y from space to ground, west to east
             if (ldom.last()[0] == odom.first()[0]-1 && ldom.first()[2] == odom.last()[2]+1 && 
                     !(odom.last()[1] < ldom.first()[1] || odom.first()[1] > ldom.last()[1])) {

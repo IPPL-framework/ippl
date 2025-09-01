@@ -223,12 +223,6 @@ namespace ippl{
         return data_m;
     }
 
-
-    template <typename T>
-    T FEMVector<T>::getVolumeAverage() const {
-        return T();
-    }
-
     
     template <typename T>
     size_t FEMVector<T>::size() const {

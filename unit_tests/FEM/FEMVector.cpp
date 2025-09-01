@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "Ippl.h"
+#include "LinearSolvers/PCG.h"
 
 #include "gtest/gtest.h"
 
@@ -449,7 +450,6 @@ TEST(FEMVector, norm) {
 }
 
 
-/*
 TEST(FEMVector, CG) {
     using T = double;
     using CG_t = ippl::CG<ippl::FEMVector<T>, ippl::FEMVector<T>, ippl::FEMVector<T>,
@@ -463,14 +463,10 @@ TEST(FEMVector, CG) {
 
     CG_t cg;
     
-    std::vector<size_t> neighbors(1);
-    std::vector< Kokkos::View<size_t*> > sendIdxs(1,Kokkos::View<size_t*>("sendIdxs", 2));
-    std::vector< Kokkos::View<size_t*> > recvIdxs(1,Kokkos::View<size_t*>("recvIdxs", 2));
-    
     // create the FEMVectors
     size_t n = 10;
-    ippl::FEMVector<T> a(n,neighbors, sendIdxs, recvIdxs);
-    ippl::FEMVector<T> b(n,neighbors, sendIdxs, recvIdxs);
+    ippl::FEMVector<T> a(n);
+    ippl::FEMVector<T> b(n);
     auto aView = a.getView();
     auto haView = Kokkos::create_mirror_view(aView);
     auto bView = b.getView();
@@ -637,7 +633,6 @@ TEST(FEMVector, CG) {
     }
 
 }
-    */
 
 
 int main(int argc, char* argv[]) {

@@ -405,6 +405,15 @@ namespace ippl {
          * MPI rank.
          */
         Kokkos::View<size_t*> elementIndices;
+
+        /**
+         * @brief Stores the positions of the local Degrees of Freedoms on the 
+         * reference elements.
+         * 
+         * We are saying that the local degree of freedom positions are simply
+         * the centers of the edges. 
+         */
+        Vector<point_t, 12> localDofPositions_m;
         
         /**
          * @brief The layout of the MPI ranks over the mesh.

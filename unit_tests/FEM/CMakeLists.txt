@@ -8,7 +8,6 @@ add_ippl_test(FiniteElementSpace)
 add_ippl_test(LagrangeSpace)
 add_ippl_test(Quadrature)
 add_ippl_test(GaussJacobiQuadrature)
-add_ippl_test(Solver)
 add_ippl_test(NedelecSpace)
 add_ippl_test(FEMVector)
 

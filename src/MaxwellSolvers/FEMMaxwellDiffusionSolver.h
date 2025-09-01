@@ -154,7 +154,7 @@ namespace ippl {
         /**
          * @brief Solve the equation using finite element methods.
          */
-        void solve() {
+        void solve() override {
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -200,9 +200,8 @@ namespace ippl {
             try {
                 pcg_algo_m(lhsVector, *rhsVector_m, this->params_m);
             } catch (IpplException& e) {
-                std::cout << e.where() << ": " << e.what() << "\n";
-                std::cout << "EXITING\n";
-                exit(-1);
+                std::string msg = e.where() + ": " + e.what() + "\n";
+                Kokkos::abort(msg.c_str());
             }
             
             // store solution.
@@ -249,9 +248,9 @@ namespace ippl {
          * \c Kokkos::View where each element corresponts to the function value
          * at the point described by the same element inside of \p positions.
          */
-        Kokkos::View<point_t*> reconstructToPoints(const Kokkos::View<point_t*>& positions) <%
+        Kokkos::View<point_t*> reconstructToPoints(const Kokkos::View<point_t*>& positions) {
             return this->nedelecSpace_m.reconstructToPoints(positions, *lhsVector_m);
-        %>
+        }
 
 
         

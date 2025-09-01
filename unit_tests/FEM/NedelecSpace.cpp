@@ -177,7 +177,7 @@ TYPED_TEST(NedelecSpaceTest, isDOFOnBoundary) {
         EXPECT_FALSE(this->nedelecSpace.isDOFOnBoundary(32));
         EXPECT_FALSE(this->nedelecSpace.isDOFOnBoundary(33));
         EXPECT_FALSE(this->nedelecSpace.isDOFOnBoundary(34));
-    } else <%
+    } else {
         // check all the ones which are true
         // south boundary
         EXPECT_TRUE(this->nedelecSpaceSmall.isDOFOnBoundary(0));
@@ -230,7 +230,7 @@ TYPED_TEST(NedelecSpaceTest, isDOFOnBoundary) {
         EXPECT_FALSE(this->nedelecSpaceSmall.isDOFOnBoundary(27));
         EXPECT_FALSE(this->nedelecSpaceSmall.isDOFOnBoundary(29));
         EXPECT_FALSE(this->nedelecSpaceSmall.isDOFOnBoundary(37));
-    %>
+    }
 }
 
 
@@ -285,7 +285,7 @@ TYPED_TEST(NedelecSpaceTest, getBoundarySide) {
     EXPECT_EQ(this->nedelecSpace.getBoundarySide(33),-1);
     EXPECT_EQ(this->nedelecSpace.getBoundarySide(34),-1);
 
-  } else <%
+  } else {
     // check all the ones which are true
     // south boundary
     EXPECT_EQ(this->nedelecSpaceSmall.getBoundarySide(13),0);
@@ -325,7 +325,7 @@ TYPED_TEST(NedelecSpaceTest, getBoundarySide) {
     EXPECT_EQ(this->nedelecSpaceSmall.getBoundarySide(27),-1);
     EXPECT_EQ(this->nedelecSpaceSmall.getBoundarySide(29),-1);
     EXPECT_EQ(this->nedelecSpaceSmall.getBoundarySide(37),-1);
-  %>
+  }
 }
 
 TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunction) {
@@ -531,12 +531,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunctionCurl) {
 
 
 TYPED_TEST(NedelecSpaceTest, createFEMVector) {
-    // Note that this test will start to fail in case the implementation of the
-    // layout is changed and therefore the split into the different subdomains
-    // becomes different. Also be aware of the domain boundaries, as there the halo cells
-    // are not necessearly uniquly defined. All in all this test is custom
-    // tailored to the current way we have implemented it and if in the future
-    // changes to the logic is made this test needs to be adjusted. 
+    // Note that this test will start to fail in case the implementation how the
+    // domain decomposition is done or how the FEMVector entires are ordered is 
+    // changed. Also be aware of the domain boundaries, as there the
+    // halo cells are not necessarily uniquely defined. All in all this test is
+    // custom tailored to the current way we have implemented it and if in the
+    // future changes to those two parts are made the test need to be adjusted.
+    // Note that currently this test is implemented for using 1, 2, or 3 MPI
+    // ranks, if more ranks are used the test is skipped.
 
     using T = typename TestFixture::value_t;
     
@@ -550,14 +552,14 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
         Kokkos::deep_copy(hView, view);
 
 
-        if (ippl::Comm->size() == 1) <%
+        if (ippl::Comm->size() == 1) {
             ASSERT_EQ(vec.size(), 84);
-            for (size_t i = 0; i < hView.extent(0); ++i) <%
+            for (size_t i = 0; i < hView.extent(0); ++i) {
                 ASSERT_EQ(hView(i),0);
-            %>
-        %>
-        if (ippl::Comm->size() == 2) <%
-            if (ippl::Comm->rank() == 0) <%
+            }
+        }
+        if (ippl::Comm->size() == 2) {
+            if (ippl::Comm->rank() == 0) {
                 ASSERT_EQ(vec.size(), 45);
 
                 ASSERT_EQ(hView(0),0);
@@ -606,8 +608,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(43),0);
                 ASSERT_EQ(hView(44),0);
 
-            %>
-            if (ippl::Comm->rank() == 1) <%
+            }
+            if (ippl::Comm->rank() == 1) {
                 ASSERT_EQ(vec.size(), 58);
 
                 ASSERT_EQ(hView(0),1);
@@ -669,10 +671,10 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(56),1);
                 ASSERT_EQ(hView(57),1);
 
-            %>
-        %>
-        if (ippl::Comm->size() == 3) <%
-            if (ippl::Comm->rank() == 0) <%
+            }
+        }
+        if (ippl::Comm->size() == 3) {
+            if (ippl::Comm->rank() == 0) {
                 ASSERT_EQ(vec.size(), 45);
 
                 ASSERT_EQ(hView(0),0);
@@ -720,8 +722,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(42),0);
                 ASSERT_EQ(hView(43),0);
                 ASSERT_EQ(hView(44),0);
-            %>
-            if (ippl::Comm->rank() == 1) <%
+            }
+            if (ippl::Comm->rank() == 1) {
                 ASSERT_EQ(vec.size(), 45);
 
                 ASSERT_EQ(hView(0),1);
@@ -771,8 +773,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(44),2);
 
 
-            %>
-            if (ippl::Comm->rank() == 2) <%
+            }
+            if (ippl::Comm->rank() == 2) {
                 ASSERT_EQ(vec.size(), 32);
 
                 ASSERT_EQ(hView(0),2);
@@ -807,11 +809,11 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(29),2);
                 ASSERT_EQ(hView(30),1);
                 ASSERT_EQ(hView(31),2);
-            %>
-        %>
+            }
+        }
     }
 
-    if constexpr (this->nedelecSpace.dim == 3) <%
+    if constexpr (this->nedelecSpace.dim == 3) {
         // Due to the fact, that for the 3D case we have a lot of values we now
         // do not check all the values in the FEMVector, but only the ones which
         // are involved in the halo exchange operations.
@@ -823,14 +825,14 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
         auto hView = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(hView, view);
 
-        if (ippl::Comm->size() == 1) <%
+        if (ippl::Comm->size() == 1) {
             ASSERT_EQ(vec.size(), 300);
-            for (size_t i = 0; i < hView.extent(0); ++i) <%
+            for (size_t i = 0; i < hView.extent(0); ++i) {
                 ASSERT_EQ(hView(i),0);
-            %>
-        %>
-        if (ippl::Comm->size() == 2) <%
-            if (ippl::Comm->rank() == 0) <%
+            }
+        }
+        if (ippl::Comm->size() == 2) {
+            if (ippl::Comm->rank() == 0) {
                 ASSERT_EQ(vec.size(), 170);
 
                 ASSERT_EQ(hView(43),0);
@@ -898,8 +900,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(167),1);
                 ASSERT_EQ(hView(169),0);
 
-            %>
-            if (ippl::Comm->rank() == 1) <%
+            }
+            if (ippl::Comm->rank() == 1) {
                 ASSERT_EQ(vec.size(), 235);
 
                 ASSERT_EQ(hView(58),0);
@@ -966,10 +968,10 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(228),0);
                 ASSERT_EQ(hView(229),2);
                 ASSERT_EQ(hView(232),0);            
-            %>
-        %>
-        if (ippl::Comm->size() == 3) <%
-            if (ippl::Comm->rank() == 0) <%
+            }
+        }
+        if (ippl::Comm->size() == 3) {
+            if (ippl::Comm->rank() == 0) {
                 ASSERT_EQ(vec.size(), 170);
 
                 ASSERT_EQ(hView(43),0);
@@ -1036,8 +1038,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(166),0);
                 ASSERT_EQ(hView(167),1);
                 ASSERT_EQ(hView(169),0);
-            %>
-            if (ippl::Comm->rank() == 1) <%
+            }
+            if (ippl::Comm->rank() == 1) {
                 ASSERT_EQ(vec.size(), 170);
 
                 ASSERT_EQ(hView(42),0);
@@ -1144,8 +1146,8 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(167),2);
                 ASSERT_EQ(hView(168),0);
                 ASSERT_EQ(hView(169),2);
-            %>
-            if (ippl::Comm->rank() == 2) <%
+            }
+            if (ippl::Comm->rank() == 2) {
                 ASSERT_EQ(vec.size(), 170);
 
                 ASSERT_EQ(hView(42),1);
@@ -1213,10 +1215,10 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
                 ASSERT_EQ(hView(166),4);
                 ASSERT_EQ(hView(168),1);
 
-            %>
-        %>
+            }
+        }
 
-    %>
+    }
 }
 
 
@@ -1224,8 +1226,8 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
     using T = typename TestFixture::value_t;
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
     
-    if (ippl::Comm->size() ==1) <%
-        if (this->nedelecSpace.dim == 2)<%
+    if (ippl::Comm->size() ==1) {
+        if (this->nedelecSpace.dim == 2){
             auto fModel = this->nedelecSpace.createFEMVector();
             
             auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpace.dim>>();
@@ -1238,7 +1240,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
             Kokkos::deep_copy(hView, view);
 
             auto ldom = this->layout.getLocalNDIndex();
-            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) <%
+            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) {
                 const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
                     this->nedelecSpace.getGlobalDOFIndices(elementIndex);
 
@@ -1250,15 +1252,15 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpace.isDOFOnBoundary(I)) {
                         continue;
-                    } else <%
+                    } else {
                         ASSERT_NEAR(hView(vectorIndices<:i:>), 1., tolerance);
-                    %>
+                    }
 
-                %>
-            %>
-        %>
+                }
+            }
+        }
 
-        if (this->nedelecSpaceSmall.dim == 3)<%
+        if (this->nedelecSpaceSmall.dim == 3){
             auto fModel = this->nedelecSpaceSmall.createFEMVector();
             
             auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpaceSmall.dim>>();
@@ -1271,7 +1273,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
             Kokkos::deep_copy(hView, view);
 
             auto ldom = this->layoutSmall.getLocalNDIndex();
-            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) <%
+            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) {
                 const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
                     this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
 
@@ -1283,16 +1285,16 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
                         continue;
-                    } else <%
+                    } else {
                         ASSERT_NEAR(hView(vectorIndices<:i:>), 1., tolerance);
-                    %>
+                    }
 
-                %>
-            %>
-        %>
-    %> else <%
+                }
+            }
+        }
+    } else {
         GTEST_SKIP();
-    %>
+    }
 }
 
 
@@ -1301,7 +1303,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
 
 
-    if (ippl::Comm->size() ==1) <%
+    if (ippl::Comm->size() ==1) {
         if (this->nedelecSpace.dim == 2) {
             auto f = DummyFunctor<T, this->nedelecSpace.dim, this->nedelecSpace.numElementDOFs>();
 
@@ -1314,7 +1316,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
             Kokkos::deep_copy(hView, view);
 
             auto ldom = this->layout.getLocalNDIndex();
-            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) <%
+            for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) {
                 const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
                     this->nedelecSpace.getGlobalDOFIndices(elementIndex);
 
@@ -1326,11 +1328,11 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpace.isDOFOnBoundary(I)) {
                         continue;
-                    } else <%
+                    } else {
                         ASSERT_NEAR(hView(vectorIndices<:i:>), 2., tolerance);
-                    %>
-                %>
-            %>
+                    }
+                }
+            }
         }
         if (this->nedelecSpaceSmall.dim == 3) {
             auto f = DummyFunctor<T, this->nedelecSpaceSmall.dim, this->nedelecSpaceSmall.numElementDOFs>();
@@ -1344,7 +1346,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
             Kokkos::deep_copy(hView, view);
 
             auto ldom = this->layoutSmall.getLocalNDIndex();
-            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) <%
+            for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) {
                 const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
                     this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
 
@@ -1356,16 +1358,16 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
                         continue;
-                    } else <%
+                    } else {
                         ASSERT_NEAR(hView(vectorIndices<:i:>), 4., tolerance);
-                    %>
-                %>
-            %>
+                    }
+                }
+            }
 
         }
-    %> else <%
+    } else {
         GTEST_SKIP();
-    %>
+    }
 } 
 
 
