@@ -237,9 +237,7 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
   ippl::Vector<T, Dim> origin, h;
   for (unsigned d=0; d<Dim; ++d) { 
     origin[d] = T(-0.7 + 0.11*d); 
-    origin[d] = T(0);
     h[d] = T(0.31 + 0.07*d); 
-    h[d] = T(1.0);
   }
 
   auto owned  = TestFixture::make_owned_nd(nx);
@@ -252,7 +250,6 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
   ippl::Vector<T,Dim> a; 
   for (unsigned d=0; d<Dim; ++d) {
     a[d] = T(0.21 + 0.1*d); 
-    a[d] = T(1.0); 
   }
 
   auto u = KOKKOS_LAMBDA(const ippl::Vector<T,Dim>& x) -> T {
@@ -270,20 +267,15 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
 
-  const int n_local = 1;
+  const int n_local = 1000;
   TestFixture::fill_uniform_positions(bunch, n_local, mesh, /*seed=*/42);
-  auto d_pos = bunch.R.getView();
-  auto d_out = bunch.Q.getView();
 
   auto policy = Kokkos::RangePolicy<exec_space>(0, bunch.getLocalNum());
   Kokkos::deep_copy(bunch.Q.getView(), T(0));
   ippl::interpolate_to_diracs(bunch.Q, coeffs, bunch.R, space, policy);
 
-  ippl::Vector<size_t,Dim> e_nd;
-  ippl::Vector<T,Dim>      xi;
-
-
-  ippl::locate_element_nd_and_xi(mesh, d_pos(0), e_nd, xi);
+  auto d_pos = bunch.R.getView();
+  auto d_out = bunch.Q.getView();
 
   double max_err = 0.0, max_ref = 0.0;
   Kokkos::parallel_reduce("interp_affine_err", policy,
@@ -315,6 +307,8 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
     << "  ref scale max|u(x_p)|   = " << g_ref << "\n"
     << "  allowed (abs+rel)       = " << allow
     << " (abs_tol=" << abs_tol << ", rel_tol*ref=" << rel_tol * g_ref << ")";
+
+  std::cout << max_err << std::endl;
 }
 
 int main(int argc, char* argv[]) {
