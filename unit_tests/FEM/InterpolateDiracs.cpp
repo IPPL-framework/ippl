@@ -2,6 +2,7 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
+#include <limits>
 #include <random>
 #include <algorithm>
 
@@ -69,8 +70,7 @@ public:
   using bunch_t     = Bunch<playout_t>;
 
   static constexpr T tol() {
-    if constexpr (std::is_same_v<T, float>) return T(1e-5f);
-    else                                    return T(1e-12);
+    return std::numeric_limits<T>::epsilon();
   }
 
   static ippl::NDIndex<dim> make_owned_nd(int nx) {
