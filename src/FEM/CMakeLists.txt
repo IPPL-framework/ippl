@@ -36,6 +36,9 @@ install(FILES
     LagrangeSpace.h
     LagrangeSpace.hpp
 
+    # Operators
+    FEMInterpolate.hpp
+
     DESTINATION include/FEM
 )
 
