@@ -31,6 +31,21 @@ namespace ippl {
         }
     }
 
+
+    template<class View, class IVec, std::size_t... Is>
+    KOKKOS_INLINE_FUNCTION
+    auto view_ptr_impl(View& v, const IVec& I, std::index_sequence<Is...>)
+      -> decltype(&v(I[Is]...)) {
+      return &v(I[Is]...);
+    }
+
+    template<int D, class View, class IVec>
+    KOKKOS_INLINE_FUNCTION
+    auto view_ptr(View& v, const IVec& I)
+      -> decltype(view_ptr_impl(v, I, std::make_index_sequence<D>{})) {
+      return view_ptr_impl(v, I, std::make_index_sequence<D>{});
+    }
+
     /**
      * @brief Assemble a P1 FEM load vector (RHS) from particle attributes.
      *
@@ -97,13 +112,7 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
                     }
-                    if constexpr (Dim == 1) {
-                        Kokkos::atomic_add(&view(I[0]), val * w);
-                    } else if constexpr (Dim == 2) {
-                        Kokkos::atomic_add(&view(I[0], I[1]), val * w);
-                    } else if constexpr (Dim == 3) {
-                        Kokkos::atomic_add(&view(I[0], I[1], I[2]), val * w);
-                    }
+                    Kokkos::atomic_add(view_ptr<Dim>(view, I), val * w);
                 }
             }
         );
