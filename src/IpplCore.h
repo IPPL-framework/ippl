@@ -54,4 +54,7 @@
 // // FEM Vector
 #include "FEM/FEMVector.h"
 
+// FEM Operators
+#include "FEM/FEMInterpolate.hpp"
+
 #endif

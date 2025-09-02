@@ -38,5 +38,8 @@ install(FILES
     NedelecSpace.h
     NedelecSpace.hpp
 
+    # Operators
+    FEMInterpolate.hpp
+
     DESTINATION include/FEM
 )
