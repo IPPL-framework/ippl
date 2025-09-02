@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
         std::vector<std::string> preconditioner_params;
 
         // Create an instance of a manger for the considered application
-        if (solver == "PCG") {
+        if (solver == "PCG" || solver == "FEM") {
             for (int i = 0; i < 5; i++) {
                 preconditioner_params.push_back(argv[arg++]);
             }

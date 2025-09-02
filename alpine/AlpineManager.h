@@ -115,13 +115,33 @@ public:
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
     }
 
-    void grid2par() override { gatherCIC(); }
+    void grid2par() override { 
+        if (getSolver() == "FEM") {
+            gatherFEM();
+        } else {
+            gatherCIC();
+        }
+    }
+
+    void gatherFEM() {
+        // TODO: body    
+    }
 
     void gatherCIC() {
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
-    void par2grid() override { scatterCIC(); }
+    void par2grid() override {
+        if (getSolver() == "FEM") {
+            scatterFEM();
+        } else {
+            scatterCIC();
+        }
+    }
+
+    void scatterFEM() {
+        // TODO: body
+    }
 
     void scatterCIC() {
         Inform m("scatter ");
