@@ -42,6 +42,7 @@ TYPED_TEST(LocateElementTest, DeterministicPoints) {
 
     MeshStub<Dim,T> M{};
 
+    // Fixed, arbitrary choice of origin, spacing and number of vertices
     for (unsigned d=0; d<Dim; ++d) {
         M.nr[d]  = (d+4);           // e.g., 4,5,6 vertices → 3,4,5 cells
         M.h[d]   = T(0.3 + 0.2*d);  // non-uniform spacings

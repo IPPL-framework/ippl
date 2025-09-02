@@ -233,6 +233,7 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
   using playout_t  = typename TestFixture::playout_t;
   using bunch_t    = typename TestFixture::bunch_t;
 
+  // Fixed, arbitrary choice of origin and spacing
   const int nx = 10; 
   ippl::Vector<T, Dim> origin, h;
   for (unsigned d=0; d<Dim; ++d) { 

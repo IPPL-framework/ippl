@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# test/FFT/CMakeLists.txt
+# test/FEM/CMakeLists.txt
 #
 # Integration tests for FEM functionality. These build example executables
 # that run and validate FEM behavior across supported configurations.

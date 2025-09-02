@@ -130,7 +130,8 @@ namespace ippl {
             this->getGlobalDOFIndices(elementIndex);
 
         // Find the global DOF in the vector and return the local DOF index
-        // TODO this can be done faster since the global DOFs are sorted
+        // Note: It is important that this only works because the global_dofs 
+        // are already arranged in the correct order from getGlobalDOFIndices
         for (size_t i = 0; i < global_dofs.dim; ++i) {
             if (global_dofs[i] == globalDOFIndex) {
                 return i;

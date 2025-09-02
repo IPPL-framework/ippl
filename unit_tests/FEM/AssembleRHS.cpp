@@ -187,6 +187,7 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
 
   int nx = 32;
 
+  // Fixed, arbitrary choice of origin and spacing
   ippl::Vector<T, Dim> origin;
   for (unsigned d=0; d<Dim; ++d) {
     origin[d] = T(-0.7 + 0.11*d);
