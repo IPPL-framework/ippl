@@ -384,6 +384,30 @@ Functions</h2></td></tr>
 <tr class="memitem:aef7a455fedb25128d4d4c40b391245c1"><td class="memTemplParams" colspan="2">template&lt;typename E1 , size_t N1, typename E2 , size_t N2&gt; </td></tr>
 <tr class="memitem:aef7a455fedb25128d4d4c40b391245c1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1detail_1_1meta__dot.html">detail::meta_dot</a>&lt; E1, E2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#aef7a455fedb25128d4d4c40b391245c1">dot</a> (const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E1, N1 &gt; &amp;u, const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E2, N2 &gt; &amp;v)</td></tr>
 <tr class="separator:aef7a455fedb25128d4d4c40b391245c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &gt; </td></tr>
+<tr class="memitem:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a82d8ba8db0a45eaee29d37c1e1e19f5a">locate_element_nd_and_xi</a> (const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;x, <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;e_nd, <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;xi)</td></tr>
+<tr class="memdesc:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mapping from global position to element ND index and reference coordinates (xi ∈ [0,1)^Dim) on a <a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a> mesh.  <a href="namespaceippl.html#a82d8ba8db0a45eaee29d37c1e1e19f5a">More...</a><br /></td></tr>
+<tr class="separator:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d0768e2295c95728852481be1c25984"><td class="memTemplParams" colspan="2">template&lt;class View , class IVec , std::size_t... Is&gt; </td></tr>
+<tr class="memitem:a5d0768e2295c95728852481be1c25984"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a5d0768e2295c95728852481be1c25984">view_ptr_impl</a> (View &amp;v, const IVec &amp;I, std::index_sequence&lt; Is... &gt;) -&gt; decltype(&amp;v(I[Is]...))</td></tr>
+<tr class="separator:a5d0768e2295c95728852481be1c25984"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f0bc29f3c6e5ff1fe0da1f60554aed7"><td class="memTemplParams" colspan="2">template&lt;int D, class View , class IVec &gt; </td></tr>
+<tr class="memitem:a5f0bc29f3c6e5ff1fe0da1f60554aed7"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a5f0bc29f3c6e5ff1fe0da1f60554aed7">view_ptr</a> (View &amp;v, const IVec &amp;I) -&gt; decltype(<a class="el" href="namespaceippl.html#a5d0768e2295c95728852481be1c25984">view_ptr_impl</a>(v, I, std::make_index_sequence&lt; D &gt;{}))</td></tr>
+<tr class="separator:a5f0bc29f3c6e5ff1fe0da1f60554aed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e5974f54a488134b7ee16bd02d84c1e"><td class="memTemplParams" colspan="2">template&lt;typename AttribIn , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
+<tr class="memitem:a7e5974f54a488134b7ee16bd02d84c1e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a7e5974f54a488134b7ee16bd02d84c1e">assemble_rhs_from_particles</a> (const AttribIn &amp;attrib, <a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const PosAttrib &amp;pp, const Space &amp;space, policy_type iteration_policy)</td></tr>
+<tr class="memdesc:a7e5974f54a488134b7ee16bd02d84c1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assemble a P1 FEM load vector (RHS) from particle attributes.  <a href="namespaceippl.html#a7e5974f54a488134b7ee16bd02d84c1e">More...</a><br /></td></tr>
+<tr class="separator:a7e5974f54a488134b7ee16bd02d84c1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae127a688425c74181867447d200c1855"><td class="memTemplParams" colspan="2">template&lt;class View , class IVec , std::size_t... Is&gt; </td></tr>
+<tr class="memitem:ae127a688425c74181867447d200c1855"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ae127a688425c74181867447d200c1855">view_ref_impl</a> (View &amp;v, const IVec &amp;I, std::index_sequence&lt; Is... &gt;)</td></tr>
+<tr class="separator:ae127a688425c74181867447d200c1855"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a128d78cfa2ff45fd9480b209cc33bb22"><td class="memTemplParams" colspan="2">template&lt;int D, class View , class IVec &gt; </td></tr>
+<tr class="memitem:a128d78cfa2ff45fd9480b209cc33bb22"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a128d78cfa2ff45fd9480b209cc33bb22">view_ref</a> (View &amp;v, const IVec &amp;I)</td></tr>
+<tr class="separator:a128d78cfa2ff45fd9480b209cc33bb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f873168b3c170ebb0ad4ea570246996"><td class="memTemplParams" colspan="2">template&lt;typename AttribOut , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
+<tr class="memitem:a7f873168b3c170ebb0ad4ea570246996"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a7f873168b3c170ebb0ad4ea570246996">interpolate_to_diracs</a> (AttribOut &amp;attrib_out, const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;coeffs, const PosAttrib &amp;pp, const Space &amp;space, policy_type iteration_policy)</td></tr>
+<tr class="memdesc:a7f873168b3c170ebb0ad4ea570246996"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolate a P1 FEM field to particle positions.  <a href="namespaceippl.html#a7f873168b3c170ebb0ad4ea570246996">More...</a><br /></td></tr>
+<tr class="separator:a7f873168b3c170ebb0ad4ea570246996"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57eb78319165e949b7334542546af7e4"><td class="memItemLeft" align="right" valign="top">constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a57eb78319165e949b7334542546af7e4">calculateNumElementVertices</a> (unsigned <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>)</td></tr>
 <tr class="separator:a57eb78319165e949b7334542546af7e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25190fc9fb40e3fb2277b5536ba5340b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a25190fc9fb40e3fb2277b5536ba5340b">DefineReduction</a> (Sum, sum, <a class="el" href="namespaceippl.html#a8f7e4fb4eed1e301eff1ad5d8b35df33">valL</a>+=myVal, std::plus) DefineReduction(Max</td></tr>
@@ -980,6 +1004,75 @@ template&lt;typename View , typename Coords , size_t... Idx&gt; </div>
 <p >Utility function for apply (see its docstring) </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Idx...</td><td>indices of the elements to take (in practice, always the sequence of natural numbers up to the dimension of the view) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7e5974f54a488134b7ee16bd02d84c1e" name="a7e5974f54a488134b7ee16bd02d84c1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e5974f54a488134b7ee16bd02d84c1e">&#9670;&#160;</a></span>assemble_rhs_from_particles()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename AttribIn , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::assemble_rhs_from_particles </td>
+          <td>(</td>
+          <td class="paramtype">const AttribIn &amp;&#160;</td>
+          <td class="paramname"><em>attrib</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PosAttrib &amp;&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Space &amp;&#160;</td>
+          <td class="paramname"><em>space</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Assemble a P1 FEM load vector (RHS) from particle attributes. </p>
+<p >For each particle position x, locate the owning element (ND index e_nd) and reference coordinate xi. Deposit the particle attribute value into the element's nodal DOFs using P1 Lagrange shape functions evaluated at xi.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">AttribIn</td><td>Particle attribute type with getView()(p) -&gt; scalar </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td><a class="el" href="classippl_1_1Field.html">ippl::Field</a> with rank=Dim nodal coefficients (RHS) </td></tr>
+    <tr><td class="paramname">PosAttrib</td><td>Particle position attribute with getView()(p) -&gt; Vector&lt;T,Dim&gt; </td></tr>
+    <tr><td class="paramname">Space</td><td>Lagrange space providing element/DOF/topology queries </td></tr>
+    <tr><td class="paramname">policy_type</td><td><a class="el" href="namespaceKokkos.html">Kokkos</a> execution policy (defaults to <a class="el" href="classippl_1_1BareField.html#ae3b8e4d26e218d9ec999a29871d61700">Field::execution_space</a>) </td></tr>
   </table>
   </dd>
 </dl>
@@ -1781,6 +1874,75 @@ template&lt;typename <a class="el" href="classippl_1_1BareField.html">BareField<
 
 </div>
 </div>
+<a id="a7f873168b3c170ebb0ad4ea570246996" name="a7f873168b3c170ebb0ad4ea570246996"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f873168b3c170ebb0ad4ea570246996">&#9670;&#160;</a></span>interpolate_to_diracs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename AttribOut , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::interpolate_to_diracs </td>
+          <td>(</td>
+          <td class="paramtype">AttribOut &amp;&#160;</td>
+          <td class="paramname"><em>attrib_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>coeffs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PosAttrib &amp;&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Space &amp;&#160;</td>
+          <td class="paramname"><em>space</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Interpolate a P1 FEM field to particle positions. </p>
+<p >For each particle position x, locate the owning element (ND index e_nd) and reference coordinate xi. Evaluate P1 Lagrange shape functions at xi to combine nodal coefficients and write u(x) to the particle attribute.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">AttribOut</td><td>Particle attribute type with getView()(p) -&gt; scalar </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td><a class="el" href="classippl_1_1Field.html">ippl::Field</a> with rank=Dim nodal coefficients </td></tr>
+    <tr><td class="paramname">PosAttrib</td><td>Particle position attribute with getView()(p) -&gt; Vector&lt;T,Dim&gt; </td></tr>
+    <tr><td class="paramname">Space</td><td>Lagrange space providing element/DOF/topology queries </td></tr>
+    <tr><td class="paramname">policy_type</td><td><a class="el" href="namespaceKokkos.html">Kokkos</a> execution policy (defaults to <a class="el" href="classippl_1_1BareField.html#ae3b8e4d26e218d9ec999a29871d61700">Field::execution_space</a>) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a91a21e9020f6a5fb0b9cada900824651" name="a91a21e9020f6a5fb0b9cada900824651"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a91a21e9020f6a5fb0b9cada900824651">&#9670;&#160;</a></span>laplace()</h2>
 
@@ -1850,6 +2012,51 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a82d8ba8db0a45eaee29d37c1e1e19f5a" name="a82d8ba8db0a45eaee29d37c1e1e19f5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82d8ba8db0a45eaee29d37c1e1e19f5a">&#9670;&#160;</a></span>locate_element_nd_and_xi()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION void ippl::locate_element_nd_and_xi </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>e_nd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>xi</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Mapping from global position to element ND index and reference coordinates (xi ∈ [0,1)^Dim) on a <a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a> mesh. </p>
+<p >Assumes the input x is strictly inside the computational domain so that for each dimension d: 0 ≤ (x[d]-origin[d])/h[d] &lt; nr[d]-1. </p>
 
 </div>
 </div>
@@ -3091,6 +3298,138 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a5f0bc29f3c6e5ff1fe0da1f60554aed7" name="a5f0bc29f3c6e5ff1fe0da1f60554aed7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f0bc29f3c6e5ff1fe0da1f60554aed7">&#9670;&#160;</a></span>view_ptr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int D, class View , class IVec &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION auto ippl::view_ptr </td>
+          <td>(</td>
+          <td class="paramtype">View &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const IVec &amp;&#160;</td>
+          <td class="paramname"><em>I</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt; decltype(<a class="el" href="namespaceippl.html#a5d0768e2295c95728852481be1c25984">view_ptr_impl</a>(v, I, std::make_index_sequence&lt;D&gt;{})) </td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5d0768e2295c95728852481be1c25984" name="a5d0768e2295c95728852481be1c25984"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d0768e2295c95728852481be1c25984">&#9670;&#160;</a></span>view_ptr_impl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class View , class IVec , std::size_t... Is&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION auto ippl::view_ptr_impl </td>
+          <td>(</td>
+          <td class="paramtype">View &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const IVec &amp;&#160;</td>
+          <td class="paramname"><em>I</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::index_sequence&lt; Is... &gt;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt; decltype(&amp;v(I[Is]...)) </td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a128d78cfa2ff45fd9480b209cc33bb22" name="a128d78cfa2ff45fd9480b209cc33bb22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a128d78cfa2ff45fd9480b209cc33bb22">&#9670;&#160;</a></span>view_ref()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;int D, class View , class IVec &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION decltype(auto) ippl::view_ref </td>
+          <td>(</td>
+          <td class="paramtype">View &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const IVec &amp;&#160;</td>
+          <td class="paramname"><em>I</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae127a688425c74181867447d200c1855" name="ae127a688425c74181867447d200c1855"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae127a688425c74181867447d200c1855">&#9670;&#160;</a></span>view_ref_impl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class View , class IVec , std::size_t... Is&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION decltype(auto) ippl::view_ref_impl </td>
+          <td>(</td>
+          <td class="paramtype">View &amp;&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const IVec &amp;&#160;</td>
+          <td class="paramname"><em>I</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::index_sequence&lt; Is... &gt;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
