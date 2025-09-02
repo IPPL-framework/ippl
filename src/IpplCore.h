@@ -50,4 +50,7 @@
 // // FEM Spaces
 #include "FEM/LagrangeSpace.h"
 
+// FEM Operators
+#include "FEM/FEMInterpolate.hpp"
+
 #endif

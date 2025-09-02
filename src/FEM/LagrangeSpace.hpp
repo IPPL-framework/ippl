@@ -129,20 +129,12 @@ namespace ippl {
         const Vector<size_t, numElementDOFs> global_dofs =
             this->getGlobalDOFIndices(elementIndex);
 
-        ippl::Vector<size_t, numElementDOFs> dof_mapping;
-        if (Dim == 1) {
-            dof_mapping = {0, 1};
-        } else if (Dim == 2) {
-            dof_mapping = {0, 1, 3, 2};
-        } else if (Dim == 3) {
-            dof_mapping = {0, 1, 3, 2, 4, 5, 7, 6};
-        }
-
         // Find the global DOF in the vector and return the local DOF index
-        // TODO this can be done faster since the global DOFs are sorted
-        for (size_t i = 0; i < dof_mapping.dim; ++i) {
-            if (global_dofs[dof_mapping[i]] == globalDOFIndex) {
-                return dof_mapping[i];
+        // Note: It is important that this only works because the global_dofs 
+        // are already arranged in the correct order from getGlobalDOFIndices
+        for (size_t i = 0; i < global_dofs.dim; ++i) {
+            if (global_dofs[i] == globalDOFIndex) {
+                return i;
             }
         }
         return std::numeric_limits<size_t>::quiet_NaN();
