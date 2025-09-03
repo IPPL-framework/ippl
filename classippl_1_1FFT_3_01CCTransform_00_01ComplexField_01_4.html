@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FFT&lt; CCTransform, ComplexField &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,7 +97,7 @@ Inheritance diagram for ippl::FFT&lt; CCTransform, ComplexField &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4__inherit__graph.png" border="0" usemap="#aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map" id="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="149,108,317,192"/>
+<area shape="rect" title=" " alt="" coords="149,108,317,207"/>
 <area shape="rect" title=" " alt="" coords="5,5,269,60"/>
 <area shape="rect" title=" " alt="" coords="293,13,368,53"/>
 </map>
@@ -105,7 +107,7 @@ Collaboration diagram for ippl::FFT&lt; CCTransform, ComplexField &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4__coll__graph.png" border="0" usemap="#aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map" id="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="149,108,317,192"/>
+<area shape="rect" title=" " alt="" coords="149,108,317,207"/>
 <area shape="rect" title=" " alt="" coords="5,5,269,60"/>
 <area shape="rect" title=" " alt="" coords="293,13,368,53"/>
 </map>
@@ -122,11 +124,45 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a69983a477f4aeb586f33e9135fdb97be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30e59939df7d10074fe62ac5cab1548c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a30e59939df7d10074fe62ac5cab1548c">transform</a> (<a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02">TransformDirection</a> direction, ComplexField &amp;f)</td></tr>
 <tr class="separator:a30e59939df7d10074fe62ac5cab1548c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a3f3eb2533ba8295985f5be6feb269fba"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a3f3eb2533ba8295985f5be6feb269fba">Base</a> = <a class="el" href="FFT_8h.html#a8f9f25bdb6354b0e7bd7916c8ce8d9dd">IN_PLACE_FFT_BASE_CLASS</a>(ComplexField, backend)</td></tr>
+<tr class="separator:a3f3eb2533ba8295985f5be6feb269fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:ab10630f3f62b21e0e5e8d9077587c177"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a> = ComplexField::dim</td></tr>
+<tr class="separator:ab10630f3f62b21e0e5e8d9077587c177"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename ComplexField&gt;<br />
 class ippl::FFT&lt; CCTransform, ComplexField &gt;</div><p >complex-to-complex <a class="el" href="classippl_1_1FFT.html">FFT</a> class </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a3f3eb2533ba8295985f5be6feb269fba" name="a3f3eb2533ba8295985f5be6feb269fba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f3eb2533ba8295985f5be6feb269fba">&#9670;&#160;</a></span>Base</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Base =  <a class="el" href="FFT_8h.html#a8f9f25bdb6354b0e7bd7916c8ce8d9dd">IN_PLACE_FFT_BASE_CLASS</a>(ComplexField, backend)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ad7f25dad592ab32c610e92c4bd18b0b3" name="ad7f25dad592ab32c610e92c4bd18b0b3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad7f25dad592ab32c610e92c4bd18b0b3">&#9670;&#160;</a></span>Complex_t</h2>
 
@@ -205,6 +241,31 @@ template&lt;typename ComplexField &gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ab10630f3f62b21e0e5e8d9077587c177" name="ab10630f3f62b21e0e5e8d9077587c177"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab10630f3f62b21e0e5e8d9077587c177">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Dim = ComplexField::dim</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

@@ -86,6 +86,8 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1Poisson-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::Poisson&lt; FieldLHS, FieldRHS &gt; Class Template Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div></div>
 </div><!--header-->
@@ -97,14 +99,14 @@ Inheritance diagram for ippl::Poisson&lt; FieldLHS, FieldRHS &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Poisson__inherit__graph.png" border="0" usemap="#aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="683,5,852,295"/>
-<area shape="rect" href="classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,350,177,610"/>
-<area shape="rect" href="classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="201,357,392,603"/>
-<area shape="rect" href="classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="417,416,619,544"/>
-<area shape="rect" href="classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="644,357,891,603"/>
-<area shape="rect" href="classippl_1_1NullSolver.html" title=" " alt="" coords="915,423,1097,537"/>
-<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="1121,387,1309,573"/>
-<area shape="rect" href="classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1333,343,1545,617"/>
+<area shape="rect" title=" " alt="" coords="677,5,847,309"/>
+<area shape="rect" href="classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,453,177,727"/>
+<area shape="rect" href="classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="201,379,392,801"/>
+<area shape="rect" href="classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="416,475,615,705"/>
+<area shape="rect" href="classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="639,357,885,823"/>
+<area shape="rect" href="classippl_1_1NullSolver.html" title=" " alt="" coords="909,533,1092,647"/>
+<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="1116,497,1304,683"/>
+<area shape="rect" href="classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1328,445,1540,735"/>
 </map>
 </div>
 <div class="dynheader">
@@ -112,11 +114,22 @@ Collaboration diagram for ippl::Poisson&lt; FieldLHS, FieldRHS &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Poisson__coll__graph.png" border="0" usemap="#aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" id="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="60,741,229,1001"/>
-<area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="5,470,140,657"/>
-<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="164,448,357,679"/>
-<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="195,168,326,399"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="149,5,372,119"/>
+<area shape="rect" title=" " alt="" coords="340,1721,509,1996"/>
+<area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="307,1450,441,1637"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="465,1428,659,1659"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,775,228,889"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="253,805,407,859"/>
+<area shape="rect" href="classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="432,739,620,925"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="451,365,601,449"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="453,64,599,119"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="645,636,815,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="631,240,815,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="637,5,770,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="794,57,1021,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,379,986,434"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="490,1113,634,1343"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="658,1120,837,1336"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -135,7 +148,7 @@ Public Types</h2></td></tr>
 <tr class="separator:af98f201fc7e3db7b3e4f3fbc105a90c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65fe3bce48c05b76386f266834825bc8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a65fe3bce48c05b76386f266834825bc8">Trhs</a> = typename FieldRHS::value_type</td></tr>
 <tr class="separator:a65fe3bce48c05b76386f266834825bc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02066a70332d325a71c0b1269addc266"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> = <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, Dim &gt;, Dim, Mesh, <a class="el" href="classCentering.html">Centering</a> &gt;</td></tr>
+<tr class="memitem:a02066a70332d325a71c0b1269addc266"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> = <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a> &gt;, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>, <a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a>, <a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a> &gt;</td></tr>
 <tr class="separator:a02066a70332d325a71c0b1269addc266"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -155,7 +168,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a81e7f53b2358fab7696fc56634ee1a3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3901f32fee80b64b0a1fd25c9965de3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#ac3901f32fee80b64b0a1fd25c9965de3">setRhs</a> (<a class="el" href="classippl_1_1Poisson.html#a96a91a7da45bb0d881ec749ddfef38e3">rhs_type</a> &amp;rhs)</td></tr>
 <tr class="separator:ac3901f32fee80b64b0a1fd25c9965de3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e16267dee288ee4af66728c704b1189"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Field.html">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189">getHessian</a> ()</td></tr>
+<tr class="memitem:a2e16267dee288ee4af66728c704b1189"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Poisson.html#a85844e27c27e54cf11b85ed1e206f43a">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189">getHessian</a> ()</td></tr>
 <tr class="separator:a2e16267dee288ee4af66728c704b1189"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adebe4f5b5a6fa6a52390a4f3d9c4ec79"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#adebe4f5b5a6fa6a52390a4f3d9c4ec79">setGradient</a> (<a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> &amp;<a class="el" href="namespaceippl.html#a8dcdffd155f407d75bc014ecb729c3dd">grad</a>)</td></tr>
 <tr class="separator:adebe4f5b5a6fa6a52390a4f3d9c4ec79"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -179,8 +192,48 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a535a7f6672523d45687ea675de4e3f74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78a002b2ac5ab074724e13242c7f4a0e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a78a002b2ac5ab074724e13242c7f4a0e">grad_mp</a></td></tr>
 <tr class="separator:a78a002b2ac5ab074724e13242c7f4a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a6c917449c967819efae9ac7c5d4783e3"><td class="memItemLeft" align="right" valign="top">typedef FieldLHS::Mesh_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a></td></tr>
+<tr class="separator:a6c917449c967819efae9ac7c5d4783e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8a60f8481a093aa37499db0bc4798a0"><td class="memItemLeft" align="right" valign="top">typedef FieldLHS::Centering_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a></td></tr>
+<tr class="separator:aa8a60f8481a093aa37499db0bc4798a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5175ff7f284e3c46fdd6446c543254ca"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Mesh.html#a102bad798da7441046e353fc7a666f77">Mesh::matrix_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a5175ff7f284e3c46fdd6446c543254ca">Matrix_t</a></td></tr>
+<tr class="separator:a5175ff7f284e3c46fdd6446c543254ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85844e27c27e54cf11b85ed1e206f43a"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1Poisson.html#a5175ff7f284e3c46fdd6446c543254ca">Matrix_t</a>, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>, <a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a>, <a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a85844e27c27e54cf11b85ed1e206f43a">MField_t</a></td></tr>
+<tr class="separator:a85844e27c27e54cf11b85ed1e206f43a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a6cdaaf20433f0eee48afcdcd42c5f82e"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a> = FieldLHS::dim</td></tr>
+<tr class="separator:a6cdaaf20433f0eee48afcdcd42c5f82e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aa8a60f8481a093aa37499db0bc4798a0" name="aa8a60f8481a093aa37499db0bc4798a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8a60f8481a093aa37499db0bc4798a0">&#9670;&#160;</a></span>Centering</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef FieldLHS::Centering_t <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="classCentering.html">::Centering</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a02066a70332d325a71c0b1269addc266" name="a02066a70332d325a71c0b1269addc266"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02066a70332d325a71c0b1269addc266">&#9670;&#160;</a></span>grad_type</h2>
 
@@ -190,7 +243,7 @@ Protected Attributes</h2></td></tr>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::grad_type =  <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, Dim&gt;, Dim, Mesh, <a class="el" href="classCentering.html">Centering</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::grad_type =  <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>&gt;, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>, <a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a>, <a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -209,6 +262,78 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
           <td class="memname">using <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::lhs_type =  FieldLHS</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5175ff7f284e3c46fdd6446c543254ca" name="a5175ff7f284e3c46fdd6446c543254ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5175ff7f284e3c46fdd6446c543254ca">&#9670;&#160;</a></span>Matrix_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Mesh.html#a102bad798da7441046e353fc7a666f77">Mesh::matrix_type</a> <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::Matrix_t</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6c917449c967819efae9ac7c5d4783e3" name="a6c917449c967819efae9ac7c5d4783e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c917449c967819efae9ac7c5d4783e3">&#9670;&#160;</a></span>Mesh</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef FieldLHS::Mesh_t <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::Mesh</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a85844e27c27e54cf11b85ed1e206f43a" name="a85844e27c27e54cf11b85ed1e206f43a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85844e27c27e54cf11b85ed1e206f43a">&#9670;&#160;</a></span>MField_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1Poisson.html#a5175ff7f284e3c46fdd6446c543254ca">Matrix_t</a>, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>, <a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a>, <a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a>&gt; <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::MField_t</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -391,7 +516,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classippl_1_1Field.html">MField_t</a> * <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::getHessian </td>
+          <td class="memname">virtual <a class="el" href="classippl_1_1Poisson.html#a85844e27c27e54cf11b85ed1e206f43a">MField_t</a> * <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::getHessian </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -701,6 +826,30 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6cdaaf20433f0eee48afcdcd42c5f82e" name="a6cdaaf20433f0eee48afcdcd42c5f82e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cdaaf20433f0eee48afcdcd42c5f82e">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::Dim = FieldLHS::dim</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a78a002b2ac5ab074724e13242c7f4a0e" name="a78a002b2ac5ab074724e13242c7f4a0e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a78a002b2ac5ab074724e13242c7f4a0e">&#9670;&#160;</a></span>grad_mp</h2>
 

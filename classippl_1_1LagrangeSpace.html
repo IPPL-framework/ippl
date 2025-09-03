@@ -85,6 +85,8 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1LagrangeSpace-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -99,7 +101,7 @@ Inheritance diagram for ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, Quad
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1LagrangeSpace__inherit__graph.png" border="0" usemap="#aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="10,431,254,735"/>
+<area shape="rect" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="10,431,254,764"/>
 <area shape="rect" href="classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="5,5,259,383"/>
 </map>
 </div>
@@ -108,7 +110,7 @@ Collaboration diagram for ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, Qu
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1LagrangeSpace__coll__graph.png" border="0" usemap="#aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_coll__map" id="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_coll__map">
-<area shape="rect" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="43,844,287,1148"/>
+<area shape="rect" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="43,844,287,1177"/>
 <area shape="rect" href="classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="39,461,292,795"/>
 <area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="25,139,149,384"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
@@ -172,12 +174,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3f8774d067516170be74ee24a3772a4b"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="classippl_1_1LagrangeSpace.html#a765bd4f2cfe74d8c52f4497896a834f7">numElementDOFs</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">getGlobalDOFIndices</a> (const size_t &amp;element_index) const override</td></tr>
 <tr class="memdesc:a3f8774d067516170be74ee24a3772a4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the global DOF indices (vector of global DOF indices) of an element.  <a href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">More...</a><br /></td></tr>
 <tr class="separator:a3f8774d067516170be74ee24a3772a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcfc38f64c5190cf6f6e44b176341a37"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#abcfc38f64c5190cf6f6e44b176341a37">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const override</td></tr>
-<tr class="memdesc:abcfc38f64c5190cf6f6e44b176341a37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basis functions and gradients /////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#abcfc38f64c5190cf6f6e44b176341a37">More...</a><br /></td></tr>
-<tr class="separator:abcfc38f64c5190cf6f6e44b176341a37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a906fc1db86334ab0f21f89ad3e20bef4"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a906fc1db86334ab0f21f89ad3e20bef4">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const override</td></tr>
-<tr class="memdesc:a906fc1db86334ab0f21f89ad3e20bef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element.  <a href="classippl_1_1LagrangeSpace.html#a906fc1db86334ab0f21f89ad3e20bef4">More...</a><br /></td></tr>
-<tr class="separator:a906fc1db86334ab0f21f89ad3e20bef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77865b914230b172dd60825fd4de22d2"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a77865b914230b172dd60825fd4de22d2">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
+<tr class="memdesc:a77865b914230b172dd60825fd4de22d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basis functions and gradients /////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a77865b914230b172dd60825fd4de22d2">More...</a><br /></td></tr>
+<tr class="separator:a77865b914230b172dd60825fd4de22d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fe66e2e5d803fc7526a74286ac63acd"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a9fe66e2e5d803fc7526a74286ac63acd">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
+<tr class="memdesc:a9fe66e2e5d803fc7526a74286ac63acd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element.  <a href="classippl_1_1LagrangeSpace.html#a9fe66e2e5d803fc7526a74286ac63acd">More...</a><br /></td></tr>
+<tr class="separator:a9fe66e2e5d803fc7526a74286ac63acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e111421322e57595e63e303b7e34103"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
 <tr class="memitem:a6e111421322e57595e63e303b7e34103"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a6e111421322e57595e63e303b7e34103">evaluateAx</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
 <tr class="memdesc:a6e111421322e57595e63e303b7e34103"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assembly operations ///////////////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a6e111421322e57595e63e303b7e34103">More...</a><br /></td></tr>
@@ -201,9 +203,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a39bcc1594f6560788a58fe99970ae0e8"><td class="memTemplItemLeft" align="right" valign="top">FieldLHS&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a39bcc1594f6560788a58fe99970ae0e8">evaluateAx_lift</a> (FieldLHS &amp;field, F &amp;evalFunction) const</td></tr>
 <tr class="memdesc:a39bcc1594f6560788a58fe99970ae0e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assemble the left stiffness matrix A of the system but only for the boundary values, so that they can be subtracted from the RHS for treatment of Dirichlet BCs.  <a href="classippl_1_1LagrangeSpace.html#a39bcc1594f6560788a58fe99970ae0e8">More...</a><br /></td></tr>
 <tr class="separator:a39bcc1594f6560788a58fe99970ae0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a279ed57533f2d11ecb91ee319d48b62c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a279ed57533f2d11ecb91ee319d48b62c">evaluateLoadVector</a> (FieldRHS &amp;field) const override</td></tr>
-<tr class="memdesc:a279ed57533f2d11ecb91ee319d48b62c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assemble the load vector b of the system Ax = b.  <a href="classippl_1_1LagrangeSpace.html#a279ed57533f2d11ecb91ee319d48b62c">More...</a><br /></td></tr>
-<tr class="separator:a279ed57533f2d11ecb91ee319d48b62c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fbe931d846c6bb150d61776f99ae7ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a3fbe931d846c6bb150d61776f99ae7ea">evaluateLoadVector</a> (FieldRHS &amp;field) const</td></tr>
+<tr class="memdesc:a3fbe931d846c6bb150d61776f99ae7ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assemble the load vector b of the system Ax = b.  <a href="classippl_1_1LagrangeSpace.html#a3fbe931d846c6bb150d61776f99ae7ea">More...</a><br /></td></tr>
+<tr class="separator:a3fbe931d846c6bb150d61776f99ae7ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96742d2887350890ee325ed630d477dc"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
 <tr class="memitem:a96742d2887350890ee325ed630d477dc"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a96742d2887350890ee325ed630d477dc">computeErrorL2</a> (const FieldLHS &amp;u_h, const F &amp;u_sol) const</td></tr>
 <tr class="memdesc:a96742d2887350890ee325ed630d477dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error norm computations ///////////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a96742d2887350890ee325ed630d477dc">More...</a><br /></td></tr>
@@ -259,15 +261,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a01cb5fca72d6939a9535770cc036f3a5 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, NumElementDOFs &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a01cb5fca72d6939a9535770cc036f3a5">getGlobalDOFIndices</a> (const size_t &amp;elementIndex) const=0</td></tr>
 <tr class="memdesc:a01cb5fca72d6939a9535770cc036f3a5 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the global DOF indices (vector of global DOF indices) of an element.  <a href="classippl_1_1FiniteElementSpace.html#a01cb5fca72d6939a9535770cc036f3a5">More...</a><br /></td></tr>
 <tr class="separator:a01cb5fca72d6939a9535770cc036f3a5 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aadc5c275e17ba770e97afbfb438d4c91 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#aadc5c275e17ba770e97afbfb438d4c91">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;localPoint) const=0</td></tr>
-<tr class="memdesc:aadc5c275e17ba770e97afbfb438d4c91 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basis functions and gradients /////////////////////////////////////.  <a href="classippl_1_1FiniteElementSpace.html#aadc5c275e17ba770e97afbfb438d4c91">More...</a><br /></td></tr>
-<tr class="separator:aadc5c275e17ba770e97afbfb438d4c91 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67343eed0334a7748a82b4ed9b8c09f2 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a67343eed0334a7748a82b4ed9b8c09f2">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;localPoint) const=0</td></tr>
-<tr class="memdesc:a67343eed0334a7748a82b4ed9b8c09f2 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element.  <a href="classippl_1_1FiniteElementSpace.html#a67343eed0334a7748a82b4ed9b8c09f2">More...</a><br /></td></tr>
-<tr class="separator:a67343eed0334a7748a82b4ed9b8c09f2 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3321ca4000f2154d8582446eee17543e inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a3321ca4000f2154d8582446eee17543e">evaluateLoadVector</a> (FieldRHS &amp;rhs_field) const=0</td></tr>
-<tr class="memdesc:a3321ca4000f2154d8582446eee17543e inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assembly operations ///////////////////////////////////////////////.  <a href="classippl_1_1FiniteElementSpace.html#a3321ca4000f2154d8582446eee17543e">More...</a><br /></td></tr>
-<tr class="separator:a3321ca4000f2154d8582446eee17543e inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
@@ -286,6 +279,17 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a60db42bceccdd9d7466d66f41895879e inherit pub_static_attribs_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a099faa6d1294fa54f324cbda33743e50 inherit pub_static_attribs_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a099faa6d1294fa54f324cbda33743e50">numElementDOFs</a></td></tr>
 <tr class="separator:a099faa6d1294fa54f324cbda33743e50 inherit pub_static_attribs_classippl_1_1FiniteElementSpace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a6a791423e0bc199be6050ad99ceacfc5"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a6a791423e0bc199be6050ad99ceacfc5">isDOFOnBoundary</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;ndindex) const</td></tr>
+<tr class="memdesc:a6a791423e0bc199be6050ad99ceacfc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a DOF is on the boundary of the mesh.  <a href="classippl_1_1LagrangeSpace.html#a6a791423e0bc199be6050ad99ceacfc5">More...</a><br /></td></tr>
+<tr class="separator:a6a791423e0bc199be6050ad99ceacfc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:aaee8a2bd5ab988cb57a90831bc4aa72e"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; size_t * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#aaee8a2bd5ab988cb57a90831bc4aa72e">elementIndices</a></td></tr>
+<tr class="separator:aaee8a2bd5ab988cb57a90831bc4aa72e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -833,16 +837,13 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
-<a id="a279ed57533f2d11ecb91ee319d48b62c" name="a279ed57533f2d11ecb91ee319d48b62c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a279ed57533f2d11ecb91ee319d48b62c">&#9670;&#160;</a></span>evaluateLoadVector()</h2>
+<a id="a3fbe931d846c6bb150d61776f99ae7ea" name="a3fbe931d846c6bb150d61776f99ae7ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fbe931d846c6bb150d61776f99ae7ea">&#9670;&#160;</a></span>evaluateLoadVector()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateLoadVector </td>
@@ -852,11 +853,6 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Assemble the load vector b of the system Ax = b. </p>
@@ -868,20 +864,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>FieldRHS - The RHS field containing b </dd></dl>
 
-<p>Implements <a class="el" href="classippl_1_1FiniteElementSpace.html#a3321ca4000f2154d8582446eee17543e">ippl::FiniteElementSpace&lt; T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>.</p>
-
 </div>
 </div>
-<a id="abcfc38f64c5190cf6f6e44b176341a37" name="abcfc38f64c5190cf6f6e44b176341a37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abcfc38f64c5190cf6f6e44b176341a37">&#9670;&#160;</a></span>evaluateRefElementShapeFunction()</h2>
+<a id="a77865b914230b172dd60825fd4de22d2" name="a77865b914230b172dd60825fd4de22d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77865b914230b172dd60825fd4de22d2">&#9670;&#160;</a></span>evaluateRefElementShapeFunction()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateRefElementShapeFunction </td>
@@ -901,11 +892,6 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td></td><td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Basis functions and gradients /////////////////////////////////////. </p>
@@ -919,20 +905,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>T - The value of the shape function at the given point </dd></dl>
 
-<p>Implements <a class="el" href="classippl_1_1FiniteElementSpace.html#aadc5c275e17ba770e97afbfb438d4c91">ippl::FiniteElementSpace&lt; T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>.</p>
-
 </div>
 </div>
-<a id="a906fc1db86334ab0f21f89ad3e20bef4" name="a906fc1db86334ab0f21f89ad3e20bef4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a906fc1db86334ab0f21f89ad3e20bef4">&#9670;&#160;</a></span>evaluateRefElementShapeFunctionGradient()</h2>
+<a id="a9fe66e2e5d803fc7526a74286ac63acd" name="a9fe66e2e5d803fc7526a74286ac63acd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fe66e2e5d803fc7526a74286ac63acd">&#9670;&#160;</a></span>evaluateRefElementShapeFunctionGradient()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">::point_t</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateRefElementShapeFunctionGradient </td>
@@ -952,11 +933,6 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td></td><td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element. </p>
@@ -968,8 +944,6 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>point_t (Vector&lt;T, Dim&gt;) - The gradient of the shape function at the given point </dd></dl>
-
-<p>Implements <a class="el" href="classippl_1_1FiniteElementSpace.html#a67343eed0334a7748a82b4ed9b8c09f2">ippl::FiniteElementSpace&lt; T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>
@@ -1202,6 +1176,45 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
+<a id="a6a791423e0bc199be6050ad99ceacfc5" name="a6a791423e0bc199be6050ad99ceacfc5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a791423e0bc199be6050ad99ceacfc5">&#9670;&#160;</a></span>isDOFOnBoundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION bool <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::isDOFOnBoundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>ndindex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Check if a DOF is on the boundary of the mesh. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ndindex</td><td>The <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a> of the global DOF</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true - If the DOF is on the boundary </dd>
+<dd>
+false - If the DOF is not on the boundary </dd></dl>
+
+</div>
+</div>
 <a id="a2d6b478166c828ac5ef4333aeed42dc5" name="a2d6b478166c828ac5ef4333aeed42dc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d6b478166c828ac5ef4333aeed42dc5">&#9670;&#160;</a></span>numGlobalDOFs()</h2>
 
@@ -1262,6 +1275,30 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="ttc" id="aclassippl_1_1LagrangeSpace_html_a765bd4f2cfe74d8c52f4497896a834f7"><div class="ttname"><a href="classippl_1_1LagrangeSpace.html#a765bd4f2cfe74d8c52f4497896a834f7">ippl::LagrangeSpace::numElementDOFs</a></div><div class="ttdeci">static constexpr unsigned numElementDOFs</div><div class="ttdef"><b>Definition:</b> LagrangeSpace.h:38</div></div>
 <div class="ttc" id="aclassippl_1_1LagrangeSpace_html_ab8452dbb297d4f8f3c61dd1c2b5ecf3f"><div class="ttname"><a href="classippl_1_1LagrangeSpace.html#ab8452dbb297d4f8f3c61dd1c2b5ecf3f">ippl::LagrangeSpace::dim</a></div><div class="ttdeci">static constexpr unsigned dim</div><div class="ttdef"><b>Definition:</b> LagrangeSpace.h:41</div></div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="aaee8a2bd5ab988cb57a90831bc4aa72e" name="aaee8a2bd5ab988cb57a90831bc4aa72e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaee8a2bd5ab988cb57a90831bc4aa72e">&#9670;&#160;</a></span>elementIndices</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Kokkos::View&lt;size_t*&gt; <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::elementIndices</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="a765bd4f2cfe74d8c52f4497896a834f7" name="a765bd4f2cfe74d8c52f4497896a834f7"></a>

@@ -101,6 +101,11 @@ Collaboration diagram for ippl::detail::ParticleAttribBase&lt; MemorySpace &gt;:
 </map>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleAttribBase_1_1WithMemSpace.html">WithMemSpace</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a3f6b0b242ba2df58838e176a0f9e0307"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> = <a class="el" href="namespaceippl_1_1detail.html#a964f3ca3105d73edc2897efef3060fcb">ippl::detail::hash_type</a>&lt; MemorySpace &gt;</td></tr>
@@ -110,7 +115,7 @@ Public Types</h2></td></tr>
 <tr class="memitem:a7bc2afec77ea1ec0cca1f6c3ad945350"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a7bc2afec77ea1ec0cca1f6c3ad945350">execution_space</a> = typename memory_space::execution_space</td></tr>
 <tr class="separator:a7bc2afec77ea1ec0cca1f6c3ad945350"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52e8bb8e7bb10e19bdcdbf0561ea0ebd"><td class="memTemplParams" colspan="2">template&lt;typename... Properties&gt; </td></tr>
-<tr class="memitem:a52e8bb8e7bb10e19bdcdbf0561ea0ebd"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a52e8bb8e7bb10e19bdcdbf0561ea0ebd">with_properties</a> = typename WithMemSpace&lt; Properties... &gt;::type</td></tr>
+<tr class="memitem:a52e8bb8e7bb10e19bdcdbf0561ea0ebd"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a52e8bb8e7bb10e19bdcdbf0561ea0ebd">with_properties</a> = typename <a class="el" href="structippl_1_1detail_1_1ParticleAttribBase_1_1WithMemSpace.html">WithMemSpace</a>&lt; Properties... &gt;::type</td></tr>
 <tr class="separator:a52e8bb8e7bb10e19bdcdbf0561ea0ebd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -207,7 +212,7 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 template&lt;typename... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::with_properties =  typename WithMemSpace&lt;Properties...&gt;::type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::with_properties =  typename <a class="el" href="structippl_1_1detail_1_1ParticleAttribBase_1_1WithMemSpace.html">WithMemSpace</a>&lt;Properties...&gt;::type</td>
         </tr>
       </table>
 </div><div class="memdoc">

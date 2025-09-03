@@ -85,6 +85,8 @@ $(function() {
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1detail_1_1HaloCells-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::detail::HaloCells&lt; T, Dim, ViewArgs &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -96,7 +98,9 @@ Collaboration diagram for ippl::detail::HaloCells&lt; T, Dim, ViewArgs &gt;:</di
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1HaloCells__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1HaloCells_3_01T_00_01Dim_00_01ViewArgs_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1HaloCells_3_01T_00_01Dim_00_01ViewArgs_01_4_coll__map" id="aippl_1_1detail_1_1HaloCells_3_01T_00_01Dim_00_01ViewArgs_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,193,163"/>
+<area shape="rect" title=" " alt="" coords="5,269,193,456"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="24,123,175,207"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="26,5,173,60"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -143,6 +147,19 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a51e6388ea158c195576f7e530b46d322"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
 <tr class="memitem:a51e6388ea158c195576f7e530b46d322"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a51e6388ea158c195576f7e530b46d322">applyPeriodicSerialDim</a> (<a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;view, const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#ab9cf9d54adfb0826fb0d3893685caa68">Layout_t</a> *layout, const int nghost)</td></tr>
 <tr class="separator:a51e6388ea158c195576f7e530b46d322"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:ac202241e731d45748e896f3cf6c7fc9c"><td class="memTemplParams" colspan="2">template&lt;class Op &gt; </td></tr>
+<tr class="memitem:ac202241e731d45748e896f3cf6c7fc9c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#ac202241e731d45748e896f3cf6c7fc9c">exchangeBoundaries</a> (<a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;view, <a class="el" href="classippl_1_1detail_1_1HaloCells.html#ab9cf9d54adfb0826fb0d3893685caa68">Layout_t</a> *layout, <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a608d4b766782192817f1f0a19b6d98ff">SendOrder</a> order, int nghost=1)</td></tr>
+<tr class="separator:ac202241e731d45748e896f3cf6c7fc9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33d84ad24b2058b64060a8e68dcf9a37"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a33d84ad24b2058b64060a8e68dcf9a37">makeSubview</a> (const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;view, const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#adc83a5b03212d720ed8cbc3b32279c74">bound_type</a> &amp;intersect)</td></tr>
+<tr class="separator:a33d84ad24b2058b64060a8e68dcf9a37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a4a4ccbea1b41b0a093a30f6fecd83e5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a4a4ccbea1b41b0a093a30f6fecd83e5a">haloData_m</a></td></tr>
+<tr class="separator:a4a4ccbea1b41b0a093a30f6fecd83e5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="adc83a5b03212d720ed8cbc3b32279c74" name="adc83a5b03212d720ed8cbc3b32279c74"></a>
@@ -369,6 +386,72 @@ template&lt;typename Op &gt; </div>
 
 </div>
 </div>
+<a id="ac202241e731d45748e896f3cf6c7fc9c" name="ac202241e731d45748e896f3cf6c7fc9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac202241e731d45748e896f3cf6c7fc9c">&#9670;&#160;</a></span>exchangeBoundaries()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+<div class="memtemplate">
+template&lt;class Op &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::exchangeBoundaries </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#ab9cf9d54adfb0826fb0d3893685caa68">Layout_t</a> *&#160;</td>
+          <td class="paramname"><em>layout</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a608d4b766782192817f1f0a19b6d98ff">SendOrder</a>&#160;</td>
+          <td class="paramname"><em>order</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>nghost</em> = <code>1</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >Exchange the data of halo cells. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td>is the original field data </td></tr>
+    <tr><td class="paramname">layout</td><td>the field layout storing the domain decomposition </td></tr>
+    <tr><td class="paramname">order</td><td>the data send orientation </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Op</td><td>the data assigment operator of the unpack function call </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="af2b7be33a3f2dfc14172d2351de09f57" name="af2b7be33a3f2dfc14172d2351de09f57"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af2b7be33a3f2dfc14172d2351de09f57">&#9670;&#160;</a></span>fillHalo()</h2>
 
@@ -400,6 +483,51 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   <table class="params">
     <tr><td class="paramname">view</td><td>the original field data </td></tr>
     <tr><td class="paramname">layout</td><td>the field layout storing the domain decomposition </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a33d84ad24b2058b64060a8e68dcf9a37" name="a33d84ad24b2058b64060a8e68dcf9a37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33d84ad24b2058b64060a8e68dcf9a37">&#9670;&#160;</a></span>makeSubview()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::makeSubview </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#adc83a5b03212d720ed8cbc3b32279c74">bound_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>intersect</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >Extract the subview of the original data. This does not copy. A subview points to the same memory. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td>is the original field data </td></tr>
+    <tr><td class="paramname">intersect</td><td>the bounds of the intersection </td></tr>
   </table>
   </dd>
 </dl>
@@ -505,6 +633,31 @@ template&lt;typename Op &gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a4a4ccbea1b41b0a093a30f6fecd83e5a" name="a4a4ccbea1b41b0a093a30f6fecd83e5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a4ccbea1b41b0a093a30f6fecd83e5a">&#9670;&#160;</a></span>haloData_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a> <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::haloData_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

@@ -1,3 +1,5 @@
 <map id="ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, PositionProperties &gt;::ParticleNeighborData" name="ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, PositionProperties &gt;::ParticleNeighborData">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,268,75"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,461,268,663"/>
+<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="75,139,199,384"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="61,5,213,89"/>
 </map>

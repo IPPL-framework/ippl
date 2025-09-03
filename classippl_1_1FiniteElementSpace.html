@@ -101,7 +101,7 @@ Inheritance diagram for ippl::FiniteElementSpace&lt; T, Dim, NumElementDOFs, Ele
 <div class="center"><img src="classippl_1_1FiniteElementSpace__inherit__graph.png" border="0" usemap="#aippl_1_1FiniteElementSpace_3_01T_00_01Dim_00_01NumElementDOFs_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FiniteElementSpace_3_01T_00_01Dim_00_01NumElementDOFs_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1FiniteElementSpace_3_01T_00_01Dim_00_01NumElementDOFs_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
 <area shape="rect" title="The FiniteElementSpace class handles the mesh index mapping to vertices and elements and is the base ..." alt="" coords="9,5,245,383"/>
-<area shape="rect" href="classippl_1_1LagrangeSpace.html" title=" " alt="" coords="5,431,249,735"/>
+<area shape="rect" href="classippl_1_1LagrangeSpace.html" title=" " alt="" coords="5,431,249,764"/>
 </map>
 </div>
 <div class="dynheader">
@@ -179,15 +179,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a01cb5fca72d6939a9535770cc036f3a5"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, NumElementDOFs &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a01cb5fca72d6939a9535770cc036f3a5">getGlobalDOFIndices</a> (const size_t &amp;elementIndex) const =0</td></tr>
 <tr class="memdesc:a01cb5fca72d6939a9535770cc036f3a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the global DOF indices (vector of global DOF indices) of an element.  <a href="classippl_1_1FiniteElementSpace.html#a01cb5fca72d6939a9535770cc036f3a5">More...</a><br /></td></tr>
 <tr class="separator:a01cb5fca72d6939a9535770cc036f3a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aadc5c275e17ba770e97afbfb438d4c91"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#aadc5c275e17ba770e97afbfb438d4c91">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;localPoint) const =0</td></tr>
-<tr class="memdesc:aadc5c275e17ba770e97afbfb438d4c91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basis functions and gradients /////////////////////////////////////.  <a href="classippl_1_1FiniteElementSpace.html#aadc5c275e17ba770e97afbfb438d4c91">More...</a><br /></td></tr>
-<tr class="separator:aadc5c275e17ba770e97afbfb438d4c91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a67343eed0334a7748a82b4ed9b8c09f2"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_FUNCTION <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a67343eed0334a7748a82b4ed9b8c09f2">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;localPoint) const =0</td></tr>
-<tr class="memdesc:a67343eed0334a7748a82b4ed9b8c09f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element.  <a href="classippl_1_1FiniteElementSpace.html#a67343eed0334a7748a82b4ed9b8c09f2">More...</a><br /></td></tr>
-<tr class="separator:a67343eed0334a7748a82b4ed9b8c09f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3321ca4000f2154d8582446eee17543e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a3321ca4000f2154d8582446eee17543e">evaluateLoadVector</a> (FieldRHS &amp;rhs_field) const =0</td></tr>
-<tr class="memdesc:a3321ca4000f2154d8582446eee17543e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Assembly operations ///////////////////////////////////////////////.  <a href="classippl_1_1FiniteElementSpace.html#a3321ca4000f2154d8582446eee17543e">More...</a><br /></td></tr>
-<tr class="separator:a3321ca4000f2154d8582446eee17543e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -357,148 +348,6 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a3321ca4000f2154d8582446eee17543e" name="a3321ca4000f2154d8582446eee17543e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3321ca4000f2154d8582446eee17543e">&#9670;&#160;</a></span>evaluateLoadVector()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumElementDOFs, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateLoadVector </td>
-          <td>(</td>
-          <td class="paramtype">FieldRHS &amp;&#160;</td>
-          <td class="paramname"><em>rhs_field</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Assembly operations ///////////////////////////////////////////////. </p>
-<p >Assemble the load vector b of the system Ax = b</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">rhs_field</td><td>The field to set with the load vector </td></tr>
-    <tr><td class="paramname">f</td><td>The source function</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>FieldRHS - The RHS field containing b </dd></dl>
-
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a279ed57533f2d11ecb91ee319d48b62c">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>.</p>
-
-</div>
-</div>
-<a id="aadc5c275e17ba770e97afbfb438d4c91" name="aadc5c275e17ba770e97afbfb438d4c91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aadc5c275e17ba770e97afbfb438d4c91">&#9670;&#160;</a></span>evaluateRefElementShapeFunction()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumElementDOFs, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateRefElementShapeFunction </td>
-          <td>(</td>
-          <td class="paramtype">const size_t &amp;&#160;</td>
-          <td class="paramname"><em>localDOF</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;&#160;</td>
-          <td class="paramname"><em>localPoint</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Basis functions and gradients /////////////////////////////////////. </p>
-<p >Evaluate the shape function of a local degree of freedom at a given point in the reference element</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">localDOF</td><td>size_t - The local degree of freedom index </td></tr>
-    <tr><td class="paramname">localPoint</td><td>point_t (Vector&lt;T, Dim&gt;) - The point in the reference element</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>T - The value of the shape function at the given point </dd></dl>
-
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#abcfc38f64c5190cf6f6e44b176341a37">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#abcfc38f64c5190cf6f6e44b176341a37">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
-
-</div>
-</div>
-<a id="a67343eed0334a7748a82b4ed9b8c09f2" name="a67343eed0334a7748a82b4ed9b8c09f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67343eed0334a7748a82b4ed9b8c09f2">&#9670;&#160;</a></span>evaluateRefElementShapeFunctionGradient()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumElementDOFs, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual KOKKOS_FUNCTION <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::evaluateRefElementShapeFunctionGradient </td>
-          <td>(</td>
-          <td class="paramtype">const size_t &amp;&#160;</td>
-          <td class="paramname"><em>localDOF</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1FiniteElementSpace.html#a14e949596df9f85b145b1263cac186a4">point_t</a> &amp;&#160;</td>
-          <td class="paramname"><em>localPoint</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Evaluate the gradient of the shape function of a local degree of freedom at a given point in the reference element. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">localDOF</td><td>size_t - The local degree of freedom index </td></tr>
-    <tr><td class="paramname">localPoint</td><td>point_t (Vector&lt;T, Dim&gt;) - The point in the reference element</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>point_t (Vector&lt;T, Dim&gt;) - The gradient of the shape function at the given point </dd></dl>
-
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a906fc1db86334ab0f21f89ad3e20bef4">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#a906fc1db86334ab0f21f89ad3e20bef4">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
-
-</div>
-</div>
 <a id="a1e93cd503334d226f824dbac47507332" name="a1e93cd503334d226f824dbac47507332"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1e93cd503334d226f824dbac47507332">&#9670;&#160;</a></span>getElementIndex()</h2>
 
@@ -690,7 +539,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>size_t - The global DOF index </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#afbdfb51518d6813977577d676aaf7ee0">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#afbdfb51518d6813977577d676aaf7ee0">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#afbdfb51518d6813977577d676aaf7ee0">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#afbdfb51518d6813977577d676aaf7ee0">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>, <a class="el" href="classippl_1_1NedelecSpace.html#a153c5e3cf061a42ed85268c7acee1144">ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;</a>, and <a class="el" href="classippl_1_1NedelecSpace.html#a153c5e3cf061a42ed85268c7acee1144">ippl::NedelecSpace&lt; T, Dim, 1, ElementType, QuadratureType, FieldType &gt;</a>.</p>
 
 </div>
 </div>
@@ -729,7 +578,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector&lt;size_t, NumElementDOFs&gt; - The global DOF indices </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#a3f8774d067516170be74ee24a3772a4b">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>, <a class="el" href="classippl_1_1NedelecSpace.html#a89ec8dfda5be9cc8d58d5069c5a79070">ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;</a>, and <a class="el" href="classippl_1_1NedelecSpace.html#a89ec8dfda5be9cc8d58d5069c5a79070">ippl::NedelecSpace&lt; T, Dim, 1, ElementType, QuadratureType, FieldType &gt;</a>.</p>
 
 </div>
 </div>
@@ -779,7 +628,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>size_t - The local DOF index </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a5d9864f82cce69b32e6a40a76bb6eabc">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#a5d9864f82cce69b32e6a40a76bb6eabc">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a5d9864f82cce69b32e6a40a76bb6eabc">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#a5d9864f82cce69b32e6a40a76bb6eabc">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>, <a class="el" href="classippl_1_1NedelecSpace.html#a975be846752041c1cb82b3dc2fa622f6">ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;</a>, and <a class="el" href="classippl_1_1NedelecSpace.html#a975be846752041c1cb82b3dc2fa622f6">ippl::NedelecSpace&lt; T, Dim, 1, ElementType, QuadratureType, FieldType &gt;</a>.</p>
 
 </div>
 </div>
@@ -811,7 +660,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <p>Get the local DOF indices (vector of local DOF indices) They are independent of the specific element because it only depends on the reference element type. </p>
 <dl class="section return"><dt>Returns</dt><dd>Vector&lt;size_t, NumElementDOFs&gt; - The local DOF indices </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a82b60d83543c439d137e14484acca14b">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#a82b60d83543c439d137e14484acca14b">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a82b60d83543c439d137e14484acca14b">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#a82b60d83543c439d137e14484acca14b">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>, <a class="el" href="classippl_1_1NedelecSpace.html#aba9a8899a35a87324625f1c471fe38fd">ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;</a>, and <a class="el" href="classippl_1_1NedelecSpace.html#aba9a8899a35a87324625f1c471fe38fd">ippl::NedelecSpace&lt; T, Dim, 1, ElementType, QuadratureType, FieldType &gt;</a>.</p>
 
 </div>
 </div>
@@ -951,7 +800,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <p >Get the number of global degrees of freedom in the space</p>
 <dl class="section return"><dt>Returns</dt><dd>size_t - unsigned integer number of global degrees of freedom </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5">ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#a2d6b478166c828ac5ef4333aeed42dc5">ippl::LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;</a>, <a class="el" href="classippl_1_1NedelecSpace.html#a5c4300b1ac55b11aec4aac9738f730a7">ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;</a>, and <a class="el" href="classippl_1_1NedelecSpace.html#a5c4300b1ac55b11aec4aac9738f730a7">ippl::NedelecSpace&lt; T, Dim, 1, ElementType, QuadratureType, FieldType &gt;</a>.</p>
 
 </div>
 </div>

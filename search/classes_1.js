@@ -22,6 +22,7 @@ var searchData=
   ['bconds_3c_20field_3c_20t_2c_20dim_2c_20mesh_2c_20centering_2c_20viewargs_2e_2e_2e_20_3e_2c_20dim_20_3e_19',['BConds&lt; Field&lt; T, Dim, Mesh, Centering, ViewArgs... &gt;, Dim &gt;',['../classippl_1_1BConds.html',1,'ippl']]],
   ['bconds_3c_20field_3c_20t_2c_20dim_2c_20mesh_5ft_3c_20dim_20_3e_2c_20centering_5ft_3c_20dim_20_3e_2c_20viewargs_2e_2e_2e_20_3e_2c_20dim_20_3e_20',['BConds&lt; Field&lt; T, Dim, Mesh_t&lt; Dim &gt;, Centering_t&lt; Dim &gt;, ViewArgs... &gt;, Dim &gt;',['../classippl_1_1BConds.html',1,'ippl']]],
   ['bound_5ftype_21',['bound_type',['../structippl_1_1FieldLayout_1_1bound__type.html',1,'ippl::FieldLayout']]],
-  ['bufferhandler_22',['BufferHandler',['../classippl_1_1BufferHandler.html',1,'ippl']]],
-  ['bumpontailinstabilitymanager_23',['BumponTailInstabilityManager',['../classBumponTailInstabilityManager.html',1,'']]]
+  ['boundaryinfo_22',['BoundaryInfo',['../structippl_1_1FEMVector_1_1BoundaryInfo.html',1,'ippl::FEMVector']]],
+  ['bufferhandler_23',['BufferHandler',['../classippl_1_1BufferHandler.html',1,'ippl']]],
+  ['bumpontailinstabilitymanager_24',['BumponTailInstabilityManager',['../classBumponTailInstabilityManager.html',1,'']]]
 ];

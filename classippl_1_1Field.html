@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1Field-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::Field&lt; T, Dim, Mesh, Centering, ViewArgs &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,8 +97,8 @@ Inheritance diagram for ippl::Field&lt; T, Dim, Mesh, Centering, ViewArgs &gt;:<
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Field__inherit__graph.png" border="0" usemap="#aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_inherit__map" id="aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="20,445,213,676"/>
-<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="51,167,182,397"/>
+<area shape="rect" title=" " alt="" coords="20,533,213,793"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="51,167,182,485"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,228,119"/>
 </map>
 </div>
@@ -105,9 +107,20 @@ Collaboration diagram for ippl::Field&lt; T, Dim, Mesh, Centering, ViewArgs &gt;
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Field__coll__graph.png" border="0" usemap="#aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_coll__map" id="aippl_1_1Field_3_01T_00_01Dim_00_01Mesh_00_01Centering_00_01ViewArgs_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="20,445,213,676"/>
-<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="51,167,182,397"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,228,119"/>
+<area shape="rect" title=" " alt="" coords="465,1428,659,1659"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,775,228,889"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="253,805,407,859"/>
+<area shape="rect" href="classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="432,739,620,925"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="451,365,601,449"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="453,64,599,119"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="645,636,815,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="631,240,815,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="637,5,770,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="794,57,1021,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,379,986,434"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="490,1113,634,1343"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="658,1120,837,1336"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -125,7 +138,7 @@ Public Types</h2></td></tr>
 <tr class="separator:af5d33627f142e8ec6e532828e1616fad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a647f7d312f2851a386bd0667a19da51b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#a647f7d312f2851a386bd0667a19da51b">BConds_t</a> = <a class="el" href="classippl_1_1BConds.html">BConds</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs... &gt;, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
 <tr class="separator:a647f7d312f2851a386bd0667a19da51b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d1abd6ffd6f20e309ebb5a55f047231"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#a7d1abd6ffd6f20e309ebb5a55f047231">uniform_type</a> = typename <a class="el" href="structippl_1_1detail_1_1CreateUniformType.html">detail::CreateUniformType</a>&lt; <a class="el" href="classippl_1_1Field.html">base_type</a>, typename view_type::uniform_type &gt;::type</td></tr>
+<tr class="memitem:a7d1abd6ffd6f20e309ebb5a55f047231"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#a7d1abd6ffd6f20e309ebb5a55f047231">uniform_type</a> = typename <a class="el" href="structippl_1_1detail_1_1CreateUniformType.html">detail::CreateUniformType</a>&lt; <a class="el" href="classippl_1_1Field.html#afec2e3de115025e796332df6fe3da5d9">base_type</a>, typename view_type::uniform_type &gt;::type</td></tr>
 <tr class="separator:a7d1abd6ffd6f20e309ebb5a55f047231"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classippl_1_1BareField"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classippl_1_1BareField')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classippl_1_1BareField.html">ippl::BareField&lt; T, Dim, ViewArgs... &gt;</a></td></tr>
 <tr class="memitem:a65473a60d3fcd5cffd90ad4bb9c6bc23 inherit pub_types_classippl_1_1BareField"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#a65473a60d3fcd5cffd90ad4bb9c6bc23">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
@@ -248,6 +261,19 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#aa121b2144b45f7ca060a9e9b02a5991c">operator[]</a> (size_t i) const</td></tr>
 <tr class="separator:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:afec2e3de115025e796332df6fe3da5d9"><td class="memTemplParams" colspan="2">template&lt;typename... Props&gt; </td></tr>
+<tr class="memitem:afec2e3de115025e796332df6fe3da5d9"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#afec2e3de115025e796332df6fe3da5d9">base_type</a> = <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, Props... &gt;</td></tr>
+<tr class="separator:afec2e3de115025e796332df6fe3da5d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a42a768a0412932f14f0af27f92775eb8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html#a5214091d2fb7314226f26319bb5b764b">Mesh_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#a42a768a0412932f14f0af27f92775eb8">mesh_m</a></td></tr>
+<tr class="separator:a42a768a0412932f14f0af27f92775eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43ae8fe917e1320868ba8b55b0233f5f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html#a647f7d312f2851a386bd0667a19da51b">BConds_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Field.html#a43ae8fe917e1320868ba8b55b0233f5f">bc_m</a></td></tr>
+<tr class="separator:a43ae8fe917e1320868ba8b55b0233f5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_static_attribs_classippl_1_1BareField"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classippl_1_1BareField')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classippl_1_1BareField.html">ippl::BareField&lt; T, Dim, ViewArgs... &gt;</a></td></tr>
@@ -270,6 +296,32 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td class="memname">using <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::BareField_t =  <a class="el" href="classippl_1_1BareField.html">BareField</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs...&gt;</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afec2e3de115025e796332df6fe3da5d9" name="afec2e3de115025e796332df6fe3da5d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afec2e3de115025e796332df6fe3da5d9">&#9670;&#160;</a></span>base_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , class <a class="el" href="classCentering.html">Centering</a> , class... ViewArgs&gt; </div>
+<div class="memtemplate">
+template&lt;typename... Props&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::base_type =  <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, Props...&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -347,7 +399,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , class <a class="el" href="classCentering.html">Centering</a> , class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::uniform_type =  typename <a class="el" href="structippl_1_1detail_1_1CreateUniformType.html">detail::CreateUniformType</a>&lt;<a class="el" href="classippl_1_1Field.html">base_type</a>, typename view_type::uniform_type&gt;::type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::uniform_type =  typename <a class="el" href="structippl_1_1detail_1_1CreateUniformType.html">detail::CreateUniformType</a>&lt;<a class="el" href="classippl_1_1Field.html#afec2e3de115025e796332df6fe3da5d9">base_type</a>, typename view_type::uniform_type&gt;::type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -674,6 +726,55 @@ template&lt;class <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea
           <td></td><td></td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a43ae8fe917e1320868ba8b55b0233f5f" name="a43ae8fe917e1320868ba8b55b0233f5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43ae8fe917e1320868ba8b55b0233f5f">&#9670;&#160;</a></span>bc_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , class <a class="el" href="classCentering.html">Centering</a> , class... ViewArgs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Field.html#a647f7d312f2851a386bd0667a19da51b">BConds_t</a> <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::bc_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a42a768a0412932f14f0af27f92775eb8" name="a42a768a0412932f14f0af27f92775eb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42a768a0412932f14f0af27f92775eb8">&#9670;&#160;</a></span>mesh_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , class <a class="el" href="classCentering.html">Centering</a> , class... ViewArgs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Field.html#a5214091d2fb7314226f26319bb5b764b">Mesh_t</a>* <a class="el" href="classippl_1_1Field.html">ippl::Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classCentering.html">Centering</a>, ViewArgs &gt;::mesh_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

@@ -2,7 +2,7 @@ var searchData=
 [
   ['cell_5fparticle_5fneighbor_5flist_5ftype_0',['cell_particle_neighbor_list_type',['../classippl_1_1ParticleSpatialOverlapLayout.html#afe91c0d8b6cecc6b2aa87090242945ce',1,'ippl::ParticleSpatialOverlapLayout']]],
   ['cellindex_5ft_1',['CellIndex_t',['../classippl_1_1ParticleSpatialOverlapLayout.html#a93b7a26cf719e2798cabde914d8970d0',1,'ippl::ParticleSpatialOverlapLayout']]],
-  ['centering_2',['Centering',['../classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159',1,'ippl::FFTOpenPoissonSolver']]],
+  ['centering_2',['Centering',['../classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159',1,'ippl::FFTOpenPoissonSolver::Centering()'],['../classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0',1,'ippl::Poisson::Centering()']]],
   ['centering_5ft_3',['Centering_t',['../classippl_1_1Field.html#a078bf18ac232c59495fdd6c3bc5e8142',1,'ippl::Field::Centering_t()'],['../ChargedParticles_8hpp.html#aa0c2f6ddbc74317f18dde648c40d6123',1,'Centering_t():&#160;ChargedParticles.hpp'],['../datatypes_8h.html#aa0c2f6ddbc74317f18dde648c40d6123',1,'Centering_t():&#160;datatypes.h']]],
   ['cgsolver_5ft_4',['CGSolver_t',['../ChargedParticles_8hpp.html#a65e3f12d3ed9e572b6952a0cbf0c79ed',1,'CGSolver_t():&#160;ChargedParticles.hpp'],['../datatypes_8h.html#a65e3f12d3ed9e572b6952a0cbf0c79ed',1,'CGSolver_t():&#160;datatypes.h']]],
   ['check_5',['Check',['../structippl_1_1detail_1_1ConstructVariant_3_01std_1_1variant_3_01Next_00_01ToAdd_8_8_8_01_4_00_01e42b7c37956d1e171dc7a8c8b2e34d34.html#aa98bac8584f0ca449b7039b113bf25d2',1,'ippl::detail::ConstructVariant&lt; std::variant&lt; Next, ToAdd... &gt;, std::variant&lt; Added... &gt;, Verifier &gt;']]],

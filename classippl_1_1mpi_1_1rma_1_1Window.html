@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1mpi_1_1rma_1_1Window-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::mpi::rma::Window&lt; Target &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,7 +96,7 @@ Collaboration diagram for ippl::mpi::rma::Window&lt; Target &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1mpi_1_1rma_1_1Window__coll__graph.png" border="0" usemap="#aippl_1_1mpi_1_1rma_1_1Window_3_01Target_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1mpi_1_1rma_1_1Window_3_01Target_01_4_coll__map" id="aippl_1_1mpi_1_1rma_1_1Window_3_01Target_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,159,236"/>
+<area shape="rect" title=" " alt="" coords="5,5,159,295"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -157,6 +158,17 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae4cad8809f0814e71b22a0c8306f17ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66d4bb01c3a858f00f30c9ca5bf8d8be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html#a66d4bb01c3a858f00f30c9ca5bf8d8be">unlockall</a> ()</td></tr>
 <tr class="separator:a66d4bb01c3a858f00f30c9ca5bf8d8be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a3c08a56adb5d0269a13fcd15dae32f88"><td class="memItemLeft" align="right" valign="top">MPI_Win&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html#a3c08a56adb5d0269a13fcd15dae32f88">win_m</a></td></tr>
+<tr class="separator:a3c08a56adb5d0269a13fcd15dae32f88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad12a15599c2e1bf6685c7765d689cb2e"><td class="memItemLeft" align="right" valign="top">MPI_Aint&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html#ad12a15599c2e1bf6685c7765d689cb2e">count_m</a></td></tr>
+<tr class="separator:ad12a15599c2e1bf6685c7765d689cb2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa155325c760a00fd77c245d7174aa1e6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html#aa155325c760a00fd77c245d7174aa1e6">attached_m</a></td></tr>
+<tr class="separator:aa155325c760a00fd77c245d7174aa1e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae871e3f86c99aa94b28e5890993e7698"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html#ae871e3f86c99aa94b28e5890993e7698">allocated_m</a></td></tr>
+<tr class="separator:ae871e3f86c99aa94b28e5890993e7698"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="ad51963c9de49f39912dd08d5368d60ba" name="ad51963c9de49f39912dd08d5368d60ba"></a>
@@ -796,6 +808,103 @@ template&lt;<a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f8
           <td class="memname">void <a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">ippl::mpi::rma::Window</a>&lt; Target &gt;::unlockall</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ae871e3f86c99aa94b28e5890993e7698" name="ae871e3f86c99aa94b28e5890993e7698"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae871e3f86c99aa94b28e5890993e7698">&#9670;&#160;</a></span>allocated_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f800062e44f458edf5aa">TargetComm</a> Target&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">ippl::mpi::rma::Window</a>&lt; Target &gt;::allocated_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa155325c760a00fd77c245d7174aa1e6" name="aa155325c760a00fd77c245d7174aa1e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa155325c760a00fd77c245d7174aa1e6">&#9670;&#160;</a></span>attached_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f800062e44f458edf5aa">TargetComm</a> Target&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">ippl::mpi::rma::Window</a>&lt; Target &gt;::attached_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad12a15599c2e1bf6685c7765d689cb2e" name="ad12a15599c2e1bf6685c7765d689cb2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad12a15599c2e1bf6685c7765d689cb2e">&#9670;&#160;</a></span>count_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f800062e44f458edf5aa">TargetComm</a> Target&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">MPI_Aint <a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">ippl::mpi::rma::Window</a>&lt; Target &gt;::count_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3c08a56adb5d0269a13fcd15dae32f88" name="a3c08a56adb5d0269a13fcd15dae32f88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c08a56adb5d0269a13fcd15dae32f88">&#9670;&#160;</a></span>win_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f800062e44f458edf5aa">TargetComm</a> Target&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">MPI_Win <a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">ippl::mpi::rma::Window</a>&lt; Target &gt;::win_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

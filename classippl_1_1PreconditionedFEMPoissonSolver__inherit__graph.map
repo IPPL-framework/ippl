@@ -1,4 +1,4 @@
 <map id="ippl::PreconditionedFEMPoissonSolver&lt; FieldLHS, FieldRHS &gt;" name="ippl::PreconditionedFEMPoissonSolver&lt; FieldLHS, FieldRHS &gt;">
-<area shape="rect" id="node1" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,343,217,617"/>
-<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="27,5,196,295"/>
+<area shape="rect" id="node1" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,357,217,647"/>
+<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="27,5,196,309"/>
 </map>

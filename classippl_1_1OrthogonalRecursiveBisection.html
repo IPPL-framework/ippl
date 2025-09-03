@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1OrthogonalRecursiveBisection-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::OrthogonalRecursiveBisection&lt; Field, Tp &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,27 +97,38 @@ Collaboration diagram for ippl::OrthogonalRecursiveBisection&lt; Field, Tp &gt;:
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1OrthogonalRecursiveBisection__coll__graph.png" border="0" usemap="#aippl_1_1OrthogonalRecursiveBisection_3_01Field_00_01Tp_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1OrthogonalRecursiveBisection_3_01Field_00_01Tp_01_4_coll__map" id="aippl_1_1OrthogonalRecursiveBisection_3_01Field_00_01Tp_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="29,756,205,913"/>
-<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="29,448,204,693"/>
-<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="51,168,182,399"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,228,119"/>
+<area shape="rect" title=" " alt="" coords="474,1736,650,1908"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="475,1428,649,1673"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,775,228,889"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="253,805,407,859"/>
+<area shape="rect" href="classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="432,739,620,925"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="451,365,601,449"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="453,64,599,119"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="645,636,815,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="631,240,815,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="637,5,770,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="794,57,1021,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,379,986,434"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="490,1113,634,1343"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="658,1113,837,1343"/>
 </map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a51ad429a7255471c67dbddd9cfc39a10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a51ad429a7255471c67dbddd9cfc39a10">initialize</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;fl, mesh_type &amp;mesh, const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;rho)</td></tr>
+<tr class="memitem:a51ad429a7255471c67dbddd9cfc39a10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a51ad429a7255471c67dbddd9cfc39a10">initialize</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;fl, <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#ad242b9bfecdf6700f453a0b8a3fec47d">mesh_type</a> &amp;mesh, const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;rho)</td></tr>
 <tr class="separator:a51ad429a7255471c67dbddd9cfc39a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57c30bc44ae73bd6b1088a4c12926f7d"><td class="memTemplParams" colspan="2">template&lt;typename Attrib &gt; </td></tr>
-<tr class="memitem:a57c30bc44ae73bd6b1088a4c12926f7d"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a57c30bc44ae73bd6b1088a4c12926f7d">binaryRepartition</a> (const Attrib &amp;R, <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;fl, const bool &amp;isFirstRepartition)</td></tr>
+<tr class="memitem:a57c30bc44ae73bd6b1088a4c12926f7d"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a57c30bc44ae73bd6b1088a4c12926f7d">binaryRepartition</a> (const Attrib &amp;R, <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;fl, const bool &amp;isFirstRepartition)</td></tr>
 <tr class="separator:a57c30bc44ae73bd6b1088a4c12926f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a990f627bc28dd376b0fcf3ff3eec5085"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a990f627bc28dd376b0fcf3ff3eec5085">findCutAxis</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;dom)</td></tr>
+<tr class="memitem:a990f627bc28dd376b0fcf3ff3eec5085"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a990f627bc28dd376b0fcf3ff3eec5085">findCutAxis</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;dom)</td></tr>
 <tr class="separator:a990f627bc28dd376b0fcf3ff3eec5085"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55ed2713ea83c9351d994ebbd90d224a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a55ed2713ea83c9351d994ebbd90d224a">perpendicularReduction</a> (std::vector&lt; Tf &gt; &amp;rankWeights, unsigned int cutAxis, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;dom)</td></tr>
+<tr class="memitem:a55ed2713ea83c9351d994ebbd90d224a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a55ed2713ea83c9351d994ebbd90d224a">perpendicularReduction</a> (std::vector&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75">Tf</a> &gt; &amp;rankWeights, unsigned int cutAxis, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;dom)</td></tr>
 <tr class="separator:a55ed2713ea83c9351d994ebbd90d224a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27ef9969ba6f536818f5fe602d8b3a31"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a27ef9969ba6f536818f5fe602d8b3a31">findMedian</a> (std::vector&lt; Tf &gt; &amp;w)</td></tr>
+<tr class="memitem:a27ef9969ba6f536818f5fe602d8b3a31"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a27ef9969ba6f536818f5fe602d8b3a31">findMedian</a> (std::vector&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75">Tf</a> &gt; &amp;w)</td></tr>
 <tr class="separator:a27ef9969ba6f536818f5fe602d8b3a31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12212ca7252174973f2cde2d9ab8dbba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a12212ca7252174973f2cde2d9ab8dbba">cutDomain</a> (std::vector&lt; <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &gt; &amp;domains, std::vector&lt; int &gt; &amp;procs, int it, int cutAxis, int median)</td></tr>
+<tr class="memitem:a12212ca7252174973f2cde2d9ab8dbba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a12212ca7252174973f2cde2d9ab8dbba">cutDomain</a> (std::vector&lt; <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &gt; &amp;domains, std::vector&lt; int &gt; &amp;procs, int it, int cutAxis, int median)</td></tr>
 <tr class="separator:a12212ca7252174973f2cde2d9ab8dbba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1eeb8a0f9a3099ef1a73eab1ec7f3d5d"><td class="memTemplParams" colspan="2">template&lt;typename Attrib &gt; </td></tr>
 <tr class="memitem:a1eeb8a0f9a3099ef1a73eab1ec7f3d5d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a1eeb8a0f9a3099ef1a73eab1ec7f3d5d">scatterR</a> (const Attrib &amp;r)</td></tr>
@@ -125,7 +138,68 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:aea7dbfee70c37404573da9e220003f63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html">Field</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aea7dbfee70c37404573da9e220003f63">bf_m</a></td></tr>
 <tr class="separator:aea7dbfee70c37404573da9e220003f63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:ad242b9bfecdf6700f453a0b8a3fec47d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#ad242b9bfecdf6700f453a0b8a3fec47d">mesh_type</a> = typename <a class="el" href="classippl_1_1Field.html#a5214091d2fb7314226f26319bb5b764b">Field::Mesh_t</a></td></tr>
+<tr class="separator:ad242b9bfecdf6700f453a0b8a3fec47d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a933b0bd8564fef1c1c757a83b84b75"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75">Tf</a> = typename <a class="el" href="classippl_1_1BareField.html#a2fb15a61aa1f2751015b7e4f42d54ddf">Field::value_type</a></td></tr>
+<tr class="separator:a9a933b0bd8564fef1c1c757a83b84b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:aebe55585dcc419e323f6135556c131c8"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> = <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a></td></tr>
+<tr class="separator:aebe55585dcc419e323f6135556c131c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="ad242b9bfecdf6700f453a0b8a3fec47d" name="ad242b9bfecdf6700f453a0b8a3fec47d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad242b9bfecdf6700f453a0b8a3fec47d">&#9670;&#160;</a></span>mesh_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class Tp  = typename Field::value_type&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::mesh_type =  typename <a class="el" href="classippl_1_1Field.html#a5214091d2fb7314226f26319bb5b764b">Field::Mesh_t</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9a933b0bd8564fef1c1c757a83b84b75" name="a9a933b0bd8564fef1c1c757a83b84b75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a933b0bd8564fef1c1c757a83b84b75">&#9670;&#160;</a></span>Tf</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class Tp  = typename Field::value_type&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::Tf =  typename <a class="el" href="classippl_1_1BareField.html#a2fb15a61aa1f2751015b7e4f42d54ddf">Field::value_type</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a57c30bc44ae73bd6b1088a4c12926f7d" name="a57c30bc44ae73bd6b1088a4c12926f7d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a57c30bc44ae73bd6b1088a4c12926f7d">&#9670;&#160;</a></span>binaryRepartition()</h2>
@@ -146,7 +220,7 @@ template&lt;typename Attrib &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>fl</em>, </td>
         </tr>
         <tr>
@@ -190,7 +264,7 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::cutDomain </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &gt; &amp;&#160;</td>
           <td class="paramname"><em>domains</em>, </td>
         </tr>
         <tr>
@@ -248,7 +322,7 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="memname">int <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::findCutAxis </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>dom</em></td><td>)</td>
           <td></td>
         </tr>
@@ -274,7 +348,7 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="memname">int <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::findMedian </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; Tf &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75">Tf</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>w</em></td><td>)</td>
           <td></td>
         </tr>
@@ -300,13 +374,13 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::initialize </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>fl</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">mesh_type &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#ad242b9bfecdf6700f453a0b8a3fec47d">mesh_type</a> &amp;&#160;</td>
           <td class="paramname"><em>mesh</em>, </td>
         </tr>
         <tr>
@@ -344,7 +418,7 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::perpendicularReduction </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; Tf &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75">Tf</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>rankWeights</em>, </td>
         </tr>
         <tr>
@@ -356,7 +430,7 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html#aebe55585dcc419e323f6135556c131c8">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>dom</em>&#160;</td>
         </tr>
         <tr>
@@ -424,6 +498,30 @@ template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class
           <td class="memname"><a class="el" href="classippl_1_1Field.html">Field</a> <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::bf_m</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebe55585dcc419e323f6135556c131c8" name="aebe55585dcc419e323f6135556c131c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebe55585dcc419e323f6135556c131c8">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class <a class="el" href="classippl_1_1Field.html">Field</a> , class Tp  = typename Field::value_type&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1OrthogonalRecursiveBisection.html">ippl::OrthogonalRecursiveBisection</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, Tp &gt;::Dim = <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

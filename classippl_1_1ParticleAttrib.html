@@ -85,6 +85,7 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1ParticleAttrib-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::ParticleAttrib&lt; T, Properties &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -96,7 +97,7 @@ Inheritance diagram for ippl::ParticleAttrib&lt; T, Properties &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleAttrib__inherit__graph.png" border="0" usemap="#aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_inherit__map" id="aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="172,167,299,397"/>
+<area shape="rect" title=" " alt="" coords="172,167,299,427"/>
 <area shape="rect" title=" " alt="" coords="5,35,228,89"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="253,5,455,119"/>
 </map>
@@ -106,9 +107,10 @@ Collaboration diagram for ippl::ParticleAttrib&lt; T, Properties &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleAttrib__coll__graph.png" border="0" usemap="#aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_coll__map" id="aippl_1_1ParticleAttrib_3_01T_00_01Properties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="172,167,299,397"/>
+<area shape="rect" title=" " alt="" coords="291,196,417,427"/>
 <area shape="rect" title=" " alt="" coords="5,35,228,89"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="253,5,455,119"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="479,35,626,89"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -206,6 +208,13 @@ Static Public Attributes</h2></td></tr>
 <tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; ParticleAttrib&lt; T, Properties... &gt;, sizeof(detail::ViewType&lt; T, 1, Properties... &gt;::view_type)&gt;</a></td></tr>
 <tr class="memitem:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">dim</a></td></tr>
 <tr class="separator:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a233303123f33b9fbcb0ee95c28977615"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a233303123f33b9fbcb0ee95c28977615">dview_m</a></td></tr>
+<tr class="separator:a233303123f33b9fbcb0ee95c28977615"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb0fbbf91f91d51d74c0165311afae9d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeb0fbbf91f91d51d74c0165311afae9d">buf_m</a></td></tr>
+<tr class="separator:aeb0fbbf91f91d51d74c0165311afae9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="aeb098466040f451217868f3f3fb4a802" name="aeb098466040f451217868f3f3fb4a802"></a>
@@ -1203,6 +1212,30 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aeb0fbbf91f91d51d74c0165311afae9d" name="aeb0fbbf91f91d51d74c0165311afae9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb0fbbf91f91d51d74c0165311afae9d">&#9670;&#160;</a></span>buf_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::buf_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a357a26401a5b19a40096d009000468e3" name="a357a26401a5b19a40096d009000468e3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a357a26401a5b19a40096d009000468e3">&#9670;&#160;</a></span>dim</h2>
 
@@ -1221,6 +1254,30 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a233303123f33b9fbcb0ee95c28977615" name="a233303123f33b9fbcb0ee95c28977615"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a233303123f33b9fbcb0ee95c28977615">&#9670;&#160;</a></span>dview_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::dview_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

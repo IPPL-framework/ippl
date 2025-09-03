@@ -1,9 +1,10 @@
 <map id="ParameterList.h" name="ParameterList.h">
-<area shape="rect" id="node1" title=" " alt="" coords="1175,5,1289,31"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1516,5,1631,31"/>
 <area shape="rect" id="node2" href="$FFT_8h.html" title=" " alt="" coords="883,152,939,177"/>
-<area shape="rect" id="node22" href="$ParticleInteractionBase_8h.html" title=" " alt="" coords="1369,79,1535,104"/>
-<area shape="rect" id="node24" href="$Poisson_8h.html" title=" " alt="" coords="1143,152,1222,177"/>
-<area shape="rect" id="node29" href="$SolverAlgorithm_8h.html" title=" " alt="" coords="1221,79,1345,104"/>
+<area shape="rect" id="node22" href="$Maxwell_8h.html" title=" " alt="" coords="1910,79,1989,104"/>
+<area shape="rect" id="node27" href="$ParticleInteractionBase_8h.html" title=" " alt="" coords="2119,79,2286,104"/>
+<area shape="rect" id="node29" href="$Poisson_8h.html" title=" " alt="" coords="1203,152,1282,177"/>
+<area shape="rect" id="node34" href="$SolverAlgorithm_8h.html" title=" " alt="" coords="1511,79,1635,104"/>
 <area shape="rect" id="node3" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="517,233,688,258"/>
 <area shape="rect" id="node20" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="712,233,899,258"/>
 <area shape="rect" id="node21" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="923,225,1109,265"/>
@@ -23,10 +24,14 @@
 <area shape="rect" id="node14" href="$BumponTailInstabilityManager_8h.html" title=" " alt="" coords="970,607,1177,632"/>
 <area shape="rect" id="node15" href="$LandauDampingManager_8h.html" title=" " alt="" coords="1201,607,1377,632"/>
 <area shape="rect" id="node17" href="$PenningTrapManager_8h.html" title=" " alt="" coords="1401,607,1556,632"/>
-<area shape="rect" id="node23" href="$TruncatedGreenParticleInteraction_8h.html" title=" " alt="" coords="1337,152,1567,177"/>
-<area shape="rect" id="node25" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="1373,233,1515,258"/>
-<area shape="rect" id="node26" href="$NullSolver_8h.html" title=" " alt="" coords="1257,233,1349,258"/>
-<area shape="rect" id="node27" href="$PoissonCG_8h.html" title=" " alt="" coords="1133,233,1232,258"/>
-<area shape="rect" id="node28" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1539,225,1722,265"/>
-<area shape="rect" id="node30" href="$PCG_8h.html" title=" " alt="" coords="1253,152,1313,177"/>
+<area shape="rect" id="node23" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="1987,152,2120,177"/>
+<area shape="rect" id="node24" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="1964,233,2143,258"/>
+<area shape="rect" id="node25" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="2167,233,2321,258"/>
+<area shape="rect" id="node26" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="1746,233,1939,258"/>
+<area shape="rect" id="node28" href="$TruncatedGreenParticleInteraction_8h.html" title=" " alt="" coords="2195,152,2426,177"/>
+<area shape="rect" id="node30" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="1373,233,1515,258"/>
+<area shape="rect" id="node31" href="$NullSolver_8h.html" title=" " alt="" coords="1257,233,1349,258"/>
+<area shape="rect" id="node32" href="$PoissonCG_8h.html" title=" " alt="" coords="1133,233,1232,258"/>
+<area shape="rect" id="node33" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1539,225,1722,265"/>
+<area shape="rect" id="node35" href="$PCG_8h.html" title=" " alt="" coords="1543,152,1603,177"/>
 </map>

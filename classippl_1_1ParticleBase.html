@@ -86,6 +86,8 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1ParticleBase-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::ParticleBase&lt; PLayout, IDProperties &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -97,8 +99,8 @@ Inheritance diagram for ippl::ParticleBase&lt; PLayout, IDProperties &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleBase__inherit__graph.png" border="0" usemap="#aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_inherit__map" id="aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,5,176,280"/>
-<area shape="rect" href="classParticleContainer.html" title=" " alt="" coords="17,328,164,515"/>
+<area shape="rect" title=" " alt="" coords="5,5,176,412"/>
+<area shape="rect" href="classParticleContainer.html" title=" " alt="" coords="17,460,164,676"/>
 </map>
 </div>
 <div class="dynheader">
@@ -106,10 +108,13 @@ Collaboration diagram for ippl::ParticleBase&lt; PLayout, IDProperties &gt;:</di
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleBase__coll__graph.png" border="0" usemap="#aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_coll__map" id="aippl_1_1ParticleBase_3_01PLayout_00_01IDProperties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="137,432,307,692"/>
-<area shape="rect" href="classippl_1_1ParticleAttrib.html" title=" " alt="" coords="125,139,319,369"/>
+<area shape="rect" title=" " alt="" coords="458,475,629,823"/>
+<area shape="rect" href="classippl_1_1ParticleAttrib.html" title=" " alt="" coords="232,167,425,397"/>
 <area shape="rect" title=" " alt="" coords="5,20,228,75"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="253,5,405,89"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="429,20,623,75"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="450,247,637,317"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="661,247,860,317"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -225,6 +230,37 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a10bccce6658ee94552afc07cd93e1976"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68817eb516a698bce3a0fd30171d5204"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">unpack</a> (<a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nrecvs)</td></tr>
 <tr class="separator:a68817eb516a698bce3a0fd30171d5204"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a4d389f0c5f399676137343b693979de5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#ae2d459a14594e642dccb9237c4f4aeb6">Layout_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a4d389f0c5f399676137343b693979de5">layout_m</a></td></tr>
+<tr class="memdesc:a4d389f0c5f399676137343b693979de5"><td class="mdescLeft">&#160;</td><td class="mdescRight">particle layout  <a href="classippl_1_1ParticleBase.html#a4d389f0c5f399676137343b693979de5">More...</a><br /></td></tr>
+<tr class="separator:a4d389f0c5f399676137343b693979de5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10fe68f31ce3d38da25a64ffe34082ac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a10fe68f31ce3d38da25a64ffe34082ac">localNum_m</a></td></tr>
+<tr class="memdesc:a10fe68f31ce3d38da25a64ffe34082ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">processor local number of particles  <a href="classippl_1_1ParticleBase.html#a10fe68f31ce3d38da25a64ffe34082ac">More...</a><br /></td></tr>
+<tr class="separator:a10fe68f31ce3d38da25a64ffe34082ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcda50307d359619f8a5e296455e2883"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#adcda50307d359619f8a5e296455e2883">totalNum_m</a></td></tr>
+<tr class="memdesc:adcda50307d359619f8a5e296455e2883"><td class="mdescLeft">&#160;</td><td class="mdescRight">total number of particles (across all processes)  <a href="classippl_1_1ParticleBase.html#adcda50307d359619f8a5e296455e2883">More...</a><br /></td></tr>
+<tr class="separator:adcda50307d359619f8a5e296455e2883"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20c04cf0f3446b6490d6f1ef74ac3475"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#aed5c3db3520eb7b170f0b7a52334ef70">attribute_container_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a20c04cf0f3446b6490d6f1ef74ac3475">attributes_m</a></td></tr>
+<tr class="memdesc:a20c04cf0f3446b6490d6f1ef74ac3475"><td class="mdescLeft">&#160;</td><td class="mdescRight">all attributes  <a href="classippl_1_1ParticleBase.html#a20c04cf0f3446b6490d6f1ef74ac3475">More...</a><br /></td></tr>
+<tr class="separator:a20c04cf0f3446b6490d6f1ef74ac3475"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0eab5217f09e7e208b5e2e944e87d07f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#abdf11c4649e1f2c081664eea7ea97c95">index_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a0eab5217f09e7e208b5e2e944e87d07f">nextID_m</a></td></tr>
+<tr class="memdesc:a0eab5217f09e7e208b5e2e944e87d07f"><td class="mdescLeft">&#160;</td><td class="mdescRight">next unique particle ID  <a href="classippl_1_1ParticleBase.html#a0eab5217f09e7e208b5e2e944e87d07f">More...</a><br /></td></tr>
+<tr class="separator:a0eab5217f09e7e208b5e2e944e87d07f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2b4cf5416a10ecbd693e4e50a9b8236"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#abdf11c4649e1f2c081664eea7ea97c95">index_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#ad2b4cf5416a10ecbd693e4e50a9b8236">numNodes_m</a></td></tr>
+<tr class="memdesc:ad2b4cf5416a10ecbd693e4e50a9b8236"><td class="mdescLeft">&#160;</td><td class="mdescRight">number of MPI ranks  <a href="classippl_1_1ParticleBase.html#ad2b4cf5416a10ecbd693e4e50a9b8236">More...</a><br /></td></tr>
+<tr class="separator:ad2b4cf5416a10ecbd693e4e50a9b8236"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add592024834896751110bee461fe6dae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#a0dd49a2a4f86f0c9938ed992d5c911f0">hash_container_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#add592024834896751110bee461fe6dae">deleteIndex_m</a></td></tr>
+<tr class="memdesc:add592024834896751110bee461fe6dae"><td class="mdescLeft">&#160;</td><td class="mdescRight">buffers for particle partitioning  <a href="classippl_1_1ParticleBase.html#add592024834896751110bee461fe6dae">More...</a><br /></td></tr>
+<tr class="separator:add592024834896751110bee461fe6dae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2b9bf9b2631b1195ccddca936696ceb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleBase.html#a0dd49a2a4f86f0c9938ed992d5c911f0">hash_container_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#ad2b9bf9b2631b1195ccddca936696ceb">keepIndex_m</a></td></tr>
+<tr class="separator:ad2b9bf9b2631b1195ccddca936696ceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a8e690016f62ca9003de23d671c55cbb1"><td class="memItemLeft" align="right" valign="top">static constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleBase.html#a8e690016f62ca9003de23d671c55cbb1">EnableIDs</a> = sizeof...(IDProperties) &gt; 0</td></tr>
+<tr class="separator:a8e690016f62ca9003de23d671c55cbb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class PLayout, typename... IDProperties&gt;<br />
@@ -1367,6 +1403,82 @@ template&lt;class PLayout , typename... IDProperties&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a20c04cf0f3446b6490d6f1ef74ac3475" name="a20c04cf0f3446b6490d6f1ef74ac3475"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20c04cf0f3446b6490d6f1ef74ac3475">&#9670;&#160;</a></span>attributes_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#aed5c3db3520eb7b170f0b7a52334ef70">attribute_container_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::attributes_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>all attributes </p>
+
+</div>
+</div>
+<a id="add592024834896751110bee461fe6dae" name="add592024834896751110bee461fe6dae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add592024834896751110bee461fe6dae">&#9670;&#160;</a></span>deleteIndex_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#a0dd49a2a4f86f0c9938ed992d5c911f0">hash_container_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::deleteIndex_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>buffers for particle partitioning </p>
+
+</div>
+</div>
+<a id="a8e690016f62ca9003de23d671c55cbb1" name="a8e690016f62ca9003de23d671c55cbb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e690016f62ca9003de23d671c55cbb1">&#9670;&#160;</a></span>EnableIDs</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::EnableIDs = sizeof...(IDProperties) &gt; 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af3b2355cd0b916563d976087cdfe689d" name="af3b2355cd0b916563d976087cdfe689d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af3b2355cd0b916563d976087cdfe689d">&#9670;&#160;</a></span>ID</h2>
 
@@ -1385,6 +1497,134 @@ template&lt;class PLayout , typename... IDProperties&gt; </div>
 
 </div>
 </div>
+<a id="ad2b9bf9b2631b1195ccddca936696ceb" name="ad2b9bf9b2631b1195ccddca936696ceb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2b9bf9b2631b1195ccddca936696ceb">&#9670;&#160;</a></span>keepIndex_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#a0dd49a2a4f86f0c9938ed992d5c911f0">hash_container_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::keepIndex_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4d389f0c5f399676137343b693979de5" name="a4d389f0c5f399676137343b693979de5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d389f0c5f399676137343b693979de5">&#9670;&#160;</a></span>layout_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#ae2d459a14594e642dccb9237c4f4aeb6">Layout_t</a>* <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::layout_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>particle layout </p>
+
+</div>
+</div>
+<a id="a10fe68f31ce3d38da25a64ffe34082ac" name="a10fe68f31ce3d38da25a64ffe34082ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10fe68f31ce3d38da25a64ffe34082ac">&#9670;&#160;</a></span>localNum_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::localNum_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>processor local number of particles </p>
+
+</div>
+</div>
+<a id="a0eab5217f09e7e208b5e2e944e87d07f" name="a0eab5217f09e7e208b5e2e944e87d07f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0eab5217f09e7e208b5e2e944e87d07f">&#9670;&#160;</a></span>nextID_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#abdf11c4649e1f2c081664eea7ea97c95">index_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::nextID_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>next unique particle ID </p>
+
+</div>
+</div>
+<a id="ad2b4cf5416a10ecbd693e4e50a9b8236" name="ad2b4cf5416a10ecbd693e4e50a9b8236"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2b4cf5416a10ecbd693e4e50a9b8236">&#9670;&#160;</a></span>numNodes_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#abdf11c4649e1f2c081664eea7ea97c95">index_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::numNodes_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>number of MPI ranks </p>
+
+</div>
+</div>
 <a id="af28b1c693f7fb69f12ccd65e507ef22a" name="af28b1c693f7fb69f12ccd65e507ef22a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af28b1c693f7fb69f12ccd65e507ef22a">&#9670;&#160;</a></span>R</h2>
 
@@ -1400,6 +1640,32 @@ template&lt;class PLayout , typename... IDProperties&gt; </div>
 </div><div class="memdoc">
 
 <p>view of particle positions </p>
+
+</div>
+</div>
+<a id="adcda50307d359619f8a5e296455e2883" name="adcda50307d359619f8a5e296455e2883"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcda50307d359619f8a5e296455e2883">&#9670;&#160;</a></span>totalNum_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class PLayout , typename... IDProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; PLayout, IDProperties &gt;::totalNum_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>total number of particles (across all processes) </p>
 
 </div>
 </div>

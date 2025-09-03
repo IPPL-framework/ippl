@@ -1,9 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,144,111,169"/>
-<area shape="rect" id="node2" href="$structippl_1_1detail_1_1isExpression.html" title=" " alt="" coords="159,5,347,31"/>
-<area shape="rect" id="node3" href="$structippl_1_1mpi_1_1always__false.html" title=" " alt="" coords="163,55,343,80"/>
-<area shape="rect" id="node4" href="$structippl_1_1mpi_1_1is__ippl__mpi__type.html" title=" " alt="" coords="185,105,320,145"/>
-<area shape="rect" id="node5" href="$structippl_1_1mpi_1_1is__serializable.html" title=" " alt="" coords="175,169,331,209"/>
-<area shape="rect" id="node6" href="$structippl_1_1mpi_1_1rma_1_1isActiveTarget.html" title=" " alt="" coords="177,233,328,273"/>
-<area shape="rect" id="node7" href="$structippl_1_1mpi_1_1rma_1_1isPassiveTarget.html" title=" " alt="" coords="173,297,333,337"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,13,104,38"/>
+<area shape="rect" id="node2" href="$structKokkosCorrection_1_1Prod.html" title=" " alt="" coords="152,5,311,45"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="ippl::FDTDSolverBase&lt; EMField, SourceField, boundary_conditions &gt;" name="ippl::FDTDSolverBase&lt; EMField, SourceField, boundary_conditions &gt;">
-<area shape="rect" id="node1" title="Base class for FDTD solvers in the ippl library." alt="" coords="99,255,321,603"/>
-<area shape="rect" id="node3" href="$classippl_1_1NonStandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using a non&#45;standard Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="5,651,204,779"/>
-<area shape="rect" id="node4" href="$classippl_1_1StandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using the Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="228,651,403,779"/>
-<area shape="rect" id="node2" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="129,5,291,207"/>
+<area shape="rect" id="node1" title="Base class for FDTD solvers in the ippl library." alt="" coords="99,284,321,632"/>
+<area shape="rect" id="node3" href="$classippl_1_1NonStandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using a non&#45;standard Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="5,680,204,808"/>
+<area shape="rect" id="node4" href="$classippl_1_1StandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using the Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="228,680,403,808"/>
+<area shape="rect" id="node2" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="129,5,291,236"/>
 </map>

@@ -1,9 +1,13 @@
 <map id="ParticleContainer&lt; T, Dim &gt;" name="ParticleContainer&lt; T, Dim &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="240,741,387,913"/>
-<area shape="rect" id="node2" href="$classippl_1_1ParticleBase.html" title=" " alt="" coords="155,432,325,692"/>
-<area shape="rect" id="node3" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="106,139,299,369"/>
-<area shape="rect" id="node4" title=" " alt="" coords="182,20,405,75"/>
-<area shape="rect" id="node6" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="323,139,450,369"/>
-<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
-<area shape="rect" id="node7" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="429,5,581,89"/>
+<area shape="rect" id="node1" title=" " alt="" coords="264,872,411,1073"/>
+<area shape="rect" id="node2" href="$classippl_1_1ParticleBase.html" title=" " alt="" coords="431,475,601,823"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="774,167,967,397"/>
+<area shape="rect" id="node4" title=" " alt="" coords="474,20,697,75"/>
+<area shape="rect" id="node9" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="189,167,315,397"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="769,5,921,89"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="945,20,1140,75"/>
+<area shape="rect" id="node7" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="340,247,527,317"/>
+<area shape="rect" id="node8" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="551,247,750,317"/>
+<area shape="rect" id="node10" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="200,5,352,89"/>
+<area shape="rect" id="node11" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="5,20,176,75"/>
 </map>

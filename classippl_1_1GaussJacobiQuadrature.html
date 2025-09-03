@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1GaussJacobiQuadrature-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -98,9 +100,9 @@ Inheritance diagram for ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementTy
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1GaussJacobiQuadrature__inherit__graph.png" border="0" usemap="#aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map" id="aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map">
-<area shape="rect" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="128,372,351,471"/>
-<area shape="rect" href="classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="5,519,228,588"/>
-<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="252,519,475,588"/>
+<area shape="rect" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="128,372,351,544"/>
+<area shape="rect" href="classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="5,592,228,661"/>
+<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="252,592,475,661"/>
 <area shape="rect" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="139,5,339,324"/>
 </map>
 </div>
@@ -109,10 +111,11 @@ Collaboration diagram for ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, Element
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1GaussJacobiQuadrature__coll__graph.png" border="0" usemap="#aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map" id="aippl_1_1GaussJacobiQuadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map">
-<area shape="rect" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="5,815,228,913"/>
-<area shape="rect" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="17,476,217,765"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="12,153,221,384"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="31,5,203,104"/>
+<area shape="rect" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="76,857,299,1000"/>
+<area shape="rect" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="10,476,210,765"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="5,153,215,384"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="24,5,196,104"/>
+<area shape="rect" title=" " alt="" coords="235,601,295,641"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -156,6 +159,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a368cc46932453703af574c900a282d6b inherit pub_methods_classippl_1_1Quadrature"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html#a368cc46932453703af574c900a282d6b">computeNodesAndWeights</a> ()=0</td></tr>
 <tr class="memdesc:a368cc46932453703af574c900a282d6b inherit pub_methods_classippl_1_1Quadrature"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pure virtual function that computes the local quadrature nodes and weights. (Needs to be implemented in derived classes)  <a href="classippl_1_1Quadrature.html#a368cc46932453703af574c900a282d6b">More...</a><br /></td></tr>
 <tr class="separator:a368cc46932453703af574c900a282d6b inherit pub_methods_classippl_1_1Quadrature"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:ad815336e63e6206434955f6dd28d7390"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#ad815336e63e6206434955f6dd28d7390">getLehrFEMInitialGuess</a> (const size_t &amp;i, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>, NumNodes1D &gt; &amp;integration_nodes) const</td></tr>
+<tr class="memdesc:ad815336e63e6206434955f6dd28d7390"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the initial guess for the Newton iterations, the way they are computed in the implementation from LehrFEM++.  <a href="classippl_1_1GaussJacobiQuadrature.html#ad815336e63e6206434955f6dd28d7390">More...</a><br /></td></tr>
+<tr class="separator:ad815336e63e6206434955f6dd28d7390"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a9d48b832984dd0db33a21d9935fdf77a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a9d48b832984dd0db33a21d9935fdf77a">alpha_m</a></td></tr>
+<tr class="separator:a9d48b832984dd0db33a21d9935fdf77a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac943b455b9c1efa607cb4b8a1c62d998"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#ac943b455b9c1efa607cb4b8a1c62d998">beta_m</a></td></tr>
+<tr class="separator:ac943b455b9c1efa607cb4b8a1c62d998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af74d76a524b2ce81d303a7fc8d3fab4c"><td class="memItemLeft" align="right" valign="top">const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#af74d76a524b2ce81d303a7fc8d3fab4c">max_newton_iterations_m</a></td></tr>
+<tr class="separator:af74d76a524b2ce81d303a7fc8d3fab4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90fd55ebe5bd5b6e63d1dadf8a46efe7"><td class="memItemLeft" align="right" valign="top">const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a90fd55ebe5bd5b6e63d1dadf8a46efe7">min_newton_iterations_m</a></td></tr>
+<tr class="separator:a90fd55ebe5bd5b6e63d1dadf8a46efe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -324,6 +344,151 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>scalar_t - i-th Chebyshev node </dd></dl>
+
+</div>
+</div>
+<a id="ad815336e63e6206434955f6dd28d7390" name="ad815336e63e6206434955f6dd28d7390"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad815336e63e6206434955f6dd28d7390">&#9670;&#160;</a></span>getLehrFEMInitialGuess()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;<a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">::scalar_t</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::getLehrFEMInitialGuess </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>, NumNodes1D &gt; &amp;&#160;</td>
+          <td class="paramname"><em>integration_nodes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Computes the initial guess for the Newton iterations, the way they are computed in the implementation from LehrFEM++. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>index of the initial guess (corresponding to the i-th quadrature node) </td></tr>
+    <tr><td class="paramname">integration_nodes</td><td>the integration nodes</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>scalar_t - initial guess </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a9d48b832984dd0db33a21d9935fdf77a" name="a9d48b832984dd0db33a21d9935fdf77a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d48b832984dd0db33a21d9935fdf77a">&#9670;&#160;</a></span>alpha_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::alpha_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac943b455b9c1efa607cb4b8a1c62d998" name="ac943b455b9c1efa607cb4b8a1c62d998"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac943b455b9c1efa607cb4b8a1c62d998">&#9670;&#160;</a></span>beta_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::beta_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af74d76a524b2ce81d303a7fc8d3fab4c" name="af74d76a524b2ce81d303a7fc8d3fab4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af74d76a524b2ce81d303a7fc8d3fab4c">&#9670;&#160;</a></span>max_newton_iterations_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const size_t <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::max_newton_iterations_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a90fd55ebe5bd5b6e63d1dadf8a46efe7" name="a90fd55ebe5bd5b6e63d1dadf8a46efe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90fd55ebe5bd5b6e63d1dadf8a46efe7">&#9670;&#160;</a></span>min_newton_iterations_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const size_t <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::min_newton_iterations_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

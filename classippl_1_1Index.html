@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classippl_1_1Index-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::Index Class Reference</div></div>
@@ -96,7 +98,8 @@ Collaboration diagram for ippl::Index:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Index__coll__graph.png" border="0" usemap="#aippl_1_1Index_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Index_coll__map" id="aippl_1_1Index_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,107,207"/>
+<area shape="rect" title=" " alt="" coords="5,108,141,397"/>
+<area shape="rect" title=" " alt="" coords="43,5,103,45"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -158,6 +161,28 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7a691b4abfd28055513e8b76e5704aab"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a7a691b4abfd28055513e8b76e5704aab">operator==</a> (const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;r) const noexcept</td></tr>
 <tr class="separator:a7a691b4abfd28055513e8b76e5704aab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a7427dba1283fd616998b4bee748d0a3e"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a7427dba1283fd616998b4bee748d0a3e">reverse</a> () const</td></tr>
+<tr class="memdesc:a7427dba1283fd616998b4bee748d0a3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of elements.  <a href="classippl_1_1Index.html#a7427dba1283fd616998b4bee748d0a3e">More...</a><br /></td></tr>
+<tr class="separator:a7427dba1283fd616998b4bee748d0a3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af38331d5ffc38b4a46aeb7f60647d54e"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#af38331d5ffc38b4a46aeb7f60647d54e">Index</a> (int m, int a, const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;b)</td></tr>
+<tr class="separator:af38331d5ffc38b4a46aeb7f60647d54e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf378773bd3393faf40ad9c38f9c2318"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#abf378773bd3393faf40ad9c38f9c2318">Index</a> (int f, int s, const <a class="el" href="classippl_1_1Index.html">Index</a> *b)</td></tr>
+<tr class="separator:abf378773bd3393faf40ad9c38f9c2318"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06613ff386cd99b929450c8867d032b9"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a06613ff386cd99b929450c8867d032b9">general_intersect</a> (const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;) const</td></tr>
+<tr class="separator:a06613ff386cd99b929450c8867d032b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a77dd0d501ec12a0e9d853091d7e13e4c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a77dd0d501ec12a0e9d853091d7e13e4c">first_m</a></td></tr>
+<tr class="separator:a77dd0d501ec12a0e9d853091d7e13e4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39c4821b048d444dc9f98a047dc2efa2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a39c4821b048d444dc9f98a047dc2efa2">stride_m</a></td></tr>
+<tr class="memdesc:a39c4821b048d444dc9f98a047dc2efa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">First index element.  <a href="classippl_1_1Index.html#a39c4821b048d444dc9f98a047dc2efa2">More...</a><br /></td></tr>
+<tr class="separator:a39c4821b048d444dc9f98a047dc2efa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae43f6334d3ee08a37e40bd37dd6d40ce"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#ae43f6334d3ee08a37e40bd37dd6d40ce">length_m</a></td></tr>
+<tr class="separator:ae43f6334d3ee08a37e40bd37dd6d40ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
 <tr class="memitem:a3ca60358dc57beb96e1d67e1244caa41"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION friend <a class="el" href="classippl_1_1Index.html">Index</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Index.html#a3ca60358dc57beb96e1d67e1244caa41">operator+</a> (const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;, int)</td></tr>
@@ -179,7 +204,7 @@ Friends</h2></td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a872702b444e3cd43ff7bbf78737a0f2e" name="a872702b444e3cd43ff7bbf78737a0f2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a872702b444e3cd43ff7bbf78737a0f2e">&#9670;&#160;</a></span>Index() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a872702b444e3cd43ff7bbf78737a0f2e">&#9670;&#160;</a></span>Index() <span class="overload">[1/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -197,7 +222,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="a26401bf8393487add060d998bbb90742" name="a26401bf8393487add060d998bbb90742"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26401bf8393487add060d998bbb90742">&#9670;&#160;</a></span>Index() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26401bf8393487add060d998bbb90742">&#9670;&#160;</a></span>Index() <span class="overload">[2/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -221,7 +246,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="ae6f137d3b001530159c0552d91a5e854" name="ae6f137d3b001530159c0552d91a5e854"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6f137d3b001530159c0552d91a5e854">&#9670;&#160;</a></span>Index() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6f137d3b001530159c0552d91a5e854">&#9670;&#160;</a></span>Index() <span class="overload">[3/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +281,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="ac0308453f9657ad38fce5375c5005cee" name="ac0308453f9657ad38fce5375c5005cee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0308453f9657ad38fce5375c5005cee">&#9670;&#160;</a></span>Index() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0308453f9657ad38fce5375c5005cee">&#9670;&#160;</a></span>Index() <span class="overload">[4/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -316,6 +341,90 @@ Friends</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af38331d5ffc38b4a46aeb7f60647d54e" name="af38331d5ffc38b4a46aeb7f60647d54e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af38331d5ffc38b4a46aeb7f60647d54e">&#9670;&#160;</a></span>Index() <span class="overload">[5/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION ippl::Index::Index </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf378773bd3393faf40ad9c38f9c2318" name="abf378773bd3393faf40ad9c38f9c2318"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf378773bd3393faf40ad9c38f9c2318">&#9670;&#160;</a></span>Index() <span class="overload">[6/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION ippl::Index::Index </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Index.html">Index</a> *&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -440,6 +549,32 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the first element </dd></dl>
+
+</div>
+</div>
+<a id="a06613ff386cd99b929450c8867d032b9" name="a06613ff386cd99b929450c8867d032b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06613ff386cd99b929450c8867d032b9">&#9670;&#160;</a></span>general_intersect()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a> ippl::Index::general_intersect </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Index.html">Index</a> &amp;&#160;</td>
+          <td class="paramname"><em>that</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -668,6 +803,33 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7427dba1283fd616998b4bee748d0a3e" name="a7427dba1283fd616998b4bee748d0a3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7427dba1283fd616998b4bee748d0a3e">&#9670;&#160;</a></span>reverse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a> ippl::Index::reverse </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The number of elements. </p>
 
 </div>
 </div>
@@ -1087,6 +1249,75 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a77dd0d501ec12a0e9d853091d7e13e4c" name="a77dd0d501ec12a0e9d853091d7e13e4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77dd0d501ec12a0e9d853091d7e13e4c">&#9670;&#160;</a></span>first_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ippl::Index::first_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae43f6334d3ee08a37e40bd37dd6d40ce" name="ae43f6334d3ee08a37e40bd37dd6d40ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae43f6334d3ee08a37e40bd37dd6d40ce">&#9670;&#160;</a></span>length_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t ippl::Index::length_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a39c4821b048d444dc9f98a047dc2efa2" name="a39c4821b048d444dc9f98a047dc2efa2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39c4821b048d444dc9f98a047dc2efa2">&#9670;&#160;</a></span>stride_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ippl::Index::stride_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>First index element. </p>
 
 </div>
 </div>

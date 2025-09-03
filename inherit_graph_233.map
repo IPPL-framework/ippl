@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1mpi_1_1extractBinaryOperationKind_3_01std_1_1multiplies_3_01T_01_4_01_4.html" title=" " alt="" coords="5,5,200,60"/>
+<area shape="rect" id="node1" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,5,172,45"/>
+<area shape="rect" id="node2" href="$classippl_1_1FEMMaxwellDiffusionSolver.html" title="A solver for the electric diffusion equation given by &#160;and &#160;using the Nédélec basis functions." alt="" coords="220,5,392,45"/>
 </map>

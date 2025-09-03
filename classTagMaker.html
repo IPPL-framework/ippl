@@ -80,6 +80,8 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classTagMaker-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">TagMaker Class Reference</div></div>
 </div><!--header-->
@@ -91,9 +93,9 @@ Inheritance diagram for TagMaker:</div>
 <div class="dyncontent">
 <div class="center"><img src="classTagMaker__inherit__graph.png" border="0" usemap="#aTagMaker_inherit__map" alt="Inheritance graph"/></div>
 <map name="aTagMaker_inherit__map" id="aTagMaker_inherit__map">
-<area shape="rect" title=" " alt="" coords="134,5,257,148"/>
-<area shape="rect" href="classippl_1_1Communicate.html" title=" " alt="" coords="5,225,188,427"/>
-<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="213,196,375,456"/>
+<area shape="rect" title=" " alt="" coords="134,5,267,177"/>
+<area shape="rect" href="classippl_1_1Communicate.html" title=" " alt="" coords="5,262,188,537"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="213,225,397,573"/>
 </map>
 </div>
 <div class="dynheader">
@@ -101,10 +103,17 @@ Collaboration diagram for TagMaker:</div>
 <div class="dyncontent">
 <div class="center"><img src="classTagMaker__coll__graph.png" border="0" usemap="#aTagMaker_coll__map" alt="Collaboration graph"/></div>
 <map name="aTagMaker_coll__map" id="aTagMaker_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,128,148"/>
+<area shape="rect" title=" " alt="" coords="5,5,139,177"/>
 </map>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker_1_1TagCompare.html">TagCompare</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker_1_1TagInfo.html">TagInfo</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a87c93f990f5b5a9bf63ccf17eccba851"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#a87c93f990f5b5a9bf63ccf17eccba851">TagMaker</a> (void)</td></tr>
@@ -121,6 +130,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a580563931e043209d7704f653bd5c06d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af807e4aa5edb24ce945768e6a38d135d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#af807e4aa5edb24ce945768e6a38d135d">reset_tag</a> (int t, int s=<a class="el" href="TagMaker_8h.html#a4169c2c503d6f015eb376713fd29fb4f">DEF_CYCLE_SIZE</a>)</td></tr>
 <tr class="separator:af807e4aa5edb24ce945768e6a38d135d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a7bd463eeb0deb2f44b60fe73bd16bcbf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classTagMaker_1_1TagInfo.html">TagInfo</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#a7bd463eeb0deb2f44b60fe73bd16bcbf">create_base_tag</a> (int t, int s=<a class="el" href="TagMaker_8h.html#a4169c2c503d6f015eb376713fd29fb4f">DEF_CYCLE_SIZE</a>)</td></tr>
+<tr class="separator:a7bd463eeb0deb2f44b60fe73bd16bcbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a0a9eda11b460033e33715055bb983dc5"><td class="memItemLeft" align="right" valign="top">std::map&lt; int, <a class="el" href="classTagMaker_1_1TagInfo.html">TagInfo</a>, <a class="el" href="classTagMaker_1_1TagCompare.html">TagCompare</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#a0a9eda11b460033e33715055bb983dc5">TagList</a></td></tr>
+<tr class="separator:a0a9eda11b460033e33715055bb983dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a87c93f990f5b5a9bf63ccf17eccba851" name="a87c93f990f5b5a9bf63ccf17eccba851"></a>
@@ -176,6 +195,42 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7bd463eeb0deb2f44b60fe73bd16bcbf" name="a7bd463eeb0deb2f44b60fe73bd16bcbf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bd463eeb0deb2f44b60fe73bd16bcbf">&#9670;&#160;</a></span>create_base_tag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classTagMaker_1_1TagInfo.html">TagInfo</a> &amp; TagMaker::create_base_tag </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>t</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>s</em> = <code><a class="el" href="TagMaker_8h.html#a4169c2c503d6f015eb376713fd29fb4f">DEF_CYCLE_SIZE</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a580563931e043209d7704f653bd5c06d" name="a580563931e043209d7704f653bd5c06d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a580563931e043209d7704f653bd5c06d">&#9670;&#160;</a></span>current_tag()</h2>
 
@@ -350,6 +405,29 @@ Public Member Functions</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a0a9eda11b460033e33715055bb983dc5" name="a0a9eda11b460033e33715055bb983dc5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a9eda11b460033e33715055bb983dc5">&#9670;&#160;</a></span>TagList</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt;int, <a class="el" href="classTagMaker_1_1TagInfo.html">TagInfo</a>, <a class="el" href="classTagMaker_1_1TagCompare.html">TagCompare</a>&gt; TagMaker::TagList</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

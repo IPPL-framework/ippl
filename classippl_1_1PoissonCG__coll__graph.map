@@ -1,8 +1,19 @@
 <map id="ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;" name="ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="51,1051,239,1237"/>
-<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="60,741,229,1001"/>
-<area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="5,470,140,657"/>
-<area shape="rect" id="node4" href="$classippl_1_1Field.html" title=" " alt="" coords="164,448,357,679"/>
-<area shape="rect" id="node5" href="$classippl_1_1BareField.html" title=" " alt="" coords="195,168,326,399"/>
-<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="149,5,372,119"/>
+<area shape="rect" id="node1" title=" " alt="" coords="331,2045,519,2232"/>
+<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="340,1721,509,1996"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="307,1450,441,1637"/>
+<area shape="rect" id="node4" href="$classippl_1_1Field.html" title=" " alt="" coords="465,1428,659,1659"/>
+<area shape="rect" id="node5" href="$classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,775,228,889"/>
+<area shape="rect" id="node7" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="253,805,407,859"/>
+<area shape="rect" id="node8" href="$classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="432,739,620,925"/>
+<area shape="rect" id="node9" href="$structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="451,365,601,449"/>
+<area shape="rect" id="node10" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="453,64,599,119"/>
+<area shape="rect" id="node11" href="$classippl_1_1FieldLayout.html" title=" " alt="" coords="645,636,815,1028"/>
+<area shape="rect" id="node12" href="$classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="631,240,815,573"/>
+<area shape="rect" id="node13" href="$classTagMaker.html" title=" " alt="" coords="637,5,770,177"/>
+<area shape="rect" id="node14" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="794,57,1021,126"/>
+<area shape="rect" id="node15" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,379,986,434"/>
+<area shape="rect" id="node16" href="$classippl_1_1Mesh.html" title=" " alt="" coords="490,1113,634,1343"/>
+<area shape="rect" id="node17" href="$classippl_1_1BConds.html" title=" " alt="" coords="658,1120,837,1336"/>
 </map>

@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1Communicate-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::Communicate Class Reference</div></div>
 </div><!--header-->
@@ -95,8 +97,8 @@ Inheritance diagram for ippl::Communicate:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Communicate__inherit__graph.png" border="0" usemap="#aippl_1_1Communicate_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Communicate_inherit__map" id="aippl_1_1Communicate_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,196,188,397"/>
-<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="35,5,158,148"/>
+<area shape="rect" title=" " alt="" coords="5,225,188,500"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="30,5,163,177"/>
 </map>
 </div>
 <div class="dynheader">
@@ -104,8 +106,9 @@ Collaboration diagram for ippl::Communicate:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Communicate__coll__graph.png" border="0" usemap="#aippl_1_1Communicate_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Communicate_coll__map" id="aippl_1_1Communicate_coll__map">
-<area shape="rect" title=" " alt="" coords="5,196,188,397"/>
-<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="35,5,158,148"/>
+<area shape="rect" title=" " alt="" coords="66,240,249,500"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="5,5,139,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="163,57,325,126"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -181,6 +184,27 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a580563931e043209d7704f653bd5c06d inherit pub_methods_classTagMaker"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af807e4aa5edb24ce945768e6a38d135d inherit pub_methods_classTagMaker"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#af807e4aa5edb24ce945768e6a38d135d">reset_tag</a> (int t, int s=<a class="el" href="TagMaker_8h.html#a4169c2c503d6f015eb376713fd29fb4f">DEF_CYCLE_SIZE</a>)</td></tr>
 <tr class="separator:af807e4aa5edb24ce945768e6a38d135d inherit pub_methods_classTagMaker"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a7a02b2c380e97c75c1937070d2f47ee1"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace &gt; </td></tr>
+<tr class="memitem:a7a02b2c380e97c75c1937070d2f47ee1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#a7a02b2c380e97c75c1937070d2f47ee1">map_type</a> = std::map&lt; int, <a class="el" href="classippl_1_1Communicate.html#af37212977b72b6287f6226fed4a719a8">buffer_type</a>&lt; MemorySpace &gt; &gt;</td></tr>
+<tr class="separator:a7a02b2c380e97c75c1937070d2f47ee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9543832cd3a67f8d99af4e7045d15c52"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#a9543832cd3a67f8d99af4e7045d15c52">buffer_map_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt; <a class="el" href="classippl_1_1Communicate.html#a7a02b2c380e97c75c1937070d2f47ee1">map_type</a> &gt;::type</td></tr>
+<tr class="separator:a9543832cd3a67f8d99af4e7045d15c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a6fda3416b85984732877951d27e7e2df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Communicate.html#a9543832cd3a67f8d99af4e7045d15c52">buffer_map_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#a6fda3416b85984732877951d27e7e2df">buffers_m</a></td></tr>
+<tr class="separator:a6fda3416b85984732877951d27e7e2df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a159c01dd070547d8a8b7c1b0dc728c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#a0a159c01dd070547d8a8b7c1b0dc728c">defaultOveralloc_m</a> = 1.0</td></tr>
+<tr class="separator:a0a159c01dd070547d8a8b7c1b0dc728c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d5aea6c74e6c52815705ba36baee478"><td class="memItemLeft" align="right" valign="top">MPI_Comm&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#a2d5aea6c74e6c52815705ba36baee478">comm_m</a></td></tr>
+<tr class="separator:a2d5aea6c74e6c52815705ba36baee478"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb8aefc313e1edabebe53afc3f382619"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#abb8aefc313e1edabebe53afc3f382619">size_m</a></td></tr>
+<tr class="separator:abb8aefc313e1edabebe53afc3f382619"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9edf4b221e50aa0ffbc25d5b0151e2d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Communicate.html#aa9edf4b221e50aa0ffbc25d5b0151e2d">rank_m</a></td></tr>
+<tr class="separator:aa9edf4b221e50aa0ffbc25d5b0151e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a063681dfc3e40f750c981aa8ea346702" name="a063681dfc3e40f750c981aa8ea346702"></a>
@@ -199,6 +223,28 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 
 </div>
 </div>
+<a id="a9543832cd3a67f8d99af4e7045d15c52" name="a9543832cd3a67f8d99af4e7045d15c52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9543832cd3a67f8d99af4e7045d15c52">&#9670;&#160;</a></span>buffer_map_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1Communicate.html#a9543832cd3a67f8d99af4e7045d15c52">ippl::Communicate::buffer_map_type</a> =  typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt;<a class="el" href="classippl_1_1Communicate.html#a7a02b2c380e97c75c1937070d2f47ee1">map_type</a>&gt;::type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af37212977b72b6287f6226fed4a719a8" name="af37212977b72b6287f6226fed4a719a8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af37212977b72b6287f6226fed4a719a8">&#9670;&#160;</a></span>buffer_type</h2>
 
@@ -211,6 +257,30 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
           <td class="memname">using <a class="el" href="classippl_1_1Communicate.html#af37212977b72b6287f6226fed4a719a8">ippl::Communicate::buffer_type</a> =  std::shared_ptr&lt;<a class="el" href="classippl_1_1Communicate.html#a063681dfc3e40f750c981aa8ea346702">archive_type</a>&lt;MemorySpace&gt; &gt;</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7a02b2c380e97c75c1937070d2f47ee1" name="a7a02b2c380e97c75c1937070d2f47ee1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a02b2c380e97c75c1937070d2f47ee1">&#9670;&#160;</a></span>map_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1Communicate.html#a7a02b2c380e97c75c1937070d2f47ee1">ippl::Communicate::map_type</a> =  std::map&lt;int, <a class="el" href="classippl_1_1Communicate.html#af37212977b72b6287f6226fed4a719a8">buffer_type</a>&lt;MemorySpace&gt; &gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -840,6 +910,118 @@ template&lt;class Buffer , typename Archive &gt; </div>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6fda3416b85984732877951d27e7e2df" name="a6fda3416b85984732877951d27e7e2df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fda3416b85984732877951d27e7e2df">&#9670;&#160;</a></span>buffers_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Communicate.html#a9543832cd3a67f8d99af4e7045d15c52">buffer_map_type</a> ippl::Communicate::buffers_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >For each memory space, store a map of all buffers created for that space </p>
+
+</div>
+</div>
+<a id="a2d5aea6c74e6c52815705ba36baee478" name="a2d5aea6c74e6c52815705ba36baee478"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d5aea6c74e6c52815705ba36baee478">&#9670;&#160;</a></span>comm_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">MPI_Comm ippl::Communicate::comm_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a159c01dd070547d8a8b7c1b0dc728c" name="a0a159c01dd070547d8a8b7c1b0dc728c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a159c01dd070547d8a8b7c1b0dc728c">&#9670;&#160;</a></span>defaultOveralloc_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double ippl::Communicate::defaultOveralloc_m = 1.0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa9edf4b221e50aa0ffbc25d5b0151e2d" name="aa9edf4b221e50aa0ffbc25d5b0151e2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9edf4b221e50aa0ffbc25d5b0151e2d">&#9670;&#160;</a></span>rank_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ippl::Communicate::rank_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abb8aefc313e1edabebe53afc3f382619" name="abb8aefc313e1edabebe53afc3f382619"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb8aefc313e1edabebe53afc3f382619">&#9670;&#160;</a></span>size_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int ippl::Communicate::size_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

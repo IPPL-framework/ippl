@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1SubFieldLayout-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::SubFieldLayout&lt; Dim &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -98,8 +99,8 @@ Inheritance diagram for ippl::SubFieldLayout&lt; Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1SubFieldLayout__inherit__graph.png" border="0" usemap="#aippl_1_1SubFieldLayout_3_01Dim_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1SubFieldLayout_3_01Dim_01_4_inherit__map" id="aippl_1_1SubFieldLayout_3_01Dim_01_4_inherit__map">
-<area shape="rect" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="5,401,148,588"/>
-<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="5,5,148,353"/>
+<area shape="rect" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="19,475,162,676"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="5,5,176,427"/>
 </map>
 </div>
 <div class="dynheader">
@@ -107,11 +108,12 @@ Collaboration diagram for ippl::SubFieldLayout&lt; Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1SubFieldLayout__coll__graph.png" border="0" usemap="#aippl_1_1SubFieldLayout_3_01Dim_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1SubFieldLayout_3_01Dim_01_4_coll__map" id="aippl_1_1SubFieldLayout_3_01Dim_01_4_coll__map">
-<area shape="rect" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="149,888,291,1075"/>
-<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="149,520,291,839"/>
-<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="5,197,168,457"/>
-<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="25,5,148,148"/>
-<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="192,300,339,355"/>
+<area shape="rect" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="243,1077,386,1279"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="229,636,400,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="81,240,265,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="5,5,139,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="163,57,389,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="289,379,436,434"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -214,6 +216,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa48156c2c837baa5ee3948b242e68046 inherit pub_methods_classippl_1_1FieldLayout"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae15b1bcf738515f17c06d5271d922026 inherit pub_methods_classippl_1_1FieldLayout"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#ae15b1bcf738515f17c06d5271d922026">updateLayout</a> (const std::vector&lt; <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &gt; &amp;domains)</td></tr>
 <tr class="separator:ae15b1bcf738515f17c06d5271d922026 inherit pub_methods_classippl_1_1FieldLayout"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:af19b338c78e2a2835a4e501ad71c1e32"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1SubFieldLayout.html#a1436a29a694f2173949cda42101293dc">NDIndex_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1SubFieldLayout.html#af19b338c78e2a2835a4e501ad71c1e32">originDomain_m</a></td></tr>
+<tr class="memdesc:af19b338c78e2a2835a4e501ad71c1e32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Original global domain in which the sub-field is defined.  <a href="classippl_1_1SubFieldLayout.html#af19b338c78e2a2835a4e501ad71c1e32">More...</a><br /></td></tr>
+<tr class="separator:af19b338c78e2a2835a4e501ad71c1e32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -752,6 +760,34 @@ template&lt;unsigned Dim2&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if both the current domain, origin domain and local domains match </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="af19b338c78e2a2835a4e501ad71c1e32" name="af19b338c78e2a2835a4e501ad71c1e32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af19b338c78e2a2835a4e501ad71c1e32">&#9670;&#160;</a></span>originDomain_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1SubFieldLayout.html#a1436a29a694f2173949cda42101293dc">NDIndex_t</a> <a class="el" href="classippl_1_1SubFieldLayout.html">ippl::SubFieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::originDomain_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Original global domain in which the sub-field is defined. </p>
+<p >This stores the full domain before any sub-region extraction, allowing comparison with regular FieldLayouts. </p>
 
 </div>
 </div>

@@ -85,6 +85,7 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
 <a href="classippl_1_1PCG-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -172,7 +173,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9ae462348543f4d25627eb170e32ac99 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1e9e0c2b13462fe56b14cb02a796871 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ae1e9e0c2b13462fe56b14cb02a796871">operator()</a> (<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;lhs, <a class="el" href="classippl_1_1CG.html#ac028d323dc2a9e7f1be744e6abd67d98">rhs_type</a> &amp;rhs, const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params) override</td></tr>
 <tr class="separator:ae1e9e0c2b13462fe56b14cb02a796871 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2507e24edd3ae187ac7dc8921da78552 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a2507e24edd3ae187ac7dc8921da78552">getResidue</a> () const</td></tr>
+<tr class="memitem:a2507e24edd3ae187ac7dc8921da78552 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a2507e24edd3ae187ac7dc8921da78552">getResidue</a> () const</td></tr>
 <tr class="separator:a2507e24edd3ae187ac7dc8921da78552 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a264316b8a11166862799540266bdcad8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1SolverAlgorithm.html#a264316b8a11166862799540266bdcad8">operator()</a> (<a class="el" href="classippl_1_1SolverAlgorithm.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;lhs, <a class="el" href="classippl_1_1SolverAlgorithm.html#ac028d323dc2a9e7f1be744e6abd67d98">rhs_type</a> &amp;rhs, const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params)=0</td></tr>
 <tr class="separator:a264316b8a11166862799540266bdcad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,12 +185,43 @@ Protected Attributes</h2></td></tr>
 <tr class="inherit_header pro_attribs_classippl_1_1CG"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classippl_1_1CG')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classippl_1_1CG.html">ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memitem:a1e701df28e9f1e3a139995f11fcb0c8e inherit pro_attribs_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a1e701df28e9f1e3a139995f11fcb0c8e">op_m</a></td></tr>
 <tr class="separator:a1e701df28e9f1e3a139995f11fcb0c8e inherit pro_attribs_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02d0a0ded3e939a6d49e2330f4732085 inherit pro_attribs_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a02d0a0ded3e939a6d49e2330f4732085">residueNorm</a> = 0</td></tr>
+<tr class="memitem:a02d0a0ded3e939a6d49e2330f4732085 inherit pro_attribs_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a02d0a0ded3e939a6d49e2330f4732085">residueNorm</a> = 0</td></tr>
 <tr class="separator:a02d0a0ded3e939a6d49e2330f4732085 inherit pro_attribs_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ecb18123a087339856d1ecbf62c4459 inherit pro_attribs_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a9ecb18123a087339856d1ecbf62c4459">iterations_m</a> = 0</td></tr>
 <tr class="separator:a9ecb18123a087339856d1ecbf62c4459 inherit pro_attribs_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a9d454c271f728c0ff72e5bec70e47779"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#a9d454c271f728c0ff72e5bec70e47779">Base</a> = <a class="el" href="classippl_1_1SolverAlgorithm.html">SolverAlgorithm</a>&lt; FieldLHS, FieldRHS &gt;</td></tr>
+<tr class="separator:a9d454c271f728c0ff72e5bec70e47779"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71da464e2b99d7fbfe1f9e187700aa02"><td class="memItemLeft" align="right" valign="top">typedef Base::lhs_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#a71da464e2b99d7fbfe1f9e187700aa02">T</a></td></tr>
+<tr class="separator:a71da464e2b99d7fbfe1f9e187700aa02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a9d454c271f728c0ff72e5bec70e47779" name="a9d454c271f728c0ff72e5bec70e47779"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d454c271f728c0ff72e5bec70e47779">&#9670;&#160;</a></span>Base</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1PCG.html">ippl::PCG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::Base =  <a class="el" href="classippl_1_1SolverAlgorithm.html">SolverAlgorithm</a>&lt;FieldLHS, FieldRHS&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a5a90ae04c92761cf0ff042671e4e58a2" name="a5a90ae04c92761cf0ff042671e4e58a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a90ae04c92761cf0ff042671e4e58a2">&#9670;&#160;</a></span>DiagF</h2>
 
@@ -282,6 +314,30 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
           <td class="memname">using <a class="el" href="classippl_1_1SolverAlgorithm.html">ippl::SolverAlgorithm</a>&lt; FieldLHS, FieldRHS &gt;::rhs_type =  FieldRHS</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a71da464e2b99d7fbfe1f9e187700aa02" name="a71da464e2b99d7fbfe1f9e187700aa02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71da464e2b99d7fbfe1f9e187700aa02">&#9670;&#160;</a></span>T</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef Base::lhs_type::value_type <a class="el" href="classippl_1_1PCG.html">ippl::PCG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">::T</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

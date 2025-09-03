@@ -1,3 +1,10 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html" title="Functor that is used for generating samples." alt="" coords="5,5,209,75"/>
+<area shape="rect" id="node1" href="$classippl_1_1Poisson.html" title=" " alt="" coords="5,213,171,253"/>
+<area shape="rect" id="node2" href="$classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="256,5,428,60"/>
+<area shape="rect" id="node3" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="249,85,435,125"/>
+<area shape="rect" id="node4" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="243,149,441,189"/>
+<area shape="rect" id="node5" href="$classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="219,213,465,253"/>
+<area shape="rect" id="node6" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="253,277,431,317"/>
+<area shape="rect" id="node7" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="250,341,434,381"/>
+<area shape="rect" id="node8" href="$classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="238,405,446,445"/>
 </map>

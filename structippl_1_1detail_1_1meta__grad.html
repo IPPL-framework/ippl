@@ -85,6 +85,8 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structippl_1_1detail_1_1meta__grad-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::detail::meta_grad&lt; E &gt; Struct Template Reference</div></div>
 </div><!--header-->
@@ -96,7 +98,7 @@ Inheritance diagram for ippl::detail::meta_grad&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__grad__inherit__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__grad_3_01E_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1detail_1_1meta__grad_3_01E_01_4_inherit__map" id="aippl_1_1detail_1_1meta__grad_3_01E_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="45,167,163,265"/>
+<area shape="rect" title=" " alt="" coords="45,167,163,295"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,203,119"/>
 </map>
 </div>
@@ -105,8 +107,10 @@ Collaboration diagram for ippl::detail::meta_grad&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__grad__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__grad_3_01E_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1meta__grad_3_01E_01_4_coll__map" id="aippl_1_1detail_1_1meta__grad_3_01E_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="45,167,163,265"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,203,119"/>
+<area shape="rect" title=" " alt="" coords="66,447,185,560"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,212,203,325"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="227,153,378,384"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="217,5,389,104"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -133,11 +137,49 @@ Static Public Attributes</h2></td></tr>
 <tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_grad&lt; E &gt;, sizeof(E)+sizeof(E::Mesh_t::vector_type[E::Mesh_t::Dimension])&gt;</a></td></tr>
 <tr class="memitem:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">dim</a></td></tr>
 <tr class="separator:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:aae9cccef6193fd9f1ebb03f00929e90e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#aae9cccef6193fd9f1ebb03f00929e90e">Mesh_t</a> = typename E::Mesh_t</td></tr>
+<tr class="separator:aae9cccef6193fd9f1ebb03f00929e90e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a398fd2ec461098b5cc6303828ab9971b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#a398fd2ec461098b5cc6303828ab9971b">vector_type</a> = typename <a class="el" href="classippl_1_1UniformCartesian.html#a555cb2cbe9dea5453993bd5efa0b9b20">Mesh_t::vector_type</a></td></tr>
+<tr class="separator:a398fd2ec461098b5cc6303828ab9971b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a94474ce254f96955a104928a6a10588b"><td class="memItemLeft" align="right" valign="top">const E&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#a94474ce254f96955a104928a6a10588b">u_m</a></td></tr>
+<tr class="separator:a94474ce254f96955a104928a6a10588b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52ef4e1aedddc4309a7a995a90f33aa7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#a398fd2ec461098b5cc6303828ab9971b">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#a52ef4e1aedddc4309a7a995a90f33aa7">vectors_m</a> [<a class="el" href="structippl_1_1detail_1_1meta__grad.html#a36fff3df5dbe7322c454c104020a8c8d">dim</a>]</td></tr>
+<tr class="separator:a52ef4e1aedddc4309a7a995a90f33aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename E&gt;<br />
 struct ippl::detail::meta_grad&lt; E &gt;</div><p >Meta function of gradient </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aae9cccef6193fd9f1ebb03f00929e90e" name="aae9cccef6193fd9f1ebb03f00929e90e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae9cccef6193fd9f1ebb03f00929e90e">&#9670;&#160;</a></span>Mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a>&lt; E &gt;<a class="el" href="datatypes_8h.html#acf6afef09138aaa7329f5076e9d2d27f">::Mesh_t</a> =  typename E::Mesh_t</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a04abfcbc3c19b1cee45b4979f4fa88db" name="a04abfcbc3c19b1cee45b4979f4fa88db"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a04abfcbc3c19b1cee45b4979f4fa88db">&#9670;&#160;</a></span>value_type</h2>
 
@@ -150,6 +192,30 @@ template&lt;typename E &gt; </div>
           <td class="memname">using <a class="el" href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a>&lt; E &gt;::value_type =  typename E::value_type</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a398fd2ec461098b5cc6303828ab9971b" name="a398fd2ec461098b5cc6303828ab9971b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a398fd2ec461098b5cc6303828ab9971b">&#9670;&#160;</a></span>vector_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a>&lt; E &gt;::vector_type =  typename <a class="el" href="classippl_1_1UniformCartesian.html#a555cb2cbe9dea5453993bd5efa0b9b20">Mesh_t::vector_type</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -243,6 +309,54 @@ template&lt;typename E &gt; </div>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a94474ce254f96955a104928a6a10588b" name="a94474ce254f96955a104928a6a10588b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94474ce254f96955a104928a6a10588b">&#9670;&#160;</a></span>u_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const E <a class="el" href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a>&lt; E &gt;::u_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a52ef4e1aedddc4309a7a995a90f33aa7" name="a52ef4e1aedddc4309a7a995a90f33aa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52ef4e1aedddc4309a7a995a90f33aa7">&#9670;&#160;</a></span>vectors_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structippl_1_1detail_1_1meta__grad.html#a398fd2ec461098b5cc6303828ab9971b">vector_type</a> <a class="el" href="structippl_1_1detail_1_1meta__grad.html">ippl::detail::meta_grad</a>&lt; E &gt;::vectors_m[<a class="el" href="structippl_1_1detail_1_1meta__grad.html#a36fff3df5dbe7322c454c104020a8c8d">dim</a>]</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

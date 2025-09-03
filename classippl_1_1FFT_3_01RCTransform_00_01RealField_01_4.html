@@ -84,6 +84,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FFT&lt; RCTransform, RealField &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,7 +98,7 @@ Inheritance diagram for ippl::FFT&lt; RCTransform, RealField &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4__inherit__graph.png" border="0" usemap="#aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_inherit__map" id="aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="212,108,380,207"/>
+<area shape="rect" title=" " alt="" coords="212,108,380,236"/>
 <area shape="rect" title=" " alt="" coords="5,13,235,53"/>
 <area shape="rect" title=" " alt="" coords="259,13,333,53"/>
 <area shape="rect" title=" " alt="" coords="357,5,547,60"/>
@@ -106,7 +109,7 @@ Collaboration diagram for ippl::FFT&lt; RCTransform, RealField &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4__coll__graph.png" border="0" usemap="#aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_coll__map" id="aippl_1_1FFT_3_01RCTransform_00_01RealField_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="212,108,380,207"/>
+<area shape="rect" title=" " alt="" coords="212,108,380,236"/>
 <area shape="rect" title=" " alt="" coords="5,13,235,53"/>
 <area shape="rect" title=" " alt="" coords="259,13,333,53"/>
 <area shape="rect" title=" " alt="" coords="357,5,547,60"/>
@@ -115,9 +118,9 @@ Collaboration diagram for ippl::FFT&lt; RCTransform, RealField &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:af1a23c41fb8caca6dfe74f2ef56323b5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a> = Kokkos::complex&lt; Real_t &gt;</td></tr>
+<tr class="memitem:af1a23c41fb8caca6dfe74f2ef56323b5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a> = Kokkos::complex&lt; <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a8c73e515957114a1b7b3df831c2902aa">Real_t</a> &gt;</td></tr>
 <tr class="separator:af1a23c41fb8caca6dfe74f2ef56323b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9131bc1cb43bd58b7edcfade664a7d98"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a9131bc1cb43bd58b7edcfade664a7d98">ComplexField</a> = typename <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a>, Dim, typename RealField::Mesh_t, typename RealField::Centering_t, typename RealField::execution_space &gt;::uniform_type</td></tr>
+<tr class="memitem:a9131bc1cb43bd58b7edcfade664a7d98"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a9131bc1cb43bd58b7edcfade664a7d98">ComplexField</a> = typename <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a>, <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a23c264a55f2ce8b07dc09382945b32f5">Dim</a>, typename RealField::Mesh_t, typename RealField::Centering_t, typename RealField::execution_space &gt;::uniform_type</td></tr>
 <tr class="separator:a9131bc1cb43bd58b7edcfade664a7d98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -128,11 +131,52 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aae8c537d0172061df97da94ebce9a553"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f5d176ecd6670e833250fd3407188d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a5f5d176ecd6670e833250fd3407188d6">transform</a> (<a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02">TransformDirection</a> direction, RealField &amp;f, <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a9131bc1cb43bd58b7edcfade664a7d98">ComplexField</a> &amp;g)</td></tr>
 <tr class="separator:a5f5d176ecd6670e833250fd3407188d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a8c73e515957114a1b7b3df831c2902aa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a8c73e515957114a1b7b3df831c2902aa">Real_t</a> = typename RealField::value_type</td></tr>
+<tr class="separator:a8c73e515957114a1b7b3df831c2902aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa49e00a11d946e1eb566faceeafa6ca8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#aa49e00a11d946e1eb566faceeafa6ca8">Base</a> = <a class="el" href="FFT_8h.html#a6b8943a37392d6d1997dab7754f83fa7">EXT_FFT_BASE_CLASS</a>(RealField, backend, Kokkos::complex&lt; typename RealField::value_type &gt;)</td></tr>
+<tr class="separator:aa49e00a11d946e1eb566faceeafa6ca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:aaf403d9da8f91ff3f94fce89ed5618ac"><td class="memItemLeft" align="right" valign="top">Base::template temp_view_type&lt; <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a9131bc1cb43bd58b7edcfade664a7d98">ComplexField</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#aaf403d9da8f91ff3f94fce89ed5618ac">tempFieldComplex</a></td></tr>
+<tr class="separator:aaf403d9da8f91ff3f94fce89ed5618ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a23c264a55f2ce8b07dc09382945b32f5"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a23c264a55f2ce8b07dc09382945b32f5">Dim</a> = RealField::dim</td></tr>
+<tr class="separator:a23c264a55f2ce8b07dc09382945b32f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename RealField&gt;<br />
 class ippl::FFT&lt; RCTransform, RealField &gt;</div><p >real-to-complex <a class="el" href="classippl_1_1FFT.html">FFT</a> class </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aa49e00a11d946e1eb566faceeafa6ca8" name="aa49e00a11d946e1eb566faceeafa6ca8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa49e00a11d946e1eb566faceeafa6ca8">&#9670;&#160;</a></span>Base</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename RealField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::Base =  <a class="el" href="FFT_8h.html#a6b8943a37392d6d1997dab7754f83fa7">EXT_FFT_BASE_CLASS</a>(RealField, backend, Kokkos::complex&lt;typename RealField::value_type&gt;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af1a23c41fb8caca6dfe74f2ef56323b5" name="af1a23c41fb8caca6dfe74f2ef56323b5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af1a23c41fb8caca6dfe74f2ef56323b5">&#9670;&#160;</a></span>Complex_t</h2>
 
@@ -142,7 +186,7 @@ class ippl::FFT&lt; RCTransform, RealField &gt;</div><p >real-to-complex <a clas
 template&lt;typename RealField &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::Complex_t =  Kokkos::complex&lt;Real_t&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::Complex_t =  Kokkos::complex&lt;<a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a8c73e515957114a1b7b3df831c2902aa">Real_t</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -158,9 +202,33 @@ template&lt;typename RealField &gt; </div>
 template&lt;typename RealField &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::ComplexField =  typename <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a>, Dim, typename RealField::Mesh_t, typename RealField::Centering_t, typename RealField::execution_space&gt;::uniform_type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::ComplexField =  typename <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#af1a23c41fb8caca6dfe74f2ef56323b5">Complex_t</a>, <a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a23c264a55f2ce8b07dc09382945b32f5">Dim</a>, typename RealField::Mesh_t, typename RealField::Centering_t, typename RealField::execution_space&gt;::uniform_type</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8c73e515957114a1b7b3df831c2902aa" name="a8c73e515957114a1b7b3df831c2902aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c73e515957114a1b7b3df831c2902aa">&#9670;&#160;</a></span>Real_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename RealField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::Real_t =  typename RealField::value_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -285,6 +353,55 @@ template&lt;typename RealField &gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a23c264a55f2ce8b07dc09382945b32f5" name="a23c264a55f2ce8b07dc09382945b32f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23c264a55f2ce8b07dc09382945b32f5">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename RealField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::Dim = RealField::dim</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaf403d9da8f91ff3f94fce89ed5618ac" name="aaf403d9da8f91ff3f94fce89ed5618ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf403d9da8f91ff3f94fce89ed5618ac">&#9670;&#160;</a></span>tempFieldComplex</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename RealField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Base::template temp_view_type&lt;<a class="el" href="classippl_1_1FFT_3_01RCTransform_00_01RealField_01_4.html#a9131bc1cb43bd58b7edcfade664a7d98">ComplexField</a>&gt; <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, RealField &gt;::tempFieldComplex</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

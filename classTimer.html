@@ -81,6 +81,7 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classTimer-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Timer Class Reference</div></div>
 </div><!--header-->
@@ -92,7 +93,7 @@ Collaboration diagram for Timer:</div>
 <div class="dyncontent">
 <div class="center"><img src="classTimer__coll__graph.png" border="0" usemap="#aTimer_coll__map" alt="Collaboration graph"/></div>
 <map name="aTimer_coll__map" id="aTimer_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,123,133"/>
+<area shape="rect" title=" " alt="" coords="5,5,123,177"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -120,6 +121,15 @@ Public Member Functions</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a8b51eb0491ef135b32ea1de96d117bc3"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTimer.html#a8b51eb0491ef135b32ea1de96d117bc3">enableFences</a> = <a class="el" href="Timer_8h.html#aa5b0007f2e679e8f07953f84c4ca2c23">IPPL_ENABLE_TIMER_FENCES</a></td></tr>
 <tr class="separator:a8b51eb0491ef135b32ea1de96d117bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:aabea45d0f56f0c560e9c843cd65fa963"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTimer.html#aabea45d0f56f0c560e9c843cd65fa963">elapsed_m</a></td></tr>
+<tr class="separator:aabea45d0f56f0c560e9c843cd65fa963"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab793fa73a0eb7eae59445609b65c23d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classTimer.html#ad8832485437c643452094267e0545238">timer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTimer.html#ab793fa73a0eb7eae59445609b65c23d1">start_m</a></td></tr>
+<tr class="separator:ab793fa73a0eb7eae59445609b65c23d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7883cb2b383303c9fbe40f866273ea76"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classTimer.html#ad8832485437c643452094267e0545238">timer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTimer.html#a7883cb2b383303c9fbe40f866273ea76">stop_m</a></td></tr>
+<tr class="separator:a7883cb2b383303c9fbe40f866273ea76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a0bfc2d4aa5d197c4506f6f6f3bfcda5b" name="a0bfc2d4aa5d197c4506f6f6f3bfcda5b"></a>
@@ -238,6 +248,28 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aabea45d0f56f0c560e9c843cd65fa963" name="aabea45d0f56f0c560e9c843cd65fa963"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabea45d0f56f0c560e9c843cd65fa963">&#9670;&#160;</a></span>elapsed_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double Timer::elapsed_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a8b51eb0491ef135b32ea1de96d117bc3" name="a8b51eb0491ef135b32ea1de96d117bc3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8b51eb0491ef135b32ea1de96d117bc3">&#9670;&#160;</a></span>enableFences</h2>
 
@@ -254,6 +286,50 @@ Static Public Attributes</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab793fa73a0eb7eae59445609b65c23d1" name="ab793fa73a0eb7eae59445609b65c23d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab793fa73a0eb7eae59445609b65c23d1">&#9670;&#160;</a></span>start_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classTimer.html#ad8832485437c643452094267e0545238">timer_type</a> Timer::start_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7883cb2b383303c9fbe40f866273ea76" name="a7883cb2b383303c9fbe40f866273ea76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7883cb2b383303c9fbe40f866273ea76">&#9670;&#160;</a></span>stop_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classTimer.html#ad8832485437c643452094267e0545238">timer_type</a> Timer::stop_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

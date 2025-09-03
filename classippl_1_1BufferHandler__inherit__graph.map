@@ -1,5 +1,5 @@
 <map id="ippl::BufferHandler&lt; MemorySpace &gt;" name="ippl::BufferHandler&lt; MemorySpace &gt;">
-<area shape="rect" id="node1" title="Interface for memory buffer handling." alt="" coords="123,5,257,163"/>
-<area shape="rect" id="node2" href="$classippl_1_1DefaultBufferHandler.html" title="Concrete implementation of BufferHandler for managing memory buffers." alt="" coords="5,211,177,397"/>
-<area shape="rect" id="node3" href="$classippl_1_1LoggingBufferHandler.html" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="201,211,379,397"/>
+<area shape="rect" id="node1" title="Interface for memory buffer handling." alt="" coords="143,5,276,163"/>
+<area shape="rect" id="node2" href="$classippl_1_1DefaultBufferHandler.html" title="Concrete implementation of BufferHandler for managing memory buffers." alt="" coords="5,211,203,544"/>
+<area shape="rect" id="node3" href="$classippl_1_1LoggingBufferHandler.html" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="227,255,405,500"/>
 </map>

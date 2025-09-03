@@ -79,6 +79,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classLoadBalancer-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">LoadBalancer&lt; T, Dim &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -90,13 +92,33 @@ Collaboration diagram for LoadBalancer&lt; T, Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classLoadBalancer__coll__graph.png" border="0" usemap="#aLoadBalancer_3_01T_00_01Dim_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aLoadBalancer_3_01T_00_01Dim_01_4_coll__map" id="aLoadBalancer_3_01T_00_01Dim_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,197,207"/>
+<area shape="rect" title=" " alt="" coords="531,1971,723,2231"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="229,1443,379,1659"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="5,1091,136,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="471,775,694,889"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="747,1091,877,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="285,805,440,859"/>
+<area shape="rect" href="classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="59,739,247,925"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="78,365,229,449"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="80,64,227,119"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="723,636,893,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="820,240,1004,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="947,5,1080,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="696,57,923,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="649,379,796,434"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="376,1113,520,1343"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="551,1443,702,1659"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="726,1428,901,1673"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="161,1120,351,1336"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="544,1120,723,1336"/>
+<area shape="rect" href="classippl_1_1OrthogonalRecursiveBisection.html" title=" " alt="" coords="708,1736,884,1908"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="901,1113,1080,1343"/>
 </map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a504012e3872d3e8e4c1c3ac60d763cf5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a504012e3872d3e8e4c1c3ac60d763cf5">LoadBalancer</a> (double lbs, std::shared_ptr&lt; <a class="el" href="classFieldContainer.html">FieldContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &amp;fc, std::shared_ptr&lt; <a class="el" href="classParticleContainer.html">ParticleContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &amp;pc, std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt; &amp;fs)</td></tr>
+<tr class="memitem:a504012e3872d3e8e4c1c3ac60d763cf5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a504012e3872d3e8e4c1c3ac60d763cf5">LoadBalancer</a> (double lbs, std::shared_ptr&lt; <a class="el" href="classFieldContainer.html">FieldContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &amp;fc, std::shared_ptr&lt; <a class="el" href="classParticleContainer.html">ParticleContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; &amp;pc, std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt; &amp;fs)</td></tr>
 <tr class="separator:a504012e3872d3e8e4c1c3ac60d763cf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a373bf388af6d803376989c89b7168945"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a373bf388af6d803376989c89b7168945">~LoadBalancer</a> ()</td></tr>
 <tr class="separator:a373bf388af6d803376989c89b7168945"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,9 +142,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad078ad9a5070eaf9b3a9cc5927eb9529"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d445e49e8e61bdc06d83b2a8cd114e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a2d445e49e8e61bdc06d83b2a8cd114e1">setParticleContainer</a> (std::shared_ptr&lt; <a class="el" href="classParticleContainer.html">ParticleContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt; pc)</td></tr>
 <tr class="separator:a2d445e49e8e61bdc06d83b2a8cd114e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0bc5a9c6fb9a7715f8b6efdc784fb3e0"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a0bc5a9c6fb9a7715f8b6efdc784fb3e0">getFieldSolver</a> () const</td></tr>
+<tr class="memitem:a0bc5a9c6fb9a7715f8b6efdc784fb3e0"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a0bc5a9c6fb9a7715f8b6efdc784fb3e0">getFieldSolver</a> () const</td></tr>
 <tr class="separator:a0bc5a9c6fb9a7715f8b6efdc784fb3e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6f7e0be0842b7fba74868f8892e8eda"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#ad6f7e0be0842b7fba74868f8892e8eda">setFieldSolver</a> (std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt; fs)</td></tr>
+<tr class="memitem:ad6f7e0be0842b7fba74868f8892e8eda"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#ad6f7e0be0842b7fba74868f8892e8eda">setFieldSolver</a> (std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt; fs)</td></tr>
 <tr class="separator:ad6f7e0be0842b7fba74868f8892e8eda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8325fd83a08b6277b05b991e6566fe1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#ac8325fd83a08b6277b05b991e6566fe1">updateLayout</a> (<a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *fl, <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *mesh, bool &amp;isFirstRepartition)</td></tr>
 <tr class="separator:ac8325fd83a08b6277b05b991e6566fe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,7 +154,82 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab56c94a5cef088d5fe3a3d1c4a01be3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a762ed77842ae707f0a6233e5552cfbe4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a762ed77842ae707f0a6233e5552cfbe4">balance</a> (<a class="el" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> totalP, const unsigned int nstep)</td></tr>
 <tr class="separator:a762ed77842ae707f0a6233e5552cfbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:aa2967628a0a69669d633d990e89d01c5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#aa2967628a0a69669d633d990e89d01c5">Base</a> = <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
+<tr class="separator:aa2967628a0a69669d633d990e89d01c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a966eb178583f8d9c55a85f5b354a7e49"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> = <a class="el" href="classippl_1_1FieldSolverBase.html">ippl::FieldSolverBase</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
+<tr class="separator:a966eb178583f8d9c55a85f5b354a7e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a1737ae1a9d84ec9d9a811eb22385cc2c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a1737ae1a9d84ec9d9a811eb22385cc2c">loadbalancethreshold_m</a></td></tr>
+<tr class="separator:a1737ae1a9d84ec9d9a811eb22385cc2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bd37f97f198725af332ac1f44c5e729"><td class="memItemLeft" align="right" valign="top"><a class="el" href="datatypes_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a2bd37f97f198725af332ac1f44c5e729">rho_m</a></td></tr>
+<tr class="separator:a2bd37f97f198725af332ac1f44c5e729"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5133cb8de360d8b9b9ef22883e77dc46"><td class="memItemLeft" align="right" valign="top"><a class="el" href="datatypes_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a5133cb8de360d8b9b9ef22883e77dc46">E_m</a></td></tr>
+<tr class="separator:a5133cb8de360d8b9b9ef22883e77dc46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7da2daa104b56c4cd797b704824022f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a7da2daa104b56c4cd797b704824022f4">phi_m</a></td></tr>
+<tr class="separator:a7da2daa104b56c4cd797b704824022f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3440302b86803a29ab06a964c010aee"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classParticleContainer.html">ParticleContainer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#ae3440302b86803a29ab06a964c010aee">pc_m</a></td></tr>
+<tr class="separator:ae3440302b86803a29ab06a964c010aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7744ba558bbd97abdd0bdf8ec8c65dc"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#ac7744ba558bbd97abdd0bdf8ec8c65dc">fs_m</a></td></tr>
+<tr class="separator:ac7744ba558bbd97abdd0bdf8ec8c65dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a764df62f6e066b9f84902c245d2792e8"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#a764df62f6e066b9f84902c245d2792e8">loadbalancefreq_m</a></td></tr>
+<tr class="separator:a764df62f6e066b9f84902c245d2792e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb170245a245b6378f0a0e641a5d6b05"><td class="memItemLeft" align="right" valign="top"><a class="el" href="datatypes_8h.html#a9675e144be6d4d20c5b740fd8b7d0c83">ORB</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLoadBalancer.html#afb170245a245b6378f0a0e641a5d6b05">orb</a></td></tr>
+<tr class="separator:afb170245a245b6378f0a0e641a5d6b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aa2967628a0a69669d633d990e89d01c5" name="aa2967628a0a69669d633d990e89d01c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2967628a0a69669d633d990e89d01c5">&#9670;&#160;</a></span>Base</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::Base =  <a class="el" href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a>&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a966eb178583f8d9c55a85f5b354a7e49" name="a966eb178583f8d9c55a85f5b354a7e49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a966eb178583f8d9c55a85f5b354a7e49">&#9670;&#160;</a></span>FieldSolver_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::FieldSolver_t =  <a class="el" href="classippl_1_1FieldSolverBase.html">ippl::FieldSolverBase</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a504012e3872d3e8e4c1c3ac60d763cf5" name="a504012e3872d3e8e4c1c3ac60d763cf5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a504012e3872d3e8e4c1c3ac60d763cf5">&#9670;&#160;</a></span>LoadBalancer()</h2>
@@ -166,7 +263,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>fs</em>&#160;</td>
         </tr>
         <tr>
@@ -289,7 +386,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt; <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getFieldSolver </td>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt; <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getFieldSolver </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -536,7 +633,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         <tr>
           <td class="memname">void <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::setFieldSolver </td>
           <td>(</td>
-          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">FieldSolver_t</a> &gt;&#160;</td>
+          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a> &gt;&#160;</td>
           <td class="paramname"><em>fs</em></td><td>)</td>
           <td></td>
         </tr>
@@ -700,6 +797,199 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a5133cb8de360d8b9b9ef22883e77dc46" name="a5133cb8de360d8b9b9ef22883e77dc46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5133cb8de360d8b9b9ef22883e77dc46">&#9670;&#160;</a></span>E_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="datatypes_8h.html#a0886db4e73ff70ec630296972a48fbe0">VField_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;* <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::E_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac7744ba558bbd97abdd0bdf8ec8c65dc" name="ac7744ba558bbd97abdd0bdf8ec8c65dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7744ba558bbd97abdd0bdf8ec8c65dc">&#9670;&#160;</a></span>fs_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classLoadBalancer.html#a966eb178583f8d9c55a85f5b354a7e49">FieldSolver_t</a>&gt; <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::fs_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a764df62f6e066b9f84902c245d2792e8" name="a764df62f6e066b9f84902c245d2792e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a764df62f6e066b9f84902c245d2792e8">&#9670;&#160;</a></span>loadbalancefreq_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::loadbalancefreq_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1737ae1a9d84ec9d9a811eb22385cc2c" name="a1737ae1a9d84ec9d9a811eb22385cc2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1737ae1a9d84ec9d9a811eb22385cc2c">&#9670;&#160;</a></span>loadbalancethreshold_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::loadbalancethreshold_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afb170245a245b6378f0a0e641a5d6b05" name="afb170245a245b6378f0a0e641a5d6b05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb170245a245b6378f0a0e641a5d6b05">&#9670;&#160;</a></span>orb</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="datatypes_8h.html#a9675e144be6d4d20c5b740fd8b7d0c83">ORB</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::orb</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae3440302b86803a29ab06a964c010aee" name="ae3440302b86803a29ab06a964c010aee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3440302b86803a29ab06a964c010aee">&#9670;&#160;</a></span>pc_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classParticleContainer.html">ParticleContainer</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt; <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::pc_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7da2daa104b56c4cd797b704824022f4" name="a7da2daa104b56c4cd797b704824022f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7da2daa104b56c4cd797b704824022f4">&#9670;&#160;</a></span>phi_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;* <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::phi_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2bd37f97f198725af332ac1f44c5e729" name="a2bd37f97f198725af332ac1f44c5e729"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bd37f97f198725af332ac1f44c5e729">&#9670;&#160;</a></span>rho_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="datatypes_8h.html#a1ebebd69981b8926f65d22ceb1e9bb27">Field_t</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;* <a class="el" href="classLoadBalancer.html">LoadBalancer</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::rho_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

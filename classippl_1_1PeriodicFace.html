@@ -84,6 +84,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1PeriodicFace-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::PeriodicFace&lt; Field &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,8 +98,8 @@ Inheritance diagram for ippl::PeriodicFace&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1PeriodicFace__inherit__graph.png" border="0" usemap="#aippl_1_1PeriodicFace_3_01Field_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1PeriodicFace_3_01Field_01_4_inherit__map" id="aippl_1_1PeriodicFace_3_01Field_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,269,184,412"/>
-<area shape="rect" href="classippl_1_1detail_1_1BCondBase.html" title=" " alt="" coords="5,5,184,221"/>
+<area shape="rect" title=" " alt="" coords="5,284,184,471"/>
+<area shape="rect" href="classippl_1_1detail_1_1BCondBase.html" title=" " alt="" coords="5,5,184,236"/>
 </map>
 </div>
 <div class="dynheader">
@@ -104,19 +107,19 @@ Collaboration diagram for ippl::PeriodicFace&lt; Field &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1PeriodicFace__coll__graph.png" border="0" usemap="#aippl_1_1PeriodicFace_3_01Field_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1PeriodicFace_3_01Field_01_4_coll__map" id="aippl_1_1PeriodicFace_3_01Field_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,269,184,412"/>
-<area shape="rect" href="classippl_1_1detail_1_1BCondBase.html" title=" " alt="" coords="5,5,184,221"/>
+<area shape="rect" title=" " alt="" coords="5,284,184,471"/>
+<area shape="rect" href="classippl_1_1detail_1_1BCondBase.html" title=" " alt="" coords="5,5,184,236"/>
 </map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aa270a3b654bc5c6151223fc9d1b0f111"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#aa270a3b654bc5c6151223fc9d1b0f111">face_neighbor_type</a> = std::array&lt; std::vector&lt; int &gt;, 2 *Dim &gt;</td></tr>
+<tr class="memitem:aa270a3b654bc5c6151223fc9d1b0f111"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#aa270a3b654bc5c6151223fc9d1b0f111">face_neighbor_type</a> = std::array&lt; std::vector&lt; int &gt;, 2 *<a class="el" href="classippl_1_1PeriodicFace.html#aef9aee00d1ecc954e3dc6e2162c8f81a">Dim</a> &gt;</td></tr>
 <tr class="separator:aa270a3b654bc5c6151223fc9d1b0f111"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aade6046494a27ff3f7dda57dfe963e0e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#aade6046494a27ff3f7dda57dfe963e0e">Layout_t</a> = typename <a class="el" href="classippl_1_1detail_1_1BCondBase.html">detail::BCondBase</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::Layout_t</td></tr>
 <tr class="separator:aade6046494a27ff3f7dda57dfe963e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classippl_1_1detail_1_1BCondBase"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classippl_1_1detail_1_1BCondBase')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classippl_1_1detail_1_1BCondBase.html">ippl::detail::BCondBase&lt; Field &gt;</a></td></tr>
-<tr class="memitem:acf7c09bfcb721f95b92844e1b25e5a2d inherit pub_types_classippl_1_1detail_1_1BCondBase"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#acf7c09bfcb721f95b92844e1b25e5a2d">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt;</td></tr>
+<tr class="memitem:acf7c09bfcb721f95b92844e1b25e5a2d inherit pub_types_classippl_1_1detail_1_1BCondBase"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#acf7c09bfcb721f95b92844e1b25e5a2d">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1detail_1_1BCondBase.html#a6e99ae1efb7dfa213b16ed42f9bf3bdb">Dim</a> &gt;</td></tr>
 <tr class="separator:acf7c09bfcb721f95b92844e1b25e5a2d inherit pub_types_classippl_1_1detail_1_1BCondBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -153,6 +156,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6604c9decda07fd6fb286ba45016cd10 inherit pub_methods_classippl_1_1detail_1_1BCondBase"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1BCondBase.html#a6604c9decda07fd6fb286ba45016cd10">changesPhysicalCells</a> () const</td></tr>
 <tr class="separator:a6604c9decda07fd6fb286ba45016cd10 inherit pub_methods_classippl_1_1detail_1_1BCondBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a3ea2e84d2a3a4a2ea5a28968a2e78da5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#a3ea2e84d2a3a4a2ea5a28968a2e78da5">T</a> = typename <a class="el" href="classippl_1_1BareField.html#a2fb15a61aa1f2751015b7e4f42d54ddf">Field::value_type</a></td></tr>
+<tr class="separator:a3ea2e84d2a3a4a2ea5a28968a2e78da5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a2f5e6baa6e3ed2af7de847aef30c4dd1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1PeriodicFace.html#aa270a3b654bc5c6151223fc9d1b0f111">face_neighbor_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#a2f5e6baa6e3ed2af7de847aef30c4dd1">faceNeighbors_m</a></td></tr>
+<tr class="separator:a2f5e6baa6e3ed2af7de847aef30c4dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa033321d563249f494cdfb1e7717928c"><td class="memItemLeft" align="right" valign="top">Field::halo_type::databuffer_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#aa033321d563249f494cdfb1e7717928c">haloData_m</a></td></tr>
+<tr class="separator:aa033321d563249f494cdfb1e7717928c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:aef9aee00d1ecc954e3dc6e2162c8f81a"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PeriodicFace.html#aef9aee00d1ecc954e3dc6e2162c8f81a">Dim</a> = <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a></td></tr>
+<tr class="separator:aef9aee00d1ecc954e3dc6e2162c8f81a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classippl_1_1detail_1_1BCondBase"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classippl_1_1detail_1_1BCondBase')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classippl_1_1detail_1_1BCondBase.html">ippl::detail::BCondBase&lt; Field &gt;</a></td></tr>
@@ -171,7 +191,7 @@ Additional Inherited Members</h2></td></tr>
 template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::face_neighbor_type =  std::array&lt;std::vector&lt;int&gt;, 2 * Dim&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::face_neighbor_type =  std::array&lt;std::vector&lt;int&gt;, 2 * <a class="el" href="classippl_1_1PeriodicFace.html#aef9aee00d1ecc954e3dc6e2162c8f81a">Dim</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -190,6 +210,30 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
           <td class="memname">using <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::Layout_t =  typename <a class="el" href="classippl_1_1detail_1_1BCondBase.html">detail::BCondBase</a>&lt;<a class="el" href="classippl_1_1Field.html">Field</a>&gt;::Layout_t</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3ea2e84d2a3a4a2ea5a28968a2e78da5" name="a3ea2e84d2a3a4a2ea5a28968a2e78da5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ea2e84d2a3a4a2ea5a28968a2e78da5">&#9670;&#160;</a></span>T</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">::T</a> =  typename <a class="el" href="classippl_1_1BareField.html#a2fb15a61aa1f2751015b7e4f42d54ddf">Field::value_type</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -370,6 +414,79 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classippl_1_1detail_1_1BCondBase.html#aff7d1017c4d6a4c2b90509ac26cf7245">ippl::detail::BCondBase&lt; Field &gt;</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="aef9aee00d1ecc954e3dc6e2162c8f81a" name="aef9aee00d1ecc954e3dc6e2162c8f81a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef9aee00d1ecc954e3dc6e2162c8f81a">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::Dim = <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2f5e6baa6e3ed2af7de847aef30c4dd1" name="a2f5e6baa6e3ed2af7de847aef30c4dd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f5e6baa6e3ed2af7de847aef30c4dd1">&#9670;&#160;</a></span>faceNeighbors_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1PeriodicFace.html#aa270a3b654bc5c6151223fc9d1b0f111">face_neighbor_type</a> <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::faceNeighbors_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa033321d563249f494cdfb1e7717928c" name="aa033321d563249f494cdfb1e7717928c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa033321d563249f494cdfb1e7717928c">&#9670;&#160;</a></span>haloData_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Field::halo_type::databuffer_type <a class="el" href="classippl_1_1PeriodicFace.html">ippl::PeriodicFace</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt;::haloData_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

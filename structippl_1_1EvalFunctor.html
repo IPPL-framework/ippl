@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.5"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>IPPL (Independent Parallel Particle Layer): ippl::EvalFunctor&lt; Tlhs, Dim, numElemDOFs &gt; Struct Template Reference</title>
+<title>IPPL (Independent Parallel Particle Layer): ippl::EvalFunctor&lt; T, Dim, numElementDOFs &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -85,17 +85,20 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structippl_1_1EvalFunctor-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">ippl::EvalFunctor&lt; Tlhs, Dim, numElemDOFs &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">ippl::EvalFunctor&lt; T, Dim, numElementDOFs &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="FEMPoissonSolver_8h_source.html">FEMPoissonSolver.h</a>&gt;</code></p>
+<p>Representation of the lhs of the problem we are trying to solve.  
+ <a href="structippl_1_1EvalFunctor.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="FEMMaxwellDiffusionSolver_8h_source.html">FEMMaxwellDiffusionSolver.h</a>&gt;</code></p>
 <div class="dynheader">
-Collaboration diagram for ippl::EvalFunctor&lt; Tlhs, Dim, numElemDOFs &gt;:</div>
+Collaboration diagram for ippl::EvalFunctor&lt; T, Dim, numElementDOFs &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="structippl_1_1EvalFunctor__coll__graph.png" border="0" usemap="#aippl_1_1EvalFunctor_3_01Tlhs_00_01Dim_00_01numElemDOFs_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="aippl_1_1EvalFunctor_3_01Tlhs_00_01Dim_00_01numElemDOFs_01_4_coll__map" id="aippl_1_1EvalFunctor_3_01Tlhs_00_01Dim_00_01numElemDOFs_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,447,192,575"/>
+<div class="center"><img src="structippl_1_1EvalFunctor__coll__graph.png" border="0" usemap="#aippl_1_1EvalFunctor_3_01T_00_01Dim_00_01numElementDOFs_01_4_coll__map" alt="Collaboration graph"/></div>
+<map name="aippl_1_1EvalFunctor_3_01T_00_01Dim_00_01numElementDOFs_01_4_coll__map" id="aippl_1_1EvalFunctor_3_01T_00_01Dim_00_01numElementDOFs_01_4_coll__map">
+<area shape="rect" title="Representation of the lhs of the problem we are trying to solve." alt="" coords="5,447,192,619"/>
 <area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="33,139,164,384"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="23,5,175,89"/>
 </map>
@@ -103,36 +106,100 @@ Collaboration diagram for ippl::EvalFunctor&lt; Tlhs, Dim, numElemDOFs &gt;:</di
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a2da6b5bb8e49b7ec8062adc4aeb08e2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a2da6b5bb8e49b7ec8062adc4aeb08e2a">EvalFunctor</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html#af29be144faec6c03c07f07d80db1ada2">DPhiInvT</a>, Tlhs <a class="el" href="structippl_1_1EvalFunctor.html#a68dbb247861a2a5f11db6601e2633a46">absDetDPhi</a>)</td></tr>
-<tr class="separator:a2da6b5bb8e49b7ec8062adc4aeb08e2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69bc9443b3f584297bbc0a77be6c66e1"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a69bc9443b3f584297bbc0a77be6c66e1">operator()</a> (const size_t &amp;i, const size_t &amp;j, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElemDOFs &gt; &amp;grad_b_q_k) const</td></tr>
-<tr class="separator:a69bc9443b3f584297bbc0a77be6c66e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2da6b5bb8e49b7ec8062adc4aeb08e2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a2da6b5bb8e49b7ec8062adc4aeb08e2a">EvalFunctor</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html#af29be144faec6c03c07f07d80db1ada2">DPhiInvT</a>, Tlhs <a class="el" href="structippl_1_1EvalFunctor.html#a68dbb247861a2a5f11db6601e2633a46">absDetDPhi</a>)</td></tr>
-<tr class="separator:a2da6b5bb8e49b7ec8062adc4aeb08e2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69bc9443b3f584297bbc0a77be6c66e1"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a69bc9443b3f584297bbc0a77be6c66e1">operator()</a> (const size_t &amp;i, const size_t &amp;j, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElemDOFs &gt; &amp;grad_b_q_k) const</td></tr>
-<tr class="separator:a69bc9443b3f584297bbc0a77be6c66e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9bbe5661a7ca04ea7c04dd2e4a702c2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#ae9bbe5661a7ca04ea7c04dd2e4a702c2">EvalFunctor</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html#ac35ef5534d90b558fac11ba00fbd1416">DPhiInvT</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">absDetDPhi</a>)</td></tr>
+<tr class="memdesc:ae9bbe5661a7ca04ea7c04dd2e4a702c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="structippl_1_1EvalFunctor.html#ae9bbe5661a7ca04ea7c04dd2e4a702c2">More...</a><br /></td></tr>
+<tr class="separator:ae9bbe5661a7ca04ea7c04dd2e4a702c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab41f5838c1dfe1db73a498950e1e5623"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION const auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#ab41f5838c1dfe1db73a498950e1e5623">operator()</a> (size_t i, size_t j, const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElementDOFs &gt; &amp;curl_b_q_k, const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElementDOFs &gt; &amp;val_b_q_k) const</td></tr>
+<tr class="memdesc:ab41f5838c1dfe1db73a498950e1e5623"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the evaluation of (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi.  <a href="structippl_1_1EvalFunctor.html#ab41f5838c1dfe1db73a498950e1e5623">More...</a><br /></td></tr>
+<tr class="separator:ab41f5838c1dfe1db73a498950e1e5623"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba432913364e8de235353e07b73d5aba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#aba432913364e8de235353e07b73d5aba">EvalFunctor</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html#ac35ef5534d90b558fac11ba00fbd1416">DPhiInvT</a>, Tlhs <a class="el" href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">absDetDPhi</a>)</td></tr>
+<tr class="separator:aba432913364e8de235353e07b73d5aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ab0bf97043e30e1972f90ef4362a7a4"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a6ab0bf97043e30e1972f90ef4362a7a4">operator()</a> (const size_t &amp;i, const size_t &amp;j, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElemDOFs &gt; &amp;grad_b_q_k) const</td></tr>
+<tr class="separator:a6ab0bf97043e30e1972f90ef4362a7a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba432913364e8de235353e07b73d5aba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#aba432913364e8de235353e07b73d5aba">EvalFunctor</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html#ac35ef5534d90b558fac11ba00fbd1416">DPhiInvT</a>, Tlhs <a class="el" href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">absDetDPhi</a>)</td></tr>
+<tr class="separator:aba432913364e8de235353e07b73d5aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ab0bf97043e30e1972f90ef4362a7a4"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a6ab0bf97043e30e1972f90ef4362a7a4">operator()</a> (const size_t &amp;i, const size_t &amp;j, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElemDOFs &gt; &amp;grad_b_q_k) const</td></tr>
+<tr class="separator:a6ab0bf97043e30e1972f90ef4362a7a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:af29be144faec6c03c07f07d80db1ada2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#af29be144faec6c03c07f07d80db1ada2">DPhiInvT</a></td></tr>
-<tr class="separator:af29be144faec6c03c07f07d80db1ada2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68dbb247861a2a5f11db6601e2633a46"><td class="memItemLeft" align="right" valign="top">const Tlhs&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a68dbb247861a2a5f11db6601e2633a46">absDetDPhi</a></td></tr>
-<tr class="separator:a68dbb247861a2a5f11db6601e2633a46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac35ef5534d90b558fac11ba00fbd1416"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#ac35ef5534d90b558fac11ba00fbd1416">DPhiInvT</a></td></tr>
+<tr class="memdesc:ac35ef5534d90b558fac11ba00fbd1416"><td class="mdescLeft">&#160;</td><td class="mdescRight">The inverse transpose Jacobian.  <a href="structippl_1_1EvalFunctor.html#ac35ef5534d90b558fac11ba00fbd1416">More...</a><br /></td></tr>
+<tr class="separator:ac35ef5534d90b558fac11ba00fbd1416"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e52b64827e061fca9d617441b612f4e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">absDetDPhi</a></td></tr>
+<tr class="memdesc:a4e52b64827e061fca9d617441b612f4e"><td class="mdescLeft">&#160;</td><td class="mdescRight">The determinant of the Jacobian.  <a href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">More...</a><br /></td></tr>
+<tr class="separator:a4e52b64827e061fca9d617441b612f4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9060c2c1e2e5f34d2a3db1ed928026d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#ad9060c2c1e2e5f34d2a3db1ed928026d">DPhiInvT</a></td></tr>
+<tr class="separator:ad9060c2c1e2e5f34d2a3db1ed928026d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e52b64827e061fca9d617441b612f4e"><td class="memItemLeft" align="right" valign="top">const Tlhs&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e">absDetDPhi</a></td></tr>
+<tr class="separator:a4e52b64827e061fca9d617441b612f4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a2da6b5bb8e49b7ec8062adc4aeb08e2a" name="a2da6b5bb8e49b7ec8062adc4aeb08e2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2da6b5bb8e49b7ec8062adc4aeb08e2a">&#9670;&#160;</a></span>EvalFunctor() <span class="overload">[1/2]</span></h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, unsigned Dim, unsigned numElementDOFs&gt;<br />
+struct ippl::EvalFunctor&lt; T, Dim, numElementDOFs &gt;</div><p >Representation of the lhs of the problem we are trying to solve. </p>
+<p >In our case this corresponds to the variational formulation of the curl(curl(E)) + E and is curl(b_i)*curl(b_j) + b_i*b_j.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>The type we are working with. </td></tr>
+    <tr><td class="paramname">Dim</td><td>the dimension of the space. </td></tr>
+    <tr><td class="paramname">numElementDOFs</td><td>the number of DOFs per element that we have. </td></tr>
+  </table>
+  </dd>
+</dl>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ae9bbe5661a7ca04ea7c04dd2e4a702c2" name="ae9bbe5661a7ca04ea7c04dd2e4a702c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9bbe5661a7ca04ea7c04dd2e4a702c2">&#9670;&#160;</a></span>EvalFunctor() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::EvalFunctor </td>
+          <td class="memname"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::EvalFunctor </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
+          <td class="paramname"><em>DPhiInvT</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td>
+          <td class="paramname"><em>absDetDPhi</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructor. </p>
+
+</div>
+</div>
+<a id="aba432913364e8de235353e07b73d5aba" name="aba432913364e8de235353e07b73d5aba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba432913364e8de235353e07b73d5aba">&#9670;&#160;</a></span>EvalFunctor() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::EvalFunctor </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>DPhiInvT</em>, </td>
@@ -158,19 +225,19 @@ template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
 
 </div>
 </div>
-<a id="a2da6b5bb8e49b7ec8062adc4aeb08e2a" name="a2da6b5bb8e49b7ec8062adc4aeb08e2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2da6b5bb8e49b7ec8062adc4aeb08e2a">&#9670;&#160;</a></span>EvalFunctor() <span class="overload">[2/2]</span></h2>
+<a id="aba432913364e8de235353e07b73d5aba" name="aba432913364e8de235353e07b73d5aba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba432913364e8de235353e07b73d5aba">&#9670;&#160;</a></span>EvalFunctor() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::EvalFunctor </td>
+          <td class="memname"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::EvalFunctor </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>DPhiInvT</em>, </td>
@@ -197,19 +264,19 @@ template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a69bc9443b3f584297bbc0a77be6c66e1" name="a69bc9443b3f584297bbc0a77be6c66e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69bc9443b3f584297bbc0a77be6c66e1">&#9670;&#160;</a></span>operator()() <span class="overload">[1/2]</span></h2>
+<a id="a6ab0bf97043e30e1972f90ef4362a7a4" name="a6ab0bf97043e30e1972f90ef4362a7a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ab0bf97043e30e1972f90ef4362a7a4">&#9670;&#160;</a></span>operator()() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION auto <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::operator() </td>
+          <td class="memname">KOKKOS_FUNCTION auto <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>i</em>, </td>
@@ -241,19 +308,19 @@ template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
 
 </div>
 </div>
-<a id="a69bc9443b3f584297bbc0a77be6c66e1" name="a69bc9443b3f584297bbc0a77be6c66e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69bc9443b3f584297bbc0a77be6c66e1">&#9670;&#160;</a></span>operator()() <span class="overload">[2/2]</span></h2>
+<a id="a6ab0bf97043e30e1972f90ef4362a7a4" name="a6ab0bf97043e30e1972f90ef4362a7a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ab0bf97043e30e1972f90ef4362a7a4">&#9670;&#160;</a></span>operator()() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION auto <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::operator() </td>
+          <td class="memname">KOKKOS_FUNCTION auto <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>i</em>, </td>
@@ -282,36 +349,137 @@ template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab41f5838c1dfe1db73a498950e1e5623" name="ab41f5838c1dfe1db73a498950e1e5623"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab41f5838c1dfe1db73a498950e1e5623">&#9670;&#160;</a></span>operator()() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION const auto <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::operator() </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElementDOFs &gt; &amp;&#160;</td>
+          <td class="paramname"><em>curl_b_q_k</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;, numElementDOFs &gt; &amp;&#160;</td>
+          <td class="paramname"><em>val_b_q_k</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the evaluation of (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi. </p>
+<p >This function takes as input the basis function values and their curl for the different DOFs and returns the evaluation of the inner part of the integral of the variational formuation, which corresponds to (curl(b_i)*curl(b_j) + b_i*b_j), but note that we additionally also multiply this with absDetDPhi, which is required by the quadrature rule. In theroy this could also be done outside of this.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>The first DOF index. </td></tr>
+    <tr><td class="paramname">j</td><td>The second DOF index. </td></tr>
+    <tr><td class="paramname">curl_b_q_k</td><td>The curl of the DOFs. </td></tr>
+    <tr><td class="paramname">val_b_q_k</td><td>The values of the DOFs.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>(curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi </dd></dl>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a68dbb247861a2a5f11db6601e2633a46" name="a68dbb247861a2a5f11db6601e2633a46"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68dbb247861a2a5f11db6601e2633a46">&#9670;&#160;</a></span>absDetDPhi</h2>
+<a id="a4e52b64827e061fca9d617441b612f4e" name="a4e52b64827e061fca9d617441b612f4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e52b64827e061fca9d617441b612f4e">&#9670;&#160;</a></span>absDetDPhi <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">const Tlhs <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::absDetDPhi</td>
+          <td class="memname">const Tlhs <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::absDetDPhi</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The determinant of the Jacobian. </p>
+<p >As we have a unirectangular grid it is the same for all the differnt Elements and we therefore have to store it only once. </p>
+
+</div>
+</div>
+<a id="a4e52b64827e061fca9d617441b612f4e" name="a4e52b64827e061fca9d617441b612f4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e52b64827e061fca9d617441b612f4e">&#9670;&#160;</a></span>absDetDPhi <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">const Tlhs <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::absDetDPhi</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="af29be144faec6c03c07f07d80db1ada2" name="af29be144faec6c03c07f07d80db1ada2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af29be144faec6c03c07f07d80db1ada2">&#9670;&#160;</a></span>DPhiInvT</h2>
+<a id="ac35ef5534d90b558fac11ba00fbd1416" name="ac35ef5534d90b558fac11ba00fbd1416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac35ef5534d90b558fac11ba00fbd1416">&#9670;&#160;</a></span>DPhiInvT <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElemDOFs &gt;::DPhiInvT</td>
+          <td class="memname">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::DPhiInvT</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The inverse transpose Jacobian. </p>
+<p >As we have a unirectangular grid it is the same for all the differnt Elements and we therefore have to store it only once. </p>
+
+</div>
+</div>
+<a id="ad9060c2c1e2e5f34d2a3db1ed928026d" name="ad9060c2c1e2e5f34d2a3db1ed928026d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9060c2c1e2e5f34d2a3db1ed928026d">&#9670;&#160;</a></span>DPhiInvT <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned numElementDOFs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;Tlhs, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, numElementDOFs &gt;::DPhiInvT</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -319,6 +487,7 @@ template&lt;typename Tlhs , unsigned Dim, unsigned numElemDOFs&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following files:<ul>
+<li><a class="el" href="FEMMaxwellDiffusionSolver_8h_source.html">FEMMaxwellDiffusionSolver.h</a></li>
 <li><a class="el" href="FEMPoissonSolver_8h_source.html">FEMPoissonSolver.h</a></li>
 <li><a class="el" href="PreconditionedFEMPoissonSolver_8h_source.html">PreconditionedFEMPoissonSolver.h</a></li>
 </ul>

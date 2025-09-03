@@ -1,7 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,53,163,93"/>
-<area shape="rect" id="node2" href="$classippl_1_1FDTDSolverBase.html" title=" " alt="" coords="211,5,371,60"/>
-<area shape="rect" id="node3" href="$classippl_1_1FDTDSolverBase.html" title="Base class for FDTD solvers in the ippl library." alt="" coords="211,84,371,139"/>
-<area shape="rect" id="node4" href="$classippl_1_1NonStandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using a non&#45;standard Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="419,44,613,99"/>
-<area shape="rect" id="node5" href="$classippl_1_1StandardFDTDSolver.html" title="A solver for Maxwell&#39;s equations using the Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="431,123,601,177"/>
+<area shape="rect" id="node1" href="$classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="5,5,259,75"/>
+<area shape="rect" id="node2" href="$classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid." alt="" coords="307,5,503,75"/>
 </map>

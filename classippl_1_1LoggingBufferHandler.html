@@ -84,6 +84,8 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1LoggingBufferHandler-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::LoggingBufferHandler&lt; MemorySpace &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -98,7 +100,7 @@ Inheritance diagram for ippl::LoggingBufferHandler&lt; MemorySpace &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1LoggingBufferHandler__inherit__graph.png" border="0" usemap="#aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_inherit__map" id="aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_inherit__map">
-<area shape="rect" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="5,211,183,397"/>
+<area shape="rect" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="5,211,183,456"/>
 <area shape="rect" href="classippl_1_1BufferHandler.html" title="Interface for memory buffer handling." alt="" coords="27,5,161,163"/>
 </map>
 </div>
@@ -107,7 +109,7 @@ Collaboration diagram for ippl::LoggingBufferHandler&lt; MemorySpace &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1LoggingBufferHandler__coll__graph.png" border="0" usemap="#aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_coll__map" id="aippl_1_1LoggingBufferHandler_3_01MemorySpace_01_4_coll__map">
-<area shape="rect" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="5,211,183,397"/>
+<area shape="rect" title="Decorator class for buffer management that adds logging capabilities to buffer operations." alt="" coords="5,211,183,456"/>
 <area shape="rect" href="classippl_1_1BufferHandler.html" title="Interface for memory buffer handling." alt="" coords="27,5,161,163"/>
 </map>
 </div>
@@ -176,6 +178,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a19865f2b63bf5c537936c94ab6a532d5 inherit pub_methods_classippl_1_1BufferHandler"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1BufferHandler.html#a1cd017a37389455e726b3ea9c97c4cc5">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BufferHandler.html#a19865f2b63bf5c537936c94ab6a532d5">getFreeSize</a> () const =0</td></tr>
 <tr class="memdesc:a19865f2b63bf5c537936c94ab6a532d5 inherit pub_methods_classippl_1_1BufferHandler"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the size of all free buffers.  <a href="classippl_1_1BufferHandler.html#a19865f2b63bf5c537936c94ab6a532d5">More...</a><br /></td></tr>
 <tr class="separator:a19865f2b63bf5c537936c94ab6a532d5 inherit pub_methods_classippl_1_1BufferHandler"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a8d984580e3eb169ba4453198d3068909"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LoggingBufferHandler.html#a8d984580e3eb169ba4453198d3068909">logMethod</a> (const std::string &amp;methodName, const std::map&lt; std::string, std::string &gt; &amp;parameters)</td></tr>
+<tr class="memdesc:a8d984580e3eb169ba4453198d3068909"><td class="mdescLeft">&#160;</td><td class="mdescRight">Records a method call in the log with its parameters.  <a href="classippl_1_1LoggingBufferHandler.html#a8d984580e3eb169ba4453198d3068909">More...</a><br /></td></tr>
+<tr class="separator:a8d984580e3eb169ba4453198d3068909"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a32e5c69ec136ff220aaf7ee8b3d23776"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1BufferHandler.html">BufferHandler</a>&lt; MemorySpace &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LoggingBufferHandler.html#a32e5c69ec136ff220aaf7ee8b3d23776">handler_m</a></td></tr>
+<tr class="memdesc:a32e5c69ec136ff220aaf7ee8b3d23776"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal handler for buffer management.  <a href="classippl_1_1LoggingBufferHandler.html#a32e5c69ec136ff220aaf7ee8b3d23776">More...</a><br /></td></tr>
+<tr class="separator:a32e5c69ec136ff220aaf7ee8b3d23776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb097286e797ffc2cea88cccff7d168a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structippl_1_1LogEntry.html">LogEntry</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LoggingBufferHandler.html#aeb097286e797ffc2cea88cccff7d168a">logEntries_m</a></td></tr>
+<tr class="memdesc:aeb097286e797ffc2cea88cccff7d168a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log entries for buffer operations.  <a href="classippl_1_1LoggingBufferHandler.html#aeb097286e797ffc2cea88cccff7d168a">More...</a><br /></td></tr>
+<tr class="separator:aeb097286e797ffc2cea88cccff7d168a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5b28912287a254458610ac8f683dd19"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LoggingBufferHandler.html#ad5b28912287a254458610ac8f683dd19">rank_m</a></td></tr>
+<tr class="memdesc:ad5b28912287a254458610ac8f683dd19"><td class="mdescLeft">&#160;</td><td class="mdescRight">MPI rank for identifying log sources.  <a href="classippl_1_1LoggingBufferHandler.html#ad5b28912287a254458610ac8f683dd19">More...</a><br /></td></tr>
+<tr class="separator:ad5b28912287a254458610ac8f683dd19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename MemorySpace&gt;<br />
@@ -502,6 +522,133 @@ template&lt;typename MemorySpace &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The size of allocated buffers. </dd></dl>
 
 <p>Implements <a class="el" href="classippl_1_1BufferHandler.html#af5c0989e20211b2c9480bddae51b1548">ippl::BufferHandler&lt; MemorySpace &gt;</a>.</p>
+
+</div>
+</div>
+<a id="a8d984580e3eb169ba4453198d3068909" name="a8d984580e3eb169ba4453198d3068909"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d984580e3eb169ba4453198d3068909">&#9670;&#160;</a></span>logMethod()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1LoggingBufferHandler.html">ippl::LoggingBufferHandler</a>&lt; MemorySpace &gt;::logMethod </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>methodName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::map&lt; std::string, std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>parameters</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Records a method call in the log with its parameters. </p>
+<p >This method creates a log entry with details of the buffer operation, including the method name, parameters, allocated size, free size, memory space, rank, and timestamp.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">methodName</td><td>Name of the method being logged (e.g., "getBuffer"). </td></tr>
+    <tr><td class="paramname">parameters</td><td>A map of parameter names and values for the operation. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a32e5c69ec136ff220aaf7ee8b3d23776" name="a32e5c69ec136ff220aaf7ee8b3d23776"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32e5c69ec136ff220aaf7ee8b3d23776">&#9670;&#160;</a></span>handler_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classippl_1_1BufferHandler.html">BufferHandler</a>&lt;MemorySpace&gt; &gt; <a class="el" href="classippl_1_1LoggingBufferHandler.html">ippl::LoggingBufferHandler</a>&lt; MemorySpace &gt;::handler_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Internal handler for buffer management. </p>
+
+</div>
+</div>
+<a id="aeb097286e797ffc2cea88cccff7d168a" name="aeb097286e797ffc2cea88cccff7d168a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb097286e797ffc2cea88cccff7d168a">&#9670;&#160;</a></span>logEntries_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structippl_1_1LogEntry.html">LogEntry</a>&gt; <a class="el" href="classippl_1_1LoggingBufferHandler.html">ippl::LoggingBufferHandler</a>&lt; MemorySpace &gt;::logEntries_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Log entries for buffer operations. </p>
+
+</div>
+</div>
+<a id="ad5b28912287a254458610ac8f683dd19" name="ad5b28912287a254458610ac8f683dd19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5b28912287a254458610ac8f683dd19">&#9670;&#160;</a></span>rank_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classippl_1_1LoggingBufferHandler.html">ippl::LoggingBufferHandler</a>&lt; MemorySpace &gt;::rank_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>MPI rank for identifying log sources. </p>
 
 </div>
 </div>

@@ -1,7 +1,8 @@
 <map id="ippl::GaussLegendreQuadrature&lt; T, NumNodes1D, ElementType &gt;" name="ippl::GaussLegendreQuadrature&lt; T, NumNodes1D, ElementType &gt;">
-<area shape="rect" id="node1" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="5,963,228,1032"/>
-<area shape="rect" id="node2" href="$classippl_1_1GaussJacobiQuadrature.html" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="5,815,228,913"/>
-<area shape="rect" id="node3" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="17,476,217,765"/>
-<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="12,153,221,384"/>
-<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="31,5,203,104"/>
+<area shape="rect" id="node1" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="76,1049,299,1119"/>
+<area shape="rect" id="node2" href="$classippl_1_1GaussJacobiQuadrature.html" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="76,857,299,1000"/>
+<area shape="rect" id="node3" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="10,476,210,765"/>
+<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="5,153,215,384"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="24,5,196,104"/>
+<area shape="rect" id="node6" title=" " alt="" coords="235,601,295,641"/>
 </map>

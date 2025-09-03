@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1UniformCartesian-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::UniformCartesian&lt; T, Dim &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -95,7 +96,7 @@ Inheritance diagram for ippl::UniformCartesian&lt; T, Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1UniformCartesian__inherit__graph.png" border="0" usemap="#aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_inherit__map" id="aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,284,169,515"/>
+<area shape="rect" title=" " alt="" coords="5,284,169,544"/>
 <area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="15,5,159,236"/>
 </map>
 </div>
@@ -104,8 +105,10 @@ Collaboration diagram for ippl::UniformCartesian&lt; T, Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1UniformCartesian__coll__graph.png" border="0" usemap="#aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_coll__map" id="aippl_1_1UniformCartesian_3_01T_00_01Dim_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,284,169,515"/>
-<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="15,5,159,236"/>
+<area shape="rect" title=" " alt="" coords="17,447,181,692"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="5,153,149,384"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="174,153,325,384"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="163,5,335,104"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -175,6 +178,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab1e208ebe7e6b29b6362463c9f4a6752 inherit pub_methods_classippl_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af869c8e017c4c82492991375af348e53 inherit pub_methods_classippl_1_1Mesh"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#af869c8e017c4c82492991375af348e53">getDeltaVertex</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;ndi) const =0</td></tr>
 <tr class="separator:af869c8e017c4c82492991375af348e53 inherit pub_methods_classippl_1_1Mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:ae5375b16726942bf280ba5eb36edbd34"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1UniformCartesian.html#a555cb2cbe9dea5453993bd5efa0b9b20">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1UniformCartesian.html#ae5375b16726942bf280ba5eb36edbd34">meshSpacing_m</a></td></tr>
+<tr class="separator:ae5375b16726942bf280ba5eb36edbd34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69267eb14147c44f8cd07f54aefe280a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1UniformCartesian.html#a69267eb14147c44f8cd07f54aefe280a">volume_m</a></td></tr>
+<tr class="separator:a69267eb14147c44f8cd07f54aefe280a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -532,6 +542,55 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::updateCellVolume_m</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ae5375b16726942bf280ba5eb36edbd34" name="ae5375b16726942bf280ba5eb36edbd34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5375b16726942bf280ba5eb36edbd34">&#9670;&#160;</a></span>meshSpacing_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1UniformCartesian.html#a555cb2cbe9dea5453993bd5efa0b9b20">vector_type</a> <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::meshSpacing_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a69267eb14147c44f8cd07f54aefe280a" name="a69267eb14147c44f8cd07f54aefe280a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69267eb14147c44f8cd07f54aefe280a">&#9670;&#160;</a></span>volume_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1UniformCartesian.html">ippl::UniformCartesian</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::volume_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

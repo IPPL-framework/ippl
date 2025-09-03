@@ -89,6 +89,8 @@ $(function() {
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1FieldLayout-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FieldLayout&lt; Dim &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -100,8 +102,8 @@ Inheritance diagram for ippl::FieldLayout&lt; Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FieldLayout__inherit__graph.png" border="0" usemap="#aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map" id="aippl_1_1FieldLayout_3_01Dim_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,5,148,353"/>
-<area shape="rect" href="classippl_1_1SubFieldLayout.html" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="5,401,148,588"/>
+<area shape="rect" title=" " alt="" coords="5,5,176,427"/>
+<area shape="rect" href="classippl_1_1SubFieldLayout.html" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="19,475,162,676"/>
 </map>
 </div>
 <div class="dynheader">
@@ -109,10 +111,11 @@ Collaboration diagram for ippl::FieldLayout&lt; Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FieldLayout__coll__graph.png" border="0" usemap="#aippl_1_1FieldLayout_3_01Dim_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FieldLayout_3_01Dim_01_4_coll__map" id="aippl_1_1FieldLayout_3_01Dim_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="149,520,291,839"/>
-<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="5,197,168,457"/>
-<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="25,5,148,148"/>
-<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="192,300,339,355"/>
+<area shape="rect" title=" " alt="" coords="229,636,400,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="81,240,265,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="5,5,139,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="163,57,389,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="289,379,436,434"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -216,6 +219,22 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a000e94613c174702c6d81034ceda703c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18e6ea906d50790af20fb2459759de32"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a18e6ea906d50790af20fb2459759de32">minWidth_m</a> [<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>]</td></tr>
 <tr class="separator:a18e6ea906d50790af20fb2459759de32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:accab47279a4511ae8b61f9302c0f37e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1FieldLayout_1_1bound__type.html">bound_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#accab47279a4511ae8b61f9302c0f37e0">getBounds</a> (const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;nd1, const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;nd2, const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;offset, int nghost)</td></tr>
+<tr class="separator:accab47279a4511ae8b61f9302c0f37e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bdb260a38bde2c9a01da44f1384a911"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a6bdb260a38bde2c9a01da44f1384a911">getPeriodicOffset</a> (const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;nd, const unsigned int d, const int k)</td></tr>
+<tr class="separator:a6bdb260a38bde2c9a01da44f1384a911"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a3224a54502941123db760eb5a81ea7fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#a489d6f8b884f8193807d7704d5e106a6">neighbor_list</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a3224a54502941123db760eb5a81ea7fb">neighbors_m</a></td></tr>
+<tr class="separator:a3224a54502941123db760eb5a81ea7fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34dcef40498e3ec1b64398e0df462bdb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#ab4004e828ab9973447bdc381afa90d69">neighbor_range_list</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a34dcef40498e3ec1b64398e0df462bdb">neighborsSendRange_m</a></td></tr>
+<tr class="separator:a34dcef40498e3ec1b64398e0df462bdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a828e044701a7ada78766fffd2a79caf0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FieldLayout.html#ab4004e828ab9973447bdc381afa90d69">neighbor_range_list</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FieldLayout.html#a828e044701a7ada78766fffd2a79caf0">neighborsRecvRange_m</a></td></tr>
+<tr class="separator:a828e044701a7ada78766fffd2a79caf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a156b68940741d389450ef1d613a287ed" name="a156b68940741d389450ef1d613a287ed"></a>
@@ -616,6 +635,65 @@ template&lt;unsigned Dim&gt; </div>
 
 </div>
 </div>
+<a id="accab47279a4511ae8b61f9302c0f37e0" name="accab47279a4511ae8b61f9302c0f37e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accab47279a4511ae8b61f9302c0f37e0">&#9670;&#160;</a></span>getBounds()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::bound_type <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getBounds </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>nd1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>nd2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>nghost</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >Obtain the bounds to send / receive. The second domain, i.e., nd2, is grown by nghost cells in each dimension in order to figure out the intersecting cells. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">nd1</td><td>either remote or owned domain </td></tr>
+    <tr><td class="paramname">nd2</td><td>either remote or owned domain </td></tr>
+    <tr><td class="paramname">offset</td><td>to map global to local grid point </td></tr>
+    <tr><td class="paramname">nghost</td><td>number of ghost cells per dimension </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a289229f77d5465bd6e38db88fabf00d9" name="a289229f77d5465bd6e38db88fabf00d9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a289229f77d5465bd6e38db88fabf00d9">&#9670;&#160;</a></span>getDeviceLocalDomains()</h2>
 
@@ -824,6 +902,50 @@ template&lt;unsigned Dim&gt; </div>
       </table>
 </div><div class="memdoc">
 <p >Get the domain ranges corresponding to regions that should be sent to neighbor ranks </p><dl class="section return"><dt>Returns</dt><dd>Ranges to send </dd></dl>
+
+</div>
+</div>
+<a id="a6bdb260a38bde2c9a01da44f1384a911" name="a6bdb260a38bde2c9a01da44f1384a911"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bdb260a38bde2c9a01da44f1384a911">&#9670;&#160;</a></span>getPeriodicOffset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getPeriodicOffset </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FieldLayout.html#ac0e42dbf29d3b220b0652cb8559f7a4d">NDIndex_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>nd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned int&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>k</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -1141,6 +1263,78 @@ template&lt;unsigned Dim&gt; </div>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3224a54502941123db760eb5a81ea7fb" name="a3224a54502941123db760eb5a81ea7fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3224a54502941123db760eb5a81ea7fb">&#9670;&#160;</a></span>neighbors_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#a489d6f8b884f8193807d7704d5e106a6">neighbor_list</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::neighbors_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a828e044701a7ada78766fffd2a79caf0" name="a828e044701a7ada78766fffd2a79caf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a828e044701a7ada78766fffd2a79caf0">&#9670;&#160;</a></span>neighborsRecvRange_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#ab4004e828ab9973447bdc381afa90d69">neighbor_range_list</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::neighborsRecvRange_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a34dcef40498e3ec1b64398e0df462bdb" name="a34dcef40498e3ec1b64398e0df462bdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34dcef40498e3ec1b64398e0df462bdb">&#9670;&#160;</a></span>neighborsSendRange_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FieldLayout.html#ab4004e828ab9973447bdc381afa90d69">neighbor_range_list</a> <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::neighborsSendRange_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

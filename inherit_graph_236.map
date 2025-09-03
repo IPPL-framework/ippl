@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1mpi_1_1getMpiOpImpl.html" title=" " alt="" coords="5,5,164,60"/>
+<area shape="rect" id="node1" href="$classippl_1_1Mesh.html" title=" " alt="" coords="5,84,145,109"/>
+<area shape="rect" id="node2" href="$classippl_1_1UniformCartesian.html" title=" " alt="" coords="193,5,372,31"/>
+<area shape="rect" id="node3" href="$classippl_1_1UniformCartesian.html" title=" " alt="" coords="193,55,372,80"/>
+<area shape="rect" id="node4" href="$classippl_1_1UniformCartesian.html" title=" " alt="" coords="208,105,357,145"/>
+<area shape="rect" id="node5" href="$classippl_1_1UniformCartesian.html" title=" " alt="" coords="208,169,357,209"/>
 </map>

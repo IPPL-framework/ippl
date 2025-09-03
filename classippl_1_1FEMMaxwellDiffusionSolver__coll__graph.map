@@ -1,0 +1,20 @@
+<map id="ippl::FEMMaxwellDiffusionSolver&lt; FieldType &gt;" name="ippl::FEMMaxwellDiffusionSolver&lt; FieldType &gt;">
+<area shape="rect" id="node1" title="A solver for the electric diffusion equation given by &#160;and &#160;using the Nédélec basis functions." alt="" coords="328,1341,533,1587"/>
+<area shape="rect" id="node2" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,997,176,1213"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="23,571,158,758"/>
+<area shape="rect" id="node4" href="$classippl_1_1CG.html" title=" " alt="" coords="200,989,427,1220"/>
+<area shape="rect" id="node5" href="$classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="207,630,369,699"/>
+<area shape="rect" id="node6" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="451,1033,650,1176"/>
+<area shape="rect" id="node7" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="393,520,593,809"/>
+<area shape="rect" id="node8" href="$classippl_1_1Vector.html" title=" " alt="" coords="389,161,598,391"/>
+<area shape="rect" id="node9" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="407,5,579,104"/>
+<area shape="rect" id="node10" title=" " alt="" coords="618,645,678,685"/>
+<area shape="rect" id="node11" href="$classippl_1_1NedelecSpace.html" title=" " alt="" coords="726,931,917,1279"/>
+<area shape="rect" id="node12" href="$classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="703,491,939,839"/>
+<area shape="rect" id="node13" href="$classippl_1_1Vector.html" title=" " alt="" coords="627,153,751,399"/>
+<area shape="rect" id="node14" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="611,13,763,97"/>
+<area shape="rect" id="node15" href="$classippl_1_1Vector.html" title=" " alt="" coords="779,153,922,399"/>
+<area shape="rect" id="node16" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="787,13,939,97"/>
+<area shape="rect" id="node17" href="$classippl_1_1Vector.html" title=" " alt="" coords="963,542,1085,787"/>
+<area shape="rect" id="node18" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="948,234,1100,318"/>
+</map>

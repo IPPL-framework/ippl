@@ -1,9 +1,10 @@
 <map id="ippl::NonStandardFDTDSolver&lt; EMField, SourceField, boundary_conditions &gt;" name="ippl::NonStandardFDTDSolver&lt; EMField, SourceField, boundary_conditions &gt;">
-<area shape="rect" id="node1" title="A solver for Maxwell&#39;s equations using a non&#45;standard Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="171,829,369,957"/>
-<area shape="rect" id="node2" href="$classippl_1_1FDTDSolverBase.html" title="Base class for FDTD solvers in the ippl library." alt="" coords="159,461,381,780"/>
-<area shape="rect" id="node3" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,168,167,369"/>
-<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="191,139,349,399"/>
-<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="191,5,343,89"/>
-<area shape="rect" id="node6" href="$classippl_1_1Vector.html" title=" " alt="" coords="377,146,496,391"/>
-<area shape="rect" id="node7" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="367,5,519,89"/>
+<area shape="rect" id="node1" title="A solver for Maxwell&#39;s equations using a non&#45;standard Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="171,945,369,1073"/>
+<area shape="rect" id="node2" href="$classippl_1_1FDTDSolverBase.html" title="Base class for FDTD solvers in the ippl library." alt="" coords="159,577,381,896"/>
+<area shape="rect" id="node3" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,277,167,493"/>
+<area shape="rect" id="node4" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="19,5,153,192"/>
+<area shape="rect" id="node5" href="$classippl_1_1Vector.html" title=" " alt="" coords="191,255,349,515"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="190,57,342,141"/>
+<area shape="rect" id="node7" href="$classippl_1_1Vector.html" title=" " alt="" coords="380,262,499,507"/>
+<area shape="rect" id="node8" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="366,57,518,141"/>
 </map>

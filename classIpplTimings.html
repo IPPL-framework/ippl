@@ -80,6 +80,9 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classIpplTimings-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">IpplTimings Class Reference</div></div>
 </div><!--header-->
@@ -91,7 +94,8 @@ Collaboration diagram for IpplTimings:</div>
 <div class="dyncontent">
 <div class="center"><img src="classIpplTimings__coll__graph.png" border="0" usemap="#aIpplTimings_coll__map" alt="Collaboration graph"/></div>
 <map name="aIpplTimings_coll__map" id="aIpplTimings_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,108,177"/>
+<area shape="rect" title=" " alt="" coords="5,269,133,485"/>
+<area shape="rect" href="structTiming.html" title=" " alt="" coords="18,5,121,207"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -122,6 +126,27 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a28583a92d84a01e2d8ae6966990025bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acba3089a5be6d565119c0a38c5714d3c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#acba3089a5be6d565119c0a38c5714d3c">pop</a> ()</td></tr>
 <tr class="separator:acba3089a5be6d565119c0a38c5714d3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a4cf9e004ab60e8a62057038dca484ef0"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="structTiming.html#afe7b35e5acb41d6ae5b22bd35f58c356">Timing::TimerList_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a4cf9e004ab60e8a62057038dca484ef0">TimerList_t</a></td></tr>
+<tr class="separator:a4cf9e004ab60e8a62057038dca484ef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a764b03de866882a900429dc5225c9cef"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="structTiming.html#a82f68810d1eeb2d0e35bdd0bbefd6722">Timing::TimerMap_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a764b03de866882a900429dc5225c9cef">TimerMap_t</a></td></tr>
+<tr class="separator:a764b03de866882a900429dc5225c9cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a2eb4bb6dafa14d5f07ee7aafd51b3bff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a2eb4bb6dafa14d5f07ee7aafd51b3bff">IpplTimings</a> ()</td></tr>
+<tr class="separator:a2eb4bb6dafa14d5f07ee7aafd51b3bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15d1021403ec78c959122dd53a597fd0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a15d1021403ec78c959122dd53a597fd0">~IpplTimings</a> ()</td></tr>
+<tr class="separator:a15d1021403ec78c959122dd53a597fd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:aa7c6fd734d549357d9ea86aa5b19ccbd"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structTiming.html">Timing</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#aa7c6fd734d549357d9ea86aa5b19ccbd">instance</a> = new <a class="el" href="structTiming.html">Timing</a>()</td></tr>
+<tr class="separator:aa7c6fd734d549357d9ea86aa5b19ccbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7863d1ecbfebdb87596d5372c94098f5"><td class="memItemLeft" align="right" valign="top">static std::stack&lt; <a class="el" href="structTiming.html">Timing</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a7863d1ecbfebdb87596d5372c94098f5">stashedInstance</a></td></tr>
+<tr class="separator:a7863d1ecbfebdb87596d5372c94098f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a8733ef0d226941ebcf124e7e703e4185" name="a8733ef0d226941ebcf124e7e703e4185"></a>
@@ -138,6 +163,50 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a4cf9e004ab60e8a62057038dca484ef0" name="a4cf9e004ab60e8a62057038dca484ef0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cf9e004ab60e8a62057038dca484ef0">&#9670;&#160;</a></span>TimerList_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef <a class="el" href="structTiming.html#afe7b35e5acb41d6ae5b22bd35f58c356">Timing::TimerList_t</a> <a class="el" href="classIpplTimings.html#a4cf9e004ab60e8a62057038dca484ef0">IpplTimings::TimerList_t</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a764b03de866882a900429dc5225c9cef" name="a764b03de866882a900429dc5225c9cef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a764b03de866882a900429dc5225c9cef">&#9670;&#160;</a></span>TimerMap_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef <a class="el" href="structTiming.html#a82f68810d1eeb2d0e35bdd0bbefd6722">Timing::TimerMap_t</a> <a class="el" href="classIpplTimings.html#a764b03de866882a900429dc5225c9cef">IpplTimings::TimerMap_t</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a06ab8330445cb281b26fa12dbfa2b72c" name="a06ab8330445cb281b26fa12dbfa2b72c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a06ab8330445cb281b26fa12dbfa2b72c">&#9670;&#160;</a></span>TimerRef</h2>
 
@@ -148,6 +217,57 @@ Static Public Member Functions</h2></td></tr>
           <td class="memname">typedef <a class="el" href="structTiming.html#a2881fcf1b47e42626211c7b1fa787f7c">Timing::TimerRef</a> <a class="el" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">IpplTimings::TimerRef</a></td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a2eb4bb6dafa14d5f07ee7aafd51b3bff" name="a2eb4bb6dafa14d5f07ee7aafd51b3bff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eb4bb6dafa14d5f07ee7aafd51b3bff">&#9670;&#160;</a></span>IpplTimings()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IpplTimings::IpplTimings </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a15d1021403ec78c959122dd53a597fd0" name="a15d1021403ec78c959122dd53a597fd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15d1021403ec78c959122dd53a597fd0">&#9670;&#160;</a></span>~IpplTimings()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IpplTimings::~IpplTimings </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -388,6 +508,51 @@ Static Public Member Functions</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="aa7c6fd734d549357d9ea86aa5b19ccbd" name="aa7c6fd734d549357d9ea86aa5b19ccbd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7c6fd734d549357d9ea86aa5b19ccbd">&#9670;&#160;</a></span>instance</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structTiming.html">Timing</a> * IpplTimings::instance = new <a class="el" href="structTiming.html">Timing</a>()</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7863d1ecbfebdb87596d5372c94098f5" name="a7863d1ecbfebdb87596d5372c94098f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7863d1ecbfebdb87596d5372c94098f5">&#9670;&#160;</a></span>stashedInstance</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::stack&lt; <a class="el" href="structTiming.html">Timing</a> * &gt; IpplTimings::stashedInstance</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

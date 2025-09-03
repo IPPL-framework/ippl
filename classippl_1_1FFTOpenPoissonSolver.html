@@ -85,6 +85,9 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1FFTOpenPoissonSolver-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -96,8 +99,8 @@ Inheritance diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;:<
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__inherit__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,343,196,588"/>
-<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="16,5,185,295"/>
+<area shape="rect" title=" " alt="" coords="5,357,196,779"/>
+<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="16,5,185,309"/>
 </map>
 </div>
 <div class="dynheader">
@@ -105,12 +108,36 @@ Collaboration diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__coll__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="49,1051,240,1296"/>
-<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="60,741,229,1001"/>
-<area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="5,470,140,657"/>
-<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="164,448,357,679"/>
-<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="195,168,326,399"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="149,5,372,119"/>
+<area shape="rect" title=" " alt="" coords="1222,2073,1413,2495"/>
+<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="741,1736,910,2011"/>
+<area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="758,1457,893,1644"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="529,1435,722,1666"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="371,1091,501,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="566,775,789,889"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="1099,1091,1229,1365"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="216,1091,347,1365"/>
+<area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="1477,1091,1608,1365"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="377,805,532,859"/>
+<area shape="rect" href="classippl_1_1detail_1_1HaloCells.html" title=" " alt="" coords="818,739,1006,925"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="837,365,987,449"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,64,985,119"/>
+<area shape="rect" href="classippl_1_1FieldLayout.html" title=" " alt="" coords="1224,636,1395,1028"/>
+<area shape="rect" href="classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="1095,240,1279,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="1048,5,1181,177"/>
+<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="1205,57,1432,126"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="1303,379,1449,434"/>
+<area shape="rect" href="classippl_1_1Mesh.html" title=" " alt="" coords="728,1113,872,1343"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="1006,1435,1167,1666"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="287,1428,438,1673"/>
+<area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="1237,1428,1398,1673"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="525,1120,704,1336"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="896,1113,1075,1343"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="5,1113,192,1343"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="1417,1751,1535,1996"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1423,1509,1575,1593"/>
+<area shape="rect" href="classippl_1_1BConds.html" title=" " alt="" coords="1254,1113,1453,1343"/>
+<area shape="rect" href="structippl_1_1detail_1_1FieldBufferData.html" title=" " alt="" coords="1711,1831,1862,1915"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="1737,1523,1893,1578"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -130,21 +157,21 @@ Public Types</h2></td></tr>
 <tr class="separator:a15fc74460aac62a7fab8e27ab1644df2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a883afd7fa98c9d5cfa4bc0d6d373f159"><td class="memItemLeft" align="right" valign="top">typedef FieldLHS::Centering_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a></td></tr>
 <tr class="separator:a883afd7fa98c9d5cfa4bc0d6d373f159"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d2437ef2cbebd076cd8824ef3ce180e"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; int, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4d2437ef2cbebd076cd8824ef3ce180e">IField_t</a></td></tr>
+<tr class="memitem:a4d2437ef2cbebd076cd8824ef3ce180e"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4d2437ef2cbebd076cd8824ef3ce180e">IField_t</a></td></tr>
 <tr class="separator:a4d2437ef2cbebd076cd8824ef3ce180e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05d470b61420bd20a3a22409a512af91"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; Tg, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a05d470b61420bd20a3a22409a512af91">Field_gt</a></td></tr>
+<tr class="memitem:a05d470b61420bd20a3a22409a512af91"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a05d470b61420bd20a3a22409a512af91">Field_gt</a></td></tr>
 <tr class="separator:a05d470b61420bd20a3a22409a512af91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b9f9a30505f8ee186b3d1c869419fd0"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; Kokkos::complex&lt; Tg &gt;, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a></td></tr>
+<tr class="memitem:a7b9f9a30505f8ee186b3d1c869419fd0"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; Kokkos::complex&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a> &gt;, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a></td></tr>
 <tr class="separator:a7b9f9a30505f8ee186b3d1c869419fd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02807aa60e901bd8629f781902261a28"><td class="memItemLeft" align="right" valign="top">typedef FFT_t::ComplexField&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a></td></tr>
 <tr class="separator:a02807aa60e901bd8629f781902261a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af021575093f53ecfbc6b6fff7aa26dd5"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; Trhs, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af021575093f53ecfbc6b6fff7aa26dd5">Vector_t</a></td></tr>
+<tr class="memitem:af021575093f53ecfbc6b6fff7aa26dd5"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af021575093f53ecfbc6b6fff7aa26dd5">Vector_t</a></td></tr>
 <tr class="separator:af021575093f53ecfbc6b6fff7aa26dd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb499a30711631984f4f5fead7441ec2"><td class="memItemLeft" align="right" valign="top">typedef mesh_type::matrix_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#adb499a30711631984f4f5fead7441ec2">Matrix_t</a></td></tr>
 <tr class="separator:adb499a30711631984f4f5fead7441ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#adb499a30711631984f4f5fead7441ec2">Matrix_t</a>, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a></td></tr>
+<tr class="memitem:a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#adb499a30711631984f4f5fead7441ec2">Matrix_t</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a></td></tr>
 <tr class="separator:a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1da3cfc779b9ba307bf2fc5d02d6794"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a></td></tr>
+<tr class="memitem:ab1da3cfc779b9ba307bf2fc5d02d6794"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a></td></tr>
 <tr class="separator:ab1da3cfc779b9ba307bf2fc5d02d6794"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2186e55d614c20a94b161c332338f7ab"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a2186e55d614c20a94b161c332338f7ab">memory_space</a> = typename FieldLHS::memory_space</td></tr>
 <tr class="separator:a2186e55d614c20a94b161c332338f7ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -172,7 +199,7 @@ Public Types</h2></td></tr>
 <tr class="separator:af98f201fc7e3db7b3e4f3fbc105a90c7 inherit pub_types_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65fe3bce48c05b76386f266834825bc8 inherit pub_types_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a65fe3bce48c05b76386f266834825bc8">Trhs</a> = typename FieldRHS::value_type</td></tr>
 <tr class="separator:a65fe3bce48c05b76386f266834825bc8 inherit pub_types_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02066a70332d325a71c0b1269addc266 inherit pub_types_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> = <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, Dim &gt;, Dim, Mesh, <a class="el" href="classCentering.html">Centering</a> &gt;</td></tr>
+<tr class="memitem:a02066a70332d325a71c0b1269addc266 inherit pub_types_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> = <a class="el" href="classippl_1_1Field.html">Field</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Poisson.html#af98f201fc7e3db7b3e4f3fbc105a90c7">Tlhs</a>, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a> &gt;, <a class="el" href="classippl_1_1Poisson.html#a6cdaaf20433f0eee48afcdcd42c5f82e">Dim</a>, <a class="el" href="classippl_1_1Poisson.html#a6c917449c967819efae9ac7c5d4783e3">Mesh</a>, <a class="el" href="classippl_1_1Poisson.html#aa8a60f8481a093aa37499db0bc4798a0">Centering</a> &gt;</td></tr>
 <tr class="separator:a02066a70332d325a71c0b1269addc266 inherit pub_types_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -197,9 +224,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5b32133c36164d4f571297c35b43bc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a17eecbcc51e40e4d6a368af11a2312ef">initializeFields</a> ()</td></tr>
 <tr class="separator:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af84bcae8f94160b47193c7e0f8854671"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af84bcae8f94160b47193c7e0f8854671">communicateVico</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt; size, typename <a class="el" href="classippl_1_1BareField.html#a43ad25370a2216346b1e60c7fa17f27f">CxField_gt::view_type</a> view_g, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt; ldom_g, const int nghost_g, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt; ldom, const int nghost)</td></tr>
+<tr class="memitem:af84bcae8f94160b47193c7e0f8854671"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af84bcae8f94160b47193c7e0f8854671">communicateVico</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; size, typename <a class="el" href="classippl_1_1BareField.html#a43ad25370a2216346b1e60c7fa17f27f">CxField_gt::view_type</a> view_g, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom_g, const int nghost_g, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom, const int nghost)</td></tr>
 <tr class="separator:af84bcae8f94160b47193c7e0f8854671"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a553d9dadb2de488453b08e6328cf2dc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a553d9dadb2de488453b08e6328cf2dc5">communicateVico</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt; size, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view_g, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt; ldom_g, const int nghost_g, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt; ldom, const int nghost)</td></tr>
+<tr class="memitem:a553d9dadb2de488453b08e6328cf2dc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a553d9dadb2de488453b08e6328cf2dc5">communicateVico</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; size, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view_g, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom_g, const int nghost_g, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom, const int nghost)</td></tr>
 <tr class="separator:a553d9dadb2de488453b08e6328cf2dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1Poisson"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1Poisson')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson&lt; FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memitem:a07c4840069a73f2d00cc8be58e3a2839 inherit pub_methods_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a07c4840069a73f2d00cc8be58e3a2839">Poisson</a> ()</td></tr>
@@ -217,7 +244,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a81e7f53b2358fab7696fc56634ee1a3d inherit pub_methods_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3901f32fee80b64b0a1fd25c9965de3 inherit pub_methods_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#ac3901f32fee80b64b0a1fd25c9965de3">setRhs</a> (<a class="el" href="classippl_1_1Poisson.html#a96a91a7da45bb0d881ec749ddfef38e3">rhs_type</a> &amp;rhs)</td></tr>
 <tr class="separator:ac3901f32fee80b64b0a1fd25c9965de3 inherit pub_methods_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e16267dee288ee4af66728c704b1189 inherit pub_methods_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Field.html">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189">getHessian</a> ()</td></tr>
+<tr class="memitem:a2e16267dee288ee4af66728c704b1189 inherit pub_methods_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Poisson.html#a85844e27c27e54cf11b85ed1e206f43a">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189">getHessian</a> ()</td></tr>
 <tr class="separator:a2e16267dee288ee4af66728c704b1189 inherit pub_methods_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adebe4f5b5a6fa6a52390a4f3d9c4ec79 inherit pub_methods_classippl_1_1Poisson"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#adebe4f5b5a6fa6a52390a4f3d9c4ec79">setGradient</a> (<a class="el" href="classippl_1_1Poisson.html#a02066a70332d325a71c0b1269addc266">grad_type</a> &amp;<a class="el" href="namespaceippl.html#a8dcdffd155f407d75bc014ecb729c3dd">grad</a>)</td></tr>
 <tr class="separator:adebe4f5b5a6fa6a52390a4f3d9c4ec79 inherit pub_methods_classippl_1_1Poisson"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -232,6 +259,89 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a7cf24b48678075a176d6350894af37ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ad03385921305b90f7dfe4c0f10c627"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a7ad03385921305b90f7dfe4c0f10c627">setDefaultParameters</a> ()</td></tr>
 <tr class="separator:a7ad03385921305b90f7dfe4c0f10c627"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a4055faad2859d213996e3d8d150db2d8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a> = typename FieldRHS::value_type</td></tr>
+<tr class="separator:a4055faad2859d213996e3d8d150db2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa682906ee3e32d8f41d51bbe24a68903"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> = typename FieldLHS::Mesh_t</td></tr>
+<tr class="separator:aa682906ee3e32d8f41d51bbe24a68903"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0543b83e62bfa3a48770c51de37932b4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a> = typename FieldLHS::value_type::value_type</td></tr>
+<tr class="separator:a0543b83e62bfa3a48770c51de37932b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a03c8b55bd849928aed963810a620192f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></td></tr>
+<tr class="separator:a03c8b55bd849928aed963810a620192f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ce3d326d0c194b64d600d013b77d496"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1ce3d326d0c194b64d600d013b77d496">rho2_mr</a></td></tr>
+<tr class="separator:a1ce3d326d0c194b64d600d013b77d496"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55a85b04073db170a135fae94a303cb2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a55a85b04073db170a135fae94a303cb2">grn_mr</a> = <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></td></tr>
+<tr class="separator:a55a85b04073db170a135fae94a303cb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e2bc290a02de53fd179d6dc34740fe9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4e2bc290a02de53fd179d6dc34740fe9">rho2tr_m</a></td></tr>
+<tr class="separator:a4e2bc290a02de53fd179d6dc34740fe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b344cd77f8439c4a5925e081f568923"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a2b344cd77f8439c4a5925e081f568923">grntr_m</a></td></tr>
+<tr class="separator:a2b344cd77f8439c4a5925e081f568923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf43ef3f87b071e4c5a8b6a3c0ddb12c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#abf43ef3f87b071e4c5a8b6a3c0ddb12c">temp_m</a></td></tr>
+<tr class="separator:abf43ef3f87b071e4c5a8b6a3c0ddb12c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf38b8874fc91f51f913aae689360a45"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4d2437ef2cbebd076cd8824ef3ce180e">IField_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aaf38b8874fc91f51f913aae689360a45">grnIField_m</a> [<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>]</td></tr>
+<tr class="separator:aaf38b8874fc91f51f913aae689360a45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3980e999eab0ae4fd1d91361d3450b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab3980e999eab0ae4fd1d91361d3450b0">hess_m</a></td></tr>
+<tr class="separator:ab3980e999eab0ae4fd1d91361d3450b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9aef562c191ec2bdb1552cb1effdbb54"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9cc56c843b6a193a3c3eeac6e22b7766">FFT_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9aef562c191ec2bdb1552cb1effdbb54">fft_m</a></td></tr>
+<tr class="separator:a9aef562c191ec2bdb1552cb1effdbb54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a213859c381d694fd45e3c498eb1ee82b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a213859c381d694fd45e3c498eb1ee82b">mesh_mp</a></td></tr>
+<tr class="separator:a213859c381d694fd45e3c498eb1ee82b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeff5517115183735d8eb74c8319c3dc5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aeff5517115183735d8eb74c8319c3dc5">layout_mp</a></td></tr>
+<tr class="separator:aeff5517115183735d8eb74c8319c3dc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c403dafc8f4fd3e0d0dbb82f87d5266"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7c403dafc8f4fd3e0d0dbb82f87d5266">mesh2_m</a></td></tr>
+<tr class="separator:a7c403dafc8f4fd3e0d0dbb82f87d5266"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f1264ccadc0fd2917c7a235eee1149c"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a2f1264ccadc0fd2917c7a235eee1149c">layout2_m</a></td></tr>
+<tr class="separator:a2f1264ccadc0fd2917c7a235eee1149c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ab676a1c54742c8e42d1cf7032e2e9c"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a8ab676a1c54742c8e42d1cf7032e2e9c">meshComplex_m</a></td></tr>
+<tr class="separator:a8ab676a1c54742c8e42d1cf7032e2e9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac6cf2737ad70365e50a54ed16086b14"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aac6cf2737ad70365e50a54ed16086b14">layoutComplex_m</a></td></tr>
+<tr class="separator:aac6cf2737ad70365e50a54ed16086b14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19f288300241702d2091831c043b4ed3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a19f288300241702d2091831c043b4ed3">domain_m</a></td></tr>
+<tr class="separator:a19f288300241702d2091831c043b4ed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ee0dc306d513429c3f31977627affe3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a3ee0dc306d513429c3f31977627affe3">domain2_m</a></td></tr>
+<tr class="separator:a3ee0dc306d513429c3f31977627affe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab77be5f7e31ebbd7d747a8948fe9dbec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab77be5f7e31ebbd7d747a8948fe9dbec">domainComplex_m</a></td></tr>
+<tr class="separator:ab77be5f7e31ebbd7d747a8948fe9dbec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a643fcd4cd2588d447ccf541f27eb7884"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a186ddc4f2a74c242d547b350db6ff8bb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a643fcd4cd2588d447ccf541f27eb7884">hr_m</a></td></tr>
+<tr class="separator:a643fcd4cd2588d447ccf541f27eb7884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69321480c4407ca6a39d5542082827c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a69321480c4407ca6a39d5542082827c3">nr_m</a></td></tr>
+<tr class="separator:a69321480c4407ca6a39d5542082827c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1bafe9d868891bb137dfba434d88ad8"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ac1bafe9d868891bb137dfba434d88ad8">alg_m</a></td></tr>
+<tr class="separator:ac1bafe9d868891bb137dfba434d88ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa76013c9e042d480f3d0b2a6bb5c0a97">grnL_m</a></td></tr>
+<tr class="separator:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a848f2919b6140992791313f0e21c4f46"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a848f2919b6140992791313f0e21c4f46">fft4n_m</a></td></tr>
+<tr class="separator:a848f2919b6140992791313f0e21c4f46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aadbc65b6b710ae48785f6a7d18f13b06"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aadbc65b6b710ae48785f6a7d18f13b06">mesh4_m</a></td></tr>
+<tr class="separator:aadbc65b6b710ae48785f6a7d18f13b06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6089ba87c2823464f35425ca66f5b7ae"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a6089ba87c2823464f35425ca66f5b7ae">layout4_m</a></td></tr>
+<tr class="separator:a6089ba87c2823464f35425ca66f5b7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2afbfcccc8f3c7bc2b58581d3469484"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad2afbfcccc8f3c7bc2b58581d3469484">domain4_m</a></td></tr>
+<tr class="separator:ad2afbfcccc8f3c7bc2b58581d3469484"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5eb92487ab7cd78f1368f02dc94ade8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5eb92487ab7cd78f1368f02dc94ade8e">grn2n1_m</a></td></tr>
+<tr class="separator:a5eb92487ab7cd78f1368f02dc94ade8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92757c778dcc50824dab95339715655b"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a92757c778dcc50824dab95339715655b">fft2n1_m</a></td></tr>
+<tr class="separator:a92757c778dcc50824dab95339715655b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a171478835c48414f083fad1246490bd1"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a171478835c48414f083fad1246490bd1">mesh2n1_m</a></td></tr>
+<tr class="separator:a171478835c48414f083fad1246490bd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a946072c758a52eccdd45555e31b508ce"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a946072c758a52eccdd45555e31b508ce">layout2n1_m</a></td></tr>
+<tr class="separator:a946072c758a52eccdd45555e31b508ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33f7f5bcd2c78bdd149774e56a40e6f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a33f7f5bcd2c78bdd149774e56a40e6f4">domain2n1_m</a></td></tr>
+<tr class="separator:a33f7f5bcd2c78bdd149774e56a40e6f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a640c493fab3a2f5e56e5b106aa1559a4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a640c493fab3a2f5e56e5b106aa1559a4">isGradFD_m</a></td></tr>
+<tr class="separator:a640c493fab3a2f5e56e5b106aa1559a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa3ff952aaa0ba903c0e4c1a0a3b3294"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">detail::FieldBufferData</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aaa3ff952aaa0ba903c0e4c1a0a3b3294">fd_m</a></td></tr>
+<tr class="separator:aaa3ff952aaa0ba903c0e4c1a0a3b3294"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a9e2e51a105f0f101dfcbda9140e8f8d5"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> = FieldLHS::dim</td></tr>
+<tr class="separator:a9e2e51a105f0f101dfcbda9140e8f8d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -303,7 +413,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;Kokkos::complex&lt;Tg&gt;, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::CxField_gt</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;Kokkos::complex&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a>&gt;, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::CxField_gt</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -351,7 +461,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;Tg, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::Field_gt</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::Field_gt</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -383,7 +493,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt;Dim&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="datatypes_8h.html#a62775f861ae59098011e0a07b912f0e5">::FieldLayout_t</a></td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="datatypes_8h.html#a62775f861ae59098011e0a07b912f0e5">::FieldLayout_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -399,7 +509,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;int, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::IField_t</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::IField_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -454,6 +564,30 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 
 </div>
 </div>
+<a id="aa682906ee3e32d8f41d51bbe24a68903" name="aa682906ee3e32d8f41d51bbe24a68903"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa682906ee3e32d8f41d51bbe24a68903">&#9670;&#160;</a></span>mesh_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::mesh_type =  typename FieldLHS::Mesh_t</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b" name="a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">&#9670;&#160;</a></span>MField_t</h2>
 
@@ -463,7 +597,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#adb499a30711631984f4f5fead7441ec2">Matrix_t</a>, Dim, mesh_type, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::MField_t</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Field.html">Field</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#adb499a30711631984f4f5fead7441ec2">Matrix_t</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a883afd7fa98c9d5cfa4bc0d6d373f159">Centering</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::MField_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -502,6 +636,54 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 
 </div>
 </div>
+<a id="a0543b83e62bfa3a48770c51de37932b4" name="a0543b83e62bfa3a48770c51de37932b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0543b83e62bfa3a48770c51de37932b4">&#9670;&#160;</a></span>Tg</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::Tg =  typename FieldLHS::value_type::value_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4055faad2859d213996e3d8d150db2d8" name="a4055faad2859d213996e3d8d150db2d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4055faad2859d213996e3d8d150db2d8">&#9670;&#160;</a></span>Trhs</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::Trhs =  typename FieldRHS::value_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af021575093f53ecfbc6b6fff7aa26dd5" name="af021575093f53ecfbc6b6fff7aa26dd5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af021575093f53ecfbc6b6fff7aa26dd5">&#9670;&#160;</a></span>Vector_t</h2>
 
@@ -511,7 +693,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;Trhs, Dim&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="datatypes_8h.html#a716e97cb94129a4800d15dc3d2fa4063">::Vector_t</a></td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="datatypes_8h.html#a716e97cb94129a4800d15dc3d2fa4063">::Vector_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -679,7 +861,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::communicateVico </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>size</em>, </td>
         </tr>
         <tr>
@@ -691,7 +873,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>ldom_g</em>, </td>
         </tr>
         <tr>
@@ -709,7 +891,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>ldom</em>, </td>
         </tr>
         <tr>
@@ -739,7 +921,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::communicateVico </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>size</em>, </td>
         </tr>
         <tr>
@@ -751,7 +933,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>ldom_g</em>, </td>
         </tr>
         <tr>
@@ -769,7 +951,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>ldom</em>, </td>
         </tr>
         <tr>
@@ -959,6 +1141,826 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 <p >Solve the <a class="el" href="classippl_1_1Poisson.html">Poisson</a> problem described by -laplace(lhs) = rhs </p>
 
 <p>Implements <a class="el" href="classippl_1_1Poisson.html#a14fc58bdb49e9e5c9164dc6d39b4382c">ippl::Poisson&lt; FieldLHS, FieldRHS &gt;</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ac1bafe9d868891bb137dfba434d88ad8" name="ac1bafe9d868891bb137dfba434d88ad8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1bafe9d868891bb137dfba434d88ad8">&#9670;&#160;</a></span>alg_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::alg_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9e2e51a105f0f101dfcbda9140e8f8d5" name="a9e2e51a105f0f101dfcbda9140e8f8d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e2e51a105f0f101dfcbda9140e8f8d5">&#9670;&#160;</a></span>Dim</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::Dim = FieldLHS::dim</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3ee0dc306d513429c3f31977627affe3" name="a3ee0dc306d513429c3f31977627affe3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ee0dc306d513429c3f31977627affe3">&#9670;&#160;</a></span>domain2_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::domain2_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a33f7f5bcd2c78bdd149774e56a40e6f4" name="a33f7f5bcd2c78bdd149774e56a40e6f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33f7f5bcd2c78bdd149774e56a40e6f4">&#9670;&#160;</a></span>domain2n1_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::domain2n1_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad2afbfcccc8f3c7bc2b58581d3469484" name="ad2afbfcccc8f3c7bc2b58581d3469484"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2afbfcccc8f3c7bc2b58581d3469484">&#9670;&#160;</a></span>domain4_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::domain4_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a19f288300241702d2091831c043b4ed3" name="a19f288300241702d2091831c043b4ed3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19f288300241702d2091831c043b4ed3">&#9670;&#160;</a></span>domain_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::domain_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab77be5f7e31ebbd7d747a8948fe9dbec" name="ab77be5f7e31ebbd7d747a8948fe9dbec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab77be5f7e31ebbd7d747a8948fe9dbec">&#9670;&#160;</a></span>domainComplex_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::domainComplex_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaa3ff952aaa0ba903c0e4c1a0a3b3294" name="aaa3ff952aaa0ba903c0e4c1a0a3b3294"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa3ff952aaa0ba903c0e4c1a0a3b3294">&#9670;&#160;</a></span>fd_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">detail::FieldBufferData</a>&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fd_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a92757c778dcc50824dab95339715655b" name="a92757c778dcc50824dab95339715655b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92757c778dcc50824dab95339715655b">&#9670;&#160;</a></span>fft2n1_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="classippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft2n1_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a848f2919b6140992791313f0e21c4f46" name="a848f2919b6140992791313f0e21c4f46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a848f2919b6140992791313f0e21c4f46">&#9670;&#160;</a></span>fft4n_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft4n_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9aef562c191ec2bdb1552cb1effdbb54" name="a9aef562c191ec2bdb1552cb1effdbb54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9aef562c191ec2bdb1552cb1effdbb54">&#9670;&#160;</a></span>fft_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9cc56c843b6a193a3c3eeac6e22b7766">FFT_t</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5eb92487ab7cd78f1368f02dc94ade8e" name="a5eb92487ab7cd78f1368f02dc94ade8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5eb92487ab7cd78f1368f02dc94ade8e">&#9670;&#160;</a></span>grn2n1_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::grn2n1_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a55a85b04073db170a135fae94a303cb2" name="a55a85b04073db170a135fae94a303cb2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55a85b04073db170a135fae94a303cb2">&#9670;&#160;</a></span>grn_mr</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&amp; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::grn_mr = <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaf38b8874fc91f51f913aae689360a45" name="aaf38b8874fc91f51f913aae689360a45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf38b8874fc91f51f913aae689360a45">&#9670;&#160;</a></span>grnIField_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4d2437ef2cbebd076cd8824ef3ce180e">IField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::grnIField_m[<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>]</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa76013c9e042d480f3d0b2a6bb5c0a97" name="aa76013c9e042d480f3d0b2a6bb5c0a97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa76013c9e042d480f3d0b2a6bb5c0a97">&#9670;&#160;</a></span>grnL_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::grnL_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2b344cd77f8439c4a5925e081f568923" name="a2b344cd77f8439c4a5925e081f568923"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b344cd77f8439c4a5925e081f568923">&#9670;&#160;</a></span>grntr_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::grntr_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab3980e999eab0ae4fd1d91361d3450b0" name="ab3980e999eab0ae4fd1d91361d3450b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3980e999eab0ae4fd1d91361d3450b0">&#9670;&#160;</a></span>hess_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::hess_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a643fcd4cd2588d447ccf541f27eb7884" name="a643fcd4cd2588d447ccf541f27eb7884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a643fcd4cd2588d447ccf541f27eb7884">&#9670;&#160;</a></span>hr_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a186ddc4f2a74c242d547b350db6ff8bb">vector_type</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::hr_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a640c493fab3a2f5e56e5b106aa1559a4" name="a640c493fab3a2f5e56e5b106aa1559a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a640c493fab3a2f5e56e5b106aa1559a4">&#9670;&#160;</a></span>isGradFD_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::isGradFD_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2f1264ccadc0fd2917c7a235eee1149c" name="a2f1264ccadc0fd2917c7a235eee1149c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f1264ccadc0fd2917c7a235eee1149c">&#9670;&#160;</a></span>layout2_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::layout2_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a946072c758a52eccdd45555e31b508ce" name="a946072c758a52eccdd45555e31b508ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a946072c758a52eccdd45555e31b508ce">&#9670;&#160;</a></span>layout2n1_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::layout2n1_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6089ba87c2823464f35425ca66f5b7ae" name="a6089ba87c2823464f35425ca66f5b7ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6089ba87c2823464f35425ca66f5b7ae">&#9670;&#160;</a></span>layout4_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::layout4_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aeff5517115183735d8eb74c8319c3dc5" name="aeff5517115183735d8eb74c8319c3dc5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeff5517115183735d8eb74c8319c3dc5">&#9670;&#160;</a></span>layout_mp</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a>* <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::layout_mp</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aac6cf2737ad70365e50a54ed16086b14" name="aac6cf2737ad70365e50a54ed16086b14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac6cf2737ad70365e50a54ed16086b14">&#9670;&#160;</a></span>layoutComplex_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab1da3cfc779b9ba307bf2fc5d02d6794">FieldLayout_t</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::layoutComplex_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7c403dafc8f4fd3e0d0dbb82f87d5266" name="a7c403dafc8f4fd3e0d0dbb82f87d5266"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c403dafc8f4fd3e0d0dbb82f87d5266">&#9670;&#160;</a></span>mesh2_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::mesh2_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a171478835c48414f083fad1246490bd1" name="a171478835c48414f083fad1246490bd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a171478835c48414f083fad1246490bd1">&#9670;&#160;</a></span>mesh2n1_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::mesh2n1_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aadbc65b6b710ae48785f6a7d18f13b06" name="aadbc65b6b710ae48785f6a7d18f13b06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aadbc65b6b710ae48785f6a7d18f13b06">&#9670;&#160;</a></span>mesh4_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::mesh4_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a213859c381d694fd45e3c498eb1ee82b" name="a213859c381d694fd45e3c498eb1ee82b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a213859c381d694fd45e3c498eb1ee82b">&#9670;&#160;</a></span>mesh_mp</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>* <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::mesh_mp</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8ab676a1c54742c8e42d1cf7032e2e9c" name="a8ab676a1c54742c8e42d1cf7032e2e9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ab676a1c54742c8e42d1cf7032e2e9c">&#9670;&#160;</a></span>meshComplex_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::meshComplex_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a69321480c4407ca6a39d5542082827c3" name="a69321480c4407ca6a39d5542082827c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69321480c4407ca6a39d5542082827c3">&#9670;&#160;</a></span>nr_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a>&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::nr_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1ce3d326d0c194b64d600d013b77d496" name="a1ce3d326d0c194b64d600d013b77d496"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ce3d326d0c194b64d600d013b77d496">&#9670;&#160;</a></span>rho2_mr</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&amp; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::rho2_mr</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">            <a class="code hl_variable" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></div>
+<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:171</div></div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a4e2bc290a02de53fd179d6dc34740fe9" name="a4e2bc290a02de53fd179d6dc34740fe9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e2bc290a02de53fd179d6dc34740fe9">&#9670;&#160;</a></span>rho2tr_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::rho2tr_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a03c8b55bd849928aed963810a620192f" name="a03c8b55bd849928aed963810a620192f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03c8b55bd849928aed963810a620192f">&#9670;&#160;</a></span>storage_field</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::storage_field</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf43ef3f87b071e4c5a8b6a3c0ddb12c" name="abf43ef3f87b071e4c5a8b6a3c0ddb12c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf43ef3f87b071e4c5a8b6a3c0ddb12c">&#9670;&#160;</a></span>temp_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::temp_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

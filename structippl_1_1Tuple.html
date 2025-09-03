@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structippl_1_1Tuple-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::Tuple&lt; Ts &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -98,7 +99,8 @@ Collaboration diagram for ippl::Tuple&lt; Ts &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1Tuple__coll__graph.png" border="0" usemap="#aippl_1_1Tuple_3_01Ts_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Tuple_3_01Ts_01_4_coll__map" id="aippl_1_1Tuple_3_01Ts_01_4_coll__map">
-<area shape="rect" title="Generic tuple class with various operations." alt="" coords="5,5,157,236"/>
+<area shape="rect" title="Generic tuple class with various operations." alt="" coords="5,123,157,353"/>
+<area shape="rect" href="structippl_1_1TupleImpl.html" title=" " alt="" coords="15,5,148,60"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -194,6 +196,11 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:ad429a48e15fd18e57659a711a1f404ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8020ee76bb71a8d601b7ed0f0b4d480"><td class="memItemLeft" align="right" valign="top">static constexpr std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1Tuple.html#ab8020ee76bb71a8d601b7ed0f0b4d480">size</a> = sizeof...(Ts)</td></tr>
 <tr class="separator:ab8020ee76bb71a8d601b7ed0f0b4d480"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:ac9084695b70c330dd4a85aaa203d7233"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1TupleImpl.html">TupleImpl</a>&lt; 0, sizeof...(Ts), Ts... &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1Tuple.html#ac9084695b70c330dd4a85aaa203d7233">tupleImpl_m</a></td></tr>
+<tr class="separator:ac9084695b70c330dd4a85aaa203d7233"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename... Ts&gt;<br />
@@ -1118,6 +1125,30 @@ template&lt;typename... Ts&gt; </div>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac9084695b70c330dd4a85aaa203d7233" name="ac9084695b70c330dd4a85aaa203d7233"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9084695b70c330dd4a85aaa203d7233">&#9670;&#160;</a></span>tupleImpl_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename... Ts&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structippl_1_1TupleImpl.html">TupleImpl</a>&lt;0, sizeof...(Ts), Ts...&gt; <a class="el" href="structippl_1_1Tuple.html">ippl::Tuple</a>&lt; Ts &gt;::tupleImpl_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

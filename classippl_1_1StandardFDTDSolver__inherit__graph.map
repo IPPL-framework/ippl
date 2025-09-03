@@ -1,5 +1,5 @@
 <map id="ippl::StandardFDTDSolver&lt; EMField, SourceField, boundary_conditions &gt;" name="ippl::StandardFDTDSolver&lt; EMField, SourceField, boundary_conditions &gt;">
-<area shape="rect" id="node1" title="A solver for Maxwell&#39;s equations using the Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="29,651,203,779"/>
-<area shape="rect" id="node2" href="$classippl_1_1FDTDSolverBase.html" title="Base class for FDTD solvers in the ippl library." alt="" coords="5,255,227,603"/>
-<area shape="rect" id="node3" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="35,5,197,207"/>
+<area shape="rect" id="node1" title="A solver for Maxwell&#39;s equations using the Finite&#45;Difference Time&#45;Domain (FDTD) method." alt="" coords="29,680,203,808"/>
+<area shape="rect" id="node2" href="$classippl_1_1FDTDSolverBase.html" title="Base class for FDTD solvers in the ippl library." alt="" coords="5,284,227,632"/>
+<area shape="rect" id="node3" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="35,5,197,236"/>
 </map>

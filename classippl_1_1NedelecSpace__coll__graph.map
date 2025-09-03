@@ -1,0 +1,10 @@
+<map id="ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;" name="ippl::NedelecSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;">
+<area shape="rect" id="node1" title="A class representing a Nedelec space for finite element methods on a structured, rectilinear grid." alt="" coords="233,872,429,1220"/>
+<area shape="rect" id="node2" href="$classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="113,461,349,809"/>
+<area shape="rect" id="node3" href="$classippl_1_1Vector.html" title=" " alt="" coords="25,139,149,384"/>
+<area shape="rect" id="node4" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
+<area shape="rect" id="node5" href="$classippl_1_1Vector.html" title=" " alt="" coords="182,139,325,384"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+<area shape="rect" id="node7" href="$classippl_1_1Vector.html" title=" " alt="" coords="373,513,494,758"/>
+<area shape="rect" id="node8" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="357,219,509,303"/>
+</map>
