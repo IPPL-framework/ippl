@@ -12,7 +12,7 @@
 #   - Enabling compiler flags                → CompilerOptions.cmake
 #   - Version variables or target creation   → Version.cmake / src/
 # -----------------------------------------------------------------------------
-set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.fc-cache")
+set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/.fc-cache")
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)  # opt out of auto-updates
 set(FETCHCONTENT_QUIET ON)
 
@@ -64,7 +64,7 @@ if(IPPL_ENABLE_FFT)
     endif()
 
 
-    if(NOT heffte_FOUND)
+    if(NOT Heffte_FOUND)
       message(STATUS "📦 Heffte ${Heffte_VERSION} not found — fetching")
     if(Heffte_VERSION STREQUAL "master")
       set(_heffte_repo GIT_REPOSITORY https://github.com/icl-utk-edu/heffte.git)

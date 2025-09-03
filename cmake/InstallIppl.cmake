@@ -53,20 +53,20 @@ install(EXPORT ipplTargets
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/ipplConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfig.cmake"
+  "${PROJECT_SOURCE_DIR}/cmake/IPPLConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
     INSTALL_DESTINATION ${IPPL_INSTALL_CMAKEDIR}
 )
 
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/ipplConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfigVersion.cmake"
     DESTINATION ${IPPL_INSTALL_CMAKEDIR}
 )
 
