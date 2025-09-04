@@ -66,7 +66,9 @@ namespace ippl {
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
-        {}
+        {
+            setDefaultParameters();
+        }
 
         PreconditionedFEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
