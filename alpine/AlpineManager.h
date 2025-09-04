@@ -123,11 +123,12 @@ public:
         }
     }
 
-    void gatherFEM() {
-        // TODO: body    
+    void gatherCIC() {
+        gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
-    void gatherCIC() {
+    void gatherFEM() {
+        // TODO: body    
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
@@ -139,27 +140,56 @@ public:
         }
     }
 
-    void scatterFEM() {
-        // TODO: body
-    }
-
     void scatterCIC() {
         Inform m("scatter ");
+
         this->fcontainer_m->getRho() = 0.0;
 
         ippl::ParticleAttrib<double>* q          = &this->pcontainer_m->q;
         typename Base::particle_position_type* R = &this->pcontainer_m->R;
         Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
         double Q                                 = Q_m;
-        Vector_t<double, Dim> rmin               = rmin_m;
-        Vector_t<double, Dim> rmax               = rmax_m;
-        Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q - (*rho).sum()) / Q);
 
+        double relError = std::fabs((Q - (*rho).sum()) / Q);
         m << relError << endl;
 
+        checkChargeConservation(relError, m);
+
+        getDensity(rho);
+    }
+
+    void scatterFEM() {
+        Inform m("scatter ");
+
+        this->fcontainer_m->getRho() = 0.0;
+
+        ippl::ParticleAttrib<double>* q          = &this->pcontainer_m->q;
+        typename Base::particle_position_type* R = &this->pcontainer_m->R;
+        Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
+        double Q                                 = Q_m;
+        size_type localParticles                 = this->pcontainer_m->getLocalNum();
+
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        //TODO: get space (Lagrange) from solver to be able to pass it to interpolate
+
+        //interpolate_from_rhs(*q, *rho, *R, iteration_policy, space);
+
+        scatter(*q, *rho, *R);
+
+        double relError = std::fabs((Q - (*rho).sum()) / Q);
+        m << relError << endl;
+
+        checkChargeConservation(relError, m);
+
+        getDensity(rho);
+    }
+
+    void checkChargeConservation(double& relError, Inform& m) {
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
@@ -174,6 +204,13 @@ public:
                 ippl::Comm->abort();
             }
         }
+    }
+
+    void getDensity(Field_t<Dim>* rho) {
+        Vector_t<double, Dim> rmin               = rmin_m;
+        Vector_t<double, Dim> rmax               = rmax_m;
+        Vector_t<double, Dim> hr                 = hr_m;
+        double Q                                 = Q_m;
 
         double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)            = (*rho) / cellVolume;
