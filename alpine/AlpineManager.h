@@ -13,6 +13,7 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
+#include "FEM/FEMInterpolate.hpp"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -134,12 +135,10 @@ public:
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
-        //TODO: get space (Lagrange) from solver to be able to pass it to interpolate
+        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
 
-        //interpolate_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getE(), 
-        //                      this->pcontainer_m->R, space, policy);
-
-        gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
+        interpolate_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getE(), 
+                              this->pcontainer_m->R, space, iteration_policy);
     }
 
     void par2grid() override {
@@ -185,11 +184,9 @@ public:
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
-        //TODO: get space (Lagrange) from solver to be able to pass it to interpolate
+        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
 
-        //interpolate_from_rhs(*q, *rho, *R, space, iteration_policy);
-
-        scatter(*q, *rho, *R);
+        interpolate_from_rhs(*q, *rho, *R, space, iteration_policy);
 
         double relError = std::fabs((Q - (*rho).sum()) / Q);
         m << relError << endl;

@@ -100,6 +100,13 @@ namespace ippl {
         }
 
         /**
+         * @brief Return the LagrangeSpace object.
+         */
+        LagrangeType& getSpace() {
+            return lagrangeSpace_m;
+        }
+
+        /**
          * @brief Solve the poisson equation using finite element methods.
          * The problem is described by -laplace(lhs) = rhs
          */
