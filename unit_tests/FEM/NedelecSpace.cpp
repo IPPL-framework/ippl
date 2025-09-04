@@ -25,6 +25,7 @@ protected:
 
 public:
     using value_t = T;
+    static constexpr unsigned dim = Dim;
 
     static_assert(Dim == 2 || Dim == 3, "Dim must be 2 or 3");
     static_assert(Order == 1, "Currently only order 1 is supported");
@@ -38,6 +39,8 @@ public:
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
     using Layout               = ippl::FieldLayout<Dim>;
+
+    using NedelecType = ippl::NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>;
 
     NedelecSpaceTest()
         : ref_element()
@@ -61,9 +64,8 @@ public:
     const QuadratureType quadrature;
     Layout layout;
     Layout layoutSmall;
-    const ippl::NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType> nedelecSpace;
-    const ippl::NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
-        nedelecSpaceSmall;
+    const NedelecType nedelecSpace;
+    const NedelecType nedelecSpaceSmall;
 };
 
 
@@ -77,15 +79,20 @@ TYPED_TEST_CASE(NedelecSpaceTest, Tests);
 
 
 TYPED_TEST(NedelecSpaceTest, numLocalDOFS) {
-  if (this->nedelecSpace.dim == 2) {
-    EXPECT_EQ(this->nedelecSpace.numElementDOFs, 4);
+  const auto& nedelecSpace = this->nedelecSpace;
+  int numElementDOFs       = nedelecSpace.numElementDOFs;
+  static constexpr std::size_t dim = TestFixture::dim;
+
+  if (dim == 2) {
+    EXPECT_EQ(numElementDOFs, 4);
   } else{
-    EXPECT_EQ(this->nedelecSpace.numElementDOFs, 12);
+    EXPECT_EQ(numElementDOFs, 12);
   }
 }
 
 TYPED_TEST(NedelecSpaceTest, numGlobalDOFs) {
-    if (this->nedelecSpace.dim == 2) {
+    static constexpr std::size_t dim = TestFixture::dim;
+    if (dim == 2) {
       EXPECT_EQ(this->nedelecSpace.numGlobalDOFs(), 40);
     } else{
       EXPECT_EQ(this->nedelecSpace.numGlobalDOFs(), 300);
@@ -96,8 +103,9 @@ TYPED_TEST(NedelecSpaceTest, numGlobalDOFs) {
 TYPED_TEST(NedelecSpaceTest, getGlobalDOFIndices) {
   // Here we just check some random element and see if it is equivalent to a handcrafted one,
   // probably the simplest way of doing this.
+  static constexpr std::size_t dim = TestFixture::dim;
 
-  if (this->nedelecSpace.dim == 2) {
+  if (dim == 2) {
     auto idxSet = this->nedelecSpace.getGlobalDOFIndices(3);
     EXPECT_EQ(idxSet[0],3);
     EXPECT_EQ(idxSet[1],7);
@@ -109,7 +117,7 @@ TYPED_TEST(NedelecSpaceTest, getGlobalDOFIndices) {
     EXPECT_EQ(idxSet[1],34);
     EXPECT_EQ(idxSet[2],39);
     EXPECT_EQ(idxSet[3],35);
-  } else if (this->nedelecSpaceSmall.dim == 3) {
+  } else if (dim == 3) {
     auto idxSet = this->nedelecSpaceSmall.getGlobalDOFIndices(7);
     EXPECT_EQ(idxSet[0], 27);
     EXPECT_EQ(idxSet[1], 29);
@@ -128,7 +136,8 @@ TYPED_TEST(NedelecSpaceTest, getGlobalDOFIndices) {
 }
 
 TYPED_TEST(NedelecSpaceTest, isDOFOnBoundary) {
-    if (this->nedelecSpace.dim == 2) {
+    static constexpr std::size_t dim = TestFixture::dim;
+    if (dim == 2) {
         // check all the ones which are true
         // south boundary
         EXPECT_TRUE(this->nedelecSpace.isDOFOnBoundary(0));
@@ -235,7 +244,8 @@ TYPED_TEST(NedelecSpaceTest, isDOFOnBoundary) {
 
 
 TYPED_TEST(NedelecSpaceTest, getBoundarySide) {
-  if (this->nedelecSpace.dim == 2) {
+  static constexpr std::size_t dim = TestFixture::dim;
+  if (dim == 2) {
     // check all the ones which are true
     // south boundary
     EXPECT_EQ(this->nedelecSpace.getBoundarySide(0),0);
@@ -336,14 +346,15 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunction) {
     // have this test here. So while it right now might not be the most useful
     // thing, it could become useful in the future.
     
+    static constexpr std::size_t dim = TestFixture::dim;
     using T = typename TestFixture::value_t;
-    using point_t = ippl::Vector<T, this->nedelecSpace.dim>;
+    using point_t = ippl::Vector<T, dim>;
 
     point_t point;
     point_t dif;
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
 
-    if constexpr (this->nedelecSpace.dim == 2) {
+    if constexpr (dim == 2) {
         for (T x = 0; x <= 1; x += 0.05) {
             point[0] = x;
             for (T y = 0; y <= 1; y += 0.05) {
@@ -362,7 +373,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunction) {
 
             }
         }
-    } else if constexpr (this->nedelecSpace.dim == 3) {
+    } else if constexpr (dim == 3) {
         for (T x = 0; x <= 1; x += 0.05) {
             point[0] = x;
             for (T y = 0; y <= 1; y += 0.05) {
@@ -435,13 +446,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunctionCurl) {
     // thing, it could become useful in the future.
     
     using T = typename TestFixture::value_t;
-    using point_t = ippl::Vector<T, this->nedelecSpace.dim>;
+    static constexpr std::size_t dim = TestFixture::dim;
+    using point_t = ippl::Vector<T, dim>;
 
     point_t point;
     point_t dif;
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
 
-    if constexpr (this->nedelecSpace.dim == 2) {
+    if constexpr (dim == 2) {
         for (T x = 0; x <= 1; x += 0.05) {
             point[0] = x;
             for (T y = 0; y <= 1; y += 0.05) {
@@ -464,7 +476,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateRefElementShapeFunctionCurl) {
 
             }
         }
-    } else if constexpr (this->nedelecSpace.dim == 3) {
+    } else if constexpr (dim == 3) {
         for (T x = 0; x <= 1; x += 0.05) {
             point[0] = x;
             for (T y = 0; y <= 1; y += 0.05) {
@@ -541,8 +553,9 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
     // ranks, if more ranks are used the test is skipped.
 
     using T = typename TestFixture::value_t;
+    static constexpr std::size_t dim = TestFixture::dim;
     
-    if constexpr (this->nedelecSpace.dim == 2) {
+    if constexpr (dim == 2) {
         auto vec = this->nedelecSpace.createFEMVector();
         vec = ippl::Comm->rank();
         vec.fillHalo();
@@ -813,7 +826,7 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
         }
     }
 
-    if constexpr (this->nedelecSpace.dim == 3) {
+    if constexpr (dim == 3) {
         // Due to the fact, that for the 3D case we have a lot of values we now
         // do not check all the values in the FEMVector, but only the ones which
         // are involved in the halo exchange operations.
@@ -1225,13 +1238,15 @@ TYPED_TEST(NedelecSpaceTest, createFEMVector) {
 TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
     using T = typename TestFixture::value_t;
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
+    using NedelecType = typename TestFixture::NedelecType;
+    static constexpr std::size_t dim = TestFixture::dim;
     
     if (ippl::Comm->size() ==1) {
-        if (this->nedelecSpace.dim == 2){
+        if (dim == 2){
             auto fModel = this->nedelecSpace.createFEMVector();
             
-            auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpace.dim>>();
-            f = ippl::Vector<T,this->nedelecSpace.dim>(1.);
+            auto f = fModel.template skeletonCopy<ippl::Vector<T,dim>>();
+            f = ippl::Vector<T,dim>(1.);
             
             ippl::FEMVector<T> out = this->nedelecSpace.evaluateLoadVector(f);
 
@@ -1241,14 +1256,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
 
             auto ldom = this->layout.getLocalNDIndex();
             for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) {
-                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> global_dofs =
                     this->nedelecSpace.getGlobalDOFIndices(elementIndex);
 
-                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> vectorIndices =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> vectorIndices =
                     this->nedelecSpace.getFEMVectorDOFIndices(elementIndex, ldom);
 
 
-                for (size_t i = 0; i < this->nedelecSpace.numElementDOFs; ++i) {
+                for (size_t i = 0; i < NedelecType::numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpace.isDOFOnBoundary(I)) {
                         continue;
@@ -1260,11 +1275,11 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
             }
         }
 
-        if (this->nedelecSpaceSmall.dim == 3){
+        if (dim == 3){
             auto fModel = this->nedelecSpaceSmall.createFEMVector();
             
-            auto f = fModel.template skeletonCopy<ippl::Vector<T,this->nedelecSpaceSmall.dim>>();
-            f = ippl::Vector<T,this->nedelecSpaceSmall.dim>(1.);
+            auto f = fModel.template skeletonCopy<ippl::Vector<T,dim>>();
+            f = ippl::Vector<T,dim>(1.);
             
             ippl::FEMVector<T> out = this->nedelecSpaceSmall.evaluateLoadVector(f);
 
@@ -1274,14 +1289,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
 
             auto ldom = this->layoutSmall.getLocalNDIndex();
             for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) {
-                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> global_dofs =
                     this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
 
-                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> vectorIndices =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> vectorIndices =
                     this->nedelecSpaceSmall.getFEMVectorDOFIndices(elementIndex, ldom);
 
 
-                for (size_t i = 0; i < this->nedelecSpaceSmall.numElementDOFs; ++i) {
+                for (size_t i = 0; i < NedelecType::numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
                         continue;
@@ -1301,11 +1316,12 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
 TYPED_TEST(NedelecSpaceTest, evaluateAx) {
     using T         = typename TestFixture::value_t;
     T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
-
+    using NedelecType = typename TestFixture::NedelecType;
+    static constexpr std::size_t dim = TestFixture::dim;
 
     if (ippl::Comm->size() ==1) {
-        if (this->nedelecSpace.dim == 2) {
-            auto f = DummyFunctor<T, this->nedelecSpace.dim, this->nedelecSpace.numElementDOFs>();
+        if (dim == 2) {
+            auto f = DummyFunctor<T, dim, NedelecType::numElementDOFs>();
 
             auto x = this->nedelecSpace.createFEMVector();
             x = 1;
@@ -1317,14 +1333,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
 
             auto ldom = this->layout.getLocalNDIndex();
             for (size_t elementIndex = 0; elementIndex < 20; ++ elementIndex) {
-                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> global_dofs =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> global_dofs =
                     this->nedelecSpace.getGlobalDOFIndices(elementIndex);
 
-                const ippl::Vector<size_t, this->nedelecSpace.numElementDOFs> vectorIndices =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> vectorIndices =
                     this->nedelecSpace.getFEMVectorDOFIndices(elementIndex, ldom);
 
 
-                for (size_t i = 0; i < this->nedelecSpace.numElementDOFs; ++i) {
+                for (size_t i = 0; i < NedelecType::numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpace.isDOFOnBoundary(I)) {
                         continue;
@@ -1334,8 +1350,8 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
                 }
             }
         }
-        if (this->nedelecSpaceSmall.dim == 3) {
-            auto f = DummyFunctor<T, this->nedelecSpaceSmall.dim, this->nedelecSpaceSmall.numElementDOFs>();
+        if (dim == 3) {
+            auto f = DummyFunctor<T, dim, NedelecType::numElementDOFs>();
 
             auto x = this->nedelecSpaceSmall.createFEMVector();
             x = 1;
@@ -1347,14 +1363,14 @@ TYPED_TEST(NedelecSpaceTest, evaluateAx) {
 
             auto ldom = this->layoutSmall.getLocalNDIndex();
             for (size_t elementIndex = 0; elementIndex < 8; ++ elementIndex) {
-                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> global_dofs =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> global_dofs =
                     this->nedelecSpaceSmall.getGlobalDOFIndices(elementIndex);
 
-                const ippl::Vector<size_t, this->nedelecSpaceSmall.numElementDOFs> vectorIndices =
+                const ippl::Vector<size_t, NedelecType::numElementDOFs> vectorIndices =
                     this->nedelecSpaceSmall.getFEMVectorDOFIndices(elementIndex, ldom);
 
 
-                for (size_t i = 0; i < this->nedelecSpaceSmall.numElementDOFs; ++i) {
+                for (size_t i = 0; i < NedelecType::numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
                     if (this->nedelecSpaceSmall.isDOFOnBoundary(I)) {
                         continue;
