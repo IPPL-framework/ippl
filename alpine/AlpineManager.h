@@ -128,7 +128,17 @@ public:
     }
 
     void gatherFEM() {
-        // TODO: body    
+        size_type localParticles                 = this->pcontainer_m->getLocalNum();
+
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        //TODO: get space (Lagrange) from solver to be able to pass it to interpolate
+
+        //interpolate_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getE(), 
+        //                      this->pcontainer_m->R, space, policy);
+
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
@@ -177,7 +187,7 @@ public:
 
         //TODO: get space (Lagrange) from solver to be able to pass it to interpolate
 
-        //interpolate_from_rhs(*q, *rho, *R, iteration_policy, space);
+        //interpolate_from_rhs(*q, *rho, *R, space, iteration_policy);
 
         scatter(*q, *rho, *R);
 
