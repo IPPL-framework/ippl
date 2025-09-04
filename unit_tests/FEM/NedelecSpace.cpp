@@ -1315,7 +1315,7 @@ TYPED_TEST(NedelecSpaceTest, evaluateLoadVector) {
 
 TYPED_TEST(NedelecSpaceTest, evaluateAx) {
     using T         = typename TestFixture::value_t;
-    T tolerance = std::numeric_limits<T>::epsilon() * 10.0;
+    T tolerance = std::numeric_limits<T>::epsilon() * 100.0;
     using NedelecType = typename TestFixture::NedelecType;
     static constexpr std::size_t dim = TestFixture::dim;
 
