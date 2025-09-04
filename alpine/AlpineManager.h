@@ -117,28 +117,11 @@ public:
     }
 
     void grid2par() override { 
-        if (getSolver() == "FEM") {
-            gatherFEM();
-        } else {
-            gatherCIC();
-        }
+        gatherCIC();
     }
 
     void gatherCIC() {
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
-    }
-
-    void gatherFEM() {
-        size_type localParticles                 = this->pcontainer_m->getLocalNum();
-
-        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
-        policy_type iteration_policy(0, localParticles);
-
-        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
-
-        interpolate_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getE(), 
-                              this->pcontainer_m->R, space, iteration_policy);
     }
 
     void par2grid() override {
