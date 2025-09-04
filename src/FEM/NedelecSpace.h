@@ -10,7 +10,7 @@
 #include "FEM/FiniteElementSpace.h"
 #include "FEM/FEMVector.h"
 
-constexpr unsigned getNedelecNumElementDOFs(unsigned Dim, unsigned Order) {
+constexpr unsigned getNedelecNumElementDOFs(unsigned Dim, [[maybe_unused]] unsigned Order) {
     // needs to be constexpr pow function to work at compile time. Kokkos::pow
     // doesn't work.
     return static_cast<unsigned>(static_cast<int>(Dim)*power(2, static_cast<int>(Dim-1)));
