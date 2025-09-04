@@ -10,6 +10,7 @@
 
 #include "Field/Field.h"
 
+#include "Utility/ParameterList.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 
@@ -53,6 +54,14 @@ namespace ippl {
             Bn_mp = &B;
         }
 
+
+        /*!
+         * Merges another parameter set into the solver's parameters, overwriting
+         * existing parameters in case of conflict
+         * @param params Parameter list with desired values
+         */
+        void mergeParameters(const ParameterList& params) { params_m.merge(params); }
+
         /*!
          * Solve the electromagnetic problem (Maxwell's eqs)
          */
@@ -61,6 +70,9 @@ namespace ippl {
         virtual ~Maxwell() {}
 
     protected:
+        // Parameters
+        ParameterList params_m;
+
         // Field for four-current (rho, J)
         SourceField* JN_mp = nullptr;
 

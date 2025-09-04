@@ -4,6 +4,11 @@
 # Adds Maxwell solver header to the IPPL target.
 # -----------------------------------------------------------------------------
 
+
+set (_HDRS
+    Maxwell.h
+    FEMMaxwellDiffusionSolver.h
+)
 target_include_directories(ippl
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

@@ -176,7 +176,7 @@ namespace ippl {
          * @return T - The value of the shape function at the given point
          */
         KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
-                                                          const point_t& localPoint) const override;
+                                                          const point_t& localPoint) const;
 
         /**
          * @brief Evaluate the gradient of the shape function of a local degree of freedom at a
@@ -189,7 +189,7 @@ namespace ippl {
          * point
          */
         KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
-            const size_t& localDOF, const point_t& localPoint) const override;
+            const size_t& localDOF, const point_t& localPoint) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
@@ -241,7 +241,7 @@ namespace ippl {
          *
          * @return FieldRHS - The RHS field containing b
          */
-        void evaluateLoadVector(FieldRHS& field) const override;
+        void evaluateLoadVector(FieldRHS& field) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
