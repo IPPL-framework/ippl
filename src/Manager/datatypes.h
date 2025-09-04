@@ -6,7 +6,7 @@
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/NullSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
-#include "PoissonSolvers/PreconditionedFEMPoissonSolver.h"
+#include "PoissonSolvers/FEMPoissonSolver.h"
 
 // some typedefs
 template <unsigned Dim>
@@ -66,7 +66,7 @@ using OpenSolver_t =
     ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FEMSolver_t = ippl::PreconditionedFEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>; 
+using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>; 
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,

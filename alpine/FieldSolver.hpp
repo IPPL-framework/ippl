@@ -90,7 +90,7 @@ public:
 
             if (ippl::Comm->rank() == 0) {
                 std::stringstream fname;
-                if (this->getStype() == "CG") {
+                if (this->getStype() == "CG" || this->getStype() == "FEM") {
                     fname << "data_CG/CG_";
                 } else {
                     fname << "data_";
@@ -228,10 +228,11 @@ public:
 
     void initFEMSolver() {
         ippl::ParameterList sp;
-        sp.add("solver", "preconditioned");
+        //sp.add("solver", "preconditioned");
         sp.add("output_type", FEMSolver_t<T, Dim>::GRAD);
         sp.add("tolerance", 1e-7);
 
+        /*
         int arg = 0;
 
         int gauss_seidel_inner_iterations;
@@ -269,7 +270,7 @@ public:
         sp.add("richardson_iterations", richardson_iterations);
         sp.add("communication", communication);
         sp.add("ssor_omega", ssor_omega);
-
+        */
         initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
     }
 
