@@ -75,7 +75,7 @@ public:
             int residue = 0;
 
             if (this->getStype() == "FEM") {
-                FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>(this->getSolver())>;
+                FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
                 solver.solve();
 
                 iterations = solver.getIterationCount();
