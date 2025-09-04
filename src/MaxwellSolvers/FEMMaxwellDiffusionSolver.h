@@ -2,7 +2,7 @@
 //   Solves the electric diffusion probelm given by curl(curl(E)) + E = f in 
 //   the domain and n x E = 0 on the boundary.
 
-#ifndef IPPL_FEM_MAXWELL_DIFUSSION_SOLVER_H
+#ifndef IPPL_FEM_MAXWELL_DIFFUSION_SOLVER_H
 #define IPPL_FEM_MAXWELL_DIFFUSION_SOLVER_H
 
 #include "LinearSolvers/PCG.h"
@@ -66,7 +66,7 @@ namespace ippl {
          * 
          * @returns (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi
          */
-        KOKKOS_FUNCTION const auto operator()(size_t i, size_t j,
+        KOKKOS_FUNCTION auto operator()(size_t i, size_t j,
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
             const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
             
@@ -174,7 +174,7 @@ namespace ippl {
 
             // Create the functor object which stores the function we have to
             // solve for the lhs
-            EvalFunctor<T, Dim, this->nedelecSpace_m.numElementDOFs> maxwellDiffusionEval(
+            EvalFunctor<T, Dim, NedelecType::numElementDOFs> maxwellDiffusionEval(
                 DPhiInvT, absDetDPhi);
             
             // The Ax operator
