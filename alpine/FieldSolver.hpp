@@ -228,11 +228,10 @@ public:
 
     void initFEMSolver() {
         ippl::ParameterList sp;
-        //sp.add("solver", "preconditioned");
+        sp.add("solver", "preconditioned");
         sp.add("output_type", FEMSolver_t<T, Dim>::GRAD);
         sp.add("tolerance", 1e-7);
 
-        /*
         int arg = 0;
 
         int gauss_seidel_inner_iterations;
@@ -270,7 +269,7 @@ public:
         sp.add("richardson_iterations", richardson_iterations);
         sp.add("communication", communication);
         sp.add("ssor_omega", ssor_omega);
-        */
+        
         initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
     }
 
