@@ -71,12 +71,21 @@ public:
 
     void runSolver() override {
         if ((this->getStype() == "CG") || (this->getStype() == "PCG" || this->getStype() == "FEM")) {
+            int iterations = 0;
+            int residue = 0;
+
             if (this->getStype() == "FEM") {
-                FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>(this->getSolver());
+                FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>(this->getSolver())>;
                 solver.solve();
+
+                iterations = solver.getIterationCount();
+                residue    = solver.getResidue();
             } else {
                 CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
                 solver.solve();
+
+                iterations = solver.getIterationCount();
+                residue    = solver.getResidue();
             }
 
             if (ippl::Comm->rank() == 0) {
@@ -94,14 +103,13 @@ public:
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
-                int iterations = solver.getIterationCount();
                 // Assume the dummy solve is the first call
                 if (iterations == 0) {
                     log << "residue,iterations" << endl;
                 }
                 // Don't print the dummy solve
                 if (iterations > 0) {
-                    log << solver.getResidue() << "," << iterations << endl;
+                    log << residue << "," << iterations << endl;
                 }
             }
             ippl::Comm->barrier();
