@@ -169,7 +169,7 @@ public:
 
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
 
-        interpolate_from_rhs(*q, *rho, *R, space, iteration_policy);
+        assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
 
         double relError = std::fabs((Q - (*rho).sum()) / Q);
         m << relError << endl;
