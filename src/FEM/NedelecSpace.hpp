@@ -340,7 +340,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    KOKKOS_FUNCTION NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
         NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
             ::getLocalDOFPosition(size_t localDOFIndex) const {
         
@@ -691,7 +691,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
                 typename QuadratureType, typename FieldType>
-    KOKKOS_FUNCTION NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
                             NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                             ::evaluateRefElementShapeFunction(const size_t& localDOF,
                                 const NedelecSpace<T, Dim, Order, ElementType,
