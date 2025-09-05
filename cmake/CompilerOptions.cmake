@@ -31,7 +31,7 @@ endif()
 
 # === Code coverage options ===
 if(IPPL_ENABLE_COVERAGE AND (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"))
-    message(STATUS "${Yellow}Code coverage enabled.${ColourReset}")
+    message(STATUS "${ColorYellow}Code coverage enabled.${ColorReset}")
     add_compile_options(-fprofile-arcs -ftest-coverage -g)
     add_link_options(-fprofile-arcs -ftest-coverage)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")

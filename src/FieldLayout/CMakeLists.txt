@@ -10,18 +10,3 @@ target_sources(ippl
         FieldLayout.cpp
 )
 
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install FieldLayout headers
-install(FILES
-    FieldLayout.h
-    FieldLayout.hpp
-    SubFieldLayout.h
-    SubFieldLayout.hpp
-    DESTINATION include/FieldLayout
-)
-

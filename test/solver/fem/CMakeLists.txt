@@ -4,7 +4,7 @@
 # Integration tests for IPPL FEM solvers.
 # -----------------------------------------------------------------------------
 
-file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding FEM solver integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestZeroBC_sin LABELS solver fem integration)
