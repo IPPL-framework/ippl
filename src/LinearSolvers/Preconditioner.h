@@ -312,7 +312,7 @@ namespace ippl {
                 // due to the matrix-free evaluation.
                 // Therefore, we need this if to differentiate
                 // the two cases.
-                if constexpr (std::is_same_v<InvDiagF, double>) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                     g = inverse_diagonal_m(g) * g;
                 } else {
                     g = inverse_diagonal_m(g);
@@ -375,7 +375,7 @@ namespace ippl {
                     // due to the matrix-free evaluation.
                     // Therefore, we need this if to differentiate
                     // the two cases.
-                    if constexpr (std::is_same_v<InvDiagF, double>) {
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                         x = inverse_diagonal_m(x) * x;
                     } else {
                         x = inverse_diagonal_m(x);
@@ -393,7 +393,7 @@ namespace ippl {
                     // due to the matrix-free evaluation.
                     // Therefore, we need this if to differentiate
                     // the two cases.
-                    if constexpr (std::is_same_v<InvDiagF, double>) {
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                         x = inverse_diagonal_m(x) * x;
                     } else {
                         x = inverse_diagonal_m(x);
@@ -469,7 +469,7 @@ namespace ippl {
             // Therefore, we need this if to differentiate
             // the two cases.
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                if constexpr (std::is_same_v<DiagF, double>) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                     UL_m = upper_m(x);
                     D    = diagonal_m(x);
                     r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * x;
