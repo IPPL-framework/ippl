@@ -115,7 +115,7 @@ compile-and-test-juwels:
     echo "🧪 Launching tests with srun…"
     set +e
     srun \
-      --account="${BUDGET_ACCOUNTS}" \
+      --account="${PROJECT_NAME}" \
       --partition="${SLURM_PARTITION}" \
       --time="${SLURM_TIME}" \
       --nodes="1" \
