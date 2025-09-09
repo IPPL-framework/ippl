@@ -30,6 +30,7 @@ add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBC LABELS solver fem integ
 add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBCTimed LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_ZeroBC_sin_precon LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin_precon LABELS solver fem integration)
+add_ippl_integration_test(TestGrad LABELS solver fem integration)
 
 # vi: set et ts=4 sw=4 sts=4:
 

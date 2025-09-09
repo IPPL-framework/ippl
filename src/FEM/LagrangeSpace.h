@@ -68,6 +68,11 @@ namespace ippl {
         typedef typename detail::ViewType<T, Dim, Kokkos::MemoryTraits<Kokkos::Atomic>>::view_type
             AtomicViewType;
 
+        // Type for gradient
+        typedef typename FieldLHS::Mesh_t Mesh;
+        typedef typename FieldLHS::Centering_t Centering;
+        using GradType = Field<Vector<T, Dim>, Dim, Mesh, Centering>;
+
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -242,6 +247,16 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         void evaluateLoadVector(FieldRHS& field) const;
+
+        /**
+         * @brief
+         *
+         * @param 
+         * @param
+         *
+         * @return
+         */
+        void evaluateGrad(GradType& grad, FieldLHS& field);
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
