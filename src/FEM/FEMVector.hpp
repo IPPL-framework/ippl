@@ -207,13 +207,13 @@ namespace ippl{
 
 
     template <typename T>
-    T FEMVector<T>::operator[] (size_t i) const {
+    KOKKOS_INLINE_FUNCTION T FEMVector<T>::operator[] (size_t i) const {
         return data_m(i);
     }
 
 
     template <typename T>
-    T FEMVector<T>::operator() (size_t i) const {
+    KOKKOS_INLINE_FUNCTION T FEMVector<T>::operator() (size_t i) const {
         return this->operator[](i);
     }
 
