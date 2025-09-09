@@ -117,11 +117,26 @@ public:
     }
 
     void grid2par() override { 
-        gatherCIC();
+        if (getSolver() == "FEM") {
+            gatherFEM();
+        } else {
+            gatherCIC();
+        }
     }
 
     void gatherCIC() {
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
+    }
+
+    void gatherFEM() {
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+
+        interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
+                                   this->pcontainer_m->R, space, iteration_policy);
     }
 
     void par2grid() override {
@@ -150,6 +165,8 @@ public:
         checkChargeConservation(relError, m);
 
         getDensity(rho);
+
+        m << "rhoSum = " << (*rho).sum() << endl;
     }
 
     void scatterFEM() {
@@ -177,6 +194,8 @@ public:
         checkChargeConservation(relError, m);
 
         getDensity(rho);
+
+        m << "rhoSum = " << (*rho).sum() << endl;
     }
 
     void checkChargeConservation(double& relError, Inform& m) {
