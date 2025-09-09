@@ -989,7 +989,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    bool NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+    KOKKOS_FUNCTION bool NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::isDOFOnBoundary(const size_t& dofIdx) const {
         
         bool onBoundary = false;
@@ -1077,7 +1077,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
-    int NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
+    KOKKOS_FUNCTION int NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>
                                 ::getBoundarySide(const size_t& dofIdx) const {
 
         if constexpr (Dim == 2) {
