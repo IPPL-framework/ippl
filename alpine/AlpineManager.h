@@ -131,6 +131,7 @@ public:
     void gatherFEM() {
         using exec_space = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
+        size_type localParticles = this->pcontainer_m->getLocalNum();
         policy_type iteration_policy(0, localParticles);
 
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
