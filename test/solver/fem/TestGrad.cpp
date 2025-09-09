@@ -79,9 +79,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
         "Assign exact E-field", exactE.getFieldRangePolicy(),
         KOKKOS_LAMBDA(const int i) {
             const int ig = i + ldom[0].first() - numGhosts;
-            const T x = (ig)*cellSpacing[0] + origin[0];
+            const T x_mid = (ig + 0.5)*cellSpacing[0] + origin[0];
 
-            ippl::Vector<T, 1> exact_val = {efield(x)};
+            ippl::Vector<T, 1> exact_val = {efield(x_mid)};
             view_exactE(i) = exact_val;
         });
     Kokkos::fence();
