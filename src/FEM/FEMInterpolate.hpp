@@ -231,7 +231,7 @@ namespace ippl {
                                                policy_type iteration_policy)
     {
         constexpr unsigned Dim = Field::dim;
-        using T                 = typename AttribOut::value_type;
+        using T                 = typename Field::value_type;
         using view_type         = typename Field::view_type;
         using mesh_type         = typename Field::Mesh_t;
 
