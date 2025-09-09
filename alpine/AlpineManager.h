@@ -165,8 +165,6 @@ public:
         checkChargeConservation(relError, m);
 
         getDensity(rho);
-
-        m << "rhoSum = " << (*rho).sum() << endl;
     }
 
     void scatterFEM() {
@@ -194,8 +192,6 @@ public:
         checkChargeConservation(relError, m);
 
         getDensity(rho);
-
-        m << "rhoSum = " << (*rho).sum() << endl;
     }
 
     void checkChargeConservation(double& relError, Inform& m) {
