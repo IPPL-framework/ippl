@@ -280,6 +280,7 @@ namespace ippl {
             }
             d_out(p) = static_cast<T>(up);
         });
+    }
 
 } // namespace ippl
 #endif
