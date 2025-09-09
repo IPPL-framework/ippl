@@ -232,7 +232,6 @@ namespace ippl {
     {
         constexpr unsigned Dim = Field::dim;
         using T                 = typename AttribOut::value_type;
-        using field_value_type  = typename Field::value_type;
         using view_type         = typename Field::view_type;
         using mesh_type         = typename Field::Mesh_t;
 
@@ -255,20 +254,20 @@ namespace ippl {
         Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
                 KOKKOS_LAMBDA(const size_t p) {
 
-            const Vector<T,Dim> x   = d_pos(p);
+            const Vector<T, Dim> x = d_pos(p);
 
-            ippl::Vector<size_t,Dim> e_nd;
-            ippl::Vector<T,Dim>      xi;
-            locate_element_nd_and_xi<T,Dim>(M, x, e_nd, xi);
+            ippl::Vector<size_t, Dim> e_nd;
+            ippl::Vector<T, Dim> xi;
+            locate_element_nd_and_xi<T, Dim>(M, x, e_nd, xi);
             const size_t e_lin = space.getElementIndex(e_nd);
 
-            const auto dofs  = space.getGlobalDOFIndices(e_lin);
+            const auto dofs = space.getGlobalDOFIndices(e_lin);
 
-            field_value_type up = field_value_type(0);
+            Vector<T, Dim> up(0.0);
 
             for (size_t a = 0; a < dofs.dim; ++a) {
                 const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]);
-                const field_value_type w = space.evaluateRefElementShapeFunctionGradient(local, xi);
+                const Vector<T, Dim> w = space.evaluateRefElementShapeFunctionGradient(local, xi);
 
                 const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
                 ippl::Vector<size_t,Dim> I;
@@ -278,7 +277,7 @@ namespace ippl {
 
                 up += view_ref<Dim>(view, I) * w;
             }
-            d_out(p) = static_cast<T>(up);
+            d_out(p) = up;
         });
     }
 
