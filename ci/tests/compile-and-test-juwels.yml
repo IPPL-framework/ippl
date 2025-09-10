@@ -20,17 +20,15 @@ compile-and-test-juwels:
 
   script: |
     set -Eeuo pipefail
-    echo "🔐 Activating project: ${PROJECT_NAME}"
-    jutil env activate -p "${PROJECT_NAME}"
 
-    if [[ -z "${PROJECT:-}" ]]; then
-      echo "❌ ERROR: \$PROJECT not set after jutil activation." >&2
+    if [[ -z "${SCRATCH_hai_1073:-}" ]]; then
+      echo "❌ ERROR: \$SCRATCH_hai_1073 not set after jutil activation." >&2
       exit 1
     fi
 
-    echo "📦 PROJECT = ${PROJECT}"
+    echo "📦 SCRATCH = ${SCRATCH_hai_1073}"
 
-    export BUILD_DIR="${PROJECT}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
+    export BUILD_DIR="${SCRATCH_hai_1073}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
 
     echo "📁 BUILD_DIR = ${BUILD_DIR}"
 
