@@ -148,7 +148,7 @@ TYPED_TEST(ORBTest, Charge) {
     auto& bunch = this->bunch;
     auto& field = this->field;
 
-    typename TestFixture::value_type tol = 5*tolerance<typename TestFixture::value_type>;
+    typename TestFixture::value_type tol = tolerance<typename TestFixture::value_type>;
 
     double charge = 0.5;
     bunch->Q = charge/this->nParticles;

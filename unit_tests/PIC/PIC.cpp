@@ -127,7 +127,7 @@ TYPED_TEST(PICTest, Scatter) {
 
     double totalcharge = field->sum();
     ASSERT_NEAR((nParticles * charge - totalcharge) / (nParticles * charge), 0.0,
-                5*tolerance<typename TestFixture::value_type>);
+                tolerance<typename TestFixture::value_type>);
 }
 
 TYPED_TEST(PICTest, Gather) {

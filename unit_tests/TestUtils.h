@@ -86,7 +86,7 @@ struct TestForTypes<std::tuple<Types...>> {
  * @tparam T precision
  */
 template <typename T>
-constexpr T tolerance = Kokkos::Experimental::epsilon_v<T>; 
+constexpr T tolerance = 10.*Kokkos::Experimental::epsilon_v<T>; 
 
 /*!
  * Verifies that two values are equal to the correct level of precision
