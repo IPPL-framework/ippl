@@ -1645,20 +1645,17 @@ namespace ippl {
                 "Order of quadrature rule for error computation should be > 2*p + 1");
         }
 
-        // List of quadrature weights
-        const Vector<T, QuadratureType::numElementNodes> w =
-            this->quadrature_m.getWeightsForRefElement();
-
-        // List of quadrature nodes
-        const Vector<point_t, QuadratureType::numElementNodes> q =
-            this->quadrature_m.getIntegrationNodesForRefElement();
+        // List of quadrature nodes - we use only midpoint rule
+        // Since ref element is of size 1, this means weight is 1
+        point_t q;
+        for (unsigned d = 0; d < Dim; ++d) {
+            q[d] = 0.5;
+        }
 
         // Evaluate the basis functions for the DOF at the quadrature nodes
-        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
-        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-            for (size_t i = 0; i < numElementDOFs; ++i) {
-                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
-            }
+        Vector<T, numElementDOFs> basis_q;
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            basis_q[i] = this->evaluateRefElementShapeFunction(i, q);
         }
 
         const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
@@ -1681,34 +1678,24 @@ namespace ippl {
         Kokkos::parallel_reduce(
             "Compute error over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
-                const size_t elementIndex = elementIndices(index);
-                const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                indices_t elementNDIndex = this->getElementNDIndex(index);
 
-                // contribution of this element to the error
-                T contrib = 0;
-                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    Vector<T, Dim> val_u_sol = u_sol(this->ref_element_m.localToGlobal(
-                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
-                        q[k]));
-                    Vector<T, Dim> val_u_h = 0;
-                    for (size_t i = 0; i < numElementDOFs; ++i) {
-                        // get field index corresponding to this DOF
-                        size_t I           = global_dofs[i];
-                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
-                        }
+                // Get value of analytical sol at midpoint
+                Vector<T, Dim> val_u_sol = u_sol(this->ref_element_m.localToGlobal(
+                    this->getElementMeshVertexPoints(elementNDIndex), q));
 
-                        // get field value at DOF and interpolate to q_k
-                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
-                    }
-                    val_u_sol = val_u_sol - val_u_h;
-                    T dot_prod = val_u_sol.dot(val_u_sol);
-
-                    contrib += w[k] * dot_prod * absDetDPhi;
+                // Get the value of the numerical sol at midpoint
+                for (unsigned d = 0; d < Dim; ++d) {
+                    elementNDIndex[d] = elementNDIndex[d] - ldom[d].first() + nghost;
                 }
-                local += contrib;
+                Vector<T, Dim> val_u_h = apply(u_h, elementNDIndex);
+
+                // compute (u_h - u_sol)^2 
+                val_u_sol = val_u_sol - val_u_h;
+                T dot_prod = val_u_sol.dot(val_u_sol);
+
+                // compute error - midpoint quadrature
+                local += dot_prod * absDetDPhi;
             },
             Kokkos::Sum<double>(error));
 
