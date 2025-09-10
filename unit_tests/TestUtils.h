@@ -86,7 +86,7 @@ struct TestForTypes<std::tuple<Types...>> {
  * @tparam T precision
  */
 template <typename T>
-constexpr T tolerance = std::is_same_v<T, double> ? 1e-13 : 1e-6;
+constexpr T tolerance = 10.*Kokkos::Experimental::epsilon_v<T>; 
 
 /*!
  * Verifies that two values are equal to the correct level of precision

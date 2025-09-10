@@ -148,9 +148,10 @@ TYPED_TEST(ORBTest, Charge) {
     auto& bunch = this->bunch;
     auto& field = this->field;
 
-    double charge = 0.5;
+    typename TestFixture::value_type tol = tolerance<typename TestFixture::value_type>;
 
-    bunch->Q = charge;
+    double charge = 0.5;
+    bunch->Q = charge/this->nParticles;
 
     bunch->update();
 
@@ -160,11 +161,10 @@ TYPED_TEST(ORBTest, Charge) {
 
     *field = 0.0;
     scatter(bunch->Q, *field, bunch->R);
-
     double totalCharge = field->sum();
 
-    ASSERT_NEAR((this->nParticles * charge - totalCharge) / totalCharge, 0.,
-                tolerance<typename TestFixture::value_type>);
+    ASSERT_NEAR((charge - totalCharge), 0., tol);
+
 }
 
 int main(int argc, char* argv[]) {
