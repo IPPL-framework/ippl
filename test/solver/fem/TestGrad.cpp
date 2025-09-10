@@ -114,17 +114,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // solve the problem
     solver.solve();
 
-    /*
-    std::cout << "solution is " << std::endl;
-    lhs.write();
-
-    std::cout << "gradient is " << std::endl;
-    grad.write();
-
-    std::cout << "Exact E is " << std::endl;
-    exactE.write();
-    */
-
     // start the timer
     static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
     IpplTimings::startTimer(errorTimer);
@@ -133,38 +122,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     AnalyticSol<T> analytic;
     const T relError = solver.getL2Error(analytic);
 
-    // compute relative error norm for the E-field components
-    grad = grad - exactE;
-    auto view_grad = grad.getView();
-
-    T temp = 0.0;
-    Kokkos::parallel_reduce(
-        "Vector errorNr reduce", grad.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const size_t i, T& valL) {
-            T myVal = Kokkos::pow(view_grad(i)[0], 2);
-            valL += myVal;
-        },
-        Kokkos::Sum<T>(temp));
-
-    T globaltemp = 0.0;
-
-    ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
-    T errorNr = std::sqrt(globaltemp);
-
-    temp = 0.0;
-    Kokkos::parallel_reduce(
-        "Vector errorDr reduce", exactE.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const size_t i, T& valL) {
-            T myVal = Kokkos::pow(view_exactE(i)[0], 2);
-            valL += myVal;
-        },
-        Kokkos::Sum<T>(temp));
-
-    globaltemp = 0.0;
-    ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
-    T errorDr = std::sqrt(globaltemp);
-
-    T relErrorE = errorNr / errorDr;
+    // Compute the error
+    EfieldSol<T> analyticE;
+    const T relErrorE = solver.getL2ErrorGrad(analyticE);
 
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
@@ -196,7 +156,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(15) << "Iterations";
         msg << endl;
 
-        for (unsigned n = 1 << 2; n <= 1 << 2; n = n << 1) {
+        for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
             testFEMSolver<T, 1>(n, 0.0, 1.0);
         }
 

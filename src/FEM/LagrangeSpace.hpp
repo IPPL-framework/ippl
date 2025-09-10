@@ -413,7 +413,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -557,7 +557,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -705,7 +705,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -853,7 +853,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -1001,7 +1001,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -1157,7 +1157,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                      = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -1477,17 +1477,21 @@ namespace ippl {
         static IpplTimings::TimerRef evalGrad = IpplTimings::getTimer("evaluateGrad");
         IpplTimings::startTimer(evalGrad);
 
-        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
-
         // Evaluate the basis functions for the DOF at the quadrature nodes
         Vector<point_t, numElementDOFs> grad_b_q;
         point_t mid; 
-        for (int i = 0; i < Dim; ++i) {
+        for (unsigned int i = 0; i < Dim; ++i) {
             mid[i] = 0.5;
         }
         for (size_t i = 0; i < numElementDOFs; ++i) {
             grad_b_q[i] = this->evaluateRefElementShapeFunctionGradient(i, mid);
         }
+
+        // Compute Inverse Transpose Transformation Jacobian ()
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+        const auto firstElementVertexPoints = this->getElementMeshVertexPoints(zeroNdIndex);
+        const Vector<T, Dim> DPhiInvT =
+            this->ref_element_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
 
         // Get domain information and ghost cells
         auto ldom        = (field.getLayout()).getLocalNDIndex();
@@ -1510,7 +1514,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                        = elementIndices(index);
-                const indices_t elementNDIndex                   = this->getElementNDIndex(index);
                 const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -1530,7 +1533,12 @@ namespace ippl {
                         dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
                     }
 
-                    val += apply(view_field, dof_ndindex_I) * grad_b_q[i];
+                    val += apply(view_field, dof_ndindex_I) * grad_b_q[i] * DPhiInvT;
+                }
+
+                indices_t elementNDIndex = this->getElementNDIndex(index);
+                for (unsigned d = 0; d < Dim; ++d) {
+                    elementNDIndex[d] = elementNDIndex[d] - ldom[d].first() + nghost;
                 }
 
                 // add the contribution of the element to the field
@@ -1613,6 +1621,92 @@ namespace ippl {
                     }
 
                     contrib += w[k] * Kokkos::pow(val_u_sol - val_u_h, 2) * absDetDPhi;
+                }
+                local += contrib;
+            },
+            Kokkos::Sum<double>(error));
+
+        // MPI reduce
+        T global_error = 0.0;
+        Comm->allreduce(error, global_error, 1, std::plus<T>());
+
+        return Kokkos::sqrt(global_error);
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    T LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::computeErrorL2(
+        const GradType& u_h, const F& u_sol) const {
+        if (this->quadrature_m.getOrder() < (2 * Order + 1)) {
+            // throw exception
+            throw IpplException(
+                "LagrangeSpace::computeErrorL2()",
+                "Order of quadrature rule for error computation should be > 2*p + 1");
+        }
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Variable to sum the error to
+        T error = 0;
+
+        // Get domain information and ghost cells
+        auto ldom        = (u_h.getLayout()).getLocalNDIndex();
+        const int nghost = u_h.getNghost();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_reduce(
+            "Compute error over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndices(index);
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                // contribution of this element to the error
+                T contrib = 0;
+                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                    Vector<T, Dim> val_u_sol = u_sol(this->ref_element_m.localToGlobal(
+                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
+                        q[k]));
+                    Vector<T, Dim> val_u_h = 0;
+                    for (size_t i = 0; i < numElementDOFs; ++i) {
+                        // get field index corresponding to this DOF
+                        size_t I           = global_dofs[i];
+                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                        }
+
+                        // get field value at DOF and interpolate to q_k
+                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
+                    }
+                    val_u_sol = val_u_sol - val_u_h;
+                    T dot_prod = val_u_sol.dot(val_u_sol);
+
+                    contrib += w[k] * dot_prod * absDetDPhi;
                 }
                 local += contrib;
             },

@@ -266,12 +266,23 @@ namespace ippl {
          * @brief Given two fields, compute the L2 norm error
          *
          * @param u_h The numerical solution found using FEM
-         * @param u_sol The analytical solution (functor)
+         * @param u_sol The analytical solution (functor)
          *
          * @return error - The error ||u_h - u_sol||_L2
          */
         template <typename F>
         T computeErrorL2(const FieldLHS& u_h, const F& u_sol) const;
+
+        /**
+         * @brief Given two Vector field, compute the L2 norm error
+         *
+         * @param u_h The numerical gradient computed
+         * @param u_sol The analytical solution (functor)
+         *
+         * @return error - The error ||u_h - u_sol||_L2
+         */
+        template <typename F>
+        T computeErrorL2(const GradType& u_h, const F& u_sol) const;
 
         /**
          * @brief Given a field, compute the average
