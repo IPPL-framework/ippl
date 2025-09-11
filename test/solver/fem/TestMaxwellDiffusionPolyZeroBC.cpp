@@ -242,9 +242,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     Kokkos::parallel_for("assign positions", 97,
         KOKKOS_LAMBDA(size_t i) {
-            positions;
-            ldom;
-            domain_start;
+  	    (void) positions;            // add (void) to make clang happy i.e. no unused variable warning
+            (void) ldom;
+            (void) domain_start;
             auto gen = randomPool.get_state();
             T cellWidth = (domain_end - domain_start) / numCellsPerDim;
             if constexpr (Dim == 2) {

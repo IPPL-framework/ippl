@@ -144,7 +144,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
         Kokkos::parallel_for("Assign RHS", rhsVector.size(),
             KOKKOS_LAMBDA(size_t i) {
                 size_t nx = extents(0);
-                size_t ny = extents(1);
 
                 size_t yOffset = i / (2*nx - 1);
                 size_t xOffset = i - (2*nx -1)*yOffset;
@@ -171,7 +170,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
             KOKKOS_LAMBDA(size_t i) {
                 size_t nx = extents(0);
                 size_t ny = extents(1);
-                size_t nz = extents(2);
                 
                 size_t zOffset = i / (nx*(ny-1) + ny*(nx-1) + nx*ny);
                 T z = zOffset*cellSpacing[2];
@@ -246,9 +244,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     Kokkos::parallel_for("assign positions", 97,
         KOKKOS_LAMBDA(size_t i) {
-            positions;
-            ldom;
-            domain_start;
+	    (void) positions;
+            (void) ldom;
+            (void) domain_start;
             auto gen = randomPool.get_state();
             T cellWidth = (domain_end - domain_start) / numCellsPerDim;
             if constexpr (Dim == 2) {

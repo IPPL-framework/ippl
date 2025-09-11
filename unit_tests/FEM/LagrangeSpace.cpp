@@ -613,7 +613,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
         // Poisson equation eval function (based on the weak form)
         EvalFunctor<T, dim, LagrangeType::numElementDOFs> eval(DPhiInvT, absDetDPhi);
 
-        if (dim == 1) {
+        if constexpr (dim == 1) {
             x = 1.25;
 
             x.fillHalo();
@@ -660,7 +660,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
             double err = ippl::norm(z);
 
             ASSERT_NEAR(err, 0.0, 1e-6);
-        } else if (dim == 2) {
+        } else if constexpr (dim == 2) {
             if (ippl::Comm->size() == 1) {
                 x = 1.0;
 
@@ -712,7 +712,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
 
                 ASSERT_NEAR(err, 0.0, 1e-6);
             }
-        } else if (dim == 3) {
+        } else if constexpr (dim == 3) {
             x = 1.5;
 
             x.fillHalo();
@@ -815,7 +815,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
         }
         rhs_field.setFieldBC(bcField);
 
-        if (dim == 1) {
+        if constexpr (dim == 1) {
             rhs_field = 2.75;
 
             // call evaluateLoadVector
@@ -868,7 +868,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             double err = ippl::norm(rhs_field);
 
             ASSERT_NEAR(err, 0.0, 1e-6);
-        } else if (dim == 2) {
+        } else if constexpr (dim == 2) {
             rhs_field = 3.5;
 
             // call evaluateLoadVector
@@ -909,7 +909,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
             ASSERT_NEAR(err, 0.0, 1e-6);
 
-        } else if (dim == 3) {
+        } else if constexpr (dim == 3) {
 
             rhs_field = 1.25;
 
