@@ -850,7 +850,7 @@ namespace ippl {
                 // transformation gives back an element which is somewhat in the
                 // halo. In order to fix this we simply subtract one.
                 for (size_t d = 0; d < Dim; ++d) {
-                    if (elemIdx<:d:> >= ldom.last()<:d:>) {
+                    if (elemIdx<:d:> >= static_cast<size_t>(ldom.last()<:d:>)) {
                         elemIdx<:d:> -= 1;
                     }
                 }
