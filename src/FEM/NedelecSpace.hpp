@@ -850,7 +850,7 @@ namespace ippl {
                 // transformation gives back an element which is somewhat in the
                 // halo. In order to fix this we simply subtract one.
                 for (size_t d = 0; d < Dim; ++d) {
-                    if (elemIdx<:d:> >= ldom.last()<:d:>) {
+                    if (elemIdx<:d:> >= static_cast<size_t>(ldom.last()<:d:>)) {
                         elemIdx<:d:> -= 1;
                     }
                 }
@@ -1205,8 +1205,9 @@ namespace ippl {
 
         // Here we loop thought all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }
@@ -1718,8 +1719,9 @@ namespace ippl {
 
         // Here we loop through all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }
