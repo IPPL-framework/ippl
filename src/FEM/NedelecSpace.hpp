@@ -1205,8 +1205,9 @@ namespace ippl {
 
         // Here we loop thought all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }
@@ -1718,8 +1719,9 @@ namespace ippl {
 
         // Here we loop through all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }
