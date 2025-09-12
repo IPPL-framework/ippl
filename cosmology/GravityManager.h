@@ -13,6 +13,8 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+#include "mc-4-Initializer/InputParser.h"
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 /**
@@ -41,11 +43,13 @@ public:
      * @param lbt_ Load balance threshold.
      * @param solver_ Solver type.
      * @param stepMethod_ Time stepping method type.
+     * @param par_ Inputfile parser 
      */
     GravityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                   std::string& solver_, std::string& stepMethod_)
+                   std::string& solver_, std::string& stepMethod_, initializer::InputParser par_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
                            LoadBalancer<T, Dim>>()
+	, parser_m(par_)
         , totalP_m(totalP_)
         , nt_m(nt_)
         , nr_m(nr_)
@@ -64,6 +68,12 @@ public:
      */
     std::string folder;
 
+    /**
+     * @brief Access to the input file with constants and simulation parameters.
+     */
+    initializer::InputParser parser_m;
+
+  
     /**
      * @brief Get the total number of particles.
      *
@@ -210,8 +220,10 @@ public:
      */
     void InitialiseTime() {
         Inform mes("Inititalise: ");
-        this->O_m      = 0.3;
-        this->O_L      = 0.7;
+	parser_m.getByName("Omega_m", this->O_m);
+	parser_m.getByName("Omega_L", this->O_L);
+	// this->O_m      = 0.3;       // \todo need to from input file
+        // this->O_L      = 0.7;       // \todo need to from input file
         this->t_L      = 2 / (3 * this->Hubble0 * sqrt(this->O_L));
         this->a_m      = 1 / (1 + this->z_m);
         this->Dloga    = 1. / (this->nt_m) * log((1 + this->z_m) / (1 + this->z_f));
@@ -349,8 +361,8 @@ protected:
     double Hubble0;                  ///< Hubble constant today (73.8 km/sec/Mpc).
     double G;                        ///< Gravitational constant. [kpc^3/(Msun s^2)]
     double rho_crit0;                ///< Critical density today. [Msun/kpc^3]
-    double O_m;                      ///< Matter density parameter. [1]
-    double O_L;                      ///< Dark energy density parameter. [1]
+    float  O_m;                      ///< Matter density parameter. [1]
+    float  O_L;                      ///< Dark energy density parameter. [1]
     double t_L;                      ///< Characteristic time scale. [s]
     double z_m;                      ///< Initial redshift. [1]
     double z_f;                      ///< Final redshift.   [1]

@@ -81,8 +81,6 @@ using T                = double;
 #include <string>
 #include <vector>
 
-#include "Manager/datatypes.h"
-
 #include "Utility/IpplTimings.h"
 
 #include "Manager/PicManager.h"

@@ -56,7 +56,7 @@ public:
     StructureFormationManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                               std::string& solver_, std::string& stepMethod_,
 			      initializer::InputParser par_, std::string tfname_, bool readICs_)
-      : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),
+      : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, par_),
 	readICs_m(readICs_)
   {}
 
