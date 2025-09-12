@@ -20,6 +20,13 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+#include "mc-4-Initializer/InputParser.h"
+#include "mc-4-Initializer/DataBase.h"
+#include "mc-4-Initializer/Cosmology.h"
+
+
+#define KOKKOS_PRINT    // Kokkos::printf of interesting quantities. Does not work multirank
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 /**
@@ -31,9 +38,15 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
  * @param lbt_ Lookback time.
  * @param solver_ Solver method.
  * @param stepMethod_ Time stepping method.
+ * @param par_ the parser to read the input file
+ * @param tfname_ filename for transfer function
+ * @param readICs_ read or create initial conditions
  */
 template <typename T, unsigned Dim>
 class StructureFormationManager : public GravityManager<T, Dim> {
+
+  bool readICs_m;
+
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
     using FieldContainer_t    = FieldContainer<T, Dim>;
@@ -41,8 +54,11 @@ public:
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
     StructureFormationManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                              std::string& solver_, std::string& stepMethod_)
-        : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
+                              std::string& solver_, std::string& stepMethod_,
+			      initializer::InputParser par_, std::string tfname_, bool readICs_)
+      : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),
+	readICs_m(readICs_)
+  {}
 
     /**
      * @brief Destructor for StructureFormationManager.
@@ -396,7 +412,7 @@ public:
         if (this->stepMethod_m == "LeapFrog") {
             LeapFrogStep();
         } else {
-            throw IpplException(TestName, "Step method is not set/recognized!");
+            throw IpplException("StructureFormation ", "Step method is not set/recognized!");
         }
     }
 
