@@ -240,8 +240,8 @@ public:
      * @brief Pre-step method called before each simulation step.
      */
     void pre_step() override {
-        Inform mes("Pre-step");
-        mes << "Done" << endl;
+      //        Inform mes("Pre-step");
+      //  mes << "Done" << endl;
     }
 
     /**
@@ -261,8 +261,8 @@ public:
         // dynamic time step
         this->dt_m = this->Dloga / this->Hubble_m;
 
-        mes << "Finished time step: " << this->it_m << endl;
-        mes << " time: " << this->time_m << ", timestep: " << this->dt_m << ", z: " << this->z_m
+        mes << "Step: " << this->it_m;
+        mes << " comological time: " << this->time_m << ", dt: " << this->dt_m << ", z: " << this->z_m
             << ", a: " << this->a_m << endl;
     }
 
@@ -290,7 +290,7 @@ public:
      */
     void scatterCIC() {
         Inform mes("scatter ");
-        mes << "starting ..." << endl;
+
         this->fcontainer_m->getRho() = 0.0;
 
         ippl::ParticleAttrib<double>* m          = &this->pcontainer_m->m;
@@ -302,7 +302,6 @@ public:
 
         scatter(*m, *rho, *R);
         double relError = std::fabs((M_m - (*rho).sum()) / M_m);
-        mes << "relative error: " << relError << endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
@@ -310,7 +309,7 @@ public:
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
         if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 1e-10) {
+            if (TotalParticles != totalP_m || relError > 10.*Kokkos::Experimental::epsilon_v<T> ) {
                 mes << "Time step: " << it_m << endl;
                 mes << "Total particles in the sim. " << totalP_m << " "
                     << "after update: " << TotalParticles << endl;
