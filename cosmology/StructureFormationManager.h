@@ -47,18 +47,25 @@ class StructureFormationManager : public GravityManager<T, Dim> {
 
   bool readICs_m;
 
+  initializer::CosmoClass cosmo_m;
+  
 public:
-    using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>;
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+  using ParticleContainer_t = ParticleContainer<T, Dim>;
+  using FieldContainer_t    = FieldContainer<T, Dim>;
+  using FieldSolver_t       = FieldSolver<T, Dim>;
+  using LoadBalancer_t      = LoadBalancer<T, Dim>;
 
-    StructureFormationManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                              std::string& solver_, std::string& stepMethod_,
-			      initializer::InputParser par_, std::string tfname_, bool readICs_)
-      : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, par_),
-	readICs_m(readICs_)
-  {}
+  using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+  using index_type       = typename ippl::RangePolicy<Dim>::index_type;
+  
+  StructureFormationManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+			    std::string& solver_, std::string& stepMethod_,	
+			    initializer::InputParser par_, std::string tfname_, bool readICs_)
+    : GravityManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, par_),
+      readICs_m(readICs_)
+  {
+    cosmo_m.SetParameters(initializer::GlobalStuff::instance(), tfname_.c_str()); 
+  }
 
     /**
      * @brief Destructor for StructureFormationManager.
@@ -69,7 +76,7 @@ public:
      * @brief Pre-run setup for the simulation.
      */
     void pre_run() override {
-        Inform mes("Pre Run");
+        Inform msg("Pre Run");
 
         if (this->solver_m == "OPEN") {
             throw IpplException("StructureFormation",
@@ -84,23 +91,32 @@ public:
         this->decomp_m.fill(true);
         this->Hubble0 = 0.1;         // h * km/sec/kpc  (h = 0.7, H = 0.07)
         this->G       = 4.30071e04;  // kpc km^2 /s^2 / M_Sun e10
-        this->z_m     = 63;          // initial z
-        this->z_f     = 0;           // final z
+
+	float zm;
+	float zf;
+	this->parser_m.getByName("z_in", zm);     // initial z
+	this->parser_m.getByName("z_fi", zf);     // final z
+	this->z_m = zm;
+	this->z_f = zf;
+	
         this->InitialiseTime();
 
-        this->rmin_m = 0.0;
-        this->rmax_m = 50000.0;  // kpc/h
+	float box_size;
+	this->parser_m.getByName("box_size", box_size);
+        this->rmin_m = 0.0;	
+	this->rmax_m = box_size*1000.0; // kpc/h
+
         double Vol =
             std::reduce(this->rmax_m.begin(), this->rmax_m.end(), 1., std::multiplies<double>());
         this->M_m = this->rho_crit0 * Vol * this->O_m;  // 1e10 M_Sun
-        mes << "total mass: " << this->M_m << endl;
-        mes << "mass of a single particle " << this->M_m / this->totalP_m << endl;
+        msg << "total mass: " << this->M_m << endl;
+        msg << "mass of a single particle " << this->M_m / this->totalP_m << endl;
 
         this->hr_m     = this->rmax_m / this->nr_m;
         this->origin_m = this->rmin_m;
         this->it_m     = 0;
 
-        mes << "Discretization:" << endl
+        msg << "Discretization:" << endl
             << "nt " << this->nt_m << ", Np = " << this->totalP_m << ", grid = " << this->nr_m
             << endl;
 
@@ -145,17 +161,17 @@ public:
         this->grid2par();
         this->dump();
 
-        mes << "Done";
+        msg << "Done";
     }
 
     /**
      * @brief Read particle data from a file.
      */
     void readParticles() {
-        Inform mes("Reading Particles");
+        Inform msg("Reading Particles");
 
         size_type nloc = this->totalP_m / ippl::Comm->size();
-        mes << "Local number of particles: " << nloc << endl;
+        msg << "Local number of particles: " << nloc << endl;
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         pc->create(nloc);
         pc->m = this->M_m / this->totalP_m;
@@ -166,7 +182,7 @@ public:
         auto* mesh = &this->fcontainer_m->getMesh();
         auto* FL   = &this->fcontainer_m->getFL();
         if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
-            mes << "Starting first repartition" << endl;
+            msg << "Starting first repartition" << endl;
             this->isFirstRepartition_m = true;
             this->loadbalancer_m->initializeORB(FL, mesh);
             this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
@@ -225,9 +241,9 @@ public:
         }
 
         // Boundaries of Particle Positions
-        mes << "Minimum Position: " << MinPos << endl;
-        mes << "Maximum Position: " << MaxPos << endl;
-        mes << "Defined maximum:  " << this->rmax_m << endl;
+        msg << "Minimum Position: " << MinPos << endl;
+        msg << "Maximum Position: " << MaxPos << endl;
+        msg << "Defined maximum:  " << this->rmax_m << endl;
 
         // Number of Particles
         if (nloc != ParticlePositions.size()) {
@@ -238,7 +254,7 @@ public:
             // Particle positions and velocities, which are read in above from the initial
             // conditions file, are assigned to the particle attributes R and V in the particle
             // container.
-            mes << "successfully done." << endl;
+            msg << "successfully done." << endl;
 
         auto R_host = pc->R.getHostMirror();
         auto V_host = pc->V.getHostMirror();
@@ -273,14 +289,14 @@ public:
             printf("first repartition works \n");
         }
 
-        mes << "Assignment of positions and velocities done." << endl;
+        msg << "Assignment of positions and velocities done." << endl;
     }
 
     /**
      * @brief Read particle data from a file and assign to the domain.
      */
     void readParticlesDomain() {
-        Inform mes("Reading Particles");
+        Inform msg("Reading Particles");
 
         this->fcontainer_m->getRho() = 0.0;
 
@@ -288,7 +304,7 @@ public:
         auto* mesh = &this->fcontainer_m->getMesh();
         auto* FL   = &this->fcontainer_m->getFL();
         if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
-            mes << "Starting first repartition" << endl;
+            msg << "Starting first repartition" << endl;
             this->isFirstRepartition_m = true;
             this->loadbalancer_m->initializeORB(FL, mesh);
             this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
@@ -336,12 +352,12 @@ public:
                     // positions. This avoids double-counting of particles and ensures the total
                     // number of particles is conserved.
                     if (Pos == Max[j]) {
-                        mes << "Particle was on edge. Shift position from " << Pos << " to "
+                        msg << "Particle was on edge. Shift position from " << Pos << " to "
                             << Pos * 0.9999 << endl;
                         Pos = 0.9999 * Pos;
                     }
                     if (Pos == 0) {
-                        mes << "Particle was on edge. Shift position from " << Pos << " to "
+                        msg << "Particle was on edge. Shift position from " << Pos << " to "
                             << 0.0001 * Max[j] << endl;
                         Pos = 0.0001 * Max[j];
                     }
@@ -402,7 +418,7 @@ public:
             printf("first repartition works \n");
         }
 
-        mes << "Assignment of positions and velocities done." << endl;
+        msg << "Assignment of positions and velocities done." << endl;
     }
 
     /**
@@ -496,12 +512,12 @@ public:
      * @param index Current time step number
      */
     void savePositions(unsigned int index) {
-        Inform mes("Saving Particles");
+        Inform msg("Saving Particles");
 
         static IpplTimings::TimerRef SavingTimer = IpplTimings::getTimer("Save Data");
         IpplTimings::startTimer(SavingTimer);
 
-        mes << "snapshot " << this->it_m << endl;
+        msg << "snapshot " << this->it_m << endl;
 
         std::stringstream ss;
         if (ippl::Comm->size() == 1)
@@ -548,7 +564,7 @@ public:
 
         // Close the file stream
         file.close();
-        mes << "done." << endl;
+        msg << "done." << endl;
         IpplTimings::stopTimer(SavingTimer);
     }
 
