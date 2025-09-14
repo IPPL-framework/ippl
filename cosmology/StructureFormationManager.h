@@ -29,6 +29,16 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
+typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t<Dim>, Mesh_t<Dim>::DefaultCentering> field_type;
+typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
+typedef Field<Kokkos::complex<double>, Dim> CField_t;
+typedef Field<double, Dim> RField_t; 
+
+struct HermitianPkg {
+  int    kx, ky, kz;
+  double re, im;
+};
+
 /**
  * @brief Construct a new StructureFormationManager object.
  *
@@ -45,6 +55,10 @@ using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>:
 template <typename T, unsigned Dim>
 class StructureFormationManager : public GravityManager<T, Dim> {
 
+  /// all for the initializer
+  std::unique_ptr<CFFT_type> Cfft_m;
+  CField_t cfield_m;
+  RField_t Pk_m;
   bool readICs_m;
 
   initializer::CosmoClass cosmo_m;
@@ -140,28 +154,36 @@ public:
         this->setLoadBalancer(std::make_shared<LoadBalancer_t>(
             this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m));
 
-        readParticlesDomain();  // defines particle positions, velocities
 
-        static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
-        IpplTimings::startTimer(DummySolveTimer);
+	msg << "About to generate ... readICs_m= " << readICs_m << endl; 
+	
+	if (readICs_m) {
+	  msg << "Read in particles ..." << endl;
+	  readParticlesDomain();  // defines particle positions, velocities
+	  msg << "Read particles done" << endl;
+	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
+	  IpplTimings::startTimer(DummySolveTimer);
 
-        this->fcontainer_m->getRho() = 0.0;
+	  this->fcontainer_m->getRho() = 0.0;
+	  
+	  this->fsolver_m->runSolver();
 
-        this->fsolver_m->runSolver();
+	  IpplTimings::stopTimer(DummySolveTimer);
+	  this->par2grid();
 
-        IpplTimings::stopTimer(DummySolveTimer);
-        this->par2grid();
+	  static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
 
-        static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-
-        IpplTimings::startTimer(SolveTimer);
-        this->fsolver_m->runSolver();
-        IpplTimings::stopTimer(SolveTimer);
-
-        this->grid2par();
-        this->dump();
-
-        msg << "Done";
+	  IpplTimings::startTimer(SolveTimer);
+	  this->fsolver_m->runSolver();
+	  IpplTimings::stopTimer(SolveTimer);
+	  
+	  this->grid2par();
+	  this->dump();
+	  msg << "Done reading initial conditions";
+	} else {
+	  msg << "Create Particles" << endl; 
+	  msg << "Done creating initial conditions";
+	}
     }
 
     /**
