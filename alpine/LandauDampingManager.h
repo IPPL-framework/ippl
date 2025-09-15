@@ -304,7 +304,8 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
+        //dumpLandau(this->fcontainer_m->getE().getView());
+        dumpLandau();
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
@@ -353,6 +354,52 @@ public:
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
             }
             csvout << this->time_m << " " << fieldEnergy << " " << ExAmp << endl;
+        }
+        ippl::Comm->barrier();
+    }
+
+    void dumpLandau() {
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        size_type localParticles                = pc->getLocalNum();
+
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        double localEx2 = 0;
+        Kokkos::parallel_reduce(
+            "Ex stats", iteration_policy,
+            KOKKOS_LAMBDA(const size_t i, double& E2) {
+                double val = (pc->E(i))[0];
+                double e2  = Kokkos::pow(val, 2);
+                E2 += e2;
+            },
+            Kokkos::Sum<double>(localEx2));
+
+        double globaltemp = 0.0;
+        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
+
+        // MC integration: divide by no. of particles N  and multiply by volume
+        ippl::Vector<T, Dim> domain_size = this->rmax_m - this->rmin_m;
+        double fieldEnergy =
+            std::reduce(domain_size.begin(), domain_size.end(),
+                        globaltemp, std::multiplies<double>());
+
+        fieldEnergy = fieldEnergy / this->totalP_m;
+
+        if (ippl::Comm->rank() == 0) {
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << ippl::Comm->size();
+            fname << "_manager";
+            fname << ".csv";
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(16);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            if (std::fabs(this->time_m) < 1e-14) {
+                csvout << "time, Ex_field_energy" << endl;
+            }
+            csvout << this->time_m << " " << fieldEnergy << endl;
         }
         ippl::Comm->barrier();
     }
