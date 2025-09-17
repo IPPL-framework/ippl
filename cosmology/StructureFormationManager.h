@@ -160,25 +160,6 @@ public:
 	  msg << "Read in particles ..." << endl;
 	  readParticlesDomain();  // defines particle positions, velocities
 	  msg << "Read particles done" << endl;
-	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
-	  IpplTimings::startTimer(DummySolveTimer);
-
-	  this->fcontainer_m->getRho() = 0.0;
-	  
-	  this->fsolver_m->runSolver();
-
-	  IpplTimings::stopTimer(DummySolveTimer);
-	  this->par2grid();
-
-	  static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-
-	  IpplTimings::startTimer(SolveTimer);
-	  this->fsolver_m->runSolver();
-	  IpplTimings::stopTimer(SolveTimer);
-	  
-	  this->grid2par();
-	  this->dump();
-	  msg << "Done reading initial conditions";
 	} else {
 	  msg << "Create Particles ....." << endl;
 	  ippl::ParameterList fftParams;
@@ -188,28 +169,29 @@ public:
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  msg << "FFT and Pk structures initialized" << endl;;
 	  createParticles();
-	  msg << "Create particles done" << endl;
-
-	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
-	  IpplTimings::startTimer(DummySolveTimer);
-	  
-	  this->fcontainer_m->getRho() = 0.0;
-	  
-	  this->fsolver_m->runSolver();
-
-	  IpplTimings::stopTimer(DummySolveTimer);
-	  this->par2grid();
-	  
-	  static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
-	  
-	  IpplTimings::startTimer(SolveTimer);
-	  this->fsolver_m->runSolver();
-	  IpplTimings::stopTimer(SolveTimer);
-	  
-	  this->grid2par();
-	  this->dump();
-	  msg << "Done creating initial conditions" << endl;
+	  msg << "Create particles done" << endl;	  
 	}
+
+	static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
+	IpplTimings::startTimer(DummySolveTimer);
+	
+	this->fcontainer_m->getRho() = 0.0;
+	
+	this->fsolver_m->runSolver();
+
+	IpplTimings::stopTimer(DummySolveTimer);
+
+	this->par2grid();
+	  
+	static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");  
+	IpplTimings::startTimer(SolveTimer);
+	this->fsolver_m->runSolver();
+	IpplTimings::stopTimer(SolveTimer);
+	  
+	this->grid2par();
+	this->dump();
+	msg << "Done creating initial conditions" << endl;
+
 	this->savePositions(0);
     }
 
@@ -515,11 +497,10 @@ public:
 
 			   rView(n)[dim] = (d*hr[dim]) - (d_z*x);
 			   vView(n)[dim] = -ddot*x;
-
+#ifdef KOKKOS_PRINT
 			   if (dim==0)
 			     Kokkos::printf("setparticle: %i %g \n", d, x);
-			   
-#ifdef KOKKOS_PRINT
+		   
 			   if (n==0)
 			     Kokkos::printf("zeldo: dim, pos0, x, v, re: d_z= %g ddot= %g \n", d_z, ddot);
 			   Kokkos::printf("zeldo: %i %g %g %g %g \n", dim, d+0.5,-d_z*x, -ddot*x, x);

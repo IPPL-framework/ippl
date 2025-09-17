@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
 
         msg << "Starting iterations ... up to " << manager.getNt() << endl;
 
-        // manager.run(manager.getNt());
+        manager.run(manager.getNt());
 
         msg << "End." << endl;
 
