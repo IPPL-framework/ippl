@@ -31,8 +31,8 @@ struct AnalyticSol {
 
 template <typename T>
 struct EfieldSol {
-    KOKKOS_FUNCTION const T operator()(ippl::Vector<T, 1> x_vec) const {
-        return (0.5 - x_vec[0]);
+    KOKKOS_FUNCTION const ippl::Vector<T,1> operator()(ippl::Vector<T, 1> x_vec) const {
+        return {-(0.5 - x_vec[0])};
     }
 };
 
@@ -69,22 +69,6 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     VField_t grad(mesh, layout, numGhosts);
-    VField_t exactE(mesh, layout, numGhosts);
-
-    // assign the exact E field
-    EfieldSol<T> efield;
-    auto view_exactE = exactE.getView();
-    auto ldom        = layout.getLocalNDIndex();
-    Kokkos::parallel_for(
-        "Assign exact E-field", exactE.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const int i) {
-            const int ig = i + ldom[0].first() - numGhosts;
-            const T x_mid = (ig + 0.5)*cellSpacing[0] + origin[0];
-
-            ippl::Vector<T, 1> exact_val = {efield(x_mid)};
-            view_exactE(i) = exact_val;
-        });
-    Kokkos::fence();
 
     // Define boundary conditions
     BConds_t bcField;
@@ -102,12 +86,12 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     IpplTimings::stopTimer(initTimer);
 
     // initialize the solver
-    ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+    ippl::FEMPoissonSolver<Field_t, Field_t, 1, 2> solver(lhs, rhs);
     solver.setGradient(grad);
 
     // turn on computation of grad
     ippl::ParameterList params;
-    params.add("output_type", ippl::FEMPoissonSolver<Field_t, Field_t>::SOL_AND_GRAD);
+    params.add("output_type", ippl::FEMPoissonSolver<Field_t, Field_t, 1, 2>::SOL_AND_GRAD);
 
     solver.mergeParameters(params);
 
@@ -122,14 +106,82 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     AnalyticSol<T> analytic;
     const T relError = solver.getL2Error(analytic);
 
-    // Compute the error
+    // Compute the error of the Efield
     EfieldSol<T> analyticE;
     const T relErrorE = solver.getL2ErrorGrad(analyticE);
+
+    // norm error Efield
+
+    // assign the exact E field
+    VField_t exactE(mesh, layout, numGhosts);
+    EfieldSol<T> efield;
+    auto view_exactE = exactE.getView();
+    auto ldom        = layout.getLocalNDIndex();
+
+    Kokkos::RangePolicy<> range(numGhosts, view_exactE.extent(0) - numGhosts); // - 1);
+    Kokkos::parallel_for(
+        "Assign exact E-field", range,
+        KOKKOS_LAMBDA(const int i) {
+            const int ig = i + ldom[0].first() - numGhosts;
+            //const T x_mid = (ig + 0.5)*cellSpacing[0] + origin[0];
+            const T x_mid = (ig)*cellSpacing[0] + origin[0];
+
+            view_exactE(i) = efield(x_mid);
+        });
+    Kokkos::fence();
+
+    /*
+    // print outs (debugging)
+    std::cout << "spacing = " << cellSpacing << std::endl;
+
+    std::cout << "solution phi = " << std::endl;
+    lhs.write();
+
+    std::cout << "gradient E = " << std::endl;
+    grad.write();
+
+    std::cout << "analytic E = " << std::endl;
+    exactE.write();
+    */
+
+    // compute relative error
+    grad = grad - exactE;
+    auto view_grad = grad.getView();
+
+    T temp = 0.0;
+    Kokkos::parallel_reduce(
+        "Vector errorNr reduce", grad.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const size_t i, T& valL) {
+            T myVal = Kokkos::pow(view_grad(i)[0], 2);
+            valL += myVal;
+        },
+        Kokkos::Sum<T>(temp));
+
+    T globaltemp = 0.0;
+
+    ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
+    T errorNr = std::sqrt(globaltemp);
+
+    temp = 0.0;
+    Kokkos::parallel_reduce(
+        "Vector errorDr reduce", exactE.getFieldRangePolicy(),
+        KOKKOS_LAMBDA(const size_t i, T& valL) {
+            T myVal = Kokkos::pow(view_exactE(i)[0], 2);
+            valL += myVal;
+        },
+        Kokkos::Sum<T>(temp));
+
+    globaltemp = 0.0;
+    ippl::Comm->allreduce(temp, globaltemp, 1, std::plus<T>());
+    T errorDr = std::sqrt(globaltemp);
+
+    T normErrorE = errorNr / errorDr;
 
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
     m << std::setw(25) << std::setprecision(16) << relError;
     m << std::setw(25) << std::setprecision(16) << relErrorE;
+    m << std::setw(25) << std::setprecision(16) << normErrorE;
     m << std::setw(25) << std::setprecision(16) << solver.getResidue();
     m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
     m << endl;
@@ -151,6 +203,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(10) << "Size";
         msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
+        msg << std::setw(25) << "Error E";
         msg << std::setw(25) << "Norm Error E";
         msg << std::setw(25) << "Residue";
         msg << std::setw(15) << "Iterations";
