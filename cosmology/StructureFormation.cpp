@@ -97,8 +97,8 @@ using Vector_t = ippl::Vector<T, Dim>;
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        Inform msg(argv[0]);
-        Inform msg2all(argv[0], INFORM_ALL_NODES);
+        Inform msg("StructureFormation ");
+        Inform msg2all("StructureFormation ", INFORM_ALL_NODES);
 
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
@@ -111,15 +111,24 @@ int main(int argc, char* argv[]) {
 	int arg = 5;
 	initializer::InputParser par(indatName);
 	initializer::GlobalStuff::instance().GetParameters(par);
-		
-        // Number of gridpoints in each dimension
+
+	size_t totalP;
+	if ((totalP=static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid) *
+	     static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid) *
+	     static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid)) >
+	    std::numeric_limits<std::size_t>::max()) {
+	  throw std::overflow_error("Index space exceeds size_t capacity");
+	}
+    
+	
+	// Number of gridpoints in each dimension
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
 	  nr[d] = initializer::GlobalStuff::instance().ngrid;
         }
-        // Total number of particles
-        size_type totalP = nr[0]*nr[1]*nr[2];
 
+	msg << "Np = " << totalP << endl; 
+	
         // Number of time steps
         int nt = 0;
 	par.getByName("nt", nt);
@@ -150,7 +159,7 @@ int main(int argc, char* argv[]) {
 
         msg << "Starting iterations ... up to " << manager.getNt() << endl;
 
-        manager.run(manager.getNt());
+        // manager.run(manager.getNt());
 
         msg << "End." << endl;
 
