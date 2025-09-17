@@ -72,33 +72,16 @@ namespace ippl {
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout())
+        {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-
-            // start a timer
-            static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
-            IpplTimings::startTimer(init);
-            
-            rhs.fillHalo();
-
-            lagrangeSpace_m.evaluateLoadVector(rhs);
-
-            rhs.fillHalo();
-            
-            IpplTimings::stopTimer(init);
         }
 
         void setRhs(rhs_type& rhs) override {
             Base::setRhs(rhs);
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
-
-            rhs.fillHalo();
-
-            lagrangeSpace_m.evaluateLoadVector(rhs);
-
-            rhs.fillHalo();
         }
 
         /**
@@ -116,6 +99,11 @@ namespace ippl {
             // start a timer
             static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
             IpplTimings::startTimer(solve);
+            
+            // create load vector for the problem
+            this->rhs_mp->fillHalo();
+            lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
+            this->rhs_mp->fillHalo();
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -169,7 +157,7 @@ namespace ippl {
 
             int output = this->params_m.template get<int>("output_type");
             if (output & Base::GRAD) {
-                lagrangeSpace_m.evaluateGrad(*(this->grad_mp), *(this->lhs_mp));
+                *(this->grad_mp) = grad(*(this->lhs_mp));
             }
 
             IpplTimings::stopTimer(pcgTimer);

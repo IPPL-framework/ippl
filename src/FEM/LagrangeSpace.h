@@ -248,16 +248,6 @@ namespace ippl {
          */
         void evaluateLoadVector(FieldRHS& field) const;
 
-        /**
-         * @brief
-         *
-         * @param 
-         * @param
-         *
-         * @return
-         */
-        void evaluateGrad(GradType& grad, FieldLHS& field);
-
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////

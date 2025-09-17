@@ -221,8 +221,6 @@ public:
         double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
         (*rho)            = (*rho) / cellVolume;
 
-        rhoNorm_m = norm(*rho);
-
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {
             double size = 1;

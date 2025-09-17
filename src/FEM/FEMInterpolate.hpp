@@ -242,7 +242,6 @@ namespace ippl {
         view_type view     = coeffs.getView();
         const mesh_type& M = coeffs.get_mesh();
 
-
         const ippl::FieldLayout<Dim>& layout = coeffs.getLayout();
         const ippl::NDIndex<Dim>&     lDom   = layout.getLocalNDIndex();
         const int                     nghost = coeffs.getNghost();
@@ -275,7 +274,9 @@ namespace ippl {
                     I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
                 }
 
-                up += view_ref<Dim>(view, I) * w;
+                // negative as E = -grad(phi), but in the future this should be 
+                // more general (maybe bool to say whether we want negative or positive?)
+                up += -(view_ref<Dim>(view, I) * w);
             }
             d_out(p) = up;
         });
