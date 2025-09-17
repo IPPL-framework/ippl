@@ -180,15 +180,37 @@ public:
 	  this->dump();
 	  msg << "Done reading initial conditions";
 	} else {
-	  msg << "Create Particles" << endl;
+	  msg << "Create Particles ....." << endl;
 	  ippl::ParameterList fftParams;
 	  fftParams.add("use_heffte_defaults", true);
 	  Cfft_m = std::make_unique<CFFT_type>(this->fcontainer_m->getFL(), fftParams);
 	  cfield_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
-	  msg << "FFT and Pk structures initialized";
+	  msg << "FFT and Pk structures initialized" << endl;;
 	  createParticles();
+	  msg << "Create particles done" << endl;
+
+	  static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
+	  IpplTimings::startTimer(DummySolveTimer);
+	  
+	  this->fcontainer_m->getRho() = 0.0;
+	  
+	  this->fsolver_m->runSolver();
+
+	  IpplTimings::stopTimer(DummySolveTimer);
+	  this->par2grid();
+	  
+	  static IpplTimings::TimerRef SolveTimer = IpplTimings::getTimer("solve");
+	  
+	  IpplTimings::startTimer(SolveTimer);
+	  this->fsolver_m->runSolver();
+	  IpplTimings::stopTimer(SolveTimer);
+	  
+	  this->grid2par();
+	  this->dump();
+	  msg << "Done creating initial conditions" << endl;
 	}
+	this->savePositions(0);
     }
 
 
@@ -319,6 +341,9 @@ public:
     auto rView = this->pcontainer_m->R.getView();
     auto vView = this->pcontainer_m->V.getView();
 
+    //auto rView = this->pcontainer_m->R.getHostMirror();
+    //auto vView = this->pcontainer_m->V.getHostMirror();
+   
     const int ngh = cfield_m.getNghost();
     const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
 
@@ -434,6 +459,7 @@ public:
 	zz = 1.0;
 	break;
       }
+
       
       // Compute displacement component in k-space
       ippl::parallel_for("force_in_k_space", ippl::getRangePolicy(cfview, ngh),
@@ -487,10 +513,11 @@ public:
 			   const unsigned int kl = idx[2] - ngh;
 			   const index_type    n = il + lDom[0].length()*(jl + kl*lDom[1].length());
 
-			   rView(n)[dim] = ((d + 0.5) - d_z*x);
+			   rView(n)[dim] = (d*hr[dim]) - (d_z*x);
 			   vView(n)[dim] = -ddot*x;
-			   
-			   //Kokkos::printf("set_particle: rank= %i \t dim= %i \t d=%i \t n=%i  \n", myrank, dim, d, n);
+
+			   if (dim==0)
+			     Kokkos::printf("setparticle: %i %g \n", d, x);
 			   
 #ifdef KOKKOS_PRINT
 			   if (n==0)
@@ -498,7 +525,6 @@ public:
 			   Kokkos::printf("zeldo: %i %g %g %g %g \n", dim, d+0.5,-d_z*x, -ddot*x, x);
 #endif											 
 			 });
-
       cfield_m = tmpcfield;
     }
   }
@@ -541,7 +567,7 @@ public:
     IpplTimings::stopTimer(linZeldo);
     
     // Load Balancer Initialisation
-    /*
+
     auto* mesh = &this->fcontainer_m->getMesh();
     auto* FL   = &this->fcontainer_m->getFL();
     if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -549,11 +575,8 @@ public:
       this->loadbalancer_m->initializeORB(FL, mesh);
       this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
     }
-
     pc->update();
     m2a << "local number of galaxies after initializer " << pc->getLocalNum() << endl;
-    this->dumpParticles();
-    */
 }
 
 
@@ -930,6 +953,9 @@ public:
             std::cerr << "Error opening saving file!" << std::endl;
             return;
         }
+	else
+	  file << "# rx \t ry \t rz \n"; 
+	
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
         auto Rview = this->pcontainer_m->R.getView();
@@ -949,11 +975,13 @@ public:
         // Write data to the file
         for (unsigned int i = 0; i < pc->getLocalNum(); ++i) {
             for (unsigned int d = 0; d < Dim; ++d)
-                file << R_host(i)[d] << ",";
+                file << R_host(i)[d] << " \t";
+	    /*
             for (unsigned int d = 0; d < Dim; ++d)
                 file << V_host(i)[d] << ",";
             for (unsigned int d = 0; d < Dim; ++d)
                 file << -4 * M_PI * this->G / (a * a) * F_host(i)[d] << ",";
+	    */
             file << "\n";
         }
         ippl::Comm->barrier();
