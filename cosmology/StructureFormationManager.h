@@ -970,15 +970,16 @@ public:
         Kokkos::deep_copy(V_host, Vview);
         Kokkos::deep_copy(F_host, Fview);
 
-        double a = this->a_m;
+	//        double a = this->a_m;
 
         // Write data to the file
         for (unsigned int i = 0; i < pc->getLocalNum(); ++i) {
             for (unsigned int d = 0; d < Dim; ++d)
                 file << R_host(i)[d] << " \t";
-	    /*
             for (unsigned int d = 0; d < Dim; ++d)
-                file << V_host(i)[d] << ",";
+                file << V_host(i)[d] << " \t";
+	    /*
+
             for (unsigned int d = 0; d < Dim; ++d)
                 file << -4 * M_PI * this->G / (a * a) * F_host(i)[d] << ",";
 	    */
