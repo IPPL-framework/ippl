@@ -22,8 +22,8 @@
 add_compile_options(-Wall -Wextra -Wno-deprecated-declarations)
 
 # === Use modified variant implementation ===
-if(USE_ALTERNATIVE_VARIANT)
-  add_definitions(-DUSE_ALTERNATIVE_VARIANT)
+if(IPPL_USE_ALTERNATIVE_VARIANT)
+  add_definitions(-DIPPL_USE_ALTERNATIVE_VARIANT)
 endif()
 
 # === Code coverage options ===
@@ -48,8 +48,15 @@ endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU"
    AND IPPL_ENABLE_SANITIZER)
   message(STATUS "✅ Enabling AddressSanitizer and UBSan for Debug build")
-  add_compile_options(-fsanitize=address,undefined)
-  add_link_options(-fsanitize=address,undefined)
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
+endif()
+
+# === Position Independent Code (PIC) for shared libraries ===
+if(BUILD_SHARED_LIBS)
+  message(STATUS "✅ Enabling Position Independent Code (PIC) for shared libraries")
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(CMAKE_LINK_DEPENDS_NO_SHARED true)
 endif()
 
 message(STATUS "✅ Compiler options configured")
