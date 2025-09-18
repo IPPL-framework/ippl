@@ -6,6 +6,8 @@ name: Mirror to Gitlab to trigger CI
 
 on:
   push:
+    branches:
+      - master
   pull_request_target:
     types: [opened, synchronize, reopened, labeled]
   schedule:
