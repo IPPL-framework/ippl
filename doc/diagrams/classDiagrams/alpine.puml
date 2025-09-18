@@ -41,45 +41,117 @@ BorderColor<<alpine>> ForestGreen
 
 
 
-package legend{
+' package legend{
 
-<> y1 
-<> y2
-<> x1 
-<> x2
-y1 *--r> y2 : Original Pointer
-x1 -[#blue]r-> x2 : Pointer
+' <> y1 
+' <> y2
+' <> x1 
+' <> x2
+' y1 *--r> y2 : Original Pointer
+' x1 -[#blue]r-> x2 : Pointer
+
+' }
+
+' package legend2{
+' ' <> z1
+' ' <> z2
+' ' <> a1
+' ' <> a2
+' <> b1
+' <> b2
+' <> c1
+' <> c2
+
+
+' b1 -right-* b2  : Composition
+' c1 -right-o c2  : Aggregation
+' ' z1 .right.|> z2 : Realisation  
+' ' a1 -right-|> a2 : Generalisation \n(Inheritance) 
+
+' }
+
+
+
+package LEGEND{
+    <> w1 
+    <> w2
+    <> x1 
+    <> x2
+    <> y1 
+    <> y2
+    <> z1
+    <> z2
+    <> a1
+    <> a2
+    <> b1
+    <> b2
+    <> c1
+    <> c2
+    <> d1
+    <> d2
+    <> e1
+    <> e2
+    <> f1
+    <> f2
+    entity X
+    <> g1
+    <> g2
+    ' <> g3
+
+
+    w1 -[hidden]d-> x1
+    w2 -[hidden]d-> x2
+    x1 -[hidden]d-> y1
+    x2 -[hidden]d-> y2
+    y1 -[hidden]d-> z1
+    y2 -[hidden]d-> z2
+    z1 -[hidden]d-> a1
+    z2 -[hidden]d-> a2
+    a1 -[hidden]d-> b1
+    a2 -[hidden]d-> b2
+    b1 -[hidden]d-> c1
+    b2 -[hidden]d-> c2
+    c1 -[hidden]d-> d1
+    c2 -[hidden]d-> d2
+    d1 -[hidden]d-> e1
+    d2 -[hidden]d-> e2
+    e1 -[hidden]d-> f1
+    e2 -[hidden]d-> f2
+    f1 -[hidden]d-> g1
+    f2 -[hidden]d-> g2
+
+    ' g1 -[hidden]d-> A
+    ' g2 -[hidden]d-> B
+
+
+    w1 .r. w2 : Weak Association
+    x1 -r- x2 : Association
+    y1 ..[#blue]r.> y2 : Dependency
+    z1 -[#blue]r> z2 : Navigable \n Association
+    ' z1 -r> z2 : Navigable \n Association
+    a1 -right-o a2 : Aggregation
+    b1 -right-* b2 : Composition
+    c1 -right-|> c2 : Generalisation
+    d1 ..right.|> d2 : Realisation
+    e1 ..[#ForestGreen]right.|> e2 : Instantiation \n (not UML standard)
+    f1 o..[#ForestGreen]right.> f2 : Aggregation via. \n Reference/Pointer\n (not UML standard)
+    g1 o..[#ForestGreen]right. X   : Aggregation via. explicit \n named Reference/Pointer\n (not UML standard)
+    X  ..[#ForestGreen]right.> g2 
+
+
+    ' A  .r g3 :  relation relais: aid \n for layout improvement \n (not UML standard)
+    ' g3 .r B
 
 }
 
-package legend2{
-' <> z1
-' <> z2
-' <> a1
-' <> a2
-<> b1
-<> b2
-<> c1
-<> c2
-
-
-b1 -right-* b2  : Composition
-c1 -right-o c2  : Aggregation
-' z1 .right.|> z2 : Realisation  
-' a1 -right-|> a2 : Generalisation \n(Inheritance) 
-
-}
-
-
-x1 -[hidden]d-> b1
-y1 -[hidden]d-> c1
 
 
 
 
 
 
-
+package IPPL {
+    
 
 abstract class   BaseManager <<ippl>> {
     virt. prerun()
@@ -88,6 +160,7 @@ abstract class   BaseManager <<ippl>> {
     virt. advance()
     run()
 }
+' BaseManager -[hidden]d-> LEGEND
 
 abstract class  PICManager <<ippl>> {
     virt. part2grid()
@@ -240,6 +313,8 @@ class RegionLayout <<ippl>>
 
 
 
+}
+
 
 
 
@@ -258,10 +333,10 @@ BaseManager <|-- PICManager
 '  --|> 
 PICManager <|-- AlpineManager
 
-AlpineManager o-- p_container
-AlpineManager o-- f_container
-AlpineManager o-- l_balancer
-AlpineManager o-- f_solver
+AlpineManager o.[#ForestGreen]. p_container
+AlpineManager o.[#ForestGreen]. f_container
+AlpineManager o.[#ForestGreen]. l_balancer
+AlpineManager o.[#ForestGreen]. f_solver
 
 
 
@@ -283,17 +358,17 @@ AlpineManager o-- f_solver
 
 
 
-l_balancer  *-d> lb 
-f_solver    *-d-> fs  
-f_container *-d-> fc 
-p_container *-d-> pc 
+l_balancer  .[#ForestGreen]d> lb 
+f_solver    .[#ForestGreen]d.> fs  
+f_container .[#ForestGreen]d.> fc 
+p_container .[#ForestGreen]d.> pc 
 
 
 
-lb .d|> LoadBalancer
-fs ..d.|> FieldSolver 
-fc ..d.|> FieldContainer
-pc ..d.|> ParticleContainer
+lb .[#ForestGreen]d|> LoadBalancer
+fs ..[#ForestGreen]d.|> FieldSolver 
+fc ..[#ForestGreen]d.|> FieldContainer
+pc ..[#ForestGreen]d.|> ParticleContainer
 
 
 /' not possible with this fucking '/
@@ -358,16 +433,16 @@ FieldContainer o-- E_m
 FieldContainer o-- fl_m
 FieldContainer o-- mesh_m
 
-rho_m ..down.|> Field 
-phi_m ..down.|> Field 
-E_m   ..down.|> Field 
+rho_m ..down[#ForestGreen].|> Field 
+phi_m ..down[#ForestGreen].|> Field 
+E_m   ..down[#ForestGreen].|> Field 
 
 Field     --|> BareField
 BareField --|> "Expression<E,N>"
 
 
 
-mesh_m ...|> UniformCartesian
+mesh_m ..[#ForestGreen].|> UniformCartesian
 UniformCartesian --|> Mesh
 
 
@@ -376,13 +451,13 @@ UniformCartesian --|> Mesh
 
 
 
-ParticleBase  o-- layout_m : private
-ParticleBase o-- attributes_m : private
+ParticleBase  o.[#ForestGreen]. layout_m  
+ParticleBase o-- attributes_m  
 ParticleBase  <|-d-- ParticleContainer
 
 
 ParticleAttribute --|> ParticleAttributeBase
-attributes_m ...|> ContainerForAllSpaces
+attributes_m ..[#ForestGreen].|> ContainerForAllSpaces
 
 
 attributes_m o-- q
@@ -390,9 +465,9 @@ attributes_m o-- p
 attributes_m o-- E
 
 
-q -down-|> ParticleAttribute  
-p -down-|> ParticleAttribute  
-E -down-|> ParticleAttribute  
+q .[#ForestGreen]down.|> ParticleAttribute  
+p .[#ForestGreen]down.|> ParticleAttribute  
+E .[#ForestGreen]down.|> ParticleAttribute  
 
 
 
@@ -404,15 +479,15 @@ ParticleSpatialLayout --|> ParticleLayout
 
 ParticleSpatialLayout o-- RegionLayout
 ParticleSpatialLayout -[#Blue]->FieldLayout
-ParticleContainer o-- pl_m : private
+ParticleContainer o-- pl_m  
 
-pl_m ...|> ParticleSpatialLayout
-
-
+pl_m ..[#ForestGreen].|> ParticleSpatialLayout
 
 
 
-layout_m -[#blue]l-> pl_m
+
+
+layout_m .[#ForestGreen]l.> pl_m
 pl_m .[#blue]l.> mesh_m 
 
 pl_m -[#blue]r-> fl_m
@@ -431,7 +506,7 @@ pl_m -[#blue]r-> fl_m
 
 
 
-fl_m   ...|> FieldLayout
+fl_m   ..[#ForestGreen].|> FieldLayout
 
 
 

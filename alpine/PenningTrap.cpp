@@ -47,8 +47,18 @@ const char* TestName   = "PenningTrap";
 #endif
 
 int main(int argc, char* argv[]) {
+
+        // #ifdef IPPL_ENABLE_CATALYST
+        //     std::cout << "Catalyst is enabled" << std::endl; 
+        // #endif
+
+
     ippl::initialize(argc, argv);
     {
+
+        Inform msg(TestName);
+        Inform msg2all(TestName, INFORM_ALL_NODES);
+
         
         // #ifdef IPPL_ENABLE_CATALYST
         // for (int i = 1; i < argc; ++i) {
@@ -62,7 +72,9 @@ int main(int argc, char* argv[]) {
         // #endif
 
 
+
         #ifdef IPPL_ENABLE_CATALYST
+            msg << "Catalyst is enabled" << endl; 
             char* script = nullptr;
             char* proxy = nullptr;
             for (int i = 1; i < argc; ++i) {
@@ -77,6 +89,8 @@ int main(int argc, char* argv[]) {
             }
             char* reducedArgv[] = { argv[0], script, proxy};
             CatalystAdaptor::Initialize(2, reducedArgv);
+
+            msg << "Catalyst Initialized" << endl;
         #endif
         
         // #ifdef IPPL_ENABLE_ASCENT
@@ -93,9 +107,6 @@ int main(int argc, char* argv[]) {
         // #endif
 
         
-        Inform msg(TestName);
-        Inform msg2all(TestName, INFORM_ALL_NODES);
-
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
@@ -121,11 +132,17 @@ int main(int argc, char* argv[]) {
             }
         }
 
+
+
+        
+        msg << "Creating Manager Instance" << endl;
         // Create an instance of a manger for the considered application
         PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
                                            preconditioner_params);
 
+                                          
         // Perform pre-run operations, including creating mesh, particles,...
+        msg << "manager.pre_run();" << endl;
         manager.pre_run();
 
         manager.setTime(0.0);

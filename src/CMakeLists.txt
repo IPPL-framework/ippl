@@ -80,17 +80,79 @@ if (IPPL_ENABLE_SOLVERS)
 endif ()
 
 if (IPPL_ENABLE_CATALYST)
-    message (STATUS "Adding Catalyst subdirectory")
+    message (STATUS "Adding Stream subdirectory")
     add_subdirectory (Stream)
-    find_package(Catalyst REQUIRED)
-    message (STATUS "Found Catalyst")
-    target_link_libraries(ippl PUBLIC 
-        catalyst::catalyst
+
+
+    # Create a list to hold all hint paths
+    set(CATALYST_HINTS "")
+
+    # If a path is provided from the command line, add it to the list first
+    if(DEFINED CATALYST_HINT_PATH AND EXISTS "${CATALYST_HINT_PATH}")
+        message(STATUS "Using user-provided Catalyst hint path: ${CATALYST_HINT_PATH}")
+        list(APPEND CATALYST_HINTS "${CATALYST_HINT_PATH}")
+    endif()
+
+
+    # Use the list of hints in find_package
+    find_package(catalyst REQUIRED
+        HINTS 
+        ${CATALYST_HINTS}
     )
-    target_compile_definitions(ippl PUBLIC
-        IPPL_ENABLE_CATALYST 
-    )
-endif ()
+
+    if (catalyst_FOUND)
+        message (STATUS "Found Catalyst:")
+        target_link_libraries(ippl PUBLIC 
+            catalyst::catalyst
+        )
+        target_compile_definitions(ippl PUBLIC
+            IPPL_ENABLE_CATALYST 
+        )
+
+
+                # ======================================================
+                # ========= CATALYST INFO SUMMARY ======================
+                # ======================================================
+
+                message(STATUS "Catalyst Summary:")
+                message(STATUS "  Found: ${catalyst_FOUND}")
+                message(STATUS "  Version: ${catalyst_VERSION}")
+
+                # Display debug library location
+                get_property(_cfgs TARGET catalyst::catalyst PROPERTY IMPORTED_CONFIGURATIONS)
+                foreach(_cfg IN LISTS _cfgs)
+                    get_target_property(_loc catalyst::catalyst IMPORTED_LOCATION_${_cfg})
+                    if(_loc)
+                        message(STATUS "  Library (${_cfg}): ${_loc}")
+                    endif()
+                endforeach()
+
+                # Headers information
+                message(STATUS "  Headers:")
+                get_target_property(_inc catalyst::catalyst_headers INTERFACE_INCLUDE_DIRECTORIES)
+                if(_inc)
+                    message(STATUS "    Include directories: ${_inc}")
+                endif()
+
+                # Config location
+                if(catalyst_DIR)
+                    message(STATUS "  CMake config dir: ${catalyst_DIR}")
+                endif()
+
+                # Target structure summary
+                message(STATUS "  Target structure:")
+                message(STATUS "    catalyst::catalyst (${_cat_type})")
+                message(STATUS "    catalyst::catalyst_headers (INTERFACE_LIBRARY)")
+
+                # ======================================================
+
+
+    else()
+        # Fallback: locate headers and library manually
+        message(STATUS "WARNING: CATALYST NOT FOUND, find_package failed")
+    endif ()
+endif()
+
 
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 

@@ -58,11 +58,17 @@ namespace CatalystAdaptor {
 
     void Initialize(int argc, char* argv[]) {
         conduit_cpp::Node node;
-        std::cout << "\n\n\n PATHCHECK" << std::endl;
+        std::cout << argc << std::endl;
+        std::cout << "\nPATHCHECK" << std::endl;
         std::cout << "pvscript path: " << argv[1] << std::endl;
-        std::cout << "pvproxy path: " << argv[2] <<"\n\n\n" << std::endl;
+        std::cout << "pvproxy path: " << argv[2] <<"\n" << std::endl;
+
+        std::cout << "Set script" << std::endl;
         node["catalyst/scripts/script/filename"].set(argv[1]);
+        std::cout << "Set proxy" << std::endl;
         node["catalyst/proxies/proxy"].set(argv[2]);
+
+
         /*
         for (int cc = 2; cc < argc; ++cc) {
             std::cout << "pvscript args: " << argv[cc] << std::endl;
@@ -78,6 +84,8 @@ namespace CatalystAdaptor {
                                 "no environmental variable for CATALYST_IMPLEMENTATION_NAME or "
                                 "CATALYST_IMPLEMENTATION_PATHS found");
         }
+
+        std::cout << "ippl: catalyst_initialize() call" << std::endl;       
         // TODO: catch catalyst error also with IpplException
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
@@ -404,6 +412,9 @@ namespace CatalystAdaptor {
 }  // namespace CatalystAdaptor
 
 #endif
+
+
+
 
 
     // ==========
