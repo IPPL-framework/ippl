@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/github/license/IPPL-framework/ippl)](https://github.com/IPPL-framework/ippl/blob/master/LICENSE)
 
 # Independent Parallel Particle Layer (IPPL)
-Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of Kokkos (https://github.com/kokkos/kokkos), HeFFTe (https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs). 
+Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of Kokkos (https://github.com/kokkos/kokkos), HeFFTe (https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
 All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the `variant` header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the [GNU Standard Library](https://github.com/gcc-mirror/gcc); note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.
 
@@ -42,11 +42,11 @@ The relevant options of IPPL are
 - `IPPL_ENABLE_FFT`, default `OFF`
   - If `IPPL_ENABLE_FFT` is set, `Heffte_ENABLE_CUDA` will default to `ON` if `IPPL_PLATFORMS` contains `cuda`
   - Otherwise, `Heffte_ENABLE_AVX2` is enabled. FFTW has to be enabled explicitly.
-- `Heffte_ENABLE_FFTW`, default `OFF` 
+- `Heffte_ENABLE_FFTW`, default `OFF`
 - `IPPL_ENABLE_TESTS`, default `OFF`
 - `IPPL_ENABLE_UNIT_TESTS`, default `OFF`
 - `IPPL_ENABLE_ALPINE`, default `OFF`
-- `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can be turned on for GPU builds where the use of the system-provided variant doesn't work.  
+- `IPPL_USE_ALTERNATIVE_VARIANT`, default `OFF`. Can be turned on for GPU builds where the use of the system-provided variant doesn't work.  
 - `IPPL_ENABLE_SANITIZER`, default `OFF`
   
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
@@ -82,7 +82,7 @@ cmake .. \
     -DIPPL_PLATFORMS=openmp \
     -DHeffte_ENABLE_FFTW=True
 ```
-#### Cuda alpine release build 
+#### Cuda alpine release build
 ```
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
@@ -90,12 +90,12 @@ cmake .. \
     -DCMAKE_CXX_STANDARD=20 \
     -DIPPL_ENABLE_FFT=ON \
     -DIPPL_ENABLE_TESTS=ON \
-    -DUSE_ALTERNATIVE_VARIANT=ON \
+    -DIPPL_USE_ALTERNATIVE_VARIANT=ON \
     -DIPPL_ENABLE_SOLVERS=ON \
     -DIPPL_ENABLE_ALPINE=True \
     -DIPPL_PLATFORMS=cuda
 ```
-#### HIP release build (LUMI) 
+#### HIP release build (LUMI)
 ```
 cmake .. \
       -DCMAKE_BUILD_TYPE=Release \
@@ -135,7 +135,7 @@ m-6.0.3/lib/llvm/lib"
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
 
-For larger projects we recommend to fork the main repository and then submit a pull request from it. More information regarding github workflow for forks can be found in this [page](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks) and how to submit a pull request from a fork can be found [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork). Please follow the coding guidelines as mentioned in this [page](https://github.com/IPPL-framework/ippl/blob/master/WORKFLOW.md). 
+For larger projects we recommend to fork the main repository and then submit a pull request from it. More information regarding github workflow for forks can be found in this [page](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks) and how to submit a pull request from a fork can be found [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork). Please follow the coding guidelines as mentioned in this [page](https://github.com/IPPL-framework/ippl/blob/master/WORKFLOW.md).
 
 You can add an upstream to be able to get all the latest changes from the master. For example, if you are working with a fork of the main repository, you can add the upstream by:
 ```bash

@@ -104,10 +104,8 @@ include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
-if(IPPL_ENABLE_FFT AND TARGET Heffte::heffte)
-  target_link_libraries(ippl PUBLIC Heffte::heffte)
-else()
-  message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
+if(IPPL_ENABLE_FFT)
+  target_link_libraries(ippl PUBLIC Heffte::Heffte)
 endif()
 
-include(${PROJECT_SOURCE_DIR}/cmake/InstallIppl.cmake)
+include(InstallIppl)
