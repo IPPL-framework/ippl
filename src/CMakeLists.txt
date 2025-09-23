@@ -79,37 +79,36 @@ if (IPPL_ENABLE_SOLVERS)
     add_subdirectory (LinearSolvers)
 endif ()
 
+
+
+message (STATUS "Adding Stream subdirectory")
+add_subdirectory (Stream)
+
+
 if (IPPL_ENABLE_CATALYST)
-    message (STATUS "Adding Stream subdirectory")
-    add_subdirectory (Stream)
-
-
+    message (STATUS "CATALYST enabled")
     # Create a list to hold all hint paths
     set(CATALYST_HINTS "")
-
     # If a path is provided from the command line, add it to the list first
     if(DEFINED CATALYST_HINT_PATH AND EXISTS "${CATALYST_HINT_PATH}")
         message(STATUS "Using user-provided Catalyst hint path: ${CATALYST_HINT_PATH}")
         list(APPEND CATALYST_HINTS "${CATALYST_HINT_PATH}")
     endif()
 
-
     # Use the list of hints in find_package
     find_package(catalyst REQUIRED
         HINTS 
         ${CATALYST_HINTS}
     )
-
+    message (STATUS "Found catalyst_DIR: ${catalyst_DIR}")
     if (catalyst_FOUND)
         message (STATUS "Found Catalyst:")
-        target_link_libraries(ippl PUBLIC 
-            catalyst::catalyst
-        )
         target_compile_definitions(ippl PUBLIC
             IPPL_ENABLE_CATALYST 
         )
-
-
+        target_link_libraries(ippl PUBLIC 
+            catalyst::catalyst
+        )
                 # ======================================================
                 # ========= CATALYST INFO SUMMARY ======================
                 # ======================================================
@@ -131,7 +130,7 @@ if (IPPL_ENABLE_CATALYST)
                 message(STATUS "  Headers:")
                 get_target_property(_inc catalyst::catalyst_headers INTERFACE_INCLUDE_DIRECTORIES)
                 if(_inc)
-                    message(STATUS "    Include directories: ${_inc}")
+                    message(STATUS "  Include directories: ${_inc}")
                 endif()
 
                 # Config location
@@ -144,14 +143,54 @@ if (IPPL_ENABLE_CATALYST)
                 message(STATUS "    catalyst::catalyst (${_cat_type})")
                 message(STATUS "    catalyst::catalyst_headers (INTERFACE_LIBRARY)")
 
-                # ======================================================
-
-
-    else()
-        # Fallback: locate headers and library manually
-        message(STATUS "WARNING: CATALYST NOT FOUND, find_package failed")
     endif ()
 endif()
+
+
+if (IPPL_ENABLE_ASCENT)
+    message (STATUS "ASCENT Enabled")
+
+
+    # Create a list to hold all hint paths
+    set(ASCENT_HINTS "")
+    # If a path is provided from the command line, add it to the list first
+    if(DEFINED ASCENT_HINT_PATH AND EXISTS "${ASCENT_HINT_PATH}")
+        message(STATUS "Using user-provided Ascent hint path: ${ASCENT_HINT_PATH}")
+        list(APPEND ASCENT_HINTS "${ASCENT_HINT_PATH}")
+    endif()
+
+    find_package(Ascent REQUIRED 
+    HINTS ${ASCENT_HINTS}
+    )
+    # fails if ascent isn't found ...
+
+    target_compile_definitions(ippl PUBLIC
+        IPPL_ENABLE_ASCENT
+    )
+        # Use the correct target based on what's available
+        if(TARGET ascent::ascent_mpi)
+            target_link_libraries(ippl PUBLIC ascent::ascent_mpi)
+            message(STATUS "Linking with ascent::ascent_mpi")
+        elseif(TARGET ascent::ascent)
+            target_link_libraries(ippl PUBLIC ascent::ascent)
+            message(STATUS "Linking with ascent::ascent (no MPI)")
+        else()
+            message(FATAL_ERROR "No suitable Ascent target found")
+        endif()
+        ####################################################
+        # Detailed INFO automatically printed by ascent ...#
+        ####################################################
+
+    
+        ##-> done automatically ...
+        ### INSTALL_PREFIX defined upon linking of the library...
+    # include_directories ( 
+    #     ${ASCENT_INSTALL_PREFIX}/include/ascent>
+    # )
+
+
+endif()
+
 
 
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)

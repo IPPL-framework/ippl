@@ -2,9 +2,6 @@
 # for more details check https://www.paraview.org/paraview-docs/latest/cxx/CatalystPythonScriptsV2.html
 
 
-
-
-
 # Add this block to the top of your file
 import sys
 import time
@@ -17,17 +14,15 @@ from paraview import catalyst
 from paraview.simple import LoadPlugin, CreateSteerableParameters
 
 
+# from catalyst_scripts import proxy_helpers
+# from catalyst_scripts import data_extractor_helper
 
-
-from helper_scripts import proxy_helpers
-from helper_scripts import data_extractor_helper
-
+import proxy_helpers
+import data_extractor_helper
 
 
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
-
-
 
 
 # print start marker
@@ -65,9 +60,6 @@ print("===SETTING ACTIVE SOURCES=======DONE")
 
 
 
-
-
-
 # ------------------------------------------------------------------------------
 # -------------EXTRACTORS-----------------------------------------------
 # ------------------------------------------------------------------------------
@@ -76,11 +68,9 @@ print("===CREATING EXTRACTORS==============")
 
 """ these will directly reate extractors without further use
 these files are catalst save files directly created from paraview -... """
-from extractors import png_ext_particle
-from extractors import png_ext_sfield
-from extractors import png_ext_vfield
-
-
+from catalyst_extractors import png_ext_particle
+from catalyst_extractors import png_ext_sfield
+from catalyst_extractors import png_ext_vfield
 
 
 # create extractor (PD=partitioned dataset...)
@@ -93,9 +83,6 @@ vTPD_particle = data_extractor_helper.create_VTPD_extractor("particle", ippl_par
 vTPD_particle = data_extractor_helper.create_VTPD_extractor("field_v", ippl_field_v)
 vTPD_particle = data_extractor_helper.create_VTPD_extractor("field_s", ippl_field_s)
 print("===CREATING EXTRACTORS==============DONE")
-
-
-
 
 
 
@@ -119,10 +106,6 @@ print("===CHECKING IPPL DATA===================DONE")
 
 
 
-
-
-
-
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -140,10 +123,6 @@ options.ExtractsOutputDirectory = 'ippl_catalyst_output'
  # Set only a single output directory
 # options.CatalystLiveTriggerFrequency = 1 ?????
 print("===SETING CATALYST OPTIONS=======================DONE")
-
-
-
-
 
 
 

@@ -1,0 +1,48 @@
+-
+  action: "add_pipelines"
+  pipelines:
+    pl1:
+      f1:
+        type: "threshold"
+        params:
+          field: "particle_magnitude"
+          min_value: 9.2
+          max_value: 25.0
+- 
+  action: "add_scenes"
+  scenes: 
+    s1: 
+      plots: 
+        p1:
+          type: pseudocolor
+          field: particle_charge
+          points:
+            radius: 0.1
+          # pipeline: "pl1"
+        p2:
+          type: pseudocolor
+          field: particle_center
+          points:
+            radius: 0.5
+      renders: 
+        r1: 
+          image_prefix: "render"
+          # image_prefix: 'render_%06d'
+          screen_annotations: "false"
+          camera:
+              look_at: [10, 0, 10]
+              up: [1, 0, 0]
+              position: [10, 40, 10]
+
+# ascent_actions_debug.yaml
+# -
+#   action: "save_info"
+#   filename: "out_ascent_info" # Output: out_ascent_info_{cycle}.yaml
+# -
+#   action: "add_extracts"
+#   extracts:
+#     e1:
+#       type: "relay"
+#       params:
+#         path: "conduit_blueprint" # Output: conduit_blueprint.{cycle}.root
+#         protocol: "blueprint/mesh/hdf5"

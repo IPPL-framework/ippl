@@ -21,9 +21,9 @@
 #endif
 
 
-// #ifdef IPPL_ENABLE_ASCENT
-// #include "AscentAdaptor.h"
-// #endif
+#ifdef IPPL_ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
+#endif
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -321,33 +321,33 @@ public:
 
 
 #ifdef IPPL_ENABLE_CATALYST
-        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles = {
+        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles_cata = {
             {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
         };
-        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields = {
+        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields_cata = {
             {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
             {"scalar", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
             /* when using the FFT solver this contained can't return anything ... */
             // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
             // {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
         };
-        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles, fields, scaleFactor);
+        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles_cata, fields_cata, scaleFactor);
 #endif
 
 
-// #ifdef IPPL_ENABLE_ASCENT
+#ifdef IPPL_ENABLE_ASCENT
 
-//         std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles = {
-//             {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
-//         };
-//         std::vector<AscentAdaptor::FieldPair<T, Dim>> fields = {
-//             {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
-//             // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-//             // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
-//         };
-//         AscentAdaptor::Execute(it, this->time_m ,  particles, fields);
+        std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles_asc = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<AscentAdaptor::FieldPair<T, Dim>> fields_asc = {
+            {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        AscentAdaptor::Execute(it, this->time_m ,  particles_asc, fields_asc);
 
-// #endif
+#endif
 
 
         // // // Field solve

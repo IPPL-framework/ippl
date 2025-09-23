@@ -46,6 +46,11 @@ const char* TestName   = "PenningTrap";
 #include "Stream/InSitu/CatalystAdaptor.h"
 #endif
 
+#ifdef IPPL_ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
+#endif
+
+
 int main(int argc, char* argv[]) {
 
         // #ifdef IPPL_ENABLE_CATALYST
@@ -93,18 +98,18 @@ int main(int argc, char* argv[]) {
             msg << "Catalyst Initialized" << endl;
         #endif
         
-        // #ifdef IPPL_ENABLE_ASCENT
-        //         int frequency = 1;
-        //         for (int i = 1; i < argc; ++i) {
-        //             if (std::string(argv[i]) == "--frequency" && i + 1 < argc) {
-        //                 frequency = atoi(argv[i+1]); 
-        //                 std::cout << "Frequency: " << frequency << std::endl;
-        //                 i++;
-        //             } 
-        //         }
+        #ifdef IPPL_ENABLE_ASCENT
+                int frequency = 1;
+                for (int i = 1; i < argc; ++i) {
+                    if (std::string(argv[i]) == "--frequency" && i + 1 < argc) {
+                        frequency = atoi(argv[i+1]); 
+                        std::cout << "Frequency: " << frequency << std::endl;
+                        i++;
+                    } 
+                }
             
-        //         AscentAdaptor::Initialize(frequency);
-        // #endif
+                AscentAdaptor::Initialize(frequency);
+        #endif
 
         
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
