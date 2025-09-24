@@ -68,6 +68,7 @@ namespace ippl {
          * @tparam View the field view type
          * @tparam T the field data type
          * @tparam IndexType the index type for accessing the field (default size_t)
+	 $ @tparam Val the type of the value to be interpolated to the grid
          * @param view the field view on which to scatter
          * @param wlo lower weights for interpolation
          * @param whi upper weights for interpolation
@@ -75,11 +76,11 @@ namespace ippl {
          * @param val the value to interpolate
          */
         template <unsigned long... ScatterPoint, typename View, typename T,
-                  typename IndexType = size_t>
+                  typename IndexType = size_t, typename Val = T>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, T val = 1);
+            const Vector<IndexType, View::rank>& args, Val val);
 
         /*!
          * Gathers from a field at a single point

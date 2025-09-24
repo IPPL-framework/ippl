@@ -6,13 +6,17 @@ template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
         : ippl::ParticleBase<PLayout>(playout) {
-        this->addAttribute(Q);
+        this->addAttribute(Q1);
+	this->addAttribute(Q2);
     }
 
     ~Bunch() {}
 
-    typedef ippl::ParticleAttrib<double> charge_container_type;
-    charge_container_type Q;
+    typedef ippl::ParticleAttrib<float> charge_container_typeF;
+    charge_container_typeF Q1;
+  
+    typedef ippl::ParticleAttrib<double> charge_container_typeD;
+    charge_container_typeD Q2;
 };
 
 int main(int argc, char* argv[]) {
@@ -84,26 +88,44 @@ int main(int argc, char* argv[]) {
             std::cout << "Sum coord: " << global_sum_coord << std::endl;
         }
 
-        bunch.Q = 1.0;
+        bunch.Q1 = 1.0;
 
         bunch.update();
 
         field = 0.0;
 
-        scatter(bunch.Q, field, bunch.R);
+        scatter(bunch.Q1, field, bunch.R);
 
         // Check charge conservation
         try {
             double Total_charge_field = field.sum();
 
-            std::cout << "Total charge in the field:" << Total_charge_field << std::endl;
-            std::cout << "Total charge of the particles:" << bunch.Q.sum() << std::endl;
-            std::cout << "Error:" << std::fabs(bunch.Q.sum() - Total_charge_field) << std::endl;
+            std::cout << "Float:: Total charge in the field:" << Total_charge_field << std::endl;
+            std::cout << "Float:: Total charge of the particles:" << bunch.Q1.sum() << std::endl;
+            std::cout << "Float:: Error:" << std::fabs(bunch.Q1.sum() - Total_charge_field) << std::endl;
+        } catch (const std::exception& e) {
+            std::cout << e.what() << std::endl;
+        }
+
+	bunch.Q2 = 1.0;
+
+        bunch.update();
+
+        field = 0.0;
+
+        scatter(bunch.Q2, field, bunch.R);
+
+        // Check charge conservation
+        try {
+            double Total_charge_field = field.sum();
+
+            std::cout << "Double:: Total charge in the field:" << Total_charge_field << std::endl;
+            std::cout << "Double:: Total charge of the particles:" << bunch.Q2.sum() << std::endl;
+            std::cout << "Double:: Error:" << std::fabs(bunch.Q2.sum() - Total_charge_field) << std::endl;
         } catch (const std::exception& e) {
             std::cout << e.what() << std::endl;
         }
     }
     ippl::finalize();
-
     return 0;
 }
