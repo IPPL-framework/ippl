@@ -126,8 +126,6 @@ int main(int argc, char* argv[]) {
         for (unsigned d = 0; d < Dim; d++) {
 	  nr[d] = initializer::GlobalStuff::instance().ngrid;
         }
-
-	msg << "Np = " << totalP << endl; 
 	
         // Number of time steps
         int nt = 0;

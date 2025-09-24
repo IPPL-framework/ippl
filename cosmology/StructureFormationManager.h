@@ -24,15 +24,26 @@
 #include "mc-4-Initializer/DataBase.h"
 #include "mc-4-Initializer/Cosmology.h"
 
+//#define DOUBLE_INIT_COND
 
 //#define KOKKOS_PRINT    // Kokkos::printf of interesting quantities. Does not work multirank
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
+
+#ifdef DOUBLE_INIT_COND
 typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t<Dim>, Mesh_t<Dim>::DefaultCentering> field_type;
 typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
 typedef Field<Kokkos::complex<double>, Dim> CField_t;
 typedef Field<double, Dim> RField_t; 
+#else
+typedef ippl::Field<Kokkos::complex<float>, Dim, Mesh_t<Dim>, Mesh_t<Dim>::DefaultCentering> field_type;
+typedef ippl::FFT<ippl::CCTransform, field_type> CFFT_type;
+typedef Field<Kokkos::complex<float>, Dim> CField_t;
+typedef Field<float, Dim> RField_t;
+#endif
+
+
 
 struct HermitianPkg {
   int    kx, ky, kz;
@@ -151,8 +162,12 @@ public:
             this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getF(),
             &this->fcontainer_m->getPhi()));
 
+	msg << "Set FieldSolver done ..." << endl;
+	
         this->fsolver_m->initSolver();
 
+	msg << "Init FieldSolver done ..." << endl;
+	
         this->setLoadBalancer(std::make_shared<LoadBalancer_t>(
             this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m));
 
@@ -164,14 +179,27 @@ public:
 	  msg << "Create Particles ....." << endl;
 	  ippl::ParameterList fftParams;
 	  fftParams.add("use_heffte_defaults", true);
+
+	  /** ADA
+	     make string to annotate pushRegion
+	  */
+
+	  const ippl::NDIndex<Dim>& lDom = this->fcontainer_m->getFL().getLocalNDIndex();
+	  std::ostringstream oss;
+	  oss << "CFFT CField Pk nx= " << lDom[0].length();
+	  
+	  Kokkos::Profiling::pushRegion(oss.str());
 	  Cfft_m = std::make_unique<CFFT_type>(this->fcontainer_m->getFL(), fftParams);
 	  cfield_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
 	  Pk_m.initialize(this->fcontainer_m->getMesh(), this->fcontainer_m->getFL());
-	  msg << "FFT and Pk structures initialized" << endl;;
+	  msg << "FFT and Pk structures initialized" << endl;
+	  Kokkos::Profiling::popRegion();
 	  createParticles();
 	  msg << "Create particles done" << endl;	  
 	}
 
+	return;
+	
 	static IpplTimings::TimerRef DummySolveTimer = IpplTimings::getTimer("solveWarmup");
 	IpplTimings::startTimer(DummySolveTimer);
 	
@@ -314,6 +342,7 @@ public:
 
   void LinearZeldoInitMP() {
     // After creating the field layout (cfield_m) and determining global grid sizes Nx, Ny, Nz:
+ {
     Inform msg("LinearZeldoInitMP ");
     Inform m2a("LinearZeldoInitMP ", INFORM_ALL_NODES);
     
@@ -441,7 +470,6 @@ public:
 	zz = 1.0;
 	break;
       }
-
       
       // Compute displacement component in k-space
       ippl::parallel_for("force_in_k_space", ippl::getRangePolicy(cfview, ngh),
@@ -508,6 +536,8 @@ public:
 			 });
       cfield_m = tmpcfield;
     }
+    Kokkos::fence();
+ }
   }
 
   /**
@@ -519,24 +549,32 @@ public:
     Inform m2a("createParticles ",INFORM_ALL_NODES);
     Inform msg("createParticles ");
 
+
     static IpplTimings::TimerRef creaIpplParts = IpplTimings::getTimer("creaIpplParts");
     IpplTimings::startTimer(creaIpplParts);
     size_type nloc = this->totalP_m / ippl::Comm->size();
     std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+    std::ostringstream oss;
+    oss << "pc->create  nloc= " << nloc;
+    
+    Kokkos::Profiling::pushRegion(oss.str());
     pc->create(nloc);
     pc->m = this->M_m / this->totalP_m;
     IpplTimings::stopTimer(creaIpplParts);
-    
     msg << "pc->create(nloc) done" << endl;
+    Kokkos::Profiling::popRegion();
     
     /** 
 	construct Pk_m 
-     */
+    */
     static IpplTimings::TimerRef iniPwrSpec = IpplTimings::getTimer("initPwrSpec");
     IpplTimings::startTimer(iniPwrSpec);
     initPwrSpec();
     IpplTimings::stopTimer(iniPwrSpec);
 
+    msg << "Construct Pk_m done" << endl;
+    
     /**
        the following code can be found
        as standalone test in test/particles/zeldo-test-mp1.cpp
@@ -546,9 +584,9 @@ public:
     IpplTimings::startTimer(linZeldo);
     LinearZeldoInitMP();
     IpplTimings::stopTimer(linZeldo);
-    
+    msg << "LinearZeldoInitMP() done" << endl;
     // Load Balancer Initialisation
-
+    /*
     auto* mesh = &this->fcontainer_m->getMesh();
     auto* FL   = &this->fcontainer_m->getFL();
     if ((this->lbt_m != 1.0) && (ippl::Comm->size() > 1)) {
@@ -556,13 +594,11 @@ public:
       this->loadbalancer_m->initializeORB(FL, mesh);
       this->loadbalancer_m->repartition(FL, mesh, this->isFirstRepartition_m);
     }
+    */
     pc->update();
     m2a << "local number of galaxies after initializer " << pc->getLocalNum() << endl;
+
 }
-
-
-  
-
   
     /**
      * @brief Read particle data from a file.

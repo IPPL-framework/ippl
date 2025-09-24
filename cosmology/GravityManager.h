@@ -305,7 +305,7 @@ public:
 
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double>* m          = &this->pcontainer_m->m;
+        ippl::ParticleAttrib<float>* m           = &this->pcontainer_m->m;
         typename Base::particle_position_type* R = &this->pcontainer_m->R;
         Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
         Vector_t<double, Dim> rmin               = rmin_m;
@@ -321,7 +321,7 @@ public:
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
         if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 10.*Kokkos::Experimental::epsilon_v<T> ) {
+            if (TotalParticles != totalP_m || relError > 10.*Kokkos::Experimental::epsilon_v<float> ) {
                 mes << "Time step: " << it_m << endl;
                 mes << "Total particles in the sim. " << totalP_m << " "
                     << "after update: " << TotalParticles << endl;
