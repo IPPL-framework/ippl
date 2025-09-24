@@ -14,8 +14,16 @@
 #include "Utility/IpplException.h"
 
 
+/* catalyst header defined the following for free use ... */
+//   CATALYST_EXPORT enum catalyst_status catalyst_initialize(const conduit_node* params);
+//   CATALYST_EXPORT enum catalyst_status catalyst_finalize(const conduit_node* params);
+//   CATALYST_EXPORT enum catalyst_status catalyst_about(conduit_node* params);
+//   CATALYST_EXPORT enum catalyst_status catalyst_results(conduit_node* params);
 
 
+
+
+#include<filesystem>
 
 namespace CatalystAdaptor {
 
@@ -56,46 +64,48 @@ namespace CatalystAdaptor {
     }
 
 
-    void Initialize(int argc, char* argv[]) {
+
+    void Initialize() {
         conduit_cpp::Node node;
-        std::cout << argc << std::endl;
-        std::cout << "\nPATHCHECK" << std::endl;
-        std::cout << "pvscript path: " << argv[1] << std::endl;
-        std::cout << "pvproxy path: " << argv[2] <<"\n" << std::endl;
+        
 
-        std::cout << "Set script" << std::endl;
-        node["catalyst/scripts/script/filename"].set(argv[1]);
-        std::cout << "Set proxy" << std::endl;
-        node["catalyst/proxies/proxy"].set(argv[2]);
+       const char* catalyst_pipeline_path_env = std::getenv("CATALYST_PIPELINE_PATH");
+       const char* catalyst_proxy_path_env    = std::getenv("CATALYST_PROXY_PATH");
 
+       std::filesystem::path source_dir = std::filesystem::path(__FILE__).parent_path();
 
-        /*
-        for (int cc = 2; cc < argc; ++cc) {
-            std::cout << "pvscript args: " << argv[cc] << std::endl;
-            conduit_cpp::Node list_entry = node["catalyst/scripts/script/args"].append();
-            list_entry.set(argv[cc]);
-        }
-        */
-        try {
-            node["catalyst_load/implementation"]        = getenv("CATALYST_IMPLEMENTATION_NAME");
-            node["catalyst_load/search_paths/paraview"] = getenv("CATALYST_IMPLEMENTATION_PATHS");
-        } catch (...) {
-            throw IpplException("CatalystAdaptor::Initialize",
-                                "no environmental variable for CATALYST_IMPLEMENTATION_NAME or "
-                                "CATALYST_IMPLEMENTATION_PATHS found");
-        }
+       std::filesystem::path pipeline_file_path;
+       if (catalyst_pipeline_path_env && std::filesystem::exists(catalyst_pipeline_path_env)) {
+           pipeline_file_path = catalyst_pipeline_path_env;
+           std::cout << "Using CATALYST_PIPELINE_PATH from environment: " << pipeline_file_path << std::endl;
+       } else {
+           pipeline_file_path = source_dir / "catalyst_scripts" / "pipeline_default.py";
+           std::cout << "No valid CATALYST_PIPELINE_PATH. Using default: " << pipeline_file_path << std::endl;
+       }
 
-        std::cout << "ippl: catalyst_initialize() call" << std::endl;       
-        // TODO: catch catalyst error also with IpplException
+       std::filesystem::path proxy_file_path;
+       if (catalyst_proxy_path_env && std::filesystem::exists(catalyst_proxy_path_env)) {
+           proxy_file_path = catalyst_proxy_path_env;
+           std::cout << "Using CATALYST_PROXY_PATH from environment: " << proxy_file_path << std::endl;
+       } else {
+           proxy_file_path = source_dir / "catalyst_scripts" / "proxy_default.xml";
+           std::cout << "No valid CATALYST_PROXY_PATH. Using default: " << proxy_file_path << std::endl;
+       }
+
+       // Apply resolved paths to Catalyst node
+       node["catalyst/scripts/script/filename"].set(pipeline_file_path.string());
+       node["catalyst/proxies/proxy"].set(proxy_file_path.string());
+       
+
+        std::cout << "ippl: catalyst_initialize() call" << std::endl;
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
-            std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
+            throw IpplException("Stream::InSitu::CatalystAdaptor", "Failed to initialize Catalyst");
+            // std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
         }
         else{
             std::cout << "\n Catalyst initialized successfully.\n" << std::endl;
         }
-
-        /* Insurance */
     }
 
     // void Initialize_Adios(int argc, char* argv[])
@@ -337,7 +347,7 @@ namespace CatalystAdaptor {
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-        // Handle particles
+    // Handle particles
 
         std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> R_host_map;
         std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> P_host_map;
@@ -369,7 +379,7 @@ namespace CatalystAdaptor {
               node);
         }
 
- // Handle fields
+    // Handle fields
 
         // Map of all Kokkos::Views. This keeps a reference on all Kokkos::Views
         // which ensures that Kokkos does not free the memory before the end of this function.

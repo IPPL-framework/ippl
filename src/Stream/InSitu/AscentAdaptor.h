@@ -73,8 +73,7 @@ namespace AscentAdaptor {
         node["density/values"].set_external(view.data(), view.size());
     }
 
-    void Initialize(int frequency) {
-        mFrequency = frequency;
+    void Initialize() {
         
         conduit::Node ascent_options;
 
@@ -83,19 +82,33 @@ namespace AscentAdaptor {
         MPI_Comm_dup(MPI_COMM_WORLD, &ascent_comm);
         ascent_options["mpi_comm"] = MPI_Comm_c2f(ascent_comm);
 
-
-        
-        // Create output directory relative to executable location
-        // std::filesystem::path exe_dir = std::filesystem::path(std::getenv("PWD") ? std::getenv("PWD") : ".");
-        // std::filesystem::path output_dir = exe_dir / "ippl_ascent_output";
-        
+               
 
         std::filesystem::path output_dir = "./ippl_ascent_output";
         std::filesystem::create_directories(output_dir);
         ascent_options["default_dir"] = output_dir.string();
 
 
+        const char* ascent_freq_env = std::getenv("ASCENT_EXTRACTION_FREQUENCY");
+        int extraction_frequency = 10;
 
+        if (ascent_freq_env) {
+            try {
+                int parsed = std::stoi(ascent_freq_env);
+                if (parsed > 0) {
+                    extraction_frequency = parsed;
+                    std::cout << "Using ASCENT_EXTRACTION_FREQUENCY from environment: " << extraction_frequency << std::endl;
+                } else {
+                    std::cerr << "ASCENT_EXTRACTION_FREQUENCY must be > 0. Using default: " << extraction_frequency << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Invalid ASCENT_EXTRACTION_FREQUENCY ('" << ascent_freq_env
+                          << "'): " << e.what() << ". Using default: " << extraction_frequency << std::endl;
+            }
+        } else {
+            std::cout << "ASCENT_EXTRACTION_FREQUENCY not set. Using default: " << extraction_frequency << std::endl;
+        }
+        mFrequency = extraction_frequency;
 
         
 

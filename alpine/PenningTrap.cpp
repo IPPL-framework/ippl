@@ -65,50 +65,15 @@ int main(int argc, char* argv[]) {
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
         
-        // #ifdef IPPL_ENABLE_CATALYST
-        // for (int i = 1; i < argc; ++i) {
-        //     if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
-        //         // reduce the argument list
-        //         char* reducedArgv[] = { argv[0], argv[i + 1] };
-        //         CatalystAdaptor::Initialize(2, reducedArgv);
-        //         break;
-        //     }
-        // }
-        // #endif
-
-
 
         #ifdef IPPL_ENABLE_CATALYST
             msg << "Catalyst is enabled" << endl; 
-            char* script = nullptr;
-            char* proxy = nullptr;
-            for (int i = 1; i < argc; ++i) {
-                if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
-                    script = argv[i+1]; 
-                    i++;
-                }   
-                if (std::string(argv[i]) == "--pvproxy" && i+1 < argc) {
-                    proxy = argv[i+1];
-                    i++;
-                }
-            }
-            char* reducedArgv[] = { argv[0], script, proxy};
-            CatalystAdaptor::Initialize(2, reducedArgv);
-
-            msg << "Catalyst Initialized" << endl;
+            CatalystAdaptor::Initialize();
         #endif
         
         #ifdef IPPL_ENABLE_ASCENT
-                int frequency = 1;
-                for (int i = 1; i < argc; ++i) {
-                    if (std::string(argv[i]) == "--frequency" && i + 1 < argc) {
-                        frequency = atoi(argv[i+1]); 
-                        std::cout << "Frequency: " << frequency << std::endl;
-                        i++;
-                    } 
-                }
-            
-                AscentAdaptor::Initialize(frequency);
+            msg << "Ascemt is enabled" << endl; 
+            AscentAdaptor::Initialize();
         #endif
 
         
