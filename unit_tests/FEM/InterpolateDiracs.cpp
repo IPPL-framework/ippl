@@ -225,7 +225,8 @@ using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::ty
 
 TYPED_TEST_SUITE(InterpTest, Tests);
 
-TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
+template <typename TestFixture>
+void InterpolatesAffineExactly() {
   using T          = typename TestFixture::value_type;
   constexpr unsigned Dim = TestFixture::dim;
   using field_t    = typename TestFixture::field_t;
@@ -310,6 +311,10 @@ TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
     << " (abs_tol=" << abs_tol << ", rel_tol*ref=" << rel_tol * g_ref << ")";
 
   std::cout << max_err << std::endl;
+}
+
+TYPED_TEST(InterpTest, InterpolatesAffineExactly) {
+  InterpolatesAffineExactly<TestFixture>();
 }
 
 int main(int argc, char* argv[]) {
