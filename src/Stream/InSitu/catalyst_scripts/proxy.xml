@@ -46,11 +46,11 @@
             </DoubleVectorProperty>
 
             <!--
-              PropertyGroup: SteerableParametersFLAAAG
+              PropertyGroup: SteerableParameters
               Groups steerable properties for display in the ParaView UI as a collection.
               The 'scaleFactor' property is mapped to the prototype property 'PrototypescaleFactor'.
             -->
-            <PropertyGroup label="SteerableParametersFLAAAG" panel_widget="PropertyCollection">
+            <PropertyGroup label="SteerableParameters_LABEL" panel_widget="PropertyCollection">
                 <Property name="scaleFactor" function="PrototypescaleFactor" />
                 <!-- here, "name" identifies the property on this proxy, while
                      "function" identifies the property on the prototype proxy. If

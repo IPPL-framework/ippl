@@ -174,7 +174,7 @@ pNG3 = CreateExtractor('PNG', renderView1, registrationName='PNG3')
 pNG3.Trigger = 'Time Step'
 
 # init the 'Time Step' selected for 'Trigger'
-pNG3.Trigger.Frequency = 7
+pNG3.Trigger.Frequency = 5
 
 # init the 'PNG' selected for 'Writer'
 pNG3.Writer.FileName = 'PTrap_vField_RenderView1_{timestep:06d}{camera}.png'
