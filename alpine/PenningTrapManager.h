@@ -14,10 +14,15 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+
+#include "Stream/Registry/VisRegistry.h"
+#include "Stream/InSitu/VisBaseAdaptor.h"
+
+
 #ifdef IPPL_ENABLE_CATALYST
+
 #include "Stream/InSitu/CatalystAdaptor.h"
 // #include <vtkSMProxyManager.h>
-// #include "CatalystAdaptor.h"
 #endif
 
 
@@ -138,6 +143,22 @@ public:
         IpplTimings::stopTimer(SolveTimer);
 
         this->grid2par();
+
+
+
+        #ifdef IPPL_ENABLE_CATALYST
+            m << "Catalyst is enabled" << endl; 
+            CatalystAdaptor::Initialize();
+
+        #endif
+        
+        #ifdef IPPL_ENABLE_ASCENT
+            m << "Ascemt is enabled" << endl; 
+            AscentAdaptor::Initialize();
+        #endif
+
+
+
 
         this->dump();
 
@@ -319,20 +340,32 @@ public:
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
 
-
+        
+        
+        
+        
 #ifdef IPPL_ENABLE_CATALYST
-        std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles_cata = {
-            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
-        };
-        std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields_cata = {
-            {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
-            {"scalar", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-            /* when using the FFT solver this contained can't return anything ... */
-            // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
-            // {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-        };
-        CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles_cata, fields_cata, scaleFactor);
+        
+        auto myR_vis = MakeRegistry<"particle","field_v","field_s">(pc, this->fcontainer_m->getE(), this->fcontainer_m->getRho() );
+        auto myR_steer = MakeRegistry<"magnetic">(scaleFactor);
+
+        CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
+
+
+        // std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles_cata = {
+        //     {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        // };
+        // std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields_cata = {
+        //     {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+        //     {"scalar", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+        //     /* when using the FFT solver this contained can't return anything ... */
+        //     // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        //     // {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+        // };
+        // CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles_cata, fields_cata, scaleFactor);
 #endif
+
+
 
 
 #ifdef IPPL_ENABLE_ASCENT

@@ -101,25 +101,134 @@ struct ids_unique<S, Rest...>
 template <auto>
 struct always_false_id : std::false_type {};
 
-// === Forward declarations to break circular dependencies ===
-
-template <typename... Slots>
-class RegistryFluent;
-
-template <typename... Slots>
-class VisBaseAdaptor;
-
-class RegistryBase;
-
-template<typename T, unsigned Dim>
-class ParticleBase;
-
-template<typename T, unsigned Dim>
-class Field;
-
-// === Aggregate public headers ===
-// Including public project headers here allows end-users to include only this file.
-#include "VisRegistry.h"
-#include "VisBase.h"
 
 
+
+
+
+
+
+
+
+// ======================================
+// // Helper trait to extract T and Dim from ParticleBase types
+// template<typename T>
+// struct ParticleTraits;
+
+// template<typename T, unsigned Dim, typename... PositionProperties, typename... IDProperties>
+// struct ParticleTraits<ippl::ParticleBase<ippl::detail::ParticleLayout<T, Dim, PositionProperties...>, IDProperties...>> {
+//     using value_type = T;
+//     static constexpr unsigned dimension = Dim;
+// };
+
+
+
+// // --- Shorthands for ParticleTraits ---
+// template<typename ParticleBaseT>
+// using particle_value_t = typename ParticleTraits<std::decay_t<ParticleBaseT>>::value_type;
+
+// template<typename ParticleBaseT>
+// constexpr unsigned particle_dim_v = ParticleTraits<std::decay_t<ParticleBaseT>>::dimension;
+
+// template<typename ParticleBaseT>
+// void foo(const ParticleBaseT& pc) {
+//     using T = particle_value_t<ParticleBaseT>;
+//     constexpr unsigned Dim = particle_dim_v<ParticleBaseT>;
+//     // Now you can use T and Dim directly
+// }auto& pc = some_particle_container;
+// constexpr unsigned Dim = particle_dim_v<decltype(pc)>; // Correct!
+// ======================================
+
+
+
+// Helper: matches any Layout<T, Dim, ...>
+template<typename Layout>
+struct ExtractTypeDim;
+
+template<template<typename, unsigned, typename...> class Layout, typename T, unsigned Dim, typename... Rest>
+struct ExtractTypeDim<Layout<T, Dim, Rest...>> {
+    using value_type = T;
+    static constexpr unsigned dimension = Dim;
+};
+
+// General ParticleTraits: matches any class whose first template parameter is a layout
+template<typename T>
+struct ParticleTraits;
+
+// Partial specialization for any class whose first template parameter is a layout
+template<   template<typename, typename...> class C,
+            typename Layout, typename... OtherArgs>
+struct ParticleTraits<C<Layout, OtherArgs...>> : ExtractTypeDim<Layout> {};
+
+// Generic: matches any template class with <T, unsigned Dim>
+template<template<typename, unsigned> class PContainer, typename T, unsigned Dim>
+struct ParticleTraits<PContainer<T, Dim>> {
+    using value_type = T;
+    static constexpr unsigned dimension = Dim;
+};
+
+
+
+template<typename ParticleLikeT>
+using particle_value_t = typename ParticleTraits<std::decay_t<ParticleLikeT>>::value_type;
+
+template<typename ParticleLikeT>
+constexpr unsigned particle_dim_v = ParticleTraits<std::decay_t<ParticleLikeT>>::dimension;
+
+
+
+
+
+
+
+
+
+
+// ======================================
+// Helper trait to remove shared_ptr wrapper and get underlying type
+template<typename T>
+struct UnwrapType {
+    using type = T;
+};
+
+template<typename T>
+struct UnwrapType<std::shared_ptr<T>> {
+    using type = T;
+};
+
+template<typename T>
+using UnwrapType_t = typename UnwrapType<T>::type;
+
+// ======================================
+
+
+// ======================================
+// Helper to check if type is shared_ptr
+template<typename T>
+struct IsSharedPtr : std::false_type {};
+
+template<typename T>
+struct IsSharedPtr<std::shared_ptr<T>> : std::true_type {};
+
+template<typename T>
+constexpr bool IsSharedPtr_v = IsSharedPtr<T>::value;
+
+// ======================================
+
+
+
+
+
+
+
+
+
+// // === Forward declarations to break circular dependencies ===
+
+// template <typename... Slots>
+// class RegistryFluent;
+
+// template <typename... Slots>
+// class VisBaseAdaptor;
+
+// class RegistryBase;

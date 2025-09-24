@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Stream/Registry/VisRegistry"
+#include "Stream/Registry/VisRegistry.h"
 
 
 // Fluent builder for compile-time slot accumulation

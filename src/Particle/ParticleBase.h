@@ -62,6 +62,11 @@
 #include "Particle/ParticleLayout.h"
 
 namespace ippl {
+    // Minimal empty base class for all ParticleBase specializations, for practical purposes
+    class ParticleBaseBase {
+    public:
+        virtual ~ParticleBaseBase() = default;
+    };
 
     /*!
      * @class ParticleBase
@@ -72,7 +77,7 @@ namespace ippl {
      * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
-    class ParticleBase {
+    class ParticleBase: public ParticleBaseBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:

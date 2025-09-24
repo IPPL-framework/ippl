@@ -7,10 +7,8 @@ target_include_directories(ippl
         $<INSTALL_INTERFACE:include>
 )
 
-
 install(FILES
-    CatalystAdaptor.h
-    AscentAdatpor.h
-    VisBaseAdaptor.h
-    DESTINATION include/Stream/InSitu 
+    VisRegistry.h
+    RegistryHelper.h
+    DESTINATION include/Stream/Registry
 )

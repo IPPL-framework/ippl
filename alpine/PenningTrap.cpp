@@ -66,15 +66,15 @@ int main(int argc, char* argv[]) {
 
         
 
-        #ifdef IPPL_ENABLE_CATALYST
-            msg << "Catalyst is enabled" << endl; 
-            CatalystAdaptor::Initialize();
-        #endif
+        // #ifdef IPPL_ENABLE_CATALYST
+        //     msg << "Catalyst is enabled" << endl; 
+        //     CatalystAdaptor::Initialize();
+        // #endif
         
-        #ifdef IPPL_ENABLE_ASCENT
-            msg << "Ascemt is enabled" << endl; 
-            AscentAdaptor::Initialize();
-        #endif
+        // #ifdef IPPL_ENABLE_ASCENT
+        //     msg << "Ascemt is enabled" << endl; 
+        //     AscentAdaptor::Initialize();
+        // #endif
 
         
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
@@ -126,7 +126,8 @@ int main(int argc, char* argv[]) {
         CatalystAdaptor::Finalize();
         #endif
         IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
+
+        // IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();

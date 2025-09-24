@@ -10,9 +10,10 @@
 #include <vector>
 #include <variant>
 #include <utility>
-
+#include <type_traits>
 #include "Utility/IpplException.h"
 
+#include<filesystem>
 
 /* catalyst header defined the following for free use ... */
 //   CATALYST_EXPORT enum catalyst_status catalyst_initialize(const conduit_node* params);
@@ -21,14 +22,12 @@
 //   CATALYST_EXPORT enum catalyst_status catalyst_results(conduit_node* params);
 
 
-
-
-#include<filesystem>
-
 namespace CatalystAdaptor {
 
     template <typename T, unsigned Dim>
     using FieldVariant = std::variant<Field_t<Dim>*, VField_t<T, Dim>*>;
+
+
 
     template <typename T, unsigned Dim>
     using FieldPair = std::pair<std::string, FieldVariant<T, Dim>>;
@@ -326,29 +325,243 @@ namespace CatalystAdaptor {
         }   
     }
 
-    template <typename T, unsigned Dim>
-    void Execute(int cycle, double time, int rank,
-        // const auto& /* std::shared_ptr<ParticleContainer<double, 3> >& */ particle,
-        const std::vector<CatalystAdaptor::ParticlePair<T, Dim>>& particles,
-        const std::vector<FieldPair<T, Dim>>& fields, 
-        double& scaleFactor
+
+
+
+    
+            // catalyst blueprint definition
+            // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
+            //
+            // conduit blueprint definition (v.8.3)
+            // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
+            
+            
+    template<typename entry_t>
+    void execute_steer(entry_t entry){
+
+        using EntryType = std::decay_t<decltype(entry)>;
+        // std::cout << "   Processing entry of type: " << typeid(EntryType).name() << "\n";
+        std::cout << "   Processing Steering Entries: " <<std::endl;
+        //  typeid(EntryType).name() << "\n";
+        
+        // Type-specific processing
+        if constexpr (std::is_same_v<EntryType, double>) {
+            std::cout << "     -> double steering parameter: " << "\n";
+        } else if constexpr (std::is_same_v<EntryType, float>) {
+            std::cout << "     -> float steering parameter" <<  "\n";
+        } else if constexpr (std::is_same_v<EntryType, int>) {
+            std::cout << "     -> int  steering parameter\n" << std::endl;;
+        } else {
+            std::cout << "   Unclear steeerig " << "\n";
+        }
+    }
+
+
+
+
+
+
+/* SCALAR FIELDS - handles both reference and shared_ptr */
+template<typename T, unsigned Dim, class... ViewArgs>
+void execute_entry([[maybe_unused]]  const ippl::Field<T, Dim, ViewArgs...>& entry) {
+    std::cout << " execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
+    // Add your field processing logic here
+}
+
+/* VECTOR FIELDS - handles both reference and shared_ptr */
+template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
+void execute_entry([[maybe_unused]]  const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry) {
+    std::cout << " execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
+    // Add your vector field processing logic here
+}
+
+
+
+        // using vector_type            = typename PLayout::vector_type;
+        // using index_type             = typename PLayout::index_type;
+        // using particle_position_type = typename PLayout::particle_position_type;
+        // using particle_index_type    = ParticleAttrib<index_type, IDProperties...>;
+
+        // using Layout_t = PLayout;
+
+        // template <typename... Properties>
+        // using attribute_type = typename detail::ParticleAttribBase<Properties...>;
+
+        // template <typename MemorySpace>
+        // using container_type = std::vector<attribute_type<MemorySpace>*>;
+
+        // using attribute_container_type =
+        //     typename detail::ContainerForAllSpaces<container_type>::type;
+
+        // using bc_container_type = typename PLayout::bc_container_type;
+
+        // using hash_container_type = typename detail::ContainerForAllSpaces<detail::hash_type>::type;
+
+        // using size_type = detail::size_type;
+// C++20: function template with requires
+template<typename T>
+requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
+void execute_entry([[maybe_unused]] const T& entry) {
+    std::cout << "DD execute_entry(ParticleBaseBase or subclass) called" << std::endl;
+    std::cout << "Particle Space Dimension:"<< particle_dim_v<T> << std::endl;
+    std::cout << "Particle Data Scalar Type:"  <<  typeid(particle_value_t<T>).name() << std::endl;
+}
+
+
+
+
+// Base case: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
+template<typename T>
+requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
+void execute_entry([[maybe_unused]] T&& entry) {
+    std::cout << "AA  Entry type can't be processed: " << typeid(std::decay_t<T>).name() << std::endl;
+}
+
+
+
+
+
+//     // using Base = ippl::ParticleBase<typename T::Layout_t>;
+//     using Layout = typename T::Layout_t;
+//     using value_type = typename Layout::vector_type::value_type;
+
+
+
+
+
+
+
+
+
+
+
+
+/* WE DONT  USE BASE CASE BECAUSE WE CANT AVOID TRIGGERING IT FOR PARTICLECONTAINERS AAAAAAAAAA WIESO.....!!!! */
+
+/* BASE CASE - handles unknown types 
+withouth enable_if this will be preferred for in derived classes from particle base
+which is not ideal, use sfinae to make base case fail, if addAttribute method exists,
+ since then there shoudl be another specialisation*/
+// template<typename EntryT>
+// std::enable_if_t<!has_addAttribute<EntryT>::value,void>  execute_entry([[maybe_unused]] EntryT&& entry) {
+//     std::cout << "AA  Entry type can't be processed: " << typeid(std::decay_t<EntryT>).name() << std::endl;   
+// }
+
+// or
+// template<typename EntryT, std::enable_if_t<!has_addAttribute<EntryT>::value, int> = 0>
+// void execute_entry([[maybe_unused]] EntryT&& entry) {
+//    std::cout << "AA  Entry type can't be processed: " << typeid(std::decay_t<EntryT>).name() << std::endl;   
+
+//    // ...
+// }
+
+
+
+
+
+
+/* Doesn't work ... */
+
+// // Detection idiom for addAttribute
+// template<typename, typename = void>
+// struct has_addAttribute : std::false_type {};
+
+// template<typename T>
+// struct has_addAttribute<T, std::void_t<decltype(&T::addAttribute)>> : std::true_type {};
+
+
+/* Also does't work ... */
+
+
+// Primary template: false by default
+// template<typename T, typename = void>
+// struct is_any_particle_base : std::false_type {};
+
+// // Specialization: only enabled if T has Layout_t
+// template<typename T>
+// struct is_any_particle_base<T, std::void_t<typename T::Layout_t>>
+//     : std::bool_constant<std::is_base_of_v<ippl::ParticleBase<typename T::Layout_t>, std::decay_t<T>>> {};
+
+
+
+
+/* PARTICLE CONTAINERS; fails for derived types .. and is limiting later on maybe ....
+using ParticleBase with trait extraction via specifie Particle Layout */
+// template<typename T, unsigned Dim, typename... PositionProperties, typename... IDProperties>
+// void execute_entry([[maybe_unused]]  const ippl::ParticleBase<ippl::detail::ParticleLayout<T, Dim, PositionProperties...>, IDProperties...>& entry) {
+//     std::cout   << "CC execute_entry(ippl::ParticleBase<ippl::detail::ParticleLayou<"
+//                 << typeid(T).name() << "," << Dim << ">) called" << std::endl;
+// }
+
+
+
+
+
+// template<unsigend Dim,  typename T>
+// template<typename ippl::Field<ippl::Vector<T, Dim>, Dim>
+// void execute_entry(entry_t entry){;
+// }
+
+
+
+/* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
+template<typename T>
+void execute_entry(const std::shared_ptr<T>& entry) {
+    if (entry) {
+        std::cout << "shared pointer ..." << std::endl;
+        execute_entry(*entry);  // Dereference and dispatch to reference version
+    } else {
+        std::cout << "  Null shared_ptr encountered" << std::endl;
+    }
+}
+
+
+
+
+
+
+    void Execute(
+        /* template instead of auto ... */
+        auto registry_vis, auto registry_steer,
+        int cycle, double time, int rank
     ){
-
-        // catalyst blueprint definition
-        // https://docs.paraview.org/en/latest/Catalyst/blueprints.html
-        //
-        // conduit blueprint definition (v.8.3)
-        // https://llnl-conduit.readthedocs.io/en/latest/blueprint_mesh.html
-        conduit_cpp::Node node;
-
+        
         // add time/cycle information
+        conduit_cpp::Node node;
         auto state = node["catalyst/state"];
         state["cycle"].set(cycle);
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-    // Handle particles
 
+
+        // std::cout << "All declared IDs:\n";
+        // auto all_ids = registry_vis.getAllIds();
+        // std::cout << "   ";
+        // for (const auto& id : all_ids) {
+        //     std::cout << "\"" << id << "\" ";
+        // }
+        // std::cout << "\n\n";
+        
+
+        registry_vis.forEach([](std::string_view id, const auto& entry) {
+            std::cout << "   Entry ID: " << id << "\n";
+            execute_entry(entry);
+        });
+
+
+        registry_steer.forEach([](std::string_view id, const auto& entry) {
+            std::cout << "   Entry ID: " << id << "\n";
+            execute_steer(entry);
+        });
+
+
+
+
+
+
+    // Handle particles{
+/* 
         std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> R_host_map;
         std::map<std::string, typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror> P_host_map;
         std::map<std::string, typename ippl::ParticleAttrib<double>::HostMirror> q_host_map;
@@ -378,7 +591,10 @@ namespace CatalystAdaptor {
               particlesName,
               node);
         }
+        
 
+ */
+/* 
     // Handle fields
 
         // Map of all Kokkos::Views. This keeps a reference on all Kokkos::Views
@@ -407,16 +623,23 @@ namespace CatalystAdaptor {
                 Execute_Field(field, fieldName, vector_host_views[fieldName], node);     
             }
         }
+*/
 
-        AddSteerableChannel(node, scaleFactor);
 
-        // Pass Conduit node to Catalyst
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-        }
 
-        Results(scaleFactor);
+
+
+
+
+        // AddSteerableChannel(node, scaleFactor);
+
+        // // Pass Conduit node to Catalyst
+        // catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        // if (err != catalyst_status_ok) {
+        //     std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        // }
+
+        // Results(scaleFactor);
     }
 
 }  // namespace CatalystAdaptor
@@ -424,130 +647,3 @@ namespace CatalystAdaptor {
 #endif
 
 
-
-
-
-    // ==========
-    // == RYAN 
-    // inline void callCatalystExecute(const conduit_cpp::Node& node) {
-
-    //     // TODO: we should add here this IPPL-INFO stuff
-    //     //if ( static auto called {false}; !std::exchange(called, true) ) {
-    //     //    catalyst_conduit_node_print(conduit_cpp::c_node(&node));
-    //     //}
-
-    //     catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-    //     if (err != catalyst_status_ok) {
-    //         std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-    //     }
-    // }
-    
-
-
-    // template <class ParticleContainer>
-    // std::optional<conduit_cpp::Node> Execute_Particle_1d(int cycle, double time, int rank, ParticleContainer& particleContainer, std::optional<conduit_cpp::Node>& node_in) {
-    //   assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
-
-    //     //auto layout_view = particleContainer->R.getView();
-    //     typename ippl::ParticleAttrib<ippl::Vector<double, 1>>::HostMirror R_host = particleContainer->R.getHostMirror();
-    //     typename ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror P_host = particleContainer->P.getHostMirror();
-    //     typename ippl::ParticleAttrib<double>::HostMirror q_host = particleContainer->q.getHostMirror();
-    //     typename ippl::ParticleAttrib<std::int64_t>::HostMirror ID_host = particleContainer->ID.getHostMirror();
-    //     Kokkos::deep_copy(R_host, particleContainer->R.getView());
-    //     Kokkos::deep_copy(P_host, particleContainer->P.getView());
-    //     Kokkos::deep_copy(q_host, particleContainer->q.getView());
-    //     Kokkos::deep_copy(ID_host, particleContainer->ID.getView());
-    
-    //     // =========================================================================
-    //     // THE FIX: Create a NEW, independent Kokkos View on the host for padded data
-    //     // =========================================================================
-    //     typename Kokkos::View<ippl::Vector<double, 3>*, Kokkos::HostSpace> R_host_padded("R_padded", particleContainer->getLocalNum());
-
-    //     // Now, fill this NEW buffer with the padded data
-    //     for (size_t i = 0; i < particleContainer->getLocalNum(); ++i) {
-    //         R_host_padded(i)[0] = R_host(i)[0]; // Copy X from 1D data
-    //         R_host_padded(i)[1] = 0.0;          // Pad Y with 0
-    //         R_host_padded(i)[2] = 0.0;          // Pad Z with 0
-    //     }
-    //     // =========================================================================
-
-    //     // if node is passed in, append data to it
-    //     conduit_cpp::Node node;
-    //     if (node_in)
-    //         node = node_in.value();
-
-    //     // add time/cycle information
-    //     auto state = node["catalyst/state"];
-    //     state["cycle"].set(cycle);
-    //     state["time"].set(time);
-    //     state["domain_id"].set(rank);
-
-    //     // channel for particles
-    //     auto channel = node["catalyst/channels/ippl_particle"];
-    //     channel["type"].set_string("mesh");
-
-    //     // in data channel now we adhere to conduits mesh blueprint definition
-    //     auto mesh = channel["data"];
-    //     mesh["coordsets/coords/type"].set_string("explicit");
-
-
-    //     //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     mesh["coordsets/coords/values/x"].set(&R_host_padded.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     mesh["coordsets/coords/values/y"].set(&R_host_padded.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     mesh["coordsets/coords/values/z"].set(&R_host_padded.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-
-    //     mesh["topologies/mesh/type"].set_string("unstructured");
-    //     mesh["topologies/mesh/coordset"].set_string("coords");
-    //     mesh["topologies/mesh/elements/shape"].set_string("point");
-    //     //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
-    //     mesh["topologies/mesh/elements/connectivity"].set(ID_host.data(),particleContainer->getLocalNum());
-
-    //     //auto charge_view = particleContainer->getQ().getView();
-
-    //     // add values for scalar charge field
-    //     auto fields = mesh["fields"];
-    //     fields["charge/association"].set_string("vertex");
-    //     fields["charge/topology"].set_string("mesh");
-    //     fields["charge/volume_dependent"].set_string("false");
-
-    //     //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
-    //     fields["charge/values"].set(q_host.data(), particleContainer->getLocalNum());
-
-    //     // add values for vector velocity field
-    //     //auto velocity_view = particleContainer->P.getView();
-    //     fields["velocity/association"].set_string("vertex");
-    //     fields["velocity/topology"].set_string("mesh");
-    //     fields["velocity/volume_dependent"].set_string("false");
-
-    //     //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-    //     //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-    //     //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-    //     fields["velocity/values/x"].set(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-    //     fields["velocity/values/y"].set(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-    //     fields["velocity/values/z"].set(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-
-    //     fields["position/association"].set_string("vertex");
-    //     fields["position/topology"].set_string("mesh");
-    //     fields["position/volume_dependent"].set_string("false");
-
-    //     //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     fields["position/values/x"].set(&R_host_padded.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     fields["position/values/y"].set(&R_host_padded.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    //     fields["position/values/z"].set(&R_host_padded.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-
-    //     // this node we can return as the pointer to velocity and charge is globally valid
-    //     if (node_in == std::nullopt)
-    //     {
-    //         callCatalystExecute(node);
-    //         return {};
-    //     }
-    //     else
-    //         return node;
-    // }
-
-    // == RYAN 
-    // ==========

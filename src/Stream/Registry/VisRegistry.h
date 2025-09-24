@@ -1,12 +1,11 @@
 #pragma once
 
 // #include "Stream/Registry/RegistryHelper.h"
-
-#include "RegistryHelper.h"
-
 #include "Types/Vector.h"
-
 #include "Utility/IpplException.h"
+#include "Stream/Registry/RegistryHelper.h"
+
+
 
 
 
@@ -124,7 +123,83 @@ public:
     template <fixed_string IdV>
     void Unset(id_tag<IdV>) { this->template Unset<IdV>(); }
 
-private:
+    // === Iteration Support ===
+    
+    // forEach: Call a function for each non-null entry
+    // The function receives (string_view id, const T& value) for each entry
+    template <typename Func>
+    void forEach(Func&& func) const {
+        forEach_impl(std::forward<Func>(func), std::make_index_sequence<sizeof...(Slots)>{});
+    }
+
+
+    // Count non-null entries
+    std::size_t size() const {
+        return count_non_null(std::make_index_sequence<sizeof...(Slots)>{});
+    }
+
+    // Check if registry is empty (all entries null)
+    bool empty() const {
+        return size() == 0;
+    }
+
+    // Get all entry names (including null entries)
+    std::vector<std::string> getAllIds() const {
+        std::vector<std::string> result;
+        result.reserve(sizeof...(Slots));
+        collectIds_impl(result, std::make_index_sequence<sizeof...(Slots)>{});
+        return result;
+    }
+
+    // Get names of non-null entries only
+    std::vector<std::string> getActiveIds() const {
+        std::vector<std::string> result;
+        collectActiveIds_impl(result, std::make_index_sequence<sizeof...(Slots)>{});
+        return result;
+    }
+
+    // === Iteration Implementation ===
+    
+    template <typename Func, std::size_t... Is>
+    void forEach_impl(Func&& func, std::index_sequence<Is...>) const {
+        (forEach_one<Is>(std::forward<Func>(func)), ...);
+    }
+
+    template <std::size_t I, typename Func>
+    void forEach_one(Func&& func) const {
+        auto* ptr = std::get<I>(m_ptrs);
+        if (ptr != nullptr) {
+            const auto id_sv = IdAt<I>.sv();
+            func(id_sv, *ptr);
+        }
+    }
+
+
+    template <std::size_t... Is>
+    std::size_t count_non_null(std::index_sequence<Is...>) const {
+        return ((std::get<Is>(m_ptrs) != nullptr ? 1 : 0) + ...);
+    }
+
+    template <std::size_t... Is>
+    void collectIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
+        (result.emplace_back(std::string(IdAt<Is>.sv())), ...);
+    }
+
+    template <std::size_t... Is>
+    void collectActiveIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
+        (collectActiveId_one<Is>(result), ...);
+    }
+
+    template <std::size_t I>
+    void collectActiveId_one(std::vector<std::string>& result) const {
+        if (std::get<I>(m_ptrs) != nullptr) {
+            result.emplace_back(std::string(IdAt<I>.sv()));
+        }
+    }
+
+
+    private:
+    
     void init_from_map(const std::unordered_map<std::string, std::any>& tmp) {
         init_each(tmp, std::make_index_sequence<sizeof...(Slots)>{});
     }
@@ -145,6 +220,7 @@ private:
             throw std::invalid_argument("Type mismatch for ID: " + it->first);
         }
     }
+
 };
 
 
@@ -205,6 +281,24 @@ public:
 
     template <fixed_string IdV>
     void Unset(id_tag<IdV>) { this->template Unset<IdV>(); }
+
+    // === Iteration Support (Empty Specialization) ===
+    
+    template <typename Func>
+    void forEach(Func&&) const {
+        // Empty registry - nothing to iterate over
+    }
+
+    std::size_t size() const { return 0; }
+    bool empty() const { return true; }
+    
+    std::vector<std::string> getAllIds() const { 
+        return std::vector<std::string>{}; 
+    }
+    
+    std::vector<std::string> getActiveIds() const { 
+        return std::vector<std::string>{}; 
+    }
 };
 
 
