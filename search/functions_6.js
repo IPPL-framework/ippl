@@ -73,7 +73,7 @@ var searchData=
   ['gethessian_70',['getHessian',['../classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189',1,'ippl::Poisson::getHessian()'],['../classippl_1_1FFTOpenPoissonSolver.html#aa450b3f8127dad563128e0a3f2e1bf9a',1,'ippl::FFTOpenPoissonSolver::getHessian()']]],
   ['gethlocalregions_71',['gethLocalRegions',['../classippl_1_1detail_1_1RegionLayout.html#ae549fe3122044e2ddc89a78bfb45ff67',1,'ippl::detail::RegionLayout']]],
   ['gethostlocaldomains_72',['getHostLocalDomains',['../classippl_1_1FieldLayout.html#a15ae640bcad7c263b2abc9b3c768fac8',1,'ippl::FieldLayout']]],
-  ['gethostmirror_73',['getHostMirror',['../classippl_1_1BareField.html#a533fb91e273e32234a50930905f2d268',1,'ippl::BareField::getHostMirror()'],['../classippl_1_1ParticleAttrib.html#a06c2d6026a275c09160a6a269a876429',1,'ippl::ParticleAttrib::getHostMirror()']]],
+  ['gethostmirror_73',['getHostMirror',['../classippl_1_1BareField.html#a533fb91e273e32234a50930905f2d268',1,'ippl::BareField::getHostMirror()'],['../classippl_1_1ParticleAttrib.html#a1350c63657b244f06e1d23940d21241e',1,'ippl::ParticleAttrib::getHostMirror()']]],
   ['gethr_74',['getHr',['../classFieldContainer.html#ad76699816d92596d7af872d6b6a4c7f4',1,'FieldContainer']]],
   ['getindex_75',['getIndex',['../classippl_1_1BareField.html#aaf2315a5561173509c3dc58b3593f19b',1,'ippl::BareField']]],
   ['getintegrationnodes1d_76',['getIntegrationNodes1D',['../classippl_1_1Quadrature.html#a97a9c1a9f16267f5ccf27ab7af2b79f5',1,'ippl::Quadrature']]],
