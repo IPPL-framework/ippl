@@ -32,12 +32,12 @@ add_compile_options(
 
 include(ProjectSetup)
 include(Version)
+include(Platforms)
 include(Dependencies)
 
 add_subdirectory(src)
 
 include(CompilerOptions)
-include(Platforms)
 
 if(DEFINED FETCHCONTENT_BASE_DIR)
   add_compile_options(
