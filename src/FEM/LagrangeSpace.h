@@ -197,6 +197,14 @@ namespace ippl {
             const size_t& localDOF, const point_t& localPoint) const;
 
         ///////////////////////////////////////////////////////////////////////
+        /// Functions to access element info from outside /////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        KOKKOS_FUNCTION point_t getInverseTransposeTransformationJacobian(vertex_points_t pt) const {
+            return this->ref_element_m.getInverseTransposeTransformationJacobian(pt);
+        }
+
+        ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
@@ -247,6 +255,16 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         void evaluateLoadVector(FieldRHS& field) const;
+        void evaluateLumpedMass(FieldRHS& field) const;
+
+        /**
+         * @brief Compute gradient of a field by projecting with grad(basis)
+         *
+         * @param grad The Vector field on which the result is written
+         * @param field The field whose gradient we compute
+         *
+         */
+        void evaluateGrad(GradType& grad, FieldLHS& field);
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////

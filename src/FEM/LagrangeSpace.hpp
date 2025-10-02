@@ -1404,7 +1404,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                              = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->getGlobalDOFIndices(elementIndex);
@@ -1465,6 +1465,166 @@ namespace ippl {
         field = temp_field;
 
         IpplTimings::stopTimer(evalLoadV);
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::evaluateLumpedMass(FieldRHS& field) const {
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        AtomicViewType atomic_view = field.getView();
+
+        // Get domain information and ghost cells
+        auto ldom        = (field.getLayout()).getLocalNDIndex();
+        const int nghost = field.getNghost();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndices(index);
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                size_t i, I;
+
+                // 1. Compute b_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I = global_dofs[i];
+
+                    // TODO fix for higher order
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                    // calculate the contribution of this element
+                    T contrib = 0;
+                    for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        contrib += w[k] * basis_q[k][i] * absDetDPhi;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
+
+                    // add the contribution of the element to the field
+                    apply(atomic_view, dof_ndindex_I) += contrib;
+                }
+            });
+        field.accumulateHalo();
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::evaluateGrad(GradType& grad, FieldLHS& field) {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalGrad = IpplTimings::getTimer("evaluateGrad");
+        IpplTimings::startTimer(evalGrad);
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<point_t, numElementDOFs> grad_b_q;
+        point_t mid;
+        for (unsigned int i = 0; i < Dim; ++i) {
+            mid[i] = 0.5;
+        }
+        for (size_t i = 0; i < numElementDOFs; ++i) {
+            grad_b_q[i] = this->evaluateRefElementShapeFunctionGradient(i, mid);
+        }
+
+        // Compute Inverse Transpose Transformation Jacobian ()
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+        const auto firstElementVertexPoints = this->getElementMeshVertexPoints(zeroNdIndex);
+        const Vector<T, Dim> DPhiInvT =
+            this->ref_element_m.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
+        // Get domain information and ghost cells
+        auto ldom        = (field.getLayout()).getLocalNDIndex();
+        const int nghost = field.getNghost();
+
+        // Get boundary conditions from field
+        BConds<GradType, Dim>& bcField = grad.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        // Get field data
+        auto view_field = field.getView();
+        auto view_grad  = grad.getView();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop =
+            IpplTimings::getTimer("evaluateGrad: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndices(index);
+                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                point_t val(0.0);
+                size_t i, I;
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I = global_dofs[i];
+
+                    // TODO fix for higher order
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                    
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
+
+                    val += apply(view_field, dof_ndindex_I) * grad_b_q[i] * DPhiInvT;
+                }
+
+                indices_t elementNDIndex = this->getElementNDIndex(index);
+                for (unsigned d = 0; d < Dim; ++d) {
+                    elementNDIndex[d] = elementNDIndex[d] - ldom[d].first() + nghost;
+                }
+
+                // add the contribution of the element to the field
+                apply(view_grad, elementNDIndex) = val;
+            });
+
+        if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
+            bcField.apply(grad);
+        }
+
+        IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalGrad);
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
