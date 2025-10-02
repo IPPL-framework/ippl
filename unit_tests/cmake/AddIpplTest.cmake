@@ -1,27 +1,20 @@
 # -----------------------------------------------------------------------------
 # AddIpplTest.cmake
 #
-# Defines a helper macro `add_ippl_test()` to create a unit test executable.
-# It links to IPPL and GoogleTest, and sets include directories and labels.
+# Defines a helper macro `add_ippl_test()` to create a unit test executable. It links to IPPL and
+# GoogleTest, and sets include directories and labels.
 # -----------------------------------------------------------------------------
 
-
 # -----------------------------------------------------------------------------
-# add_ippl_test(<name>
-#   [SOURCES <src1> <src2> ...]        # default: <name>.cpp
-#   [ARGS <arg1> <arg2> ...]           # args passed to the test binary
-#   [MPI_ARGS <arg1> <arg2> ...]       # extra args for mpiexec
-#   [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2)
-#   [TIMEOUT <sec>]                    # default: 300
-#   [WORKING_DIRECTORY <dir>]          # default: current binary dir
-#   [LABELS <lbl1> <lbl2> ...]         # default: unit
-#   [LAUNCH <tool> [tool-args...]]     # e.g. LAUNCH "valgrind;--leak-check=full"
-#   [NO_MPI]                           # run without mpiexec
-#   [REQUIRE_MPI]                      # disable test if MPI not found
-#   [RUN_SERIAL]                       # ctest runs this test serially
-#   [USE_GTEST_MAIN]                   # link GTest::gtest_main instead of gtest
-#   [PROPERTIES <ctest-prop> <val> ...]# extra set_tests_properties
-# )
+# add_ippl_test(<name> [SOURCES <src1> <src2> ...]        # default: <name>.cpp [ARGS <arg1> <arg2>
+# ...]           # args passed to the test binary [MPI_ARGS <arg1> <arg2> ...]       # extra args
+# for mpiexec [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2) [TIMEOUT
+# <sec>]                    # default: 300 [WORKING_DIRECTORY <dir>]          # default: current
+# binary dir [LABELS <lbl1> <lbl2> ...]         # default: unit [LAUNCH <tool> [tool-args...]]     #
+# e.g. LAUNCH "valgrind;--leak-check=full" [NO_MPI]                           # run without mpiexec
+# [REQUIRE_MPI]                      # disable test if MPI not found [RUN_SERIAL] # ctest runs this
+# test serially [USE_GTEST_MAIN]                   # link GTest::gtest_main instead of gtest
+# [PROPERTIES <ctest-prop> <val> ...]# extra set_tests_properties )
 # -----------------------------------------------------------------------------
 
 set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit test")
@@ -89,16 +82,13 @@ function(add_ippl_test TEST_NAME)
     set(_final_cmd ${_launched_cmd})
   else()
     if(DEFINED MPIEXEC_EXECUTABLE)
-      set(_final_cmd
-        ${MPIEXEC_EXECUTABLE}
-        ${MPIEXEC_NUMPROC_FLAG} ${_procs}
-        ${TEST_MPI_ARGS}
-        ${_launched_cmd})
+      set(_final_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${_procs} ${TEST_MPI_ARGS}
+                     ${_launched_cmd})
     elseif(TEST_REQUIRE_MPI)
       # Add a disabled test with a clear message
       add_test(NAME ${TEST_NAME} COMMAND ${_launched_cmd})
-      set_tests_properties(${TEST_NAME} PROPERTIES DISABLED TRUE
-        SKIP_REGULAR_EXPRESSION "MPI required but not found")
+      set_tests_properties(${TEST_NAME} PROPERTIES DISABLED TRUE SKIP_REGULAR_EXPRESSION
+                                                   "MPI required but not found")
       return()
     else()
       # Fallback: run single-process without mpiexec
@@ -107,9 +97,8 @@ function(add_ippl_test TEST_NAME)
     endif()
   endif()
 
-  # Name prefix for nicer grouping: unit.<relpath>.<name>
-  # file(RELATIVE_PATH _rel "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-  # string(REPLACE "/" "." _rel "${_rel}")
+  # Name prefix for nicer grouping: unit.<relpath>.<name> file(RELATIVE_PATH _rel
+  # "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}") string(REPLACE "/" "." _rel "${_rel}")
   set(_ctest_name "${TEST_NAME}")
 
   # Register the test
@@ -117,18 +106,14 @@ function(add_ippl_test TEST_NAME)
     add_test(NAME ${_ctest_name} COMMAND ${_final_cmd})
 
     # Base properties
-    set_tests_properties(${_ctest_name} PROPERTIES
-      TIMEOUT ${_timeout}
-      LABELS "${_labels}"
-    )
+    set_tests_properties(${_ctest_name} PROPERTIES TIMEOUT ${_timeout} LABELS "${_labels}")
 
     # Optional working directory
     if(TEST_WORKING_DIRECTORY)
-      set_tests_properties(${_ctest_name} PROPERTIES
-        WORKING_DIRECTORY "${TEST_WORKING_DIRECTORY}")
+      set_tests_properties(${_ctest_name} PROPERTIES WORKING_DIRECTORY "${TEST_WORKING_DIRECTORY}")
     else()
-      set_tests_properties(${_ctest_name} PROPERTIES
-        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+      set_tests_properties(${_ctest_name} PROPERTIES WORKING_DIRECTORY
+                                                     "${CMAKE_CURRENT_BINARY_DIR}")
     endif()
 
     # Run serially if requested
