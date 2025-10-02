@@ -5,7 +5,9 @@
 # -----------------------------------------------------------------------------
 
 if(NOT IPPL_ENABLE_FFT)
-  message(FATAL_ERROR "Unit tests require IPPL_ENABLE_FFT to be ON. Please configure with -DIPPL_ENABLE_FFT=ON.")
+  message(
+    FATAL_ERROR
+      "Unit tests require IPPL_ENABLE_FFT to be ON. Please configure with -DIPPL_ENABLE_FFT=ON.")
 endif()
 
 if(NOT TARGET GTest::gtest)
@@ -16,9 +18,8 @@ include(GoogleTest)
 
 if(NOT TARGET ippl_test_support)
   add_library(ippl_test_support INTERFACE)
-  target_include_directories(ippl_test_support INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  )
+  target_include_directories(ippl_test_support
+                             INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
   add_library(ippl::test_support ALIAS ippl_test_support)
 endif()
 

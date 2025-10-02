@@ -1,16 +1,16 @@
-file (RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message (STATUS "Adding examples found in ${_relPath}")
+file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "Adding examples found in ${_relPath}")
 
 # Needed for threading
 find_package(Threads REQUIRED)
 
 # Macro for adding example executables
 function(add_alpine_example name)
-    add_executable(${name} ${name}.cpp)
+  add_executable(${name} ${name}.cpp)
 
-    target_link_libraries(${name} PRIVATE ippl::ippl)
+  target_link_libraries(${name} PRIVATE ippl::ippl)
 
-    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
 
 # === Add individual examples ===

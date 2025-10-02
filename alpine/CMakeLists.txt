@@ -7,11 +7,11 @@
 add_subdirectory(ExamplesWithoutPicManager)
 
 function(add_alpine_example name)
-    add_executable(${name} ${name}.cpp)
+  add_executable(${name} ${name}.cpp)
 
-    target_link_libraries(${name} PRIVATE ippl::ippl)
+  target_link_libraries(${name} PRIVATE ippl::ippl)
 
-    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
 
 add_alpine_example(PenningTrap)
