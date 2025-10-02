@@ -109,7 +109,7 @@ public:
         // Update time
         this->time_m += this->dt_m;
         this->it_m++;
-        // wrtie solution to output file
+        // write solution to output file
         this->dump();
 
         Inform m("Post-step:");
@@ -118,8 +118,8 @@ public:
 
     void grid2par() override { 
         if (getSolver() == "FEM") {
-            gatherFEM();
-            //gatherCIC();
+            //gatherFEM();
+            gatherCIC();
         } else {
             gatherCIC();
         }
@@ -144,7 +144,6 @@ public:
     void par2grid() override {
         if (getSolver() == "FEM") {
             scatterFEM();
-            //scatterCIC();
         } else {
             scatterCIC();
         }
