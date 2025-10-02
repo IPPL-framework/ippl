@@ -29,6 +29,18 @@ struct AnalyticSol {
 };
 
 template <typename T>
+struct EfieldSol {
+    KOKKOS_FUNCTION const ippl::Vector<T,2> operator()(ippl::Vector<T, 2> x_vec) const {
+        ippl::Vector<T, 2> sol;
+        sol[0] = -2.0 * (x_vec[0] - 2.0*Kokkos::pow(x_vec[0], 3)) * 
+                 (x_vec[1] * x_vec[1]) * (1.0 - x_vec[1]*x_vec[1]);
+        sol[1] = -2.0 * (x_vec[1] - 2.0*Kokkos::pow(x_vec[1], 3)) * 
+                 (x_vec[0] * x_vec[0]) * (1.0 - x_vec[0] * x_vec[0]);
+        return sol;
+    }
+};
+
+template <typename T>
 KOKKOS_INLINE_FUNCTION T rhs_function(ippl::Vector<T, 2> x_vec) {
     double x2 = x_vec[0] * x_vec[0];
     double y2 = x_vec[1] * x_vec[1];
@@ -50,6 +62,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     using Mesh_t   = ippl::UniformCartesian<T, Dim>;
     using Field_t  = ippl::Field<T, Dim, Mesh_t, Cell>;
+    using VField_t = ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t, Cell>;
     using BConds_t = ippl::BConds<Field_t, Dim>;
 
     const unsigned numCellsPerDim = numNodesPerDim - 1;
@@ -70,6 +83,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (set once)
     Field_t sol(mesh, layout, numGhosts);  // right hand side (set once)
+    VField_t grad(mesh, layout, numGhosts); // vector field for grad
 
     // Define boundary conditions
     BConds_t bcField;
@@ -105,11 +119,15 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
     // initialize the solver
     ippl::FEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
+    solver.setGradient(grad);
 
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 2000);
+
+    // turn on computation of grad
+    params.add("output_type", ippl::FEMPoissonSolver<Field_t, Field_t>::SOL_AND_GRAD);
 
     solver.mergeParameters(params);
 
@@ -126,10 +144,15 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     lhs = lhs - sol;
     const T normError = norm(lhs) / norm(sol);
 
+    // Compute the error of the Efield
+    EfieldSol<T> analyticE;
+    const T relErrorE = solver.getL2ErrorGrad(analyticE);
+
     m << std::setw(10) << numNodesPerDim;
     m << std::setw(25) << std::setprecision(16) << cellSpacing[0];
     m << std::setw(25) << std::setprecision(16) << relError;
     m << std::setw(25) << std::setprecision(16) << normError;
+    m << std::setw(25) << std::setprecision(16) << relErrorE;
     m << std::setw(25) << std::setprecision(16) << solver.getResidue();
     m << std::setw(15) << std::setprecision(16) << solver.getIterationCount();
     m << endl;
@@ -152,6 +175,7 @@ int main(int argc, char* argv[]) {
         msg << std::setw(25) << "Spacing";
         msg << std::setw(25) << "Relative Error";
         msg << std::setw(25) << "Norm Error";
+        msg << std::setw(25) << "ErrorE";
         msg << std::setw(25) << "Residue";
         msg << std::setw(15) << "Iterations";
         msg << endl;
