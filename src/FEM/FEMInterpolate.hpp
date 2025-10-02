@@ -77,11 +77,16 @@ namespace ippl {
         view_type view = f.getView();
         
         // Mesh / layout (for locating + indexing into the field view)
-        const mesh_type& mesh = f.get_mesh();
+        mesh_type& mesh = f.get_mesh();
 
-        const ippl::FieldLayout<Dim>& layout = f.getLayout();
+        ippl::FieldLayout<Dim>& layout = f.getLayout();
         const ippl::NDIndex<Dim>&     lDom   = layout.getLocalNDIndex();
         const int                     nghost = f.getNghost();
+
+        Field lumpedMass(mesh, layout);
+        space.evaluateLumpedMass(lumpedMass);
+
+        view_type view_lumpedmass = lumpedMass.getView();
 
         // Particle attribute/device views
         auto d_attr = attrib.getView();  // scalar weight per particle (e.g. charge)
@@ -112,7 +117,9 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
                     }
-                    Kokkos::atomic_add(view_ptr<Dim>(view, I), val * w);
+                    const T m = apply(view_lumpedmass, I);
+
+                    Kokkos::atomic_add(view_ptr<Dim>(view, I), val * w / m);
                 }
             }
         );
@@ -239,6 +246,11 @@ namespace ippl {
             IpplTimings::getTimer("interpolate_field_to_particles(P1)");
         IpplTimings::startTimer(timer);
 
+        // Compute Inverse Transpose Transformation Jacobian ()
+        const auto firstElementVertexPoints = space.getElementMeshVertexPoints(Vector<size_t, Dim>(0));
+        const Vector<T, Dim> DPhiInvT =
+            space.getInverseTransposeTransformationJacobian(firstElementVertexPoints);
+
         view_type view     = coeffs.getView();
         const mesh_type& M = coeffs.get_mesh();
 
@@ -266,7 +278,8 @@ namespace ippl {
 
             for (size_t a = 0; a < dofs.dim; ++a) {
                 const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]);
-                const Vector<T, Dim> w = space.evaluateRefElementShapeFunctionGradient(local, xi);
+                Vector<T, Dim> w = space.evaluateRefElementShapeFunctionGradient(local, xi);
+                w = DPhiInvT * w;
 
                 const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
                 ippl::Vector<size_t,Dim> I;
