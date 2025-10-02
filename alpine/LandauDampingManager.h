@@ -348,17 +348,8 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        //dumpLandau(this->fcontainer_m->getE().getView());
-        dumpLandau();
-        /*
-        if (this->getSolver() == "FEM") {
-            dumpVTK(this->fcontainer_m->getE(), this->nr_m[0]-1, this->nr_m[1]-1, this->nr_m[2]-1,
-                    this->time_m, this->hr_m[0], this->hr_m[1], this->hr_m[2]);
-        } else {
-            dumpVTK(this->fcontainer_m->getE(), this->nr_m[0], this->nr_m[1], this->nr_m[2],
-                    this->time_m, this->hr_m[0], this->hr_m[1], this->hr_m[2]);
-        }
-        */
+        dumpLandau(this->fcontainer_m->getE().getView());
+        //dumpLandau();
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
@@ -411,6 +402,8 @@ public:
         ippl::Comm->barrier();
     }
 
+    // Monte Carlo computation of the integral, computing it from particles
+    // instead of using the E-field on the grid.
     void dumpLandau() {
         std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
         size_type localParticles                = pc->getLocalNum();
