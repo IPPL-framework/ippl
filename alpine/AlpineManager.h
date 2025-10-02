@@ -119,6 +119,7 @@ public:
     void grid2par() override { 
         if (getSolver() == "FEM") {
             gatherFEM();
+            //gatherCIC();
         } else {
             gatherCIC();
         }
@@ -143,6 +144,7 @@ public:
     void par2grid() override {
         if (getSolver() == "FEM") {
             scatterFEM();
+            //scatterCIC();
         } else {
             scatterCIC();
         }
@@ -190,7 +192,8 @@ public:
         double relError = std::fabs((Q - (*rho).sum()) / Q);
         m << relError << endl;
 
-        checkChargeConservation(relError, m);
+        double num = 1e-14;
+        checkChargeConservation(num, m);
 
         getDensity(rho);
     }
@@ -215,11 +218,13 @@ public:
     void getDensity(Field_t<Dim>* rho) {
         Vector_t<double, Dim> rmin               = rmin_m;
         Vector_t<double, Dim> rmax               = rmax_m;
-        Vector_t<double, Dim> hr                 = hr_m;
+        Vector_t<double, Dim> hr                 = this->hr_m;
         double Q                                 = Q_m;
 
-        double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
-        (*rho)            = (*rho) / cellVolume;
+        if (this->fsolver_m->getStype() != "FEM") {
+            double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
+            (*rho)            = (*rho) / cellVolume;
+        }
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {

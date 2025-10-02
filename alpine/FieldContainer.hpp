@@ -17,7 +17,14 @@ public:
         , rmax_m(rmax)
         , decomp_m(decomp)
         , mesh_m(domain, hr, origin)
-        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {}
+        , fl_m(MPI_COMM_WORLD, domain, decomp, isAllPeriodic) {
+            ippl::NDIndex<Dim> domainE;
+            for (unsigned d = 0; d < Dim; ++d) {
+                domainE[d] = domain[d] - 1;
+            }
+            meshE_m.initialize(domainE, hr, origin);
+            flE_m = *(new FieldLayout_t<Dim>(MPI_COMM_WORLD, domainE, decomp, isAllPeriodic));
+        }
 
     ~FieldContainer() {}
 
@@ -31,6 +38,8 @@ private:
     Field<T, Dim> phi_m;
     Mesh_t<Dim> mesh_m;
     FieldLayout_t<Dim> fl_m;
+    Mesh_t<Dim> meshE_m;
+    FieldLayout_t<Dim> flE_m;
 
 public:
     VField_t<T, Dim>& getE() { return E_m; }
@@ -61,7 +70,11 @@ public:
     void setFL(std::shared_ptr<FieldLayout_t<Dim>>& fl) { fl_m = fl; }
 
     void initializeFields(std::string stype_m = "") {
-        E_m.initialize(mesh_m, fl_m);
+        if (stype_m == "FEM") {
+            E_m.initialize(meshE_m, flE_m);
+        } else {
+            E_m.initialize(mesh_m, fl_m);
+        }
         rho_m.initialize(mesh_m, fl_m);
         if (stype_m == "CG" || stype_m == "PCG" || stype_m == "FEM") {
             phi_m.initialize(mesh_m, fl_m);

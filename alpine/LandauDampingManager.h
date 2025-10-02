@@ -16,6 +16,43 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
+template <typename T>
+void dumpVTK(VField_t<T, 3>& E, int nx, int ny, int nz, int iteration, double dx, double dy,
+             double dz) {
+    typename VField_t<T, 3>::view_type::host_mirror_type host_view = E.getHostMirror();
+
+    std::stringstream fname;
+    fname << "data/ef_";
+    fname << std::setw(4) << std::setfill('0') << iteration;
+    fname << ".vtk";
+
+    Kokkos::deep_copy(host_view, E.getView());
+
+    Inform vtkout(NULL, fname.str().c_str(), Inform::OVERWRITE);
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    // start with header
+    vtkout << "# vtk DataFile Version 2.0" << endl;
+    vtkout << TestName << endl;
+    vtkout << "ASCII" << endl;
+    vtkout << "DATASET STRUCTURED_POINTS" << endl;
+    vtkout << "DIMENSIONS " << nx + 3 << " " << ny + 3 << " " << nz + 3 << endl;
+    vtkout << "ORIGIN " << -dx << " " << -dy << " " << -dz << endl;
+    vtkout << "SPACING " << dx << " " << dy << " " << dz << endl;
+    vtkout << "CELL_DATA " << (nx + 2) * (ny + 2) * (nz + 2) << endl;
+
+    vtkout << "VECTORS E-Field float" << endl;
+    for (int z = 0; z < nz + 2; z++) {
+        for (int y = 0; y < ny + 2; y++) {
+            for (int x = 0; x < nx + 2; x++) {
+                vtkout << host_view(x, y, z)[0] << "\t" << host_view(x, y, z)[1] << "\t"
+                       << host_view(x, y, z)[2] << endl;
+            }
+        }
+    }
+}
+
 // define functions used in sampling particles
 struct CustomDistributionFunctions {
     struct CDF {
@@ -82,7 +119,13 @@ public:
         this->rmin_m  = 0.0;
         this->rmax_m  = 2 * pi / this->kw_m;
 
-        this->hr_m = this->rmax_m / this->nr_m;
+        Vector<int, Dim> nElements = this->nr_m - 1;
+        if (this->getSolver() == "FEM") {
+            this->hr_m = this->rmax_m / nElements;
+        } else {
+            this->hr_m = this->rmax_m / this->nr_m;
+        }
+
         // Q = -\int\int f dx dv
         this->Q_m =
             std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
@@ -173,19 +216,20 @@ public:
             const int nghost               = this->fcontainer_m->getRho().getNghost();
             auto rhoview                   = this->fcontainer_m->getRho().getView();
 
+            bool notFEM = !(this->getSolver() == "FEM");
+
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
                 "Assign initial rho based on PDF",
                 this->fcontainer_m->getRho().getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5*(notFEM)) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
                     ippl::apply(rhoview, args) = distR.getFullPdf(xvec);
                 });
-
             Kokkos::fence();
 
             this->loadbalancer_m->initializeORB(FL, mesh);
@@ -306,6 +350,15 @@ public:
         IpplTimings::startTimer(dumpDataTimer);
         //dumpLandau(this->fcontainer_m->getE().getView());
         dumpLandau();
+        /*
+        if (this->getSolver() == "FEM") {
+            dumpVTK(this->fcontainer_m->getE(), this->nr_m[0]-1, this->nr_m[1]-1, this->nr_m[2]-1,
+                    this->time_m, this->hr_m[0], this->hr_m[1], this->hr_m[2]);
+        } else {
+            dumpVTK(this->fcontainer_m->getE(), this->nr_m[0], this->nr_m[1], this->nr_m[2],
+                    this->time_m, this->hr_m[0], this->hr_m[1], this->hr_m[2]);
+        }
+        */
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
