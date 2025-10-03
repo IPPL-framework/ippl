@@ -205,10 +205,10 @@ if(Kokkos_FOUND)
   endforeach()
 else()
   # Define options BEFORE calling MakeAvailable
-  colour_message(STATUS ${Green} "✅ Kokkos ${Kokkos_VERSION} building from source")
+  colour_message(STATUS ${Green} "✅ Kokkos ${KOKKOS_VERSION_GIT} building from source")
   set_kokkos_options()
   # Invoke cmake fetch/find
-  FetchContent_Declare(Kokkos GIT_TAG ${Kokkos_VERSION} GIT_REPOSITORY ${Kokkos_REPOSITORY})
+  FetchContent_Declare(Kokkos GIT_TAG ${KOKKOS_VERSION_GIT} GIT_REPOSITORY ${Kokkos_REPOSITORY})
   FetchContent_MakeAvailable(Kokkos)
 
   # get_git_tags(${Kokkos_REPOSITORY} KOKKOS_GIT_TAGS) if(NOT Kokkos_VERSION IN_LIST
