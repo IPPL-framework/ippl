@@ -34,6 +34,11 @@ if("HIP" IN_LIST IPPL_PLATFORMS)
   option(IPPL_ENABLE_HIP_PROFILER "Enable HIP Systems Profiler" OFF)
 endif()
 
+if(NOT "SERIAL" IN_LIST IPPL_PLATFORMS AND NOT "OPENMP" IN_LIST IPPL_PLATFORMS)
+  list(APPEND IPPL_PLATFORMS "OPENMP")
+  message(STATUS "Appending OPENMP to IPPL_PLATFORMS as no HOST execution space set")
+endif()
+
 # -----------------------------------------------------------------------------
 # Sanity check for known platforms
 # -----------------------------------------------------------------------------
