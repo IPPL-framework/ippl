@@ -35,8 +35,8 @@ if("HIP" IN_LIST IPPL_PLATFORMS)
 endif()
 
 if(NOT "SERIAL" IN_LIST IPPL_PLATFORMS AND NOT "OPENMP" IN_LIST IPPL_PLATFORMS)
-  list(APPEND IPPL_PLATFORMS "OPENMP")
-  message(STATUS "Appending OPENMP to IPPL_PLATFORMS as no HOST execution space set")
+  list(APPEND IPPL_PLATFORMS "SERIAL")
+  message(STATUS "Appending SERIAL to IPPL_PLATFORMS as no HOST execution space set")
 endif()
 
 # -----------------------------------------------------------------------------
