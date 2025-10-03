@@ -118,8 +118,8 @@ public:
 
     void grid2par() override { 
         if (getSolver() == "FEM") {
-            //gatherFEM();
-            gatherCIC();
+            gatherFEM();
+            //gatherCIC();
         } else {
             gatherCIC();
         }

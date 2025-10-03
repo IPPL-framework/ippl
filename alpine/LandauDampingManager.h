@@ -348,8 +348,8 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
-        //dumpLandau();
+        //dumpLandau(this->fcontainer_m->getE().getView());
+        dumpLandau();
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
