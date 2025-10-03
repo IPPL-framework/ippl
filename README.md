@@ -13,6 +13,7 @@
   - [Compilation](#compilation)
       - [None of the options have to be set explicitly, all have a default.](#none-of-the-options-have-to-be-set-explicitly-all-have-a-default)
     - [Examples](#examples)
+      - [CMakeUserPresets](#cmakeuserpresets)
       - [Serial debug build with tests and newest Kokkos](#serial-debug-build-with-tests-and-newest-kokkos)
       - [OpenMP release build with alpine and FFTW](#openmp-release-build-with-alpine-and-fftw)
       - [Cuda alpine release build](#cuda-alpine-release-build)
@@ -59,8 +60,8 @@ cmake <src_dir> -D<option>=<value>
 
 The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
-- `Kokkos_VERSION`, default `4.1.00`
-- `Heffte_VERSION`, default `MASTER`
+- `Kokkos_VERSION`, default `4.5.00` 
+- `Heffte_VERSION`, default `4.7.1`
   - If set to `MASTER`, an additional flag `Heffte_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
   - Currently, this is the only compatible commit of Heffte
 - `IPPL_DYL`, default `OFF`
@@ -74,7 +75,15 @@ The relevant options of IPPL are
 - `IPPL_ENABLE_ALPINE`, default `OFF`
 - `IPPL_USE_ALTERNATIVE_VARIANT`, default `OFF`. Can be turned on for GPU builds where the use of the system-provided variant doesn't work.  
 - `IPPL_ENABLE_SANITIZER`, default `OFF`
-  
+
+`Kokkos` and `Heffte` by default will try to use version that are found on the sytem, if the system has `kokkos@4.6` and you set `Kokkos_VERSION=4.5` then cmake's find_package will consider the system version a match (newer than requested) and use it. The same applies for `Heffte`. You can override the variable to checkout any version by setting a git tag/sha/branch such as 
+```
+cmake -DKokkos_version=git.4.7.01 -DHeffte_VERSION=git.v2.4.1 ...  
+# or for a very specific version 
+cmake -DHeffte_VERSION=git.9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda ...  
+```
+Note that by default, Kokkos git tags use a format `x.x.xx (eg. 4.7.01)` and Heffte git tags (extra 'v') are of the form `vx.x.x (eg. v2.4.1)`
+
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
 - `Release` for optimized builds
 - `RelWithDebInfo` for optimized builds with debug info (default)
@@ -88,6 +97,27 @@ cd ippl
 mkdir build
 cd build
 ```
+#### CMakeUserPresets
+In the root IPPL source folder, there is a cmake user presets file which can be used to set some default cmake settings, they may be used in the following way
+```
+cmake --prefix=release-testing ...
+```
+This will set the following variables automatically (exact values may change over time)
+```
+        "IPPL_ENABLE_TESTS": "ON",
+        "IPPL_ENABLE_UNIT_TESTS": "ON"
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "Kokkos_VERSION_DEFAULT": "4.5.01",
+        "Heffte_VERSION_DEFAULT": "2.4.0",
+        "IPPL_PLATFORMS": "OPENMP;CUDA",
+        "IPPL_ENABLE_FFT": "ON",
+        "IPPL_ENABLE_ALPINE": "ON",
+        "IPPL_ENABLE_COSMOLOGY": "ON",
+        "IPPL_USE_STANDARD_FOLDERS": "ON"
+```
+Users are encouraged to define additional sets of flags and create presets for them.
+
 #### Serial debug build with tests and newest Kokkos
 ```
 cmake .. \
@@ -300,11 +330,12 @@ Here we compile links to recipies for easy build on various HPC systems.
 Start by loading a `uenv` that contains most of the tools we want. Note that in future an `official` uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...
 
 ```bash
-uenv start --view=develop /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
+uenv start --view=develop \
+/capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
 ```
 or, look for a newer one and pick the one with the latest date in the name using
 ```bash
-ls -al /capstor/scratch/cscs/biddisco/uenvs/gh200-opalx*.squashfs
+ls -al /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-*.squashfs
 ``` 
 At the time of writing, the uenv provides (as well as many other packages)
 ```yaml
@@ -334,7 +365,7 @@ spack -C /user-environment/config find -flv
 ```
 It is important to use the `--view=develop` when loading the uenv as this sets-up the paths to packages in the spack environment ready for you to use them (without needing to manually `spack load xxx` packages individually) (In fact it will also add `/user-environment/env/develop/` to your `CMAKE_PREFIX_PATH`) which makes cmake-built packages 'just work'. 
 
-To build, try the following which uses default CMake settings (`release-testing`) taken from `CMakeUserPresets.json` (in the root ippl source of the alps-cmake branch - it is not required to use this branch, but cmake support has been cleaned up)
+To build, try the following which uses default CMake settings (`release-testing`) taken from `CMakeUserPresets.json` (in the root ippl source of the cmake-alps branch - it is not required to use this branch, but cmake support has been cleaned up)
 ```bash
 ssh daint
 uenv start --view=develop /capstor/scratch/cscs/biddisco/uenvs/gh200-opalxgccmpich-2025-07-23.squashfs
@@ -344,11 +375,11 @@ mkdir -p $HOME/src/ippl
 cd $HOME/src
 git clone https://github.com/IPPL-framework/ippl
 
-# (optionally) checkout the alps-cmake branch since it is not yet merged to master
+# (optionally) checkout the cmake-alps branch since it is not yet merged to master
 cd $HOME/src/ippl
 git remote add biddisco https://github.com/biddisco/ippl.git
-git fetch biddisco alps-cmake
-git checkout alps-cmake
+git fetch biddisco cmake-alps
+git checkout cmake-alps
 
 # create a build dir
 mkdir -p $HOME/build/ippl
