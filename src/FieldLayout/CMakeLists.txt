@@ -5,8 +5,4 @@
 # -----------------------------------------------------------------------------
 
 # Register FieldLayout source
-target_sources(ippl
-    PRIVATE
-        FieldLayout.cpp
-)
-
+target_sources(ippl PRIVATE FieldLayout.cpp)
