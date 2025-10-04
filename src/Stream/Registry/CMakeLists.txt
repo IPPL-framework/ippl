@@ -9,6 +9,7 @@ target_include_directories(ippl
 
 install(FILES
     VisRegistry.h
+    ViewRegistry.h
     RegistryHelper.h
     DESTINATION include/Stream/Registry
 )
