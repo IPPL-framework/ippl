@@ -336,6 +336,63 @@ namespace ippl {
     };
 
     /*!
+     * Alternative Richardson preconditioner
+     */
+    template <typename Field, typename OperatorF, typename InvDiagF>
+    struct richardson_preconditioner_alt : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        richardson_preconditioner_alt(OperatorF&& op, InvDiagF&& inverse_diagonal,
+                                  unsigned innerloops = 5)
+            : preconditioner<Field>("Richardson")
+            , innerloops_m(innerloops) {
+            op_m  = std::move(op);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+        }
+
+        Field operator()(Field& r) override {
+            mesh_type& mesh     = r.get_mesh();
+            layout_type& layout = r.getLayout();
+            Field g(mesh, layout);
+            g = 0;
+
+            for (unsigned int j = 0; j < innerloops_m; ++j) {
+                Ag_m = op_m(g);
+                g     = r - Ag_m;
+
+                // The inverse diagonal is applied to the
+                // vector itself to return the result usually.
+                // However, the operator for FEM already
+                // returns the result of inv_diag * itself
+                // due to the matrix-free evaluation.
+                // Therefore, we need this if to differentiate
+                // the two cases.
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                    g = g + inverse_diagonal_m(g) * g;
+                } else {
+                    g = g + inverse_diagonal_m(g);
+                }
+            }
+            return g;
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+
+            Ag_m = Field(mesh, layout);
+        }
+
+    protected:
+        OperatorF op_m;
+        InvDiagF inverse_diagonal_m;
+        unsigned innerloops_m;
+        Field Ag_m;
+    };
+
+    /*!
      * 2-step Gauss-Seidel preconditioner
      */
     template <typename Field, typename LowerF, typename UpperF, typename InvDiagF>
