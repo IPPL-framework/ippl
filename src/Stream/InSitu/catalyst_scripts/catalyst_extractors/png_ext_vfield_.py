@@ -9,14 +9,12 @@ from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
 
-from paraview import print_info
-
 # ----------------------------------------------------------------
 # setup views used in the visualization
 # ----------------------------------------------------------------
-print_info("==='%s'=============================="[0:30]+">",__name__)
-# print_info("===EXECUTING CATALYSt VFIELD EXTRACTOR ADAPTABLE ======>")
-# print_info("====================================>")
+print("====================================>")
+print("===EXECUTING CATALYSt VFIELD EXTRACTOR2======>")
+print("====================================>")
 
 
 # get the material library

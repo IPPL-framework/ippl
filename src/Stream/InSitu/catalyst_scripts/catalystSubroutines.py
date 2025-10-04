@@ -9,7 +9,7 @@ def create_VTPD_extractor(name, object, fr = 10):
     # create extractor (PD=partitioned dataset...)
     vTPD = CreateExtractor('VTPD', object, registrationName='VTPD_'+ name)
     # vTPD2.Trigger = 'TimeStep'  """ not needed"""
-    vTPD.Trigger.Frequency = 10
+    vTPD.Trigger.Frequency = fr
     vTPD.Writer.FileName = 'ippl_'+name+'_{timestep:06d}.vtpd'
     return vTPD
     
@@ -81,7 +81,7 @@ def _log(msg: str, level: str = "INFO"):
 
 
 def print_proxy_overview():
-    _log("====Printing Proxy Overview  ===========", "INFO")
+    # _log("====Printing Proxy Overview  ===========", "INFO")
     pm = servermanager.ProxyManager()
     _log("Available 'sources' proxies:", "INFO")
     for (proxy_name, _), proxy_id in pm.GetProxiesInGroup("sources").items():
@@ -94,7 +94,6 @@ def print_proxy_overview():
         _log(f"   - Properties:", "INFO")
         for prop_name in proxy.ListProperties():
             _log(f"     - {prop_name}", "INFO")
-    _log("===Printing Proxy Overview==============DONE", "INFO")
 
 # print_proxy_overview()
 

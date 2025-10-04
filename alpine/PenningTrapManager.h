@@ -16,6 +16,7 @@
 
 
 #include "Stream/Registry/VisRegistry.h"
+#include "Stream/Registry/ViewRegistry.h"
 #include "Stream/InSitu/VisBaseAdaptor.h"
 
 
@@ -39,11 +40,18 @@ public:
     using FieldContainer_t = FieldContainer<T, Dim>;
     using FieldSolver_t= FieldSolver<T, Dim>;
     using LoadBalancer_t= LoadBalancer<T, Dim>;
+
     double scaleFactor;
+    double electric_scale;
+    double magnetic_scale;
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),scaleFactor(30){}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),
+            scaleFactor(30),
+            electric_scale(30),
+            magnetic_scale(30){
+        }
 
     // PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
     //                    std::string& solver_, std::string& stepMethod_)
@@ -52,7 +60,10 @@ public:
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                        std::string& solver_, std::string& stepMethod_,
                        std::vector<std::string> preconditioner_params_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_) {}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_),
+            scaleFactor(30),
+            electric_scale(30),
+            magnetic_scale(30) {}
 
     ~PenningTrapManager(){}
 
@@ -278,6 +289,8 @@ public:
         double alpha                            = this->alpha_m;
         double Bext                             = this->Bext_m;
         double DrInv                            = this->DrInv_m;
+        // double V0                               = scaleFactor * this->length_m[2];
+        // double V0                               = electric_scale * this->length_m[2];
         double V0                               = 30 * this->length_m[2];
         Vector_t<double, Dim> length            = this->length_m;
         Vector_t<double, Dim> origin            = this->origin_m;
@@ -346,24 +359,22 @@ public:
         
 #ifdef IPPL_ENABLE_CATALYST
         
-        auto myR_vis = MakeRegistry<"particle","field_v","field_s">(pc, this->fcontainer_m->getE(), this->fcontainer_m->getRho() );
-        auto myR_steer = MakeRegistry<"magnetic">(scaleFactor);
+        // auto myR_steer = MakeRegistry<"steerable">(scaleFactor);
+        auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
+        
+        auto myR_vis = MakeRegistry<"particles","E","scalar">
+                                    (pc, this->fcontainer_m->getE(), this->fcontainer_m->getRho() );
 
         CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
-
-        // std::vector<CatalystAdaptor::ParticlePair<T, Dim>> particles_cata = {
-        //     {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
-        // };
-        // std::vector<CatalystAdaptor::FieldPair<T, Dim>> fields_cata = {
-        //     {"E",   CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
-        //     {"scalar", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-        //     /* when using the FFT solver this contained can't return anything ... */
-        //     // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
-        //     // {"roh", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-        // };
-        // CatalystAdaptor::Execute(it, this->time_m, ippl::Comm->rank(), particles_cata, fields_cata, scaleFactor);
 #endif
+
+
+        /* extra wrapping for testing ... */
+        // auto e_ptr  = std::make_shared<const VField_t<double, 3>>(this->fcontainer_m->getE());
+        // auto rho_ptr = std::make_shared<const Field_t<3>>(this->fcontainer_m->getRho());
+        // auto myR_vis = MakeRegistry<"particle","field_v","field_s">(pc, e_ptr, rho_ptr);
+
 
 
 

@@ -1,8 +1,5 @@
 # script-version: 2.0
 # for more details check https://www.paraview.org/paraview-docs/latest/cxx/CatalystPythonScriptsV2.html
-
-
-# Add this block to the top of your file
 import sys
 import time
 import os
@@ -16,20 +13,12 @@ from paraview.simple import LoadPlugin, CreateSteerableParameters, PVTrivialProd
 import paraview.simple as pvs
 # from paraview.simple import GetActive
 
-
-from paraview import servermanager as sm
 from paraview import servermanager
 
 # Import Catalyst utility subroutines
 from catalystSubroutines import (
     print_proxy_overview,
-    create_VTPD_extractor,
-    register_png_extractor,
-    load_state_module,
-    _fix_png_extractors_force,
-    _debug_dump_state,
-    get_keepalive_counts,
-    set_log_level
+    create_VTPD_extractor
 )
 
 
@@ -39,50 +28,60 @@ paraview.simple._DisableFirstRenderCameraReset()
 
 
 # print start marker
-print("====================================>")
-print("===EXECUTING CATALYST PIPELINE======>")
-print("====================================>")
-print_info("\nstart'%s'\n", __name__)
+print_info("====================================>")
+print_info("===EXECUTING CATALYST PIPELINE======>")
+print_info("====================================>")
+print_info("start'%s'", __name__)
 
 
 
 
 
-print_proxy_overview()
-print("===CREATING STEERABLES======")
+print_info("===CREATING STEERABLES======|0")
 try:
-    steerable_parameters = CreateSteerableParameters("SteerableParameters")
     # steerable_parameters = CreateSteerableParameters("STEERING_TYPE", "SteerableParameters")
     # steering_parameters = servermanager.ProxyManager().GetProxy("sources", "SteeringParameters")
-    if steerable_parameters is None:
-        print("Error: SteerableParameters proxy not found (CreateSteerableParameters returned None).")
+
+
+
+    # = CreateSteerableParameters("SteerableParameters")
+    steerable_parameters_electric =  CreateSteerableParameters(
+                                steerable_proxy_type_name           = "SteerableParameters_electric",
+                                steerable_proxy_registration_name   = "SteeringParameters_electric",
+                                result_mesh_name                    = "steerable_channel_backward_electric"
+                            )
+    
+    steerable_parameters_magnetic =  CreateSteerableParameters(
+                                steerable_proxy_type_name           = "SteerableParameters_magnetic",
+                                steerable_proxy_registration_name   = "SteeringParameters_magnetic",
+                                result_mesh_name                    = "steerable_channel_backward_magnetic"
+                                # result_mesh_name                    = "steerable_magnetic_mesh_backward"
+                            )
+
+
+
+    if steerable_parameters_electric is None:
+        print_info("Error: SteerableParameters_electric proxy not found (CreateSteerableParameters returned None).")
     else:
-        print("SteerableParameters loaded successfully.")
+        print_info("SteerableParameters_electric loaded successfully.")
+    
+    if steerable_parameters_magnetic is None:
+        print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
+    else:
+        print_info("SteerableParameters_magnetic loaded successfully.")
+
 except Exception as e:
-    print(f"Exception while loading SteerableParameters: {e}")
+    print_info(f"Exception while loading SteerableParameters: {e}")
 
-print("===CREATING STEERABLES======DONE")
+print_info("===CREATING STEERABLES=========="[0:30]+"|1")
 
+
+
+
+
+print_info("=== Printing Proxy Overview ============"[0:30]+"0")
 print_proxy_overview()
-
-
-
-
-# print("===SETTING DATA EXTRAXCTION=======")
-# registrationName must match the channel name used in the 'CatalystAdaptor'.
-ippl_field_v        = PVTrivialProducer(registrationName='ippl_E')
-ippl_field_s        = PVTrivialProducer(registrationName='ippl_scalar')
-ippl_particle       = PVTrivialProducer(registrationName='ippl_particle')
-# # ippl_field_phi = PVTrivialProducer(registrationName='ippl_phi')
-
-
-# vTPD_particle = create_VTPD_extractor("particle", ippl_particle)
-# vTPD_field_v  = create_VTPD_extractor("field_v",  ippl_field_v)
-# vTPD_field_s  = create_VTPD_extractor("field_s",  ippl_field_s)
-
-# print("===SETTING DATA EXTRACTION=======DONE")
-
-
+print_info("=== Printing Proxy Overview ============"[0:30]+"1")
 
 
 
@@ -90,35 +89,26 @@ ippl_particle       = PVTrivialProducer(registrationName='ippl_particle')
 # -------------EXTRACTORS-----------------------------------------------
 # ----------------------------------------------------------------------
 
-# print("===CREATING PNG EXTRACTORS==============")
-# """ these will directly create extractors without further use
-# these files are catalyst save files directly created from paraview -... """
-# from catalyst_extractors import png_ext_particle
-# from catalyst_extractors import png_ext_sfield
-# from catalyst_extractors import png_ext_vfield
-# print("===CREATING PNG EXTRACTORS==============DONE")
+# print("=== SETTING TRIVIAL PRODUCERS (LIVE) =======0")
+# registrationName must match the channel name used in the 'CatalystAdaptor'.
+ippl_parti_e        = PVTrivialProducer(registrationName='ippl_particles')
+ippl_field_s        = PVTrivialProducer(registrationName='ippl_scalar')
+ippl_field_v        = PVTrivialProducer(registrationName='ippl_E')
+# # ippl_field_phi = PVTrivialProducer(registrationName='ippl_phi')
+# print("=== SETTING TRIVIAL PRODUCERS (LIVE) =======1")
 
 
 
 
+#?? segfault ....
+# print("===SETTING VTK DATA EXTRAXCTION=======0")
+# vTPD_particle = create_VTPD_extractor("particle", ippl_parti_e, 1)
+# vTPD_field_v  = create_VTPD_extractor("field_v",  ippl_field_v, 1)
+# vTPD_field_s  = create_VTPD_extractor("field_s",  ippl_field_s, 1)
+# print("===SETTING VTK DATA EXTRACTION=======1")
 
-# print("===CHECKING IPPL DATA===================")
-# # Add detailed data type checking
-# field_output    = ippl_field_v.GetClientSideObject().GetOutput()
-# scalar_output   = ippl_field_s.GetClientSideObject().GetOutput()
-# particle_output = ippl_particle.GetClientSideObject().GetOutput()
-# particle_info   = ippl_particle.GetDataInformation()
-# field_info      = ippl_field_v.GetDataInformation()
-# scalar_info     = ippl_field_s.GetDataInformation()
-# # Debug: Check data availability (can be done at each cycle...)
-# print(f"Data types:")
-# print(f"  - ippl_field_v       : {type(field_output).__name__}")
-# print(f"                       {field_info.GetNumberOfPoints()} points, {field_info.GetNumberOfCells()} cells")
-# print(f"  - ippl_field_s:      {type(scalar_output).__name__}")
-# print(f"                       {scalar_info.GetNumberOfPoints()} points, {scalar_info.GetNumberOfCells()} cells") 
-# print(f"  - ippl_particle    : {type(particle_output).__name__}")
-# print(f"                       {particle_info.GetNumberOfPoints()} points, {particle_info.GetNumberOfCells()} cells")
-# print("===CHECKING IPPL DATA===================DONE")
+
+
 
 
 
@@ -126,169 +116,172 @@ ippl_particle       = PVTrivialProducer(registrationName='ippl_particle')
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
-set_log_level("NONE")
-
-# Capture VTK errors to file for post-mortem (vtk_errors.log in CWD)
-try:
-    from vtkmodules.vtkCommonCore import vtkFileOutputWindow, vtkOutputWindow
-    _vtk_log = vtkFileOutputWindow()
-    _vtk_log.SetFileName("vtk_errors.log")
-    vtkOutputWindow.SetInstance(_vtk_log)
-    print("[DEBUG] VTK error log redirected to vtk_errors.log")
-except Exception as e:
-    print(f"[WARN] VTK error log setup failed: {e}")
 
 
 
-
-
-
-
-
-
-
-
-print("===SETING CATALYST OPTIONS======================")
+print_info("===SETTING CATALYST OPTIONS================"[0:30]+"|0")
 # Catalyst options
 options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
-options.ExtractsOutputDirectory = 'ippl_catalyst_output'
+options.ExtractsOutputDirectory = 'data_vtk_extracts'
  # Set only a single output directory
-print("===SETING CATALYST OPTIONS=======================DONE")
-
-
-
-try:
-    from catalyst_extractors import png_ext_particle
-    register_png_extractor(png_ext_particle)
-except Exception as e:
-    print(f"[WARN] particle registration failed: {e}")
-
-try:
-    from catalyst_extractors import png_ext_sfield
-    register_png_extractor(png_ext_sfield)
-except Exception as e:
-    print(f"[WARN] sfield registration failed: {e}")
-
-try:
-    from catalyst_extractors import png_ext_vfield
-    register_png_extractor(png_ext_vfield)
-except Exception as e:
-    print(f"[WARN] vfield registration failed: {e}")
-
-# try:
-#     from catalyst_extractors import png_ext_particle
-#     register_png_extractor(png_ext_particle.renderView1, apng_ext_partcile.pNG1)
-# except Exception as e:
-#     print(f"[WARN]  registration failed: {e}")
-
-
-# try:
-#     from catalyst_extractors import aa
-#     register_png_extractor(aa.renderView2, aa.pNG2)
-# except Exception as e:
-#     print(f"[WARN]  registration failed: {e}")
-
-kc = get_keepalive_counts()
-print(f"[DEBUG] Keepalive views count: {kc[0]}  extractors: {kc[1]}")
+print_info("===SETTING CATALYST OPTIONS==================="[0:30]+"|1")
 
 
 
 
 
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
+# from catalyst_extractors import png_ext_particle
 
-print("===DEFINING CATALYST_ init, exe, fini======================")
+
+
+
+# from catalyst_extractors import png_ext_sfield
+# from catalyst_extractor import png_ext_sfield.ippl_scalar 
+# from png_ext_sfield
+
+
+# from catalyst_extractors import png_ext_vfield
+""" if done like this view will detach after a couple time steps ... """
+
+""" maybe need to test like this """
+# from catalyst_extractors.png_ext_particle import pNG1
+# from catalyst_extractors.png_ext_sfield import pNG2
+# from catalyst_extractors.png_ext_vfield import pNG3
+
+
+
+
+# from catalyst_extractors.png_ext_vfield import glyph1
+""" this import while extract also active being listed in conduit will cause two separate extarcts  """
+
+
+# glyph1 = Glyph( registrationName='Glyph1', 
+#                 Input=ippl_field_v_,
+#                 GlyphType='Arrow')
+
+# glyph1.OrientationArray = ['CELLS', 'electrostatic']
+# glyph1.ScaleArray = ['CELLS', 'electrostatic']
+# glyph1.ScaleFactor = 1.32
+# glyph1.GlyphTransform = 'Transform2'
+
+# # init the 'Arrow' selected for 'GlyphType'
+# glyph1.GlyphType.TipResolution = 20
+# glyph1.GlyphType.TipLength = 0.29
+# glyph1.GlyphType.ShaftResolution = 8
+# glyph1.GlyphType.ShaftRadius = 0.02
+
+
+# # show data from glyph1
+# glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
+
+
+print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:30]+"|1")
 
 def catalyst_initialize():
     print_info("in '%s::catalyst_initialize'", __name__)
-    print("====================================>")
-    print("===CALLING catalyst_initialize()====>")
-
-
-
-    
-    print("===CALLING catalyst_initialize()====>DONE")
-    print("====================================>")
-
-
+    print_info("===CALLING catalyst_initialize()===="[0:30]+">0")
+    print_info("===CALLING catalyst_initialize()===="[0:30]+">1")
 
 # ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-
-
-
-
 
 def catalyst_execute(info):
     # print_info("in '%s::catalyst_execute'", __name__)
-    print(f"---Cycle {info.cycle}:----catalyst_execute()---------------START")
-    print("executing (cycle={}, time={})".format(info.cycle, info.time))
+    print_info(f"---Cycle {info.cycle}:----catalyst_execute()---------------START")
+    print_info("executing (cycle={}, time={})".format(info.cycle, info.time))
 
-    # Force PNG extractors to have proper view associations each cycle
-    _fix_png_extractors_force()
-    # Ensure views are freshly rendered (helps when views were created but not yet rendered)
-    try:
-        pvs.RenderAllViews()
-    except Exception:
-        pass
-    # _debug_dump_state(tag=f"pre-cycle {info.cycle}")
+    global ippl_parti_e
+    global ippl_field_s
+    global ippl_field_v
+    # global glyph1
 
-    # print("field bounds   :", ippl_field_v.GetDataInformation().GetBounds())
-    # print("field bounds   :", ippl_field_s.GetDataInformation().GetBounds())
-    # print("particle bounds:", ippl_particle.GetDataInformation().GetBounds())
-
-    ippl_field_v.UpdatePipeline()
+    ippl_parti_e.UpdatePipeline()
     ippl_field_s.UpdatePipeline()
-    ippl_particle.UpdatePipeline()
+    ippl_field_v.UpdatePipeline()
+    # glyph1.UpdatePipeline()
 
-
-
-    
-    global steerable_parameters
-    steerable_parameters.scaleFactor[0] = 31 + info.cycle
+    global steerable_parameters_electric
+    global steerable_parameters_magnetic
+    steerable_parameters_electric.scaleFactor_e[0] = 31 + info.cycle
+    steerable_parameters_magnetic.scaleFactor_m[0] = 31 + info.cycle
     
 
 
     if options.EnableCatalystLive:
-        time.sleep(0.5)
+        time.sleep(0.2)
 
-    print(f"---Cycle {info.cycle}:----catalyst_execute()---------------DONE")
+    print_info(f"---Cycle {info.cycle}:----catalyst_execute()---------------DONE")
 
-# ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
 
 
 def catalyst_finalize():
     print_info("in '%s::catalyst_finalize'", __name__)
-    print("==================================|")
-    print("===CALLING catalyst_finalize()====|")
-
-
-    
-    print("===CALLING catalyst_finalize()====|DONE")
-    print("==================================|")
+    print_info("===CALLING catalyst_finalize()===="[0:30]+"|0")
+    print_info("===CALLING catalyst_finalize()===="[0:30]+"|1")
 
 
 
 
 
-print("===DEFINING CATALYST_ init, exe, fini======================DONE")
+print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:30]+"|1\n\n\n")
 
 
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
-print("\n\n")
 print_info("end '%s'", __name__)
-print("====================================|")
-print("===END OF CATALYST PIPELINE=========|")
-print("====================================|")
-print("\n\n")
+print_info("===================================="[0:30]+"|")
+print_info("===END OF CATALYST PIPELINE========="[0:30]+"|")
+print_info("===================================="[0:30]+"|\n\n\n")
 # print end marker
+
+
+
+
+
+
+
+
+
+        # // // Pass Conduit node to Catalyst
+        # // catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        # // if (err != catalyst_status_ok) {
+        # //     std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        # // }
+
+        # // Results(scaleFactor);
+
+    # # In a real simulation sleep is not needed. We use it here to slow down the
+    # # "simulation" and make sure ParaView client can catch up with the produced
+    # # results instead of having all of them flashing at once.
+    # if options.EnableCatalystLive:
+    #     time.sleep(5)
+
+
+    # https://docs.paraview.org/en/latest/Catalyst/blueprints.html#background
+
+
+# https://github.com/jhgoebbert/ippl/commit/5b3012942849e939f56cf1c260ef2334e1565533#diff-96bf80a34c8923d60556bbae1b4d35791ea13aadc3d3e75d722fd801be609ee7
+
+
+
+
+# def CreateSteerableParameters(
+#                               steerable_proxy_type_name = ,
+#                               steerable_proxy_registration_name   ="SteeringParameters",
+#                               result_mesh_name                    ="steerable"
+#         ):
+
+#     pxm = servermanager.ProxyManager()
+#     steerable_proxy = pxm.NewProxy("sources", steerable_proxy_type_name)
+#     pxm.RegisterProxy("sources", steerable_proxy_registration_name,
+#                       steerable_proxy)
+#     steerable_proxy_wrapper = servermanager._getPyProxy(steerable_proxy)
+#     UpdateSteerableParameters(steerable_proxy_wrapper, result_mesh_name)
+#     return steerable_proxy_wrapper
+
