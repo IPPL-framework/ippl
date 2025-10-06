@@ -1,27 +1,93 @@
 # script-version: 2.0
-
-#### import the simple module from the paraview
 from paraview.simple import *
+from paraview import print_info
+import math
+
+
+print_info("==='%s'======================="[0:28]+">",__name__)
+
+
+def nice_bounds(vmin, vmax):
+    # Avoid zero range
+    if vmin == vmax:
+        return vmin, vmax
+    # Find order of magnitude
+    order = math.floor(math.log10(max(abs(vmin), abs(vmax), 1e-10)))
+    scale = 10 ** order
+    # Round down min, up max
+    nice_min = math.floor(vmin / scale) * scale
+    nice_max = math.ceil(vmax / scale) * scale
+    return nice_min, nice_max
+
+
+
+def set_camera(view, position=None, focal_point=None, view_up=None, parallel_scale=None):
+    if position is not None:
+        view.CameraPosition = position
+    if focal_point is not None:
+        view.CameraFocalPoint = focal_point
+    if view_up is not None:
+        view.CameraViewUp = view_up
+    if parallel_scale is not None:
+        view.CameraParallelScale = parallel_scale
+
+
+def auto_camera_from_bounds(view, bounds):
+    # bounds: (xmin, xmax, ymin, ymax, zmin, zmax)
+    def nice_pair(vmin, vmax):
+        # Use nice_bounds for each axis
+        return nice_bounds(vmin, vmax)
+
+    # Compute nice bounds for each axis
+    x0, x1 = nice_pair(bounds[0], bounds[1])
+    y0, y1 = nice_pair(bounds[2], bounds[3])
+    z0, z1 = nice_pair(bounds[4], bounds[5])
+
+    # Center and diagonal based on nice bounds
+    center = [
+        0.5 * (x0 + x1),
+        0.5 * (y0 + y1),
+        0.5 * (z0 + z1)
+    ]
+    dx = x1 - x0
+    dy = y1 - y0
+    dz = z1 - z0
+    diagonal = math.sqrt(dx*dx + dy*dy + dz*dz)
+
+    # Camera direction: from a diagonal (e.g., [1,1,1])
+    direction = [1, 1, 1]
+    norm = math.sqrt(sum(d*d for d in direction))
+    direction = [d / norm for d in direction]
+
+    # Camera position: center + direction * (distance)
+    distance = 1.8 * diagonal  # adjust multiplier as needed
+    cam_pos = [
+        center[0] + direction[0] * distance,
+        center[1] + direction[1] * distance,
+        center[2] + direction[2] * distance
+    ]
+    set_camera(
+        view,
+        position=cam_pos,
+        focal_point=center,
+        view_up=[0, 0, 1],  # z-up
+        parallel_scale=0.6 * diagonal
+    )
+    view.AxesGrid.UseCustomBounds = 1
+    view.AxesGrid.CustomBounds = [x0, x1, y0, y1, z0, z1]
+
+
+
 
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
-
-from paraview import print_info
-
-# ----------------------------------------------------------------
-# setup views used in the visualization
-# ----------------------------------------------------------------
-print_info("==='%s'======================="[0:28]+">",__name__)
-# print_info("===EXECUTING CATALYSt PARTICLES EXTRACTOR ADAPTABLE ======>")
-# print_info("====================================>")
-
 
 # get the material library
 materialLibrary1 = GetMaterialLibrary()
 
 # Create a new 'Render View'
 renderView1 = CreateView('RenderView')
-renderView1.ViewSize = [877, 811]
+renderView1.ViewSize = [2000, 1500]
 renderView1.AxesGrid = 'GridAxes3DActor'
 renderView1.CenterOfRotation = [9.804888932121028, 10.012698468217557, 10.017046030145888]
 renderView1.HiddenLineRemoval = 1
@@ -33,108 +99,37 @@ renderView1.CameraFocalDisk = 1.0
 renderView1.CameraParallelScale = 14.438249951766423
 renderView1.BackEnd = 'OSPRay raycaster'
 renderView1.OSPRayMaterialLibrary = materialLibrary1
-
 renderView1.AxesGrid.Visibility = 1
 
 SetActiveView(None)
 
-# ----------------------------------------------------------------
-# setup view layouts
-# ----------------------------------------------------------------
-
-# create new layout object 'Layout #1'
-layout1 = CreateLayout(name='Layout #1')
-layout1.AssignView(0, renderView1)
-layout1.SetSize(877, 811)
-
-# ----------------------------------------------------------------
-# restore active view
-SetActiveView(renderView1)
-# ----------------------------------------------------------------
-
-# ----------------------------------------------------------------
-# setup the data processing pipelines
-# ----------------------------------------------------------------
-
 # create a new 'XML Partitioned Dataset Reader'
 ippl_particle = PVTrivialProducer(registrationName='ippl_particles')
-
-# ----------------------------------------------------------------
-# setup the visualization in view 'renderView1'
-# ----------------------------------------------------------------
-
 # show data from ippl_particle
 ippl_particleDisplay = Show(ippl_particle, renderView1, 'UnstructuredGridRepresentation')
 
-# get 2D transfer function for 'velocity'
 velocityTF2D = GetTransferFunction2D('velocity')
-
-# get color transfer function/color map for 'velocity'
 velocityLUT = GetColorTransferFunction('velocity')
 velocityLUT.TransferFunction2D = velocityTF2D
 velocityLUT.RGBPoints = [0.050641224585373915, 0.231373, 0.298039, 0.752941, 2.3924284143906274, 0.865003, 0.865003, 0.865003, 4.734215604195881, 0.705882, 0.0156863, 0.14902]
-velocityLUT.ScalarRangeInitialized = 1.0
 
-# get opacity transfer function/opacity map for 'velocity'
-velocityPWF = GetOpacityTransferFunction('velocity')
-velocityPWF.Points = [0.050641224585373915, 0.0, 0.5, 0.0, 4.734215604195881, 1.0, 0.5, 0.0]
-velocityPWF.ScalarRangeInitialized = 1
 
-# trace defaults for the display properties.
 ippl_particleDisplay.Representation = 'Point Gaussian'
-ippl_particleDisplay.ColorArrayName = ['POINTS', 'velocity']
 ippl_particleDisplay.LookupTable = velocityLUT
-ippl_particleDisplay.SelectTCoordArray = 'None'
-ippl_particleDisplay.SelectNormalArray = 'None'
-ippl_particleDisplay.SelectTangentArray = 'None'
-ippl_particleDisplay.OSPRayScaleArray = 'charge'
-ippl_particleDisplay.OSPRayScaleFunction = 'PiecewiseFunction'
-ippl_particleDisplay.SelectOrientationVectors = 'None'
-ippl_particleDisplay.ScaleFactor = 1.9956595386576226
-ippl_particleDisplay.SelectScaleArray = 'None'
-ippl_particleDisplay.GlyphType = 'Arrow'
-ippl_particleDisplay.GlyphTableIndexArray = 'None'
-ippl_particleDisplay.GaussianRadius = 0.09978297693288113
-ippl_particleDisplay.SetScaleArray = ['POINTS', 'charge']
-ippl_particleDisplay.ScaleTransferFunction = 'PiecewiseFunction'
-ippl_particleDisplay.OpacityArray = ['POINTS', 'charge']
-ippl_particleDisplay.OpacityTransferFunction = 'PiecewiseFunction'
+# point size ...
+# ippl_particleDisplay.GaussianRadius = 1
+
+
 ippl_particleDisplay.DataAxesGrid = 'GridAxesRepresentation'
-ippl_particleDisplay.PolarAxes = 'PolarAxesRepresentation'
-ippl_particleDisplay.ScalarOpacityFunction = velocityPWF
-ippl_particleDisplay.ScalarOpacityUnitDistance = 1.3403283950605853
-ippl_particleDisplay.OpacityArrayName = ['POINTS', 'charge']
 ippl_particleDisplay.SelectInputVectors = ['POINTS', 'position']
-ippl_particleDisplay.WriteLog = ''
-
-# init the 'PiecewiseFunction' selected for 'ScaleTransferFunction'
-ippl_particleDisplay.ScaleTransferFunction.Points = [-0.15625, 0.0, 0.5, 0.0, -0.156219482421875, 1.0, 0.5, 0.0]
-
-# init the 'PiecewiseFunction' selected for 'OpacityTransferFunction'
-ippl_particleDisplay.OpacityTransferFunction.Points = [-0.15625, 0.0, 0.5, 0.0, -0.156219482421875, 1.0, 0.5, 0.0]
-
-# setup the color legend parameters for each legend in this view
+ippl_particleDisplay.ColorArrayName = ['POINTS', 'velocity']
 
 # get color legend/bar for velocityLUT in view renderView1
 velocityLUTColorBar = GetScalarBar(velocityLUT, renderView1)
 velocityLUTColorBar.Title = 'velocity'
 velocityLUTColorBar.ComponentTitle = 'Magnitude'
-
-# set color bar visibility
 velocityLUTColorBar.Visibility = 1
-
-# show color legend
 ippl_particleDisplay.SetScalarBarVisibility(renderView1, True)
-
-# ----------------------------------------------------------------
-# setup color maps and opacity mapes used in the visualization
-# note: the Get..() functions create a new object, if needed
-# ----------------------------------------------------------------
-
-# ----------------------------------------------------------------
-# setup extractors
-# ----------------------------------------------------------------
-
 # create extractor
 pNG1 = CreateExtractor('PNG', renderView1, registrationName='PNG1')
 # trace defaults for the extractor.
@@ -142,32 +137,74 @@ pNG1.Trigger = 'TimeStep'
 
 # init the 'PNG' selected for 'Writer'
 pNG1.Writer.FileName = 'Particles_{timestep:06d}{camera}.png'
-pNG1.Writer.ImageResolution = [3840, 2160]
+pNG1.Writer.ImageResolution = [2000, 1500]
 pNG1.Writer.TransparentBackground = 0
 pNG1.Writer.Format = 'PNG'
-
 # ----------------------------------------------------------------
 # restore active source
 SetActiveSource(pNG1)
 # ----------------------------------------------------------------
 
+
 # ------------------------------------------------------------------------------
 # Catalyst options
 from paraview import catalyst
 options = catalyst.Options()
-
 options.GlobalTrigger = 'TimeStep'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'TimeStep'
-
-
 options.ExtractsOutputDirectory = 'data_png_extracts2'
-
-
-
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     from paraview.simple import SaveExtractsUsingCatalystOptions
     # Code for non in-situ environments; if executing in post-processing
     # i.e. non-Catalyst mode, let's generate extracts using Catalyst options
     SaveExtractsUsingCatalystOptions(options)
+
+
+
+
+
+def catalyst_execute(info):
+    print_info("'%s::catalyst_execute()'", __name__)
+    global ippl_particle
+    global renderView1
+
+    if info.cycle % 10 == 0:
+
+        particle_info = ippl_particle.GetDataInformation()
+        point_data_info = particle_info.GetPointDataInformation()
+
+        vel_array_info = point_data_info.GetArrayInformation('velocity')
+        pos_array_info = point_data_info.GetArrayInformation('position')
+
+        if vel_array_info:
+            vmin, vmax = vel_array_info.GetComponentRange(-1)
+            nice_min, nice_max = nice_bounds(vmin, vmax)
+            vel_lut = GetColorTransferFunction('velocity')
+            vel_lut.RescaleTransferFunction(nice_min, nice_max)
+        else:
+            print_info("Velocity array not found!")
+        if pos_array_info:
+            bounds = particle_info.GetBounds()
+            auto_camera_from_bounds(renderView1, bounds)
+
+
+            def nice_pair(vmin, vmax):
+                # Use nice_bounds for each axis
+                return nice_bounds(vmin, vmax)
+
+            # Compute nice bounds for each axis
+            x0, x1 = nice_pair(bounds[0], bounds[1])
+            y0, y1 = nice_pair(bounds[2], bounds[3])
+            z0, z1 = nice_pair(bounds[4], bounds[5])
+            dx = x1 - x0
+            dy = y1 - y0
+            dz = z1 - z0
+            diagonal = math.sqrt(dx*dx + dy*dy + dz*dz)
+            """ size """
+            ippl_particleDisplay.GaussianRadius = diagonal/500
+
+        else:
+            print_info("Position array not found!")
+
