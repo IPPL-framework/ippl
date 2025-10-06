@@ -3,6 +3,8 @@ from paraview.simple import *
 from paraview import print_info
 import math
 
+""" ideally offer option to add a field object, from which we can extract the true positional bounds of the simulation """
+
 
 print_info("==='%s'======================="[0:28]+">",__name__)
 
@@ -55,7 +57,7 @@ def auto_camera_from_bounds(view, bounds):
     diagonal = math.sqrt(dx*dx + dy*dy + dz*dz)
 
     # Camera direction: from a diagonal (e.g., [1,1,1])
-    direction = [1, 1, 1]
+    direction = [1, 1.3, 0.6]
     norm = math.sqrt(sum(d*d for d in direction))
     direction = [d / norm for d in direction]
 
@@ -101,6 +103,15 @@ renderView1.BackEnd = 'OSPRay raycaster'
 renderView1.OSPRayMaterialLibrary = materialLibrary1
 renderView1.AxesGrid.Visibility = 1
 
+
+# change background ...
+renderView1.UseColorPaletteForBackground = 0
+renderView1.BackgroundColorMode = 'Gradient'
+# renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
+# renderView1.Background = [0.0, 0.0, 0.4980392156862745]
+
+
+
 SetActiveView(None)
 
 # create a new 'XML Partitioned Dataset Reader'
@@ -111,6 +122,7 @@ ippl_particleDisplay = Show(ippl_particle, renderView1, 'UnstructuredGridReprese
 velocityTF2D = GetTransferFunction2D('velocity')
 velocityLUT = GetColorTransferFunction('velocity')
 velocityLUT.TransferFunction2D = velocityTF2D
+# colouring ...
 velocityLUT.RGBPoints = [0.050641224585373915, 0.231373, 0.298039, 0.752941, 2.3924284143906274, 0.865003, 0.865003, 0.865003, 4.734215604195881, 0.705882, 0.0156863, 0.14902]
 
 

@@ -10,199 +10,211 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 from paraview import print_info
+import math
+
+
+# ----------------------------------------------------------------
+# helpers used for adaptive visualization
+# ----------------------------------------------------------------
+# Helper function to compute "nice" bounds
+def nice_bounds(vmin, vmax):
+    if vmin == vmax:
+        return vmin, vmax
+    order = math.floor(math.log10(max(abs(vmin), abs(vmax), 1e-10)))
+    scale = 10 ** order
+    nice_min = math.floor(vmin / scale) * scale
+    nice_max = math.ceil(vmax / scale) * scale
+    return nice_min, nice_max
+
+def compute_bounding_box_scale(bounds):
+    dx = bounds[1] - bounds[0]
+    dy = bounds[3] - bounds[2]
+    dz = bounds[5] - bounds[4]
+    diagonal = math.sqrt(dx * dx + dy * dy + dz * dz)
+    return diagonal
+
+# Helper function to set the camera
+def set_camera(view, position=None, focal_point=None, view_up=None, parallel_scale=None):
+    if position is not None:
+        view.CameraPosition = position
+    if focal_point is not None:
+        view.CameraFocalPoint = focal_point
+        renderView1.CameraFocalDisk = 1.0
+        #  maybe default better ....
+        view.CenterOfRotation = focal_point
+    if view_up is not None:
+        view.CameraViewUp = view_up
+    if parallel_scale is not None:
+        view.CameraParallelScale = parallel_scale
+
+# Helper function to auto-adjust the camera based on bounds
+def auto_camera_from_bounds(view, bounds):
+    center = [
+        0.5 * (bounds[0] + bounds[1]),
+        0.5 * (bounds[2] + bounds[3]),
+        0.5 * (bounds[4] + bounds[5])
+    ]
+    dx = bounds[1] - bounds[0]
+    dy = bounds[3] - bounds[2]
+    dz = bounds[5] - bounds[4]
+    diagonal = math.sqrt(dx * dx + dy * dy + dz * dz)
+
+    # "Nice" rounding for center and diagonal
+    def nice_value(val):
+        if val == 0:
+            return 0
+        order = math.floor(math.log10(abs(val)))
+        scale = 10 ** order
+        if val > 0:
+            return math.ceil(val / scale) * scale
+        else:
+            return math.floor(val / scale) * scale
+
+    nice_center = [nice_value(c) for c in center]
+    nice_diagonal = nice_value(diagonal)
+
+    # Camera position: look from a diagonal direction
+    direction = [1, 1.3, 0.6]
+    norm = math.sqrt(sum(d * d for d in direction))
+    direction = [d / norm for d in direction]
+    distance = 1.3 * nice_diagonal
+    cam_pos = [
+        nice_center[0] + direction[0] * distance,
+        nice_center[1] + direction[1] * distance,
+        nice_center[2] + direction[2] * distance
+    ]
+
+    set_camera(
+        view,
+        position=cam_pos,
+        focal_point=nice_center,
+        view_up=[0, 0, 1],  # z-up
+        parallel_scale=0.6 * nice_diagonal
+    )
+
+
+
 
 # ----------------------------------------------------------------
 # setup views used in the visualization
 # ----------------------------------------------------------------
 print_info("==='%s'=============================="[0:30]+">",__name__)
-# print_info("===EXECUTING CATALYSt VFIELD EXTRACTOR ADAPTABLE ======>")
-# print_info("====================================>")
-
-
-# get the material library
-materialLibrary1 = GetMaterialLibrary()
-
-# Create a new 'Render View'
-renderView1 = CreateView('RenderView')
-renderView1.ViewSize = [1247, 1176]
-renderView1.AxesGrid = 'Grid Axes 3D Actor'
-renderView1.CenterOfRotation = [9.977132737636566, 9.960369408130646, 10.014306247234344]
-renderView1.StereoType = 'Crystal Eyes'
-renderView1.CameraPosition = [45.25156805313023, 36.870151913543715, 45.686363221485244]
-renderView1.CameraFocalPoint = [9.977132737636566, 9.960369408130646, 10.014306247234344]
-renderView1.CameraViewUp = [-0.13205443629762095, 0.8497247521302609, -0.5104208767980444]
-renderView1.CameraFocalDisk = 1.0
-renderView1.CameraParallelScale = 14.73432485141569
-renderView1.LegendGrid = 'Legend Grid Actor'
-renderView1.UseColorPaletteForBackground = 0
-renderView1.BackgroundColorMode = 'Gradient'
-renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
-renderView1.Background = [0.0, 0.0, 0.4980392156862745]
-renderView1.BackEnd = 'OSPRay raycaster'
-renderView1.OSPRayMaterialLibrary = materialLibrary1
-
-# init the 'Grid Axes 3D Actor' selected for 'AxesGrid'
-renderView1.AxesGrid.Visibility = 1
-
 SetActiveView(None)
 
-# ----------------------------------------------------------------
-# setup view layouts
-# ----------------------------------------------------------------
+ippl_vector_field = PVTrivialProducer(registrationName='ippl_E')
+renderView1 = CreateView('RenderView')
+renderView1.ViewSize = [2000, 1500]
+renderView1.BackEnd = 'OSPRay raycaster'
+renderView1.StereoType = 'Crystal Eyes'
+renderView1.LegendGrid = 'Legend Grid Actor'
+renderView1.AxesGrid = 'Grid Axes 3D Actor'
+renderView1.AxesGrid.Visibility = 1
+materialLibrary1 = GetMaterialLibrary()
+renderView1.OSPRayMaterialLibrary = materialLibrary1
 
-# create new layout object 'Layout #1'
-layout1 = CreateLayout(name='Layout #1')
-layout1.AssignView(0, renderView1)
-layout1.SetSize(1247, 1176)
+# change background ...
+renderView1.UseColorPaletteForBackground = 0
+renderView1.BackgroundColorMode = 'Gradient'
+# renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
+# renderView1.Background = [0.0, 0.0, 0.4980392156862745]
 
-# ----------------------------------------------------------------
-# restore active view
+
+ippl_vector_info = ippl_vector_field.GetDataInformation()
+bounds = ippl_vector_info.GetBounds()
+auto_camera_from_bounds(renderView1, bounds)
+diag = compute_bounding_box_scale(bounds)
+
 SetActiveView(renderView1)
-# ----------------------------------------------------------------
+
 
 # ----------------------------------------------------------------
 # setup the data processing pipelines
 # ----------------------------------------------------------------
-
-# create a new 'PV Trivial Producer'
-ippl_E = PVTrivialProducer(registrationName='ippl_E')
-
-# create a new 'Glyph'
-glyph1 = Glyph(registrationName='Glyph1', Input=ippl_E,
-    GlyphType='Arrow')
+glyph1 = Glyph(registrationName='Glyph1', Input=ippl_vector_field, GlyphType='Arrow')
 glyph1.OrientationArray = ['CELLS', 'electrostatic']
-glyph1.ScaleArray = ['CELLS', 'None']
-# glyph1.ScaleArray = ['CELLS', 'electrostatic']
-# glyph1.ScaleFactor = 0.5
 glyph1.GlyphTransform = 'Transform2'
+glyph1.ScaleFactor = diag/30
 
-# init the 'Arrow' selected for 'GlyphType'
-glyph1.GlyphType.TipResolution = 20
-glyph1.GlyphType.TipLength = 0.29
-glyph1.GlyphType.ShaftResolution = 8
-glyph1.GlyphType.ShaftRadius = 0.02
 
-# ----------------------------------------------------------------
-# setup the visualization in view 'renderView1'
-# ----------------------------------------------------------------
+#MORE....
+#  ## dimension dependent scaling... depends on data ...
+# glyph1.ScaleFactor = [1.0, 0.5, 2.0] 
+## field proportional scaling, sometimes turns graph illegible
+# glyph1.ScaleArray = ['CELLS', 'electrostatic']
 
-# show data from glyph1
+# init 'Arrow' selected for 'GlyphType' ... stay at defaults...
+# print(f"Default TipResolution: {glyph1.GlyphType.TipResolution}")
+# print(f"Default TipLength: {glyph1.GlyphType.TipLength}")
+# print(f"Default ShaftResolution: {glyph1.GlyphType.ShaftResolution}")
+# print(f"Default ShaftRadius: {glyph1.GlyphType.ShaftRadius}")
+    
+# print(f"Glyph Type: {glyph1.GlyphType}")
+# print(f"Orientation Array: {glyph1.OrientationArray}")
+# print(f"Scale Factor: {glyph1.ScaleFactor}")
+# print(f"Opacity Transfer Function Points: {fieldStrengthPWF.Points}")
+# print(f"Color Transfer Function Range: {fieldStrengthLUT.RGBPoints}")
+
+
+
+
+
+fieldStrengthTF2D = GetTransferFunction2D('electrostatic')
+fieldStrengthTF2D.ScalarRangeInitialized = 1
+fieldStrengthTF2D.Range = [0.00, 2.00, 0.0, 1.0]
+
+fieldStrengthLUT = GetColorTransferFunction('electrostatic')
+fieldStrengthLUT.TransferFunction2D = fieldStrengthTF2D
+fieldStrengthLUT.ScalarRangeInitialized = 1
+fieldStrengthLUT.RGBPoints = [0.00, 0.231373, 0.298039, 0.752941, 
+                              1.00, 0.865003, 0.865003, 0.865003, 
+                              2.00, 0.705882, 0.0156863, 0.14902]
+fieldStrengthLUTColorBar = GetScalarBar(fieldStrengthLUT, renderView1)
+fieldStrengthLUTColorBar.Title = 'fieldStrength'
+fieldStrengthLUTColorBar.ComponentTitle = 'Magnitude'
+fieldStrengthLUTColorBar.Visibility = 1
+
+fieldStrengthLUT.EnableOpacityMapping = True
+
+fieldStrengthPWF = GetOpacityTransferFunction('electrostatic')
+fieldStrengthPWF.ScalarRangeInitialized = 1
+fieldStrengthPWF.Points = [0.00, 0.0, 0.5, 0.0, 
+                           0.50, 0.2, 0.5, 0.0, 
+                           2.00, 1.0, 0.5, 0.0]
+
+
+
 glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
-
-# get 2D transfer function for 'electrostatic'
-electrostaticTF2D = GetTransferFunction2D('electrostatic')
-electrostaticTF2D.ScalarRangeInitialized = 1
-electrostaticTF2D.Range = [0.3405590802851601, 2.3380367305185823, 0.0, 1.0]
-
-# get color transfer function/color map for 'electrostatic'
-electrostaticLUT = GetColorTransferFunction('electrostatic')
-electrostaticLUT.TransferFunction2D = electrostaticTF2D
-electrostaticLUT.RGBPoints = [0.3405590802851601, 0.231373, 0.298039, 0.752941, 1.3392979054018714, 0.865003, 0.865003, 0.865003, 2.3380367305185823, 0.705882, 0.0156863, 0.14902]
-electrostaticLUT.ScalarRangeInitialized = 1.0
-
-# trace defaults for the display properties.
 glyph1Display.Representation = 'Surface'
+glyph1Display.LookupTable = fieldStrengthLUT
 glyph1Display.ColorArrayName = ['POINTS', 'electrostatic']
-glyph1Display.LookupTable = electrostaticLUT
-glyph1Display.SelectTCoordArray = 'None'
-glyph1Display.SelectNormalArray = 'None'
-glyph1Display.SelectTangentArray = 'None'
-glyph1Display.OSPRayScaleFunction = 'Piecewise Function'
-glyph1Display.Assembly = 'Hierarchy'
-glyph1Display.SelectOrientationVectors = 'None'
-glyph1Display.ScaleFactor = 2.2
-glyph1Display.SelectScaleArray = 'None'
-glyph1Display.GlyphType = 'Arrow'
-glyph1Display.GlyphTableIndexArray = 'None'
-glyph1Display.GaussianRadius = 0.11
-glyph1Display.SetScaleArray = [None, '']
-glyph1Display.ScaleTransferFunction = 'Piecewise Function'
-glyph1Display.OpacityArray = [None, '']
-glyph1Display.OpacityTransferFunction = 'Piecewise Function'
+glyph1Display.OpacityTransferFunction = fieldStrengthPWF
 glyph1Display.DataAxesGrid = 'Grid Axes Representation'
-glyph1Display.PolarAxes = 'Polar Axes Representation'
-glyph1Display.SelectInputVectors = [None, '']
-glyph1Display.WriteLog = ''
-
-# setup the color legend parameters for each legend in this view
-
-# get color legend/bar for electrostaticLUT in view renderView1
-electrostaticLUTColorBar = GetScalarBar(electrostaticLUT, renderView1)
-electrostaticLUTColorBar.Title = 'electrostatic'
-electrostaticLUTColorBar.ComponentTitle = 'Magnitude'
-
-# set color bar visibility
-electrostaticLUTColorBar.Visibility = 1
-
-# show color legend
 glyph1Display.SetScalarBarVisibility(renderView1, True)
 
-# ----------------------------------------------------------------
-# setup color maps and opacity maps used in the visualization
-# note: the Get..() functions create a new object, if needed
-# ----------------------------------------------------------------
 
-# get opacity transfer function/opacity map for 'electrostatic'
-electrostaticPWF = GetOpacityTransferFunction('electrostatic')
-electrostaticPWF.Points = [0.3405590802851601, 0.0, 0.5, 0.0, 2.3380367305185823, 1.0, 0.5, 0.0]
-electrostaticPWF.ScalarRangeInitialized = 1
 
-# ----------------------------------------------------------------
-# setup animation scene, tracks and keyframes
-# note: the Get..() functions create a new object, if needed
-# ----------------------------------------------------------------
-
-# get time animation track
-timeAnimationCue1 = GetTimeTrack()
-
-# initialize the animation scene
-
-# get the time-keeper
-timeKeeper1 = GetTimeKeeper()
-
-# initialize the timekeeper
-
-# initialize the animation track
-
-# get animation scene
-animationScene1 = GetAnimationScene()
-
-# initialize the animation scene
-animationScene1.ViewModules = renderView1
-animationScene1.Cues = timeAnimationCue1
-animationScene1.AnimationTime = 0.0
-
-# ----------------------------------------------------------------
+# # ------------------------------------------------------------
 # setup extractors
 # --------------------------------------------------------------
-# create extractor
 pNG3 = CreateExtractor('PNG', renderView1, registrationName='PNG3')
-# trace defaults for the extractor.
 pNG3.Trigger = 'Time Step'
-
-# init the 'Time Step' selected for 'Trigger'
 pNG3.Trigger.Frequency = 1
-
-# init the 'PNG' selected for 'Writer'
 pNG3.Writer.FileName = 'VectorField_{timestep:06d}{camera}.png'
 pNG3.Writer.ImageResolution = [1247, 1176]
 pNG3.Writer.Format = 'PNG'
-
-# ----------------------------------------------------------------
-# restore active source
 SetActiveSource(glyph1)
-# ----------------------------------------------------------------
 
-# ------------------------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 # Catalyst options
 from paraview import catalyst
 options = catalyst.Options()
-
-
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
-
 options.ExtractsOutputDirectory = 'data_png_extracts2'
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -210,3 +222,35 @@ if __name__ == '__main__':
     # Code for non in-situ environments; if executing in post-processing
     # i.e. non-Catalyst mode, let's generate extracts using Catalyst options
     SaveExtractsUsingCatalystOptions(options)
+
+
+# ----------------------------------------------------------------
+def catalyst_execute(info):
+    print_info("'%s::catalyst_execute()'", __name__)
+
+
+    global ippl_vector_field
+    global renderView1
+    global fieldStrengthLUT
+    global fieldStrengthPWF
+
+
+
+    if info.cycle % 10 == 0:
+        vector_info = ippl_vector_field.GetDataInformation()
+        bounds = vector_info.GetBounds()
+        cell_data_info = vector_info.GetCellDataInformation()
+        fieldStrength_array_info = cell_data_info.GetArrayInformation('electrostatic')
+
+
+        # bounds for fields dont vary normally,butmight ...-> Adjust camera dynamically;
+        auto_camera_from_bounds(renderView1, bounds)
+        # Adjust grid bounds dynamically, should happen automaically even if there are changes??...
+        # renderView1.AxesGrid.UseCustomBounds = 1
+        # renderView1.AxesGrid.CustomBounds = bounds
+        vmin, vmax = fieldStrength_array_info.GetComponentRange(-1) # magnitude ...
+        nice_min, nice_max = nice_bounds(vmin, vmax)
+        # # Update color and opacity transfer function
+        fieldStrengthLUT.RescaleTransferFunction(nice_min, nice_max)
+        fieldStrengthPWF.RescaleTransferFunction(nice_min, nice_max)
+
