@@ -12,6 +12,9 @@ from paraview.simple import *
 from paraview.simple import LoadPlugin, CreateSteerableParameters, PVTrivialProducer
 import paraview.simple as pvs
 # from paraview.simple import GetActive
+import paraview.catalyst
+import argparse
+
 
 from paraview import servermanager
 
@@ -20,68 +23,33 @@ from catalystSubroutines import (
     print_proxy_overview,
     create_VTPD_extractor
 )
-
-
-
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
 
 
 # print start marker
-print_info("====================================>")
-print_info("===EXECUTING CATALYST PIPELINE======>")
-print_info("====================================>")
-print_info("start'%s'", __name__)
+# print_info("'%s'=====EXECUTING CATALYST PIPELINE========>",__name__)
+
+
+print("\n\n\n")
+print_info("=================================================="[0:40]+"|")
+print_info("'%s'===EXECUTING CATALYST PIPELINE================"[0:40]+"|", __name__)
+print_info("=================================================="[0:40]+"|")
 
 
 
 
-
-print_info("===CREATING STEERABLES======|0")
-try:
-    # steerable_parameters = CreateSteerableParameters("STEERING_TYPE", "SteerableParameters")
-    # steering_parameters = servermanager.ProxyManager().GetProxy("sources", "SteeringParameters")
-
-
-
-    # = CreateSteerableParameters("SteerableParameters")
-    steerable_parameters_electric =  CreateSteerableParameters(
-                                steerable_proxy_type_name           = "SteerableParameters_electric",
-                                steerable_proxy_registration_name   = "SteeringParameters_electric",
-                                result_mesh_name                    = "steerable_channel_backward_electric"
-                            )
-    
-    steerable_parameters_magnetic =  CreateSteerableParameters(
-                                steerable_proxy_type_name           = "SteerableParameters_magnetic",
-                                steerable_proxy_registration_name   = "SteeringParameters_magnetic",
-                                result_mesh_name                    = "steerable_channel_backward_magnetic"
-                                # result_mesh_name                    = "steerable_magnetic_mesh_backward"
-                            )
+arg_list = paraview.catalyst.get_args()
+# print_info(f"Arguments received: {arg_list}")
+parser = argparse.ArgumentParser()
+parser.add_argument("--name", default="default_name", help="doesnt matter")
+parser.add_argument("--VTKextract", type=bool, default=False, help="Enable the VTK extracts of all incoming channels")
+parser.add_argument("--steer",      type=bool, default=False, help="Enable steering from catalyst python side")
+parsed = parser.parse_args(arg_list)
+print_info(f"Parsed VTK extract options:     {parsed.VTKextract}")
+print_info(f"Parsed steering option:         {parsed.steer}")
 
 
-
-    if steerable_parameters_electric is None:
-        print_info("Error: SteerableParameters_electric proxy not found (CreateSteerableParameters returned None).")
-    else:
-        print_info("SteerableParameters_electric loaded successfully.")
-    
-    if steerable_parameters_magnetic is None:
-        print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
-    else:
-        print_info("SteerableParameters_magnetic loaded successfully.")
-
-except Exception as e:
-    print_info(f"Exception while loading SteerableParameters: {e}")
-
-print_info("===CREATING STEERABLES=========="[0:30]+"|1")
-
-
-
-
-
-print_info("=== Printing Proxy Overview ============"[0:30]+"0")
-print_proxy_overview()
-print_info("=== Printing Proxy Overview ============"[0:30]+"1")
 
 
 
@@ -99,17 +67,12 @@ ippl_field_v        = PVTrivialProducer(registrationName='ippl_E')
 
 
 
-
-#?? segfault ....
-# print("===SETTING VTK DATA EXTRAXCTION=======0")
-# vTPD_particle = create_VTPD_extractor("particle", ippl_parti_e, 1)
-# vTPD_field_v  = create_VTPD_extractor("field_v",  ippl_field_v, 1)
-# vTPD_field_s  = create_VTPD_extractor("field_s",  ippl_field_s, 1)
-# print("===SETTING VTK DATA EXTRACTION=======1")
-
-
-
-
+if parsed.VTKextract:
+    print_info("===SETTING VTK DATA EXTRAXCTION================"[0:30]+"|0")
+    vTPD_particle = create_VTPD_extractor("particle", ippl_parti_e, 1)
+    vTPD_field_v  = create_VTPD_extractor("field_v",  ippl_field_v, 1)
+    vTPD_field_s  = create_VTPD_extractor("field_s",  ippl_field_s, 1)
+    print_info("===SETTING VTK DATA EXTRACTION==================="[0:30]+"|1")
 
 
 # ------------------------------------------------------------------------------
@@ -128,6 +91,57 @@ options.CatalystLiveTrigger = 'Time Step'
 options.ExtractsOutputDirectory = 'data_vtk_extracts'
  # Set only a single output directory
 print_info("===SETTING CATALYST OPTIONS==================="[0:30]+"|1")
+
+
+
+
+
+if parsed.steer:
+    print_info("===CREATING STEERABLES============="[0:30]+"|0")
+    try:
+        # steerable_parameters = CreateSteerableParameters("STEERING_TYPE", "SteerableParameters")
+        # steering_parameters = servermanager.ProxyManager().GetProxy("sources", "SteeringParameters")
+    
+    
+    
+        # = CreateSteerableParameters("SteerableParameters")
+        steerable_parameters_electric =  CreateSteerableParameters(
+                                    steerable_proxy_type_name           = "SteerableParameters_electric",
+                                    steerable_proxy_registration_name   = "SteeringParameters_electric",
+                                    result_mesh_name                    = "steerable_channel_backward_electric"
+                                )
+        
+        steerable_parameters_magnetic =  CreateSteerableParameters(
+                                    steerable_proxy_type_name           = "SteerableParameters_magnetic",
+                                    steerable_proxy_registration_name   = "SteeringParameters_magnetic",
+                                    result_mesh_name                    = "steerable_channel_backward_magnetic"
+                                    # result_mesh_name                    = "steerable_magnetic_mesh_backward"
+                                )
+    
+    
+    
+        if steerable_parameters_electric is None:
+            print_info("Error: SteerableParameters_electric proxy not found (CreateSteerableParameters returned None).")
+        else:
+            print_info("SteerableParameters_electric loaded successfully.")
+        
+        if steerable_parameters_magnetic is None:
+            print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
+        else:
+            print_info("SteerableParameters_magnetic loaded successfully.")
+    
+    except Exception as e:
+        print_info(f"Exception while loading SteerableParameters: {e}")
+    
+    print_info("===CREATING STEERABLES=============="[0:30]+"|1")
+
+
+
+
+
+print_info("=== Printing Proxy Overview ============"[0:30]+"0")
+print_proxy_overview()
+print_info("=== Printing Proxy Overview ============"[0:30]+"1")
 
 
 
@@ -178,20 +192,24 @@ print_info("===SETTING CATALYST OPTIONS==================="[0:30]+"|1")
 # glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
 
 
-print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:30]+"|1")
+print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:40]+"|0")
 
 def catalyst_initialize():
     print_info("in '%s::catalyst_initialize'", __name__)
     print_info("===CALLING catalyst_initialize()===="[0:30]+">0")
+
+    # arg_list = paraview.catalyst.get_args()
+
+
     print_info("===CALLING catalyst_initialize()===="[0:30]+">1")
 
+
 # ------------------------------------------------------------------------------
-
 def catalyst_execute(info):
-    # print_info("in '%s::catalyst_execute'", __name__)
-    print_info(f"---Cycle {info.cycle}:----catalyst_execute()---------------START")
-    print_info("executing (cycle={}, time={})".format(info.cycle, info.time))
+    print_info("_________executing (cycle={}, time={})___________".format(info.cycle, info.time))
+    print_info("'%s::catalyst_execute()'", __name__)
 
+    global parsed
     global ippl_parti_e
     global ippl_field_s
     global ippl_field_v
@@ -202,19 +220,20 @@ def catalyst_execute(info):
     ippl_field_v.UpdatePipeline()
     # glyph1.UpdatePipeline()
 
-    global steerable_parameters_electric
-    global steerable_parameters_magnetic
-    steerable_parameters_electric.scaleFactor_e[0] = 31 + info.cycle
-    steerable_parameters_magnetic.scaleFactor_m[0] = 31 + info.cycle
+    if parsed.steer:
+
+        global steerable_parameters_electric
+        global steerable_parameters_magnetic
+        steerable_parameters_electric.scaleFactor_e[0] = 31 + info.cycle
+        steerable_parameters_magnetic.scaleFactor_m[0] = 31 + info.cycle
     
 
 
     if options.EnableCatalystLive:
         time.sleep(0.2)
 
-    print_info(f"---Cycle {info.cycle}:----catalyst_execute()---------------DONE")
-
 # ------------------------------------------------------------------------------
+
 
 
 
@@ -227,17 +246,16 @@ def catalyst_finalize():
 
 
 
-print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:30]+"|1\n\n\n")
+print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:40]+"|1")
 
 
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
-print_info("end '%s'", __name__)
-print_info("===================================="[0:30]+"|")
-print_info("===END OF CATALYST PIPELINE========="[0:30]+"|")
-print_info("===================================="[0:30]+"|\n\n\n")
+print_info("================================================"[0:40]+"|")
+print_info("'%s'===END OF CATALYST PIPELINE================="[0:40]+"|", __name__)
+print_info("================================================"[0:40]+"|\n\n\n")
 # print end marker
 
 

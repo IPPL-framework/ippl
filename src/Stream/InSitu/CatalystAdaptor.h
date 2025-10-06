@@ -13,6 +13,9 @@
 #include <type_traits>
 #include "Utility/IpplException.h"
 
+
+#include <list>
+
 #include<filesystem>
 
 /* catalyst header defined the following for free use ... */
@@ -57,17 +60,19 @@ namespace CatalystAdaptor {
     void set_node_script(
         conduit_cpp::Node node_path,
         const char* env_var,
-        const std::filesystem::path default_file_path){
+        const std::filesystem::path default_file_path,
+        Inform& m)
+        {
             
         const char* file_path_env = std::getenv(env_var);
         std::filesystem::path file_path;
 
         
        if (file_path_env && std::filesystem::exists(file_path_env)) {
-           std::cout << "Using " << env_var << " from environment: " << file_path_env << std::endl;
+           m << "Using " << env_var << " from environment: " << file_path_env << endl;
            file_path = file_path_env;
        } else {
-           std::cout << "No valid " << env_var <<" set. Using default: " << default_file_path << std::endl;
+           m << "No valid " << env_var <<" set. Using default: " << default_file_path << endl;
            file_path = default_file_path;
        }
 
@@ -77,61 +82,122 @@ namespace CatalystAdaptor {
 
 
     void Initialize() {
+        Inform m("Catalyst::Initialize()");
+
         conduit_cpp::Node node;
         std::filesystem::path source_dir = std::filesystem::path(__FILE__).parent_path();
-               
-               
-        // set_node_script( node["catalyst/proxies/proxy/filename"],
-        //                 "CATALYST_PROXYS_PATH",
-        //                 source_dir / "catalyst_scripts" / "proxy_default.xml"
-        // );
-        
-
-        
-        set_node_script( node["catalyst/proxies/proxy_e/filename"],
-                        "CATALYST_PROXYS_PATH",
-                        source_dir / "catalyst_scripts" / "proxy_default_electric.xml"
-        );
-        set_node_script( node["catalyst/proxies/proxy_m/filename"],
-                        "CATALYST_PROXYS_PATH",
-                        source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml"
-        );
-
         
         
         set_node_script( node["catalyst/scripts/script/filename"],
                         "CATALYST_PIPELINE_PATH",
-                        source_dir / "catalyst_scripts" / "pipeline_default.py"
+                        source_dir / "catalyst_scripts" / "pipeline_default.py",
+                        m
                     );
-
-        set_node_script( node["catalyst/scripts/extract0/filename"],
-                        "CATALYST_EXTRACTOR_SCRIPT_P",
-                        source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
-                    );
-
-        set_node_script( node["catalyst/scripts/extract1/filename"],
-                        "CATALYST_EXTRACTOR_SCRIPT_S",
-                        source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py"
-                    );
-
-        set_node_script( node["catalyst/scripts/extract2/filename"],
-                        "CATALYST_EXTRACTOR_SCRIPT_V",
-                        source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py"
-                    );
+        conduit_cpp::Node args = node["catalyst/scripts/script/args"];
+        /* empty arguments cause erros?? pass something useful maybe ^*/
+        args.append().set_string("--name");
+        args.append().set_string("noname");
+                    
 
 
 
+        /* ADD ARGUMENTS TO DEFAULT E4XTRACTOR SCRIPTS TO
+        PASS INFOS OF FRAME DIRECTLY (needed for particle)
+        USE rounded up of value to scale colours ... */
+        
+        const char* catalyst_png = std::getenv("IPPL_CATALYST_PNG");
+        if(catalyst_png && std::string(catalyst_png)=="ON"){
+            m << "TRYING TO SET CATALYST PNG EXTRACTS" << endl;
 
-        std::cout << "ippl: catalyst_initialize() =>" << std::endl;
+            set_node_script( node["catalyst/scripts/extract0/filename"],
+                            "CATALYST_EXTRACTOR_SCRIPT_P",
+                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py",
+                            m
+                        );
+
+            set_node_script( node["catalyst/scripts/extract1/filename"],
+                            "CATALYST_EXTRACTOR_SCRIPT_S",
+                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py",
+                            m
+                        );
+
+            set_node_script( node["catalyst/scripts/extract2/filename"],
+                            "CATALYST_EXTRACTOR_SCRIPT_V",
+                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py",
+                            m
+                        );
+        }
+        else{
+            m << "catalyst PNG extract DEACTIVATED" << endl;
+        }
+
+
+        const char* catalyst_vtk = std::getenv("IPPL_CATALYST_VTK");
+
+        if(catalyst_vtk && std::string(catalyst_vtk)=="ON"){
+            m << "catalyst vtk extraction ACTIVATED" << endl;
+            
+            args.append().set_string("--VTKextract");
+            args.append().set_string("True");
+        }
+        else{
+            m << "catalyst vtk extraction DEACTIVATED" << endl;
+            /*  dont set since default will be false ... (and this doesnt work ...) */
+            // args.append().set_string("--VTKextract");
+            // args.append().set_string("0");
+        }
+
+
+        /* ideally, this needs to be saved .. */
+        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+            m << "catalyst steering ACTIVATED." << endl;
+            
+            args.append().set_string("--steer");
+            args.append().set_string("True");
+
+            set_node_script( node["catalyst/proxies/proxy_e/filename"],
+                            "CATALYST_PROXYS_PATH_E",
+                            source_dir / "catalyst_scripts" / "proxy_default_electric.xml",
+                            m
+            );
+            set_node_script( node["catalyst/proxies/proxy_m/filename"],
+                            "CATALYST_PROXYS_PATH_M",
+                            source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml",
+                            m
+            );
+
+        }
+        else{
+            m << "catalyst steering:      DEACTIVATED." << endl;
+            /*  dont set since default will be false ... (and this doesnt work ...) */
+            // args.append().set_string("--steer");
+            // args.append().set_string("False");
+        }
+
+        // args.print();
+        // node.print();
+
+
+
+
+
+
+
+
+
+
+        m << "ippl: catalyst_initialize() =>" << endl;
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
 
-            std::cout << "\n Catalyst initialized fail.....\n" << std::endl;
+            m << "\n Catalyst initialized fail.....\n" << endl;
             throw IpplException("Stream::InSitu::CatalystAdaptor", "Failed to initialize Catalyst");
             // std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
         }
         else{
-            std::cout << "\n Catalyst initialized successfully.\n" << std::endl;
+            m << "\n Catalyst initialized successfully.\n" << endl;
         }
     }
 
@@ -450,7 +516,7 @@ namespace CatalystAdaptor {
 
     template<typename T>
     void AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
-        std::cout << "AddSteerableChanelValue( " << steerable_suffix << "); | Type: " << typeid(T).name() << std::endl;
+        std::cout << "      AddSteerableChanelValue( " << steerable_suffix << "); | Type: " << typeid(T).name() << std::endl;
         
         
         auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
@@ -499,7 +565,7 @@ namespace CatalystAdaptor {
 
     template<typename T>
     void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
-        std::cout << "FetchSteerableChanelValue(" << steerable_suffix  << ") | Type: " << typeid(T).name() << std::endl;
+        std::cout << "      FetchSteerableChanelValue(" << steerable_suffix  << ") | Type: " << typeid(T).name() << std::endl;
 
             
             conduit_cpp::Node steerable_channel     = results["catalyst/steerable_channel_backward_" + steerable_suffix];
@@ -606,13 +672,22 @@ namespace CatalystAdaptor {
         viewregistry with shared pointer will be delted by registry running out of scope,
          shared pointers being deleted and deallocating the allocated copies for memories ...*/
         ViewRegistry vr;
-        
-        registry_steer.forEach(
-            [&node](std::string_view label, const auto& entry) {
-                // std::cout << "   Entry ID: " << label << "\n";
-                AddSteerableChannel(entry, std::string(label), node);
-            }
-        );
+
+
+        /* ideally avoid this ... */
+        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+            
+            registry_steer.forEach(
+                [&node](std::string_view label, const auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    AddSteerableChannel(entry, std::string(label), node);
+                }
+            );
+        }
 
         registry_vis.forEach(
             [&node, &vr](std::string_view label, const auto& entry){
@@ -632,13 +707,23 @@ namespace CatalystAdaptor {
         conduit_cpp::Node results;
         Results(results);  
         
-        // /* transfer steearble scalars back to original locaton via registry*/
-        registry_steer.forEach(
-            [&results](std::string_view label, auto& entry) {
-                // std::cout << "   Entry ID: " << label << "\n";
-                FetchSteerableChannelValue(entry, std::string(label), results);
-            }
-        );
+
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+        
+            // /* transfer steearble scalars back to original locaton via registry*/
+            registry_steer.forEach(
+                [&results](std::string_view label, auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    FetchSteerableChannelValue(entry, std::string(label), results);
+                }
+            );
+        }
+
+
+
+
+
     }
 
 }  // namespace CatalystAdaptor
@@ -693,6 +778,21 @@ namespace CatalystAdaptor {
 
 
 
+// The rule is simple: Values defined programmatically in your C++ Conduit node will always overwrite values loaded from the JSON config file.
+
+// Here's the sequence of operations Catalyst performs during catalyst_initialize:
+
+// Loads JSON: If catalyst/config_file is present in the node you pass from C++, Catalyst loads that JSON file's contents into an internal Conduit node.
+
+// Merges C++ Node: Catalyst then merges the node you passed from your C++ code on top of the one it just loaded from the file.
+
+// Result:
+
+// If a parameter exists in both the JSON file and your C++ node, the value from the C++ node is used.
+
+// If a parameter exists only in the JSON file, its value is kept.
+
+// If a parameter exists only in your C++ node, it is added to the final configuration.
 
 
 
