@@ -9,11 +9,9 @@ from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 
 from paraview import print_info
+
+import argparse
 import math
-
-
-print_info("==='%s'=============================="[0:30]+">",__name__)
-paraview.simple._DisableFirstRenderCameraReset()
 
 
 # ----------------------------------------------------------------
@@ -104,10 +102,28 @@ def auto_camera_from_bounds(view, bounds):
         parallel_scale=0.6 * nice_diagonal
     )
 
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
+
+print_info("==='%s'=============================="[0:30]+">",__name__)
+paraview.simple._DisableFirstRenderCameraReset()
+SetActiveView(None)
+
+
+
+arg_list = paraview.catalyst.get_args()
+# print_info(f"Arguments received: {arg_list}")
+parser = argparse.ArgumentParser()
+parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
+parsed = parser.parse_args(arg_list)
+print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
+
+
+
 
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
-ippl_scalar = PVTrivialProducer(registrationName='ippl_scalar')
+ippl_scalar = PVTrivialProducer(registrationName = parsed.channel_name)
 
 
 # Create a new 'Render View'
@@ -243,8 +259,6 @@ def catalyst_execute(info):
     global ippl_scalar
     global densityLUT
     global densityPWF
-    # densityPWF = GetOpacityTransferFunction('density')
-    # densityLUT = GetColorTransferFunction('density')
 
 
 

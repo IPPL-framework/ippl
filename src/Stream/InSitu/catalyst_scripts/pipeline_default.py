@@ -42,10 +42,12 @@ print_info("=================================================="[0:40]+"|")
 arg_list = paraview.catalyst.get_args()
 # print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
-parser.add_argument("--name", default="default_name", help="doesnt matter")
+parser.add_argument("--channel_names", nargs="*",
+                     help="Pass All Channel Names for which we need to update the privial producer each round")
 parser.add_argument("--VTKextract", type=bool, default=False, help="Enable the VTK extracts of all incoming channels")
-parser.add_argument("--steer",      type=bool, default=False, help="Enable steering from catalyst python side")
+parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
 parsed = parser.parse_args(arg_list)
+print_info(f"Parsed channel_names:           {parsed.channel_names}")
 print_info(f"Parsed VTK extract options:     {parsed.VTKextract}")
 print_info(f"Parsed steering option:         {parsed.steer}")
 
@@ -57,21 +59,22 @@ print_info(f"Parsed steering option:         {parsed.steer}")
 # -------------EXTRACTORS-----------------------------------------------
 # ----------------------------------------------------------------------
 
-# print("=== SETTING TRIVIAL PRODUCERS (LIVE) =======0")
-# registrationName must match the channel name used in the 'CatalystAdaptor'.
-ippl_parti_e        = PVTrivialProducer(registrationName='ippl_particles')
-ippl_field_s        = PVTrivialProducer(registrationName='ippl_scalar')
-ippl_field_v        = PVTrivialProducer(registrationName='ippl_E')
-# # ippl_field_phi = PVTrivialProducer(registrationName='ippl_phi')
-# print("=== SETTING TRIVIAL PRODUCERS (LIVE) =======1")
+print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) =======0")
+# Dynamically create PVTrivialProducer objects for each channel name
+channel_readers = {}
+if parsed.channel_names:
+    for cname in parsed.channel_names:
+        channel_readers[cname] = PVTrivialProducer(registrationName=cname)
+else:
+    print_info("No channel names provided in parsed.channel_names.")
+print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) =======1")
 
-
-
-if parsed.VTKextract:
+# Optionally create VTPD extractors for each channel
+extractors = {}
+if parsed.VTKextract and parsed.channel_names:
     print_info("===SETTING VTK DATA EXTRAXCTION================"[0:30]+"|0")
-    vTPD_particle = create_VTPD_extractor("particle", ippl_parti_e, 1)
-    vTPD_field_v  = create_VTPD_extractor("field_v",  ippl_field_v, 1)
-    vTPD_field_s  = create_VTPD_extractor("field_s",  ippl_field_s, 1)
+    for cname, reader in channel_readers.items():
+        extractors[cname] = create_VTPD_extractor(cname, reader, 1)
     print_info("===SETTING VTK DATA EXTRACTION==================="[0:30]+"|1")
 
 
@@ -96,7 +99,7 @@ print_info("===SETTING CATALYST OPTIONS==================="[0:30]+"|1")
 
 
 
-if parsed.steer:
+if parsed.steer == "ON" :
     print_info("===CREATING STEERABLES============="[0:30]+"|0")
     try:
         # steerable_parameters = CreateSteerableParameters("STEERING_TYPE", "SteerableParameters")
@@ -196,12 +199,12 @@ print_info("===DEFINING CATALYST_ init, exe, fini======================"[0:40]+"
 
 def catalyst_initialize():
     print_info("in '%s::catalyst_initialize'", __name__)
-    print_info("===CALLING catalyst_initialize()===="[0:30]+">0")
+    # print_info("===CALLING catalyst_initialize()===="[0:30]+">0")
 
     # arg_list = paraview.catalyst.get_args()
+    # print_info("===CALLING catalyst_initialize()===="[0:30]+">1")
 
 
-    print_info("===CALLING catalyst_initialize()===="[0:30]+">1")
 
 
 # ------------------------------------------------------------------------------
@@ -210,24 +213,17 @@ def catalyst_execute(info):
     print_info("'%s::catalyst_execute()'", __name__)
 
     global parsed
-    global ippl_parti_e
-    global ippl_field_s
-    global ippl_field_v
-    # global glyph1
+    global channel_readers
+    # Update all channel readers
+    for reader in channel_readers.values():
+        reader.UpdatePipeline()
 
-    ippl_parti_e.UpdatePipeline()
-    ippl_field_s.UpdatePipeline()
-    ippl_field_v.UpdatePipeline()
-    # glyph1.UpdatePipeline()
-
-    if parsed.steer:
-
+    if parsed.steer == "ON":
+        print_info("setting backward steerables")
         global steerable_parameters_electric
         global steerable_parameters_magnetic
         steerable_parameters_electric.scaleFactor_e[0] = 31 + info.cycle
         steerable_parameters_magnetic.scaleFactor_m[0] = 31 + info.cycle
-    
-
 
     if options.EnableCatalystLive:
         time.sleep(0.2)

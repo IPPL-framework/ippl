@@ -4,12 +4,11 @@ import paraview
 paraview.compatibility.major = 5
 paraview.compatibility.minor = 12
 
-#### import the simple module from the paraview
 from paraview.simple import *
-#### disable automatic camera reset on 'Show'
-paraview.simple._DisableFirstRenderCameraReset()
-
 from paraview import print_info
+
+
+import argparse
 import math
 
 
@@ -96,12 +95,25 @@ def auto_camera_from_bounds(view, bounds):
 
 
 # ----------------------------------------------------------------
-# setup views used in the visualization
 # ----------------------------------------------------------------
 print_info("==='%s'=============================="[0:30]+">",__name__)
+paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
 
-ippl_vector_field = PVTrivialProducer(registrationName='ippl_E')
+arg_list = paraview.catalyst.get_args()
+# print_info(f"Arguments received: {arg_list}")
+parser = argparse.ArgumentParser()
+parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
+parsed = parser.parse_args(arg_list)
+print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
+
+
+# ----------------------------------------------------------------
+# create a new 'XML Partitioned Dataset Reader'
+""" should be of the form ippl_vField_SUFFIX """
+ippl_vector_field = PVTrivialProducer(registrationName = parsed.channel_name)
+
+
 renderView1 = CreateView('RenderView')
 renderView1.ViewSize = [2000, 1500]
 renderView1.BackEnd = 'OSPRay raycaster'

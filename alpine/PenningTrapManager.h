@@ -157,9 +157,30 @@ public:
 
 
 
+
+
+
         #ifdef IPPL_ENABLE_CATALYST
             m << "Catalyst is enabled" << endl; 
-            CatalystAdaptor::Initialize();
+
+        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+
+        auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
+        
+        // auto myR_vis = MakeRegistry<"particles_ions",
+        //                             "vField_electrostatic",
+        //                             "sField_density">
+        //                             (this->pcontainer_m, 
+        //                             this->fcontainer_m->getE(), 
+        //                             this->fcontainer_m->getRho() );
+        auto myR_vis = MakeRegistry<"2ions",
+                                    "2electrostatic",
+                                    "2density">
+                                    (this->pcontainer_m, 
+                                    this->fcontainer_m->getE(), 
+                                    this->fcontainer_m->getRho() );
+
+        CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
 
         #endif
         
@@ -348,7 +369,7 @@ public:
         this->par2grid();
 
 
-        // /* Field solve */
+        // /* Field solve */ vis potential
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
         IpplTimings::stopTimer(SolveTimer);
@@ -362,7 +383,10 @@ public:
         // auto myR_steer = MakeRegistry<"steerable">(scaleFactor);
         auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
-        auto myR_vis = MakeRegistry<"particles","E","scalar">
+        
+        auto myR_vis = MakeRegistry<"2ions",
+                                    "2electrostatic",
+                                    "2density">
                                     (pc, this->fcontainer_m->getE(), this->fcontainer_m->getRho() );
 
         CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
@@ -387,14 +411,14 @@ public:
         std::vector<AscentAdaptor::FieldPair<T, Dim>> fields_asc = {
             {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
             // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
-            // {"phi", CatalystAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+            // {"phi", Ascent    ::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
         };
         AscentAdaptor::Execute(it, this->time_m ,  particles_asc, fields_asc);
 
 #endif
 
 
-        // // // Field solve
+        // // Field solve-> vis density
         // IpplTimings::startTimer(SolveTimer);
         // this->fsolver_m->runSolver();
         // IpplTimings::stopTimer(SolveTimer); 

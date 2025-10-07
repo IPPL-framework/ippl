@@ -1,12 +1,9 @@
 # script-version: 2.0
 from paraview.simple import *
 from paraview import print_info
+
+import argparse
 import math
-
-""" ideally offer option to add a field object, from which we can extract the true positional bounds of the simulation """
-
-
-print_info("==='%s'======================="[0:28]+">",__name__)
 
 
 def nice_bounds(vmin, vmax):
@@ -79,11 +76,32 @@ def auto_camera_from_bounds(view, bounds):
     view.AxesGrid.CustomBounds = [x0, x1, y0, y1, z0, z1]
 
 
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 
-
-#### disable automatic camera reset on 'Show'
+""" ideally offer option to add a field object, from which we can extract the true positional bounds of the simulation """
+print_info("==='%s'======================="[0:28]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
+SetActiveView(None)
 
+
+arg_list = paraview.catalyst.get_args()
+# print_info(f"Arguments received: {arg_list}")
+parser = argparse.ArgumentParser()
+parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
+parsed = parser.parse_args(arg_list)
+print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
+
+
+# ----------------------------------------------------------------
+# create a new 'XML Partitioned Dataset Reader'
+""" should be of the form ippl_vField_SUFFIX """
+ippl_particle = PVTrivialProducer(registrationName = parsed.channel_name)
+
+
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 # get the material library
 materialLibrary1 = GetMaterialLibrary()
 
@@ -112,10 +130,6 @@ renderView1.BackgroundColorMode = 'Gradient'
 
 
 
-SetActiveView(None)
-
-# create a new 'XML Partitioned Dataset Reader'
-ippl_particle = PVTrivialProducer(registrationName='ippl_particles')
 # show data from ippl_particle
 ippl_particleDisplay = Show(ippl_particle, renderView1, 'UnstructuredGridRepresentation')
 
