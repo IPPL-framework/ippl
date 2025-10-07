@@ -9,21 +9,7 @@ from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
 
-# ----------------------------------------------------------------
-# setup views used in the visualization
-# ----------------------------------------------------------------
+print_info("====================================>")
+print_info("===EXECUTING EMPTY EXTRACTOR======>")
+print_info("====================================>")
 
-# print start marker
-print("====================================>")
-print("===EXECUTING EMPTY EXTRACTOR======>")
-print("====================================>")
-
-
-
-
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
-    from paraview.simple import SaveExtractsUsingCatalystOptions
-    # Code for non in-situ environments; if executing in post-processing
-    # i.e. non-Catalyst mode, let's generate extracts using Catalyst options
-    SaveExtractsUsingCatalystOptions(options)

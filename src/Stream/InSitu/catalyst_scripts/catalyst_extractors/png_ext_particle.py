@@ -1,10 +1,58 @@
 # script-version: 2.0
-from paraview.simple import *
-from paraview import print_info
+# Catalyst state generated using paraview version 5.12.0
 
+########################################################
+######################################################## 
+# PNG extractor script for paraview catalyst. 
+# Visualizes 3D particles. (ParticleContainer/ParticleBase)
+# 
+# Currently hard coded to rely on attributes:
+# - 'position'
+# - 'velocity'
+# Is adaptive: Attempts to set Camera Angle and colouring 
+# of particles (dependent on velocity magnitude) adaptive to 
+# current frame, range and scale (every 10'th step).
+# 
+# 
+# Relies on pipeline_default.py to update pipeline else might
+# cause errors (i think)
+# 
+# 
+# 
+# Possible TODO:
+#  - Customize extraction frequency
+#  - Customize "rescale" frequency
+#  - Together with CPP don't rely on hard coded attributes
+#  - additionally pass field string to have constistent bounds
+#    and don't have to guess reference frame ...
+#  - More
+########################################################
+########################################################
+
+
+import paraview
+from paraview.simple import *
+# paraview.compatibility.major = 5
+# paraview.compatibility.minor = 12
+from paraview.simple import (
+    PVTrivialProducer,
+    GetMaterialLibrary,
+    CreateView,
+    Show,
+    GetTransferFunction2D,
+    GetColorTransferFunction,
+    GetScalarBar,
+    CreateExtractor,
+    SetActiveView,
+    SetActiveSource
+)
+from paraview import print_info
 import argparse
 import math
 
+# ----------------------------------------------------------------
+# helpers used for adaptive visualization
+# ----------------------------------------------------------------
 
 def nice_bounds(vmin, vmax):
     # Avoid zero range
@@ -76,36 +124,30 @@ def auto_camera_from_bounds(view, bounds):
     view.AxesGrid.CustomBounds = [x0, x1, y0, y1, z0, z1]
 
 
-# ----------------------------------------------------------------
-# ----------------------------------------------------------------
 
-""" ideally offer option to add a field object, from which we can extract the true positional bounds of the simulation """
+
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 print_info("==='%s'======================="[0:28]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
-
-
+# ----------------------------------------------------------------
+# Parse arguments received via conduit node
+# ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
 # print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parsed = parser.parse_args(arg_list)
 print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
-
-
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
-""" should be of the form ippl_vField_SUFFIX """
+# ----------------------------------------------------------------
 ippl_particle = PVTrivialProducer(registrationName = parsed.channel_name)
-
-
-
 # ----------------------------------------------------------------
+# setup visualisation view for extraction pipeline in renderview1
 # ----------------------------------------------------------------
-# get the material library
-materialLibrary1 = GetMaterialLibrary()
-
-# Create a new 'Render View'
 renderView1 = CreateView('RenderView')
 renderView1.ViewSize = [2000, 1500]
 renderView1.AxesGrid = 'GridAxes3DActor'
@@ -118,62 +160,62 @@ renderView1.CameraViewUp = [-0.4082482904638631, 0.816496580927726, -0.408248290
 renderView1.CameraFocalDisk = 1.0
 renderView1.CameraParallelScale = 14.438249951766423
 renderView1.BackEnd = 'OSPRay raycaster'
+materialLibrary1 = GetMaterialLibrary()
 renderView1.OSPRayMaterialLibrary = materialLibrary1
 renderView1.AxesGrid.Visibility = 1
 
-
-# change background ...
 renderView1.UseColorPaletteForBackground = 0
 renderView1.BackgroundColorMode = 'Gradient'
 # renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
 # renderView1.Background = [0.0, 0.0, 0.4980392156862745]
-
-
-
-# show data from ippl_particle
+SetActiveView(renderView1)
+# ----------------------------------------------------------------
+# Initial adaptive Camera set
+# ----------------------------------------------------------------
+particle_info = ippl_particle.GetDataInformation()
+bounds = particle_info.GetBounds()
+auto_camera_from_bounds(renderView1, bounds)
+# ----------------------------------------------------------------
+# choose Data to visualize and show in renderView1
+# ----------------------------------------------------------------
 ippl_particleDisplay = Show(ippl_particle, renderView1, 'UnstructuredGridRepresentation')
-
+# ----------------------------------------------------------------
+# setup initial transfer function for colouring and opacity
+# ----------------------------------------------------------------
 velocityTF2D = GetTransferFunction2D('velocity')
 velocityLUT = GetColorTransferFunction('velocity')
 velocityLUT.TransferFunction2D = velocityTF2D
-# colouring ...
-velocityLUT.RGBPoints = [0.050641224585373915, 0.231373, 0.298039, 0.752941, 2.3924284143906274, 0.865003, 0.865003, 0.865003, 4.734215604195881, 0.705882, 0.0156863, 0.14902]
-
-
+velocityLUT.RGBPoints = [0.050641224585373915, 0.231373, 0.298039, 0.752941, 
+                         2.3924284143906274, 0.865003, 0.865003, 0.865003, 
+                         4.734215604195881, 0.705882, 0.0156863, 0.14902]
+# ----------------------------------------------------------------
+# configure displayed data
+# ----------------------------------------------------------------
 ippl_particleDisplay.Representation = 'Point Gaussian'
 ippl_particleDisplay.LookupTable = velocityLUT
 # point size ...
 # ippl_particleDisplay.GaussianRadius = 1
-
-
 ippl_particleDisplay.DataAxesGrid = 'GridAxesRepresentation'
 ippl_particleDisplay.SelectInputVectors = ['POINTS', 'position']
 ippl_particleDisplay.ColorArrayName = ['POINTS', 'velocity']
-
-# get color legend/bar for velocityLUT in view renderView1
 velocityLUTColorBar = GetScalarBar(velocityLUT, renderView1)
 velocityLUTColorBar.Title = 'velocity'
 velocityLUTColorBar.ComponentTitle = 'Magnitude'
 velocityLUTColorBar.Visibility = 1
 ippl_particleDisplay.SetScalarBarVisibility(renderView1, True)
-# create extractor
+# --------------------------------------------------------------
+# setup extractors
+# --------------------------------------------------------------
 pNG1 = CreateExtractor('PNG', renderView1, registrationName='PNG1')
-# trace defaults for the extractor.
 pNG1.Trigger = 'TimeStep'
-
-# init the 'PNG' selected for 'Writer'
 pNG1.Writer.FileName = 'Particles_{timestep:06d}{camera}.png'
 pNG1.Writer.ImageResolution = [2000, 1500]
 pNG1.Writer.TransparentBackground = 0
 pNG1.Writer.Format = 'PNG'
-# ----------------------------------------------------------------
-# restore active source
 SetActiveSource(pNG1)
-# ----------------------------------------------------------------
-
-
 # ------------------------------------------------------------------------------
 # Catalyst options
+# ------------------------------------------------------------------------------
 from paraview import catalyst
 options = catalyst.Options()
 options.GlobalTrigger = 'TimeStep'
@@ -191,6 +233,7 @@ if __name__ == '__main__':
 
 
 
+# ------------------------------------------------------------------------------
 def catalyst_execute(info):
     print_info("'%s::catalyst_execute()'", __name__)
     global ippl_particle

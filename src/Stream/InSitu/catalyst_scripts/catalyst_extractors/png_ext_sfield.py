@@ -1,23 +1,64 @@
 # script-version: 2.0
 # Catalyst state generated using paraview version 5.12.0
-import paraview
-paraview.compatibility.major = 5
-paraview.compatibility.minor = 12
 
+
+########################################################
+######################################################## 
+# PNG extractor script for paraview catalyst. 
+# Visualizes 3D vector fields. eg:
+# ippl::field<double,3> 
+# ippl::field<float,3> 
+# 
+# Currently hard coded to rely on attributes:
+# - 'position'
+# - 'density'
+# Is adaptive: Attempts to set Camera Angle and colouring 
+# of paraviews Volume Rendering  (dependent on scalar
+# field values) adaptive to current frame, range and 
+# scale (every 10'th step).
+# 
+# Relies on pipeline_default.py to update pipeline else might
+# cause errors (i think)
+# 
+# 
+# Possible TODO:
+#  - Customize extraction frequency
+#  - Customize "rescale" frequency
+#  - Together with CPP don't rely on hard coded attributes
+#  - More
+# 
+# 
+########################################################
+########################################################
+
+
+import paraview
+from paraview.simple import *
+# paraview.compatibility.major = 5
+# paraview.compatibility.minor = 12
 #### import the simple module from the paraview
 from paraview.simple import *
-#### disable automatic camera reset on 'Show'
-
+from paraview.simple import (
+    PVTrivialProducer,
+    CreateView,
+    GetMaterialLibrary,
+    Show,
+    GetTransferFunction2D,
+    GetColorTransferFunction,
+    GetOpacityTransferFunction,
+    GetScalarBar,
+    CreateExtractor,
+    SetActiveView,
+    SetActiveSource
+)
 from paraview import print_info
-
 import argparse
 import math
-
 
 # ----------------------------------------------------------------
 # helpers used for adaptive visualization
 # ----------------------------------------------------------------
-# Helper function to compute "nice" bounds
+
 def nice_bounds(vmin, vmax):
     if vmin == vmax:
         return vmin, vmax
@@ -102,63 +143,61 @@ def auto_camera_from_bounds(view, bounds):
         parallel_scale=0.6 * nice_diagonal
     )
 
-# ----------------------------------------------------------------
-# ----------------------------------------------------------------
 
+
+
+
+
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 print_info("==='%s'=============================="[0:30]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
-
-
-
+# ----------------------------------------------------------------
+# Parse arguments received via conduit node
+# ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
 # print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parsed = parser.parse_args(arg_list)
 print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
-
-
-
-
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
+# ----------------------------------------------------------------
 ippl_scalar = PVTrivialProducer(registrationName = parsed.channel_name)
-
-
-# Create a new 'Render View'
-SetActiveView(None) #prbbly not needed
+# ----------------------------------------------------------------
+# setup visualisation view for extraction pipeline in renderView1
+# ----------------------------------------------------------------
 renderView1 = CreateView('RenderView')
-
 materialLibrary1 = GetMaterialLibrary()
 renderView1.BackEnd = 'OSPRay raycaster'
 renderView1.OSPRayMaterialLibrary = materialLibrary1
-
 renderView1.ViewSize = [2000, 1500]
 renderView1.StereoType = 'Crystal Eyes'
 renderView1.LegendGrid = 'Legend Grid Actor'
 renderView1.AxesGrid = 'Grid Axes 3D Actor'
 renderView1.AxesGrid.Visibility = 1
 
-# change background ...
 renderView1.UseColorPaletteForBackground = 0
 renderView1.BackgroundColorMode = 'Gradient'
 # renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
 # renderView1.Background = [0.0, 0.0, 0.4980392156862745]
-
-
+SetActiveView(renderView1)
+# ----------------------------------------------------------------
+# Initial adaptive Camera set
+# ----------------------------------------------------------------
 scalar_info = ippl_scalar.GetDataInformation()
 bounds = scalar_info.GetBounds()
 auto_camera_from_bounds(renderView1, bounds)
-# restore active view
-SetActiveView(renderView1)
-
-
-
 # ----------------------------------------------------------------
-# setup the visualization in view 'renderView1'
+# choose Data to visualize and show in renderView1
 # ----------------------------------------------------------------
 ippl_scalarDisplay = Show(ippl_scalar, renderView1, 'UniformGridRepresentation')
+# ----------------------------------------------------------------
+# setup initial transfer function for colouring and opacity
+# ----------------------------------------------------------------
 # get 2D transfer function for 'density'
 densityTF2D = GetTransferFunction2D('density')
 densityTF2D.Range = [-2.00, 2.00, 0.0, 1.0]
@@ -182,16 +221,16 @@ densityPWF.Points = [-2.00, 1.00, 0.5, 0.0,
                       1.20, 0.75, 0.5, 0.0, 
                       2.00, 1.00, 0.5, 0.0]
 densityPWF.ScalarRangeInitialized = 1
-
-
-
+# ----------------------------------------------------------------
+# Initial adaptive colouring of scale
+# ----------------------------------------------------------------
 # vmin, vmax = density_array_info.GetComponentRange(-1)
 # nice_min, nice_max = nice_bounds_sym(vmin, vmax)
 # densityLUT.RescaleTransferFunction(nice_min, nice_max)
 # densityPWF.RescaleTransferFunction(nice_min, nice_max)
-
-
-
+# ----------------------------------------------------------------
+# configure displayed data
+# ----------------------------------------------------------------
 ippl_scalarDisplay.Representation = 'Volume'
 ippl_scalarDisplay.LookupTable = densityLUT
 ippl_scalarDisplay.OSPRayScaleFunction = 'Piecewise Function'
@@ -199,34 +238,25 @@ ippl_scalarDisplay.ScaleTransferFunction = 'Piecewise Function'
 ippl_scalarDisplay.Assembly = 'Hierarchy'
 ippl_scalarDisplay.ScaleFactor = 2.0
 ippl_scalarDisplay.GaussianRadius = 0.1
-
 ippl_scalarDisplay.DataAxesGrid = 'Grid Axes Representation'
 ippl_scalarDisplay.TransferFunction2D = densityTF2D
 ippl_scalarDisplay.ColorArrayName = ['CELLS', 'density']
 ippl_scalarDisplay.ColorArray2Name = ['CELLS', 'density']
-
 ippl_scalarDisplay.OpacityArrayName = ['CELLS', 'density']
 ippl_scalarDisplay.OpacityTransferFunction = 'Piecewise Function'
 ippl_scalarDisplay.ScalarOpacityUnitDistance = 4.00
 ippl_scalarDisplay.ScalarOpacityFunction = densityPWF
 
-
 densityLUTColorBar = GetScalarBar(densityLUT, renderView1)
 densityLUTColorBar.Title = 'density'
 densityLUTColorBar.ComponentTitle = 'Magnitude'
 densityLUTColorBar.Visibility = 1
-
 densityLUTColorBar.DrawAnnotations = 1 
-# ===> FIX PART 1: Link the opacity function directly to the color map.
 densityLUT.EnableOpacityMapping = True
-
 ippl_scalarDisplay.SetScalarBarVisibility(renderView1, True)
-
-
 # ----------------------------------------------------------------
 # setup extractors
 # ----------------------------------------------------------------
-
 pNG1 = CreateExtractor('PNG', renderView1, registrationName='PNG1')
 pNG1.Trigger = 'Time Step'
 pNG1.Trigger.Frequency = 1
@@ -234,9 +264,9 @@ pNG1.Writer.FileName = 'ScalarField_{timestep:06d}{camera}.png'
 pNG1.Writer.ImageResolution = [2000, 1500]
 pNG1.Writer.Format = 'PNG'
 SetActiveSource(pNG1)
-
 # ------------------------------------------------------------------------------
 # Catalyst options
+# ------------------------------------------------------------------------------
 from paraview import catalyst
 options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
@@ -252,7 +282,7 @@ if __name__ == '__main__':
 
 
 
-# ----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def catalyst_execute(info):
     print_info("'%s::catalyst_execute()'", __name__)
 

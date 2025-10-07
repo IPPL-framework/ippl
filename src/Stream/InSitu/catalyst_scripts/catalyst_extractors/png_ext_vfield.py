@@ -1,21 +1,64 @@
 # script-version: 2.0
 # Catalyst state generated using paraview version 5.12.0
+
+
+########################################################
+######################################################## 
+# PNG extractor script for paraview catalyst. 
+# Visualizes 3D vector fields. eg:
+# ippl::field<ippl::Vector<double, 3>,3> 
+# ippl::field<ippl::Vector<float, 3>,3> 
+# 
+# Currently hard coded to rely on attributes:
+# - 'position'
+# - 'electrostatic'
+# Is adaptive: Attempts to set Camera Angle and colouring 
+# of the glyph (dependent on the fieldStrength / -magnitude of
+# electrostatic attribute) adaptive to 
+# current frame, range and scale (every 10'th step).
+# 
+# 
+# 
+# Relies on pipeline_default.py to update pipeline else might
+# cause errors (i think)
+# 
+# 
+# Possible TODO:
+#  - Customize extraction frequency
+#  - Customize "rescale" frequency
+#  - Together with CPP don't rely on hard coded attributes
+#  - More
+########################################################
+########################################################
+
+
 import paraview
-paraview.compatibility.major = 5
-paraview.compatibility.minor = 12
-
 from paraview.simple import *
+# paraview.compatibility.major = 5
+# paraview.compatibility.minor = 12
+from paraview.simple import *
+from paraview.simple import (
+    PVTrivialProducer,
+    CreateView,
+    GetMaterialLibrary,
+    Show,
+    Glyph,
+    GetTransferFunction2D,
+    GetColorTransferFunction,
+    GetScalarBar,
+    GetOpacityTransferFunction,
+    CreateExtractor,
+    SetActiveView,
+    SetActiveSource
+)
 from paraview import print_info
-
-
 import argparse
 import math
-
 
 # ----------------------------------------------------------------
 # helpers used for adaptive visualization
 # ----------------------------------------------------------------
-# Helper function to compute "nice" bounds
+
 def nice_bounds(vmin, vmax):
     if vmin == vmax:
         return vmin, vmax
@@ -94,26 +137,30 @@ def auto_camera_from_bounds(view, bounds):
 
 
 
+
+
+
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
 print_info("==='%s'=============================="[0:30]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
-
+# ----------------------------------------------------------------
+# Parse arguments received via conduit node
+# ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
 # print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parsed = parser.parse_args(arg_list)
 print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
-
-
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
-""" should be of the form ippl_vField_SUFFIX """
+# ----------------------------------------------------------------
 ippl_vector_field = PVTrivialProducer(registrationName = parsed.channel_name)
-
-
+# ----------------------------------------------------------------
+# setup visualisation view for extraction pipeline in renderview1
+# ----------------------------------------------------------------
 renderView1 = CreateView('RenderView')
 renderView1.ViewSize = [2000, 1500]
 renderView1.BackEnd = 'OSPRay raycaster'
@@ -124,30 +171,34 @@ renderView1.AxesGrid.Visibility = 1
 materialLibrary1 = GetMaterialLibrary()
 renderView1.OSPRayMaterialLibrary = materialLibrary1
 
-# change background ...
 renderView1.UseColorPaletteForBackground = 0
 renderView1.BackgroundColorMode = 'Gradient'
 # renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
 # renderView1.Background = [0.0, 0.0, 0.4980392156862745]
-
-
+SetActiveView(renderView1)
+# ----------------------------------------------------------------
+# Initial adaptive Camera set
+# ----------------------------------------------------------------
 ippl_vector_info = ippl_vector_field.GetDataInformation()
 bounds = ippl_vector_info.GetBounds()
 auto_camera_from_bounds(renderView1, bounds)
+# needed for glyph scale ...
 diag = compute_bounding_box_scale(bounds)
-
-SetActiveView(renderView1)
-
-
 # ----------------------------------------------------------------
-# setup the data processing pipelines
+# setup the data processing pipelines, create filter for 
+# Vector Field from Vector data
 # ----------------------------------------------------------------
 glyph1 = Glyph(registrationName='Glyph1', Input=ippl_vector_field, GlyphType='Arrow')
 glyph1.OrientationArray = ['CELLS', 'electrostatic']
 glyph1.GlyphTransform = 'Transform2'
 glyph1.ScaleFactor = diag/30
-
-
+# ----------------------------------------------------------------
+# choose Data to visualize to show in renderView1
+# ----------------------------------------------------------------
+glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
+# ----------------------------------------------------------------
+# setup initial transfer function for colouring and opacity
+# ----------------------------------------------------------------
 #MORE....
 #  ## dimension dependent scaling... depends on data ...
 # glyph1.ScaleFactor = [1.0, 0.5, 2.0] 
@@ -166,14 +217,9 @@ glyph1.ScaleFactor = diag/30
 # print(f"Opacity Transfer Function Points: {fieldStrengthPWF.Points}")
 # print(f"Color Transfer Function Range: {fieldStrengthLUT.RGBPoints}")
 
-
-
-
-
 fieldStrengthTF2D = GetTransferFunction2D('electrostatic')
 fieldStrengthTF2D.ScalarRangeInitialized = 1
 fieldStrengthTF2D.Range = [0.00, 2.00, 0.0, 1.0]
-
 fieldStrengthLUT = GetColorTransferFunction('electrostatic')
 fieldStrengthLUT.TransferFunction2D = fieldStrengthTF2D
 fieldStrengthLUT.ScalarRangeInitialized = 1
@@ -184,27 +230,21 @@ fieldStrengthLUTColorBar = GetScalarBar(fieldStrengthLUT, renderView1)
 fieldStrengthLUTColorBar.Title = 'fieldStrength'
 fieldStrengthLUTColorBar.ComponentTitle = 'Magnitude'
 fieldStrengthLUTColorBar.Visibility = 1
-
 fieldStrengthLUT.EnableOpacityMapping = True
-
 fieldStrengthPWF = GetOpacityTransferFunction('electrostatic')
 fieldStrengthPWF.ScalarRangeInitialized = 1
 fieldStrengthPWF.Points = [0.00, 0.0, 0.5, 0.0, 
                            0.50, 0.2, 0.5, 0.0, 
                            2.00, 1.0, 0.5, 0.0]
-
-
-
-glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
+# ----------------------------------------------------------------
+# configure displayed data
+# ----------------------------------------------------------------
 glyph1Display.Representation = 'Surface'
 glyph1Display.LookupTable = fieldStrengthLUT
 glyph1Display.ColorArrayName = ['POINTS', 'electrostatic']
 glyph1Display.OpacityTransferFunction = fieldStrengthPWF
 glyph1Display.DataAxesGrid = 'Grid Axes Representation'
 glyph1Display.SetScalarBarVisibility(renderView1, True)
-
-
-
 # # ------------------------------------------------------------
 # setup extractors
 # --------------------------------------------------------------
@@ -215,13 +255,9 @@ pNG3.Writer.FileName = 'VectorField_{timestep:06d}{camera}.png'
 pNG3.Writer.ImageResolution = [1247, 1176]
 pNG3.Writer.Format = 'PNG'
 SetActiveSource(glyph1)
-
-
-
-# ----------------------------------------------------------------
-# ----------------------------------------------------------------
 # ----------------------------------------------------------------
 # Catalyst options
+# ----------------------------------------------------------------
 from paraview import catalyst
 options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
@@ -236,7 +272,7 @@ if __name__ == '__main__':
     SaveExtractsUsingCatalystOptions(options)
 
 
-# ----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def catalyst_execute(info):
     print_info("'%s::catalyst_execute()'", __name__)
 
