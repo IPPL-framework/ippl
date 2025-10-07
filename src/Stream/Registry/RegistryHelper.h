@@ -101,14 +101,7 @@ struct ids_unique<S, Rest...>
 template <auto>
 struct always_false_id : std::false_type {};
 
-
-
-
-
-
-
-
-
+/*  NOT NEEDED UP TO 07.10
 
 // ======================================
 // // Helper trait to extract T and Dim from ParticleBase types
@@ -120,8 +113,6 @@ struct always_false_id : std::false_type {};
 //     using value_type = T;
 //     static constexpr unsigned dimension = Dim;
 // };
-
-
 
 // // --- Shorthands for ParticleTraits ---
 // template<typename ParticleBaseT>
@@ -139,7 +130,7 @@ struct always_false_id : std::false_type {};
 // constexpr unsigned Dim = particle_dim_v<decltype(pc)>; // Correct!
 // ======================================
 
-
+*/
 
 // Helper: matches any Layout<T, Dim, ...>
 template<typename Layout>
@@ -155,7 +146,6 @@ struct ExtractTypeDim<Layout<T, Dim, Rest...>> {
 template<typename T>
 struct ParticleTraits;
 
-// Partial specialization for any class whose first template parameter is a layout
 template<   template<typename, typename...> class C,
             typename Layout, typename... OtherArgs>
 struct ParticleTraits<C<Layout, OtherArgs...>> : ExtractTypeDim<Layout> {};
@@ -168,22 +158,13 @@ struct ParticleTraits<PContainer<T, Dim>> {
 };
 
 
-
 template<typename ParticleLikeT>
 using particle_value_t = typename ParticleTraits<std::decay_t<ParticleLikeT>>::value_type;
 
 template<typename ParticleLikeT>
 constexpr unsigned particle_dim_v = ParticleTraits<std::decay_t<ParticleLikeT>>::dimension;
 
-
-
-
-
-
-
-
-
-
+/*  NOT NEEDED UP TO 07.10
 // ======================================
 // Helper trait to remove shared_ptr wrapper and get underlying type
 template<typename T>
@@ -198,9 +179,7 @@ struct UnwrapType<std::shared_ptr<T>> {
 
 template<typename T>
 using UnwrapType_t = typename UnwrapType<T>::type;
-
 // ======================================
-
 
 // ======================================
 // Helper to check if type is shared_ptr
@@ -212,23 +191,5 @@ struct IsSharedPtr<std::shared_ptr<T>> : std::true_type {};
 
 template<typename T>
 constexpr bool IsSharedPtr_v = IsSharedPtr<T>::value;
-
 // ======================================
-
-
-
-
-
-
-
-
-
-// // === Forward declarations to break circular dependencies ===
-
-// template <typename... Slots>
-// class RegistryFluent;
-
-// template <typename... Slots>
-// class VisBaseAdaptor;
-
-// class RegistryBase;
+*/

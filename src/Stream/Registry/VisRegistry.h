@@ -1,30 +1,53 @@
+/**
+ * @file VisRegistry.h
+ * @brief Compile-time and runtime registry for visualization objects and data.
+ *
+ * Provides a type-safe, extensible registry for storing and accessing objects by compile-time string IDs.
+ * Supports late binding, iteration, and factories for easy construction.
+ */
 #pragma once
 
-// #include "Stream/Registry/RegistryHelper.h"
 #include "Types/Vector.h"
 #include "Utility/IpplException.h"
 #include "Stream/Registry/RegistryHelper.h"
+#include <any>
+#include <string>
+#include <unordered_map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <iostream>
 
-
-
-
-
-// Base registry entry container
+/**
+ * @brief Base registry entry container for storing named pointers (type-erased).
+ */
 class RegistryBase{
 public:
     virtual ~RegistryBase() = default;
+    /**
+     * @brief Entry struct for holding a name and a type-erased pointer.
+     */
     struct Entry {
-        std::string name;
-        std::any ptr_any;
+        std::string name; ///< Name of the entry
+        std::any ptr_any; ///< Type-erased pointer to the object
+        /**
+         * @brief Construct an entry from a name and pointer.
+         * @tparam T Type of the pointer
+         * @param entry_name Name for the entry
+         * @param ptr Pointer to the object
+         */
         template <typename T>
-        Entry(const std::string& entry_name, T* ptr)
-            : name(entry_name), ptr_any(ptr) {}
+        Entry(const std::string& entry_name, T* ptr) : name(entry_name), ptr_any(ptr) {}
+        // For internal use (initializer_list)
+        Entry(const std::string& entry_name, std::any ptr) : name(entry_name), ptr_any(ptr) {}
     };
 };
 
-
-
-// Typed registry keyed by compile-time IDs; supports late binding.
+/**
+ * @brief Typed registry keyed by compile-time IDs; supports late binding and iteration.
+ *
+ * @tparam Slots List of Slot<Id, Type> types, where Id is a fixed_string and Type is the object type.
+ */
 template <typename... Slots>
 class RegistryFluent : public RegistryBase {
     static_assert(ids_unique<Slots...>::value, "Duplicate ID in RegistryFluent (compile-time)");
@@ -44,269 +67,200 @@ class RegistryFluent : public RegistryBase {
 public:
     using Entry = typename RegistryBase::Entry;
 
-    RegistryFluent() = default;
+    /**
+     * @brief Default constructor. All entries are null.
+     */
+    RegistryFluent();
+    /**
+     * @brief Construct from an initializer list of entries.
+     * @param entries List of entries to initialize the registry.
+     */
+    RegistryFluent(std::initializer_list<Entry> entries);
 
-    RegistryFluent(std::initializer_list<Entry> entries) {
-        std::unordered_map<std::string, std::any> tmp;
-        tmp.reserve(entries.size());
-        for (const auto& e : entries) tmp[e.name] = e.ptr_any;
-        init_from_map(tmp);
-    }
-
+    /**
+     * @brief Get a reference to the object for a given compile-time ID.
+     * @tparam IdV Compile-time string ID
+     * @return Reference to the object
+     * @throws std::runtime_error if the entry is null
+     */
     template <fixed_string IdV>
-    auto& Get() const {
-        constexpr std::size_t I = index_of_v<IdV>;
-        static_assert(I != static_cast<std::size_t>(-1), "Unknown ID in RegistryFluent");
-        using T = TypeAt<I>;
-        T* ptr = std::get<I>(m_ptrs);
-        if (!ptr) throw std::runtime_error("Null entry for ID");
-        return *ptr;
-    }
+    auto& Get() const;
 
-    // Tag-based overloads (avoid 'template' at call sites)
+    /**
+     * @brief Get a reference to the object for a given tag.
+     * @tparam IdV Compile-time string ID
+     * @param tag Tag for the ID
+     * @return Reference to the object
+     */
     template <fixed_string IdV>
-    auto& Get(id_tag<IdV>) { return this->template Get<IdV>(); }
+    auto& Get(id_tag<IdV>);
 
+    /**
+     * @brief Get a const reference to the object for a given tag.
+     * @tparam IdV Compile-time string ID
+     * @param tag Tag for the ID
+     * @return Const reference to the object
+     */
     template <fixed_string IdV>
-    const auto& Get(id_tag<IdV>) const { return this->template Get<IdV>(); }
+    const auto& Get(id_tag<IdV>) const;
 
+    /**
+     * @brief Set the object for a given compile-time ID by reference.
+     * @tparam IdV Compile-time string ID
+     * @tparam U Type of the object
+     * @param object Reference to the object
+     */
     template <fixed_string IdV, typename U>
-    void Set(U& object) {
-        constexpr std::size_t I = index_of_v<IdV>;
-        static_assert(I != static_cast<std::size_t>(-1), "Unknown ID in RegistryFluent::Set");
-        using T = TypeAt<I>;
-        static_assert(std::is_same_v<std::remove_const_t<U>, T>,
-                      "Type mismatch in RegistryFluent::Set for this ID");
-        if (std::get<I>(m_ptrs) != nullptr) {
-            std::cerr << "Warning: ID '" << std::string(IdAt<I>.sv())
-                      << "' already has an object bound; rebinding to new object.\n";
-        }
-        std::get<I>(m_ptrs) = &object;
-    }
+    void Set(U& object);
 
+    /**
+     * @brief Set the object for a given tag by reference.
+     * @tparam IdV Compile-time string ID
+     * @tparam U Type of the object
+     * @param tag Tag for the ID
+     * @param object Reference to the object
+     */
     template <fixed_string IdV, typename U>
-    void Set(id_tag<IdV>, U& object) { this->template Set<IdV>(object); }
+    void Set(id_tag<IdV>, U& object);
 
+    /**
+     * @brief Set the object for a given compile-time ID by pointer.
+     * @tparam IdV Compile-time string ID
+     * @tparam U Type of the object
+     * @param ptr Pointer to the object
+     */
     template <fixed_string IdV, typename U>
-    void SetPtr(U* ptr) {
-        constexpr std::size_t I = index_of_v<IdV>;
-        static_assert(I != static_cast<std::size_t>(-1), "Unknown ID in RegistryFluent::SetPtr");
-        using T = TypeAt<I>;
-        static_assert(std::is_same_v<std::remove_const_t<U>, T>,
-                      "Type mismatch in RegistryFluent::SetPtr for this ID");
-        if (std::get<I>(m_ptrs) != nullptr) {
-            std::cerr << "Warning: ID '" << std::string(IdAt<I>.sv())
-                      << "' already has an object bound; rebinding to new pointer.\n";
-        }
-        std::get<I>(m_ptrs) = ptr;
-    }
+    void SetPtr(U* ptr);
 
+    /**
+     * @brief Set the object for a given tag by pointer.
+     * @tparam IdV Compile-time string ID
+     * @tparam U Type of the object
+     * @param tag Tag for the ID
+     * @param ptr Pointer to the object
+     */
     template <fixed_string IdV, typename U>
-    void SetPtr(id_tag<IdV>, U* ptr) { this->template SetPtr<IdV>(ptr); }
+    void SetPtr(id_tag<IdV>, U* ptr);
 
+    /**
+     * @brief Check if an entry for a given compile-time ID is set (non-null).
+     * @tparam IdV Compile-time string ID
+     * @return True if the entry is set, false otherwise
+     */
     template <fixed_string IdV>
-    bool Contains() const {
-        constexpr std::size_t I = index_of_v<IdV>;
-        static_assert(I != static_cast<std::size_t>(-1), "Unknown ID in RegistryFluent::Contains");
-        return std::get<I>(m_ptrs) != nullptr;
-    }
+    bool Contains() const;
 
+    /**
+     * @brief Check if an entry for a given tag is set (non-null).
+     * @tparam IdV Compile-time string ID
+     * @param tag Tag for the ID
+     * @return True if the entry is set, false otherwise
+     */
     template <fixed_string IdV>
-    bool Contains(id_tag<IdV>) const { return this->template Contains<IdV>(); }
+    bool Contains(id_tag<IdV>) const;
 
+    /**
+     * @brief Unset (nullify) the entry for a given compile-time ID.
+     * @tparam IdV Compile-time string ID
+     */
     template <fixed_string IdV>
-    void Unset() {
-        constexpr std::size_t I = index_of_v<IdV>;
-        std::get<I>(m_ptrs) = nullptr;
-    }
+    void Unset();
 
+    /**
+     * @brief Unset (nullify) the entry for a given tag.
+     * @tparam IdV Compile-time string ID
+     * @param tag Tag for the ID
+     */
     template <fixed_string IdV>
-    void Unset(id_tag<IdV>) { this->template Unset<IdV>(); }
+    void Unset(id_tag<IdV>);
 
-    // === Iteration Support ===
-    
-    // forEach: Call a function for each non-null entry
-    // The function receives (string_view id, const T& value) for each entry
+    /**
+     * @brief Call a function for each non-null entry in the registry.
+     * @tparam Func Callable type
+     * @param func Function to call with (string_view id, const T& value)
+     */
     template <typename Func>
-    void forEach(Func&& func) const {
-        forEach_impl(std::forward<Func>(func), std::make_index_sequence<sizeof...(Slots)>{});
-    }
+    void forEach(Func&& func) const;
 
+    /**
+     * @brief Get the number of non-null entries.
+     * @return Number of non-null entries
+     */
+    std::size_t size() const;
+    /**
+     * @brief Check if the registry is empty (all entries null).
+     * @return True if empty, false otherwise
+     */
+    bool empty() const;
+    /**
+     * @brief Get all entry names (including null entries).
+     * @return Vector of all entry names
+     */
+    std::vector<std::string> getAllIds() const;
+    /**
+     * @brief Get names of non-null entries only.
+     * @return Vector of active entry names
+     */
+    std::vector<std::string> getActiveIds() const;
 
-    // Count non-null entries
-    std::size_t size() const {
-        return count_non_null(std::make_index_sequence<sizeof...(Slots)>{});
-    }
-
-    // Check if registry is empty (all entries null)
-    bool empty() const {
-        return size() == 0;
-    }
-
-    // Get all entry names (including null entries)
-    std::vector<std::string> getAllIds() const {
-        std::vector<std::string> result;
-        result.reserve(sizeof...(Slots));
-        collectIds_impl(result, std::make_index_sequence<sizeof...(Slots)>{});
-        return result;
-    }
-
-    // Get names of non-null entries only
-    std::vector<std::string> getActiveIds() const {
-        std::vector<std::string> result;
-        collectActiveIds_impl(result, std::make_index_sequence<sizeof...(Slots)>{});
-        return result;
-    }
-
-    // === Iteration Implementation ===
-    
+private:
+    void init_from_map(const std::unordered_map<std::string, std::any>& tmp);
+    template <std::size_t... Is>
+    void init_each(const std::unordered_map<std::string, std::any>& tmp, std::index_sequence<Is...>);
+    template <std::size_t I>
+    void assign_one(const std::unordered_map<std::string, std::any>& tmp);
     template <typename Func, std::size_t... Is>
-    void forEach_impl(Func&& func, std::index_sequence<Is...>) const {
-        (forEach_one<Is>(std::forward<Func>(func)), ...);
-    }
-
+    void forEach_impl(Func&& func, std::index_sequence<Is...>) const;
     template <std::size_t I, typename Func>
-    void forEach_one(Func&& func) const {
-        auto* ptr = std::get<I>(m_ptrs);
-        if (ptr != nullptr) {
-            const auto id_sv = IdAt<I>.sv();
-            func(id_sv, *ptr);
-        }
-    }
-
-
-    template <std::size_t... Is>
-    std::size_t count_non_null(std::index_sequence<Is...>) const {
-        return ((std::get<Is>(m_ptrs) != nullptr ? 1 : 0) + ...);
-    }
-
-    template <std::size_t... Is>
-    void collectIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
-        (result.emplace_back(std::string(IdAt<Is>.sv())), ...);
-    }
-
-    template <std::size_t... Is>
-    void collectActiveIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
-        (collectActiveId_one<Is>(result), ...);
-    }
-
-    template <std::size_t I>
-    void collectActiveId_one(std::vector<std::string>& result) const {
-        if (std::get<I>(m_ptrs) != nullptr) {
-            result.emplace_back(std::string(IdAt<I>.sv()));
-        }
-    }
-
-
-    private:
-    
-    void init_from_map(const std::unordered_map<std::string, std::any>& tmp) {
-        init_each(tmp, std::make_index_sequence<sizeof...(Slots)>{});
-    }
-
-    template <std::size_t... Is>
-    void init_each(const std::unordered_map<std::string, std::any>& tmp, std::index_sequence<Is...>) {
-        (assign_one<Is>(tmp), ...);
-    }
-
-    template <std::size_t I>
-    void assign_one(const std::unordered_map<std::string, std::any>& tmp) {
-        const auto name_sv = IdAt<I>.sv();
-        auto it = tmp.find(std::string(name_sv));
-        if (it == tmp.end()) { std::get<I>(m_ptrs) = nullptr; return; }
-        try {
-            std::get<I>(m_ptrs) = std::any_cast<TypeAt<I>*>(it->second);
-        } catch (const std::bad_any_cast&) {
-            throw std::invalid_argument("Type mismatch for ID: " + it->first);
-        }
-    }
-
+    void forEach_one(Func&& func) const;
 };
 
-
-
-
-
-// Specialization for empty Slots pack
+/**
+ * @brief Specialization for empty Slots pack (no slots).
+ */
 template <>
 class RegistryFluent<> : public RegistryBase {
 public:
     using Entry = typename RegistryBase::Entry;
-    RegistryFluent() = default;
-    RegistryFluent(std::initializer_list<Entry>) {}
+    RegistryFluent();
+    RegistryFluent(std::initializer_list<Entry>);
 
     template <fixed_string IdV>
-    auto& Get() const {
-        static_assert(always_false_id<IdV>::value,
-                      "RegistryFluent<> has no slots. Add a slot before calling Get.");
-        throw std::logic_error("Get called on empty RegistryFluent");
-    }
-
+    auto& Get() const;
     template <fixed_string IdV>
-    auto& Get(id_tag<IdV>) const { return this->template Get<IdV>(); }
-
+    auto& Get(id_tag<IdV>) const;
     template <fixed_string IdV, typename U>
-    void Set(U&) {
-        static_assert(always_false_id<IdV>::value,
-                      "RegistryFluent<> has no slots. Add a slot before calling Set.");
-    }
-
+    void Set(U&);
     template <fixed_string IdV, typename U>
-    void Set(id_tag<IdV>, U&) { this->template Set<IdV>(*(U*)nullptr); }
-
+    void Set(id_tag<IdV>, U&);
     template <fixed_string IdV, typename U>
-    void SetPtr(U*) {
-        static_assert(always_false_id<IdV>::value,
-                      "RegistryFluent<> has no slots. Add a slot before calling SetPtr.");
-    }
-
+    void SetPtr(U*);
     template <fixed_string IdV, typename U>
-    void SetPtr(id_tag<IdV>, U*) { this->template SetPtr<IdV>((U*)nullptr); }
-
+    void SetPtr(id_tag<IdV>, U*);
     template <fixed_string IdV>
-    bool Contains() const {
-        static_assert(always_false_id<IdV>::value,
-                      "RegistryFluent<> has no slots. Add a slot before calling Contains.");
-        return false;
-    }
-
+    bool Contains() const;
     template <fixed_string IdV>
-    bool Contains(id_tag<IdV>) const { return this->template Contains<IdV>(); }
-
+    bool Contains(id_tag<IdV>) const;
     template <fixed_string IdV>
-    void Unset() {
-        static_assert(always_false_id<IdV>::value,
-                      "RegistryFluent<> has no slots. Add a slot before calling Unset.");
-    }
-
+    void Unset();
     template <fixed_string IdV>
-    void Unset(id_tag<IdV>) { this->template Unset<IdV>(); }
-
-    // === Iteration Support (Empty Specialization) ===
-    
+    void Unset(id_tag<IdV>);
     template <typename Func>
-    void forEach(Func&&) const {
-        // Empty registry - nothing to iterate over
-    }
-
-    std::size_t size() const { return 0; }
-    bool empty() const { return true; }
-    
-    std::vector<std::string> getAllIds() const { 
-        return std::vector<std::string>{}; 
-    }
-    
-    std::vector<std::string> getActiveIds() const { 
-        return std::vector<std::string>{}; 
-    }
+    void forEach(Func&&) const;
+    std::size_t size() const;
+    bool empty() const;
 };
 
-
-
-
-// Factories
-// Build a RegistryFluent from references
-// Usage: auto reg = MakeRegistry<"rho", "phi">(rho, phi);
+/**
+ * @brief Factory: Build a RegistryFluent from references.
+ *
+ * Usage: auto reg = MakeRegistry<"rho", "phi">(rho, phi);
+ *
+ * @tparam Ids Compile-time string IDs
+ * @tparam Ts Types of the objects
+ * @param objs References to the objects
+ * @return Unique pointer to the constructed registry
+ */
 template <fixed_string... Ids, typename... Ts>
 std::unique_ptr<RegistryFluent<Slot<Ids, std::remove_reference_t<Ts>>...>> MakeRegistry(Ts&... objs) {
     using Reg = RegistryFluent<Slot<Ids, std::remove_reference_t<Ts>>...>;
@@ -317,8 +271,16 @@ std::unique_ptr<RegistryFluent<Slot<Ids, std::remove_reference_t<Ts>>...>> MakeR
     );
 }
 
-// Build a RegistryFluent from pointers
-// Usage: auto reg = MakeRegistryPtrs<"rho", double>(rho_ptr);
+/**
+ * @brief Factory: Build a RegistryFluent from pointers.
+ *
+ * Usage: auto reg = MakeRegistryPtrs<"rho", double>(rho_ptr);
+ *
+ * @tparam Ids Compile-time string IDs
+ * @tparam Ts Types of the objects
+ * @param ptrs Pointers to the objects
+ * @return Unique pointer to the constructed registry
+ */
 template <fixed_string... Ids, typename... Ts>
 std::unique_ptr<RegistryFluent<Slot<Ids, Ts>...>> MakeRegistryPtrs(Ts*... ptrs) {
     using Reg = RegistryFluent<Slot<Ids, Ts>...>;
@@ -328,3 +290,30 @@ std::unique_ptr<RegistryFluent<Slot<Ids, Ts>...>> MakeRegistryPtrs(Ts*... ptrs) 
         }
     );
 }
+
+
+
+
+    // template <std::size_t... Is>
+    // std::size_t count_non_null(std::index_sequence<Is...>) const {
+    //     return ((std::get<Is>(m_ptrs) != nullptr ? 1 : 0) + ...);
+    // }
+
+    // template <std::size_t... Is>
+    // void collectIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
+    //     (result.emplace_back(std::string(IdAt<Is>.sv())), ...);
+    // }
+
+    // template <std::size_t... Is>
+    // void collectActiveIds_impl(std::vector<std::string>& result, std::index_sequence<Is...>) const {
+    //     (collectActiveId_one<Is>(result), ...);
+    // }
+
+    // template <std::size_t I>
+    // void collectActiveId_one(std::vector<std::string>& result) const {
+    //     if (std::get<I>(m_ptrs) != nullptr) {
+    //         result.emplace_back(std::string(IdAt<I>.sv()));
+    //     }
+    // }
+
+#include "Stream/Registry/VisRegistry.hpp"
