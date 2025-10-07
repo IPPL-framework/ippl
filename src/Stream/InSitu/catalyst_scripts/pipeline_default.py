@@ -22,6 +22,7 @@
 #    and don't have to guess reference frame ...
 #  - figure out how to also display glyphs inside the PV 
 #    client GUI (worked when wasnt in a separate script ...)
+#  - (alternative or additionally) write working macros for glyph filter   
 #  - More
 ########################################################
 ########################################################

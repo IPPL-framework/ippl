@@ -2,7 +2,10 @@
 
 
 cd build
-make PenningTrap -j
+make PenningTrap  -j
+# make PenningTrap LandauDamping BumponTailInstability -j
+# make LandauDamping -j 
+# make BumponTailInstability -j 
 
 # Report linkage
 echo "Linked libs (MPI/Catalyst/Python):"
