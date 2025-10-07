@@ -114,7 +114,7 @@ This will set the following variables automatically (exact values may change ove
         "IPPL_ENABLE_FFT": "ON",
         "IPPL_ENABLE_ALPINE": "ON",
         "IPPL_ENABLE_COSMOLOGY": "ON",
-        "IPPL_USE_STANDARD_FOLDERS": "ON"
+        "IPPL_USE_STANDARD_FOLDERS": "OFF"
 ```
 Users are encouraged to define additional sets of flags and create presets for them.
 

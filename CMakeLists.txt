@@ -44,7 +44,7 @@ option(IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
 option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
-option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" ON)
+option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" OFF)
 # option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()
@@ -59,6 +59,10 @@ if(IPPL_USE_STANDARD_FOLDERS)
       CACHE PATH "Single Directory for all Libraries")
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
       CACHE PATH "Single Directory for all static libraries.")
+else()
+  unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY CACHE)
+  unset(CMAKE_LIBRARY_OUTPUT_DIRECTORY CACHE)
+  unset(CMAKE_ARCHIVE_OUTPUT_DIRECTORY CACHE)
 endif()
 
 # ------------------------------------------------------------------------------
