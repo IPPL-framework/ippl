@@ -167,12 +167,6 @@ public:
 
         auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
-        // auto myR_vis = MakeRegistry<"particles_ions",
-        //                             "vField_electrostatic",
-        //                             "sField_density">
-        //                             (this->pcontainer_m, 
-        //                             this->fcontainer_m->getE(), 
-        //                             this->fcontainer_m->getRho() );
         auto myR_vis = MakeRegistry<"2ions",
                                     "2electrostatic",
                                     "2density">
@@ -370,9 +364,9 @@ public:
 
 
         // /* Field solve */ vis potential
-        IpplTimings::startTimer(SolveTimer);
-        this->fsolver_m->runSolver();
-        IpplTimings::stopTimer(SolveTimer);
+        // IpplTimings::startTimer(SolveTimer);
+        // this->fsolver_m->runSolver();
+        // IpplTimings::stopTimer(SolveTimer);
 
         
         
@@ -380,14 +374,18 @@ public:
         
 #ifdef IPPL_ENABLE_CATALYST
         
-        // auto myR_steer = MakeRegistry<"steerable">(scaleFactor);
-        auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
+        auto myR_steer = MakeRegistry<  "magnetic",
+                                        "electric">
+                                        (magnetic_scale,
+                                         electric_scale);
         
         auto myR_vis = MakeRegistry<"2ions",
                                     "2electrostatic",
                                     "2density">
-                                    (pc, this->fcontainer_m->getE(), this->fcontainer_m->getRho() );
+                                    (pc, 
+                                    this->fcontainer_m->getE(), 
+                                    this->fcontainer_m->getRho() );
 
         CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
@@ -418,10 +416,10 @@ public:
 #endif
 
 
-        // // Field solve-> vis density
-        // IpplTimings::startTimer(SolveTimer);
-        // this->fsolver_m->runSolver();
-        // IpplTimings::stopTimer(SolveTimer); 
+        // Field solve-> vis density
+        IpplTimings::startTimer(SolveTimer);
+        this->fsolver_m->runSolver();
+        IpplTimings::stopTimer(SolveTimer); 
 
         // gather E field
         this->grid2par();
