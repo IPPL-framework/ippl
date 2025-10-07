@@ -1,83 +1,70 @@
+#pragma once
 #include <any>
 #include <string>
 #include <unordered_map>
 #include <memory>
 #include <iostream>
 
-
-/* registry creates copies of objects passed... */
-/* for us only meaningful with shared pointers to keep copies of views and maps
-alive and not being deleted ... */
-
-
+/**
+ * @class ViewRegistry
+ * @brief A dynamic registry for storing and retrieving named objects using type erasure.
+ *
+ * The ViewRegistry class allows you to store objects of any type, typically as shared pointers,
+ * and retrieve them by name. It uses std::any for type erasure and supports both named and unnamed
+ * object registration. Unnamed objects are given a unique generated name.
+ *
+ * Typical usage is to store shared_ptr<T> objects, so that the registry keeps the objects alive
+ * and accessible by name. Retrieval is type-safe and returns nullptr if the type or name does not match.
+ */
 class ViewRegistry {
 private:
+    /**
+     * @brief Internal storage mapping names to objects (type-erased).
+     */
     std::unordered_map<std::string, std::any> m_storage;
+    /**
+     * @brief Counter for generating unique names for unnamed objects.
+     */
     size_t m_unnamed_counter = 0;
 
 public:
-    // Overload 1: Takes a name and an object. Returns void.
+    /**
+     * @brief Store an object with a given name.
+     *
+     * @tparam T Type of the object to store (usually std::shared_ptr<T>).
+     * @param name The name to associate with the object.
+     * @param object The object to store.
+     */
     template<typename T>
-    void set(const std::string& name, T object) {
-        m_storage[name] = object;
-    }
+    void set(const std::string& name, T object);
 
-    // Overload 2: Takes only an object. Returns the generated name.
+    /**
+     * @brief Store an object with an auto-generated name.
+     *
+     * @tparam T Type of the object to store (usually std::shared_ptr<T>).
+     * @param object The object to store.
+     * @return The generated unique name associated with the object.
+     */
     template<typename T>
-    std::string set(T object) {
-        std::string generated_name = "__unnamed_" + std::to_string(m_unnamed_counter++);
-        m_storage[generated_name] = object;
-        return generated_name;
-    }
+    std::string set(T object);
 
+    /**
+     * @brief Retrieve a stored object by name and type.
+     *
+     * @tparam T The type to cast the stored object to (usually the pointed-to type).
+     * @param name The name associated with the object.
+     * @return std::shared_ptr<T> if found and type matches, nullptr otherwise.
+     */
     template<typename T>
-    std::shared_ptr<T> get(const std::string& name) const {
-        auto it = m_storage.find(name);
-        if (it == m_storage.end()) {
-            return nullptr;
-        }
-        try {
-            return std::any_cast<std::shared_ptr<T>>(it->second);
-        } catch (const std::bad_any_cast&) {
-            return nullptr;
-        }
-    }
+    std::shared_ptr<T> get(const std::string& name) const;
 
-    void unset(const std::string& name) {
-        m_storage.erase(name);
-    }
+    /**
+     * @brief Remove an object from the registry by name.
+     *
+     * @param name The name of the object to remove.
+     */
+    void unset(const std::string& name);
 };
 
 
-// // A safe, modern dynamic registry
-// class ViewRegistry {
-// private:
-//     std::unordered_map<std::string, std::any> m_storage;
-
-// public:
-//     // Store any object that can be copied into an 'any'
-//     template<typename T>
-//     void set(const std::string& name, T object) {
-//         m_storage[name] = object;
-//     }
-
-//     // Retrieve a shared_ptr of a specific type
-//     template<typename T>
-//     std::shared_ptr<T> get(const std::string& name) const {
-//         auto it = m_storage.find(name);
-//         if (it == m_storage.end()) {
-//             return nullptr;
-//         }
-//         // Try to cast the 'any' back to the requested type.
-//         // Returns nullptr on failure.
-//         try {
-//             return std::any_cast<std::shared_ptr<T>>(it->second);
-//         } catch (const std::bad_any_cast&) {
-//             return nullptr;
-//         }
-//     }
-
-//     void unset(const std::string& name) {
-//         m_storage.erase(name);
-//     }
-// };
+#include "Stream/Registry/ViewRegistry.hpp"

@@ -274,25 +274,6 @@ namespace CatalystAdaptor {
             );
 
 
-            /* ADD ARGUMENTS TO DEFAULT E4XTRACTOR SCRIPTS TO
-            PASS INFOS OF FRAME DIRECTLY (needed for particle)
-            USE rounded up of value to scale colours ... */
-        
-
-            // set_node_script( node["catalyst/scripts/extract0/filename"],
-            //                 "CATALYST_EXTRACTOR_SCRIPT_P",
-            //                 source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
-            //             );
-
-            // set_node_script( node["catalyst/scripts/extract1/filename"],
-            //                 "CATALYST_EXTRACTOR_SCRIPT_S",
-            //                 source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py"
-            //             );
-
-            // set_node_script( node["catalyst/scripts/extract2/filename"],
-            //                 "CATALYST_EXTRACTOR_SCRIPT_V",
-            //                 source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py"
-            //             );
         }
         else{
             m << "catalyst PNG extract DEACTIVATED" << endl;
@@ -314,7 +295,7 @@ namespace CatalystAdaptor {
             // args.append().set_string("0");
         }
 
-        /* TWO HARDCODED STEERING OPTIONS .... > for eah */
+        /* TWO HARDCODED STEERING OPTIONS .... >  */
         /* ideally, this needs to be saved .. */
         const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
 
