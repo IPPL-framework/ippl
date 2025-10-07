@@ -9,6 +9,7 @@ target_include_directories(ippl
 
 install(FILES
     VisRegistry.h
+    VisRegistry.hpp
     ViewRegistry.h
     ViewRegistry.hpp
     RegistryHelper.h
