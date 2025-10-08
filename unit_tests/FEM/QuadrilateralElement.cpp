@@ -18,9 +18,9 @@ protected:
 
 public:
     using value_t = T;
-    using point_t = ippl::QuadrilateralElement<T>::point_t;
-    using vertex_points_t =
-        ippl::QuadrilateralElement<T>::vertex_points_t;
+    using point_t = typename ippl::QuadrilateralElement<T>::point_t;
+    using vertex_points_t = 
+        typename ippl::QuadrilateralElement<T>::vertex_points_t;
 
     static constexpr unsigned NumQuads = 3;
 

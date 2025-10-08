@@ -16,21 +16,27 @@
 #   - External dependencies               → Dependencies.cmake
 # -----------------------------------------------------------------------------
 
+if(PROJECT_IS_TOP_LEVEL)
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+        "Build type (Debug, Release, RelWithDebInfo)")
+  endif()
+endif()
+
 # === C++ Standard ===
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(IPPL_LIB_TYPE STATIC)
 
 option (USE_STATIC_LIBRARIES "Link with static libraries if available" ON)
 option (Heffte_ENABLE_GPU_AWARE_MPI "Is a issue ... " OFF)
 
-if(IPPL_DYL)
-    set(IPPL_LIB_TYPE SHARED)
-endif()
-message(STATUS "🔧 IPPL will be built as a ${IPPL_LIB_TYPE} library (IPPL_DYL = ${IPPL_DYL})")
 
 # === Default Build Type ===
 set(_allowed_build_types Debug Release RelWithDebInfo MinSizeRel)

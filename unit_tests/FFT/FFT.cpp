@@ -93,6 +93,19 @@ public:
         });
     }
 
+      /*!
+     * Fill a real-valued field with zero values
+     * @param nghost number of ghost cells
+     * @param mirror the field view's host mirror
+     */
+  
+    void zeroRealField(int nghost, typename field_type_real::HostMirror& mirror) {
+
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+            mirror(args...) = 0.0;;
+        });
+    }
+
     /*!
      * Fill a complex-valued field with random values
      * @param nghost number of ghost cells
@@ -111,6 +124,21 @@ public:
         });
     }
 
+    /*!
+     * Fill a complex-valued field with 0.0 values
+     * @param nghost number of ghost cells
+     * @param mirror the field view's host mirror
+     */
+    void zeroComplexField(int nghost, typename field_type_complex::HostMirror& mirror) {
+
+        nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+            mirror(args...).real() = 0.0;
+            mirror(args...).imag() = 0.0;
+        });
+    }
+
+
+  
     /*!
      * Verify the contents of a computation
      * @tparam MirrorA the type of the computed view
@@ -222,7 +250,7 @@ TYPED_TEST(FFTTest, RC) {
     auto input_host = field->getHostMirror();
 
     const int nghost = field->getNghost();
-    this->randomizeRealField(nghost, input_host);
+    this->zeroRealField(nghost, input_host);
 
     Kokkos::deep_copy(view, input_host);
 
@@ -253,7 +281,7 @@ TYPED_TEST(FFTTest, CC) {
     auto field_host = field->getHostMirror();
 
     const int nghost = field->getNghost();
-    this->randomizeComplexField(nghost, field_host);
+    this->zeroComplexField(nghost, field_host);
 
     Kokkos::deep_copy(view, field_host);
 

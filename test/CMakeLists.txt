@@ -6,7 +6,7 @@
 # executables and are run using `ctest` to check successful execution.
 # -----------------------------------------------------------------------------
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/test/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/test/cmake")
 include(AddIpplIntegrationTest)
 
 add_subdirectory(kokkos)
@@ -20,6 +20,7 @@ endif()
 if (IPPL_ENABLE_SOLVERS)
     add_subdirectory(solver)
     add_subdirectory(solver/fem)
+    add_subdirectory(maxwell)
 endif()
 
 add_subdirectory(particle)

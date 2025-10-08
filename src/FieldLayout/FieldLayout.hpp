@@ -86,17 +86,17 @@ namespace ippl {
             return;
         }
 
-        /* Check to see if we have too few elements to partition.  If so, reduce
-         * the number of ranks (if necessary) to just the number of elements along
-         * parallel dims.
+        /* Check in to how many local domains we can partition the given domain.
+        If there are more ranks than local domains, we throw an error, ippl does not allow this.
          */
         long totparelems = 1;
         for (unsigned d = 0; d < Dim; ++d) {
-            totparelems *= domain[d].length();
+            totparelems *= isParallelDim_m[d] ? domain[d].length() : 1;
         }
 
         if (totparelems < nRanks) {
-            nRanks = totparelems;
+            throw std::runtime_error("FieldLayout:initialize: domain can only be partitioned in to "
+                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, decrease the number of ranks or increase the domain.");
         }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
@@ -113,8 +113,16 @@ namespace ippl {
     }
 
     template <unsigned Dim>
+    const typename FieldLayout<Dim>::NDIndex_t& FieldLayout<Dim>::getLocalNDIndex() const {
+        return hLocalDomains_m(comm.rank());
+    }
+
+    template <unsigned Dim>
     const typename FieldLayout<Dim>::NDIndex_t& FieldLayout<Dim>::getLocalNDIndex(int rank) const {
-        return hLocalDomains_m(rank > 0 ? rank : comm.rank());
+        // Rank must be valid for the communicator
+        PAssert(rank >= 0 && rank < comm.size());
+
+        return hLocalDomains_m(rank);
     }
 
     template <unsigned Dim>

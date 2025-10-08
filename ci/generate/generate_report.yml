@@ -38,7 +38,17 @@ generate_report:
     - mkdir -p pages-branch/public/"${CI_PIPELINE_ID}/allure-report"
     - mv allure-report pages-branch/public/"${CI_PIPELINE_ID}"
     - mkdir -p "pages-branch/pipeline-runs/${CI_PIPELINE_ID}"
-    - mv results/"${CI_PIPELINE_ID}/coverage" pages-branch/public/"${CI_PIPELINE_ID}"
+   # - mv results/"${CI_PIPELINE_ID}/coverage" pages-branch/public/"${CI_PIPELINE_ID}"
+
+    - |
+      COVERAGE_SOURCE="results/${CI_PIPELINE_ID}/coverage"
+      if [ -d "${COVERAGE_SOURCE}" ]; then
+        echo "Found coverage results, moving them."
+        mv "${COVERAGE_SOURCE}" "pages-branch/public/${CI_PIPELINE_ID}/"
+      else
+        echo "No coverage results found, skipping."
+      fi
+
     - cp metadata.json pages-branch/public/"${CI_PIPELINE_ID}"
     - mv results/"${CI_PIPELINE_ID}/" pages-branch/pipeline-runs/
     - mv metadata.json pages-branch/pipeline-runs/"${CI_PIPELINE_ID}"
@@ -50,7 +60,4 @@ generate_report:
     - git push origin HEAD:gitlab-pages
     - cd ..
     - rm -r pages-branch
-
-
-
   allow_failure: true  

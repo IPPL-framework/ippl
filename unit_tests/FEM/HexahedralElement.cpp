@@ -17,9 +17,9 @@ protected:
 
 public:
     using value_t = T;
-    using point_t = ippl::HexahedralElement<T>::point_t;
+    using point_t = typename ippl::HexahedralElement<T>::point_t;
     using vertex_points_t =
-        ippl::HexahedralElement<T>::vertex_points_t;
+        typename ippl::HexahedralElement<T>::vertex_points_t;
 
     static constexpr unsigned NumHexs = 3;
 

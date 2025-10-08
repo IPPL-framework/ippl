@@ -149,7 +149,7 @@ namespace ippl {
         bool isBufferUsed(buffer_type buffer) const;
         void releaseUsedBuffer(buffer_type buffer);
         buffer_type findFreeBuffer(size_type requiredSize);
-        buffer_set_type::iterator findSmallestSufficientBuffer(size_type requiredSize);
+        typename buffer_set_type::iterator findSmallestSufficientBuffer(size_type requiredSize);
         buffer_type getFreeBuffer(buffer_type buffer);
         buffer_type reallocateLargestFreeBuffer(size_type requiredSize);
         buffer_type allocateNewBuffer(size_type requiredSize);

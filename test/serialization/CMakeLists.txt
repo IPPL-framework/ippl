@@ -4,7 +4,7 @@
 # Integration test for IPPL serialization functionality.
 # -----------------------------------------------------------------------------
 
-file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding serialization integration tests from: ${_relPath}")
 
 # === Individual tests ===

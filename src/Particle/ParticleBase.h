@@ -69,6 +69,18 @@ namespace ippl {
     };
 
     /*!
+     * @class ParticleBaseBase
+     *
+     *  Minimal empty base class for all ParticleBase specializations.
+     *  Needed for e.g: c++20 constraints and concepts using std::derived_from
+     * 
+     */
+    class ParticleBaseBase {
+    public:
+        virtual ~ParticleBaseBase() = default;
+    };
+
+    /*!
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks

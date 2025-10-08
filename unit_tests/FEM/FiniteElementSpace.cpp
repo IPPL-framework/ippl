@@ -17,6 +17,7 @@ protected:
 
 public:
     using value_t = T;
+    static constexpr unsigned dim = Dim;
 
     static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
 
@@ -79,7 +80,7 @@ TYPED_TEST(FiniteElementSpaceTest, numElementsInDim) {
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
     const auto& fem_space  = this->fem_space;
     const auto& meshSizes  = this->meshSizes;
-    const std::size_t& dim = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
 
     // compute the number of vertices
     std::size_t num_vertices = 1;
@@ -87,7 +88,7 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
         num_vertices *= meshSizes[d];
     }
 
-    ippl::Vector<std::size_t, fem_space.dim> ndindexCounter(0);
+    ippl::Vector<std::size_t, dim> ndindexCounter(0);
 
     for (std::size_t vertex_index = 0; vertex_index < num_vertices; ++vertex_index) {
         const auto computed_vertex_ndindex = fem_space.getMeshVertexNDIndex(vertex_index);
@@ -110,7 +111,7 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
     const auto& fem_space  = this->fem_space;
     const auto& meshSizes  = this->meshSizes;
-    const std::size_t& dim = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
 
     // compute the number of vertices
     std::size_t num_vertices = 1;
@@ -118,7 +119,7 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
         num_vertices *= meshSizes[d];
     }
 
-    ippl::Vector<std::size_t, fem_space.dim> ndindexCounter(0);
+    ippl::Vector<std::size_t, dim> ndindexCounter(0);
 
     for (std::size_t vertex_index = 0; vertex_index < num_vertices; ++vertex_index) {
         const std::size_t computed_vertex_index = fem_space.getMeshVertexIndex(ndindexCounter);
@@ -138,7 +139,7 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
     const auto& fem_space  = this->fem_space;
-    const std::size_t& dim = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
 
     if (dim == 1) {
         const auto indices = fem_space.getElementMeshVertexNDIndices(2);
@@ -147,7 +148,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
         ASSERT_EQ(indices[1][0], 3);
     } else if (dim == 2) {
         const unsigned element_index = 8;
-        const ippl::Vector<unsigned, fem_space.dim> elementNDIndex =
+        const ippl::Vector<unsigned, dim> elementNDIndex =
             fem_space.getElementNDIndex(element_index);  // {2, 2}
         const auto indices = fem_space.getElementMeshVertexNDIndices(elementNDIndex);
 
@@ -168,7 +169,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
 
 TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
     const auto& fem_space          = this->fem_space;
-    const std::size_t& dim         = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& numElements = fem_space.numElements();
 
     std::vector<std::vector<std::size_t>> element_nd_indices(dim);
@@ -188,7 +189,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
         FAIL();
     }
 
-    ippl::Vector<std::size_t, fem_space.dim> element_nd_index;
+    ippl::Vector<std::size_t, dim> element_nd_index;
 
     for (std::size_t i = 0; i < numElements; ++i) {
         element_nd_index = fem_space.getElementNDIndex(i);
@@ -204,7 +205,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
 
 TYPED_TEST(FiniteElementSpaceTest, getElementIndex) {
     const auto& fem_space          = this->fem_space;
-    constexpr size_t dim           = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& numElements = fem_space.numElements();
 
     std::vector<ippl::Vector<size_t, dim>> element_nd_indices(numElements);
@@ -232,9 +233,9 @@ TYPED_TEST(FiniteElementSpaceTest, getElementIndex) {
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
     const auto& fem_space  = this->fem_space;
-    const std::size_t& dim = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
 
-    ippl::Vector<std::size_t, fem_space.dim> elementNDIndex;
+    ippl::Vector<std::size_t, dim> elementNDIndex;
 
     if (dim == 1) {
         // start element
@@ -430,9 +431,9 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
     const auto& fem_space  = this->fem_space;
-    const std::size_t& dim = fem_space.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
 
-    const auto element_ndindex = ippl::Vector<unsigned, fem_space.dim>(2);
+    const auto element_ndindex = ippl::Vector<unsigned, dim>(2);
 
     if (dim == 1) {
         const auto indices = fem_space.getElementMeshVertexPoints(element_ndindex);

@@ -4,7 +4,7 @@
 # Integration tests for IPPL solvers.
 # -----------------------------------------------------------------------------
 
-file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding solver integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestSolverDesign LABELS solver integration)
@@ -18,5 +18,5 @@ if(IPPL_ENABLE_FFT)
     add_ippl_integration_test(TestFFTPeriodicPoissonSolver LABELS solver integration)
     add_ippl_integration_test(TestGaussian_biharmonic LABELS solver integration)
     add_ippl_integration_test(TestGaussian_hessian LABELS solver integration)
-    add_ippl_integration_test(TestP3MSolver LABELS solver integration)
+    add_ippl_integration_test(TestFFTTruncatedGreenPeriodicPoissonSolver LABELS solver integration)
 endif()

@@ -20,6 +20,7 @@
 // #include "Index/NDIndex.h"
 
 #include "FieldLayout/FieldLayout.h"
+#include "FieldLayout/SubFieldLayout.h"
 
 #ifdef IPPL_ENABLE_FFT
 #include "FFT/FFT.h"
@@ -48,5 +49,12 @@
 
 // // FEM Spaces
 #include "FEM/LagrangeSpace.h"
+#include "FEM/NedelecSpace.h"
+
+// // FEM Vector
+#include "FEM/FEMVector.h"
+
+// FEM Operators
+#include "FEM/FEMInterpolate.hpp"
 
 #endif

@@ -11,7 +11,7 @@
 
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
-#include "PoissonSolvers/P3MSolver.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
 
 unsigned LoggingPeriod = 1;
@@ -63,7 +63,7 @@ using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
                                     ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+using FFTTruncatedGreenSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
 using OpenSolver_t =
@@ -71,7 +71,7 @@ using OpenSolver_t =
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+                                             FFTTruncatedGreenSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 
@@ -320,8 +320,8 @@ public:
                 std::get<FFTSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
             }
             if constexpr (Dim == 3) {
-                if (stype_m == "P3M") {
-                    std::get<P3MSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
+                if (stype_m == "TG") {
+                    std::get<FFTTruncatedGreenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
                 } else if (stype_m == "OPEN") {
                     std::get<OpenSolver_t<T, Dim>>(solver_m).setRhs(rho_m);
                 }
@@ -438,8 +438,8 @@ public:
             initFFTSolver();
         } else if (stype_m == "CG" || stype_m == "PCG") {
             initCGSolver(sp);
-        } else if (stype_m == "P3M") {
-            initP3MSolver();
+        } else if (stype_m == "TG") {
+            initTGSolver();
         } else if (stype_m == "OPEN") {
             initOpenSolver();
         } else {
@@ -478,9 +478,9 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(solver_m).solve();
             }
-        } else if (stype_m == "P3M") {
+        } else if (stype_m == "TG") {
             if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<T, Dim>>(solver_m).solve();
+                std::get<FFTTruncatedGreenSolver_t<T, Dim>>(solver_m).solve();
             }
         } else if (stype_m == "OPEN") {
             if constexpr (Dim == 3) {
@@ -507,7 +507,7 @@ public:
             solver.setGradient(E_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
-            // and the P3M solver compute the electric field directly
+            // and the TG solver compute the electric field directly
             solver.setLhs(E_m);
         }
     }
@@ -545,10 +545,10 @@ public:
         }
     }
 
-    void initP3MSolver() {
+    void initTGSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("output_type", FFTTruncatedGreenSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -556,9 +556,9 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
+            initSolverWithParams<FFTTruncatedGreenSolver_t<T, Dim>>(sp);
         } else {
-            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+            throw std::runtime_error("Unsupported dimensionality for TG solver");
         }
     }
 
