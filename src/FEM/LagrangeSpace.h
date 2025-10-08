@@ -71,7 +71,6 @@ namespace ippl {
         // Type for gradient
         typedef typename FieldLHS::Mesh_t Mesh;
         typedef typename FieldLHS::Centering_t Centering;
-        using GradType = Field<Vector<T, Dim>, Dim, Mesh, Centering>;
 
         ///////////////////////////////////////////////////////////////////////
         // Constructors ///////////////////////////////////////////////////////
@@ -257,15 +256,6 @@ namespace ippl {
         void evaluateLoadVector(FieldRHS& field) const;
         void evaluateLumpedMass(FieldRHS& field) const;
 
-        /**
-         * @brief Compute gradient of a field by projecting with grad(basis)
-         *
-         * @param grad The Vector field on which the result is written
-         * @param field The field whose gradient we compute
-         *
-         */
-        void evaluateGrad(GradType& grad, FieldLHS& field);
-
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -280,17 +270,6 @@ namespace ippl {
          */
         template <typename F>
         T computeErrorL2(const FieldLHS& u_h, const F& u_sol) const;
-
-        /**
-         * @brief Given two Vector field, compute the L2 norm error
-         *
-         * @param u_h The numerical gradient computed
-         * @param u_sol The analytical solution (functor)
-         *
-         * @return error - The error ||u_h - u_sol||_L2
-         */
-        template <typename F>
-        T computeErrorL2(const GradType& u_h, const F& u_sol) const;
 
         /**
          * @brief Given a field, compute the average

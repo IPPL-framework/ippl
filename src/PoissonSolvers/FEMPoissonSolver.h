@@ -155,13 +155,6 @@ namespace ippl {
 
             (this->lhs_mp)->fillHalo();
 
-            int output = this->params_m.template get<int>("output_type");
-            if (output & Base::GRAD) {
-                //*(this->grad_mp) = -grad(*(this->lhs_mp));
-                lagrangeSpace_m.evaluateGrad(*(this->grad_mp), *(this->lhs_mp));
-                *(this->grad_mp) = -(*(this->grad_mp));
-            }
-
             IpplTimings::stopTimer(pcgTimer);
 
             IpplTimings::stopTimer(solve);
