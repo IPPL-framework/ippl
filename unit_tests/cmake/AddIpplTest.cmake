@@ -95,8 +95,8 @@ function(add_ippl_test TEST_NAME)
     set(_final_cmd ${_launched_cmd})
   else()
     if(DEFINED MPIEXEC_EXECUTABLE)
-      set(_final_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${_procs} ${TEST_MPI_ARGS}
-                     ${_launched_cmd})
+      set(_final_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${_procs} ${MPIEXEC_PREFLAGS}
+                     ${TEST_MPI_ARGS} ${_launched_cmd})
     elseif(TEST_REQUIRE_MPI)
       # Add a disabled test with a clear message
       add_test(NAME ${TEST_NAME} COMMAND ${_launched_cmd})
