@@ -1,20 +1,5 @@
 build/
-doc/html
-doc/latex
-manual/*.aux
-manual/*.log
-manual/*.toc
-manual/*.idx
-manual/*.lof
-manual/*.lot
-manual/ippl_user_guide.pdf
 build*/
-*~
-*.~
-
-# ignore build directories
-build*/
-
-# ignore .vscode directory
 .vscode
 .cache
+*__pycache__
