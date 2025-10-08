@@ -1,9 +1,10 @@
 <map id="ippl::ParticleBase&lt; PLayout, IDProperties &gt;" name="ippl::ParticleBase&lt; PLayout, IDProperties &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="458,475,629,823"/>
-<area shape="rect" id="node2" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="232,167,425,397"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,20,228,75"/>
-<area shape="rect" id="node4" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="253,5,405,89"/>
-<area shape="rect" id="node5" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="429,20,623,75"/>
-<area shape="rect" id="node6" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="450,247,637,317"/>
-<area shape="rect" id="node7" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="661,247,860,317"/>
+<area shape="rect" id="node1" title=" " alt="" coords="403,475,574,823"/>
+<area shape="rect" id="node2" href="$classippl_1_1ParticleBaseBase.html" title=" " alt="" coords="49,255,208,309"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="232,167,425,397"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,20,228,75"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="253,5,405,89"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="429,20,623,75"/>
+<area shape="rect" id="node7" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="450,247,637,317"/>
+<area shape="rect" id="node8" href="$structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="661,247,860,317"/>
 </map>

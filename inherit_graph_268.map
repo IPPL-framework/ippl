@@ -1,9 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1preconditioner.html" title=" " alt="" coords="5,197,135,237"/>
-<area shape="rect" id="node2" href="$structippl_1_1gs__preconditioner.html" title=" " alt="" coords="219,5,386,60"/>
-<area shape="rect" id="node3" href="$structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="217,85,388,125"/>
-<area shape="rect" id="node4" href="$structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="213,149,392,204"/>
-<area shape="rect" id="node5" href="$structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="223,228,382,283"/>
-<area shape="rect" id="node6" href="$structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="183,307,423,347"/>
-<area shape="rect" id="node7" href="$structippl_1_1ssor__preconditioner.html" title=" " alt="" coords="219,372,386,427"/>
+<area shape="rect" id="node1" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="5,101,205,141"/>
+<area shape="rect" id="node2" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="271,5,459,45"/>
+<area shape="rect" id="node3" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="271,69,459,109"/>
+<area shape="rect" id="node4" href="$classippl_1_1GaussJacobiQuadrature.html" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="253,133,476,173"/>
+<area shape="rect" id="node7" href="$classippl_1_1MidpointQuadrature.html" title="This is a class representing the midpoint quadrature rule." alt="" coords="253,197,476,237"/>
+<area shape="rect" id="node5" href="$classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="524,101,747,141"/>
+<area shape="rect" id="node6" href="$classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="524,165,747,205"/>
 </map>
