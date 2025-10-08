@@ -45,6 +45,7 @@ option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" OFF)
+option(IPPL_SKIP_FAILING_TESTS "Do not build/test tests that are currently marked as failing" OFF)
 # option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()
@@ -80,6 +81,7 @@ include(Messages)
 include(CompilerOptions)
 include(Platforms)
 include(Dependencies)
+include(FailingTests)
 
 # ------------------------------------------------------------------------------
 # Deprecated vars
