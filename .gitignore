@@ -9,11 +9,27 @@ manual/*.lof
 manual/*.lot
 manual/ippl_user_guide.pdf
 build*/
-*~
-*.~
+
+*pycache*
+*png
+*svg
+
+.gitignore
+*puml*
+cmake/
+doc/
+./old
+*old*
 
 # ignore build directories
 build*/
 
 # ignore .vscode directory
 .vscode
+
+compile.sh
+cmake.sh
+run_penningtrap.sh
+launch_paraview.sh
+doc/Doxyfile
+cmake/Dependencies.cmake

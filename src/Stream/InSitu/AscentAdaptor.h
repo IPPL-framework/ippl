@@ -20,16 +20,6 @@
 
 #include<filesystem>
 
-// // Helper function to get environment variable with optional default
-// std::optional<std::string> getEnvVar(const std::string& name) {
-//     const char* value = std::getenv(name.c_str());
-//     return value ? std::optional<std::string>{value} : std::nullopt;
-// }
-
-// std::string getEnvVarWithDefault(const std::string& name, const std::string& defaultValue) {
-//     const char* value = std::getenv(name.c_str());
-//     return value ? std::string(value) : defaultValue;
-// }
 
 
 
