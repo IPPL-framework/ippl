@@ -1,0 +1,54 @@
+name: clang-format
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # IMPORTANT: required for git diff
+
+      - name: Install clang-format 18
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-18 100
+
+      - name: Get list of modified source files
+        id: files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+
+          FILES=$(git diff --name-only \
+            origin/${{ github.base_ref }}...HEAD \
+            | grep -E '\.(c|cc|cpp|cxx|h|hpp)$' || true)
+
+          echo "$FILES"
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run clang-format check
+        if: steps.files.outputs.files != ''
+        run: |
+          echo "Checking files:"
+          echo "${{ steps.files.outputs.files }}"
+
+          FAIL=0
+          echo "${{ steps.files.outputs.files }}" | tr ' ' '\n' | xargs -n1 -I{} sh -c '
+            clang-format --dry-run "{}"
+            if [ $? -ne 0 ]; then
+              echo "Formatting issue: {}"
+              FAIL=1
+            fi
+          '
+          if [ $FAIL -ne 0 ]; then
+            echo "Some files need clang-format fixes."
+            exit 1
+          fi
