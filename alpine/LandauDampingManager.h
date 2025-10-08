@@ -204,6 +204,8 @@ public:
         }
         DistR_t distR(parR);
 
+        bool notFEM = !(this->getSolver() == "FEM");
+
         Vector_t<double, Dim> kw                         = this->kw_m;
         Vector_t<double, Dim> hr                         = this->hr_m;
         Vector_t<double, Dim> origin                     = this->origin_m;
@@ -215,8 +217,6 @@ public:
             const ippl::NDIndex<Dim>& lDom = FL->getLocalNDIndex();
             const int nghost               = this->fcontainer_m->getRho().getNghost();
             auto rhoview                   = this->fcontainer_m->getRho().getView();
-
-            bool notFEM = !(this->getSolver() == "FEM");
 
             using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             ippl::parallel_for(
@@ -242,7 +242,7 @@ public:
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh);
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh, notFEM);
 
         // unsigned int
         size_type totalP = this->totalP_m;

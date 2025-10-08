@@ -36,12 +36,20 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class Mesh, class... Properties>
+        RegionLayout<T, Dim, Mesh, Properties...>::RegionLayout(const FieldLayout<Dim>& fl,
+                                                                const Mesh& mesh, bool offset)
+            : RegionLayout() {
+            changeDomain(fl, mesh, offset);
+        }
+
+        template <typename T, unsigned Dim, class Mesh, class... Properties>
         void RegionLayout<T, Dim, Mesh, Properties...>::changeDomain(const FieldLayout<Dim>& fl,
-                                                                     const Mesh& mesh) {
+                                                                     const Mesh& mesh, 
+                                                                     bool offset) {
             // set our index space offset
             for (unsigned int d = 0; d < Dim; ++d) {
                 indexOffset_m[d]  = fl.getDomain()[d].first();
-                centerOffset_m[d] = 1;
+                centerOffset_m[d] = offset;
             }
 
             region_m = convertNDIndex(fl.getDomain(), mesh);
