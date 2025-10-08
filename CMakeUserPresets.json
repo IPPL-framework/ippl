@@ -68,6 +68,23 @@
         "IPPL_ENABLE_SANITIZER": "ON",
         "IPPL_PLATFORMS": "SERIAL"
       }
+    },
+    {
+      "name": "alps-gh200",
+      "displayName": "Alps-GH200-defaults",
+      "description": "Enables building test in debug mode",
+      "inherits": [
+        "testing",
+        "default"
+      ],
+      "cacheVariables": {
+        "MPIEXEC_PREFLAGS": "--gpus-per-task=1;/user-environment/wrapper-mpi.sh",
+        "IPPL_PLATFORMS": "OPENMP;CUDA",
+        "CMAKE_CUDA_ARCHITECTURES": "90",
+        "MPIEXEC_EXECUTABLE": "/usr/bin/srun",
+        "Kokkos_VERSION_DEFAULT": "4.7",
+        "Heffte_VERSION_DEFAULT": "2.4.1"
+      }
     }
   ]
 }
