@@ -6,15 +6,23 @@
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# add_ippl_test(<name> [SOURCES <src1> <src2> ...]        # default: <name>.cpp [ARGS <arg1> <arg2>
-# ...]           # args passed to the test binary [MPI_ARGS <arg1> <arg2> ...]       # extra args
-# for mpiexec [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2) [TIMEOUT
-# <sec>]                    # default: 300 [WORKING_DIRECTORY <dir>]          # default: current
-# binary dir [LABELS <lbl1> <lbl2> ...]         # default: unit [LAUNCH <tool> [tool-args...]]     #
-# e.g. LAUNCH "valgrind;--leak-check=full" [NO_MPI]                           # run without mpiexec
-# [REQUIRE_MPI]                      # disable test if MPI not found [RUN_SERIAL] # ctest runs this
-# test serially [USE_GTEST_MAIN]                   # link GTest::gtest_main instead of gtest
-# [PROPERTIES <ctest-prop> <val> ...]# extra set_tests_properties )
+# ~~~
+# add_ippl_test(<name>
+#   [SOURCES <src1> <src2> ...]        # default: <name>.cpp
+#   [ARGS <arg1> <arg2> ...]           # args passed to the test binary
+#   [MPI_ARGS <arg1> <arg2> ...]       # extra args for mpiexec
+#   [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2)
+#   [TIMEOUT <sec>]                    # default: 300
+#   [WORKING_DIRECTORY <dir>]          # default: current binary dir
+#   [LABELS <lbl1> <lbl2> ...]         # default: unit
+#   [LAUNCH <tool> [tool-args...]]     # e.g. LAUNCH "valgrind;--leak-check=full"
+#   [NO_MPI]                           # run without mpiexec
+#   [REQUIRE_MPI]                      # disable test if MPI not found
+#   [RUN_SERIAL]                       # ctest runs this test serially
+#   [USE_GTEST_MAIN]                   # link GTest::gtest_main instead of gtest
+#   [PROPERTIES <ctest-prop> <val> ...]# extra set_tests_properties
+# )
+# ~~~
 # -----------------------------------------------------------------------------
 
 set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit test")
