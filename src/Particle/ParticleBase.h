@@ -62,7 +62,14 @@
 #include "Particle/ParticleLayout.h"
 
 namespace ippl {
-    // Minimal empty base class for all ParticleBase specializations, for practical purposes
+
+    /*!
+     * @class ParticleBaseBase
+     *
+     *  Minimal empty base class for all ParticleBase specializations.
+     *  Needed for e.g: c++20 constraints and concepts using std::derived_from
+     * 
+     */
     class ParticleBaseBase {
     public:
         virtual ~ParticleBaseBase() = default;
