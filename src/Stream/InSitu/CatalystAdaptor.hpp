@@ -1,11 +1,9 @@
 #pragma once
 #include "CatalystAdaptor.h"
 
-namespace CatalystAdaptor {
+// Function implementations moved from CatalystAdaptor.h
 
-    // Function implementations moved from CatalystAdaptor.h
-
-    inline void setData(conduit_cpp::Node& node, const View_vector& view) {
+inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_vector& view) {
         node["electrostatic/association"].set_string("element");
         node["electrostatic/topology"].set_string("mesh");
         node["electrostatic/volume_dependent"].set_string("false");
@@ -19,7 +17,7 @@ namespace CatalystAdaptor {
         node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
     }
 
-    inline void setData(conduit_cpp::Node& node, const View_scalar& view) {
+inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_scalar& view) {
         node["density/association"].set_string("element");
         node["density/topology"].set_string("mesh");
         node["density/volume_dependent"].set_string("false");
@@ -28,12 +26,12 @@ namespace CatalystAdaptor {
     }
 
     /*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
-    void set_node_script(
-        conduit_cpp::Node node_path,
-        const char* env_var,
-        const std::filesystem::path default_file_path
-    )
-    {
+void CatalystAdaptor::set_node_script(
+    conduit_cpp::Node node_path,
+    const char* env_var,
+    const std::filesystem::path default_file_path
+)
+{
         Inform m("CatalystAdaptor::set_node_scripts(): ");
             
         const char* file_path_env = std::getenv(env_var);
@@ -53,16 +51,16 @@ namespace CatalystAdaptor {
 
     /* SCALAR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    template<typename T, unsigned Dim, class... ViewArgs>
-    void init_entry( 
-                    [[maybe_unused]]  
-                    const ippl::Field<T, Dim, ViewArgs...>& entry
-                    , const std::string label
-                    ,       conduit_cpp::Node& node
-                    , const std::filesystem::path source_dir
-        // , ViewRegistry& vr
-    )
-    {
+template<typename T, unsigned Dim, class... ViewArgs>
+void CatalystAdaptor::init_entry( 
+                [[maybe_unused]]  
+                const ippl::Field<T, Dim, ViewArgs...>& entry
+                , const std::string label
+                ,       conduit_cpp::Node& node
+                , const std::filesystem::path source_dir
+    // , ViewRegistry& vr
+)
+{
         std::cout << "      init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
         // const Field_t<Dim>* field = &entry;
         const std::string script = "catalyst/scripts/" + label;
@@ -83,16 +81,16 @@ namespace CatalystAdaptor {
 
     /* VECTOR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-    void init_entry( 
-                    [[maybe_unused]]  
-                      const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry
-                    , const std::string label
-                    ,       conduit_cpp::Node& node
-                    , const std::filesystem::path source_dir
-                    // , ViewRegistry& vr
-    ) 
-    {
+template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
+void CatalystAdaptor::init_entry( 
+                                [[maybe_unused]]  
+                                    const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry
+                                , const std::string label
+                                ,       conduit_cpp::Node& node
+                                , const std::filesystem::path source_dir
+                                // , ViewRegistry& vr
+)
+{
         std::cout << "      init_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         // const VField_t<T, Dim>* field = &entry;
         const std::string script = "catalyst/scripts/" + label;
@@ -114,16 +112,17 @@ namespace CatalystAdaptor {
 
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
     // == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
-    template<typename T>
-    requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-    void init_entry( 
-                    [[maybe_unused]]  
-                      const T& entry
-                    , const std::string label
-                    ,       conduit_cpp::Node& node
-                    , const std::filesystem::path source_dir
-                    // , ViewRegistry& vr
-    ) {
+template<typename T>
+requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
+void CatalystAdaptor::init_entry( 
+                                [[maybe_unused]]  
+                                    const T& entry
+                                , const std::string label
+                                ,       conduit_cpp::Node& node
+                                , const std::filesystem::path source_dir
+                                // , ViewRegistry& vr
+)
+{
         std::cout   << "      init_entry(ParticleBase<PLayout<" 
                     << typeid(particle_value_t<T>).name() 
                     << ","
@@ -150,29 +149,31 @@ namespace CatalystAdaptor {
     }
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
-    template<typename T>
-    requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-    void init_entry(
-                [[maybe_unused]]         T&& entry
-                ,                  const std::string label
-                , [[maybe_unused]]       conduit_cpp::Node& node
-                , [[maybe_unused]] const std::filesystem::path source_dir
-        // , ViewRegistry& vr
-    ) {
+template<typename T>
+requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
+void CatalystAdaptor::init_entry(
+            [[maybe_unused]]         T&& entry
+            ,                  const std::string label
+            , [[maybe_unused]]       conduit_cpp::Node& node
+            , [[maybe_unused]] const std::filesystem::path source_dir
+    // , ViewRegistry& vr
+)
+{
         Inform m("init_entry():");
         m << "Entry type can't be processed. ID: "<< label <<", Type: "<< typeid(std::decay_t<T>).name() <<  endl;
         m << "Channel will not be registered in Conduit Node passed to catalyst." << endl;
     }
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
-    template<typename T>
-    void init_entry( 
-          const std::shared_ptr<T>&   entry
+template<typename T>
+void CatalystAdaptor::init_entry( 
+            const std::shared_ptr<T>&   entry
         , const std::string           label
         ,       conduit_cpp::Node&    node
         , const std::filesystem::path source_dir
         // , ViewRegistry& vr 
-    ) {
+)
+{
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             init_entry(  *entry
@@ -189,16 +190,16 @@ namespace CatalystAdaptor {
         }
     }
 
-    void Execute_Particle(
-         const std::string& channelName ,
-         const auto& particleContainer
-         , const auto& R_host
-         , const auto& P_host
-         , const auto& q_host
-         , const auto& ID_host,
-         conduit_cpp::Node& node
-        ) 
-        {
+void CatalystAdaptor::Execute_Particle(
+    const std::string& channelName ,
+    const auto& particleContainer
+    , const auto& R_host
+    , const auto& P_host
+    , const auto& q_host
+    , const auto& ID_host,
+    conduit_cpp::Node& node
+)
+{
 
         // channel for particles
         auto channel = node["catalyst/channels/"+ channelName];
@@ -273,10 +274,11 @@ namespace CatalystAdaptor {
     }
 
     /* this needs to be overworked ... */
-    template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    void Execute_Field(const std::string& channelName, Field* field, 
-         Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
-         conduit_cpp::Node& node) {
+template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
+void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field, 
+    Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
+    conduit_cpp::Node& node)
+{
         static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
 
         // A) define mesh
@@ -360,8 +362,8 @@ namespace CatalystAdaptor {
 
         /* SCALAR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    template<typename T, unsigned Dim, class... ViewArgs>
-    void execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr) {
+template<typename T, unsigned Dim, class... ViewArgs>
+void CatalystAdaptor::execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
         
         
@@ -380,8 +382,8 @@ namespace CatalystAdaptor {
 
         /* VECTOR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-    void execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr) {
+template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
+void CatalystAdaptor::execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         
         const std::string channelName = "ippl_vField_" + label;
@@ -429,12 +431,12 @@ namespace CatalystAdaptor {
 
 
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
-    template<typename T>
-    requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-    void execute_entry(const T& entry
-        , const std::string label
-        , conduit_cpp::Node& node
-        , ViewRegistry& vr) {
+template<typename T>
+requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
+void CatalystAdaptor::execute_entry(const T& entry
+    , const std::string label
+    , conduit_cpp::Node& node
+    , ViewRegistry& vr) {
         std::cout   << "      execute_entry(ParticleBase<PLayout<" 
                     << typeid(particle_value_t<T>).name() 
                     << ","
@@ -486,15 +488,15 @@ namespace CatalystAdaptor {
     }
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
-    template<typename T>
-    requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-    void execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr) {
+template<typename T>
+requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
+void CatalystAdaptor::execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "  Entry type can't be processed: ID "<< label <<" "<< typeid(std::decay_t<T>).name() << std::endl;
     }
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
-    template<typename T>
-    void execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr ) {
+template<typename T>
+void CatalystAdaptor::execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr ) {
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             execute_entry(*entry, label,  node, vr);  // Dereference and dispatch to reference version
@@ -503,8 +505,8 @@ namespace CatalystAdaptor {
         }
     }
 
-    template<typename T>
-    void AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
+template<typename T>
+void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
         std::cout << "      AddSteerableChanelValue( " << steerable_suffix << "); | Type: " << typeid(T).name() << std::endl;
         
         
@@ -551,8 +553,8 @@ namespace CatalystAdaptor {
         /* ????? this should work?? */
         // if constexpr (std::is_same_v<std::remove_cvref_t<T>, double>) {
 
-    template<typename T>
-    void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
+template<typename T>
+void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
         std::cout << "      FetchSteerableChanelValue(" << steerable_suffix  << ") | Type: " << typeid(T).name() << std::endl;
 
             
@@ -623,7 +625,7 @@ namespace CatalystAdaptor {
         } 
     }
 
-    void Results(conduit_cpp::Node& results) {
+void CatalystAdaptor::Results(conduit_cpp::Node& results) {
         
         // conduit_cpp::Node results;
         catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
@@ -641,10 +643,10 @@ namespace CatalystAdaptor {
 
 /* might not even need references to registries since a copy of s shared pointer still points to the 
 right place... */
-    void Execute(
-            auto& registry_vis, auto& registry_steer,
-            int cycle, double time, int rank
-        ){
+void CatalystAdaptor::Execute(
+    auto& registry_vis, auto& registry_steer,
+    int cycle, double time, int rank
+){
         
         // add time/cycle information
         conduit_cpp::Node node;
@@ -711,7 +713,7 @@ right place... */
 
     }
 
-    void Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer) {
+void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer) {
         Inform m("Catalyst::Initialize()");
 
         conduit_cpp::Node node;
@@ -820,7 +822,7 @@ right place... */
         }
     }
 
-    void Finalize() {
+void CatalystAdaptor::Finalize() {
         conduit_cpp::Node node;
         catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
@@ -828,4 +830,4 @@ right place... */
         }
     }
 
-} // namespace CatalystAdaptor
+
