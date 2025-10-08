@@ -139,6 +139,12 @@ if (IPPL_ENABLE_CATALYST)
         target_compile_definitions(ippl PUBLIC
             IPPL_ENABLE_CATALYST 
         )
+
+        message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+        target_compile_definitions(ippl PUBLIC
+            CATALYST_ADAPTOR_ABS_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+        )
+        
         target_link_libraries(ippl PUBLIC 
             catalyst::catalyst
         )

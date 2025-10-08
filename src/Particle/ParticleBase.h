@@ -62,11 +62,6 @@
 #include "Particle/ParticleLayout.h"
 
 namespace ippl {
-    // Minimal empty base class for all ParticleBase specializations, for practical purposes
-    class ParticleBaseBase {
-    public:
-        virtual ~ParticleBaseBase() = default;
-    };
 
     /*!
      * @class ParticleBaseBase
