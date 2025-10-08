@@ -43,10 +43,10 @@ public:
             initFFTSolver();
         } else if (this->getStype() == "CG") {
             initCGSolver();
+        } else if (this->getStype() == "TG") {
+            initTGSolver();
         } else if (this->getStype() == "PCG") {
             initPCGSolver();
-        } else if (this->getStype() == "P3M") {
-            initP3MSolver();
         } else if (this->getStype() == "OPEN") {
             initOpenSolver();
         } else {
@@ -102,9 +102,9 @@ public:
             if constexpr (Dim == 2 || Dim == 3) {
                 std::get<FFTSolver_t<T, Dim>>(this->getSolver()).solve();
             }
-        } else if (this->getStype() == "P3M") {
+        } else if (this->getStype() == "TG") {
             if constexpr (Dim == 3) {
-                std::get<P3MSolver_t<T, Dim>>(this->getSolver()).solve();
+                std::get<FFTTruncatedGreenSolver_t<T, Dim>>(this->getSolver()).solve();
             }
         } else if (this->getStype() == "OPEN") {
             if constexpr (Dim == 3) {
@@ -131,7 +131,7 @@ public:
             solver.setGradient(*E_m);
         } else {
             // The periodic Poisson solver, Open boundaries solver,
-            // and the P3M solver compute the electric field directly
+            // and the TG solver compute the electric field directly
             solver.setLhs(*E_m);
         }
     }
@@ -210,10 +210,10 @@ public:
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
-    void initP3MSolver() {
+    void initTGSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
-            sp.add("output_type", P3MSolver_t<T, Dim>::GRAD);
+            sp.add("output_type", FFTTruncatedGreenSolver_t<T, Dim>::GRAD);
             sp.add("use_heffte_defaults", false);
             sp.add("use_pencils", true);
             sp.add("use_reorder", false);
@@ -221,9 +221,9 @@ public:
             sp.add("comm", ippl::p2p_pl);
             sp.add("r2c_direction", 0);
 
-            initSolverWithParams<P3MSolver_t<T, Dim>>(sp);
+            initSolverWithParams<FFTTruncatedGreenSolver_t<T, Dim>>(sp);
         } else {
-            throw std::runtime_error("Unsupported dimensionality for P3M solver");
+            throw std::runtime_error("Unsupported dimensionality for TG solver");
         }
     }
 

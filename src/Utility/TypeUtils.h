@@ -238,7 +238,7 @@ namespace ippl {
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
                                                               ,
-                                                              Kokkos::Thread
+                                                              Kokkos::Threads
 #endif
 #ifdef KOKKOS_ENABLE_SERIAL
                                                               ,

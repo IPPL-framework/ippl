@@ -3,7 +3,7 @@
 #
 # Integration tests for kokkos-related functionality.
 # -----------------------------------------------------------------------------
-file(RELATIVE_PATH _relPath "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
+file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding field integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestVectorField LABELS integration kokkos)

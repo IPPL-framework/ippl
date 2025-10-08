@@ -38,7 +38,10 @@ namespace ippl {
                 VICO_RECV   = 31000,
 
                 OPEN_SOLVER = 32000,
-                VICO_SOLVER = 32001
+                VICO_SOLVER = 32001,
+
+                // FEMVector
+                FEMVECTOR = 40000
             };
         }  // namespace tag
     }      // namespace mpi

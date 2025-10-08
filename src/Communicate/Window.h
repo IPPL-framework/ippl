@@ -33,7 +33,8 @@ namespace ippl {
             class Window {
             public:
                 Window()
-                    : count_m(-1)
+                    : win_m(MPI_WIN_NULL)
+                    , count_m(-1)
                     , attached_m(false)
                     , allocated_m(false) {}
 

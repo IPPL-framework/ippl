@@ -49,6 +49,9 @@ void CatalystAdaptor::set_node_script(
        node_path.set(file_path.string());
     }
 
+
+
+
     /* SCALAR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
@@ -717,7 +720,10 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
         Inform m("Catalyst::Initialize()");
 
         conduit_cpp::Node node;
-        const std::filesystem::path source_dir = std::filesystem::path(__FILE__).parent_path();
+        
+        
+        const std::filesystem::path source_dir =  std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu";       
+        std::cout << "using source_dir = " << source_dir.string() << std::endl;
         
         
         set_node_script( node["catalyst/scripts/script/filename"],

@@ -3,9 +3,9 @@
 
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
-#include "PoissonSolvers/P3MSolver.h"
-#include "PoissonSolvers/PoissonCG.h"
+#include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/NullSolver.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 // some typedefs
 template <unsigned Dim>
@@ -56,7 +56,9 @@ using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
                                     ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using P3MSolver_t = ConditionalType<Dim == 3, ippl::P3MSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+using FFTTruncatedGreenSolver_t =
+    ConditionalType<Dim == 3,
+                    ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
 using OpenSolver_t =
@@ -64,8 +66,8 @@ using OpenSolver_t =
 
 template <typename T = double, unsigned Dim = 3>
 using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             P3MSolver_t<T, Dim>, OpenSolver_t<T, Dim>, 
-                                             NullSolver_t<T, Dim>>;
+                                             FFTTruncatedGreenSolver_t<T, Dim>,
+                                             OpenSolver_t<T, Dim>, NullSolver_t<T, Dim>>;
 
 extern const char* TestName;
 

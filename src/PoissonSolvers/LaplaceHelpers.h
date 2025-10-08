@@ -358,7 +358,7 @@ namespace ippl {
 
     template <typename Field>
     void mult(Field& u, const double c) {
-        using view_type = Field::view_type;
+        using view_type = typename Field::view_type;
 
         view_type view = u.getView();
 

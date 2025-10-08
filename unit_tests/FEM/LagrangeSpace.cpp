@@ -19,11 +19,8 @@ struct EvalFunctor {
         : DPhiInvT(DPhiInvT)
         , absDetDPhi(absDetDPhi) {}
 
-    KOKKOS_FUNCTION const auto operator()(const size_t& i, const size_t& j,
-                    [[maybe_unused]] const ippl::Vector<Tlhs, numElemDOFs>& basis_q_k,
-                    const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k,
-                    [[maybe_unused]] int elementIndex, 
-                    [[maybe_unused]] const ippl::Vector<int, Dim> shift) const {
+    KOKKOS_FUNCTION auto operator()(const size_t& i, const size_t& j,
+                    const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
         return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
     }
 };
@@ -35,6 +32,7 @@ protected:
 
 public:
     using value_t = T;
+    static constexpr unsigned dim = Dim;
 
     static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
 
@@ -47,6 +45,9 @@ public:
     using BetterQuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
+
+    using LagrangeType = ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>;
+    using LagrangeTypeBetter = ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>;
 
     LagrangeSpaceTest()
         : ref_element()
@@ -81,11 +82,9 @@ public:
     MeshType symmetricMesh;
     const QuadratureType quadrature;
     const BetterQuadratureType betterQuadrature;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType> lagrangeSpace;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>
-        lagrangeSpaceBigger;
-    const ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>
-        symmetricLagrangeSpace;
+    const LagrangeType lagrangeSpace;
+    const LagrangeType lagrangeSpaceBigger;
+    const LagrangeTypeBetter symmetricLagrangeSpace;
 };
 
 using Precisions = TestParams::Precisions;
@@ -385,7 +384,7 @@ TYPED_TEST(LagrangeSpaceTest, getGlobalDOFIndices) {
 
 TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
     auto& lagrangeSpace      = this->lagrangeSpace;
-    const std::size_t& dim   = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order = lagrangeSpace.order;
     using T                  = typename TestFixture::value_t;
 
@@ -399,7 +398,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                 ASSERT_NEAR(lagrangeSpace.evaluateRefElementShapeFunction(1, x), x, tolerance);
             }
         } else if (dim == 2) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -415,7 +414,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
                 }
             }
         } else if (dim == 3) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -451,7 +450,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunction) {
 
 TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
     auto& lagrangeSpace      = this->lagrangeSpace;
-    const std::size_t& dim   = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order = lagrangeSpace.order;
     using T                  = typename TestFixture::value_t;
 
@@ -467,7 +466,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                 ASSERT_NEAR(grad_1[0], 1.0, tolerance);
             }
         } else if (dim == 2) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -496,7 +495,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateRefElementShapeFunctionGradient) {
                 }
             }
         } else if (dim == 3) {
-            ippl::Vector<T, lagrangeSpace.dim> point;
+            ippl::Vector<T, dim> point;
             for (T x = 0.0; x < 1.0; x += 0.05) {
                 point[0] = x;
                 for (T y = 0.0; y < 1.0; y += 0.05) {
@@ -567,154 +566,220 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using T         = typename TestFixture::value_t;
     using FieldType = typename TestFixture::FieldType;
     using BCType    = typename TestFixture::BCType;
+    using LagrangeType = typename TestFixture::LagrangeType;
 
     const auto& refElement           = this->ref_element;
     const auto& lagrangeSpace        = this->lagrangeSpaceBigger;
     auto mesh                        = this->biggerMesh;
-    const std::size_t& dim           = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order         = lagrangeSpace.order;
-    const std::size_t& numGlobalDOFs = lagrangeSpace.numGlobalDOFs();
 
     if (order == 1) {
-        if (dim == 1) {
-            // create layout
-            ippl::NDIndex<lagrangeSpace.dim> domain(
-                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
+        // create layout
+        ippl::NDIndex<dim> domain(
+            ippl::Vector<unsigned, dim>(mesh.getGridsize(0)));
 
-            // specifies decomposition; here all dimensions are parallel
-            std::array<bool, lagrangeSpace.dim> isParallel;
-            isParallel.fill(true);
+        // specifies decomposition; here all dimensions are parallel
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
-            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
-            FieldType x(mesh, layout, 1);
-            FieldType z(mesh, layout, 1);
+        FieldType x(mesh, layout, 1);
+        FieldType z(mesh, layout, 1);
 
-            // Define boundary conditions
-            BCType bcField;
-            for (unsigned int i = 0; i < 2 * dim; ++i) {
-                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
-            }
-            x.setFieldBC(bcField);
-            z.setFieldBC(bcField);
+        // Define boundary conditions
+        BCType bcField;
+        for (unsigned int i = 0; i < 2 * dim; ++i) {
+            bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+        }
+        x.setFieldBC(bcField);
+        z.setFieldBC(bcField);
 
-            int nghost  = x.getNghost();
-            auto view_x = x.getView();
+        // 1. Define the eval function for the evaluateAx function
 
-            // 1. Define the eval function for the evaluateAx function
+        const ippl::Vector<std::size_t, dim> zeroNdIndex =
+            ippl::Vector<std::size_t, dim>(0);
 
-            const ippl::Vector<std::size_t, lagrangeSpace.dim> zeroNdIndex =
-                ippl::Vector<std::size_t, lagrangeSpace.dim>(0);
+        // Inverse Transpose Transformation Jacobian
+        const ippl::Vector<T, dim> DPhiInvT =
+            refElement.getInverseTransposeTransformationJacobian(
+                lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex));
 
-            // Inverse Transpose Transformation Jacobian
-            const ippl::Vector<T, lagrangeSpace.dim> DPhiInvT =
-                refElement.getInverseTransposeTransformationJacobian(
-                    lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex));
+        // Absolute value of det Phi_K
+        const T absDetDPhi = std::abs(refElement.getDeterminantOfTransformationJacobian(
+            lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex)));
 
-            // Absolute value of det Phi_K
-            const T absDetDPhi = std::abs(refElement.getDeterminantOfTransformationJacobian(
-                lagrangeSpace.getElementMeshVertexPoints(zeroNdIndex)));
+        // Poisson equation eval function (based on the weak form)
+        EvalFunctor<T, dim, LagrangeType::numElementDOFs> eval(DPhiInvT, absDetDPhi);
 
-            // Poisson equation eval function (based on the weak form)
-            EvalFunctor<T, lagrangeSpace.dim, lagrangeSpace.numElementDOFs> eval(DPhiInvT, absDetDPhi);
+        if constexpr (dim == 1) {
+            x = 1.25;
 
-            // 2. Build the discrete poisson eqation matrix to test the assembly function against
-            Kokkos::View<T**> A_ref("A_ref", numGlobalDOFs, numGlobalDOFs);
+            x.fillHalo();
+            lagrangeSpace.evaluateLoadVector(x);
+            x.fillHalo();
 
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    if ((i == 0 || i == numGlobalDOFs - 1) || (j == 0 || j == numGlobalDOFs - 1)) {
-                        // zero boundary conditions on the stiffness matrix (essential boundary
-                        // conditions)
-                        A_ref(i, j) = 0.0;
-                    } else if (i == j) {
-                        if (i == 0 || i == numGlobalDOFs - 1) {
-                            A_ref(i, j) = 1.0;
-                        } else {
-                            A_ref(i, j) = 2.0;
-                        }
-                    } else if (i + 1 == j || j + 1 == i) {
-                        A_ref(i, j) = -1.0;
+            z = lagrangeSpace.evaluateAx(x, eval);
+            z.fillHalo();
 
-                    } else {
-                        A_ref(i, j) = 0.0;
-                    }
-                }
-            }
+            // set up for comparison
+            FieldType ref_field(mesh, layout, 1);
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            // compute the matrix A
-            Kokkos::View<T**> A("A", numGlobalDOFs, numGlobalDOFs);
+            auto ldom     = layout.getLocalNDIndex();
 
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                if (i > 0) {
-                    ippl::Vector<int, lagrangeSpace.dim> idx =
-                        lagrangeSpace.getMeshVertexNDIndex(i - 1);
-                    idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
 
-                    ippl::apply(view_x, idx) = 0.0;
+                // global coordinates
+                // We don't take into account nghost as this causes
+                // coords to be negative, which causes an overflow due
+                // to the index type.
+                // All below indices for setting the ref_field are 
+                // shifted by 1 to include the ghost (applies to all tests).
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first();
                 }
 
-                ippl::Vector<int, lagrangeSpace.dim> idx = lagrangeSpace.getMeshVertexNDIndex(i);
-                idx[0] += nghost - (x.getLayout()).getLocalNDIndex()[0].first();
+                // reference field
+                if ((coords[0] == 2) || (coords[0] == 4)) {
+                    mirror(args...) = 1.25;
+                } else {
+                    mirror(args...) = 0.0;
+                }
+            });
+            Kokkos::fence();
 
-                ippl::apply(view_x, idx) = 1.0;
+            Kokkos::deep_copy(view_ref, mirror);
 
+            // compare values with reference
+            z  = z - ref_field;
+            double err = ippl::norm(z);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
+        } else if constexpr (dim == 2) {
+            if (ippl::Comm->size() == 1) {
+                x = 1.0;
+
+                x.fillHalo();
+                lagrangeSpace.evaluateLoadVector(x);
                 x.fillHalo();
 
                 z = lagrangeSpace.evaluateAx(x, eval);
+                z.fillHalo();
 
-                z.accumulateHalo();
+                // set up for comparison
+                FieldType ref_field(mesh, layout, 1);
+                auto view_ref = ref_field.getView();
+                auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-                auto view_z = z.getView();
+                auto ldom     = layout.getLocalNDIndex();
 
-                // Set the the i-th row-vector of A to z
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    ippl::Vector<int, lagrangeSpace.dim> idx_z =
-                        lagrangeSpace.getMeshVertexNDIndex(j);
-                    idx_z[0] += nghost - (z.getLayout()).getLocalNDIndex()[0].first();
+                nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                    using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                    index_type coords[dim] = {args...};
 
-                    A(j, i) += ippl::apply(view_z, idx_z);
-                }
-            }
-
-            // Debug prints (optional)
-
-            std::cout << "A = " << std::endl;
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    std::cout << A(i, j) << " ";
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
-
-            std::cout << "A_ref = " << std::endl;
-            for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                    std::cout << std::setw(2) << A_ref(i, j) << " ";
-                }
-                std::cout << std::endl;
-            }
-
-            // Test for equivalence of A and A_ref
-
-            if (ippl::Comm->size() == 1) {
-                for (std::size_t i = 0; i < numGlobalDOFs; ++i) {
-                    for (std::size_t j = 0; j < numGlobalDOFs; ++j) {
-                        ASSERT_NEAR(A(i, j), A_ref(i, j), 1e-7);
+                    // global coordinates
+                    for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                        coords[d] += ldom[d].first();
                     }
-                    std::cout << std::endl;
-                }
-            } else {
-                // TODO make up a multi-node unit test for evalAx
-                GTEST_SKIP();
+                    
+                    // reference field
+                    if (((coords[0] == 2) && (coords[1] == 2)) ||
+                        ((coords[0] == 2) && (coords[1] == 4)) ||
+                        ((coords[0] == 4) && (coords[1] == 2)) ||
+                        ((coords[0] == 4) && (coords[1] == 4))) {
+                        mirror(args...) = 1.5;
+                    } else if (((coords[0] == 2) && (coords[1] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 2)) ||
+                        ((coords[0] == 3) && (coords[1] == 4)) ||
+                        ((coords[0] == 4) && (coords[1] == 3))) {
+                        mirror(args...) = 1.0;
+                    } else {
+                        mirror(args...) = 0.0;
+                    }
+                });
+                Kokkos::fence();
+
+                Kokkos::deep_copy(view_ref, mirror);
+
+                // compare values with reference
+                z  = z - ref_field;
+                double err = ippl::norm(z);
+
+                ASSERT_NEAR(err, 0.0, 1e-6);
             }
+        } else if constexpr (dim == 3) {
+            x = 1.5;
+
+            x.fillHalo();
+            lagrangeSpace.evaluateLoadVector(x);
+            x.fillHalo();
+
+            z = lagrangeSpace.evaluateAx(x, eval);
+            z.fillHalo();
+
+            // set up for comparison
+            FieldType ref_field(mesh, layout, 1);
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first();
+                }
+
+                // reference field
+                if (((coords[0] > 1) && (coords[0] < 5)) && 
+                    ((coords[1] > 1) && (coords[1] < 5)) && 
+                    ((coords[2] > 1) && (coords[2] < 5))) {
+                    
+                    mirror(args...) = 2.53125;
+                    
+                    if ((coords[0] == 3) || (coords[1] == 3) || (coords[2] == 3)) {
+                        mirror(args...) = 2.25;
+                    }
+
+                    if (((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 2)) ||
+                        ((coords[0] == 3) && (coords[1] == 2) && (coords[2] == 3)) ||
+                        ((coords[0] == 2) && (coords[1] == 3) && (coords[2] == 3)) ||
+                        ((coords[0] == 4) && (coords[1] == 3) && (coords[2] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 4) && (coords[2] == 3)) ||
+                        ((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 4))) {
+                        mirror(args...) = 1.5;
+                    }
+                    
+                    if ((coords[0] == 3) && (coords[1] == 3) && (coords[2] == 3)) {
+                        mirror(args...) = 0.0;
+                    }
+                } else {
+                    mirror(args...) = 0.0;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            z  = z - ref_field;
+            double err = ippl::norm(z);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
         } else {
-            // FAIL();
-            GTEST_SKIP();
+            // only 1D, 2D, 3D supported
+            FAIL();
         }
     } else {
-        // FAIL();
+        // TODO add higher-order tests when available
         GTEST_SKIP();
     }
 }
@@ -725,43 +790,43 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
     const auto& lagrangeSpace = this->symmetricLagrangeSpace;
     auto mesh                 = this->symmetricMesh;
-    const std::size_t& dim    = lagrangeSpace.dim;
+    static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order  = lagrangeSpace.order;
 
     if (order == 1) {
-        if (dim == 1) {
-            // initialize the RHS field
-            ippl::NDIndex<lagrangeSpace.dim> domain(
-                ippl::Vector<unsigned, lagrangeSpace.dim>(mesh.getGridsize(0)));
 
-            // specifies decomposition; here all dimensions are parallel
-            std::array<bool, lagrangeSpace.dim> isParallel;
-            isParallel.fill(true);
+        // initialize the RHS field
+        ippl::NDIndex<dim> domain(
+            ippl::Vector<unsigned, dim>(mesh.getGridsize(0)));
 
-            ippl::FieldLayout<lagrangeSpace.dim> layout(MPI_COMM_WORLD, domain, isParallel);
+        // specifies decomposition; here all dimensions are parallel
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
-            FieldType rhs_field(mesh, layout, 1);
-            FieldType ref_field(mesh, layout, 1);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, domain, isParallel);
 
-            // Define boundary conditions
-            BCType bcField;
-            for (unsigned int i = 0; i < 2 * dim; ++i) {
-                bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
-            }
-            rhs_field.setFieldBC(bcField);
+        FieldType rhs_field(mesh, layout, 1);
+        FieldType ref_field(mesh, layout, 1);
 
+        // Define boundary conditions
+        BCType bcField;
+        for (unsigned int i = 0; i < 2 * dim; ++i) {
+            bcField[i] = std::make_shared<ippl::ZeroFace<FieldType>>(i);
+        }
+        rhs_field.setFieldBC(bcField);
+
+        if constexpr (dim == 1) {
             rhs_field = 2.75;
 
             // call evaluateLoadVector
             rhs_field.fillHalo();
             lagrangeSpace.evaluateLoadVector(rhs_field);
-            rhs_field.accumulateHalo();
+            rhs_field.fillHalo();
 
             // set up for comparison
             auto view_ref = ref_field.getView();
             auto mirror   = Kokkos::create_mirror_view(view_ref);
 
-            int nghost    = rhs_field.getNghost();
             auto ldom     = layout.getLocalNDIndex();
 
             nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
@@ -770,17 +835,13 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
 
                 // global coordinates
                 for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
-                    coords[d] += ldom[d].first() - nghost;
+                    coords[d] += ldom[d].first();
                 }
 
                 // reference field
-
                 switch (coords[0]) {
-                    case 0:
-                        mirror(args...) = 0.0;
-                        break;
                     case 1:
-                        mirror(args...) = 1.375;
+                        mirror(args...) = 0.0;
                         break;
                     case 2:
                         mirror(args...) = 1.375;
@@ -789,6 +850,9 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
                         mirror(args...) = 1.375;
                         break;
                     case 4:
+                        mirror(args...) = 1.375;
+                        break;
+                    case 5:
                         mirror(args...) = 0.0;
                         break;
                     default:
@@ -804,11 +868,94 @@ TYPED_TEST(LagrangeSpaceTest, evaluateLoadVector) {
             double err = ippl::norm(rhs_field);
 
             ASSERT_NEAR(err, 0.0, 1e-6);
+        } else if constexpr (dim == 2) {
+            rhs_field = 3.5;
 
+            // call evaluateLoadVector
+            rhs_field.fillHalo();
+            lagrangeSpace.evaluateLoadVector(rhs_field);
+            rhs_field.fillHalo();
+
+            // set up for comparison
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first();
+                }
+
+                // reference field
+                if ((coords[0] < 2) || (coords[1] < 2) || 
+                    (coords[0] > 4) || (coords[1] > 4)) {
+                    mirror(args...) = 0.0;
+                } else {
+                    mirror(args...) = 0.875;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            rhs_field  = rhs_field - ref_field;
+            double err = ippl::norm(rhs_field);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
+
+        } else if constexpr (dim == 3) {
+
+            rhs_field = 1.25;
+
+            // call evaluateLoadVector
+            rhs_field.fillHalo();
+            lagrangeSpace.evaluateLoadVector(rhs_field);
+            rhs_field.fillHalo();
+
+            // set up for comparison
+            auto view_ref = ref_field.getView();
+            auto mirror   = Kokkos::create_mirror_view(view_ref);
+
+            auto ldom     = layout.getLocalNDIndex();
+
+            nestedViewLoop(mirror, 0, [&]<typename... Idx>(const Idx... args) {
+                using index_type       = std::tuple_element_t<0, std::tuple<Idx...>>;
+                index_type coords[dim] = {args...};
+
+                // global coordinates
+                for (unsigned int d = 0; d < lagrangeSpace.dim; ++d) {
+                    coords[d] += ldom[d].first();
+                }
+
+                // reference field
+                if ((coords[0] == 1) || (coords[1] == 1) || (coords[2] == 1) ||
+                    (coords[0] == 5) || (coords[1] == 5) || (coords[2] == 5)) {
+                    mirror(args...) = 0.0;
+                } else {
+                    mirror(args...) = 0.15625;
+                }
+            });
+            Kokkos::fence();
+
+            Kokkos::deep_copy(view_ref, mirror);
+
+            // compare values with reference
+            rhs_field  = rhs_field - ref_field;
+            double err = ippl::norm(rhs_field);
+
+            ASSERT_NEAR(err, 0.0, 1e-6);
         } else {
-            GTEST_SKIP();
+            // only dims 1, 2, 3 supported
+            FAIL();
         }
     } else {
+        // TODO add higher order unit tests when available
         GTEST_SKIP();
     }
 }

@@ -1,11 +1,20 @@
 # Add tests in ci/tests/<test-name>.yml and include here
-# Comment out tests you don't want to run
+# Add variables for your tests in order to determine what
+# is being run.
+
+variables:
+  RUN_ALL_TESTS:
+    value: "false"
+    options: ["true", "false"]
+    description: "Set to 'true' to run all possible tests."
+  RUN_TEST_JUWELS:
+    value: "true"
+    options: ["true", "false"]
+    description: "Run the compilation and tests on juwels"
 
 include:
-  - local: 'ci/tests/serial_unit.yml'
-#  - local: 'ci/tests/dummy_test.yml'
-#  - local: 'ci/tests/test_jedi.yml'
   - local: 'ci/generate/generate_report.yml'
+  - local: 'ci/tests/compile-and-test-juwels.yml'
 
 # Template for tests
 .test_template:

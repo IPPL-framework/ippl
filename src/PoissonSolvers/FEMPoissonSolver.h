@@ -19,10 +19,9 @@ namespace ippl {
             : DPhiInvT(DPhiInvT)
             , absDetDPhi(absDetDPhi) {}
 
-        KOKKOS_FUNCTION const auto operator()(
-            const size_t& i, const size_t& j, [[maybe_unused]] const Vector<Tlhs, numElemDOFs>& b_q_k,
-            const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k,
-            [[maybe_unused]] int elementIndex, [[maybe_unused]] const Vector<int, Dim> shift) const {
+        KOKKOS_FUNCTION auto operator()(
+            const size_t& i, const size_t& j,
+            const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
             return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
         }
     };
@@ -125,7 +124,7 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            EvalFunctor<Tlhs, Dim, this->lagrangeSpace_m.numElementDOFs> poissonEquationEval(
+            EvalFunctor<Tlhs, Dim, LagrangeType::numElementDOFs> poissonEquationEval(
                 DPhiInvT, absDetDPhi);
 
             // get BC type of our RHS
@@ -133,18 +132,12 @@ namespace ippl {
             FieldBC bcType = bcField[0]->getBCType();
 
             const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
-                // start a timer
-                static IpplTimings::TimerRef opTimer = IpplTimings::getTimer("operator");
-                IpplTimings::startTimer(opTimer);
-
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
                 field.fillHalo();
 
                 auto return_field = lagrangeSpace_m.evaluateAx(field, poissonEquationEval);
-
-                IpplTimings::stopTimer(opTimer);
 
                 return return_field;
             };

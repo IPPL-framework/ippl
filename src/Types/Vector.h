@@ -96,6 +96,8 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
         KOKKOS_INLINE_FUNCTION T dot(const Vector<T, Dim>& rhs) const;
+        
+        KOKKOS_INLINE_FUNCTION T Pnorm(const int p = 2) const;
 
         // Needs to be public to be a standard-layout type
         // private:

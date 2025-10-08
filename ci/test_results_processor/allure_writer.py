@@ -3,17 +3,19 @@ from typing import List
 from .model import PipelineResult, TestResult
 import json
 import uuid
+import shutil
 
 def write_allure_results(pipeline_result: PipelineResult, output_folder: Path):
     """
     Write Allure result files from a PipelineResult.
     Each TestResult becomes one <uuid>-result.json file in the output folder.
+    Also copies all attachment files into the output folder with renamed source names.
     """
     output_folder.mkdir(parents=True, exist_ok=True)
 
     for suite in pipeline_result.suites:
         for test in suite.tests:
-            allure_result = convert_testresult_to_allure(test)
+            allure_result = convert_testresult_to_allure(test, output_folder)
             file_name = f"{test.uuid}-result.json"
             file_path = output_folder / file_name
 
@@ -22,12 +24,31 @@ def write_allure_results(pipeline_result: PipelineResult, output_folder: Path):
 
             print(f"Wrote Allure result: {file_path}")
 
-def convert_testresult_to_allure(test: TestResult) -> dict:
+def convert_testresult_to_allure(test: TestResult, output_folder: Path) -> dict:
     """
     Convert internal TestResult to Allure's result JSON format.
-    This is a minimal mapping.
+    Copies and remaps attachments to the output folder.
     """
     allure_status = convert_status_to_allure(test.status)
+    attachments_json = []
+
+    for attachment in test.attachments or []:
+        ext = Path(attachment.source).suffix or ".txt"
+        allure_attachment_name = f"{uuid.uuid4()}-attachment{ext}"
+        dest_path = output_folder / allure_attachment_name
+        try:
+            shutil.copy(attachment.source, dest_path)
+        except FileNotFoundError:
+            print(f"Warning: attachment not found: {attachment.source}")
+            continue
+
+        attachments_json.append({
+            "name": attachment.name,
+            "source": allure_attachment_name,
+            "type": attachment.type or "text/plain"
+        })
+
+
 
     allure_result = {
         "uuid": test.uuid,
@@ -54,13 +75,7 @@ def convert_testresult_to_allure(test: TestResult) -> dict:
             }
         ],
         
-        "attachments": [
-            {
-                "name": attachment.name,
-                "source": attachment.source,
-                "type": attachment.type
-            } for attachment in (test.attachments or [])
-        ],
+        "attachments": attachments_json,
     }
 
     return allure_result

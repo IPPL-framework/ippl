@@ -6,7 +6,7 @@ Independent Parallel Particle Layer (IPPL) is a performance portable C++ library
 
 All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the `variant` header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the [GNU Standard Library](https://github.com/gcc-mirror/gcc); note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.
 
-# CI/CD (under construction)
+# CI/CD
 Check out the latest [results](https://ippl-bc4558.pages.jsc.fz-juelich.de/)
 
 # Installing IPPL and its dependencies
@@ -46,9 +46,9 @@ The relevant options of IPPL are
 - `IPPL_ENABLE_TESTS`, default `OFF`
 - `IPPL_ENABLE_UNIT_TESTS`, default `OFF`
 - `IPPL_ENABLE_ALPINE`, default `OFF`
-- `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can turned on for GPU builds where the use of the system-provided variant doesn't work.  
-- `IPPL_ENABLE_SANITIZER, default `OFF`
-- 
+- `USE_ALTERNATIVE_VARIANT`, default `OFF`. Can be turned on for GPU builds where the use of the system-provided variant doesn't work.  
+- `IPPL_ENABLE_SANITIZER`, default `OFF`
+  
 Furthermore, be aware of `CMAKE_BUILD_TYPE`, which can be either
 - `Release` for optimized builds
 - `RelWithDebInfo` for optimized builds with debug info (default)
@@ -113,9 +113,9 @@ cmake .. \
       -DIPPL_ENABLE_TESTS=ON \
       -DIPPL_ENABLE_FFT=ON  \
       -DIPPL_ENABLE_SOLVERS=ON \
-      -DIPPL_ENABLE_ALPINE=OFF \
-      -DHeffte_ENABLE_ROCM=ON\
-      -DHeffte_ENABLE_GPU_AWARE_MPI=ON \
+      -DIPPL_ENABLE_ALPINE=ON \
+      -DHeffte_ENABLE_ROCM=ON \
+      -DHeffte_ENABLE_GPU_AWARE_MPI=OFF \
       -DCMAKE_EXE_LINKER_FLAGS="-L/opt/cray/pe/mpich/8.1.28/ofi/amd/5.0/lib -L/opt/cray/pe/mpich/8.1.28/gtl/lib -L/opt/cray/pe/libsci/24.03.0/AMD/5.0/x86_64/lib -L/opt/cray/pe/dsmml/0.3.0/dsmml
 /lib -L/opt/cray/xpmem/2.8.2-1.0_5.1__g84a27a5.shasta/lib64 -lsci_amd_mpi -lsci_amd -ldl -lmpi_amd -lmpi_gtl_hsa -ldsmml -lxpmem -L/opt/rocm-6.0.3/lib/lib -L/opt/rocm-6.0.3/lib/lib64 -L/opt/roc
 m-6.0.3/lib/llvm/lib"

@@ -1,35 +1,17 @@
-build/
-doc/html
-doc/latex
-manual/*.aux
-manual/*.log
-manual/*.toc
-manual/*.idx
-manual/*.lof
-manual/*.lot
-manual/ippl_user_guide.pdf
-build*/
 
+.vscode
+
+.cache
 *pycache*
+*__pycache__
+
 *png
 *svg
-
-.gitignore
 *puml*
-cmake/
-doc/
+
 ./old
 *old*
 
-# ignore build directories
+build/
 build*/
 
-# ignore .vscode directory
-.vscode
-
-compile.sh
-cmake.sh
-run_penningtrap.sh
-launch_paraview.sh
-doc/Doxyfile
-cmake/Dependencies.cmake

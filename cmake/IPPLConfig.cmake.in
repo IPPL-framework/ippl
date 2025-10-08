@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Kokkos CONFIG REQUIRED)
+find_dependency(MPI REQUIRED)
+
+if(@IPPL_ENABLE_FFT@)
+  find_dependency(Heffte CONFIG REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/ipplTargets.cmake")

@@ -64,7 +64,9 @@ namespace ippl {
         , flayout_m(fl)
     {   
         nRecvs_m.resize(Comm->size());
-        window_m.create(*Comm, nRecvs_m.begin(), nRecvs_m.end());
+        if (Comm->size() > 1) {
+            window_m.create(*Comm, nRecvs_m.begin(), nRecvs_m.end());
+        }
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>

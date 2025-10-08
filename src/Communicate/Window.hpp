@@ -11,7 +11,10 @@ namespace ippl {
 
             template <TargetComm Target>
             Window<Target>::~Window() {
-                MPI_Win_free(&win_m);
+                if (win_m != MPI_WIN_NULL) {
+                    MPI_Win_free(&win_m);
+                    win_m = MPI_WIN_NULL;
+                }
             }
 
             template <TargetComm Target>
