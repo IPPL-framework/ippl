@@ -217,7 +217,7 @@ TYPED_TEST(GatherScatterTest, ScatterSimpleTest) {
 
     // Create and initialize a field/mesh.
     using Mesh_t    = typename TestFixture::mesh_type;
-    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering>;
+    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::exec_space>;
     FieldType field;
     field.initialize(this->mesh, this->layout);
     
@@ -249,7 +249,7 @@ TYPED_TEST(GatherScatterTest, ScatterCustomRangeTest) {
     this->fillAttributeQ(1.0);
 
     using Mesh_t   = typename TestFixture::mesh_type;
-    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering>;
+    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::exec_space>;
     FieldType field;
     field.initialize(this->mesh, this->layout);
     field = 0.0;
@@ -296,7 +296,7 @@ TYPED_TEST(GatherScatterTest, ScatterCustomHashTest) {
 
     // Create and initialize a field/mesh.
     using Mesh_t   = typename TestFixture::mesh_type;
-    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering>;
+    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::exec_space>;
     FieldType field;
     field.initialize(this->mesh, this->layout);
     field = 0.0;
