@@ -76,6 +76,8 @@ void CatalystAdaptor::init_entry(
         conduit_cpp::Node args = node[script + "/args"];
         args.append().set_string("--channel_name");
         args.append().set_string(channelName);
+        args.append().set_string("--experiment_name");
+        args.append().set_string(TestName);
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
@@ -107,6 +109,8 @@ void CatalystAdaptor::init_entry(
         conduit_cpp::Node args = node[script + "/args"];
         args.append().set_string("--channel_name");
         args.append().set_string(channelName);
+        args.append().set_string("--experiment_name");
+        args.append().set_string(TestName);
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
@@ -145,6 +149,9 @@ void CatalystAdaptor::init_entry(
             conduit_cpp::Node args = node[script + "/args"];
             args.append().set_string("--channel_name");
             args.append().set_string(channelName);
+            args.append().set_string("--experiment_name");
+            args.append().set_string(TestName);
+
 
             conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
             script_args.append().set_string(channelName);
@@ -767,6 +774,8 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
             m << "catalyst PNG extract DEACTIVATED" << endl;
         }
 
+        args.append().set_string("--experiment_name");
+        args.append().set_string(TestName);
 
         const char* catalyst_vtk = std::getenv("IPPL_CATALYST_VTK");
 

@@ -167,12 +167,16 @@ public:
 
         auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
-        auto myR_vis = MakeRegistry<"2ions",
-                                    "2electrostatic",
-                                    "2density">
+        auto myR_vis = MakeRegistry<"ions",
+                                    "electrostatic",
+                                    "density"
+                                    // ,"potential"
+                                    >
                                     (this->pcontainer_m, 
                                     this->fcontainer_m->getE(), 
-                                    this->fcontainer_m->getRho() );
+                                    this->fcontainer_m->getRho()
+                                     //, this->fcontainer_m->getRho() 
+                                );
 
         CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
 
@@ -361,15 +365,7 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
-
-
-        // /* Field solve */ vis potential
-        // IpplTimings::startTimer(SolveTimer);
-        // this->fsolver_m->runSolver();
-        // IpplTimings::stopTimer(SolveTimer);
-
-        
-        
+      
         
         
 #ifdef IPPL_ENABLE_CATALYST
@@ -380,9 +376,9 @@ public:
                                         (magnetic_scale,
                                          electric_scale);
         
-        auto myR_vis = MakeRegistry<"2ions",
-                                    "2electrostatic",
-                                    "2density">
+        auto myR_vis = MakeRegistry<"ions",
+                                    "electrostatic",
+                                    "density">
                                     (pc, 
                                     this->fcontainer_m->getE(), 
                                     this->fcontainer_m->getRho() );
@@ -423,6 +419,24 @@ public:
 
         // gather E field
         this->grid2par();
+
+
+        
+
+
+// #ifdef IPPL_ENABLE_CATALYST
+//         auto myR_vis2 = MakeRegistry<"potential">
+//                                     (this->fcontainer_m->getRho() );
+
+//         CatalystAdaptor::Execute(*myR_vis2, *myR_steer, it, this->time_m, ippl::Comm->rank());
+// #endif
+
+
+
+
+
+
+
 
         IpplTimings::startTimer(PTimer);
         auto R2view = pc->R.getView();

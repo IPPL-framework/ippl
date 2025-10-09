@@ -152,7 +152,10 @@ arg_list = paraview.catalyst.get_args()
 # print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
+
+parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parsed = parser.parse_args(arg_list)
+exp_string = parsed.experiment_name
 print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
@@ -263,7 +266,7 @@ options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
-options.ExtractsOutputDirectory = 'data_png_extracts2'
+options.ExtractsOutputDirectory = 'data_png_extracts_' + exp_string
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     from paraview.simple import SaveExtractsUsingCatalystOptions

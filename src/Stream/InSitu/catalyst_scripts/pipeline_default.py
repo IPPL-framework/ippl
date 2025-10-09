@@ -80,7 +80,9 @@ parser.add_argument("--channel_names", nargs="*",
                      help="Pass All Channel Names for which we need to update the privial producer each round")
 parser.add_argument("--VTKextract", type=bool, default=False, help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
+parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parsed = parser.parse_args(arg_list)
+exp_string = parsed.experiment_name
 print_info(f"Parsed channel_names:           {parsed.channel_names}")
 print_info(f"Parsed VTK extract options:     {parsed.VTKextract}")
 print_info(f"Parsed steering option:         {parsed.steer}")
@@ -121,7 +123,7 @@ options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
-options.ExtractsOutputDirectory = 'data_vtk_extracts'
+options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
 
 
 
