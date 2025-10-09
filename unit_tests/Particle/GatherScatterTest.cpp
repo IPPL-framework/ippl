@@ -40,9 +40,9 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
         : ippl::ParticleBase<PLayout>(playout) {
         this->addAttribute(Q);
     }
-    ~Bunch() {}
+    ~Bunch() = default;
 
-    typedef ippl::ParticleAttrib<double> charge_container_type;
+    typedef ippl::ParticleAttrib<double, typename PLayout::position_execution_space> charge_container_type;
     charge_container_type Q;
 };
 
@@ -65,7 +65,7 @@ public:
     std::array<T, Dim> domain;
     flayout_type layout;
     mesh_type mesh;
-    playout_type playout;
+    std::shared_ptr<playout_type> playout;    
     std::shared_ptr<bunch_type> bunch;
 
     // Particle counts for the tests.
@@ -101,8 +101,8 @@ public:
             origin[d] = 0;
         }
         mesh    = mesh_type(owned_tu, hx_vec, origin);
-        playout = playout_type(layout, mesh);
-        bunch   = std::make_shared<bunch_type>(playout);
+        playout = std::make_shared<playout_type>(layout, mesh);
+        bunch   = std::make_shared<bunch_type>(*playout);
 
         // Set periodic boundary conditions.
         bunch->setParticleBC(ippl::BC::PERIODIC);
@@ -161,7 +161,7 @@ TYPED_TEST(GatherScatterTest, GatherTestReplace) {
     this->fillAttributeQ(10.0);
 
     using Mesh_t   = typename TestFixture::mesh_type;
-    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::ExecSpace>;
+    using FieldType = ippl::Field<typename TestFixture::scalar_type, TestFixture::dim, Mesh_t, typename Mesh_t::DefaultCentering, typename TestFixture::exec_space>;
     FieldType field;
     field.initialize(this->mesh, this->layout);
     field = 1.0;
