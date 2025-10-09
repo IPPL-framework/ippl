@@ -83,36 +83,78 @@ $(function() {
 <div class="textblock"><p ><a class="anchor" id="md__github_workspace_README"></a> <a href="https://doi.org/10.5281/zenodo.8389192"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg" alt="DOI" style="pointer-events: none;" class="inline"/></a> <a href="https://github.com/IPPL-framework/ippl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/IPPL-framework/ippl" alt="License" class="inline"/></a></p>
 <h1><a class="anchor" id="autotoc_md0"></a>
 Independent Parallel Particle Layer (IPPL)</h1>
+<h2><a class="anchor" id="autotoc_md1"></a>
+Table of Contents</h2>
+<ul>
+<li>Independent Parallel Particle Layer (IPPL)<ul>
+<li>Table of Contents</li>
+</ul>
+</li>
+<li>CI/CD</li>
+<li>Installing IPPL and its dependencies<ul>
+<li>Requirements<ul>
+<li>Optional requirements</li>
+</ul>
+</li>
+<li>Compilation<ul>
+<li>None of the options have to be set explicitly, all have a default.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p ><a class="el" href="dir_687bdf86e8e626c2168c3a2d1c125116.html">Examples</a></p><ul>
+<li>CMakeUserPresets</li>
+<li>Serial debug build with tests and newest Kokkos</li>
+<li>OpenMP release build with alpine and FFTW</li>
+<li>Cuda alpine release build</li>
+<li>HIP release build (LUMI)</li>
+</ul>
+<p >Contributions</p><ul>
+<li>Citing IPPL</li>
+</ul>
+<p >Job scripts for running on Merlin and Gwendolen (at PSI)</p><ul>
+<li>Merlin CPU (MPI + OpenMP)</li>
+<li>Gwendolen GPU</li>
+<li>LUMI GPU partition</li>
+</ul>
+<p >Profiling IPPL MPI calls</p><ul>
+<li>Build Instructions<ul>
+<li>MERLIN 7 (PSI)</li>
+<li>ALPS (CSCS)</li>
+</ul>
+</li>
+</ul>
 <p >Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of <a class="el" href="namespaceKokkos.html">Kokkos</a> (<a href="https://github.com/kokkos/kokkos">https://github.com/kokkos/kokkos</a>), HeFFTe (<a href="https://github.com/icl-utk-edu/heffte">https://github.com/icl-utk-edu/heffte</a>), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).</p>
 <p >All IPPL releases (&lt; 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the <code>variant</code> header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the <a href="https://github.com/gcc-mirror/gcc">GNU Standard Library</a>; note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.</p>
-<h1><a class="anchor" id="autotoc_md1"></a>
+<h1><a class="anchor" id="autotoc_md2"></a>
 CI/CD</h1>
 <p >Check out the latest <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">results</a></p>
-<h1><a class="anchor" id="autotoc_md2"></a>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Installing IPPL and its dependencies</h1>
 <p >All the new developments of IPPL are merged into the <code>master</code> branch which can make it potentially unstable from time to time. So if you want a stable and more tested version please checkout the tagged branch correspodning to the latest release (e.g. <code>git checkout tags/IPPL-x.x.x</code>). Otherwise if you want the latest developments go with the master with the above caveat in mind.</p>
-<h2><a class="anchor" id="autotoc_md3"></a>
+<h2><a class="anchor" id="autotoc_md4"></a>
 Requirements</h2>
 <ul>
 <li><a href="https://cmake.org/download/">CMake</a></li>
 <li>A C++ compilation toolchain (GPU-capable for GPU builds, e.g. <a href="https://developer.nvidia.com/cuda-downloads">nvcc</a>, [clang]() or <a href="https://rocm.docs.amd.com/en/docs-5.0.2/reference/rocmcc/rocmcc.html">rocmcc</a>)</li>
 <li>MPI (GPU-aware if building for GPUs)</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md4"></a>
+<h3><a class="anchor" id="autotoc_md5"></a>
 Optional requirements</h3>
 <ul>
 <li>FFTW</li>
 <li>CuFFT</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Compilation</h2>
 <p >IPPL is a CMake Project and can be configured by passing options in CMake syntax: </p><div class="fragment"><div class="line">cmake &lt;src_dir&gt; -D&lt;option&gt;=&lt;value&gt;</div>
-</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md6"></a>
+</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md7"></a>
 None of the options have to be set explicitly, all have a default.</h4>
 <p >The relevant options of IPPL are</p><ul>
 <li>IPPL_PLATFORMS, can be one of <code>SERIAL, OPENMP, CUDA, "OPENMP;CUDA"</code>, default <code>SERIAL</code></li>
-<li><code>Kokkos_VERSION</code>, default <code>4.1.00</code></li>
-<li><code>Heffte_VERSION</code>, default <code>MASTER</code><ul>
+<li><code>Kokkos_VERSION</code>, default <code>4.5.00</code></li>
+<li><code>Heffte_VERSION</code>, default <code>4.7.1</code><ul>
 <li>If set to <code>MASTER</code>, an additional flag <code>Heffte_COMMIT_HASH</code> can be set, default <code>9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda</code></li>
 <li>Currently, this is the only compatible commit of Heffte</li>
 </ul>
@@ -128,29 +170,48 @@ None of the options have to be set explicitly, all have a default.</h4>
 <li><code>IPPL_ENABLE_TESTS</code>, default <code>OFF</code></li>
 <li><code>IPPL_ENABLE_UNIT_TESTS</code>, default <code>OFF</code></li>
 <li><code>IPPL_ENABLE_ALPINE</code>, default <code>OFF</code></li>
-<li><code>USE_ALTERNATIVE_VARIANT</code>, default <code>OFF</code>. Can be turned on for GPU builds where the use of the system-provided variant doesn't work. <br  />
+<li><code>IPPL_USE_ALTERNATIVE_VARIANT</code>, default <code>OFF</code>. Can be turned on for GPU builds where the use of the system-provided variant doesn't work. <br  />
 </li>
 <li><code>IPPL_ENABLE_SANITIZER</code>, default <code>OFF</code></li>
 </ul>
+<p ><code><a class="el" href="namespaceKokkos.html">Kokkos</a></code> and <code>Heffte</code> by default will try to use version that are found on the sytem, if the system has <code>kokkos@4.6</code> and you set <code>Kokkos_VERSION=4.5</code> then cmake's find_package will consider the system version a match (newer than requested) and use it. The same applies for <code>Heffte</code>. You can override the variable to checkout any version by setting a git tag/sha/branch such as </p><div class="fragment"><div class="line">cmake -DKokkos_version=git.4.7.01 -DHeffte_VERSION=git.v2.4.1 ...  </div>
+<div class="line"># or for a very specific version </div>
+<div class="line">cmake -DHeffte_VERSION=git.9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda ...  </div>
+</div><!-- fragment --><p> Note that by default, <a class="el" href="namespaceKokkos.html">Kokkos</a> git tags use a format <code>x.x.xx (eg. 4.7.01)</code> and Heffte git tags (extra 'v') are of the form <code>vx.x.x (eg. v2.4.1)</code></p>
 <p >Furthermore, be aware of <code>CMAKE_BUILD_TYPE</code>, which can be either</p><ul>
 <li><code>Release</code> for optimized builds</li>
 <li><code>RelWithDebInfo</code> for optimized builds with debug info (default)</li>
 <li><code>Debug</code> for debug builds (with <a href="https://gcc.gnu.org/onlinedocs/gcc-13.2.0/gcc/Instrumentation-Options.html"><b>Sanitizers enabled</b></a>)</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md7"></a>
+<h3><a class="anchor" id="autotoc_md8"></a>
 Examples</h3>
 <p >Download and setup a build directory: </p><div class="fragment"><div class="line">https://github.com/IPPL-framework/ippl</div>
 <div class="line">cd ippl</div>
 <div class="line">mkdir build</div>
 <div class="line">cd build</div>
-</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md8"></a>
+</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md9"></a>
+CMakeUserPresets</h4>
+<p >In the root IPPL source folder, there is a cmake user presets file which can be used to set some default cmake settings, they may be used in the following way </p><div class="fragment"><div class="line">cmake --prefix=release-testing ...</div>
+</div><!-- fragment --><p> This will set the following variables automatically (exact values may change over time) </p><div class="fragment"><div class="line">&quot;IPPL_ENABLE_TESTS&quot;: &quot;ON&quot;,</div>
+<div class="line">&quot;IPPL_ENABLE_UNIT_TESTS&quot;: &quot;ON&quot;</div>
+<div class="line">&quot;BUILD_SHARED_LIBS&quot;: &quot;ON&quot;,</div>
+<div class="line">&quot;CMAKE_BUILD_TYPE&quot;: &quot;Release&quot;,</div>
+<div class="line">&quot;Kokkos_VERSION_DEFAULT&quot;: &quot;4.5.01&quot;,</div>
+<div class="line">&quot;Heffte_VERSION_DEFAULT&quot;: &quot;2.4.0&quot;,</div>
+<div class="line">&quot;IPPL_PLATFORMS&quot;: &quot;OPENMP;CUDA&quot;,</div>
+<div class="line">&quot;IPPL_ENABLE_FFT&quot;: &quot;ON&quot;,</div>
+<div class="line">&quot;IPPL_ENABLE_ALPINE&quot;: &quot;ON&quot;,</div>
+<div class="line">&quot;IPPL_ENABLE_COSMOLOGY&quot;: &quot;ON&quot;,</div>
+<div class="line">&quot;IPPL_USE_STANDARD_FOLDERS&quot;: &quot;OFF&quot;</div>
+</div><!-- fragment --><p> Users are encouraged to define additional sets of flags and create presets for them.</p>
+<h4><a class="anchor" id="autotoc_md10"></a>
 Serial debug build with tests and newest Kokkos</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Debug \</div>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
 <div class="line">    -DIPPL_ENABLE_TESTS=True \</div>
 <div class="line">    -DKokkos_VERSION=4.2.00</div>
-</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md9"></a>
+</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md11"></a>
 OpenMP release build with alpine and FFTW</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
@@ -161,7 +222,7 @@ OpenMP release build with alpine and FFTW</h4>
 <div class="line">    -DIPPL_ENABLE_TESTS=ON \</div>
 <div class="line">    -DIPPL_PLATFORMS=openmp \</div>
 <div class="line">    -DHeffte_ENABLE_FFTW=True</div>
-</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md10"></a>
+</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md12"></a>
 Cuda alpine release build</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
@@ -169,11 +230,11 @@ Cuda alpine release build</h4>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
 <div class="line">    -DIPPL_ENABLE_FFT=ON \</div>
 <div class="line">    -DIPPL_ENABLE_TESTS=ON \</div>
-<div class="line">    -DUSE_ALTERNATIVE_VARIANT=ON \</div>
+<div class="line">    -DIPPL_USE_ALTERNATIVE_VARIANT=ON \</div>
 <div class="line">    -DIPPL_ENABLE_SOLVERS=ON \</div>
 <div class="line">    -DIPPL_ENABLE_ALPINE=True \</div>
 <div class="line">    -DIPPL_PLATFORMS=cuda</div>
-</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md11"></a>
+</div><!-- fragment --> <h4><a class="anchor" id="autotoc_md13"></a>
 HIP release build (LUMI)</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">      -DCMAKE_BUILD_TYPE=Release \</div>
@@ -207,43 +268,93 @@ HIP release build (LUMI)</h4>
 <li><code>AMD_GFX90A</code> (LUMI machine)</li>
 <li><code>HOPPER90</code> (Merlin7 GPUs)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md12"></a>
+<h1><a class="anchor" id="autotoc_md14"></a>
 Contributions</h1>
 <p >We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.</p>
 <p >For larger projects we recommend to fork the main repository and then submit a pull request from it. More information regarding github workflow for forks can be found in this <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks">page</a> and how to submit a pull request from a fork can be found <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork">here</a>. Please follow the coding guidelines as mentioned in this <a href="https://github.com/IPPL-framework/ippl/blob/master/WORKFLOW.md">page</a>.</p>
 <p >You can add an upstream to be able to get all the latest changes from the master. For example, if you are working with a fork of the main repository, you can add the upstream by: </p><div class="fragment"><div class="line">$ git remote add upstream git@github.com:IPPL-framework/ippl.git</div>
 </div><!-- fragment --><p> You can then easily pull by typing </p><div class="fragment"><div class="line">$ git pull upstream master</div>
-<div class="line">````</div>
-<div class="line">All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please</div>
-<div class="line">take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).</div>
+</div><!-- fragment --><p> All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please take a look at this <a href="https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md">page</a>.</p>
+<h2><a class="anchor" id="autotoc_md15"></a>
+Citing IPPL</h2>
+<div class="fragment"><div class="line">@inproceedings{muralikrishnan2024scaling,</div>
+<div class="line">  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications</div>
+<div class="line">         through mini-apps targeting exascale architectures},</div>
+<div class="line">  author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael</div>
+<div class="line">          and Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas},</div>
+<div class="line">  booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)},</div>
+<div class="line">  pages={26--38},</div>
+<div class="line">  year={2024},</div>
+<div class="line">  organization={SIAM}</div>
+<div class="line">}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md16"></a>
+Job scripts for running on Merlin and Gwendolen (at PSI)</h1>
+<p >You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm. More documentation on the local cluster can be found <a href="https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html">here</a> (need to be in the PSI network to access).</p>
+<h2><a class="anchor" id="autotoc_md17"></a>
+Merlin CPU (MPI + OpenMP)</h2>
+<p >For example, to run a job on 1 MPI node, with 44 OpenMP threads: </p><div class="fragment"><div class="line">#!/bin/bash</div>
+<div class="line">#SBATCH --partition=hourly      # Using &#39;hourly&#39; will grant higher priority</div>
+<div class="line">#SBATCH --nodes=1               # No. of nodes</div>
+<div class="line">#SBATCH --ntasks-per-node=1     # No. of MPI ranks per node. Merlin CPU nodes have 44 cores</div>
+<div class="line">#SBATCH --cpus-per-task=44      # No. of OMP threads</div>
+<div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
+<div class="line">#SBATCH --hint=nomultithread    # Without hyperthreading</div>
+<div class="line">##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</div>
 <div class="line"> </div>
-<div class="line">## Citing IPPL</div>
-</div><!-- fragment --><p> @inproceedings{muralikrishnan2024scaling, title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications through mini-apps targeting exascale architectures}, author={Muralikrishnan, Sriramkrishnan and Frey, Matthias and Vinciguerra, Alessandro and Ligotino, Michael and Cerfon, Antoine J and Stoyanov, Miroslav and Gayatri, Rahulkumar and Adelmann, Andreas}, booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)}, pages={26&ndash;38}, year={2024}, organization={SIAM} } </p><div class="fragment"><div class="line"># Job scripts for running on Merlin and Gwendolen (at PSI)</div>
-<div class="line">You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm.</div>
-<div class="line">More documentation on the local cluster can be found [here](https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html) (need to be in the PSI network to access).</div>
+<div class="line">#SBATCH --output=&lt;output_file_name&gt;.out  # Name of output file</div>
+<div class="line">#SBATCH --error=&lt;error_file_name&gt;.err    # Name of error file</div>
 <div class="line"> </div>
-<div class="line">## Merlin CPU (MPI + OpenMP)</div>
-<div class="line">For example, to run a job on 1 MPI node, with 44 OpenMP threads:</div>
-</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;partition=hourly # Using 'hourly' will grant higher priority #SBATCH &ndash;nodes=1 # No. of nodes #SBATCH &ndash;ntasks-per-node=1 # No. of MPI ranks per node. Merlin CPU nodes have 44 cores #SBATCH &ndash;cpus-per-task=44 # No. of OMP threads #SBATCH &ndash;time=00:05:00 # Define max time job will run (e.g. here 5 mins) #SBATCH &ndash;hint=nomultithread # Without hyperthreading </p>
-<h2><a class="anchor" id="autotoc_md13"></a>
-SBATCH –exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</h2>
-<p >#SBATCH &ndash;output=&lt;output_file_name&gt;.out # Name of output file #SBATCH &ndash;error=&lt;error_file_name&gt;.err # Name of error file</p>
-<p >export OMP_NUM_THREADS=44 export OMP_PROC_BIND=spread export OMP_PLACES=threads</p>
-<h1><a class="anchor" id="autotoc_md14"></a>
-need to pass the –cpus-per-task option to srun otherwise will not use more than 1 core per task</h1>
-<h1><a class="anchor" id="autotoc_md15"></a>
-(see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting–ccpus-per-task)</h1>
-<p >srun &ndash;cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt; </p><div class="fragment"><div class="line">## Gwendolen GPU</div>
-<div class="line">For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node):</div>
-</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;time=00:05:00 # Define max time job will run (e.g. here 5 mins) #SBATCH &ndash;nodes=1 # No. of nodes (there is only 1 node on Gwendolen) #SBATCH &ndash;ntasks=4 # No. of tasks (max. 8) #SBATCH &ndash;clusters=gmerlin6 # Specify that we are running on the GPU cluster #SBATCH &ndash;partition=gwendolen # Running on the Gwendolen partition of the GPU cluster #SBATCH &ndash;account=gwendolen </p>
-<h2><a class="anchor" id="autotoc_md16"></a>
-SBATCH –exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</h2>
-<p >#SBATCH &ndash;gpus=4 # No. of GPUs (max. 8)</p>
-<p >#SBATCH &ndash;output=&lt;output_file_name&gt;.out # Name of output file #SBATCH &ndash;error=&lt;error_file_name&gt;.err # Name of error file</p>
-<p >srun ./&lt;your_executable&gt; &lt;args&gt; &ndash;kokkos-map-device-id-by=mpi_rank </p><div class="fragment"><div class="line">## LUMI GPU partition</div>
-<div class="line">For example, to run a job on 8 nodes with 8 GPUs each:</div>
-</div><!-- fragment --><p> #!/bin/bash #SBATCH &ndash;job-name=TestGaussian #SBATCH &ndash;error=TestGaussian-j.error #SBATCH &ndash;output=TestGaussian-j.out #SBATCH &ndash;partition=dev-g # partition name #SBATCH &ndash;time=00:10:00 #SBATCH &ndash;nodes 8 #SBATCH &ndash;ntasks-per-node=8 # 8 MPI ranks per node, 64 total (8x8) #SBATCH &ndash;gpus-per-node=8 # Allocate one gpu per MPI rank per node #SBATCH &ndash;account=project_xxx #SBATCH &ndash;hint=nomultithread module load LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03 CPU_BIND="map_cpu:49,57,17,25,1,9,33,41" export MPICH_GPU_SUPPORT_ENABLED=1 ulimit -s unlimited export EXE_DIR=/users/adelmann/sandbox/vico-paper/build/test/solver cat &lt;&lt; EOF &gt; select_gpu #!/bin/bash export ROCR_VISIBLE_DEVICES=$SLURM_LOCALID exec $* EOF chmod +x ./select_gpu srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY &ndash;info 5 rm -rf ./select_gpu ```</p>
-<h1><a class="anchor" id="autotoc_md17"></a>
+<div class="line">export OMP_NUM_THREADS=44</div>
+<div class="line">export OMP_PROC_BIND=spread</div>
+<div class="line">export OMP_PLACES=threads</div>
+<div class="line"> </div>
+<div class="line"># need to pass the --cpus-per-task option to srun otherwise will not use more than 1 core per task</div>
+<div class="line"># (see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting--ccpus-per-task)</div>
+<div class="line"> </div>
+<div class="line">srun --cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt;</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md18"></a>
+Gwendolen GPU</h2>
+<p >For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node): </p><div class="fragment"><div class="line">#!/bin/bash</div>
+<div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
+<div class="line">#SBATCH --nodes=1               # No. of nodes (there is only 1 node on Gwendolen)</div>
+<div class="line">#SBATCH --ntasks=4              # No. of tasks (max. 8)</div>
+<div class="line">#SBATCH --clusters=gmerlin6     # Specify that we are running on the GPU cluster</div>
+<div class="line">#SBATCH --partition=gwendolen   # Running on the Gwendolen partition of the GPU cluster</div>
+<div class="line">#SBATCH --account=gwendolen</div>
+<div class="line">##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</div>
+<div class="line">#SBATCH --gpus=4                # No. of GPUs (max. 8)</div>
+<div class="line"> </div>
+<div class="line">#SBATCH --output=&lt;output_file_name&gt;.out  # Name of output file</div>
+<div class="line">#SBATCH --error=&lt;error_file_name&gt;.err    # Name of error file</div>
+<div class="line"> </div>
+<div class="line">srun ./&lt;your_executable&gt; &lt;args&gt; --kokkos-map-device-id-by=mpi_rank</div>
+</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md19"></a>
+LUMI GPU partition</h2>
+<p >For example, to run a job on 8 nodes with 8 GPUs each: </p><div class="fragment"><div class="line">#!/bin/bash</div>
+<div class="line">#SBATCH --job-name=TestGaussian</div>
+<div class="line">#SBATCH --error=TestGaussian-%j.error</div>
+<div class="line">#SBATCH --output=TestGaussian-%j.out</div>
+<div class="line">#SBATCH --partition=dev-g  # partition name</div>
+<div class="line">#SBATCH --time=00:10:00</div>
+<div class="line">#SBATCH --nodes 8</div>
+<div class="line">#SBATCH --ntasks-per-node=8     # 8 MPI ranks per node, 64 total (8x8)</div>
+<div class="line">#SBATCH --gpus-per-node=8       # Allocate one gpu per MPI rank per node</div>
+<div class="line">#SBATCH --account=project_xxx</div>
+<div class="line">#SBATCH --hint=nomultithread</div>
+<div class="line">module load  LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03</div>
+<div class="line">CPU_BIND=&quot;map_cpu:49,57,17,25,1,9,33,41&quot;</div>
+<div class="line">export MPICH_GPU_SUPPORT_ENABLED=1</div>
+<div class="line">ulimit -s unlimited</div>
+<div class="line">export EXE_DIR=/users/adelmann/sandbox/vico-paper/build/test/solver</div>
+<div class="line">cat &lt;&lt; EOF &gt; select_gpu</div>
+<div class="line">#!/bin/bash</div>
+<div class="line">export ROCR_VISIBLE_DEVICES=\$SLURM_LOCALID</div>
+<div class="line">exec \$*</div>
+<div class="line">EOF</div>
+<div class="line">chmod +x ./select_gpu</div>
+<div class="line">srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5</div>
+<div class="line">rm -rf ./select_gpu</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md20"></a>
 Profiling IPPL MPI calls</h1>
 <p >You can use the mpiP tool (<a href="https://github.com/LLNL/mpiP">https://github.com/LLNL/mpiP</a>) to get statistics about the MPI calls in IPPL.</p>
 <p >To use it, download it from <a href="https://github.com/LLNL/mpiP">Github</a> and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:</p><ul>
@@ -256,17 +367,60 @@ Profiling IPPL MPI calls</h1>
 <p >If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics: <code>Storing mpiP output in ...</code></p>
 <p >To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form: <code>python3 mpiP.py [path/to/directory]</code> where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.</p>
 <p >Happy profiling!</p>
-<h1><a class="anchor" id="autotoc_md18"></a>
+<h1><a class="anchor" id="autotoc_md21"></a>
 Build Instructions</h1>
 <p >Here we compile links to recipies for easy build on various HPC systems.</p>
-<h2><a class="anchor" id="autotoc_md19"></a>
+<h2><a class="anchor" id="autotoc_md22"></a>
 MERLIN 7 (PSI)</h2>
 <p ><a href="https://hpce.pages.psi.ch/merlin7/ippl.html">IPPL build for A100 and HG</a></p>
-<h2><a class="anchor" id="autotoc_md20"></a>
+<h2><a class="anchor" id="autotoc_md23"></a>
 ALPS (CSCS)</h2>
-<p >comming soon</p>
-<p >Happy building! </p>
-</div></div><!-- PageDoc -->
+<p >Start by loading a <code>uenv</code> that contains most of the tools we want. Note that in future an <code>official</code> uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...</p>
+<div class="fragment"><div class="line">uenv start --view=develop \</div>
+<div class="line">/capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs</div>
+</div><!-- fragment --><p> or, look for a newer one and pick the one with the latest date in the name using </p><div class="fragment"><div class="line">ls -al /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-*.squashfs</div>
+</div><!-- fragment --><p> At the time of writing, the uenv provides (as well as many other packages) </p><div class="fragment"><div class="line">cmake@4.1.1         ~doc+ncurses+ownlibs~qtgui </div>
+<div class="line">cray-mpich@9.0.0    +cuda+cxi~rocm </div>
+<div class="line">cuda@12.8.1         ~allow-unsupported-compilers~dev </div>
+<div class="line">eigen@3.4.0         ~ipo~nightly~rocm </div>
+<div class="line">fftw@3.3.10         +mpi~openmp~pfft_patches+shared </div>
+<div class="line">gcc@13.4.0          ~binutils+bootstrap~graphite~mold~nvptx~piclibs+profiled+strip </div>
+<div class="line">googletest@1.17.0   ~absl+gmock~ipo+pthreads+shared </div>
+<div class="line">gsl@2.8             ~external-cblas+pic+shared </div>
+<div class="line">h5hut@master        ~fortran+mpi </div>
+<div class="line">hdf5@1.14.6         +cxx~fortran+hl~ipo~java~map+mpi+shared~subfiling+szip~threadsafe+tools api=default </div>
+<div class="line">heffte@2.4.1        +cuda+fftw~fortran~ipo~magma~mkl~python~rocm+shared </div>
+<div class="line">hpctoolkit@2025.0.1 +cuda~docs~level_zero~mpi~opencl+papi~python~rocm~strip+viewer </div>
+<div class="line">hwloc@2.11.1        ~cairo~cuda~gl~level_zero~libudev~libxml2~nvml~opencl+pci~rocm </div>
+<div class="line">kokkos@4.7.00       ~aggressive_vectorization~alloc_async~cmake_lang~compiler_warnings+complex_align+cuda~cuda_constexpr~cuda_lambda~cuda_ldg_intrinsic~cuda_relocatable_device_code~cuda_uvm~debug~debug_bounds_check~debug_dualview_modify_check~deprecated_code~examples~hip_relocatable_device_code~hpx~hpx_async_dispatch~hwloc~ipo~memkind~numactl+openmp~openmptarget~pic~rocm+serial+shared~sycl~tests~threads~tuning+wrapper build_system=cmake build_type=Release cuda_arch=90 cxxstd=20 generator=make intel_gpu_arch=none </div>
+<div class="line">ninja@1.13.0        +re2c </div>
+</div><!-- fragment --><p> You can check what is inside the uenv by executing the command </p><div class="fragment"><div class="line"># This will show all packages installed by spack (including any ones you might have installed yourself outside of a uenv)</div>
+<div class="line">spack find -flv</div>
+<div class="line"> </div>
+<div class="line"># use this to only show packages inside the uenv (ie. not any you have installed elsewhere)</div>
+<div class="line">spack -C /user-environment/config find -flv</div>
+</div><!-- fragment --><p> It is important to use the <code>--view=develop</code> when loading the uenv as this sets-up the paths to packages in the spack environment ready for you to use them (without needing to manually <code>spack load xxx</code> packages individually) (In fact it will also add <code>/user-environment/env/develop/</code> to your <code>CMAKE_PREFIX_PATH</code>) which makes cmake-built packages 'just work'.</p>
+<p >To build, try the following which uses default CMake settings (<code>release-testing</code>) taken from <code>CMakeUserPresets.json</code> (in the root ippl source of the cmake-alps branch - it is not required to use this branch, but cmake support has been cleaned up) </p><div class="fragment"><div class="line">ssh daint</div>
+<div class="line">uenv start --view=develop /capstor/scratch/cscs/biddisco/uenvs/gh200-opalxgccmpich-2025-07-23.squashfs</div>
+<div class="line"> </div>
+<div class="line"># clone IPPL</div>
+<div class="line">mkdir -p $HOME/src/ippl</div>
+<div class="line">cd $HOME/src</div>
+<div class="line">git clone https://github.com/IPPL-framework/ippl</div>
+<div class="line"> </div>
+<div class="line"># (optionally) checkout the cmake-alps branch since it is not yet merged to master</div>
+<div class="line">cd $HOME/src/ippl</div>
+<div class="line">git remote add biddisco https://github.com/biddisco/ippl.git</div>
+<div class="line">git fetch biddisco cmake-alps</div>
+<div class="line">git checkout cmake-alps</div>
+<div class="line"> </div>
+<div class="line"># create a build dir</div>
+<div class="line">mkdir -p $HOME/build/ippl</div>
+<div class="line">cd $HOME/build/ippl</div>
+<div class="line"> </div>
+<div class="line"># run cmake (note that ninja is available in the uenv and &quot;cmake -G Ninja&quot; can be used)</div>
+<div class="line">cmake --preset=release-testing -DCMAKE_INSTALL_PREFIX=$HOME/apps/ippl -DCMAKE_CUDA_ARCHITECTURES=90 $HOME/src/ippl/</div>
+</div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

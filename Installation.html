@@ -81,31 +81,31 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p ><a class="anchor" id="md_extras_IPPLonEULER"></a> This guide outlines the steps to install the IPPL library on the EULER cluster. Before beginning, ensure you are connected to the ETH-VPN to access the cluster.</p>
-<h1><a class="anchor" id="autotoc_md44"></a>
+<h1><a class="anchor" id="autotoc_md47"></a>
 Connecting to the EULER Cluster</h1>
 <p >Use SSH to connect to EULER. Replace '&lt;username&gt;' with your actual username. </p><pre class="fragment">    ssh -Y &lt;username&gt;@euler.ethz.ch
 </pre><p> The '-Y' flag enables trusted X11 forwarding, necessary for running graphical applications remotely.</p>
-<h1><a class="anchor" id="autotoc_md45"></a>
+<h1><a class="anchor" id="autotoc_md48"></a>
 Preparing the Environment</h1>
 <p ><em>Load the New Software Stack:</em> Transition to the new software stack to access the latest dependencies: </p><pre class="fragment">    env2lmod
 </pre><p> <em>Clean the Environment:</em> Ensure no previous modules are loaded to avoid conflicts: </p><pre class="fragment">    module purge
-</pre><p> <em>Load Dependencies:</em> Load the required modules for IPPL: </p><pre class="fragment">    module load gcc/11.4.0 cmake/3.26.3 cuda/12.1.1 openmpi/4.1.4 
-</pre> <h1><a class="anchor" id="autotoc_md46"></a>
+</pre><p> <em>Load Dependencies:</em> Load the required modules for IPPL: </p><pre class="fragment">    module load gcc/11.4.0 cmake/3.26.3 cuda/12.1.1 openmpi/4.1.4
+</pre> <h1><a class="anchor" id="autotoc_md49"></a>
 Cloning the IPPL Library</h1>
 <p >Clone the IPPL library from its repository: </p><pre class="fragment">    git clone https://github.com/IPPL-framework/ippl.git
-</pre> <h1><a class="anchor" id="autotoc_md47"></a>
+</pre> <h1><a class="anchor" id="autotoc_md50"></a>
 Building IPPL</h1>
-<h3><a class="anchor" id="autotoc_md48"></a>
+<h3><a class="anchor" id="autotoc_md51"></a>
 Setup a build directory:</h3>
 <pre class="fragment">    cd ippl
     mkdir build
     cd build
-</pre> <h3><a class="anchor" id="autotoc_md49"></a>
+</pre> <h3><a class="anchor" id="autotoc_md52"></a>
 Create build files</h3>
 <p >Choose from the following options based on your needs. If necessary, you can build multiple versions in separate directories.</p>
 <p ><b>Serial Version</b> (for single-node computing) </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=SERIAL -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON
 </pre><p> <b>OpenMP Version</b> (for multi-threaded computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=OPENMP -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON
-</pre><p> <b>Cuda Version</b> (for GPU computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=CUDA -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON -DUSE_ALTERNATIVE_VARIANT=OFF -DKokkos_ARCH_[architecture]=ON
+</pre><p> <b>Cuda Version</b> (for GPU computing): </p><pre class="fragment">    cmake .. -DCMAKE_CXX_STANDARD=20 -DIPPL_PLATFORMS=CUDA -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_ALPINE=ON -DIPPL_USE_ALTERNATIVE_VARIANT=OFF -DKokkos_ARCH_[architecture]=ON
 </pre><p> [architecture] should be the target architecture, e.g.</p>
 <ul>
 <li>PASCAL60</li>
@@ -113,15 +113,15 @@ Create build files</h3>
 <li>TURING75</li>
 <li>AMPERE80</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md50"></a>
+<h3><a class="anchor" id="autotoc_md53"></a>
 Compile</h3>
 <pre class="fragment">    make
-</pre> <h1><a class="anchor" id="autotoc_md51"></a>
+</pre> <h1><a class="anchor" id="autotoc_md54"></a>
 Testing Your Installation</h1>
 <p >Launch an interactive job on EULER to test your installation: </p><pre class="fragment">    srun -n 1 --time=1:00:00 --mem-per-cpu=32g --pty bash
 </pre><p> This command allocates one computing node with 32GB of RAM for 60 minutes.</p>
 <p ><b>Task</b> : Execute a miniapp in the '/alpine' folder to verify the installation (don't forget to compile with Make).</p>
-<h1><a class="anchor" id="autotoc_md52"></a>
+<h1><a class="anchor" id="autotoc_md55"></a>
 Links</h1>
 <p >Repository for Independent Parallel Particle Layer (IPPL) </p><pre class="fragment">    https://github.com/IPPL-framework/ippl
 </pre> </div></div><!-- contents -->
