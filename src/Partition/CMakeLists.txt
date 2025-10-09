@@ -4,15 +4,5 @@
 # Adds domain partitioning headers to the IPPL target.
 # -----------------------------------------------------------------------------
 
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install Partition-related headers
-install(FILES
-    Partitioner.h
-    Partitioner.hpp
-    DESTINATION include/Partition
-)
+# Nothing to do: public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.

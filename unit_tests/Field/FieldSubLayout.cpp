@@ -256,7 +256,11 @@ TYPED_TEST(FieldSubLayoutTest, VolumeIntegral) {
 
     auto& field = this->field;
 
-    T tol                         = 5 * tolerance<T>;
+    /// to avoid error accumulation we increase the tolerance by the number of summands
+    std::size_t totalNumberOfPoints = std::accumulate(this->nPoints.begin(), this->nPoints.end(), std::size_t{1}, std::multiplies<>{});
+
+    T tol                         = totalNumberOfPoints * tolerance<T>;
+
     const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
     const int shift               = field->getNghost();
 

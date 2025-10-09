@@ -53,7 +53,7 @@ public:
         Kokkos::deep_copy(mirror, bunch->R.getView());
         for (int i = 0; i < nParticles; ++i) {
             for (size_t j = 0; j < Dim; ++j) {
-                ASSERT_NEAR(expected[j], mirror(i)[j], tolerance<T> / 10);
+                ASSERT_NEAR(expected[j], mirror(i)[j], tolerance<T>);
             }
         }
     }

@@ -4,20 +4,5 @@
 # Adds core type definitions and traits to the IPPL target.
 # -----------------------------------------------------------------------------
 
-# Expose Types headers for use as <Types/...>
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install Types-related headers
-install(FILES
-    Variant.h
-    Vector.h
-    Vector.hpp
-    ViewTypes.h
-    IpplTypes.h
-    DESTINATION include/Types
-)
-
+# Nothing to do: public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.

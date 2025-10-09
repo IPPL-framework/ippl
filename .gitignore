@@ -11,9 +11,11 @@ manual/ippl_user_guide.pdf
 build*/
 *~
 *.~
+*.orig
 
 # ignore build directories
 build*/
 
 # ignore .vscode directory
 .vscode
+.cache

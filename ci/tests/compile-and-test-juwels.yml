@@ -1,0 +1,181 @@
+compile-and-test-juwels:
+  extends: .test_template
+  stage: test
+  image: registry.jsc.fz-juelich.de/muralikrishnan1/ippl:latest
+  tags: [juwels_booster, jacamar, login, shell]
+  rules:
+    - if: '$RUN_TEST_JUWELS == "true" || $RUN_ALL_TESTS == "true"'
+  variables:
+    SLURM_NTASKS_PER_NODE: "1"
+    SLURM_PARTITION: "develbooster"
+    SLURM_TIME: "00:40:00"
+    SLURM_CPUS_PER_TASK: "6"
+    CMAKE_BUILD_TYPE: "Release"
+    PROJECT_NAME: "hai_1073"
+
+    RUN_TESTS: "true" # "true" → run tests; "false" → compile only
+    PLATFORM: "cuda" # or "openmp"
+    TEST_PROCS: "1" # number of ranks for tests
+    ARCH: "AMPERE80"
+
+  script: |
+    set -Eeuo pipefail
+
+    if [[ -z "${SCRATCH_hai_1073:-}" ]]; then
+      echo "❌ ERROR: \$SCRATCH_hai_1073 not set after jutil activation." >&2
+      exit 1
+    fi
+
+    echo "📦 SCRATCH = ${SCRATCH_hai_1073}"
+
+    export BUILD_DIR="${SCRATCH_hai_1073}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
+
+    echo "📁 BUILD_DIR = ${BUILD_DIR}"
+
+    export COMPILE_LOG_DIR="${RESULTS_DIR}/compile-test"
+    mkdir -p "${COMPILE_LOG_DIR}"
+
+    cleanup() {
+      echo "🧹 Cleaning up build directory: ${BUILD_DIR}"
+      rm -rf "${BUILD_DIR}" || true
+    }
+    trap cleanup EXIT
+
+    if ! command -v module >/dev/null 2>&1; then
+      echo "❌ ERROR: 'module' command not found." >&2
+      exit 1
+    fi
+
+    module purge
+    module load Stages/2025 GCC OpenMPI CMake NCCL
+
+    echo "⚙️  Configuring & Building..."
+    mkdir -p "${BUILD_DIR}"
+    COMPILE_STATUS=0
+    {
+      cmake -S "$CI_PROJECT_DIR" -B "${BUILD_DIR}" \
+        -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
+        -DIPPL_ENABLE_TESTS=ON \
+        -DIPPL_ENABLE_UNIT_TESTS=ON \
+        -DIPPL_SKIP_FAILING_TESTS=ON \
+        -DIPPL_DEFAULT_TEST_PROCS="${TEST_PROCS}" \
+        -DIPPL_ENABLE_FFT=ON \
+        -DIPPL_ENABLE_SOLVERS=ON \
+        -DIPPL_ENABLE_ALPINE=ON \
+        -DIPPL_ENABLE_EXAMPLES=ON \
+        -DIPPL_USE_ALTERNATIVE_VARIANT=ON \
+        -DIPPL_ENABLE_COSMOLOGY=ON \
+        $([ "${ARCH}" != "NONE" ] && echo "-DKokkos_ARCH_${ARCH}=ON") \
+        -DIPPL_PLATFORMS="${PLATFORM}"
+
+
+      cmake --build "${BUILD_DIR}" -j8
+    } 2> >(tee "${COMPILE_LOG_DIR}/stderr.log" >&2) > >(tee "${COMPILE_LOG_DIR}/stdout.log") || COMPILE_STATUS=$?
+
+    STATUS="passed"
+    MESSAGE="Compilation with default GCC settings successful."
+
+    if [ "${COMPILE_STATUS}" -ne 0 ]; then
+      STATUS="failed"
+      # Grab the first few lines of the error log for a quick summary
+      MESSAGE=$(head -n 5 "${COMPILE_LOG_DIR}/stderr.log" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+      echo "Compilation failed. See generated report for details."
+    else
+      echo "Compilation successful."
+    fi
+
+
+    RESULT_FILE="${COMPILE_LOG_DIR}/result.json"
+
+    cat > "${RESULT_FILE}" <<EOF
+    {
+      "name": "Compile GCC - (${PLATFORM}) (${CMAKE_BUILD_TYPE}) Mode (${ARCH})",
+      "status": "${STATUS}",
+      "statusDetails": {
+        "message": "${MESSAGE}"
+      },
+      "attachments": [
+        { "name": "stdout", "source": "stdout.log", "type": "text/plain" },
+        { "name": "stderr", "source": "stderr.log", "type": "text/plain" }
+      ]
+    }
+    EOF
+
+    if [ "${RUN_TESTS}" != "true" ]; then
+      echo "ℹ️ RUN_TESTS=false → skipping tests."
+      exit 0
+    fi
+
+    export CTEST_RESULTS_DIR="${RESULTS_DIR}/gcc-xml"
+    export CTEST_JOBS=4
+
+    export CTEST_LABELS="unit"
+
+    echo "🧪 Launching tests with srun…"
+    set +e
+    srun \
+      --account="${PROJECT_NAME}" \
+      --partition="${SLURM_PARTITION}" \
+      --time="${SLURM_TIME}" \
+      --nodes="1" \
+      --ntasks=${SLURM_NTASKS_PER_NODE} \
+      --gres=gpu:4 \
+      --cpus-per-task="${SLURM_CPUS_PER_TASK}" \
+      --export=ALL,BUILD_DIR,CTEST_RESULTS_DIR,CTEST_JOBS,CTEST_LABELS \
+      bash "$CI_PROJECT_DIR/ci/scripts/test_runner.sh"
+    TEST_STATUS=$?
+    set -e
+
+    arch="${ARCH}"
+    if [[ "${arch}" == "NONE" ]]; then
+      arch="CPU"
+    fi
+
+    echo "{\"name\": \"${arch} - ${PLATFORM} procs: ${TEST_PROCS}\"}" \
+      > "${CTEST_RESULTS_DIR}/context.json"
+
+compile-openmp-debug-no-tests:
+  extends: compile-and-test-juwels
+  variables:
+    RUN_TESTS: "false"
+    CMAKE_BUILD_TYPE: "Debug"
+    PLATFORM: "openmp"
+    ARCH: "NONE"
+
+compile-cuda-debug-no-tests:
+  extends: compile-and-test-juwels
+  variables:
+    RUN_TESTS: "false"
+    CMAKE_BUILD_TYPE: "Debug"
+    PLATFORM: "cuda"
+    ARCH: "AMPERE80"
+
+test-openmp-release-2procs:
+  extends: compile-and-test-juwels
+  variables:
+    RUN_TESTS: "true"
+    CMAKE_BUILD_TYPE: "Release"
+    PLATFORM: "openmp"
+    ARCH: "NONE"
+    TEST_PROCS: "2"
+    SLURM_NTASKS_PER_NODE: "2"
+
+test-openmp-release-1proc:
+  extends: compile-and-test-juwels
+  variables:
+    RUN_TESTS: "true"
+    CMAKE_BUILD_TYPE: "Release"
+    PLATFORM: "openmp"
+    ARCH: "NONE"
+    TEST_PROCS: "1"
+    SLURM_NTASKS_PER_NODE: "1"
+
+test-cuda-release-2procs:
+  extends: compile-and-test-juwels
+  variables:
+    RUN_TESTS: "true"
+    CMAKE_BUILD_TYPE: "Release"
+    PLATFORM: "cuda"
+    ARCH: "AMPERE80"
+    TEST_PROCS: "2"
+    SLURM_NTASKS_PER_NODE: "2"
