@@ -185,19 +185,6 @@ namespace ippl {
             return error_norm;
         }
 
-        /** 
-         * Query the L2-norm error compared to a given analytical solution
-         * for the GRADIENT
-         *
-         * @param analytic the analytical function to compare to, struct with operator()
-         * @return L2 error of grad
-         */
-        template <typename F>
-        Tlhs getL2ErrorGrad(const F& analytic) {
-            Tlhs error_norm = this->lagrangeSpace_m.computeErrorL2(*(this->grad_mp), analytic);
-            return error_norm;
-        }
-
         /**
          * Query the average of the solution
          * @param vol Boolean indicating whether we divide by volume or not
