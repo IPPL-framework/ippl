@@ -223,7 +223,7 @@ TYPED_TEST(GatherScatterTest, ScatterSimpleTest) {
     
     field = 0.0;
 
-    // Perform the simple scatter operation (extended functionality is testes below).
+    // Perform the simple scatter operation (extended functionality is tested below).
     scatter(this->bunch->Q, field, this->bunch->R);
 
     // Compute the total charge in the field and from the particles.
