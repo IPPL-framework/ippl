@@ -60,16 +60,12 @@ public:
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
         typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-        typedef ippl::BConds<VField_t<T, Dim>, Dim> bc_typeV;
         if (this->getStype() == "CG" || this->getStype() == "PCG" || this->getStype() == "FEM") {
             bc_type allPeriodic;
-            bc_typeV allPeriodicE;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
                 allPeriodic[i]  = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
-                allPeriodicE[i] = std::make_shared<ippl::PeriodicFace<VField_t<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
-            E_m->setFieldBC(allPeriodicE);
         }
     }
 

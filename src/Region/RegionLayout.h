@@ -54,13 +54,6 @@ namespace ippl {
             // the MeshType to determine the centering of the index space.
             RegionLayout(const FieldLayout<Dim>&, const Mesh&);
 
-            // Constructor which takes a FieldLayout and a MeshType,
-            // as well as a bool for the offset (needed for the FEM solver, 
-            // which does not assume cell-centering).
-            // This one compares the domain of the FieldLayout and the domain of
-            // the MeshType to determine the centering of the index space.
-            RegionLayout(const FieldLayout<Dim>&, const Mesh&, bool offset);
-
             ~RegionLayout() = default;
 
             const NDRegion_t& getDomain() const { return region_m; }
@@ -71,8 +64,7 @@ namespace ippl {
 
             void write(std::ostream& = std::cout) const;
 
-            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh,
-                              bool offset = 1);  // previously private...
+            void changeDomain(const FieldLayout<Dim>&, const Mesh& mesh);  // previously private...
 
         private:
             NDRegion_t convertNDIndex(const NDIndex<Dim>&, const Mesh& mesh) const;
