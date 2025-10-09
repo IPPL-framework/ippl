@@ -16,6 +16,7 @@
 
 
 #include "Stream/Registry/VisRegistry.h"
+#include "Stream/Registry/VisRegistry_mini.h"
 #include "Stream/Registry/ViewRegistry.h"
 #include "Stream/InSitu/VisBaseAdaptor.h"
 
@@ -163,22 +164,43 @@ public:
         #ifdef IPPL_ENABLE_CATALYST
             m << "Catalyst is enabled" << endl; 
 
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-        auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
+            
+        // std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+        // auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
-        auto myR_vis = MakeRegistry<"ions",
-                                    "electrostatic",
-                                    "density"
-                                    // ,"potential"
-                                    >
-                                    (this->pcontainer_m, 
-                                    this->fcontainer_m->getE(), 
-                                    this->fcontainer_m->getRho()
-                                     //, this->fcontainer_m->getRho() 
+        // auto myR_vis = MakeRegistry<"ions",
+        //                             "electrostatic",
+        //                             "density"
+        //                             // ,"potential"
+        //                             >
+        //                             (this->pcontainer_m, 
+        //                             this->fcontainer_m->getE(), 
+        //                             this->fcontainer_m->getRho()
+        //                              //, this->fcontainer_m->getRho() 
+        //                         );
+
+        // CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
+
+
+
+
+        auto myR_steer_mini =   MakeVisRegistry_mini( "magnetic", magnetic_scale, 
+                                                        "electric", electric_scale
+                                                            );
+        
+        auto myR_vis_mini   =   MakeVisRegistry_mini(
+                                    "ions",         this->pcontainer_m, 
+                                    "electrostatic",this->fcontainer_m->getE(), 
+                                    "density",      this->fcontainer_m->getRho() 
                                 );
 
-        CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
+        CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
+
+
+
+
+
+
 
         #endif
         
@@ -371,19 +393,42 @@ public:
 #ifdef IPPL_ENABLE_CATALYST
         
         
-        auto myR_steer = MakeRegistry<  "magnetic",
-                                        "electric">
-                                        (magnetic_scale,
-                                         electric_scale);
+        // auto myR_steer = MakeRegistry<  "magnetic",
+        //                                 "electric">
+        //                                 (magnetic_scale,
+        //                                  electric_scale);
         
-        auto myR_vis = MakeRegistry<"ions",
-                                    "electrostatic",
-                                    "density">
-                                    (pc, 
-                                    this->fcontainer_m->getE(), 
-                                    this->fcontainer_m->getRho() );
+        // auto myR_vis = MakeRegistry<"ions",
+        //                             "electrostatic",
+        //                             "density">
+        //                             (pc, 
+        //                             this->fcontainer_m->getE(), 
+        //                             this->fcontainer_m->getRho() );
 
-        CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
+        // CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
+
+
+        auto myR_steer_mini =   MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
+                                                        "electric", electric_scale);
+        
+        auto myR_vis_mini   =   MakeVisRegistry_mini(
+                                    "ions",pc, 
+                                    // "2ions",this->pcontainer_m, 
+                                    "electrostatic", this->fcontainer_m->getE(), 
+                                    "density",this->fcontainer_m->getRho() 
+                                );
+
+        CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
+
+
+
+
+
+
+
+
+
+
 
 #endif
 

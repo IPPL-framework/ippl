@@ -180,7 +180,7 @@ public:
      * @param func Function to call with (string_view id, const T& value)
      */
     template <typename Func>
-    void forEach(Func&& func) const;
+    void for_each(Func&& func) const;
 
     /**
      * @brief Get the number of non-null entries.
@@ -210,9 +210,9 @@ private:
     template <std::size_t I>
     void assign_one(const std::unordered_map<std::string, std::any>& tmp);
     template <typename Func, std::size_t... Is>
-    void forEach_impl(Func&& func, std::index_sequence<Is...>) const;
+    void for_each_impl(Func&& func, std::index_sequence<Is...>) const;
     template <std::size_t I, typename Func>
-    void forEach_one(Func&& func) const;
+    void for_each_one(Func&& func) const;
 };
 
 /**
@@ -246,7 +246,7 @@ public:
     template <fixed_string IdV>
     void Unset(id_tag<IdV>);
     template <typename Func>
-    void forEach(Func&&) const;
+    void for_each(Func&&) const;
     std::size_t size() const;
     bool empty() const;
 };

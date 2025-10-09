@@ -2,6 +2,7 @@
 #include <type_traits>
 #include <utility>
 #include "Stream/Registry/VisRegistry.h"
+#include "Stream/Registry/RegistryHelper.h"
 
 // RegistryFluent implementation
 template <typename... Slots>
@@ -97,8 +98,8 @@ void RegistryFluent<Slots...>::Unset(id_tag<IdV>) { this->template Unset<IdV>();
 
 template <typename... Slots>
 template <typename Func>
-void RegistryFluent<Slots...>::forEach(Func&& func) const {
-    forEach_impl(std::forward<Func>(func), std::make_index_sequence<sizeof...(Slots)>{});
+void RegistryFluent<Slots...>::for_each(Func&& func) const {
+    for_each_impl(std::forward<Func>(func), std::make_index_sequence<sizeof...(Slots)>{});
 }
 
 template <typename... Slots>
@@ -152,13 +153,13 @@ void RegistryFluent<Slots...>::assign_one(const std::unordered_map<std::string, 
 
 template <typename... Slots>
 template <typename Func, std::size_t... Is>
-void RegistryFluent<Slots...>::forEach_impl(Func&& func, std::index_sequence<Is...>) const {
-    (forEach_one<Is>(std::forward<Func>(func)), ...);
+void RegistryFluent<Slots...>::for_each_impl(Func&& func, std::index_sequence<Is...>) const {
+    (for_each_one<Is>(std::forward<Func>(func)), ...);
 }
 
 template <typename... Slots>
 template <std::size_t I, typename Func>
-void RegistryFluent<Slots...>::forEach_one(Func&& func) const {
+void RegistryFluent<Slots...>::for_each_one(Func&& func) const {
     auto* ptr = std::get<I>(m_ptrs);
     if (ptr != nullptr) {
         const auto id_sv = IdAt<I>.sv();
@@ -218,7 +219,7 @@ template <fixed_string IdV>
 void RegistryFluent<>::Unset(id_tag<IdV>) { this->template Unset<IdV>(); }
 
 template <typename Func>
-void RegistryFluent<>::forEach(Func&&) const {
+void RegistryFluent<>::for_each(Func&&) const {
     // Empty registry - nothing to iterate over
 }
 

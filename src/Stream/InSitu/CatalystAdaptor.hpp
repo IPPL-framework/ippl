@@ -1,5 +1,5 @@
 #pragma once
-#include "CatalystAdaptor.h"
+#include "Stream/InSitu/CatalystAdaptor.h"
 
 // Function implementations moved from CatalystAdaptor.h
 
@@ -678,7 +678,7 @@ void CatalystAdaptor::Execute(
 
         if(catalyst_steer && std::string(catalyst_steer)=="ON"){
             
-            registry_steer.forEach(
+            registry_steer.for_each(
                 [&node](std::string_view label, const auto& entry) {
                     // std::cout << "   Entry ID: " << label << "\n";
                     AddSteerableChannel(entry, std::string(label), node);
@@ -686,7 +686,7 @@ void CatalystAdaptor::Execute(
             );
         }
 
-        registry_vis.forEach(
+        registry_vis.for_each(
             [&node, &vr](std::string_view label, const auto& entry){
                 // std::cout << "  Entry ID: " << label << "\n";
                 execute_entry(entry, std::string(label),  node, vr);
@@ -709,7 +709,7 @@ void CatalystAdaptor::Execute(
         if(catalyst_steer && std::string(catalyst_steer)=="ON"){
         
             // /* transfer steearble scalars back to original locaton via registry*/
-            registry_steer.forEach(
+            registry_steer.for_each(
                 [&results](std::string_view label, auto& entry) {
                     // std::cout << "   Entry ID: " << label << "\n";
                     FetchSteerableChannelValue(entry, std::string(label), results);
@@ -747,7 +747,7 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
 
         // TODO: create steering poxy file ... for each steering channel for versatility
         // if(catalyst_steer && std::string(catalyst_steer)=="ON"){
-        //     registry_steer.forEach(
+        //     registry_steer.for_each(
         //         [&node](std::string_view label, const auto& entry) {
         //             CreateProxySteerableChannel(entry, std::string(label), node);
         //         }
@@ -758,7 +758,7 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
 
             m << "TRYING TO SET CATALYST PNG EXTRACTS" << endl;
 
-            registry_vis.forEach(
+            registry_vis.for_each(
                 [&](std::string_view label, const auto& entry){
                     init_entry(   entry
                                 , std::string(label)
