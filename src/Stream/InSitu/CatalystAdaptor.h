@@ -11,12 +11,20 @@
 #include <variant>
 #include <utility>
 #include <type_traits>
+#include <list>
+#include<filesystem>
+
 #include "Utility/IpplException.h"
 
+#include "Stream/Registry/ViewRegistry.h"
 
-#include <list>
+#include "Stream/Registry/RegistryHelper.h"
+#include "Stream/Registry/VisRegistry.h"
+#include "Stream/Registry/VisRegistry_mini.h"
+// runtime non-templated flexible (slow?) registry
+#include "Stream/Registry/VisRegistryRuntime.h"
+// #include "Stream/InSitu/VisBaseAdaptor.h"
 
-#include<filesystem>
 
 /* catalyst header defined the following for free use ... */
 //   CATALYST_EXPORT enum catalyst_status catalyst_initialize(const conduit_node* params);
@@ -396,6 +404,17 @@ right place... */
             int cycle, double time, int rank
         );
 
+    // Runtime (non-templated) API additions -------------------------------------------------
+    // Initialize Catalyst using a runtime registry (vis + steer)
+    void InitializeRuntime(visreg::VisRegistryRuntime& visReg,
+                           visreg::VisRegistryRuntime& steerReg,
+                           const std::filesystem::path& source_dir = {});
+
+    // Execute Catalyst for a given timestep using runtime registry.
+    // Populates forward steerable values and fetches back updated ones.
+    void ExecuteRuntime(visreg::VisRegistryRuntime& visReg,
+                        visreg::VisRegistryRuntime& steerReg,
+                        int cycle, double time, int rank);
 
 
     /**
@@ -414,7 +433,11 @@ right place... */
 
 
 }  // namespace CatalystAdaptor
+
+#include "Stream/InSitu/CatalystVisitors.h"
+#include "Stream/Registry/VisRegistryRuntime.h"     // visitor structs
 #include "CatalystAdaptor.hpp"
+
 #endif
 
 

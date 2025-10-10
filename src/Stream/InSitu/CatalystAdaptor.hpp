@@ -692,9 +692,11 @@ void CatalystAdaptor::Execute(
                 execute_entry(entry, std::string(label),  node, vr);
             }
         );
-        /* std::cout << dump outgoing node << std::endl; */
+       
+        /* std::cout << "dump Conduit Catalyst Node pass forward "< std::endl; */
         // node.print();
-  
+
+
         // Pass Conduit node to Catalyst and execute extraction and visualisation
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
@@ -844,5 +846,115 @@ void CatalystAdaptor::Finalize() {
             std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
         }
     }
+
+// =====================================================================================
+// Runtime registry based Initialize / Execute (non-templated registry path)
+// =====================================================================================
+
+void CatalystAdaptor::InitializeRuntime(visreg::VisRegistryRuntime& visReg,
+                                        visreg::VisRegistryRuntime& steerReg,
+                                        const std::filesystem::path& source_dir_in) {
+    Inform m("Catalyst::InitializeRuntime()");
+
+    conduit_cpp::Node node;
+    std::filesystem::path source_dir = source_dir_in;
+    if (source_dir.empty()) {
+        source_dir = std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu";
+    }
+    m << "using source_dir = " << source_dir.string() << endl;
+
+    // Pipeline script (allow override by environment)
+    set_node_script(node["catalyst/scripts/script/filename"],
+                    "CATALYST_PIPELINE_PATH",
+                    source_dir / "catalyst_scripts" / "pipeline_default.py");
+    conduit_cpp::Node args = node["catalyst/scripts/script/args"];
+    args.append().set_string("--channel_names");
+
+    const char* catalyst_png = std::getenv("IPPL_CATALYST_PNG");
+    const char* catalyst_vtk = std::getenv("IPPL_CATALYST_VTK");
+    const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+    // If PNG extraction requested, run init visitor over visualization registry
+    if (catalyst_png && std::string(catalyst_png) == "ON") {
+        m << "PNG extraction ACTIVATED" << endl;
+        InitVisitor initV{node, source_dir};
+        visReg.for_each(initV);
+    } else {
+        m << "PNG extraction DEACTIVATED" << endl;
+    }
+
+    if (catalyst_vtk && std::string(catalyst_vtk) == "ON") {
+        m << "VTK extraction ACTIVATED" << endl;
+        args.append().set_string("--VTKextract");
+        args.append().set_string("True");
+    } else {
+        m << "VTK extraction DEACTIVATED" << endl;
+    }
+
+    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
+        m << "Steering ACTIVATED" << endl;
+        args.append().set_string("--steer");
+        args.append().set_string("ON");
+
+        set_node_script(node["catalyst/proxies/proxy_e/filename"],
+                        "CATALYST_PROXYS_PATH_E",
+                        source_dir / "catalyst_scripts" / "proxy_default_electric.xml");
+        set_node_script(node["catalyst/proxies/proxy_m/filename"],
+                        "CATALYST_PROXYS_PATH_M",
+                        source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml");
+
+        // Optionally initialize steerable placeholders (not strictly required here)
+        // InitVisitor steerInit{node, source_dir};
+        // steerReg.for_each(steerInit);
+    } else {
+        m << "Steering DEACTIVATED" << endl;
+        args.append().set_string("--steer");
+        args.append().set_string("OFF");
+    }
+
+    m << "ippl: catalyst_initialize() =>" << endl;
+    catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
+    if (err != catalyst_status_ok) {
+        m << "\n Catalyst initialization failed.\n" << endl;
+        throw IpplException("Stream::InSitu::CatalystAdaptor", "Failed to initialize Catalyst (runtime path)");
+    } else {
+        m << "\n Catalyst initialized successfully (runtime path).\n" << endl;
+    }
+}
+
+void CatalystAdaptor::ExecuteRuntime(visreg::VisRegistryRuntime& visReg,
+                                     visreg::VisRegistryRuntime& steerReg,
+                                     int cycle, double time, int rank) {
+    conduit_cpp::Node node;
+    auto state = node["catalyst/state"];
+    state["cycle"].set(cycle);
+    state["time"].set(time);
+    state["domain_id"].set(rank);
+    ViewRegistry viewReg;
+
+    const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+    // Forward pass: add channels
+    ExecuteVisitor execV{node, viewReg};
+    visReg.for_each(execV); // fields + particles only
+
+    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
+        SteerForwardVisitor steerV{node};
+        steerReg.for_each(steerV); // add only steerable scalar channels
+    }
+
+    catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+    if (err != catalyst_status_ok) {
+        std::cerr << "Failed to execute Catalyst (runtime path): " << err << std::endl;
+    }
+
+    // Backward pass: fetch updated steering values
+    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
+        conduit_cpp::Node results;
+        Results(results);
+        SteerFetchVisitor fetchV{results};
+        steerReg.for_each(fetchV);
+    }
+}
 
 

@@ -8,6 +8,7 @@ target_include_directories(ippl
 )
 
 install(FILES
+    VisRegistryRuntime.h
     VisRegistry_mini.h
     VisRegistry.h
     VisRegistry.hpp

@@ -11,6 +11,7 @@ target_include_directories(ippl
 install(FILES
     CatalystAdaptor.h
     CatalystAdaptor.hpp
+    CatalystVisitors.h
     AscentAdatpor.h
     VisBaseAdaptor.h
     DESTINATION include/Stream/InSitu 

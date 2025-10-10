@@ -15,14 +15,8 @@
 #include "Random/Randn.h"
 
 
-#include "Stream/Registry/VisRegistry.h"
-#include "Stream/Registry/VisRegistry_mini.h"
-#include "Stream/Registry/ViewRegistry.h"
-#include "Stream/InSitu/VisBaseAdaptor.h"
-
 
 #ifdef IPPL_ENABLE_CATALYST
-
 #include "Stream/InSitu/CatalystAdaptor.h"
 // #include <vtkSMProxyManager.h>
 #endif
@@ -75,6 +69,9 @@ private:
     double dxFinest_m;
     double alpha_m;
     double DrInv_m;
+
+    std::shared_ptr<visreg::VisRegistryRuntime> runtime_vis_registry_;
+    std::shared_ptr<visreg::VisRegistryRuntime> runtime_steer_registry_;
 
 public:
 
@@ -184,18 +181,29 @@ public:
 
 
 
-        auto myR_steer_mini =   MakeVisRegistry_mini( "magnetic", magnetic_scale, 
-                                                        "electric", electric_scale
-                                                            );
+        // auto myR_steer_mini =   MakeVisRegistry_mini( "magnetic", magnetic_scale, 
+        //                                                 "electric", electric_scale
+        //                                                     );
         
-        auto myR_vis_mini   =   MakeVisRegistry_mini(
-                                    "ions",         this->pcontainer_m, 
-                                    "electrostatic",this->fcontainer_m->getE(), 
-                                    "density",      this->fcontainer_m->getRho() 
+        // auto myR_vis_mini   =   MakeVisRegistry_mini(
+        //                             "ions",         this->pcontainer_m, 
+        //                             "electrostatic",this->fcontainer_m->getE(), 
+        //                             "density",      this->fcontainer_m->getRho() 
+        //                         );
+
+        // CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
+
+
+        runtime_steer_registry_ =  visreg::MakeVisRegistryRuntimePtr("magnetic", magnetic_scale, "electric", electric_scale);
+        
+        runtime_vis_registry_ =   visreg::MakeVisRegistryRuntimePtr(
+                                    "ions",             this->pcontainer_m, 
+                                    // "ions",             *this->pcontainer_m, 
+                                    "electrostatic",    this->fcontainer_m->getE(), 
+                                    "density",          this->fcontainer_m->getRho() 
                                 );
 
-        CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
-
+        CatalystAdaptor::InitializeRuntime(*runtime_vis_registry_, *runtime_steer_registry_);
 
 
 
@@ -408,20 +416,24 @@ public:
         // CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
 
-        auto myR_steer_mini =   MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
-                                                        "electric", electric_scale);
+
+
+        // auto myR_steer_mini =   MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
+        //                                                 "electric", electric_scale);
         
-        auto myR_vis_mini   =   MakeVisRegistry_mini(
-                                    "ions",pc, 
-                                    // "2ions",this->pcontainer_m, 
-                                    "electrostatic", this->fcontainer_m->getE(), 
-                                    "density",this->fcontainer_m->getRho() 
-                                );
+        // auto myR_vis_mini   =   MakeVisRegistry_mini(
+        //                             "ions",pc, 
+        //                             // "2ions",this->pcontainer_m, 
+        //                             "electrostatic", this->fcontainer_m->getE(), 
+        //                             "density",this->fcontainer_m->getRho() 
+        //                         );
 
-        CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
+        // CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
 
 
 
+        CatalystAdaptor::ExecuteRuntime(*runtime_vis_registry_, *runtime_steer_registry_, 
+                                        it, this->time_m, ippl::Comm->rank());
 
 
 
