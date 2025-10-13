@@ -772,7 +772,7 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
         else{
             m << "catalyst PNG extract DEACTIVATED" << endl;
         }
-        
+
             registry_vis.for_each(
                 [&](std::string_view label, const auto& entry){
                     init_entry(   entry
@@ -885,15 +885,20 @@ void CatalystAdaptor::InitializeRuntime(visreg::VisRegistryRuntime& visReg,
 
     // If PNG extraction requested, run init visitor over visualization registry
     const bool png_extracts = (catalyst_png && std::string(catalyst_png) == "ON");
+
+
     if (png_extracts) {
         m << "PNG extraction ACTIVATED" << endl;
-        // Use a lambda to forward the png_extracts flag to init_entry
-        visReg.for_each([&](std::string_view label, const auto& entry){
-            init_entry(entry, std::string(label), node, source_dir, png_extracts);
-        });
     } else {
         m << "PNG extraction DEACTIVATED" << endl;
     }
+    
+    // visReg.for_each([&](std::string_view label, const auto& entry){
+    //     init_entry(entry, std::string(label), node, source_dir, png_extracts);
+    // });
+
+    InitVisitor initV{node, source_dir, png_extracts};
+    visReg.for_each(initV);
 
     if (catalyst_vtk && std::string(catalyst_vtk) == "ON") {
         m << "VTK extraction ACTIVATED" << endl;

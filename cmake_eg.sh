@@ -23,10 +23,10 @@ CMAKE_ARGS+=(
 # depending on your install you might need to pass hints to cmake. These might follow
 # the following form:
 #####################################################################################
-#CATALYST_CMAKE_PATH="/.../catalyst/install/lib/cmake/catalyst-2.0"
-#ASCENT_CMAKE_PATH="/.../ascent/build/install/ascent-checkout/lib/cmake/ascent"
-#echo " Passing CMake Catalyst Hint $CATALYST_CMAKE_PATH"
-#echo " Passing CMake Ascent   Hint $ASCENT_CMAKE_PATH"
+# CATALYST_CMAKE_PATH="/.../catalyst/install/lib/cmake/catalyst-2.0"
+# ASCENT_CMAKE_PATH="/.../ascent/build/install/ascent-checkout/lib/cmake/ascent"
+# echo " Passing CMake Catalyst Hint $CATALYST_CMAKE_PATH"
+# echo " Passing CMake Ascent   Hint $ASCENT_CMAKE_PATH"
 #####################################################################################
 # When build fails on jülich, when including with ascent you can also try pass hints
 # which will be something like the following (depending on loaded module).
