@@ -11,4 +11,5 @@ add_ippl_integration_test(TestVector LABELS integration types)
 #add_ippl_integration_test(TestTuple LABELS integration types)
 add_ippl_integration_test(TestVector2 LABELS integration types)
 add_ippl_integration_test(TestVector3 LABELS integration types)
+add_ippl_integration_test(TestVectorVsView LABELS integration types)
 
