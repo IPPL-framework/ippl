@@ -29,9 +29,8 @@ int main(int argc, char* argv[]) {
         constexpr int M = 3000;
         constexpr int K = 300;
 
-        Kokkos::Random_XorShift64_Pool<> random_pool(/*seed=*/12345);
 
-        double pi = 3.14;
+        constexpr double pi = 3.14;
 
 
         Kokkos::View<size_t**> idx_list_view("idx" ,N,M);
@@ -44,11 +43,9 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_for("fill idx list view" , N , KOKKOS_LAMBDA(int i) {
 
-            auto generator = random_pool.get_state();
             for (int j = 0; j < M; ++j) {
-                idx_list_view(i,j) = generator.urand(0,K-1);
+                idx_list_view(i,j) = (i*j)%K;
             }
-            random_pool.free_state(generator);
         });
 
         IpplTimings::stopTimer(fill_view_timer);
@@ -58,9 +55,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(input_view_timer);
 
         Kokkos::parallel_for("fill input view" , K , KOKKOS_LAMBDA(int k) {
-            auto generator = random_pool.get_state();
-            input_view(k) = generator.drand(0.,1.);
-            random_pool.free_state(generator);
+            input_view(k) = 1.;
         });
 
         IpplTimings::stopTimer(input_view_timer);
@@ -70,7 +65,7 @@ int main(int argc, char* argv[]) {
 
         Kokkos::parallel_for("compute view " , N , KOKKOS_LAMBDA(int i) {
             for (int j = 0; j < M; ++j) {
-                int idx = idx_list_view(i,j);
+                const int idx = idx_list_view(i,j);
                 Kokkos::atomic_add(&result_view(idx) , pi*input_view(idx));
             }
         });
@@ -98,15 +93,12 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(fill_vector_timer);
 
         */
-
         // start a timer
         static IpplTimings::TimerRef input_vector_timer = IpplTimings::getTimer("input vector");
         IpplTimings::startTimer(input_vector_timer);
 
         for (int k = 0; k < K; ++k){
-            auto generator = random_pool.get_state();
-            input_vector[k] = generator.drand(0.,1.);
-            random_pool.free_state(generator);
+            input_vector[k] = 1.0;
         }
 
         IpplTimings::stopTimer(input_vector_timer);
@@ -115,15 +107,13 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(output_vector_timer);
 
         Kokkos::parallel_for("compute vector " , N , KOKKOS_LAMBDA(int i) {
-            auto generator = random_pool.get_state();
-            ippl::Vector<double, M> local_idx(0);
+            ippl::Vector<size_t, M> local_idx(0);
             for (int j = 0; j<M;++j) {
-                local_idx[j] = generator.urand(0.,K-1);
+                local_idx[j] = (i*j)%K;
             }
-            random_pool.free_state(generator);
 
             for (int j = 0; j < M; ++j) {
-                int idx = local_idx[j];
+                const int idx = local_idx[j];
                 Kokkos::atomic_add(&result_view(idx), pi * input_vector[idx]);
             }
         });
