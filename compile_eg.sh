@@ -1,16 +1,14 @@
 #!/bin/bash
 
-
 cd build
-make PenningTrap  -j
 # make PenningTrap LandauDamping BumponTailInstability -j
+make PenningTrap  -j
 # make LandauDamping -j 
 # make BumponTailInstability -j 
 
 # Report linkage
 echo "Linked libs (MPI/Catalyst/Python):"
 ldd alpine/PenningTrap | grep -E "libmpi|libmpicxx|libcatalyst|libpython|libascent" || true
-
 
 # check for multiple MPI versions
 mpi_libs=$(ldd alpine/PenningTrap | grep -o 'libmpi\.[^ ]*' | sort -u)
@@ -30,13 +28,12 @@ if [ "${mpi_lib_count}" -gt 1 ]; then
 else
     if [ "${mpi_lib_count}" -eq 1 ]; then
         echo "------------------------------------------------------------------"
-        echo "✅ SUCCESS: Single MPI implementation linked into PenningTrap"
+        echo "✅ Single MPI implementation linked into PenningTrap"
         echo "Using: ${mpi_libs}"
         echo "------------------------------------------------------------------"
     else
         echo "No MPI libraries detected in the binary."
     fi
 fi
-
 
 cd ..

@@ -1,13 +1,16 @@
 #!/bin/bash
 
-export IPPL_DIR=/.../ippl-frk
-export PENNINGTRAP_BINDIR=${IPPL_DIR}/build/alpine
+# export IPPL_DIR=./ippl-frk
+export PENNINGTRAP_BINDIR=./build/alpine
 
-PV_PREFIX=".../ParaView-5.12.0-MPI-Linux-Python3.10-x86_64"
+# These two needed env Variables will be automatically  be set when loading module on 
+# julich system. When running everything locally they need to be set manually.
+# PV_PREFIX="/.../ParaView-5.12.0-MPI-Linux-Python3.10-x86_64"
+#export CATALYST_IMPLEMENTATION_PATHS="${PV_PREFIX}/lib/catalyst"
+#export CATALYST_IMPLEMENTATION_NAME="paraview"
 
-export CATALYST_IMPLEMENTATION_PATHS="${PV_PREFIX}/lib/catalyst"
-export CATALYST_IMPLEMENTATION_NAME="paraview"
-
+# echo $CATALYST_IMPLEMENTATION_PATHS on jureca eg. should be something simlar to: 
+# /p/software/jurecadc/stages/2024/software/ParaView/5.12.0-RC2-gpsmpi-2023a/lib64/catalyst
 
 
 # #####################################################################
@@ -20,13 +23,13 @@ export IPPL_CATALYST_VTK=OFF
 
 # #####################################################################
 # Catalyst Adaptor will try to fetch paths from environment else switch to
-#  harcoded preconfigured defaults inside IPPL src directory
+# harcoded preconfigured defaults inside IPPL src directory definde via cmake.
 # #####################################################################
 
 # export  CATALYST_PIPELINE_PATH=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/pipeline_default.py
 # export  CATALYST_EXTRACTOR_SCRIPT_P=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_particle.py
-# export    CATALYST_EXTRACTOR_SCRIPT_S=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_sfield.py
-# export    CATALYST_EXTRACTOR_SCRIPT_V=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_vfield.py
+# export  CATALYST_EXTRACTOR_SCRIPT_S=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_sfield.py
+# export  CATALYST_EXTRACTOR_SCRIPT_V=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_vfield.py
 
 # export  CATALYST_PROXY_PATH_M=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/proxy_default_magnetic.xml
 # export  CATALYST_PROXY_PATH_E=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/proxy_default_electric.xml
@@ -45,10 +48,14 @@ cd ${PENNINGTRAP_BINDIR}
 rm -rd data
 mkdir data
 
-# export MPIEXEC=/.../ParaView-5.12.0-MPI-Linux-Python3.10-x86_64/lib/mpiexec
-# exec $MPIEXEC -np 1 
-# srun 
-
+#####################################################################################
+# when running locally with MPI this might(?) be needed to guarantee compatibility (openMPI vs MPIch)
+# export MPIEXEC=$PV_PREFIX/lib/mpiexec
+# exec $MPIEXEC -np 1 ...
+#####################################################################################
+# slurm:
+# srun  .... 
+# ###################################################################################
 
 
 # ./PenningTrap 4 4 4 512 20 FFT 0.05 LeapFrog --overallocate 1.0  --info 5
@@ -63,5 +70,3 @@ mkdir data
 
 
 cd $IPPL_DIR
-
-

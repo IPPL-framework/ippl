@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(IPPL LANGUAGES CXX VERSION 3.0.2)
+project(IPPL LANGUAGES CXX C VERSION 3.0.2)
 
 include(GNUInstallDirs)
 
