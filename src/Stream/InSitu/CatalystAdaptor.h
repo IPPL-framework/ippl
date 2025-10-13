@@ -98,6 +98,7 @@ namespace CatalystAdaptor {
                     , const std::string label
                     ,       conduit_cpp::Node& node
                     , const std::filesystem::path source_dir
+                    , const bool png_extracts
         // , ViewRegistry& vr
     );
 
@@ -123,6 +124,7 @@ namespace CatalystAdaptor {
                                         , const std::string label
                                         ,       conduit_cpp::Node& node
                                         , const std::filesystem::path source_dir
+                                        , const bool png_extracts
                                         // , ViewRegistry& vr
         );
 
@@ -147,6 +149,7 @@ namespace CatalystAdaptor {
                                         , const std::string label
                                         ,       conduit_cpp::Node& node
                                         , const std::filesystem::path source_dir
+                                        , const bool png_extracts
                                         // , ViewRegistry& vr
         );
 
@@ -168,6 +171,7 @@ namespace CatalystAdaptor {
                 ,                  const std::string label
                 , [[maybe_unused]]       conduit_cpp::Node& node
                 , [[maybe_unused]] const std::filesystem::path source_dir
+                , [[maybe_unused]] const bool png_extracts
         // , ViewRegistry& vr
     );
 
@@ -183,13 +187,14 @@ namespace CatalystAdaptor {
          * @param source_dir The source directory for script lookup.
          */
         template<typename T>
-        void init_entry( 
-                    const std::shared_ptr<T>&   entry
-                , const std::string           label
-                ,       conduit_cpp::Node&    node
-                , const std::filesystem::path source_dir
-                // , ViewRegistry& vr 
-        );
+    void init_entry( 
+            const std::shared_ptr<T>&   entry
+        , const std::string           label
+        ,       conduit_cpp::Node&    node
+        , const std::filesystem::path source_dir
+        , const bool                  png_extracts
+        // , ViewRegistry& vr 
+    );
 
 
 

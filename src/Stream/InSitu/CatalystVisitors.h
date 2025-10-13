@@ -19,18 +19,19 @@ namespace conduit_cpp { class Node; }
 struct CatalystAdaptor::InitVisitor {
     conduit_cpp::Node& node;
     std::filesystem::path source_dir;
+    bool png_extracts{false};
     template<class V, unsigned Dim, class... Rest>
     void operator()(const std::string& label, const ippl::Field<V, Dim, Rest...>& f) const {
-        init_entry(f, label, node, source_dir);
+        init_entry(f, label, node, source_dir, png_extracts);
     }
     template<class T, unsigned Dim, unsigned Dim_v, class... Rest>
     void operator()(const std::string& label, const ippl::Field<ippl::Vector<T, Dim_v>, Dim, Rest...>& f) const {
-        init_entry(f, label, node, source_dir);
+        init_entry(f, label, node, source_dir, png_extracts);
     }
     template<typename T>
     requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
     void operator()(const std::string& label, const T& pc) const {
-        init_entry(pc, label, node, source_dir);
+        init_entry(pc, label, node, source_dir, png_extracts);
     }
     template<class S> requires std::is_arithmetic_v<S>
     void operator()(const std::string& label, S value) const {

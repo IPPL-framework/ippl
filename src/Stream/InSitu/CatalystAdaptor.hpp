@@ -61,23 +61,25 @@ void CatalystAdaptor::init_entry(
                 , const std::string label
                 ,       conduit_cpp::Node& node
                 , const std::filesystem::path source_dir
+                , const bool png_extracts
     // , ViewRegistry& vr
 )
 {
         std::cout << "      init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
         // const Field_t<Dim>* field = &entry;
-        const std::string script = "catalyst/scripts/" + label;
-        const std::string channelName = "ippl_sField_" + label;
-        
-        set_node_script( node[script + "/filename"],
-                        "CATALYST_EXTRACTOR_SCRIPT_P",
-                        source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py"
-                    );
-        conduit_cpp::Node args = node[script + "/args"];
-        args.append().set_string("--channel_name");
-        args.append().set_string(channelName);
-        args.append().set_string("--experiment_name");
-        args.append().set_string(TestName);
+        const std::string channelName = "ippl_sField_" + label; 
+        if(png_extracts){
+
+            const std::string script = "catalyst/scripts/" + label;
+            
+            set_node_script( node[script + "/filename"],
+                            "CATALYST_EXTRACTOR_SCRIPT_P",
+                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py"
+                        );
+            conduit_cpp::Node args = node[script + "/args"];
+            args.append().set_string("--channel_name");
+            args.append().set_string(channelName);
+        }
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
@@ -93,24 +95,26 @@ void CatalystAdaptor::init_entry(
                                 , const std::string label
                                 ,       conduit_cpp::Node& node
                                 , const std::filesystem::path source_dir
+                                , const bool png_extracts
                                 // , ViewRegistry& vr
 )
 {
         std::cout << "      init_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         // const VField_t<T, Dim>* field = &entry;
-        const std::string script = "catalyst/scripts/" + label;
         const std::string channelName = "ippl_vField_" + label;
 
-        set_node_script( node[script + "/filename"],
-                        "CATALYST_EXTRACTOR_SCRIPT_P",
-                        source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py"
-                        
-                    );
-        conduit_cpp::Node args = node[script + "/args"];
-        args.append().set_string("--channel_name");
-        args.append().set_string(channelName);
-        args.append().set_string("--experiment_name");
-        args.append().set_string(TestName);
+        if(png_extracts){
+            const std::string script = "catalyst/scripts/" + label;
+
+            set_node_script( node[script + "/filename"],
+                            "CATALYST_EXTRACTOR_SCRIPT_P",
+                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py"
+                            
+                        );
+            conduit_cpp::Node args = node[script + "/args"];
+            args.append().set_string("--channel_name");
+            args.append().set_string(channelName);
+        }
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
@@ -127,6 +131,7 @@ void CatalystAdaptor::init_entry(
                                 , const std::string label
                                 ,       conduit_cpp::Node& node
                                 , const std::filesystem::path source_dir
+                                , const bool png_extracts
                                 // , ViewRegistry& vr
 )
 {
@@ -136,22 +141,21 @@ void CatalystAdaptor::init_entry(
                     << particle_dim_v<T> 
                     << ",...>...> [or subclass]) called" << std::endl;
                     
-            const std::string script = "catalyst/scripts/"+ label;
             const std::string channelName = "ippl_particles_" + label;
-            
-            set_node_script( 
-                            node[script + "/filename"],
-                            // file
-                            "CATALYST_EXTRACTOR_SCRIPT_P",
-                            source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
-                            
-                        );
-            conduit_cpp::Node args = node[script + "/args"];
-            args.append().set_string("--channel_name");
-            args.append().set_string(channelName);
-            args.append().set_string("--experiment_name");
-            args.append().set_string(TestName);
+            if(png_extracts){
+                const std::string script = "catalyst/scripts/"+ label;
 
+                set_node_script( 
+                                node[script + "/filename"],
+                                // file
+                                "CATALYST_EXTRACTOR_SCRIPT_P",
+                                source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
+                                
+                            );
+                conduit_cpp::Node args = node[script + "/args"];
+                args.append().set_string("--channel_name");
+                args.append().set_string(channelName);
+            }
 
             conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
             script_args.append().set_string(channelName);
@@ -166,6 +170,7 @@ void CatalystAdaptor::init_entry(
             ,                  const std::string label
             , [[maybe_unused]]       conduit_cpp::Node& node
             , [[maybe_unused]] const std::filesystem::path source_dir
+            , [[maybe_unused]] const bool png_extracts
     // , ViewRegistry& vr
 )
 {
@@ -180,17 +185,19 @@ void CatalystAdaptor::init_entry(
             const std::shared_ptr<T>&   entry
         , const std::string           label
         ,       conduit_cpp::Node&    node
-        , const std::filesystem::path source_dir
-        // , ViewRegistry& vr 
+    , const std::filesystem::path source_dir
+    , const bool                  png_extracts
+    // , ViewRegistry& vr 
 )
 {
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             init_entry(  *entry
                         , label
-                        , node
-                        , source_dir
-                        // , vr
+            , node
+            , source_dir
+            , png_extracts
+            // , vr
             );          // Dereference and dispatch to reference version
         } else {
 
@@ -756,25 +763,27 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
         //     );
         // }
         const char* catalyst_png = std::getenv("IPPL_CATALYST_PNG");
-        if(catalyst_png && std::string(catalyst_png)=="ON"){
+        const bool png_extracts = (catalyst_png && std::string(catalyst_png) == "ON");
+        if(png_extracts){
 
             m << "TRYING TO SET CATALYST PNG EXTRACTS" << endl;
 
+        }
+        else{
+            m << "catalyst PNG extract DEACTIVATED" << endl;
+        }
+        
             registry_vis.for_each(
                 [&](std::string_view label, const auto& entry){
                     init_entry(   entry
                                 , std::string(label)
                                 , node
                                 , source_dir
+                                , png_extracts
                             );
                 }
             );
 
-
-        }
-        else{
-            m << "catalyst PNG extract DEACTIVATED" << endl;
-        }
 
         args.append().set_string("--experiment_name");
         args.append().set_string(TestName);
@@ -875,10 +884,13 @@ void CatalystAdaptor::InitializeRuntime(visreg::VisRegistryRuntime& visReg,
     const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
 
     // If PNG extraction requested, run init visitor over visualization registry
-    if (catalyst_png && std::string(catalyst_png) == "ON") {
+    const bool png_extracts = (catalyst_png && std::string(catalyst_png) == "ON");
+    if (png_extracts) {
         m << "PNG extraction ACTIVATED" << endl;
-        InitVisitor initV{node, source_dir};
-        visReg.for_each(initV);
+        // Use a lambda to forward the png_extracts flag to init_entry
+        visReg.for_each([&](std::string_view label, const auto& entry){
+            init_entry(entry, std::string(label), node, source_dir, png_extracts);
+        });
     } else {
         m << "PNG extraction DEACTIVATED" << endl;
     }
