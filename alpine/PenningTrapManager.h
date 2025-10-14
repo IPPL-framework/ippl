@@ -73,8 +73,6 @@ private:
     public:
     ippl::CatalystAdaptor cat_vis;
 
-    std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry_;
-    std::shared_ptr<ippl::VisRegistryRuntime> runtime_steer_registry_;
 
 public:
 
@@ -197,9 +195,15 @@ public:
         // ippl::CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
 
 
-        runtime_steer_registry_ =  ippl::MakeVisRegistryRuntimePtr("magnetic", magnetic_scale, "electric", electric_scale);
+        std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr(
+        //                ippl::VisRegistryRuntime    runtime_steer_registry = ippl::MakeVisRegistryRuntime(
+                                    "magnetic", magnetic_scale, 
+                                    "electric", electric_scale
+                                );
         
-        runtime_vis_registry_ =   ippl::MakeVisRegistryRuntimePtr(
+        std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
+        // ippl::VisRegistryRuntime runtime_vis_registry   = ippl::MakeVisRegistryRuntime(
+
                                     "ions",             this->pcontainer_m, 
                                     // "ions",             *this->pcontainer_m, 
                                     "electrostatic",    this->fcontainer_m->getE(), 
@@ -207,7 +211,7 @@ public:
                                 );
 
         // CatalystAdaptor::
-        cat_vis.InitializeRuntime(*runtime_vis_registry_, *runtime_steer_registry_);
+        cat_vis.InitializeRuntime(runtime_vis_registry, runtime_steer_registry);
 
 
 
@@ -437,8 +441,9 @@ public:
 
 
         // CatalystAdaptor::
-        cat_vis.ExecuteRuntime(*runtime_vis_registry_, *runtime_steer_registry_, 
-                                        it, this->time_m, ippl::Comm->rank());
+        cat_vis.ExecuteRuntime(
+                                // *runtime_vis_registry_, *runtime_steer_registry_, 
+                                 it, this->time_m, ippl::Comm->rank());
 
 
 

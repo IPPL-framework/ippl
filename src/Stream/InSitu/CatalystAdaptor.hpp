@@ -59,12 +59,11 @@ namespace ippl{
 template<typename T, unsigned Dim, class... ViewArgs>
  void CatalystAdaptor::init_entry( 
                 [[maybe_unused]]  
-                const Field<T, Dim, ViewArgs...>& entry
+                  const Field<T, Dim, ViewArgs...>& entry
                 , const std::string label
                 ,       conduit_cpp::Node& node
                 , const std::filesystem::path source_dir
                 , const bool png_extracts
-    // , ViewRegistry& vr
 )
 {
         std::cout << "      init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
@@ -93,12 +92,11 @@ template<typename T, unsigned Dim, class... ViewArgs>
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
  void CatalystAdaptor::init_entry( 
                                 [[maybe_unused]]  
-                                    const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
+                                  const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
                                 , const std::string label
                                 ,       conduit_cpp::Node& node
                                 , const std::filesystem::path source_dir
                                 , const bool png_extracts
-                                // , ViewRegistry& vr
 )
 {
         std::cout << "      init_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
@@ -134,7 +132,6 @@ requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
                                 ,       conduit_cpp::Node& node
                                 , const std::filesystem::path source_dir
                                 , const bool png_extracts
-                                // , ViewRegistry& vr
 )
 {
         std::cout   << "      init_entry(ParticleBase<PLayout<" 
@@ -173,7 +170,6 @@ requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
             , [[maybe_unused]]       conduit_cpp::Node& node
             , [[maybe_unused]] const std::filesystem::path source_dir
             , [[maybe_unused]] const bool png_extracts
-    // , ViewRegistry& vr
 )
 {
         Inform m("init_entry():");
@@ -189,7 +185,6 @@ template<typename T>
         ,       conduit_cpp::Node&    node
     , const std::filesystem::path source_dir
     , const bool                  png_extracts
-    // , ViewRegistry& vr 
 )
 {
         if (entry) {
@@ -200,7 +195,7 @@ template<typename T>
             , source_dir
             , png_extracts
             // , vr
-            );          // Dereference and dispatch to reference version
+            );
         } else {
 
             Inform m("init_entry():");
@@ -865,10 +860,17 @@ right place... */
 // Runtime registry based Initialize / Execute (non-templated registry)
 // =====================================================================================
 
-void CatalystAdaptor::InitializeRuntime(VisRegistryRuntime& visReg,
-                                        [[maybe_unused]] VisRegistryRuntime& steerReg,
+void CatalystAdaptor::InitializeRuntime(
+                           const std::shared_ptr<VisRegistryRuntime>& visReg,
+                           const std::shared_ptr<VisRegistryRuntime>& steerReg,
                                         const std::filesystem::path& source_dir_in) {
     Inform m("Catalyst::InitializeRuntime()");
+
+    /* no meaning in moving shared pointers ... */
+    // visRegistry   = std::move(visReg);
+    // steerRegistry = std::move(steerReg);
+    visRegistry   = visReg;
+    steerRegistry = steerReg;
 
     conduit_cpp::Node node;
     std::filesystem::path source_dir = source_dir_in;
@@ -898,12 +900,8 @@ void CatalystAdaptor::InitializeRuntime(VisRegistryRuntime& visReg,
         m << "PNG extraction DEACTIVATED" << endl;
     }
     
-    // visReg.for_each([&](std::string_view label, const auto& entry){
-    //     init_entry(entry, std::string(label), node, source_dir, png_extracts);
-    // });
-
     InitVisitor initV{node, source_dir, png_extracts};
-    visReg.for_each(initV);
+    visRegistry->for_each(initV);
 
     if (catalyst_vtk && std::string(catalyst_vtk) == "ON") {
         m << "VTK extraction ACTIVATED" << endl;
@@ -925,9 +923,13 @@ void CatalystAdaptor::InitializeRuntime(VisRegistryRuntime& visReg,
                         "CATALYST_PROXYS_PATH_M",
                         source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml");
 
-        // Optionally initialize steerable placeholders (not strictly required here)
+
+
+        // TODO:
         // InitVisitor steerInit{node, source_dir};
         // steerReg.for_each(steerInit);
+
+
     } else {
         m << "Steering DEACTIVATED" << endl;
         args.append().set_string("--steer");
@@ -944,9 +946,7 @@ void CatalystAdaptor::InitializeRuntime(VisRegistryRuntime& visReg,
     }
 }
 
-void CatalystAdaptor::ExecuteRuntime(VisRegistryRuntime& visReg,
-                                     VisRegistryRuntime& steerReg,
-                                     int cycle, double time, int rank) {
+void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank) {
     conduit_cpp::Node node;
     auto state = node["catalyst/state"];
     state["cycle"].set(cycle);
@@ -958,11 +958,11 @@ void CatalystAdaptor::ExecuteRuntime(VisRegistryRuntime& visReg,
 
     // Forward pass: add channels
     ExecuteVisitor execV{node, viewReg};
-    visReg.for_each(execV); // fields + particles only
+    visRegistry->for_each(execV); // fields + particles only
 
     if (catalyst_steer && std::string(catalyst_steer) == "ON") {
         SteerForwardVisitor steerV{node};
-        steerReg.for_each(steerV); // add only steerable scalar channels
+        steerRegistry->for_each(steerV); // add only steerable scalar channels
     }
 
     catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
@@ -975,7 +975,7 @@ void CatalystAdaptor::ExecuteRuntime(VisRegistryRuntime& visReg,
         conduit_cpp::Node results;
         Results(results);
         SteerFetchVisitor fetchV{results};
-        steerReg.for_each(fetchV);
+        steerRegistry->for_each(fetchV);
     }
 }
 

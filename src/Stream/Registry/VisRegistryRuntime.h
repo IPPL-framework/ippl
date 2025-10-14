@@ -17,11 +17,7 @@
 #include <functional>
 #include <cassert>
 
-
 #include <Stream/InSitu/CatalystAdaptor.h>
-
-// #include "Stream/InSitu/CatalystVisitors.h"
-
 
 
 // Category traits
@@ -206,6 +202,7 @@ std::shared_ptr<VisRegistryRuntime> MakeVisRegistryRuntimePtr(Args&&... args) {
         detail::add_pairs(*reg, std::forward<Args>(args)...);
     }
     return reg;
-}
+
+} 
 
 } // namespace ippl

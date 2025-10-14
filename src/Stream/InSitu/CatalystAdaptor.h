@@ -32,10 +32,26 @@
 
 
 // ############################################
+// Possible TODO:
+// ability to initialize new objects or reinitialize 
+// with completely new set of objects
+// 
+// 
 // CatalystAdaptor.h needs VisRegistryRuntime.h
-// VisRegistryRuntime.h needs CataylstVistors.h
+// VisRegistryRuntime.h needs CataylstVistors.h (only Visitors)
 // CataylstVistors.h need CatalystAdaptors.h
-// -> forward declare Vistors in Catalyst Adaptors not VisRegistryRuntime
+// 
+// 
+// 
+// A -> forward declare VisRegistryRuntime in Catalyst Adaptors
+//   -> will will only allow registry to be member via smartpointer
+// B -> (?)move Visitor structs out of the cATALYST Catalyst Adaptor,
+//       (might nto work easily)
+// 
+// 
+// 
+// ->A
+// 
 // 
 // ############################################
 
@@ -50,6 +66,9 @@ class VisRegistryRuntime;
 
 // namespace CatalystAdaptor {
 class CatalystAdaptor {
+    std::shared_ptr<ippl::VisRegistryRuntime> visRegistry;
+    std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry;
+
     public:
 
     using View_vector =
@@ -447,15 +466,20 @@ right place... */
 
     // Runtime (non-templated) API additions -------------------------------------------------
     // Initialize Catalyst using a runtime registry (vis + steer)
-    void InitializeRuntime(VisRegistryRuntime& visReg,
-                           VisRegistryRuntime& steerReg,
+    void InitializeRuntime(
+                        //    VisRegistryRuntime& visReg,
+                        //    VisRegistryRuntime& steerReg,
+                           const std::shared_ptr<VisRegistryRuntime>& visReg,
+                           const std::shared_ptr<VisRegistryRuntime>& steerReg,
                            const std::filesystem::path& source_dir = {});
 
     // Execute Catalyst for a given timestep using runtime registry.
     // Populates forward steerable values and fetches back updated ones.
-    void ExecuteRuntime(VisRegistryRuntime& visReg,
-                        VisRegistryRuntime& steerReg,
-                        int cycle, double time, int rank);
+    void ExecuteRuntime(
+                        // VisRegistryRuntime& visReg,
+                        // VisRegistryRuntime& steerReg,
+                        int cycle, double time, 
+                        int rank = ippl::Comm->rank());
 
 
     // Base Adaptor
