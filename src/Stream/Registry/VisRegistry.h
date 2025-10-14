@@ -18,6 +18,8 @@
 #include <vector>
 #include <iostream>
 
+namespace ippl{
+
 /**
  * @brief Base registry entry container for storing named pointers (type-erased).
  */
@@ -315,5 +317,7 @@ std::unique_ptr<RegistryFluent<Slot<Ids, Ts>...>> MakeRegistryPtrs(Ts*... ptrs) 
     //         result.emplace_back(std::string(IdAt<I>.sv()));
     //     }
     // }
+
+}
 
 #include "Stream/Registry/VisRegistry.hpp"

@@ -28,6 +28,8 @@
 #include <unordered_set>
 #include <initializer_list>
 
+namespace ippl{
+
 
 
 // === Compile-time ID utilities ===
@@ -193,3 +195,5 @@ template<typename T>
 constexpr bool IsSharedPtr_v = IsSharedPtr<T>::value;
 // ======================================
 */
+
+}

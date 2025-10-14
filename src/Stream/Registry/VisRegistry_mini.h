@@ -11,7 +11,7 @@
 
 #include "Stream/Registry/RegistryHelper.h"
 
-// namespace ippl {
+namespace ippl {
 
 /**
  * @brief A type-erased registry that can store arbitrary types with string labels
@@ -179,6 +179,6 @@ auto MakeVisRegistryNamed(Types&&... objects) {
 }
 #endif
 
-// } // namespace ippl
+} // namespace ippl
 
 #endif // VISREGISTRY2_H

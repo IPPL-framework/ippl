@@ -4,6 +4,8 @@
 #include "Stream/Registry/VisRegistry.h"
 #include "Stream/Registry/RegistryHelper.h"
 
+namespace ippl{
+
 // RegistryFluent implementation
 template <typename... Slots>
 RegistryFluent<Slots...>::RegistryFluent() = default;
@@ -225,3 +227,5 @@ void RegistryFluent<>::for_each(Func&&) const {
 
 inline std::size_t RegistryFluent<>::size() const { return 0; }
 inline bool RegistryFluent<>::empty() const { return true; }
+
+}

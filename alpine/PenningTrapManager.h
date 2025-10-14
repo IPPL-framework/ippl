@@ -69,9 +69,12 @@ private:
     double dxFinest_m;
     double alpha_m;
     double DrInv_m;
+    
+    public:
+    ippl::CatalystAdaptor cat_vis;
 
-    std::shared_ptr<visreg::VisRegistryRuntime> runtime_vis_registry_;
-    std::shared_ptr<visreg::VisRegistryRuntime> runtime_steer_registry_;
+    std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry_;
+    std::shared_ptr<ippl::VisRegistryRuntime> runtime_steer_registry_;
 
 public:
 
@@ -163,9 +166,9 @@ public:
 
             
         // std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-        // auto myR_steer = MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
+        // auto myR_steer = ippl::MakeRegistry<"magnetic","electric">(magnetic_scale, electric_scale);
         
-        // auto myR_vis = MakeRegistry<"ions",
+        // auto myR_vis = ippl::MakeRegistry<"ions",
         //                             "electrostatic",
         //                             "density"
         //                             // ,"potential"
@@ -176,34 +179,35 @@ public:
         //                              //, this->fcontainer_m->getRho() 
         //                         );
 
-        // CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
+        // ippl::CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
 
 
 
 
-        // auto myR_steer_mini =   MakeVisRegistry_mini( "magnetic", magnetic_scale, 
+        // auto myR_steer_mini =   ippl::MakeVisRegistry_mini( "magnetic", magnetic_scale, 
         //                                                 "electric", electric_scale
         //                                                     );
         
-        // auto myR_vis_mini   =   MakeVisRegistry_mini(
+        // auto myR_vis_mini   =   ippl::MakeVisRegistry_mini(
         //                             "ions",         this->pcontainer_m, 
         //                             "electrostatic",this->fcontainer_m->getE(), 
         //                             "density",      this->fcontainer_m->getRho() 
         //                         );
 
-        // CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
+        // ippl::CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
 
 
-        runtime_steer_registry_ =  visreg::MakeVisRegistryRuntimePtr("magnetic", magnetic_scale, "electric", electric_scale);
+        runtime_steer_registry_ =  ippl::MakeVisRegistryRuntimePtr("magnetic", magnetic_scale, "electric", electric_scale);
         
-        runtime_vis_registry_ =   visreg::MakeVisRegistryRuntimePtr(
+        runtime_vis_registry_ =   ippl::MakeVisRegistryRuntimePtr(
                                     "ions",             this->pcontainer_m, 
                                     // "ions",             *this->pcontainer_m, 
                                     "electrostatic",    this->fcontainer_m->getE(), 
                                     "density",          this->fcontainer_m->getRho() 
                                 );
 
-        CatalystAdaptor::InitializeRuntime(*runtime_vis_registry_, *runtime_steer_registry_);
+        // CatalystAdaptor::
+        cat_vis.InitializeRuntime(*runtime_vis_registry_, *runtime_steer_registry_);
 
 
 
@@ -214,7 +218,7 @@ public:
         
         #ifdef IPPL_ENABLE_ASCENT
             m << "Ascemt is enabled" << endl; 
-            AscentAdaptor::Initialize();
+            ippl::AscentAdaptor::Initialize();
         #endif
 
 
@@ -401,38 +405,39 @@ public:
 #ifdef IPPL_ENABLE_CATALYST
         
         
-        // auto myR_steer = MakeRegistry<  "magnetic",
+        // auto myR_steer = ippl::MakeRegistry<  "magnetic",
         //                                 "electric">
         //                                 (magnetic_scale,
         //                                  electric_scale);
         
-        // auto myR_vis = MakeRegistry<"ions",
+        // auto myR_vis = ippl::MakeRegistry<"ions",
         //                             "electrostatic",
         //                             "density">
         //                             (pc, 
         //                             this->fcontainer_m->getE(), 
         //                             this->fcontainer_m->getRho() );
 
-        // CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
+        // ippl::CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
 
 
 
-        // auto myR_steer_mini =   MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
+        // auto myR_steer_mini =   ippl::MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
         //                                                 "electric", electric_scale);
         
-        // auto myR_vis_mini   =   MakeVisRegistry_mini(
+        // auto myR_vis_mini   =   ippl::MakeVisRegistry_mini(
         //                             "ions",pc, 
         //                             // "2ions",this->pcontainer_m, 
         //                             "electrostatic", this->fcontainer_m->getE(), 
         //                             "density",this->fcontainer_m->getRho() 
         //                         );
 
-        // CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
+        // ippl::CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
 
 
 
-        CatalystAdaptor::ExecuteRuntime(*runtime_vis_registry_, *runtime_steer_registry_, 
+        // CatalystAdaptor::
+        cat_vis.ExecuteRuntime(*runtime_vis_registry_, *runtime_steer_registry_, 
                                         it, this->time_m, ippl::Comm->rank());
 
 
@@ -464,7 +469,7 @@ public:
             // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
             // {"phi", Ascent    ::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
         };
-        AscentAdaptor::Execute(it, this->time_m ,  particles_asc, fields_asc);
+        ippl::AscentAdaptor::Execute(it, this->time_m ,  particles_asc, fields_asc);
 
 #endif
 

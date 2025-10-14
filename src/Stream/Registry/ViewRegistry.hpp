@@ -6,6 +6,7 @@
 #include <memory>
 
 // Implementation of ViewRegistry methods
+namespace ippl{
 
 template<typename T>
 void ViewRegistry::set(const std::string& name, T object) {
@@ -34,4 +35,5 @@ std::shared_ptr<T> ViewRegistry::get(const std::string& name) const {
 
 inline void ViewRegistry::unset(const std::string& name) {
     m_storage.erase(name);
+}
 }

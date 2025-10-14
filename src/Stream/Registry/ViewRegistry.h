@@ -5,6 +5,7 @@
 #include <memory>
 #include <iostream>
 
+namespace ippl{
 /**
  * @class ViewRegistry
  * @brief A dynamic registry for storing and retrieving named objects using type erasure.
@@ -66,5 +67,6 @@ public:
     void unset(const std::string& name);
 };
 
+}
 
 #include "Stream/Registry/ViewRegistry.hpp"

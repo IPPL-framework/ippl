@@ -23,16 +23,9 @@
 // #include "Stream/InSitu/CatalystVisitors.h"
 
 
-// Forward declarations for Catalyst visitor types (defined in CatalystVisitors.h)
-namespace CatalystAdaptor {
-struct InitVisitor;
-struct ExecuteVisitor;
-struct SteerForwardVisitor;
-struct SteerFetchVisitor;
-}
 
 // Category traits
-namespace visreg {
+namespace ippl {
 
 template<class T>
 inline constexpr bool is_scalar_v = std::is_arithmetic_v<typename std::decay<T>::type>;
@@ -79,13 +72,18 @@ struct access_traits<T*> {
 };
 
 class VisRegistryRuntime {
+    using InitVisitor_t          = CatalystAdaptor::InitVisitor;
+    using ExecuteVisitor_t       = CatalystAdaptor::ExecuteVisitor;
+    using SteerForwardVisitor_t  = CatalystAdaptor::SteerForwardVisitor;
+    using SteerFetchVisitor_t    = CatalystAdaptor::SteerFetchVisitor;
+
     struct Entry {
         std::string label;
         // Per-visitor callbacks; only relevant ones are set per entry
-        std::function<void(CatalystAdaptor::InitVisitor&)> do_init;
-        std::function<void(CatalystAdaptor::ExecuteVisitor&)> do_exec;
-        std::function<void(CatalystAdaptor::SteerForwardVisitor&)> do_steer_fwd;
-        std::function<void(CatalystAdaptor::SteerFetchVisitor&)> do_steer_fetch;
+        std::function<void(InitVisitor_t&)> do_init;
+        std::function<void(ExecuteVisitor_t&)> do_exec;
+        std::function<void(SteerForwardVisitor_t&)> do_steer_fwd;
+        std::function<void(SteerFetchVisitor_t&)> do_steer_fetch;
     };
 
     std::vector<Entry> entries_;
@@ -105,14 +103,14 @@ public:
         Entry e;
         e.label = label;
         if constexpr (is_field_v<T>) {
-            e.do_init = [&value, label](CatalystAdaptor::InitVisitor& v) { v(label, value); };
-            e.do_exec = [&value, label](CatalystAdaptor::ExecuteVisitor& v) { v(label, value); };
+            e.do_init = [&value, label](InitVisitor_t& v) { v(label, value); };
+            e.do_exec = [&value, label](ExecuteVisitor_t& v) { v(label, value); };
         } else if constexpr (is_particle_v<T>) {
-            e.do_init = [&value, label](CatalystAdaptor::InitVisitor& v) { v(label, value); };
-            e.do_exec = [&value, label](CatalystAdaptor::ExecuteVisitor& v) { v(label, value); };
+            e.do_init = [&value, label](InitVisitor_t& v) { v(label, value); };
+            e.do_exec = [&value, label](ExecuteVisitor_t& v) { v(label, value); };
         } else if constexpr (is_scalar_v<T>) {
-            e.do_steer_fwd  = [&value, label](CatalystAdaptor::SteerForwardVisitor& v) { v(label, value); };
-            e.do_steer_fetch= [&value, label](CatalystAdaptor::SteerFetchVisitor& v) { v(label, value); };
+            e.do_steer_fwd  = [&value, label](SteerForwardVisitor_t& v) { v(label, value); };
+            e.do_steer_fetch= [&value, label](SteerFetchVisitor_t& v) { v(label, value); };
         }
         entries_.push_back(std::move(e));
     }
@@ -128,39 +126,24 @@ public:
         auto keep = ptr; // copy
         // augment one of the callbacks or create a dummy fetch to hold lifetime
         if (!e.do_init) {
-            e.do_init = [keep](CatalystAdaptor::InitVisitor&) {};
+            e.do_init = [keep](InitVisitor_t&) {};
         } else {
             auto fn = e.do_init;
-            e.do_init = [keep, fn](CatalystAdaptor::InitVisitor& v) { fn(v); };
+            e.do_init = [keep, fn](InitVisitor_t& v) { fn(v); };
         }
     }
 
-    // // RVALUE overload: take ownership by storing internally and binding to it
-    // template<class T>
-    // void add(std::string label, T&& value) {
-    //     static_assert(AllowedVisTypeOrShared_v<typename std::decay<T>::type>,
-    //                   "VisRegistryRuntime: unsupported value type (rvalue)");
-    //     using Stored = typename std::decay<T>::type;
-    //     if constexpr (is_allowed_shared_ptr<Stored>::value) {
-    //         // value is already a shared_ptr<U> -> dispatch to shared_ptr overload explicitly
-    //         this->add(static_cast<const std::string&>(label), std::as_const(value));
-    //     } else {
-    //         auto holder = std::make_shared<Stored>(std::forward<T>(value));
-    //         this->add(static_cast<const std::string&>(label), holder);
-    //     }
-    // }
-
     // Overloads for known visitors
-    void for_each(CatalystAdaptor::InitVisitor& v) const {
+    void for_each(InitVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_init) e.do_init(v);
     }
-    void for_each(CatalystAdaptor::ExecuteVisitor& v) const {
+    void for_each(ExecuteVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_exec) e.do_exec(v);
     }
-    void for_each(CatalystAdaptor::SteerForwardVisitor& v) const {
+    void for_each(SteerForwardVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_steer_fwd) e.do_steer_fwd(v);
     }
-    void for_each(CatalystAdaptor::SteerFetchVisitor& v) const {
+    void for_each(SteerFetchVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_steer_fetch) e.do_steer_fetch(v);
     }
 
@@ -172,7 +155,7 @@ public:
 // Factory helpers
 // Build a runtime registry from alternating (label, value) arguments.
 // Usage:
-//   auto reg = visreg::MakeVisRegistryRuntime(
+//   auto reg = MakeVisRegistryRuntime(
 //                 "particles", pcontainer,
 //                 "E", std::ref(fieldE),
 //                 "rho", std::ref(fieldRho),
@@ -225,4 +208,4 @@ std::shared_ptr<VisRegistryRuntime> MakeVisRegistryRuntimePtr(Args&&... args) {
     return reg;
 }
 
-} // namespace visreg
+} // namespace ippl

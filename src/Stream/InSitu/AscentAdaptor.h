@@ -22,7 +22,7 @@
 
 
 
-
+namespace ippl{
 namespace AscentAdaptor {
 
     ascent::Ascent mAscent;
@@ -487,7 +487,8 @@ namespace AscentAdaptor {
 
 
     }
-}  // namespace CatalystAdaptor
+}  // namespace AscentAdaptor
+} // namespace ippl
 
 #endif
 

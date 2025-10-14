@@ -21,8 +21,6 @@
 #include "Stream/Registry/RegistryHelper.h"
 #include "Stream/Registry/VisRegistry.h"
 #include "Stream/Registry/VisRegistry_mini.h"
-// runtime non-templated flexible (slow?) registry
-#include "Stream/Registry/VisRegistryRuntime.h"
 // #include "Stream/InSitu/VisBaseAdaptor.h"
 
 
@@ -33,18 +31,36 @@
 //   CATALYST_EXPORT enum catalyst_status catalyst_results(conduit_node* params);
 
 
-namespace CatalystAdaptor {
+// ############################################
+// CatalystAdaptor.h needs VisRegistryRuntime.h
+// VisRegistryRuntime.h needs CataylstVistors.h
+// CataylstVistors.h need CatalystAdaptors.h
+// -> forward declare Vistors in Catalyst Adaptors not VisRegistryRuntime
+// 
+// ############################################
 
+
+
+
+namespace ippl{
+
+    /* FORWARD DECLARATION */
+class VisRegistryRuntime;
+
+
+// namespace CatalystAdaptor {
+class CatalystAdaptor {
+    public:
 
     using View_vector =
-        Kokkos::View<ippl::Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+        Kokkos::View<Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
     /**
      * @brief Sets electrostatic vector field data in a Conduit node.
      *
      * @param node The Conduit node to populate.
      * @param view The Kokkos vector view containing field data.
      */
-    inline void setData(conduit_cpp::Node& node, const View_vector& view);
+    static inline void setData(conduit_cpp::Node& node, const View_vector& view);
 
     using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
     /**
@@ -53,7 +69,7 @@ namespace CatalystAdaptor {
      * @param node The Conduit node to populate.
      * @param view The Kokkos scalar view containing field data.
      */
-    inline void setData(conduit_cpp::Node& node, const View_scalar& view);
+    static inline void setData(conduit_cpp::Node& node, const View_scalar& view);
 
 
 
@@ -65,7 +81,7 @@ namespace CatalystAdaptor {
      * @param env_var The name of the environment variable to check.
      * @param default_file_path The default file path to use if the environment variable is not set or invalid.
      */
-    void set_node_script(
+    static void set_node_script(
         conduit_cpp::Node node_path,
         const char* env_var,
         const std::filesystem::path default_file_path
@@ -92,9 +108,9 @@ namespace CatalystAdaptor {
      * @param source_dir The source directory for script lookup.
      */
     template<typename T, unsigned Dim, class... ViewArgs>
-    void init_entry( 
+    static void init_entry( 
                     [[maybe_unused]]  
-                    const ippl::Field<T, Dim, ViewArgs...>& entry
+                    const Field<T, Dim, ViewArgs...>& entry
                     , const std::string label
                     ,       conduit_cpp::Node& node
                     , const std::filesystem::path source_dir
@@ -118,9 +134,9 @@ namespace CatalystAdaptor {
          * @param source_dir The source directory for script lookup.
          */
         template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-        void init_entry( 
+        static void init_entry( 
                                         [[maybe_unused]]  
-                                            const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry
+                                            const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
                                         , const std::string label
                                         ,       conduit_cpp::Node& node
                                         , const std::filesystem::path source_dir
@@ -142,8 +158,8 @@ namespace CatalystAdaptor {
          * @param source_dir The source directory for script lookup.
          */
         template<typename T>
-        requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-        void init_entry( 
+        requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+        static void init_entry( 
                                         [[maybe_unused]]  
                                             const T& entry
                                         , const std::string label
@@ -165,8 +181,8 @@ namespace CatalystAdaptor {
      * @param source_dir The source directory for script lookup.
      */
     template<typename T>
-    requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-    void init_entry(
+    requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
+    static void init_entry(
                 [[maybe_unused]]         T&& entry
                 ,                  const std::string label
                 , [[maybe_unused]]       conduit_cpp::Node& node
@@ -187,7 +203,7 @@ namespace CatalystAdaptor {
          * @param source_dir The source directory for script lookup.
          */
         template<typename T>
-    void init_entry( 
+    static void init_entry( 
             const std::shared_ptr<T>&   entry
         , const std::string           label
         ,       conduit_cpp::Node&    node
@@ -214,7 +230,7 @@ namespace CatalystAdaptor {
      * @param ID_host Host mirror of ID attribute.
      * @param node The Conduit node to populate.
      */
-    void Execute_Particle(
+    static void Execute_Particle(
          const std::string& channelName ,
          const auto& particleContainer
          , const auto& R_host
@@ -238,7 +254,7 @@ namespace CatalystAdaptor {
     * @param node The Conduit node to populate.
     */
     template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    void Execute_Field(const std::string& channelName, Field* field, 
+    static void Execute_Field(const std::string& channelName, Field* field, 
         Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
         conduit_cpp::Node& node);
 
@@ -263,7 +279,7 @@ namespace CatalystAdaptor {
      * @param vr The view registry to update.
      */
     template<typename T, unsigned Dim, class... ViewArgs>
-    void execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr);
+    static void execute_entry(const Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr);
 
 
 
@@ -282,7 +298,7 @@ namespace CatalystAdaptor {
      * @param vr The view registry to update.
      */
     template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-    void execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr);
+    static void execute_entry(const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr);
 
 
         // const std::string& fieldName = "E";
@@ -313,8 +329,8 @@ namespace CatalystAdaptor {
      * @param vr The view registry to update.
      */
     template<typename T>
-    requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-    void execute_entry(const T& entry
+    requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+    static void execute_entry(const T& entry
         , const std::string label
         , conduit_cpp::Node& node
         , ViewRegistry& vr);
@@ -331,8 +347,8 @@ namespace CatalystAdaptor {
      * @param vr The view registry to update.
      */
     template<typename T>
-    requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-    void execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr);
+    requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
+    static void execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr);
 
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
@@ -346,7 +362,7 @@ namespace CatalystAdaptor {
      * @param vr The view registry to update.
      */
     template<typename T>
-    void execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr );
+    static void execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr );
 
 
 
@@ -361,7 +377,7 @@ namespace CatalystAdaptor {
      * @param node The Conduit node to update.
      */
     template<typename T>
-    void AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node);
+    static void AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node);
 
 
     /* maybe use function overloading instead ... */
@@ -380,8 +396,16 @@ namespace CatalystAdaptor {
      * @param results The Conduit node containing results.
      */
     template<typename T>
-    void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results);
+    static void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results);
         
+    /**
+     * @brief Initializes Catalyst with the provided visualization and steering registries.
+     *
+     * @param registry_vis Visualization registry.
+     * @param registry_steer Steering registry.
+     */
+    static void Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer);
+
 
 
 
@@ -390,7 +414,7 @@ namespace CatalystAdaptor {
      *
      * @param results The Conduit node to populate with results.
      */
-    void Results(conduit_cpp::Node& results);
+    static void Results(conduit_cpp::Node& results);
 
 
 /* might not even need references to registries since a copy of s shared pointer still points to the 
@@ -404,44 +428,54 @@ right place... */
      * @param time Current simulation time.
      * @param rank Domain/process rank.
      */
-    void Execute(
+    static void Execute(
             auto& registry_vis, auto& registry_steer,
             int cycle, double time, int rank
         );
 
-    // Runtime (non-templated) API additions -------------------------------------------------
-    // Initialize Catalyst using a runtime registry (vis + steer)
-    void InitializeRuntime(visreg::VisRegistryRuntime& visReg,
-                           visreg::VisRegistryRuntime& steerReg,
-                           const std::filesystem::path& source_dir = {});
-
-    // Execute Catalyst for a given timestep using runtime registry.
-    // Populates forward steerable values and fetches back updated ones.
-    void ExecuteRuntime(visreg::VisRegistryRuntime& visReg,
-                        visreg::VisRegistryRuntime& steerReg,
-                        int cycle, double time, int rank);
-
-
-    /**
-     * @brief Initializes Catalyst with the provided visualization and steering registries.
-     *
-     * @param registry_vis Visualization registry.
-     * @param registry_steer Steering registry.
-     */
-    void Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer);
 
 
     /**
      * @brief Finalizes Catalyst and releases resources.
      */
-    void Finalize();
+    static void Finalize();
+
+// =====================================================================================
+// Runtime registry based Initialize / Execute (non-templated registry)
+// =====================================================================================
 
 
-}  // namespace CatalystAdaptor
+    // Runtime (non-templated) API additions -------------------------------------------------
+    // Initialize Catalyst using a runtime registry (vis + steer)
+    void InitializeRuntime(VisRegistryRuntime& visReg,
+                           VisRegistryRuntime& steerReg,
+                           const std::filesystem::path& source_dir = {});
 
+    // Execute Catalyst for a given timestep using runtime registry.
+    // Populates forward steerable values and fetches back updated ones.
+    void ExecuteRuntime(VisRegistryRuntime& visReg,
+                        VisRegistryRuntime& steerReg,
+                        int cycle, double time, int rank);
+
+
+    // Base Adaptor
+    struct InitVisitor;
+    struct ExecuteVisitor;
+    struct SteerForwardVisitor;
+    struct SteerFetchVisitor;
+
+
+
+
+};//class CatalystAdaptor
+} //namespace ippl
+  
 #include "Stream/InSitu/CatalystVisitors.h"
+  // runtime non-templated flexible (slow?) registry
 #include "Stream/Registry/VisRegistryRuntime.h"     // visitor structs
 #include "CatalystAdaptor.hpp"
+
+
 
 #endif
 

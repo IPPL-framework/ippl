@@ -63,19 +63,6 @@ int main(int argc, char* argv[]) {
 
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
-
-        
-
-        // #ifdef IPPL_ENABLE_CATALYST
-        //     msg << "Catalyst is enabled" << endl; 
-        //     CatalystAdaptor::Initialize();
-        // #endif
-        
-        // #ifdef IPPL_ENABLE_ASCENT
-        //     msg << "Ascemt is enabled" << endl; 
-        //     AscentAdaptor::Initialize();
-        // #endif
-
         
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
@@ -123,7 +110,8 @@ int main(int argc, char* argv[]) {
 
         msg << "End." << endl;
         #ifdef IPPL_ENABLE_CATALYST
-        CatalystAdaptor::Finalize();
+        // CatalystAdaptor::Finalize();
+        manager.cat_vis.Finalize();
         #endif
         IpplTimings::stopTimer(mainTimer);
 

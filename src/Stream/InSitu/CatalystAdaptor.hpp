@@ -1,9 +1,11 @@
 #pragma once
 #include "Stream/InSitu/CatalystAdaptor.h"
 
+namespace ippl{
+
 // Function implementations moved from CatalystAdaptor.h
 
-inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_vector& view) {
+ inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_vector& view) {
         node["electrostatic/association"].set_string("element");
         node["electrostatic/topology"].set_string("mesh");
         node["electrostatic/volume_dependent"].set_string("false");
@@ -17,7 +19,7 @@ inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_vector&
         node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
     }
 
-inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_scalar& view) {
+ inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_scalar& view) {
         node["density/association"].set_string("element");
         node["density/topology"].set_string("mesh");
         node["density/volume_dependent"].set_string("false");
@@ -26,7 +28,7 @@ inline void CatalystAdaptor::setData(conduit_cpp::Node& node, const View_scalar&
     }
 
     /*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
-void CatalystAdaptor::set_node_script(
+ void CatalystAdaptor::set_node_script(
     conduit_cpp::Node node_path,
     const char* env_var,
     const std::filesystem::path default_file_path
@@ -55,9 +57,9 @@ void CatalystAdaptor::set_node_script(
     /* SCALAR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
+ void CatalystAdaptor::init_entry( 
                 [[maybe_unused]]  
-                const ippl::Field<T, Dim, ViewArgs...>& entry
+                const Field<T, Dim, ViewArgs...>& entry
                 , const std::string label
                 ,       conduit_cpp::Node& node
                 , const std::filesystem::path source_dir
@@ -89,9 +91,9 @@ void CatalystAdaptor::init_entry(
     /* VECTOR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
+ void CatalystAdaptor::init_entry( 
                                 [[maybe_unused]]  
-                                    const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry
+                                    const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
                                 , const std::string label
                                 ,       conduit_cpp::Node& node
                                 , const std::filesystem::path source_dir
@@ -124,8 +126,8 @@ void CatalystAdaptor::init_entry(
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
     // == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
 template<typename T>
-requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-void CatalystAdaptor::init_entry( 
+requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+ void CatalystAdaptor::init_entry( 
                                 [[maybe_unused]]  
                                     const T& entry
                                 , const std::string label
@@ -164,8 +166,8 @@ void CatalystAdaptor::init_entry(
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
-requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-void CatalystAdaptor::init_entry(
+requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
+ void CatalystAdaptor::init_entry(
             [[maybe_unused]]         T&& entry
             ,                  const std::string label
             , [[maybe_unused]]       conduit_cpp::Node& node
@@ -181,7 +183,7 @@ void CatalystAdaptor::init_entry(
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
 template<typename T>
-void CatalystAdaptor::init_entry( 
+ void CatalystAdaptor::init_entry( 
             const std::shared_ptr<T>&   entry
         , const std::string           label
         ,       conduit_cpp::Node&    node
@@ -207,7 +209,7 @@ void CatalystAdaptor::init_entry(
         }
     }
 
-void CatalystAdaptor::Execute_Particle(
+ void CatalystAdaptor::Execute_Particle(
     const std::string& channelName ,
     const auto& particleContainer
     , const auto& R_host
@@ -292,7 +294,7 @@ void CatalystAdaptor::Execute_Particle(
 
     /* this needs to be overworked ... */
 template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field, 
+ void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field, 
     Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
     conduit_cpp::Node& node)
 {
@@ -380,7 +382,7 @@ void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field
         /* SCALAR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
-void CatalystAdaptor::execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr) {
+ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
         
         
@@ -400,7 +402,7 @@ void CatalystAdaptor::execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entr
         /* VECTOR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-void CatalystAdaptor::execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr) {
+ void CatalystAdaptor::execute_entry(const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         
         const std::string channelName = "ippl_vField_" + label;
@@ -449,8 +451,8 @@ void CatalystAdaptor::execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Di
 
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
 template<typename T>
-requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
-void CatalystAdaptor::execute_entry(const T& entry
+requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+ void CatalystAdaptor::execute_entry(const T& entry
     , const std::string label
     , conduit_cpp::Node& node
     , ViewRegistry& vr) {
@@ -464,10 +466,10 @@ void CatalystAdaptor::execute_entry(const T& entry
             const std::string channelName = "ippl_particles_" + label;
 
 
-            ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror    R_host_view;
-            ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror    P_host_view;
-            ippl::ParticleAttrib<double>::HostMirror                     q_host_view;
-            ippl::ParticleAttrib<std::int64_t>::HostMirror              ID_host_view;
+            ParticleAttrib<Vector<double, 3>>::HostMirror    R_host_view;
+            ParticleAttrib<Vector<double, 3>>::HostMirror    P_host_view;
+            ParticleAttrib<double>::HostMirror                     q_host_view;
+            ParticleAttrib<std::int64_t>::HostMirror              ID_host_view;
 
             auto particleContainer = &entry;
             assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
@@ -506,14 +508,14 @@ void CatalystAdaptor::execute_entry(const T& entry
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
-requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
-void CatalystAdaptor::execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr) {
+requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
+ void CatalystAdaptor::execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "  Entry type can't be processed: ID "<< label <<" "<< typeid(std::decay_t<T>).name() << std::endl;
     }
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
 template<typename T>
-void CatalystAdaptor::execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr ) {
+ void CatalystAdaptor::execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr ) {
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             execute_entry(*entry, label,  node, vr);  // Dereference and dispatch to reference version
@@ -523,7 +525,7 @@ void CatalystAdaptor::execute_entry( const std::shared_ptr<T>& entry,const std::
     }
 
 template<typename T>
-void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
+ void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
         std::cout << "      AddSteerableChanelValue( " << steerable_suffix << "); | Type: " << typeid(T).name() << std::endl;
         
         
@@ -571,7 +573,7 @@ void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass, std::
         // if constexpr (std::is_same_v<std::remove_cvref_t<T>, double>) {
 
 template<typename T>
-void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
+ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
         std::cout << "      FetchSteerableChanelValue(" << steerable_suffix  << ") | Type: " << typeid(T).name() << std::endl;
 
             
@@ -642,97 +644,9 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
         } 
     }
 
-void CatalystAdaptor::Results(conduit_cpp::Node& results) {
-        
-        // conduit_cpp::Node results;
-        catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
-        // catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
-        if (err != catalyst_status_ok)
-        {
-            std::cerr << "Failed to execute Catalyst-results: " << err << std::endl;
-        }
-        // else
-        // {
-        //     std::cout << "Result Node dump:" << std::endl;
-        //     results.print();
-        // }   
-    }
-
-/* might not even need references to registries since a copy of s shared pointer still points to the 
-right place... */
-void CatalystAdaptor::Execute(
-    auto& registry_vis, auto& registry_steer,
-    int cycle, double time, int rank
-){
-        
-        // add time/cycle information
-        conduit_cpp::Node node;
-        auto state = node["catalyst/state"];
-        state["cycle"].set(cycle);
-        state["time"].set(time);
-        state["domain_id"].set(rank);     
-
-        /* catch view registry by referrence and pass it to execute by refernece 
-        viewregistry with shared pointer will be delted by registry running out of scope,
-         shared pointers being deleted and deallocating the allocated copies for memories ...*/
-        ViewRegistry vr;
 
 
-        /* ideally avoid this ... */
-        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
-
-
-
-        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
-            
-            registry_steer.for_each(
-                [&node](std::string_view label, const auto& entry) {
-                    // std::cout << "   Entry ID: " << label << "\n";
-                    AddSteerableChannel(entry, std::string(label), node);
-                }
-            );
-        }
-
-        registry_vis.for_each(
-            [&node, &vr](std::string_view label, const auto& entry){
-                // std::cout << "  Entry ID: " << label << "\n";
-                execute_entry(entry, std::string(label),  node, vr);
-            }
-        );
-       
-        /* std::cout << "dump Conduit Catalyst Node pass forward "< std::endl; */
-        // node.print();
-
-
-        // Pass Conduit node to Catalyst and execute extraction and visualisation
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-        if (err != catalyst_status_ok) {
-            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
-        }
-        /* Catch steerables in results node */
-        conduit_cpp::Node results;
-        Results(results);  
-        
-
-
-        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
-        
-            // /* transfer steearble scalars back to original locaton via registry*/
-            registry_steer.for_each(
-                [&results](std::string_view label, auto& entry) {
-                    // std::cout << "   Entry ID: " << label << "\n";
-                    FetchSteerableChannelValue(entry, std::string(label), results);
-                }
-            );
-        }
-
-
-
-
-
-    }
-
-void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer) {
+ void CatalystAdaptor::Initialize(auto& registry_vis, [[maybe_unused]] auto& registry_steer) {
         Inform m("Catalyst::Initialize()");
 
         conduit_cpp::Node node;
@@ -848,7 +762,98 @@ void CatalystAdaptor::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_un
         }
     }
 
-void CatalystAdaptor::Finalize() {
+ void CatalystAdaptor::Results(conduit_cpp::Node& results) {
+        
+        // conduit_cpp::Node results;
+        catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
+        // catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
+        if (err != catalyst_status_ok)
+        {
+            std::cerr << "Failed to execute Catalyst-results: " << err << std::endl;
+        }
+        // else
+        // {
+        //     std::cout << "Result Node dump:" << std::endl;
+        //     results.print();
+        // }   
+    }
+
+/* might not even need references to registries since a copy of s shared pointer still points to the 
+right place... */
+ void CatalystAdaptor::Execute(
+    auto& registry_vis, auto& registry_steer,
+    int cycle, double time, int rank
+){
+        
+        // add time/cycle information
+        conduit_cpp::Node node;
+        auto state = node["catalyst/state"];
+        state["cycle"].set(cycle);
+        state["time"].set(time);
+        state["domain_id"].set(rank);     
+
+        /* catch view registry by referrence and pass it to execute by refernece 
+        viewregistry with shared pointer will be delted by registry running out of scope,
+         shared pointers being deleted and deallocating the allocated copies for memories ...*/
+        ViewRegistry vr;
+
+
+        /* ideally avoid this ... */
+        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+            
+            registry_steer.for_each(
+                [&node](std::string_view label, const auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    AddSteerableChannel(entry, std::string(label), node);
+                }
+            );
+        }
+
+        registry_vis.for_each(
+            [&node, &vr](std::string_view label, const auto& entry){
+                // std::cout << "  Entry ID: " << label << "\n";
+                execute_entry(entry, std::string(label),  node, vr);
+            }
+        );
+       
+        /* std::cout << "dump Conduit Catalyst Node pass forward "< std::endl; */
+        // node.print();
+
+
+        // Pass Conduit node to Catalyst and execute extraction and visualisation
+        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        }
+        /* Catch steerables in results node */
+        conduit_cpp::Node results;
+        Results(results);  
+        
+
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+        
+            // /* transfer steearble scalars back to original locaton via registry*/
+            registry_steer.for_each(
+                [&results](std::string_view label, auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    FetchSteerableChannelValue(entry, std::string(label), results);
+                }
+            );
+        }
+
+
+
+
+
+    }
+
+
+ void CatalystAdaptor::Finalize() {
         conduit_cpp::Node node;
         catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
         if (err != catalyst_status_ok) {
@@ -857,11 +862,11 @@ void CatalystAdaptor::Finalize() {
     }
 
 // =====================================================================================
-// Runtime registry based Initialize / Execute (non-templated registry path)
+// Runtime registry based Initialize / Execute (non-templated registry)
 // =====================================================================================
 
-void CatalystAdaptor::InitializeRuntime(visreg::VisRegistryRuntime& visReg,
-                                        visreg::VisRegistryRuntime& steerReg,
+void CatalystAdaptor::InitializeRuntime(VisRegistryRuntime& visReg,
+                                        [[maybe_unused]] VisRegistryRuntime& steerReg,
                                         const std::filesystem::path& source_dir_in) {
     Inform m("Catalyst::InitializeRuntime()");
 
@@ -939,8 +944,8 @@ void CatalystAdaptor::InitializeRuntime(visreg::VisRegistryRuntime& visReg,
     }
 }
 
-void CatalystAdaptor::ExecuteRuntime(visreg::VisRegistryRuntime& visReg,
-                                     visreg::VisRegistryRuntime& steerReg,
+void CatalystAdaptor::ExecuteRuntime(VisRegistryRuntime& visReg,
+                                     VisRegistryRuntime& steerReg,
                                      int cycle, double time, int rank) {
     conduit_cpp::Node node;
     auto state = node["catalyst/state"];
@@ -975,3 +980,4 @@ void CatalystAdaptor::ExecuteRuntime(visreg::VisRegistryRuntime& visReg,
 }
 
 
+}
