@@ -1,12 +1,13 @@
 # -----------------------------------------------------------------------------
 # AddIpplIntegrationTest.cmake
 #
-# Defines a helper function `add_ippl_integration_test()` to add integration tests.
-# It builds an executable, links it with IPPL and MPI, includes headers from IPPL,
-# and registers the test with CTest. Labels are optional and default to "integration".
+# Defines a helper function `add_ippl_integration_test()` to add integration tests. It builds an
+# executable, links it with IPPL and MPI, includes headers from IPPL, and registers the test with
+# CTest. Labels are optional and default to "integration".
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
+# ~~~
 # add_ippl_integration_test(<name>
 #   [SOURCES <src1> <src2> ...]        # default: <name>.cpp
 #   [ARGS <arg1> <arg2> ...]           # args passed to the test binary
@@ -22,6 +23,7 @@
 #   [INCLUDE_DIRS <dir1> <dir2> ...]   # extra include dirs for this target
 #   [PROPERTIES <ctest-prop> <val> ...]# extra set_tests_properties
 # )
+# ~~~
 # -----------------------------------------------------------------------------
 
 set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit/integration test")
@@ -29,8 +31,21 @@ set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit/integra
 function(add_ippl_integration_test TEST_NAME)
   set(options NO_MPI REQUIRE_MPI)
   set(oneValueArgs NUM_PROCS TIMEOUT WORKING_DIRECTORY)
-  set(multiValueArgs LABELS ARGS MPI_ARGS SOURCES LAUNCH LINK_LIBS INCLUDE_DIRS PROPERTIES)
+  set(multiValueArgs
+      LABELS
+      ARGS
+      MPI_ARGS
+      SOURCES
+      LAUNCH
+      LINK_LIBS
+      INCLUDE_DIRS
+      PROPERTIES)
   cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if("${TEST_NAME}" IN_LIST IPPL_DISABLED_TEST_LIST)
+    message(STATUS "Skipping disabled test: ${TEST_NAME}")
+    return()
+  endif()
 
   if(TEST_SOURCES)
     set(_sources ${TEST_SOURCES})
@@ -78,23 +93,20 @@ function(add_ippl_integration_test TEST_NAME)
     set(_launched_cmd ${_cmd})
   endif()
 
-  
   # MPI handling
   if(TEST_NO_MPI)
     set(_final_cmd ${_launched_cmd})
   else()
     if(DEFINED MPIEXEC_EXECUTABLE)
-      set(_final_cmd
-        ${MPIEXEC_EXECUTABLE}
-        ${MPIEXEC_NUMPROC_FLAG} ${_procs}
-        ${TEST_MPI_ARGS}
-        ${_launched_cmd})
+      set(_final_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${_procs} ${MPIEXEC_PREFLAGS}
+                     ${TEST_MPI_ARGS} ${_launched_cmd})
     elseif(TEST_REQUIRE_MPI)
       # Create a disabled test with a clear reason
       set(_final_cmd ${_launched_cmd})
       set(_will_disable TRUE)
     else()
-      message(STATUS "add_ippl_integration_test(${TEST_NAME}): MPI not found; running without mpiexec")
+      message(
+        STATUS "add_ippl_integration_test(${TEST_NAME}): MPI not found; running without mpiexec")
       set(_final_cmd ${_launched_cmd})
     endif()
   endif()
@@ -120,23 +132,28 @@ function(add_ippl_integration_test TEST_NAME)
     add_test(NAME ${_ctest_name} COMMAND ${_final_cmd})
 
     # Core properties
-    set_tests_properties(${_ctest_name} PROPERTIES
-      TIMEOUT ${_timeout}
-      LABELS "${_labels}"
-      PROCESSORS ${_processors}
-      WORKING_DIRECTORY "${_workdir}"
-      ENVIRONMENT
+    set_tests_properties(
+      ${_ctest_name}
+      PROPERTIES
+        TIMEOUT
+        ${_timeout}
+        LABELS
+        "${_labels}"
+        PROCESSORS
+        ${_processors}
+        WORKING_DIRECTORY
+        "${_workdir}"
+        ENVIRONMENT
         "OMP_NUM_THREADS=${_threads};
          KOKKOS_NUM_THREADS=${_threads};
          MKL_NUM_THREADS=1;
          OPENBLAS_NUM_THREADS=1;
-         FFTW_THREADS=1"
-    )
+         FFTW_THREADS=1")
 
     # Disable if MPI was required but missing
     if(_will_disable)
-      set_tests_properties(${_ctest_name} PROPERTIES DISABLED TRUE
-        SKIP_REGULAR_EXPRESSION "MPI required but not found")
+      set_tests_properties(${_ctest_name} PROPERTIES DISABLED TRUE SKIP_REGULAR_EXPRESSION
+                                                     "MPI required but not found")
     endif()
 
     # Extra CTest properties from caller
@@ -145,4 +162,3 @@ function(add_ippl_integration_test TEST_NAME)
     endif()
   endif()
 endfunction()
-
