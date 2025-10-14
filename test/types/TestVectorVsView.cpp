@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
 
 
         //ippl::Vector<ippl::Vector<size_t, M>, N> idx_list_vector(0);
+        Kokkos::View<ippl::Vector<size_t , M>*> local_idx_view("view of vectors",N);
         ippl::Vector<double , K> input_vector(0.);
         ippl::Vector<double , K> result_vector(0.);
 
@@ -94,19 +95,23 @@ int main(int argc, char* argv[]) {
 
         */
         // start a timer
-        static IpplTimings::TimerRef input_vector_timer = IpplTimings::getTimer("input vector");
+        static IpplTimings::TimerRef input_vector_timer = IpplTimings::getTimer("input view ov vector");
         IpplTimings::startTimer(input_vector_timer);
 
-        for (int k = 0; k < K; ++k){
-            input_vector[k] = 1.0;
+        for (unsigned int i = 0; i < N; ++i) {
+            ippl::Vector<double, M> idx_local;
+            for (int j = 0; j < M; ++j) {
+                idx_local(j) =(i*j)%K;
+            }
+            local_idx_view(i) = idx_local;
         }
 
         IpplTimings::stopTimer(input_vector_timer);
 
-        static IpplTimings::TimerRef output_vector_timer = IpplTimings::getTimer("output vector");
-        IpplTimings::startTimer(output_vector_timer);
+        static IpplTimings::TimerRef compute_vector_locally_timer = IpplTimings::getTimer("compute vector locally");
+        IpplTimings::startTimer(compute_vector_locally_timer);
 
-        Kokkos::parallel_for("compute vector " , N , KOKKOS_LAMBDA(int i) {
+        Kokkos::parallel_for("compute vector locally" , N , KOKKOS_LAMBDA(int i) {
             ippl::Vector<size_t, M> local_idx(0);
             for (int j = 0; j<M;++j) {
                 local_idx[j] = (i*j)%K;
@@ -117,7 +122,19 @@ int main(int argc, char* argv[]) {
                 Kokkos::atomic_add(&result_view(idx), pi * input_vector[idx]);
             }
         });
-        IpplTimings::stopTimer(output_vector_timer);
+        IpplTimings::stopTimer(compute_vector_locally_timer);
+
+        static IpplTimings::TimerRef compute_vector_view_timer = IpplTimings::getTimer("compute vector view");
+        IpplTimings::startTimer(compute_vector_view_timer);
+
+        Kokkos::parallel_for("compute with view of vector" , N , KOKKOS_LAMBDA(int i) {
+            for (int j = 0; j < M; ++j) {
+                const int idx = local_idx_view(i)[j];
+                Kokkos::atomic_add(&result_view(idx), pi * input_view[idx]);
+            }
+        });
+
+        IpplTimings::stopTimer(compute_vector_view_timer);
 
 
         IpplTimings::print();
