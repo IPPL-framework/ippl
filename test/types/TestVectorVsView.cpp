@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(output_view_timer);
 
 
-        //ippl::Vector<ippl::Vector<size_t, M>, N> idx_list_vector(0);
-        Kokkos::View<ippl::Vector<size_t , M>*> local_idx_view("view of vectors",N);
+        // ippl::Vector<ippl::Vector<size_t, M>, N> idx_list_vector(0);
+        // Kokkos::View<ippl::Vector<size_t , M>*> local_idx_view("view of vectors",N);
         ippl::Vector<double , K> input_vector(0.);
         ippl::Vector<double , K> result_vector(0.);
 
@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
 
         */
         // start a timer
+        /*
         static IpplTimings::TimerRef input_vector_timer = IpplTimings::getTimer("input view ov vector");
         IpplTimings::startTimer(input_vector_timer);
 
@@ -107,6 +108,8 @@ int main(int argc, char* argv[]) {
         }
 
         IpplTimings::stopTimer(input_vector_timer);
+        */
+
 
         static IpplTimings::TimerRef compute_vector_locally_timer = IpplTimings::getTimer("compute vector locally");
         IpplTimings::startTimer(compute_vector_locally_timer);
@@ -124,6 +127,10 @@ int main(int argc, char* argv[]) {
         });
         IpplTimings::stopTimer(compute_vector_locally_timer);
 
+        /*
+         * This fails on GPUs due to bad memory alignment but works on CPU
+
+
         static IpplTimings::TimerRef compute_vector_view_timer = IpplTimings::getTimer("compute vector view");
         IpplTimings::startTimer(compute_vector_view_timer);
 
@@ -135,7 +142,7 @@ int main(int argc, char* argv[]) {
         });
 
         IpplTimings::stopTimer(compute_vector_view_timer);
-
+        */
 
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
