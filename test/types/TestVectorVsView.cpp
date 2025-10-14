@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 
             for (int j = 0; j < M; ++j) {
                 const int idx = local_idx[j];
-                Kokkos::atomic_add(&result_view(idx), pi * input_vector[idx]);
+                Kokkos::atomic_add(&result_view(idx), pi * input_view(idx));
             }
         });
         IpplTimings::stopTimer(compute_vector_locally_timer);
