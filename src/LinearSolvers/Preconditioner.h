@@ -356,7 +356,9 @@ namespace ippl {
             mesh_type& mesh     = r.get_mesh();
             layout_type& layout = r.getLayout();
             Field g(mesh, layout);
+            Field g_old(mesh, layout);
             g = 0;
+            g_old = 0;
 
             for (unsigned int j = 0; j < innerloops_m; ++j) {
                 Ag_m = op_m(g);
@@ -370,10 +372,11 @@ namespace ippl {
                 // Therefore, we need this if to differentiate
                 // the two cases.
                 if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
-                    g = g + inverse_diagonal_m(g) * g;
+                    g = g_old + inverse_diagonal_m(g) * g;
                 } else {
-                    g = g + inverse_diagonal_m(g);
+                    g = g_old + inverse_diagonal_m(g);
                 }
+                g_old = g.deepCopy();
             }
             return g;
         }
