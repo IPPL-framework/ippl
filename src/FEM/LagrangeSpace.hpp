@@ -892,12 +892,8 @@ namespace ippl {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
 
-                    for (j = 0; j < numElementDOFs; ++j) {
+                    for (j = 0; j < i; ++j) {
                         J_nd = global_dof_ndindices[j];
-
-                        if (global_dofs[i] == global_dofs[j]) {
-                            continue;
-                        }
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
@@ -911,6 +907,7 @@ namespace ippl {
                         }
 
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                        apply(resultView, J_nd) += A_K[j][i] * apply(view, I_nd);
                     }
                 }
             });
