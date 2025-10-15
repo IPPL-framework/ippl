@@ -337,6 +337,10 @@ namespace ippl {
 
     /*!
      * Alternative Richardson preconditioner
+     * Given the linear system of equations Ax=b the update steps are performed as follows:
+     * x_{k+1} = x_k + D^{-1}(Ax -b)
+     * A derivation of this preconditioner can be found at:
+     * https://jschoeberl.github.io/iFEM/iterative/preconditioning.html
      */
     template <typename Field, typename OperatorF, typename InvDiagF>
     struct richardson_preconditioner_alt : public preconditioner<Field> {
@@ -346,7 +350,7 @@ namespace ippl {
 
         richardson_preconditioner_alt(OperatorF&& op, InvDiagF&& inverse_diagonal,
                                   unsigned innerloops = 5)
-            : preconditioner<Field>("Richardson")
+            : preconditioner<Field>("Richardson_alt")
             , innerloops_m(innerloops) {
             op_m  = std::move(op);
             inverse_diagonal_m = std::move(inverse_diagonal);
