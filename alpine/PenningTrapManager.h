@@ -177,7 +177,7 @@ public:
         //                              //, this->fcontainer_m->getRho() 
         //                         );
 
-        // ippl::CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
+        // ippl::CatalystAdaptor_ns::Initialize(*myR_vis, *myR_steer);
 
 
 
@@ -192,7 +192,7 @@ public:
         //                             "density",      this->fcontainer_m->getRho() 
         //                         );
 
-        // ippl::CatalystAdaptor::Initialize(*myR_vis_mini, *myR_steer_mini);
+        // ippl::CatalystAdaptor_ns::Initialize(*myR_vis_mini, *myR_steer_mini);
 
 
         std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr(
@@ -421,7 +421,7 @@ public:
         //                             this->fcontainer_m->getE(), 
         //                             this->fcontainer_m->getRho() );
 
-        // ippl::CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
+        // ippl::CatalystAdaptor_ns::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
 
 
@@ -436,7 +436,7 @@ public:
         //                             "density",this->fcontainer_m->getRho() 
         //                         );
 
-        // ippl::CatalystAdaptor::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
+        // ippl::CatalystAdaptor_ns::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
 
 
 

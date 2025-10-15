@@ -12,21 +12,21 @@ namespace ippl{
 
 
 struct CatalystAdaptor::InitVisitor {
-    conduit_cpp::Node& node;
-    std::filesystem::path source_dir;
-    bool png_extracts{false};
+    CatalystAdaptor& ca;
+
     template<class V, unsigned Dim, class... Rest>
-    void operator()(const std::string& label, const ippl::Field<V, Dim, Rest...>& f) const {
-        CatalystAdaptor::init_entry(f, label, node, source_dir, png_extracts);
+    void operator()(const std::string& label, const ippl::Field<V, Dim, Rest...>& sf) const {
+        ca.init_entry(sf, label);
     }
+            
     template<class T, unsigned Dim, unsigned Dim_v, class... Rest>
-    void operator()(const std::string& label, const ippl::Field<ippl::Vector<T, Dim_v>, Dim, Rest...>& f) const {
-        CatalystAdaptor::init_entry(f, label, node, source_dir, png_extracts);
+    void operator()(const std::string& label, const ippl::Field<ippl::Vector<T, Dim_v>, Dim, Rest...>& vf) const {
+        ca.init_entry(vf, label);
     }
     template<typename T>
     requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
     void operator()(const std::string& label, const T& pc) const {
-        CatalystAdaptor::init_entry(pc, label, node, source_dir, png_extracts);
+        ca.init_entry(pc, label);
     }
     // template<class S> requires std::is_arithmetic_v<S>
     // void operator()(const std::string& label, S value) const {
@@ -37,47 +37,58 @@ struct CatalystAdaptor::InitVisitor {
 };
 
 struct CatalystAdaptor::ExecuteVisitor {
-    conduit_cpp::Node& node;
-    ViewRegistry& vreg;
+    CatalystAdaptor& ca;
+
     template<class V, unsigned Dim, class... Rest>
-    void operator()(const std::string& label, const ippl::Field<V, Dim, Rest...>& f) const {
-        CatalystAdaptor::execute_entry(f, label, node, vreg);
+    void operator()(const std::string& label, const ippl::Field<V, Dim, Rest...>& sf) const {
+        ca.execute_entry(sf, label);
     }
     template<class T, unsigned Dim, unsigned Dim_v, class... Rest>
-    void operator()(const std::string& label, const ippl::Field<ippl::Vector<T, Dim_v>, Dim, Rest...>& f) const {
-        CatalystAdaptor::execute_entry(f, label, node, vreg);
+    void operator()(const std::string& label, const ippl::Field<ippl::Vector<T, Dim_v>, Dim, Rest...>& vf) const {
+        ca.execute_entry(vf, label);
     }
     template<typename T>
     requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
     void operator()(const std::string& label, const T& pc) const {
-        CatalystAdaptor::execute_entry(pc, label, node, vreg);
+        ca.execute_entry(pc, label );
     }
 };
 
 // Forward steering: add steerable scalar channels only
 struct CatalystAdaptor::SteerForwardVisitor {
-    conduit_cpp::Node& node;
+    CatalystAdaptor& ca;
+
     template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
     void operator()(const std::string& label, S value) const {
-        CatalystAdaptor::AddSteerableChannel(value, label, node);
+        ca.AddSteerableChannel(value, label);
     }
+
     template<class T>
     requires (!std::is_arithmetic_v<std::decay_t<T>>)
-    void operator()(const std::string&, const T&) const { /* ignore non-scalars */ }
+    void operator()(const std::string&, const T&) const {
+        /* ignore non-scalars */ 
+    }
 };
 
 // Backward steering fetch (mutates external scalars)
 struct CatalystAdaptor::SteerFetchVisitor {
-    conduit_cpp::Node& results;
+    CatalystAdaptor& ca;
+
     template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
     void operator()(const std::string& label, S& value) const {
-        // NOTE: runtime registry currently stores by value; to mutate you need stored reference or pointer.
-        // If registry adjusted to store reference_wrapper<S>, update dispatch accordingly.
-        CatalystAdaptor::FetchSteerableChannelValue(value, label, results);
+        ca.FetchSteerableChannelValue(value, label);
     }
+
     template<class T>
     requires (!std::is_arithmetic_v<std::decay_t<T>>)
-    void operator()(const std::string&, const T&) const { /* ignore non-scalars */ }
+    void operator()(const std::string&, const T&) const {
+        /* ignore non-scalars */ 
+    }
 };
 
 }
+
+
+
+// NOTE: runtime registry currently stores by value; to mutate you need stored reference or pointer.
+// If registry adjusted to store reference_wrapper<S>, update dispatch accordingly.

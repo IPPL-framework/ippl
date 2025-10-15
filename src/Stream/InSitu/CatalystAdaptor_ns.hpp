@@ -1,16 +1,38 @@
 #pragma once
-#include "Stream/InSitu/CatalystAdaptor.h"
+#include "Stream/InSitu/CatalystAdaptor_ns.h"
 
+// Function implementations moved from CatalystAdaptor_ns.h
 namespace ippl{
-    
-/*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
-void CatalystAdaptor::set_node_script(
+inline void CatalystAdaptor_ns::setData(conduit_cpp::Node& node, const View_vector& view) {
+        node["electrostatic/association"].set_string("element");
+        node["electrostatic/topology"].set_string("mesh");
+        node["electrostatic/volume_dependent"].set_string("false");
+
+        auto length = std::size(view);
+
+        // offset is zero as we start without the ghost cells
+        // stride is 1 as we have every index of the array
+        node["electrostatic/values/x"].set_external(&view.data()[0][0], length, 0, 1);
+        node["electrostatic/values/y"].set_external(&view.data()[0][1], length, 0, 1);
+        node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
+    }
+
+inline void CatalystAdaptor_ns::setData(conduit_cpp::Node& node, const View_scalar& view) {
+        node["density/association"].set_string("element");
+        node["density/topology"].set_string("mesh");
+        node["density/volume_dependent"].set_string("false");
+
+        node["density/values"].set_external(view.data(), view.size());
+    }
+
+    /*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
+void CatalystAdaptor_ns::set_node_script(
     conduit_cpp::Node node_path,
     const char* env_var,
     const std::filesystem::path default_file_path
 )
 {
-        Inform m("CatalystAdaptor::set_node_scripts(): ");
+        Inform m("CatalystAdaptor_ns::set_node_scripts(): ");
             
         const char* file_path_env = std::getenv(env_var);
         std::filesystem::path file_path;
@@ -33,11 +55,15 @@ void CatalystAdaptor::set_node_script(
     /* SCALAR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
-                    [[maybe_unused]]  
-                      const Field<T, Dim, ViewArgs...>& entry
-                    , const std::string label
-                )
+void CatalystAdaptor_ns::init_entry( 
+                [[maybe_unused]]  
+                const ippl::Field<T, Dim, ViewArgs...>& entry
+                , const std::string label
+                ,       conduit_cpp::Node& node
+                , const std::filesystem::path source_dir
+                , const bool png_extracts
+    // , ViewRegistry& vr
+)
 {
         std::cout << "      init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
         // const Field_t<Dim>* field = &entry;
@@ -63,11 +89,15 @@ void CatalystAdaptor::init_entry(
     /* VECTOR FIELDS - handles both reference and shared_ptr */
     // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
+void CatalystAdaptor_ns::init_entry( 
                                 [[maybe_unused]]  
-                                  const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
+                                    const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry
                                 , const std::string label
-                            )
+                                ,       conduit_cpp::Node& node
+                                , const std::filesystem::path source_dir
+                                , const bool png_extracts
+                                // , ViewRegistry& vr
+)
 {
         std::cout << "      init_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         // const VField_t<T, Dim>* field = &entry;
@@ -89,17 +119,21 @@ void CatalystAdaptor::init_entry(
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
 
-}
+    }
 
-// PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
-// == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
+    // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
+    // == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
 template<typename T>
-requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
- void CatalystAdaptor::init_entry( 
+requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
+void CatalystAdaptor_ns::init_entry( 
                                 [[maybe_unused]]  
-                                  const T& entry
+                                    const T& entry
                                 , const std::string label
-                            )
+                                ,       conduit_cpp::Node& node
+                                , const std::filesystem::path source_dir
+                                , const bool png_extracts
+                                // , ViewRegistry& vr
+)
 {
         std::cout   << "      init_entry(ParticleBase<PLayout<" 
                     << typeid(particle_value_t<T>).name() 
@@ -113,6 +147,7 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
 
                 set_node_script( 
                                 node[script + "/filename"],
+                                // file
                                 "CATALYST_EXTRACTOR_SCRIPT_P",
                                 source_dir /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
                                 
@@ -124,53 +159,62 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
 
             conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
             script_args.append().set_string(channelName);
-}
-  
-/* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
+
+    }
+
+    // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
- void CatalystAdaptor::init_entry( 
-              const std::shared_ptr<T>&   entry
-            , const std::string           label
+requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
+void CatalystAdaptor_ns::init_entry(
+            [[maybe_unused]]         T&& entry
+            ,                  const std::string label
+            , [[maybe_unused]]       conduit_cpp::Node& node
+            , [[maybe_unused]] const std::filesystem::path source_dir
+            , [[maybe_unused]] const bool png_extracts
+    // , ViewRegistry& vr
+)
+{
+        Inform m("init_entry():");
+        m << "Entry type can't be processed. ID: "<< label <<", Type: "<< typeid(std::decay_t<T>).name() <<  endl;
+        m << "Channel will not be registered in Conduit Node passed to catalyst." << endl;
+    }
+
+    /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
+template<typename T>
+void CatalystAdaptor_ns::init_entry( 
+            const std::shared_ptr<T>&   entry
+        , const std::string           label
+        ,       conduit_cpp::Node&    node
+    , const std::filesystem::path source_dir
+    , const bool                  png_extracts
+    // , ViewRegistry& vr 
 )
 {
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             init_entry(  *entry
                         , label
-            );
+            , node
+            , source_dir
+            , png_extracts
+            // , vr
+            );          // Dereference and dispatch to reference version
         } else {
+
             Inform m("init_entry():");
             m << "Null shared_ptr passed as entry. ID: "<< label  << endl;
             m << "Channel will not be registered in Conduit Node passed to catalyst." << endl;
         }
-}
+    }
 
-
-// BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
-template<typename T>
-requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
- void CatalystAdaptor::init_entry(
-                    [[maybe_unused]]
-                    // T&& entry
-                    const T& entry
-                ,   const std::string label
-)
-{
-        Inform m("init_entry():");
-        m << "Entry type can't be processed. ID: "<< label <<", Type: "<< typeid(std::decay_t<T>).name() <<  endl;
-        m << "Channel will not be registered in Conduit Node passed to catalyst." << endl;
-}
-  
-
-
-
-void CatalystAdaptor::Execute_Particle(
-      const std::string& channelName
-    , const auto& particleContainer
+void CatalystAdaptor_ns::Execute_Particle(
+    const std::string& channelName ,
+    const auto& particleContainer
     , const auto& R_host
     , const auto& P_host
     , const auto& q_host
-    , const auto& ID_host
+    , const auto& ID_host,
+    conduit_cpp::Node& node
 )
 {
 
@@ -198,20 +242,30 @@ void CatalystAdaptor::Execute_Particle(
         //auto charge_view = particleContainer->getQ().getView();
 
 
+
+
+
+
         // add values for scalar charge field
         auto fields = mesh["fields"];
         fields["charge/association"].set_string("vertex");
         fields["charge/topology"].set_string("mesh");
         fields["charge/volume_dependent"].set_string("false");
+
         //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
         fields["charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
 
+
+
+
+        
 
         // add values for vector velocity field
         //auto velocity_view = particleContainer->P.getView();
         fields["velocity/association"].set_string("vertex");
         fields["velocity/topology"].set_string("mesh");
         fields["velocity/volume_dependent"].set_string("false");
+
         //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
         //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
@@ -220,9 +274,14 @@ void CatalystAdaptor::Execute_Particle(
         fields["velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
 
 
+
+
+
+
         fields["position/association"].set_string("vertex");
         fields["position/topology"].set_string("mesh");
         fields["position/volume_dependent"].set_string("false");
+
         //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
         //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
@@ -231,43 +290,13 @@ void CatalystAdaptor::Execute_Particle(
         fields["position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
     }
 
-
-
-
-
-
-
- inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_vector& view) {
-        field_node["electrostatic/association"].set_string("element");
-        field_node["electrostatic/topology"].set_string("mesh");
-        field_node["electrostatic/volume_dependent"].set_string("false");
-
-        auto length = std::size(view);
-
-        // offset is zero as we start without the ghost cells
-        // stride is 1 as we have every index of the array
-        field_node["electrostatic/values/x"].set_external(&view.data()[0][0], length, 0, 1);
-        field_node["electrostatic/values/y"].set_external(&view.data()[0][1], length, 0, 1);
-        field_node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
-    }
-
- inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_scalar& view) {
-        field_node["density/association"].set_string("element");
-        field_node["density/topology"].set_string("mesh");
-        field_node["density/volume_dependent"].set_string("false");
-
-        field_node["density/values"].set_external(view.data(), view.size());
-    }
-
-
-/* How to mark Ghost Cells of fields, withouth taking them out via triple for loop*/
-// == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-template <class Field>  
-void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field, 
-    Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left
-        )
+    /* this needs to be overworked ... */
+template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
+void CatalystAdaptor_ns::Execute_Field(const std::string& channelName, Field* field, 
+    Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left,
+    conduit_cpp::Node& node)
 {
-        static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
+        static_assert(Field::dim == 3, "CatalystAdaptor_ns only supports 3D");
 
         // A) define mesh
 
@@ -351,57 +380,53 @@ void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field
         /* SCALAR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
- void CatalystAdaptor::execute_entry(
-                            const Field<T, Dim, ViewArgs...>& entry, 
-                            const std::string label
-    ) {
+void CatalystAdaptor_ns::execute_entry(const ippl::Field<T, Dim, ViewArgs...>& entry, const std::string label, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
-        // std::map<std::string, Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > scalar_host_views;
-        /* creates amp entry with default initialized values ... */
-        // Execute_Field(label, field, scalar_host_views[label], node);
         
         
         const std::string channelName = "ippl_sField_" + label;
-        Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> scalar_host_view;
-        const Field_t<Dim>* field = &entry;
-        Execute_Field(channelName, field, scalar_host_view);
-        viewRegistry.set(scalar_host_view);
+        // std::map<std::string, Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > scalar_host_views;
         
+        Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> scalar_host_view;
+        
+        const Field_t<Dim>* field = &entry;
+        /* creates amp entry with default initialized values ... */
+        // Execute_Field(label, field, scalar_host_views[label], node);
+        Execute_Field(channelName, field, scalar_host_view, node);
 
+        vr.set(scalar_host_view);
     }
 
         /* VECTOR FIELDS - handles both reference and shared_ptr */
         // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
- void CatalystAdaptor::execute_entry(
-                        const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry,  
-                        const std::string label
-                    ) {
+void CatalystAdaptor_ns::execute_entry(const ippl::Field<ippl::Vector<T, Dim_v>, Dim, ViewArgs...>& entry, const std::string label,conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
         
         const std::string channelName = "ippl_vField_" + label;
-        Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> vector_host_view;
         const VField_t<T, Dim>* field = &entry;
-        Execute_Field(channelName, field, vector_host_view); 
-        viewRegistry.set(vector_host_view);
-        
-        
-        // save a copy to shared pointer/view, keeps dynamco raw data of View alive
-        
 
         
         // std::map<std::string, Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > vector_host_views;
         // Execute_Field(label,field, vector_host_views[label], node); 
 
-        // use make shaed so we dont pass adereference to a nullptr .... 
-        // for us  more conveneient approach 
+
+        /* use make shaed so we dont pass adereference to a nullptr .... */
+        /* for us  more conveneient approach */
         // std::shared<Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > vector_host_views =
         // std::make_shared<Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> >;
 
-        
-        
+        Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> vector_host_view;
 
         
+        Execute_Field(channelName, field, vector_host_view, node); 
+
+
+
+        
+        vr.set(vector_host_view);
+        /* save a copy to shaed pointer, keeps dynamco reference to the View alive
+        saving a reference would make sense since referenced object will not exist when exiting this scope ... */
         
     }
 
@@ -424,11 +449,11 @@ template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
 
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
 template<typename T>
-requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
- void CatalystAdaptor::execute_entry(
-                      const T& entry
-                    , const std::string label
-) {
+requires std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>
+void CatalystAdaptor_ns::execute_entry(const T& entry
+    , const std::string label
+    , conduit_cpp::Node& node
+    , ViewRegistry& vr) {
         std::cout   << "      execute_entry(ParticleBase<PLayout<" 
                     << typeid(particle_value_t<T>).name() 
                     << ","
@@ -439,10 +464,10 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
             const std::string channelName = "ippl_particles_" + label;
 
 
-            ParticleAttrib<Vector<double, 3>>::HostMirror    R_host_view;
-            ParticleAttrib<Vector<double, 3>>::HostMirror    P_host_view;
-            ParticleAttrib<double>::HostMirror               q_host_view;
-            ParticleAttrib<std::int64_t>::HostMirror         ID_host_view;
+            ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror    R_host_view;
+            ippl::ParticleAttrib<ippl::Vector<double, 3>>::HostMirror    P_host_view;
+            ippl::ParticleAttrib<double>::HostMirror                     q_host_view;
+            ippl::ParticleAttrib<std::int64_t>::HostMirror              ID_host_view;
 
             auto particleContainer = &entry;
             assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
@@ -455,7 +480,7 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
             Kokkos::deep_copy(R_host_view ,  particleContainer->R.getView());
             Kokkos::deep_copy(P_host_view ,  particleContainer->P.getView());
             Kokkos::deep_copy(q_host_view ,  particleContainer->q.getView());
-            Kokkos::deep_copy(ID_host_view,  particleContainer->ID.getView());
+            Kokkos::deep_copy(ID_host_view, particleContainer->ID.getView());
 
 
 
@@ -467,45 +492,38 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
                     R_host_view,
                     P_host_view,
                     q_host_view,
-                    ID_host_view
+                    ID_host_view,
+                  node
             );
 
 
 
-            viewRegistry.set(R_host_view);
-            viewRegistry.set(P_host_view);
-            viewRegistry.set(q_host_view);
-            viewRegistry.set(ID_host_view);
+            vr.set(R_host_view);
+            vr.set(P_host_view);
+            vr.set(q_host_view);
+            vr.set(ID_host_view);
     }
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
-requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
- void CatalystAdaptor::execute_entry(   [[maybe_unused]] T&& entry, 
-                                        const std::string label
-) {
+requires (!std::derived_from<std::decay_t<T>, ippl::ParticleBaseBase>)
+void CatalystAdaptor_ns::execute_entry(const std::string label, [[maybe_unused]] T&& entry, conduit_cpp::Node& node, ViewRegistry& vr) {
         std::cout << "  Entry type can't be processed: ID "<< label <<" "<< typeid(std::decay_t<T>).name() << std::endl;
     }
 
     /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
 template<typename T>
- void CatalystAdaptor::execute_entry(   const std::shared_ptr<T>& entry,
-                                        const std::string  label
-                                    ) {
+void CatalystAdaptor_ns::execute_entry( const std::shared_ptr<T>& entry,const std::string  label, conduit_cpp::Node& node, ViewRegistry& vr ) {
         if (entry) {
             // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
-            execute_entry(*entry, label
-                // ,  node, vr
-            );  // Dereference and dispatch to reference version
+            execute_entry(*entry, label,  node, vr);  // Dereference and dispatch to reference version
         } else {
             std::cout << "  Null shared_ptr encountered" << std::endl;
         }
     }
 
 template<typename T>
-void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass, 
-                                            std::string steerable_suffix
-                                        ) {
+void CatalystAdaptor_ns::AddSteerableChannel( T steerable_scalar_forwardpass, std::string steerable_suffix, conduit_cpp::Node& node) {
         std::cout << "      AddSteerableChanelValue( " << steerable_suffix << "); | Type: " << typeid(T).name() << std::endl;
         
         
@@ -540,7 +558,7 @@ void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass,
         } else if constexpr (std::is_same_v<T, unsigned int>) {
             values.set_uint64_vector({steerable_scalar_forwardpass});
         } else {
-            throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
+            throw IpplException("CatalystAdaptor_ns::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
         }
         
     }
@@ -553,9 +571,7 @@ void CatalystAdaptor::AddSteerableChannel( T steerable_scalar_forwardpass,
         // if constexpr (std::is_same_v<std::remove_cvref_t<T>, double>) {
 
 template<typename T>
- void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, 
-                                                    std::string steerable_suffix
-                                                ) {
+void CatalystAdaptor_ns::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, std::string steerable_suffix, conduit_cpp::Node& results) {
         std::cout << "      FetchSteerableChanelValue(" << steerable_suffix  << ") | Type: " << typeid(T).name() << std::endl;
 
             
@@ -574,10 +590,10 @@ template<typename T>
             //         steerable_scalar_backwardpass = ptr[0];
             //         std::cout << "value vector fetched ..." << std::endl;
             //     }
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
+            //     else throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
             // }
             else {
-                throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
+                throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
             }
         }
          else if constexpr (std::is_same_v<T, float>) {
@@ -587,10 +603,10 @@ template<typename T>
             // else if (steerable_field["values"].dtype().is_float32()) {
             //     auto ptr = steerable_field["values"].as_float64_ptr();
             //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
+            //     else throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
             // }
             else {
-                throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
+                throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
             }
         }
         else if constexpr (std::is_same_v<T, int>) {
@@ -600,10 +616,10 @@ template<typename T>
             // else if (steerable_field["values"].dtype().is_float64()) {
             //     auto ptr = steerable_field["values"].as_float64_ptr();
             //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
+            //     else throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
             // }
             else {
-                throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
+                throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
             }
         }
         else if constexpr (std::is_same_v<T, unsigned int>) {
@@ -613,25 +629,24 @@ template<typename T>
             // else if (steerable_field["values"].dtype().is_float64()) {
             //     auto ptr = steerable_field["values"].as_float64_ptr();
             //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
+            //     else throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Null pointer for steerable value: " + steerable_suffix);
             // }
             else {
-                throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
+                throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + steerable_suffix);
             }
         }
         
         else {
             std::cout << "failed to fetch value" << std::endl;
-            throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable type for channel: " + steerable_suffix);
+            throw IpplException("CatalystAdaptor_ns::FetchSteerableChannelValue", "Unsupported steerable type for channel: " + steerable_suffix);
         } 
     }
 
-
-
-
-void CatalystAdaptor::fetchResults() {
+void CatalystAdaptor_ns::Results(conduit_cpp::Node& results) {
         
+        // conduit_cpp::Node results;
         catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
+        // catalyst_status err = catalyst_results(conduit_cpp::c_node(&results));
         if (err != catalyst_status_ok)
         {
             std::cerr << "Failed to execute Catalyst-results: " << err << std::endl;
@@ -643,154 +658,203 @@ void CatalystAdaptor::fetchResults() {
         // }   
     }
 
+/* might not even need references to registries since a copy of s shared pointer still points to the 
+right place... */
+void CatalystAdaptor_ns::Execute(
+    auto& registry_vis, auto& registry_steer,
+    int cycle, double time, int rank
+){
+        
+        // add time/cycle information
+        conduit_cpp::Node node;
+        auto state = node["catalyst/state"];
+        state["cycle"].set(cycle);
+        state["time"].set(time);
+        state["domain_id"].set(rank);     
 
-// =====================================================================================
-// Runtime registry based Initialize / Execute (non-templated registry)
-// =====================================================================================
-
-void CatalystAdaptor::InitializeRuntime(
-                           const std::shared_ptr<VisRegistryRuntime>& visReg,
-                           const std::shared_ptr<VisRegistryRuntime>& steerReg
-                        ) {
-    Inform m("Catalyst::InitializeRuntime()");
-
-        // if ( !(catalyst_steer && std::string(catalyst_steer) == "OFF") ){
-        // m << "Catalyst Visualisation was deactivated via setting env variable IPPL_CATALYST_VIS=OFF"
-
-    visRegistry   = visReg;
-    steerRegistry = steerReg;
-
-    // conduit_cpp::Node node;
-    // std::filesystem::path source_dir = source_dir_in;
-    // if (source_dir.empty()) {
-    // }
+        /* catch view registry by referrence and pass it to execute by refernece 
+        viewregistry with shared pointer will be delted by registry running out of scope,
+         shared pointers being deleted and deallocating the allocated copies for memories ...*/
+        ViewRegistry vr;
 
 
-    source_dir = std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu";
-    m << "using source_dir = " << source_dir.string() << endl;
-
-    // Pipeline script (allow override by environment)
-    set_node_script(node["catalyst/scripts/script/filename"],
-                    "CATALYST_PIPELINE_PATH",
-                    source_dir / "catalyst_scripts" / "pipeline_default.py");
-    conduit_cpp::Node args = node["catalyst/scripts/script/args"];
-    args.append().set_string("--channel_names");
-
-    const char* catalyst_png = std::getenv("IPPL_CATALYST_PNG");
-    const char* catalyst_vtk = std::getenv("IPPL_CATALYST_VTK");
-    const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
-
-    // If PNG extraction requested, run init visitor over visualization registry
-    // const bool class member 
-    png_extracts = (catalyst_png && std::string(catalyst_png) == "ON");
-
-
-    if (png_extracts) {
-        m << "PNG extraction ACTIVATED" << endl;
-    } else {
-        m << "PNG extraction DEACTIVATED" << endl;
-    }
-    
-    InitVisitor initV{*this};
-    visRegistry->for_each(initV);
-
-    if (catalyst_vtk && std::string(catalyst_vtk) == "ON") {
-        m << "VTK extraction ACTIVATED" << endl;
-        args.append().set_string("--VTKextract");
-        args.append().set_string("True");
-    } else {
-        m << "VTK extraction DEACTIVATED" << endl;
-    }
-
-    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
-        m << "Steering ACTIVATED" << endl;
-        args.append().set_string("--steer");
-        args.append().set_string("ON");
-
-        set_node_script(node["catalyst/proxies/proxy_e/filename"],
-                        "CATALYST_PROXYS_PATH_E",
-                        source_dir / "catalyst_scripts" / "proxy_default_electric.xml");
-        set_node_script(node["catalyst/proxies/proxy_m/filename"],
-                        "CATALYST_PROXYS_PATH_M",
-                        source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml");
+        /* ideally avoid this ... */
+        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
 
 
 
-        // TODO:
-        // InitVisitor steerInit{node, source_dir};
-        // steerReg.for_each(steerInit);
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+            
+            registry_steer.for_each(
+                [&node](std::string_view label, const auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    AddSteerableChannel(entry, std::string(label), node);
+                }
+            );
+        }
+
+        registry_vis.for_each(
+            [&node, &vr](std::string_view label, const auto& entry){
+                // std::cout << "  Entry ID: " << label << "\n";
+                execute_entry(entry, std::string(label),  node, vr);
+            }
+        );
+       
+        /* std::cout << "dump Conduit Catalyst Node pass forward "< std::endl; */
+        // node.print();
 
 
-    } else {
-        m << "Steering DEACTIVATED" << endl;
-        args.append().set_string("--steer");
-        args.append().set_string("OFF");
-    }
-
-    m << "ippl: catalyst_initialize() =>" << endl;
-    catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
-    if (err != catalyst_status_ok) {
-        m << "\n Catalyst initialization failed.\n" << endl;
-        throw IpplException("Stream::InSitu::CatalystAdaptor", "Failed to initialize Catalyst (runtime path)");
-    } else {
-        m << "\n Catalyst initialized successfully (runtime path).\n" << endl;
-    }
-}
-
-void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* default = ippl::Comm->rank() */) {
-    Inform m("Catalyst::ExecuteRuntime()");
- 
-    const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
-    const char* catalyst_vis = std::getenv("IPPL_CATALYST_VIS");
-
-    auto state = node["catalyst/state"];
-    state["cycle"].set(cycle);
-    state["time"].set(time);
-    state["domain_id"].set(rank);
-
-    // m << "Catalyst Visualisation was deactivated via setting env variable IPPL_CATALYST_VIS=OFF" << endl;
-    if ( !(catalyst_vis && std::string(catalyst_vis) == "OFF") ){
-        // forward Node: add visualisation channels
-        ExecuteVisitor execV{*this};
-        visRegistry->for_each(execV); 
-
-    }
-
-    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
-        // forward Node: add steering channels
-        SteerForwardVisitor steerV{*this};
-        steerRegistry->for_each(steerV); 
-    }
-
-    // Conduit Node Forward pass to Catalyst
-    catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
-    if (err != catalyst_status_ok) {
-        std::cerr << "Failed to execute Catalyst (runtime path): " << err << std::endl;
-    }
-
-    if (catalyst_steer && std::string(catalyst_steer) == "ON") {
-        // Conduit Node Backward pass from Catalyst
+        // Pass Conduit node to Catalyst and execute extraction and visualisation
+        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to execute Catalyst: " << err << std::endl;
+        }
+        /* Catch steerables in results node */
         conduit_cpp::Node results;
-        fetchResults();
-        // backward Node: fetch updated steering values
-        SteerFetchVisitor fetchV{*this};
-        steerRegistry->for_each(fetchV);
+        Results(results);  
+        
+
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+        
+            // /* transfer steearble scalars back to original locaton via registry*/
+            registry_steer.for_each(
+                [&results](std::string_view label, auto& entry) {
+                    // std::cout << "   Entry ID: " << label << "\n";
+                    FetchSteerableChannelValue(entry, std::string(label), results);
+                }
+            );
+        }
+
+
+
+
+
     }
-        Kokkos::fence();
-        viewRegistry.clear();
-        node.reset();
-        results.reset();
-}
+
+void CatalystAdaptor_ns::Initialize([[maybe_unused]] auto& registry_vis, [[maybe_unused]] auto& registry_steer) {
+        Inform m("Catalyst::Initialize()");
+
+        conduit_cpp::Node node;
+        
+        
+        const std::filesystem::path source_dir =  std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu";       
+        std::cout << "using source_dir = " << source_dir.string() << std::endl;
+        
+        
+        set_node_script( node["catalyst/scripts/script/filename"],
+                        "CATALYST_PIPELINE_PATH",
+                        source_dir / "catalyst_scripts" / "pipeline_default.py"
+                    );
+        conduit_cpp::Node args = node["catalyst/scripts/script/args"];
+        /* empty arguments cause erros?? pass something useful maybe ^*/
+        args.append().set_string("--channel_names");
+
+        // args.append().set_string("noname");
+                    
 
 
-void CatalystAdaptor::Finalize() {
-    conduit_cpp::Node node;
-    catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
-    if (err != catalyst_status_ok) {
-        std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
+        // TODO: create steering poxy file ... for each steering channel for versatility
+        // if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+        //     registry_steer.for_each(
+        //         [&node](std::string_view label, const auto& entry) {
+        //             CreateProxySteerableChannel(entry, std::string(label), node);
+        //         }
+        //     );
+        // }
+        const char* catalyst_png = std::getenv("IPPL_CATALYST_PNG");
+        const bool png_extracts = (catalyst_png && std::string(catalyst_png) == "ON");
+        if(png_extracts){
+
+            m << "TRYING TO SET CATALYST PNG EXTRACTS" << endl;
+
+        }
+        else{
+            m << "catalyst PNG extract DEACTIVATED" << endl;
+        }
+
+            registry_vis.for_each(
+                [&](std::string_view label, const auto& entry){
+                    init_entry(   entry
+                                , std::string(label)
+                                , node
+                                , source_dir
+                                , png_extracts
+                            );
+                }
+            );
+
+
+        args.append().set_string("--experiment_name");
+        args.append().set_string(TestName);
+
+        const char* catalyst_vtk = std::getenv("IPPL_CATALYST_VTK");
+
+        if(catalyst_vtk && std::string(catalyst_vtk)=="ON"){
+            m << "catalyst vtk extraction ACTIVATED" << endl;
+            
+            args.append().set_string("--VTKextract");
+            args.append().set_string("True");
+        }
+        else{
+            m << "catalyst vtk extraction DEACTIVATED" << endl;
+            /*  dont set since default will be false ... (and this doesnt work ...) */
+            // args.append().set_string("--VTKextract");
+            // args.append().set_string("0");
+        }
+
+        /* TWO HARDCODED STEERING OPTIONS .... >  */
+        /* ideally, this needs to be saved .. */
+        const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
+
+        if(catalyst_steer && std::string(catalyst_steer)=="ON"){
+            m << "catalyst steering ACTIVATED." << endl;
+            
+            args.append().set_string("--steer");
+            args.append().set_string("ON");
+
+            set_node_script( node["catalyst/proxies/proxy_e/filename"],
+                            "CATALYST_PROXYS_PATH_E",
+                            source_dir / "catalyst_scripts" / "proxy_default_electric.xml"
+            );
+            set_node_script( node["catalyst/proxies/proxy_m/filename"],
+                            "CATALYST_PROXYS_PATH_M",
+                            source_dir / "catalyst_scripts" / "proxy_default_magnetic.xml"
+            );
+
+        }
+        else{
+            m << "catalyst steering:      DEACTIVATED." << endl;
+            /*  dont set since default will be false ... (and this doesnt work ...) */
+            args.append().set_string("--steer");
+            // args.append().set_int16("0");
+            args.append().set_string("OFF");
+        }
+
+        // args.print();
+        // node.print();
+
+
+        m << "ippl: catalyst_initialize() =>" << endl;
+        catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+
+            m << "\n Catalyst initialized fail.....\n" << endl;
+            throw IpplException("Stream::InSitu::CatalystAdaptor_ns", "Failed to initialize Catalyst");
+            // std::cerr << "Failed to initialize Catalyst: " << err << std::endl;
+        }
+        else{
+            m << "\n Catalyst initialized successfully.\n" << endl;
+        }
     }
+
+void CatalystAdaptor_ns::Finalize() {
+        conduit_cpp::Node node;
+        catalyst_status err = catalyst_finalize(conduit_cpp::c_node(&node));
+        if (err != catalyst_status_ok) {
+            std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
+        }
+    }
+
+
 }
-
-
-
-}//ippl

@@ -65,6 +65,11 @@ public:
      * @param name The name of the object to remove.
      */
     void unset(const std::string& name);
+
+    /**
+     * @brief Remove all objects from the registry.
+     */
+    void clear();
 };
 
 }

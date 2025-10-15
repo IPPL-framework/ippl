@@ -36,4 +36,8 @@ std::shared_ptr<T> ViewRegistry::get(const std::string& name) const {
 inline void ViewRegistry::unset(const std::string& name) {
     m_storage.erase(name);
 }
+
+inline void ViewRegistry::clear() {
+    m_storage.clear();
+}
 }
