@@ -356,8 +356,15 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        //dumpLandau(this->fcontainer_m->getE().getView());
-        dumpLandau();
+
+        // When using FEM, we only have E-field on particles (currently)
+        // so we use the MC integration dump function
+        if (this->getSolver() == "FEM") {
+            dumpLandau();
+        } else {
+            dumpLandau(this->fcontainer_m->getE().getView());
+        }
+
         IpplTimings::stopTimer(dumpDataTimer);
     }
 

@@ -232,7 +232,7 @@ public:
     void initFEMSolver() {
         ippl::ParameterList sp;
         sp.add("solver", "preconditioned");
-        sp.add("output_type", FEMSolver_t<T, Dim>::GRAD);
+        sp.add("output_type", FEMSolver_t<T, Dim>::SOL);
         sp.add("tolerance", 1e-7);
 
         int arg = 0;
