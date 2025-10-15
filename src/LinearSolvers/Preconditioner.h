@@ -338,7 +338,7 @@ namespace ippl {
     /*!
      * Alternative Richardson preconditioner
      * Given the linear system of equations Ax=b the update steps are performed as follows:
-     * x_{k+1} = x_k + D^{-1}(Ax -b)
+     * x_{k+1} = x_k + D^{-1}(b-Ax_k)
      * A derivation of this preconditioner can be found at:
      * https://jschoeberl.github.io/iFEM/iterative/preconditioning.html
      */
