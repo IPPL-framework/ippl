@@ -82,17 +82,6 @@ namespace ippl {
             Vector<T, Dim> firstCoord = mesh.getVertexPosition(firstPoint);
             Vector<T, Dim> lastCoord  = mesh.getVertexPosition(lastPoint);
 
-            if (Comm->rank() == 0) {
-                std::cout << "firstCoord = " << firstCoord << ", lastCoord = " << lastCoord << std::endl;
-                std::cout << "region_m.min = " << region_m[0].min() << ", region_m.max = " << region_m[0].max() << std::endl;
-                std::cout << "node_m = " << node_m << std::endl;
-                if (node_m && (lastCoord[0] == region_m[0].max())) {
-                    std::cout << "this lastCoord is the domain bound" << std::endl;
-                    Vector <T, Dim> newCoord = lastCoord - mesh.getMeshSpacing();
-                    std::cout << "new = " << newCoord << std::endl;
-                }
-            }
-
             if (node_m) {
                 for (unsigned int d = 0; d < Dim; d++) {
                     if (lastCoord[d] == region_m[d].max()) {
