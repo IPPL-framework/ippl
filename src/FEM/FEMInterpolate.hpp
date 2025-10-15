@@ -102,7 +102,7 @@ namespace ippl {
                 locate_element_nd_and_xi<T,Dim>(mesh, x, e_nd, xi);
                 // Convert to the element's linear index
                 const size_t e_lin = space.getElementIndex(e_nd);
-
+                
                 // DOFs for this element
                 const auto dofs  = space.getGlobalDOFIndices(e_lin);
 
@@ -112,10 +112,11 @@ namespace ippl {
                     const T w = space.evaluateRefElementShapeFunction(local, xi);
 
                     const auto v_nd = space.getMeshVertexNDIndex(dofs[a]); // ND coords (global, vertex-centered)
+
                     ippl::Vector<size_t,Dim> I;                             // indices into view
 
                     for (unsigned d = 0; d < Dim; ++d) {
-                        I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
+                        I[d] = static_cast<size_t>(v_nd[d] - lDom[d].first() + nghost);
                     }
                     const T m = apply(view_lumpedmass, I);
 

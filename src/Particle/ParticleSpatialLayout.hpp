@@ -60,7 +60,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
                                                                               Mesh& mesh)
-        : rlayout_m(fl, mesh)
+        : rlayout_m(fl, mesh, true)
         , flayout_m(fl)
     {   
         nRecvs_m.resize(Comm->size());

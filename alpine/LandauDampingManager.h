@@ -102,7 +102,7 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
-	const double pi = Kokkos::numbers::pi_v<T>;
+        const double pi = Kokkos::numbers::pi_v<T>;
 	
         if (this->solver_m == "OPEN") {
             throw IpplException("LandauDamping",
@@ -242,7 +242,7 @@ public:
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh);
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh, true);
 
         // unsigned int
         size_type totalP = this->totalP_m;
@@ -277,6 +277,9 @@ public:
         IpplTimings::stopTimer(particleCreation);
 
         this->pcontainer_m->q = this->Q_m / totalP;
+
+        // added for FEM to see if it helps
+        this->pcontainer_m->update();
         m << "particles created and initial conditions assigned " << endl;
     }
 

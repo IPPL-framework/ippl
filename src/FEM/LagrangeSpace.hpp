@@ -1537,6 +1537,7 @@ namespace ippl {
                 }
             });
         field.accumulateHalo();
+        field.fillHalo();
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,

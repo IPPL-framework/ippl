@@ -26,12 +26,14 @@ namespace ippl {
             , hLocalRegions_m(Kokkos::create_mirror_view(dLocalRegions_m)) {
             indexOffset_m.fill(0);
             centerOffset_m.fill(0);
+            node_m = false;
         }
 
         template <typename T, unsigned Dim, class Mesh, class... Properties>
         RegionLayout<T, Dim, Mesh, Properties...>::RegionLayout(const FieldLayout<Dim>& fl,
-                                                                const Mesh& mesh)
+                                                                const Mesh& mesh, bool node)
             : RegionLayout() {
+            node_m = node;
             changeDomain(fl, mesh);
         }
 
@@ -41,12 +43,21 @@ namespace ippl {
             // set our index space offset
             for (unsigned int d = 0; d < Dim; ++d) {
                 indexOffset_m[d]  = fl.getDomain()[d].first();
-                centerOffset_m[d] = 0;
+                centerOffset_m[d] = 1;
             }
 
             region_m = convertNDIndex(fl.getDomain(), mesh);
 
             fillRegions(fl, mesh);
+
+            if (node_m) {
+                for (unsigned int d = 0; d < Dim; d++) {
+                    T firstCoord = region_m[d].min();
+                    T lastCoord = region_m[d].max() - mesh.getMeshSpacing()[d];
+                    region_m[d] = PRegion<T>(firstCoord, lastCoord); 
+                }
+            }
+
         }
 
         // convert a given NDIndex into an NDRegion ... if this object was
@@ -70,6 +81,26 @@ namespace ippl {
             // convert to mesh space
             Vector<T, Dim> firstCoord = mesh.getVertexPosition(firstPoint);
             Vector<T, Dim> lastCoord  = mesh.getVertexPosition(lastPoint);
+
+            if (Comm->rank() == 0) {
+                std::cout << "firstCoord = " << firstCoord << ", lastCoord = " << lastCoord << std::endl;
+                std::cout << "region_m.min = " << region_m[0].min() << ", region_m.max = " << region_m[0].max() << std::endl;
+                std::cout << "node_m = " << node_m << std::endl;
+                if (node_m && (lastCoord[0] == region_m[0].max())) {
+                    std::cout << "this lastCoord is the domain bound" << std::endl;
+                    Vector <T, Dim> newCoord = lastCoord - mesh.getMeshSpacing();
+                    std::cout << "new = " << newCoord << std::endl;
+                }
+            }
+
+            if (node_m) {
+                for (unsigned int d = 0; d < Dim; d++) {
+                    if (lastCoord[d] == region_m[d].max()) {
+                        lastCoord[d] -= mesh.getMeshSpacing()[d];
+                    }
+                }
+            }
+
             NDRegion_t ndregion;
             for (unsigned int d = 0; d < Dim; d++) {
                 ndregion[d] = PRegion<T>(firstCoord(d), lastCoord(d));

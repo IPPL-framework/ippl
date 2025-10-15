@@ -66,6 +66,9 @@ public:
                 allPeriodic[i]  = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
+            if (this->getStype() == "FEM") {
+                rho_m->setFieldBC(allPeriodic);
+            }
         }
     }
 
