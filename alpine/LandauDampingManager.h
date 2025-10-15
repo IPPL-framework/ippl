@@ -118,7 +118,7 @@ public:
         this->alpha_m = 0.05;
         this->rmin_m  = 0.0;
         this->rmax_m  = 2 * pi / this->kw_m;
-
+        
         Vector<int, Dim> nElements = this->nr_m - 1;
         if (this->getSolver() == "FEM") {
             this->hr_m = this->rmax_m / nElements;
@@ -144,7 +144,8 @@ public:
             this->isAllPeriodic_m));
 
         this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
+            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(),
+            this->getSolver() == "FEM"));
 
         this->fcontainer_m->initializeFields(this->solver_m);
 
@@ -204,7 +205,7 @@ public:
         }
         DistR_t distR(parR);
 
-        bool notFEM = !(this->getSolver() == "FEM");
+        bool FEM = (this->getSolver() == "FEM");
 
         Vector_t<double, Dim> kw                         = this->kw_m;
         Vector_t<double, Dim> hr                         = this->hr_m;
@@ -224,7 +225,7 @@ public:
                 this->fcontainer_m->getRho().getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5*(notFEM)) * hr + origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5*(!FEM)) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
@@ -278,8 +279,12 @@ public:
 
         this->pcontainer_m->q = this->Q_m / totalP;
 
-        // added for FEM to see if it helps
-        this->pcontainer_m->update();
+        // For FEM need an update due to node-centering, as periodic BCs mean
+        // that a particle at R=0 is equivalent to R=1 so it could be on the 
+        // wrong rank and needs to be sent over.
+        if (FEM) {
+            this->pcontainer_m->update();
+        }
         m << "particles created and initial conditions assigned " << endl;
     }
 
