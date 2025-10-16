@@ -19,6 +19,12 @@
 
 #include "Communicate/Archive.h"
 
+
+ #ifdef IPPL_ENABLE_CATALYST
+ #include <catalyst.hpp>
+ #include "Stream/Registry/ViewRegistry.h"
+ #endif
+
 namespace ippl {
     namespace detail {
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
@@ -30,6 +36,21 @@ namespace ippl {
             };
 
         public:
+            ParticleAttribBase(){this->name = "UNNAMED";}
+
+            virtual void set_name(const std::string & name_) = 0;
+            virtual std::string get_name() const = 0;
+            
+            
+            #ifdef IPPL_ENABLE_CATALYST
+            virtual void signConduitBlueprintNode_rememberHostCopy(
+                              const size_type Np_local
+                            , conduit_cpp::Node& node_fields
+                            , ViewRegistry& vr
+                        )  const = 0;
+            // virtual void rememberHostCopy(ViewRegistry& vr) const  = 0;
+            #endif
+
             using hash_type       = ippl::detail::hash_type<MemorySpace>;
             using memory_space    = MemorySpace;
             using execution_space = typename memory_space::execution_space;
@@ -62,6 +83,7 @@ namespace ippl {
 
         protected:
             const size_type* localNum_mp;
+            std::string name;
         };
     }  // namespace detail
 }  // namespace ippl

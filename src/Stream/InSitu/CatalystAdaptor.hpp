@@ -1,6 +1,10 @@
 #pragma once
 #include "Stream/InSitu/CatalystAdaptor.h"
 
+/* instead of maps storing kokkos view in scope we use the ViewRegistry to keep everything in frame .... and be totally type indepedent
+we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
+to redzcede unncessary computin type ...) */
+
 namespace ippl{
     
 /*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
@@ -25,13 +29,13 @@ void CatalystAdaptor::set_node_script(
        }
 
        node_path.set(file_path.string());
-    }
+}
 
 
 
 
-    /* SCALAR FIELDS - handles both reference and shared_ptr */
-    // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
+// init visualisation for SCALAR FIELDS 
+// == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
 void CatalystAdaptor::init_entry( 
                     [[maybe_unused]]  
@@ -60,8 +64,9 @@ void CatalystAdaptor::init_entry(
 
     }
 
-    /* VECTOR FIELDS - handles both reference and shared_ptr */
-    // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
+
+// init visualisation for VECTOR FIELDS  
+// == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
 void CatalystAdaptor::init_entry( 
                                 [[maybe_unused]]  
@@ -91,8 +96,8 @@ void CatalystAdaptor::init_entry(
 
 }
 
-// PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
-// == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
+// init visualisation for PARTICLECONTAINERS derived from ParticleBaseBase:
+// == ippl::ParticleBase<PLayout<T, dim>,...>,...>
 template<typename T>
 requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
  void CatalystAdaptor::init_entry( 
@@ -164,80 +169,78 @@ requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
 
 
 
-void CatalystAdaptor::Execute_Particle(
-      const std::string& channelName
-    , const auto& particleContainer
-    , const auto& R_host
-    , const auto& P_host
-    , const auto& q_host
-    , const auto& ID_host
-)
-{
+// void CatalystAdaptor::Execute_Particle(
+//       const std::string& channelName
+//     , const auto& particleContainer
+//     , const auto& R_host
+//     , const auto& P_host
+//     , const auto& q_host
+//     , const auto& ID_host
+// )
+// {
 
-        // channel for particles
-        auto channel = node["catalyst/channels/"+ channelName];
-        channel["type"].set_string("mesh");
+//         // channel for particles
+//         auto channel = node["catalyst/channels/"+ channelName];
+//         channel["type"].set_string("mesh");
 
-        // in data channel now we adhere to conduits mesh blueprint definition
-        auto mesh = channel["data"];
-        mesh["coordsets/coords/type"].set_string("explicit");
+//         // in data channel now we adhere to conduits mesh blueprint definition
+//         auto mesh = channel["data"];
+//         mesh["coordsets/coords/type"].set_string("explicit");
 
-        //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        mesh["coordsets/coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         //mesh["coordsets/coords/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         //mesh["coordsets/coords/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         //mesh["coordsets/coords/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         mesh["coordsets/coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         mesh["coordsets/coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         mesh["coordsets/coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
 
-        mesh["topologies/mesh/type"].set_string("unstructured");
-        mesh["topologies/mesh/coordset"].set_string("coords");
-        mesh["topologies/mesh/elements/shape"].set_string("point");
-        //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
-        mesh["topologies/mesh/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
+//         mesh["topologies/mesh/type"].set_string("unstructured");
+//         mesh["topologies/mesh/coordset"].set_string("coords");
+//         mesh["topologies/mesh/elements/shape"].set_string("point");
+//         //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
+//         mesh["topologies/mesh/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
 
-        //auto charge_view = particleContainer->getQ().getView();
-
-
-        // add values for scalar charge field
-        auto fields = mesh["fields"];
-        fields["charge/association"].set_string("vertex");
-        fields["charge/topology"].set_string("mesh");
-        fields["charge/volume_dependent"].set_string("false");
-        //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
-        fields["charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
+//         //auto charge_view = particleContainer->getQ().getView();
 
 
-        // add values for vector velocity field
-        //auto velocity_view = particleContainer->P.getView();
-        fields["velocity/association"].set_string("vertex");
-        fields["velocity/topology"].set_string("mesh");
-        fields["velocity/volume_dependent"].set_string("false");
-        //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["velocity/values/x"].set_external(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["velocity/values/y"].set_external(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
-        fields["velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         // add values for scalar charge field
+//         auto fields = mesh["fields"];
+//         fields["charge/association"].set_string("vertex");
+//         fields["charge/topology"].set_string("mesh");
+//         fields["charge/volume_dependent"].set_string("false");
+//         //fields["charge/values"].set_external(particleContainer->q.getView().data(), particleContainer->getLocalNum());
+//         fields["charge/values"].set_external(q_host.data(), particleContainer->getLocalNum());
 
 
-        fields["position/association"].set_string("vertex");
-        fields["position/topology"].set_string("mesh");
-        fields["position/volume_dependent"].set_string("false");
-        //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-        fields["position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
-    }
+//         // add values for vector velocity field
+//         //auto velocity_view = particleContainer->P.getView();
+//         fields["velocity/association"].set_string("vertex");
+//         fields["velocity/topology"].set_string("mesh");
+//         fields["velocity/volume_dependent"].set_string("false");
+//         //fields["velocity/values/x"].set_external(&velocity_view.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         //fields["velocity/values/y"].set_external(&velocity_view.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         //fields["velocity/values/z"].set_external(&velocity_view.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         fields["velocity/values/x"].set_external(&P_host.data()[0][0], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         fields["velocity/values/y"].set_external(&P_host.data()[0][1], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
+//         fields["velocity/values/z"].set_external(&P_host.data()[0][2], particleContainer->getLocalNum(),0 ,sizeof(double)*3);
 
 
+//         fields["position/association"].set_string("vertex");
+//         fields["position/topology"].set_string("mesh");
+//         fields["position/volume_dependent"].set_string("false");
+//         //fields["position/values/x"].set_external(&layout_view.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         //fields["position/values/y"].set_external(&layout_view.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         //fields["position/values/z"].set_external(&layout_view.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         fields["position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         fields["position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//         fields["position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+//     }
 
 
 
 
 
- inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_vector& view) {
+inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_vector& view) {
         field_node["electrostatic/association"].set_string("element");
         field_node["electrostatic/topology"].set_string("mesh");
         field_node["electrostatic/volume_dependent"].set_string("false");
@@ -251,7 +254,7 @@ void CatalystAdaptor::Execute_Particle(
         field_node["electrostatic/values/z"].set_external(&view.data()[0][2], length, 0, 1);
     }
 
- inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_scalar& view) {
+inline void CatalystAdaptor::setData(conduit_cpp::Node& field_node, const View_scalar& view) {
         field_node["density/association"].set_string("element");
         field_node["density/topology"].set_string("mesh");
         field_node["density/volume_dependent"].set_string("false");
@@ -260,22 +263,40 @@ void CatalystAdaptor::Execute_Particle(
     }
 
 
-/* How to mark Ghost Cells of fields, withouth taking them out via triple for loop*/
-// == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-template <class Field>  
-void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field, 
-    Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left
-        )
-{
-        static_assert(Field::dim == 3, "CatalystAdaptor only supports 3D");
 
+
+template<typename T, unsigned Dim, class... ViewArgs>
+void CatalystAdaptor::Execute_Field(
+    const Field<T, Dim, ViewArgs...>& entry, 
+    const std::string& label
+)
+{
+        const Field<T, Dim, ViewArgs...>* field = &entry;
+        static_assert(Dim == 3, "CatalystAdaptor only supports 3D");
+
+        std::string channelName;
+        if constexpr (std::is_scalar_v<T>) {
+            channelName = "ippl_sField_" + label;
+        } else if constexpr (is_vector_v<T>) {
+            channelName = "ippl_vField_" + label;
+        }else{
+            channelName = "ippl_errorField_" + label;
+        }
+
+
+        
+        auto channel = node["catalyst/channels/"+ channelName];
+        auto mesh = channel["data"];
+        auto fields = mesh["fields"];
+        auto field_node = fields[label];
+        
+        
+        
         // A) define mesh
 
-        auto channel = node["catalyst/channels/"+ channelName];
         channel["type"].set_string("mesh");
 
         // in data channel now we adhere to conduits mesh blueprint definition
-        auto mesh = channel["data"];
         mesh["coordsets/coords/type"].set_string("uniform");
 
         // number of points in specific dimension
@@ -315,10 +336,18 @@ void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field
             ++field_node_origin_topo.back();
         }
 
-        // B) Set the field values
 
+        
+        // B) Set the field values
         // Initialize the existing Kokkos::View
-        host_view_layout_left = Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>(
+
+        // Kokkos::View<typename               Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> scalar_host_view;
+        // Kokkos::View<typename           VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> vector_host_view;
+        Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left;
+
+
+
+        host_view_layout_left = Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>(
            "host_view_layout_left",
            field->getLayout().getLocalNDIndex()[0].length(),
            field->getLayout().getLocalNDIndex()[1].length(),
@@ -338,91 +367,208 @@ void CatalystAdaptor::Execute_Field(const std::string& channelName, Field* field
             }
         }
 
-        // Add values and subscribe to data
-        auto fields = mesh["fields"];
-        setData(fields, host_view_layout_left);
+    
+
+
+
+
+        if constexpr (std::is_scalar_v<T>) {
+            // --- SCALAR FIELD CASE ---
+            std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
+
+            field_node["association"].set_string("element");
+            field_node["topology"].set_string("mesh");
+            field_node["volume_dependent"].set_string("false");
+            field_node["values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
+
+
+
+        } else if constexpr (is_vector_v<T>) {
+            // --- VECTOR FIELD CASE ---
+            std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">) called" << std::endl;
+       
+
+            field_node["association"].set_string("element");
+            field_node["topology"].set_string("mesh");
+            field_node["volume_dependent"].set_string("false");
+            auto length = std::size(host_view_layout_left);
+            // offset is zero as we start without the ghost cells
+            // stride is 1 as we have every index of the array
+                                     field_node["values/x"].set_external(&host_view_layout_left.data()[0][0], length, 0, 1);
+            if constexpr (T::dim>=2) field_node["values/y"].set_external(&host_view_layout_left.data()[0][1], length, 0, 1);
+            if constexpr (T::dim>=3) field_node["values/z"].set_external(&host_view_layout_left.data()[0][2], length, 0, 1);        
+                
+        } else {
+            // --- INVALID CASE ---
+            std::cout << "execute_entry(Field<"<<typeid(T).name()<< ">)" << std::endl;
+            std::cout   << "For this type of Field the Conduit Blueprint description wasnt \n" 
+                        << "implemented in ippl. Therefore this type of field is not \n"
+                        << "supported for visualisation." << std::endl;
+        }
+
+        viewRegistry.set(host_view_layout_left);
     }
 
-        // Handle fields
-        // // Map of all Kokkos::Views. This keeps a reference on all Kokkos::Views
-        // // which ensures that Kokkos does not free the memory before the end of this function.
 
 
-        /* SCALAR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
+
+// Handle fields
+// // Map of all Kokkos::Views. This keeps a reference on all Kokkos::Views
+// // which ensures that Kokkos does not free the memory before the end of this function.
+
+
+// execute visualisation for SCALAR FIELDS 
+// == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
  void CatalystAdaptor::execute_entry(
                             const Field<T, Dim, ViewArgs...>& entry, 
                             const std::string label
     ) {
-        std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
-        // std::map<std::string, Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > scalar_host_views;
-        /* creates amp entry with default initialized values ... */
-        // Execute_Field(label, field, scalar_host_views[label], node);
-        
-        
-        const std::string channelName = "ippl_sField_" + label;
-        Kokkos::View<typename Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> scalar_host_view;
-        const Field_t<Dim>* field = &entry;
-        Execute_Field(channelName, field, scalar_host_view);
-        viewRegistry.set(scalar_host_view);
-        
 
+
+        const Field<T, Dim, ViewArgs...>* field = &entry;
+        static_assert(Dim == 3, "CatalystAdaptor only supports 3D");
+
+        std::string channelName;
+        if constexpr (std::is_scalar_v<T>) {
+            channelName = "ippl_sField_" + label;
+        } else if constexpr (is_vector_v<T>) {
+            channelName = "ippl_vField_" + label;
+        }else{
+            channelName = "ippl_errorField_" + label;
+        }
+
+
+        
+        auto channel = node["catalyst/channels/"+ channelName];
+        auto mesh = channel["data"];
+        auto fields = mesh["fields"];
+        auto field_node = fields[label];
+        
+        
+        
+        // A) define mesh
+
+        channel["type"].set_string("mesh");
+
+        // in data channel now we adhere to conduits mesh blueprint definition
+        mesh["coordsets/coords/type"].set_string("uniform");
+
+        // number of points in specific dimension
+        std::string field_node_dim{"coordsets/coords/dims/i"};
+        std::string field_node_origin{"coordsets/coords/origin/x"};
+        std::string field_node_spacing{"coordsets/coords/spacing/dx"};
+
+        for (unsigned int iDim = 0; iDim < field->get_mesh().getGridsize().dim; ++iDim) {
+            // add dimension
+            mesh[field_node_dim].set(field->getLayout().getLocalNDIndex()[iDim].length() + 1);
+
+            // add origin
+            mesh[field_node_origin].set(
+                field->get_mesh().getOrigin()[iDim] + field->getLayout().getLocalNDIndex()[iDim].first()
+                      * field->get_mesh().getMeshSpacing(iDim));
+
+            // add spacing
+            mesh[field_node_spacing].set(field->get_mesh().getMeshSpacing(iDim));
+
+            // increment last char in string
+            ++field_node_dim.back();
+            ++field_node_origin.back();
+            ++field_node_spacing.back();
+        }
+
+        // add topology
+        mesh["topologies/mesh/type"].set_string("uniform");
+        mesh["topologies/mesh/coordset"].set_string("coords");
+        std::string field_node_origin_topo{"topologies/mesh/origin/x"};
+        for (unsigned int iDim = 0; iDim < field->get_mesh().getGridsize().dim; ++iDim) {
+            // shift origin
+            mesh[field_node_origin_topo].set(field->get_mesh().getOrigin()[iDim]
+                                             + field->getLayout().getLocalNDIndex()[iDim].first()
+                                                   * field->get_mesh().getMeshSpacing(iDim));
+
+            // increment last char in string ('x' becomes 'y' becomes 'z')
+            ++field_node_origin_topo.back();
+        }
+
+
+        
+        // B) Set the field values
+        // Initialize the existing Kokkos::View
+
+        // Kokkos::View<typename               Field_t<Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> scalar_host_view;
+        // Kokkos::View<typename           VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> vector_host_view;
+        Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> host_view_layout_left;
+
+
+
+        host_view_layout_left = Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>(
+           "host_view_layout_left",
+           field->getLayout().getLocalNDIndex()[0].length(),
+           field->getLayout().getLocalNDIndex()[1].length(),
+           field->getLayout().getLocalNDIndex()[2].length());
+
+        // Creates a host-accessible mirror view and copies the data from the device view to the host.
+        auto host_view =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
+
+        // Copy data from field to the memory+style which will be passed to Catalyst
+        auto nGhost = field->getNghost();
+        for (size_t i = 0; i < field->getLayout().getLocalNDIndex()[0].length(); ++i) {
+            for (size_t j = 0; j < field->getLayout().getLocalNDIndex()[1].length(); ++j) {
+                for (size_t k = 0; k < field->getLayout().getLocalNDIndex()[2].length(); ++k) {
+                    host_view_layout_left(i, j, k) = host_view(i + nGhost, j + nGhost, k + nGhost);
+                }
+            }
+        }
+
+    
+
+
+
+
+        if constexpr (std::is_scalar_v<T>) {
+            // --- SCALAR FIELD CASE ---
+            std::cout << "      execute_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << std::endl;
+
+            field_node["association"].set_string("element");
+            field_node["topology"].set_string("mesh");
+            field_node["volume_dependent"].set_string("false");
+            field_node["values"].set_external(host_view_layout_left.data(), host_view_layout_left.size());
+
+
+
+        } else if constexpr (is_vector_v<T>) {
+            // --- VECTOR FIELD CASE ---
+            std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">) called" << std::endl;
+       
+
+            field_node["association"].set_string("element");
+            field_node["topology"].set_string("mesh");
+            field_node["volume_dependent"].set_string("false");
+            auto length = std::size(host_view_layout_left);
+            // offset is zero as we start without the ghost cells
+            // stride is 1 as we have every index of the array
+                                     field_node["values/x"].set_external(&host_view_layout_left.data()[0][0], length, 0, 1);
+            if constexpr (T::dim>=2) field_node["values/y"].set_external(&host_view_layout_left.data()[0][1], length, 0, 1);
+            if constexpr (T::dim>=3) field_node["values/z"].set_external(&host_view_layout_left.data()[0][2], length, 0, 1);        
+                
+        } else {
+            // --- INVALID CASE ---
+            std::cout << "execute_entry(Field<"<<typeid(T).name()<< ">)" << std::endl;
+            std::cout   << "For this type of Field the Conduit Blueprint description wasnt \n" 
+                        << "implemented in ippl. Therefore this type of field is not \n"
+                        << "supported for visualisation." << std::endl;
+        }
+
+        viewRegistry.set(host_view_layout_left);
     }
 
-        /* VECTOR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
- void CatalystAdaptor::execute_entry(
-                        const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry,  
-                        const std::string label
-                    ) {
-        std::cout << "      execute_entry(ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Dim_v << ">," << Dim << ">) called" << std::endl;
-        
-        const std::string channelName = "ippl_vField_" + label;
-        Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> vector_host_view;
-        const VField_t<T, Dim>* field = &entry;
-        Execute_Field(channelName, field, vector_host_view); 
-        viewRegistry.set(vector_host_view);
-        
-        
-        // save a copy to shared pointer/view, keeps dynamco raw data of View alive
-        
-
-        
-        // std::map<std::string, Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > vector_host_views;
-        // Execute_Field(label,field, vector_host_views[label], node); 
-
-        // use make shaed so we dont pass adereference to a nullptr .... 
-        // for us  more conveneient approach 
-        // std::shared<Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> > vector_host_views =
-        // std::make_shared<Kokkos::View<typename VField_t<T, Dim>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> >;
-
-        
-        
-
-        
-        
-    }
-
-        // const std::string& fieldName = "E";
-    // You remove const for particles in your execute_entry function
-    // because you need to call non-const member functions 
-    // (like getHostMirror()) on the particle attributes, which
-    // are not marked as const in their class definition. For 
-    // fields, you can keep const because the field-related
-    // functions you call (like getView(), getLayout(), etc.) 
-    // are either const or do not modify the object.
 
 
 
-
-    /* instead of maps storing kokkos view in scope we use the registry to keep everything in frame .... and be totally type indepedent
-    we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
-    to redzcede unncessary computin type ...) */
-
-
-    // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
+// execute visualisation for PARTICLECONTAINERS derived from ParticleBaseBase:
+// == ippl::ParticleBase<PLayout<T, dim>,...>,...>
 template<typename T>
 requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
  void CatalystAdaptor::execute_entry(
@@ -434,49 +580,83 @@ requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
                     << ","
                     << particle_dim_v<T> 
                     << ",...>...> [or subclass]) called" << std::endl;
+        const std::string channelName = "ippl_particles_" + label;
+
+        auto particleContainer = &entry;
+        assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
+
+        
+        // channel for this particleContainer
+        auto channel = node["catalyst/channels/"+ channelName];
+        auto mesh = channel["data"];
+        auto fields = mesh["fields"];
+
+        channel["type"].set_string("mesh");
+        
+        ParticleAttrib<std::int64_t>::HostMirror      ID_host;
+        ParticleAttrib<Vector<double, 3>>::HostMirror R_host;
+        ID_host = particleContainer->ID.getHostMirror();
+        R_host  = particleContainer->R.getHostMirror();
+        Kokkos::deep_copy(ID_host,  particleContainer->ID.getView());
+        Kokkos::deep_copy(R_host ,  particleContainer->R.getView());
+        viewRegistry.set(ID_host);
+        viewRegistry.set(R_host);
 
 
-            const std::string channelName = "ippl_particles_" + label;
+        /* ATTRIBUTES HARDCODED IN PARTICELBASE */
+        mesh["topologies/mesh/type"].set_string("unstructured");
+        mesh["topologies/mesh/coordset"].set_string("coords");
+        mesh["topologies/mesh/elements/shape"].set_string("point");
+        mesh["topologies/mesh/elements/connectivity"].set_external(ID_host.data(),particleContainer->getLocalNum());
+        /* no copy in situ vis:... */
+        //mesh["topologies/mesh/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
+        
+        mesh["coordsets/coords/type"].set_string("explicit");
+        mesh["coordsets/coords/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        mesh["coordsets/coords/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        // this can be left hardcodeed or made part of the for loop, but more efficient to do it right here and take out of loop...
+        fields["position/association"].set_string("vertex");
+        fields["position/topology"].set_string("mesh");
+        fields["position/volume_dependent"].set_string("false");
+        fields["position/values/x"].set_external(&R_host.data()[0][0], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/y"].set_external(&R_host.data()[0][1], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+        fields["position/values/z"].set_external(&R_host.data()[0][2], particleContainer->getLocalNum(), 0, sizeof(double)*3);
+            
+        
+        // "no way" to know what dimensions and types particle attributes will have
+        // from pointer instance since is base pointer make execute member method instead to 
+        // use virtual functions. Is most pragmatic approach.
 
+        std::cout << "============================================" << std::endl;
+        const size_t n_attributes =  entry.getAttributeNum();
+        for(size_t i = 2; i < n_attributes; ++i){
 
-            ParticleAttrib<Vector<double, 3>>::HostMirror    R_host_view;
-            ParticleAttrib<Vector<double, 3>>::HostMirror    P_host_view;
-            ParticleAttrib<double>::HostMirror               q_host_view;
-            ParticleAttrib<std::int64_t>::HostMirror         ID_host_view;
+            const auto attribute = entry.getAttribute(i);
+            const std::string  attribute_name = attribute->get_name();
+            std::cout << "Execute attribute: " << attribute_name << std::endl;
+            attribute->signConduitBlueprintNode_rememberHostCopy(particleContainer->getLocalNum(), fields, viewRegistry);
+            
+        }
+        std::cout << "============================================" << std::endl;
+        
+        // entry.template forAllAttributes<void>(
+        //     [&]<typename Attributes>(const Attributes& atts) {
+        //         for (auto* attribute : atts) {
+        //             const std::string attribute_name = attribute->get_name();
+        //             std::cout << "Execute attribute: " << attribute_name << std::endl;
 
-            auto particleContainer = &entry;
-            assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
-
-            R_host_view  = particleContainer->R.getHostMirror();
-            P_host_view  = particleContainer->P.getHostMirror();
-            q_host_view  = particleContainer->q.getHostMirror();
-            ID_host_view = particleContainer->ID.getHostMirror();
-
-            Kokkos::deep_copy(R_host_view ,  particleContainer->R.getView());
-            Kokkos::deep_copy(P_host_view ,  particleContainer->P.getView());
-            Kokkos::deep_copy(q_host_view ,  particleContainer->q.getView());
-            Kokkos::deep_copy(ID_host_view,  particleContainer->ID.getView());
-
-
-
-
-
-            Execute_Particle(
-                    channelName,
-                    particleContainer,
-                    R_host_view,
-                    P_host_view,
-                    q_host_view,
-                    ID_host_view
-            );
-
-
-
-            viewRegistry.set(R_host_view);
-            viewRegistry.set(P_host_view);
-            viewRegistry.set(q_host_view);
-            viewRegistry.set(ID_host_view);
-    }
+        //             if( attribute_name  != "ID"){
+        //                 attribute->signConduitBlueprintNode_rememberHostCopy(   particleContainer->getLocalNum(), 
+        //                                                                         node, 
+        //                                                                         viewRegistry
+        //                                                                 );
+        //             }
+        //         }
+        //     }
+        // );
+        // std::cout << "============================================" << std::endl;
+}
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
@@ -493,7 +673,7 @@ template<typename T>
                                         const std::string  label
                                     ) {
         if (entry) {
-            // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
+            std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
             execute_entry(*entry, label
                 // ,  node, vr
             );  // Dereference and dispatch to reference version
@@ -761,7 +941,7 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
         SteerForwardVisitor steerV{*this};
         steerRegistry->for_each(steerV); 
     }
-
+    if( cycle == 0)  node.print();
     // Conduit Node Forward pass to Catalyst
     catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
     if (err != catalyst_status_ok) {

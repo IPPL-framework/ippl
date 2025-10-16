@@ -39,6 +39,10 @@
 // - remember function
 // - figure out why the field and particles work differetnly
 // - reduce virtual function calls get rid of execute_FIeld set_data and execute particle this
+// - test no copy visualisation
+// 
+// how do we get attribute identifier
+// - enable pure attribute not make sense in location inf is missing...
 // 
 // 
 // CatalystAdaptor.h needs VisRegistryRuntime.h
@@ -275,9 +279,10 @@ class CatalystAdaptor {
     * @param host_view_layout_left Host mirror view for field data.
     * @param node The Conduit node to populate.
     */
-    template <class Field>  // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-     void Execute_Field(const std::string& channelName, Field* field, 
-        Kokkos::View<typename Field::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>& host_view_layout_left
+    template<typename T, unsigned Dim, class... ViewArgs>
+    void Execute_Field(
+        const Field<T, Dim, ViewArgs...>& entry, 
+        const std::string& label
     );
 
 
@@ -308,25 +313,30 @@ class CatalystAdaptor {
 
 
 
-        /* VECTOR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    /**
-     * @brief Executes a vector field entry, populating the Conduit node and updating the view registry.
-     *
-     * @tparam T Vector value type.
-     * @tparam Dim Field dimension.
-     * @tparam Dim_v Vector dimension.
-     * @tparam ViewArgs Additional template arguments for the field.
-     * @param entry The vector field to execute.
-     * @param label The label for the field/channel.
-     * @param node The Conduit node to populate.
-     * @param vr The view registry to update.
-     */
-    template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-    void execute_entry(  
-                        const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry 
-                      , const std::string label
-    );
+    /* could catch this for overall case distinction
+    but this isnt re */
+       
+// execute visualisation for VECTOR FIELDS  
+// // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
+//         /* VECTOR FIELDS - handles both reference and shared_ptr */
+//         // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
+//     /**
+//      * @brief Executes a vector field entry, populating the Conduit node and updating the view registry.
+//      *
+//      * @tparam T Vector value type.
+//      * @tparam Dim Field dimension.
+//      * @tparam Dim_v Vector dimension.
+//      * @tparam ViewArgs Additional template arguments for the field.
+//      * @param entry The vector field to execute.
+//      * @param label The label for the field/channel.
+//      * @param node The Conduit node to populate.
+//      * @param vr The view registry to update.
+//      */
+//     template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
+//     void execute_entry(  
+//                         const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry 
+//                       , const std::string label
+//     );
 
 
         // const std::string& fieldName = "E";
@@ -344,6 +354,24 @@ class CatalystAdaptor {
     /* instead of maps storing kokkos view in scope we use the registry to keep everything in frame .... and be totally type indepedent
     we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
     to redzcede unncessary computin type ...) */
+
+
+    template<typename T>
+    void execute_attribute(const ParticleAttrib<T> & pa);
+
+    template<typename T, unsigned Dim_v>
+    void execute_attribute(const ParticleAttrib<Vector<T, Dim_v>> & pa);
+
+
+
+    // template<typename T, unsigned Dim_v, typename memspace>
+    
+    // template <typename memspace>
+    // template <typename T>
+    template<typename T, typename memspace>
+    void execute_attribute(const detail::ParticleAttribBase<memspace>& pa);
+    
+
 
 
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:

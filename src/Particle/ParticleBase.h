@@ -200,6 +200,11 @@ namespace ippl {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        const attribute_type<MemorySpace>* getAttribute(size_t i) const {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
         /*!
          * Calls a given function for all attributes in the bunch
          * @tparam MemorySpace the memory space of the attributes to visit (void to visit all of

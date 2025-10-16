@@ -21,6 +21,96 @@
 
 namespace ippl {
 
+
+    template <typename T, class... Properties>
+        void ParticleAttrib<T, Properties...>::set_name(const std::string & name_){
+            this->name = name_;
+        }
+
+    template <typename T, class... Properties>
+        std::string ParticleAttrib<T, Properties...>::get_name() const {
+            return this->name;
+        }
+
+
+
+
+#ifdef IPPL_ENABLE_CATALYST
+            /* cant use reequires since using it here means having to use in derived class as well
+            and using it in derived class means having to use it in base class as well which does not make sense
+            so we switched to SFINAE approach instead */
+            // requires(!std::is_scalar_v<T>)
+
+            // In general, for runtime performance, neither function overloading nor if 
+            // constexpr has an inherent advantage when used correctly for compile-time 
+            // dispatch. Both eliminate runtime overhead compared to dynamic checks (like 
+            // function pointers or switch statements).
+            // function overloading with template parameter extraction or constraints or sfinae 
+            // are all pretty impossible to use in this case so we switched to if const expr
+
+            // In general, for runtime performance, neither function overloading nor if constexpr
+            //  has an inherent advantage when used correctly for compile-time dispatch. 
+            //  Both eliminate runtime overhead compared to dynamic checks 
+            // (like function pointers or switch statements).
+
+
+
+template <typename T, class... Properties>
+void ParticleAttrib<T, Properties...>::signConduitBlueprintNode_rememberHostCopy(
+    const size_type Np_local, 
+    conduit_cpp::Node& node_fields, 
+    ViewRegistry& viewRegistry
+)  const 
+{
+    HostMirror  hostMirror;
+    hostMirror  = this->getHostMirror();
+    Kokkos::deep_copy(hostMirror ,  this->getView());
+
+    auto field = node_fields[this->name];
+    // auto field = node_fields["tester"];
+    field["association"].set_string("vertex");
+    field["topology"].set_string("mesh");
+    field["volume_dependent"].set_string("false");
+
+
+
+    if constexpr (std::is_scalar_v<T>) {
+        // --- SCALAR CASE ---
+        std::cout   << "call to: ParticleAttribute<"  
+                    << typeid(T).name()  
+                    << ">.signConduitBlueprintNode()" << std::endl;
+        
+        field["values"].set_external(hostMirror.data(), Np_local);
+    } else if constexpr (is_vector_v<T>) {
+        // --- VECTOR CASE ---
+        std::cout   << "call to:  ParticleAttribute<ippl::vector<"  
+                    << typeid(typename T::value_type).name() << "," << T::dim   
+                    <<">>.signConduitBlueprintNode()" << std::endl;
+        
+                                    field["values/x"].set_external(&hostMirror.data()[0][0], Np_local, 0 ,sizeof(T)*T::dim);
+        if constexpr (T::dim>=2){
+            // std::cout <<"2"<<std::endl;
+               field["values/y"].set_external(&hostMirror.data()[0][1], Np_local, 0 ,sizeof(T)*T::dim);
+        }
+        if constexpr (T::dim>=3) {
+            // std::cout <<"3"<<std::endl;
+            field["values/z"].set_external(&hostMirror.data()[0][2], Np_local, 0 ,sizeof(T)*T::dim);
+        }
+    } else {
+        // --- INVALID CASE ---
+        std::cout << "ParticleAttribute<"  
+            << typeid(T).name()  
+            << ">.signConduitBlueprintNode()" << std::endl;
+        std::cout   << "For this type of Attribute the Conduit Blueprint description wasnt \n" 
+                    << "implemented in ippl. Therefore this type of attribute is not \n"
+                    << "supported for visualisation." << std::endl;
+    }
+    viewRegistry.set(hostMirror);
+    std::cout << viewRegistry.size() << std::endl;
+    // node_fields.print();
+}
+#endif
+
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::create(size_type n) {
         size_type required = *(this->localNum_mp) + n;

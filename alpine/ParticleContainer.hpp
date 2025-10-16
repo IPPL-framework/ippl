@@ -31,6 +31,11 @@ public:
     void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
     void registerAttributes() {
+        /* inherited need use this */
+        P.set_name("velocity");
+        q.set_name("charge");
+        E.set_name("electric_field");
+
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
