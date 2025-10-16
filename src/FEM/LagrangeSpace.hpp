@@ -137,11 +137,11 @@ namespace ippl {
                 return i;
             }
         }
-        return Kokkos::Experimental::quiet_NaN_v<size_t>;
         // commented this due to this being on device 
         // however, it would be good to throw an error in this case
         //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
         //                    "FEM Lagrange Space: Global DOF not found in specified element");
+        return 0;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
