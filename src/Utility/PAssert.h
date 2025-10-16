@@ -109,7 +109,7 @@ void insist(const char* cond, const char* msg, const char* file, int line);
 #define PAssert_GE(a, b)
 #else
 #if defined(__HIP_PLATFORM_AMD__) \
-    || defined(__CUDACC__)  // toss_cookies are not supported so just do a no-operation
+    || defined(__CUDA_ARCH__)  // toss_cookies are not supported so just do a no-operation
 #define PAssert(c)
 #define PAssert_CMP(cmp, a, b)
 #else
