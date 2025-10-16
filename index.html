@@ -109,6 +109,7 @@ Table of Contents</h2>
 <li>OpenMP release build with alpine and FFTW</li>
 <li>Cuda alpine release build</li>
 <li>HIP release build (LUMI)</li>
+<li>Enable Scripts</li>
 </ul>
 <p >Contributions</p><ul>
 <li>Citing IPPL</li>
@@ -173,6 +174,7 @@ None of the options have to be set explicitly, all have a default.</h4>
 <li><code>IPPL_USE_ALTERNATIVE_VARIANT</code>, default <code>OFF</code>. Can be turned on for GPU builds where the use of the system-provided variant doesn't work. <br  />
 </li>
 <li><code>IPPL_ENABLE_SANITIZER</code>, default <code>OFF</code></li>
+<li><code>IPPL_ENABLE_SCRIPTS</code>, default <code>OFF</code></li>
 </ul>
 <p ><code><a class="el" href="namespaceKokkos.html">Kokkos</a></code> and <code>Heffte</code> by default will try to use version that are found on the sytem, if the system has <code>kokkos@4.6</code> and you set <code>Kokkos_VERSION=4.5</code> then cmake's find_package will consider the system version a match (newer than requested) and use it. The same applies for <code>Heffte</code>. You can override the variable to checkout any version by setting a git tag/sha/branch such as </p><div class="fragment"><div class="line">cmake -DKokkos_version=git.4.7.01 -DHeffte_VERSION=git.v2.4.1 ...  </div>
 <div class="line"># or for a very specific version </div>
@@ -268,14 +270,20 @@ HIP release build (LUMI)</h4>
 <li><code>AMD_GFX90A</code> (LUMI machine)</li>
 <li><code>HOPPER90</code> (Merlin7 GPUs)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md14"></a>
+<h3><a class="anchor" id="autotoc_md14"></a>
+Enable Scripts</h3>
+<p >We add IPPL_ENABLE_SCRIPTS=ON/OFF and when enabled, cmake will use configure_file to copy the scripts to the build dir, and replace some strings in them with cmake generated ones with the correct paths/values in. This allows the user to</p>
+<p >cmake -DIPPL_ENABLE_SCRIPTS=ON .... make LandauDamping ... &ndash; Scripts configured in /capstor/scratch/cscs/biddisco/build-santis/scripts then</p>
+<p >./scripts/landau/strong-scaling-alps/generate.sh and the result will be something like</p>
+<p >Generating job for node count 004 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_004 Submitted batch job 396349 Generating job for node count 008 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_008 Submitted batch job 396350 Generating job for node count 016 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_016 Submitted batch job 396351 Generating job for node count 032 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_032 Submitted batch job 396352 Generating job for node count 064 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_064 Submitted batch job 396353 Generating job for node count 128 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_128 Submitted batch job 396354 Generating job for node count 256 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_256 Submitted batch job 396355</p>
+<h1><a class="anchor" id="autotoc_md15"></a>
 Contributions</h1>
 <p >We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.</p>
 <p >For larger projects we recommend to fork the main repository and then submit a pull request from it. More information regarding github workflow for forks can be found in this <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks">page</a> and how to submit a pull request from a fork can be found <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork">here</a>. Please follow the coding guidelines as mentioned in this <a href="https://github.com/IPPL-framework/ippl/blob/master/WORKFLOW.md">page</a>.</p>
 <p >You can add an upstream to be able to get all the latest changes from the master. For example, if you are working with a fork of the main repository, you can add the upstream by: </p><div class="fragment"><div class="line">$ git remote add upstream git@github.com:IPPL-framework/ippl.git</div>
 </div><!-- fragment --><p> You can then easily pull by typing </p><div class="fragment"><div class="line">$ git pull upstream master</div>
 </div><!-- fragment --><p> All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please take a look at this <a href="https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md">page</a>.</p>
-<h2><a class="anchor" id="autotoc_md15"></a>
+<h2><a class="anchor" id="autotoc_md16"></a>
 Citing IPPL</h2>
 <div class="fragment"><div class="line">@inproceedings{muralikrishnan2024scaling,</div>
 <div class="line">  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications</div>
@@ -287,10 +295,10 @@ Citing IPPL</h2>
 <div class="line">  year={2024},</div>
 <div class="line">  organization={SIAM}</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md16"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md17"></a>
 Job scripts for running on Merlin and Gwendolen (at PSI)</h1>
 <p >You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm. More documentation on the local cluster can be found <a href="https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html">here</a> (need to be in the PSI network to access).</p>
-<h2><a class="anchor" id="autotoc_md17"></a>
+<h2><a class="anchor" id="autotoc_md18"></a>
 Merlin CPU (MPI + OpenMP)</h2>
 <p >For example, to run a job on 1 MPI node, with 44 OpenMP threads: </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --partition=hourly      # Using &#39;hourly&#39; will grant higher priority</div>
@@ -312,7 +320,7 @@ Merlin CPU (MPI + OpenMP)</h2>
 <div class="line"># (see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting--ccpus-per-task)</div>
 <div class="line"> </div>
 <div class="line">srun --cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md18"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md19"></a>
 Gwendolen GPU</h2>
 <p >For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node): </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
@@ -328,7 +336,7 @@ Gwendolen GPU</h2>
 <div class="line">#SBATCH --error=&lt;error_file_name&gt;.err    # Name of error file</div>
 <div class="line"> </div>
 <div class="line">srun ./&lt;your_executable&gt; &lt;args&gt; --kokkos-map-device-id-by=mpi_rank</div>
-</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md19"></a>
+</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md20"></a>
 LUMI GPU partition</h2>
 <p >For example, to run a job on 8 nodes with 8 GPUs each: </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --job-name=TestGaussian</div>
@@ -354,7 +362,7 @@ LUMI GPU partition</h2>
 <div class="line">chmod +x ./select_gpu</div>
 <div class="line">srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5</div>
 <div class="line">rm -rf ./select_gpu</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md20"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md21"></a>
 Profiling IPPL MPI calls</h1>
 <p >You can use the mpiP tool (<a href="https://github.com/LLNL/mpiP">https://github.com/LLNL/mpiP</a>) to get statistics about the MPI calls in IPPL.</p>
 <p >To use it, download it from <a href="https://github.com/LLNL/mpiP">Github</a> and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:</p><ul>
@@ -367,13 +375,13 @@ Profiling IPPL MPI calls</h1>
 <p >If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics: <code>Storing mpiP output in ...</code></p>
 <p >To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form: <code>python3 mpiP.py [path/to/directory]</code> where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.</p>
 <p >Happy profiling!</p>
-<h1><a class="anchor" id="autotoc_md21"></a>
+<h1><a class="anchor" id="autotoc_md22"></a>
 Build Instructions</h1>
 <p >Here we compile links to recipies for easy build on various HPC systems.</p>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md23"></a>
 MERLIN 7 (PSI)</h2>
 <p ><a href="https://hpce.pages.psi.ch/merlin7/ippl.html">IPPL build for A100 and HG</a></p>
-<h2><a class="anchor" id="autotoc_md23"></a>
+<h2><a class="anchor" id="autotoc_md24"></a>
 ALPS (CSCS)</h2>
 <p >Start by loading a <code>uenv</code> that contains most of the tools we want. Note that in future an <code>official</code> uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...</p>
 <div class="fragment"><div class="line">uenv start --view=develop \</div>

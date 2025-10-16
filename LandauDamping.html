@@ -81,7 +81,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >This is an example demonstrating the setup and execution of a Landau damping simulation using the IPPL framework.</p>
-<h3><a class="anchor" id="autotoc_md42"></a>
+<h3><a class="anchor" id="autotoc_md43"></a>
 Usage</h3>
 <p >The executable can be run with the following command-line arguments: </p><div class="fragment"><div class="line">   srun ./LandauDamping &lt;nx&gt; [&lt;ny&gt;...] &lt;Np&gt; &lt;Nt&gt; &lt;stype&gt; &lt;lbthres&gt; &lt;tintegr&gt; --overallocate</div>
 <div class="line">&lt;ovfactor&gt; --info 10</div>
@@ -95,11 +95,11 @@ Usage</h3>
 <li><b>tintegr</b>: Type of time integrator. For example Leapfrog.</li>
 <li><b>ovfactor</b>: Over-allocation factor for buffers used in communication. A value of 1.0 means no over-allocation.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md43"></a>
+<h3><a class="anchor" id="autotoc_md44"></a>
 Example Command</h3>
 <div class="fragment"><div class="line">srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10</div>
 </div><!-- fragment --><p> This command runs a simulation with a 128x128x128 grid, 10,000 particles, for 10 time steps, using the FFT solver, a load balancing threshold of 1%, with LeapFrog integration, overallocating buffers by a factor of 2.</p>
-<h3><a class="anchor" id="autotoc_md44"></a>
+<h3><a class="anchor" id="autotoc_md45"></a>
 Implementation Detail</h3>
 <p >The main function initializes the Ippl framework, sets up the simulation parameters from command-line arguments, and then creates and configures an instance of <code><a class="el" href="classLandauDampingManager.html">LandauDampingManager</a></code> to manage the simulation. It performs pre-run operations to set up the simulation environment and then runs the simulation for the specified number of time steps. <a class="el" href="structTiming.html">Timing</a> information is collected and output for performance analysis. </p><div class="fragment"><div class="line"><span class="keyword">constexpr</span> <span class="keywordtype">unsigned</span> <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> = 3;</div>
 <div class="line"><span class="keyword">using </span><a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> = double;</div>

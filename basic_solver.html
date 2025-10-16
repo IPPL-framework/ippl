@@ -155,7 +155,7 @@ Example: Poisson solver</h2>
 </div><!-- fragment --><p >Now we can define the solver object and solve the Poisson equation: </p><div class="fragment"><div class="line"><a class="code hl_typedef" href="datatypes_8h.html#aa2185e8107d8cd1581df854fe3eda2d0">Solver_t</a> FFTsolver(fieldE, rho, params);</div>
 <div class="line">FFTsolver.solve();</div>
 </div><!-- fragment --><p> The potential is stored in the rho Field. The E-Field is stored in the fieldE Field.</p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 [Optional] Using a Preconditioner</h2>
 <p >If you want to precondition the solver you can add following parameters to the parameter list: </p><div class="fragment"><div class="line"><span class="comment">// Define the preconditioner type (jacobi, newton, chebyshev, richardson or gauss_seidel)</span></div>
 <div class="line">params.<a class="code hl_function" href="classippl_1_1ParameterList.html#ab4b572b0db6bad6f631b23320a8f4722">add</a>(<span class="stringliteral">&quot;preconditioner_type&quot;</span>, preconditioner_type);</div>

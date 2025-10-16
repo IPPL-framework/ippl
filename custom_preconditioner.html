@@ -80,7 +80,7 @@ $(function() {
   <div class="headertitle"><div class="title">Defining Custom Preconditioners </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md30"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md31"></a>
 Introduction to the Preconditioner Base Class</h1>
 <p >The preconditioner class in the IPPL framework serves as an abstract base class for different preconditioning strategies applied in iterative solvers. It encapsulates common functionalities and interfaces that are essential for all types of preconditioners. Structure of the Preconditioner Base Class</p>
 <ul>
@@ -89,7 +89,7 @@ Introduction to the Preconditioner Base Class</h1>
 <li>Virtual Function ('operator()'): This is a pure virtual function in the base class that must be implemented by derived classes to define the specific preconditioning behavior.</li>
 </ul>
 <p >Steps to Create a Custom Preconditioner </p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 Step 1: Define the Preconditioner Class</h2>
 <p >Begin by defining a new class that inherits from the 'preconditioner&lt;Field&gt;' provided by the IPPL framework. This new class should implement all abstract methods from the base class and can add additional members as needed for its specific strategy.</p>
 <div class="fragment"><div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Field&gt;</div>
@@ -106,15 +106,15 @@ Step 1: Define the Preconditioner Class</h2>
 <div class="line">    }</div>
 <div class="line">};</div>
 <div class="ttc" id="aclassippl_1_1Field_html"><div class="ttname"><a href="classippl_1_1Field.html">ippl::Field&lt; T, Dim, Mesh_t&lt; Dim &gt;, Centering_t&lt; Dim &gt;, ViewArgs... &gt;</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md32"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md33"></a>
 Step 2: Implement the Constructor</h2>
 <p >Use the constructor of your custom preconditioner to initialize any data members and forward any necessary parameters to the base class constructor, which sets the type name of the preconditioner. </p>
-<h2><a class="anchor" id="autotoc_md33"></a>
+<h2><a class="anchor" id="autotoc_md34"></a>
 Step 3: Override the Operator Function</h2>
 <p >Implement the 'operator()' function to apply your preconditioning logic to the input field. This method is crucial as it defines how the preconditioner modifies the input data, aligning with the specific algorithmic needs of your solver. </p>
-<h1><a class="anchor" id="autotoc_md34"></a>
+<h1><a class="anchor" id="autotoc_md35"></a>
 Example Implementations</h1>
-<h2><a class="anchor" id="autotoc_md35"></a>
+<h2><a class="anchor" id="autotoc_md36"></a>
 Jacobi Preconditioner</h2>
 <p >The 'jacobi_preconditioner' provided by IPPL is a derived class of preconditioner. It implements a specific preconditioning strategy using an inverse diagonal matrix and a damping factor. Here is how it extends the base class:</p>
 <div class="fragment"><div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Field, <span class="keyword">typename</span> InvDiagF&gt;</div>
@@ -138,7 +138,7 @@ Jacobi Preconditioner</h2>
 <div class="ttc" id="aclassippl_1_1BareField_html_a03944cc0274a28c7d2de62c3d54a62bc"><div class="ttname"><a href="classippl_1_1BareField.html#a03944cc0274a28c7d2de62c3d54a62bc">ippl::BareField::getLayout</a></div><div class="ttdeci">Layout_t &amp; getLayout() const</div><div class="ttdef"><b>Definition:</b> BareField.h:134</div></div>
 <div class="ttc" id="aclassippl_1_1Field_html_abea4a038e36f4d8d55107df74356efb7"><div class="ttname"><a href="classippl_1_1Field.html#abea4a038e36f4d8d55107df74356efb7">ippl::Field::get_mesh</a></div><div class="ttdeci">KOKKOS_INLINE_FUNCTION Mesh_t &amp; get_mesh() const</div><div class="ttdef"><b>Definition:</b> Field.h:64</div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdef"><b>Definition:</b> Tuple.h:352</div></div>
-</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md36"></a>
+</div><!-- fragment --> <h2><a class="anchor" id="autotoc_md37"></a>
 Scaling Preconditioner</h2>
 <p >A simple example of a custom preconditioner that scales the input field can be structured as follows:</p>
 <div class="fragment"><div class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Field&gt;</div>
@@ -152,7 +152,7 @@ Scaling Preconditioner</h2>
 <div class="line">        <span class="keywordflow">return</span> scale_factor * u; <span class="comment">// Scales the input field</span></div>
 <div class="line">    }</div>
 <div class="line">};</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md37"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md38"></a>
 Integration with Solvers</h1>
 <p >To utilize your custom preconditioner in a solver, instantiate it and configure the solver to use it. </p>
 </div></div><!-- contents -->
