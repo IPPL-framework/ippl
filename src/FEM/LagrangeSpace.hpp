@@ -137,7 +137,7 @@ namespace ippl {
                 return i;
             }
         }
-        return Kokkos::quiet_NaN_v<size_t>;
+        return Kokkos::Experimental::quiet_NaN_v<size_t>;
         // commented this due to this being on device 
         // however, it would be good to throw an error in this case
         //throw IpplException("LagrangeSpace::getLocalDOFIndex()",

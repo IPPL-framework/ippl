@@ -169,7 +169,7 @@ namespace ippl {
                 return dof_mapping[i];
             }
         }
-        return Kokkos::quiet_NaN_v<size_t>;
+        return Kokkos::Experimental::quiet_NaN_v<size_t>;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
