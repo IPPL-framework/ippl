@@ -12,7 +12,7 @@ var searchData=
   ['recvfromrank_9',['recvFromRank',['../classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3',1,'ippl::ParticleBase']]],
   ['reduce_10',['reduce',['../classippl_1_1mpi_1_1Communicator.html#a684bf5a9b71c2e46c44fe0c004b7d243',1,'ippl::mpi::Communicator::reduce(const T *input, T *output, int count, Op op, int root=0)'],['../classippl_1_1mpi_1_1Communicator.html#a78a311906da5cc7b00cc11676d567102',1,'ippl::mpi::Communicator::reduce(const T &amp;input, T &amp;output, int count, Op op, int root=0)']]],
   ['reflectivebc_11',['ReflectiveBC',['../structippl_1_1detail_1_1ReflectiveBC.html#abba0c1631039c8ee409b4b9cf49bee9c',1,'ippl::detail::ReflectiveBC::ReflectiveBC()=default'],['../structippl_1_1detail_1_1ReflectiveBC.html#af2e6284cd91059abc533d63299f97786',1,'ippl::detail::ReflectiveBC::ReflectiveBC(const ViewType &amp;view, const NDRegion&lt; T, Dim &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;isUpper)']]],
-  ['regionlayout_12',['RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html#ae802e0709e5e124a12a334583a9937d4',1,'ippl::detail::RegionLayout::RegionLayout()'],['../classippl_1_1detail_1_1RegionLayout.html#a0c87e8784ac193284b1215fdd88b451c',1,'ippl::detail::RegionLayout::RegionLayout(const FieldLayout&lt; Dim &gt; &amp;, const Mesh &amp;)']]],
+  ['regionlayout_12',['RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html#a0c87e8784ac193284b1215fdd88b451c',1,'ippl::detail::RegionLayout::RegionLayout(const FieldLayout&lt; Dim &gt; &amp;, const Mesh &amp;)'],['../classippl_1_1detail_1_1RegionLayout.html#ae802e0709e5e124a12a334583a9937d4',1,'ippl::detail::RegionLayout::RegionLayout()']]],
   ['registerattributes_13',['registerAttributes',['../classChargedParticles.html#a7bb0172446795f238ce85e3dfdd759cd',1,'ChargedParticles::registerAttributes()'],['../classParticleContainer.html#afae5b41161e99ee7e103b73a2f4e3e73',1,'ParticleContainer::registerAttributes()']]],
   ['release_14',['release',['../classmy__auto__ptr.html#af850d017d2884b441e8696254765b81c',1,'my_auto_ptr']]],
   ['releaseusedbuffer_15',['releaseUsedBuffer',['../classippl_1_1DefaultBufferHandler.html#a0ce32a229274bf38f3c51e1bd82aef59',1,'ippl::DefaultBufferHandler']]],
@@ -25,7 +25,8 @@ var searchData=
   ['resizebuffer_22',['resizeBuffer',['../classippl_1_1detail_1_1Archive.html#a0a44048523db7aa285ab246cfc3ed6ab',1,'ippl::detail::Archive']]],
   ['reverse_23',['reverse',['../classippl_1_1Index.html#a7427dba1283fd616998b4bee748d0a3e',1,'ippl::Index']]],
   ['richardson_5fpreconditioner_24',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html#a92767cf524db3e63adb4d9f5df46286a',1,'ippl::richardson_preconditioner']]],
-  ['run_25',['run',['../classippl_1_1BaseManager.html#a9300907fad46b9217f4231f5c46d71fb',1,'ippl::BaseManager']]],
-  ['runforallspaces_26',['runForAllSpaces',['../namespaceippl_1_1detail.html#aeb0ea8b584dda433cfe4005e0056f022',1,'ippl::detail']]],
-  ['runsolver_27',['runSolver',['../classippl_1_1FieldSolverBase.html#a9980642f484ba57648724206d43f083e',1,'ippl::FieldSolverBase::runSolver()'],['../classChargedParticles.html#a70f6e2e37f9a785104242e79890cc70a',1,'ChargedParticles::runSolver()'],['../classFieldSolver.html#a639bd4b20381b56e2c28a1e6bdd4dabf',1,'FieldSolver::runSolver()']]]
+  ['richardson_5fpreconditioner_5falt_25',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html#a010a29f70eec959f8bb39d911ae90f3c',1,'ippl::richardson_preconditioner_alt']]],
+  ['run_26',['run',['../classippl_1_1BaseManager.html#a9300907fad46b9217f4231f5c46d71fb',1,'ippl::BaseManager']]],
+  ['runforallspaces_27',['runForAllSpaces',['../namespaceippl_1_1detail.html#aeb0ea8b584dda433cfe4005e0056f022',1,'ippl::detail']]],
+  ['runsolver_28',['runSolver',['../classippl_1_1FieldSolverBase.html#a9980642f484ba57648724206d43f083e',1,'ippl::FieldSolverBase::runSolver()'],['../classChargedParticles.html#a70f6e2e37f9a785104242e79890cc70a',1,'ChargedParticles::runSolver()'],['../classFieldSolver.html#a639bd4b20381b56e2c28a1e6bdd4dabf',1,'FieldSolver::runSolver()']]]
 ];

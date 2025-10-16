@@ -11,5 +11,6 @@ var searchData=
   ['regionlayout_3c_20t_2c_20dim_2c_20uniformcartesian_3c_20t_2c_20dim_20_3e_2c_20position_5fmemory_5fspace_20_3e_8',['RegionLayout&lt; T, Dim, UniformCartesian&lt; T, Dim &gt;, position_memory_space &gt;',['../classippl_1_1detail_1_1RegionLayout.html',1,'ippl::detail']]],
   ['request_9',['Request',['../classippl_1_1mpi_1_1Request.html',1,'ippl::mpi']]],
   ['rhs_5fplus_5fassign_10',['rhs_plus_assign',['../structippl_1_1detail_1_1HaloCells_1_1rhs__plus__assign.html',1,'ippl::detail::HaloCells']]],
-  ['richardson_5fpreconditioner_11',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html',1,'ippl']]]
+  ['richardson_5fpreconditioner_11',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html',1,'ippl']]],
+  ['richardson_5fpreconditioner_5falt_12',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html',1,'ippl']]]
 ];
