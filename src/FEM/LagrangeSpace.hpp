@@ -892,12 +892,8 @@ namespace ippl {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
 
-                    for (j = 0; j < numElementDOFs; ++j) {
+                    for (j = 0; j < i; ++j) {
                         J_nd = global_dof_ndindices[j];
-
-                        if (global_dofs[i] == global_dofs[j]) {
-                            continue;
-                        }
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
@@ -911,6 +907,7 @@ namespace ippl {
                         }
 
                         apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
+                        apply(resultView, J_nd) += A_K[j][i] * apply(view, I_nd);
                     }
                 }
             });
@@ -966,15 +963,13 @@ namespace ippl {
 
         // Make local element matrix -- does not change through the element mesh
         // Element matrix
-        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+        Vector<T, numElementDOFs> A_K_diag;
 
         // 1. Compute the Galerkin element matrix A_K
         for (size_t i = 0; i < numElementDOFs; ++i) {
-            for (size_t j = 0; j < numElementDOFs; ++j) {
-                A_K[i][j] = 0.0;
-                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                }
+            A_K_diag[i] = 0.0;
+            for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                A_K_diag[i] += w[k] * evalFunction(i, i, grad_b_q[k]);
             }
         }
 
@@ -1012,11 +1007,11 @@ namespace ippl {
                 }
 
                 // local DOF indices
-                size_t i, j;
+                size_t i;
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
-                indices_t I_nd, J_nd;
+                indices_t I_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < numElementDOFs; ++i) {
@@ -1039,26 +1034,8 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
-
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        if (global_dofs[i] == global_dofs[j]) {
-                            J_nd = global_dof_ndindices[j];
-
-                            // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                            if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                                && this->isDOFOnBoundary(J_nd)) {
-                                continue;
-                            }
-
-                            // get the appropriate index for the Kokkos view of the field
-                            for (unsigned d = 0; d < Dim; ++d) {
-                                J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
-                            }
-
-                            // sum up all contributions of element matrix
-                            apply(resultView, I_nd) += A_K[i][j];
-                        }
-                    }
+                    // sum up all contributions of element matrix
+                    apply(resultView, I_nd) += A_K_diag[i];
                 }
             });
 
@@ -1122,15 +1099,13 @@ namespace ippl {
 
         // Make local element matrix -- does not change through the element mesh
         // Element matrix
-        Vector<Vector<T, numElementDOFs>, numElementDOFs> A_K;
+        Vector<T, numElementDOFs> A_K_diag;
 
         // 1. Compute the Galerkin element matrix A_K
         for (size_t i = 0; i < numElementDOFs; ++i) {
-            for (size_t j = 0; j < numElementDOFs; ++j) {
-                A_K[i][j] = 0.0;
-                for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
-                }
+            A_K_diag[i] = 0.0;
+            for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                A_K_diag[i] += w[k] * evalFunction(i, i, grad_b_q[k]);
             }
         }
 
@@ -1168,11 +1143,11 @@ namespace ippl {
                 }
 
                 // local DOF indices
-                size_t i, j;
+                size_t i;
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
                 // each dimension)
-                indices_t I_nd, J_nd;
+                indices_t I_nd;
 
                 // 2. Compute the contribution to resultAx = A*x with A_K
                 for (i = 0; i < numElementDOFs; ++i) {
@@ -1195,25 +1170,7 @@ namespace ippl {
                     for (unsigned d = 0; d < Dim; ++d) {
                         I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                     }
-
-                    for (j = 0; j < numElementDOFs; ++j) {
-                        if (global_dofs[i] == global_dofs[j]) {
-                            J_nd = global_dof_ndindices[j];
-
-                            // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                            if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                                && this->isDOFOnBoundary(J_nd)) {
-                                continue;
-                            }
-
-                            // get the appropriate index for the Kokkos view of the field
-                            for (unsigned d = 0; d < Dim; ++d) {
-                                J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
-                            }
-
-                            apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
-                        }
-                    }
+                    apply(resultView, I_nd) += A_K_diag[i] * apply(view, I_nd);
                 }
             });
         IpplTimings::stopTimer(outer_loop);
