@@ -1,0 +1,79 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(MPI REQUIRED)
+
+# -----------------------------------------------------------------------------
+# To support FetchContent downloaded kokkos/heffte:
+# Detect if this file is being sourced from build tree or install tree
+# -----------------------------------------------------------------------------
+get_filename_component(_ipplconfig_dir "${CMAKE_CURRENT_LIST_DIR}" REALPATH)
+get_filename_component(_build_dir       "@CMAKE_BINARY_DIR@"       REALPATH)
+get_filename_component(_install_dir     "@CMAKE_INSTALL_PREFIX@"   REALPATH)
+if(_ipplconfig_dir MATCHES "^${_install_dir}")
+    set(_INSTALL_TREE 1)
+elseif(_ipplconfig_dir MATCHES "^${_build_dir}")
+    set(_BUILD_TREE 1)
+endif()
+
+# -----------------------------------------------------------------------------
+# Kokkos
+# -----------------------------------------------------------------------------
+# "Kokkos_FOUND" is set when IPPL is configured if an external Kokkos was found
+if (@Kokkos_FOUND@)
+    message(STATUS "Finding IPPL dependency : external Kokkos")
+    set(Kokkos_DIR @Kokkos_DIR@)
+    find_dependency(Kokkos REQUIRED)
+else()
+    # Kokkos was built "in-tree" via FetchContent
+    # we will instruct cmake to find Kokkos either in build or install tree 
+    if(_INSTALL_TREE)
+        set(Kokkos_ROOT "${_install_dir}")
+        find_dependency(Kokkos REQUIRED)
+        message(STATUS "Using Kokkos_ROOT in the ippl install tree ${_install_dir}")
+    elseif(_BUILD_TREE)
+        set(Kokkos_ROOT "${_build_dir}")
+        message(FATAL_ERROR 
+            "You are using IPPL directly from the IPPL build tree with Kokkos compiled from source "
+            "(inside the IPPL tree). "
+            "CMake can't find correctly find Kokkos unless it has been 'installed', so please use an "
+            "install tree of IPPL (where Kokkos will also be installed")
+    else()
+        message(FATAL_ERROR "IPPLConfig.cmake location does not match IPPL build or install tree")
+    endif()
+endif()
+message(STATUS "Kokkos found version ${Kokkos_VERSION} ${Kokkos_DIR}")
+
+# -----------------------------------------------------------------------------
+# Heffte
+# -----------------------------------------------------------------------------
+if(@IPPL_ENABLE_FFT@)
+    if (@Heffte_FOUND@)
+        message(STATUS "Finding IPPL dependency : external Heffte")
+        set(Heffte_DIR @Heffte_DIR@)
+        find_dependency(Heffte REQUIRED)
+    else()
+        # Heffte was built "in-tree" via FetchContent
+        # we will instruct cmake to find Heffte either in build or install tree 
+        if(_INSTALL_TREE)
+            set(Heffte_ROOT "${_install_dir}")
+            find_dependency(Heffte REQUIRED)
+            message(STATUS "Using Heffte_ROOT in the ippl install tree ${_install_dir}")
+        elseif(_BUILD_TREE)
+            set(Heffte_ROOT "${_build_dir}")
+            message(FATAL_ERROR 
+                "You are using IPPL from the build tree with IPPL-compiled Heffte "
+                "CMake can't find correctly find Heffte, so please use an install tree of IPPL/Heffte")
+        else()
+            message(FATAL_ERROR "IPPLConfig.cmake location does not match IPPL build or install tree")
+        endif()
+    endif()
+    message(STATUS "Heffte found version ${Heffte_VERSION} ${Heffte_DIR}")
+endif()
+
+# -----------------------------------------------------------------------------
+# MAke sure IPPL targets are setup
+# -----------------------------------------------------------------------------
+include("${CMAKE_CURRENT_LIST_DIR}/IPPLTargets.cmake")
+

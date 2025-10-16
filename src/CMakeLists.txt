@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # src/CMakeLists.txt
+# cmake-format: off
 #
 # This file builds the main IPPL library target. It:
 #   - Generates IpplVersions.h from current build system info
@@ -7,92 +8,104 @@
 #   - Adds all component subdirectories (Communicate, Field, etc.)
 #   - Links to external libraries (Kokkos, Heffte)
 #   - Installs headers and the library
+#
+# cmake-format: on
 # -----------------------------------------------------------------------------
 message(STATUS "📄 Generating IpplVersions.h")
 
-execute_process(
-    COMMAND date
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE IPPL_COMPILE_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+# Make embedded metadata optional (reduces rebuild churn).
+option(IPPL_EMBED_BUILD_METADATA "Embed user/machine/date in IpplVersions.h" OFF)
 
-execute_process(
-    COMMAND uname -a
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE IPPL_COMPILE_MACHINE OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(IPPL_EMBED_BUILD_METADATA)
 
-execute_process(
-    COMMAND whoami
-    OUTPUT_VARIABLE IPPL_COMPILE_USER OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+  execute_process(COMMAND date OUTPUT_VARIABLE IPPL_COMPILE_DATE OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-set(IPPL_COMPILE_ARCH "$ENV{IPPL_ARCH}")
-set(IPPL_COMPILE_LINE "${CMAKE_CXX_FLAGS}")
-set(IPPL_COMPILE_OPTIONS "${CMAKE_CXX_FLAGS}")
+  execute_process(COMMAND uname -a OUTPUT_VARIABLE IPPL_COMPILE_MACHINE
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h
-)
-
-add_library(ippl ${IPPL_LIB_TYPE})
-
-target_sources(ippl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp
-)
-
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-add_subdirectory (Communicate)
-
-if (IPPL_ENABLE_FFT)
-    add_subdirectory (FFT)
+  execute_process(COMMAND whoami OUTPUT_VARIABLE IPPL_COMPILE_USER OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+  set(IPPL_COMPILE_DATE "unknown")
+  set(IPPL_COMPILE_MACHINE "unknown")
+  set(IPPL_COMPILE_USER "unknown")
 endif()
 
-add_subdirectory (Field)
-add_subdirectory (FieldLayout)
-add_subdirectory (Decomposition)
-add_subdirectory (Index)
-add_subdirectory (Interpolation)
-add_subdirectory (Manager)
-add_subdirectory (Meshes)
-add_subdirectory (Particle)
-add_subdirectory (Region)
-add_subdirectory (Utility)
-add_subdirectory (Expression)
-add_subdirectory (Types)
-add_subdirectory (Partition)
-add_subdirectory (FEM)
-add_subdirectory (Random)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/IpplVersions.h @ONLY)
 
-if (IPPL_ENABLE_SOLVERS)
-    message (STATUS "Adding Solver subdirectories")
-    add_subdirectory (PoissonSolvers)
-    add_subdirectory (MaxwellSolvers)
-    add_subdirectory (LinearSolvers)
-endif ()
+add_library(ippl)
+
+add_library(ippl::ippl ALIAS ippl)
+
+target_compile_features(ippl PUBLIC cxx_std_20)
+
+target_compile_options(
+  ippl
+  PUBLIC $<$<COMPILE_LANGUAGE:CXX>:
+         $<$<CONFIG:Debug>:-O0
+         -g>
+         $<$<CONFIG:RelWithDebInfo>:-O3
+         -g>
+         $<$<CONFIG:Release>:-O3>
+         >)
+
+get_target_property(_ippl_type ippl TYPE)
+if(_ippl_type)
+  string(REPLACE "_LIBRARY" "" _ippl_type "${_ippl_type}") # -> STATIC / SHARED / OBJECT / INTERFACE
+else()
+  set(_ippl_type "UNKNOWN")
+endif()
+
+# Query PIC state (may inherit from CMAKE_POSITION_INDEPENDENT_CODE)
+get_target_property(_ippl_pic ippl POSITION_INDEPENDENT_CODE)
+if(NOT DEFINED _ippl_pic)
+  set(_ippl_pic "DEFAULT(${CMAKE_POSITION_INDEPENDENT_CODE})")
+endif()
+
+message(STATUS "🔧 Target 'ippl': type=${_ippl_type}, POSITION_INDEPENDENT_CODE=${_ippl_pic}")
+
+target_sources(ippl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp)
+
+target_include_directories(
+  ippl PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+add_subdirectory(Communicate)
+
+if(IPPL_ENABLE_FFT)
+  add_subdirectory(FFT)
+endif()
+
+add_subdirectory(Field)
+add_subdirectory(FieldLayout)
+add_subdirectory(Decomposition)
+add_subdirectory(Index)
+add_subdirectory(Interpolation)
+add_subdirectory(Manager)
+add_subdirectory(Meshes)
+add_subdirectory(Particle)
+add_subdirectory(Region)
+add_subdirectory(Utility)
+add_subdirectory(Expression)
+add_subdirectory(Types)
+add_subdirectory(Partition)
+add_subdirectory(FEM)
+add_subdirectory(Random)
+
+if(IPPL_ENABLE_SOLVERS)
+  message(STATUS "Adding Solver subdirectories")
+  add_subdirectory(PoissonSolvers)
+  add_subdirectory(MaxwellSolvers)
+  add_subdirectory(LinearSolvers)
+endif()
 
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
-target_link_libraries(ippl
-    PUBLIC
-        Kokkos::kokkos
-)
+target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
-if(IPPL_ENABLE_FFT AND TARGET Heffte::heffte)
-    target_link_libraries(ippl PUBLIC Heffte::heffte)
-else()
-    message(WARNING "⚠️ Heffte::heffte target not found — skipping link.")
+if(IPPL_ENABLE_FFT)
+  target_link_libraries(ippl PUBLIC Heffte::Heffte)
 endif()
 
-set(IPPL_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(IPPL_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-include(${PROJECT_SOURCE_DIR}/cmake/InstallIppl.cmake)
+include(InstallIppl)

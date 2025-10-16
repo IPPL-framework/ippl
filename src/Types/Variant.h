@@ -1,4 +1,4 @@
-#ifdef USE_ALTERNATIVE_VARIANT
+#ifdef IPPL_USE_ALTERNATIVE_VARIANT
 // <variant> -*- C++ -*-
 
 // Copyright (C) 2016-2023 Free Software Foundation, Inc.

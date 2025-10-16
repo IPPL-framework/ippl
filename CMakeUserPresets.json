@@ -1,0 +1,73 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "testing",
+      "hidden": true,
+      "cacheVariables": {
+        "IPPL_ENABLE_TESTS": "ON",
+        "IPPL_ENABLE_UNIT_TESTS": "ON"
+      }
+    },
+    {
+      "name": "default",
+      "displayName": "Default",
+      "description": "Default build, release mode with most common options",
+      "generator": "Unix Makefiles",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "Kokkos_VERSION_DEFAULT": "4.5.01",
+        "Heffte_VERSION_DEFAULT": "2.4.0",
+        "IPPL_PLATFORMS": "OPENMP;CUDA",
+        "IPPL_ENABLE_FFT": "ON",
+        "IPPL_ENABLE_ALPINE": "ON",
+        "IPPL_ENABLE_COSMOLOGY": "ON",
+        "IPPL_ENABLE_TESTS": "OFF",
+        "IPPL_ENABLE_UNIT_TESTS": "OFF",
+        "IPPL_USE_STANDARD_FOLDERS": "OFF"
+      }
+    },
+    {
+      "name": "fetch",
+      "displayName": "ForceDownload",
+      "description": "Always downloads dependencies",
+      "inherits": [
+        "default"
+      ],
+      "cacheVariables": {
+        "Kokkos_VERSION": "git.4.6.02",
+        "Heffte_VERSION": "git.v2.4.1"
+      }
+    },
+    {
+      "name": "release-testing",
+      "displayName": "Testing(Release)",
+      "description": "Enables building test in release mode",
+      "inherits": [
+        "testing",
+        "default"
+      ]
+    },
+    {
+      "name": "debug-testing",
+      "displayName": "Testing(Debug)",
+      "description": "Enables building test in debug mode",
+      "inherits": [
+        "testing",
+        "default"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "IPPL_ENABLE_SANITIZER": "ON",
+        "IPPL_PLATFORMS": "SERIAL"
+      }
+    }
+  ]
+}

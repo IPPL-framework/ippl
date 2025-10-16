@@ -98,7 +98,7 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() { return Kokkos::create_mirror(dview_m); }
+        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Assign the same value to the whole attribute.

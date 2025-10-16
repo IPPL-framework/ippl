@@ -4,27 +4,5 @@
 # Adds Maxwell solver header to the IPPL target.
 # -----------------------------------------------------------------------------
 
-
-set (_HDRS
-    Maxwell.h
-    FEMMaxwellDiffusionSolver.h
-)
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install MaxwellSolvers header
-install(FILES
-    Maxwell.h
-    FDTDSolverBase.h
-    FDTDSolverBase.hpp
-    StandardFDTDSolver.h
-    StandardFDTDSolver.hpp
-    NonStandardFDTDSolver.h
-    NonStandardFDTDSolver.hpp
-    AbsorbingBC.h
-    DESTINATION include/MaxwellSolvers
-)
-
+# Nothing to do: public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.

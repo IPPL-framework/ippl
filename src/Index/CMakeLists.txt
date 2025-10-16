@@ -4,18 +4,5 @@
 # Adds multi-dimensional index headers to the IPPL target.
 # -----------------------------------------------------------------------------
 
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install Index-related headers
-install(FILES
-    Index.h
-    Index.hpp
-    NDIndex.h
-    NDIndex.hpp
-    DESTINATION include/Index
-)
-
+# Nothing to do: public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.
