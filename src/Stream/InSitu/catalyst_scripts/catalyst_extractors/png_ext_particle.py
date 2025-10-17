@@ -32,6 +32,7 @@
 
 import paraview
 from paraview.simple import *
+from paraview import catalyst
 # paraview.compatibility.major = 5
 # paraview.compatibility.minor = 12
 from paraview.simple import (
@@ -81,14 +82,17 @@ def set_camera(view, position=None, focal_point=None, view_up=None, parallel_sca
 
 def auto_camera_from_bounds(view, bounds):
     # bounds: (xmin, xmax, ymin, ymax, zmin, zmax)
-    def nice_pair(vmin, vmax):
-        # Use nice_bounds for each axis
-        return nice_bounds(vmin, vmax)
+            
+    # we forced nice bounds via cpp passing additional dummy field
+    # marking domain corners
+    # def nice_pair(vmin, vmax):
+    #     return nice_bounds(vmin, vmax)
+    # x0, x1 = nice_pair(bounds[0], bounds[1])
+    # y0, y1 = nice_pair(bounds[2], bounds[3])
+    # z0, z1 = nice_pair(bounds[4], bounds[5])
 
-    # Compute nice bounds for each axis
-    x0, x1 = nice_pair(bounds[0], bounds[1])
-    y0, y1 = nice_pair(bounds[2], bounds[3])
-    z0, z1 = nice_pair(bounds[4], bounds[5])
+
+    x0, x1, y0, y1, z0, z1 = bounds
 
     # Center and diagonal based on nice bounds
     center = [
@@ -136,7 +140,7 @@ SetActiveView(None)
 # Parse arguments received via conduit node
 # ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
-# print_info(f"Arguments received: {arg_list}")
+print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 
@@ -183,6 +187,12 @@ SetActiveView(renderView1)
 # ----------------------------------------------------------------
 particle_info = ippl_particle.GetDataInformation()
 bounds = particle_info.GetBounds()
+# print(particle_info.__dict__.keys())
+# print(particle_info.Idx)
+# print(particle_info.Proxy)
+# print(particle_info.DataInformation)
+# print(bounds)
+
 auto_camera_from_bounds(renderView1, bounds)
 # ----------------------------------------------------------------
 # choose Data to visualize and show in renderView1
@@ -247,6 +257,9 @@ def catalyst_execute(info):
     print_info("'%s::catalyst_execute()'", __name__)
     global ippl_particle
     global renderView1
+    # print(info)
+    # print(info.__dict__.keys())
+
 
     if info.cycle % 10 == 0:
 
@@ -266,7 +279,7 @@ def catalyst_execute(info):
         if pos_array_info:
             bounds = particle_info.GetBounds()
             auto_camera_from_bounds(renderView1, bounds)
-            print(bounds)
+            # print(bounds)
 
 
             def nice_pair(vmin, vmax):
