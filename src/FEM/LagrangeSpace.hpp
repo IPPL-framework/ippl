@@ -137,9 +137,11 @@ namespace ippl {
                 return i;
             }
         }
-        return std::numeric_limits<size_t>::quiet_NaN();
+        // commented this due to this being on device 
+        // however, it would be good to throw an error in this case
         //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
         //                    "FEM Lagrange Space: Global DOF not found in specified element");
+        return 0;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
@@ -193,23 +195,23 @@ namespace ippl {
         globalDOFs[0] = smallestGlobalDOF;
         globalDOFs[1] = smallestGlobalDOF + Order;
 
-        if (Dim >= 2) {
+        if constexpr (Dim >= 2) {
             globalDOFs[2] = globalDOFs[1] + this->nr_m[0] * Order;
             globalDOFs[3] = globalDOFs[0] + this->nr_m[0] * Order;
         }
-        if (Dim >= 3) {
+        if constexpr (Dim >= 3) {
             globalDOFs[4] = globalDOFs[0] + this->nr_m[1] * this->nr_m[0] * Order;
             globalDOFs[5] = globalDOFs[1] + this->nr_m[1] * this->nr_m[0] * Order;
             globalDOFs[6] = globalDOFs[2] + this->nr_m[1] * this->nr_m[0] * Order;
             globalDOFs[7] = globalDOFs[3] + this->nr_m[1] * this->nr_m[0] * Order;
         }
 
-        if (Order > 1) {
+        if constexpr (Order > 1) {
             // If the order is greater than 1, there are edge and face DOFs, otherwise the work is
             // done
 
             // Add the edge DOFs
-            if (Dim >= 2) {
+            if constexpr (Dim >= 2) {
                 for (size_t i = 0; i < Order - 1; ++i) {
                     globalDOFs[8 + i]                   = globalDOFs[0] + i + 1;
                     globalDOFs[8 + Order - 1 + i]       = globalDOFs[1] + (i + 1) * this->nr_m[1];
@@ -217,12 +219,12 @@ namespace ippl {
                     globalDOFs[8 + 3 * (Order - 1) + i] = globalDOFs[3] - (i + 1) * this->nr_m[1];
                 }
             }
-            if (Dim >= 3) {
+            if constexpr (Dim >= 3) {
                 // TODO
             }
 
             // Add the face DOFs
-            if (Dim >= 2) {
+            if constexpr (Dim >= 2) {
                 for (size_t i = 0; i < Order - 1; ++i) {
                     for (size_t j = 0; j < Order - 1; ++j) {
                         // TODO CHECK
