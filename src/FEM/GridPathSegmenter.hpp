@@ -23,9 +23,9 @@ void sort3(T& a, T& b, T& c) { sort2(a,b); sort2(b,c); sort2(a,b); }
 
 template<unsigned Dim, typename T>
 KOKKOS_INLINE_FUNCTION
-std::array<T,Dim> lerp_point(const std::array<T,Dim>& A,
-                             const std::array<T,Dim>& B, T t) {
-  std::array<T,Dim> out{}; 
+ippl::Vector<T,Dim> lerp_point(const ippl::Vector<T,Dim>& A,
+                             const ippl::Vector<T,Dim>& B, T t) {
+  ippl::Vector<T,Dim> out{}; 
   for (unsigned a=0; a<Dim; ++a) out[a] = A[a] + (B[a]-A[a]) * t;
   return out;
 }
@@ -37,10 +37,10 @@ struct CutTimes { std::array<T,Dim> t; };
 template<unsigned Dim, typename T>
 KOKKOS_INLINE_FUNCTION
 CutTimes<Dim,T> compute_axis_cuts_default(
-  const std::array<T,Dim>& A,
-  const std::array<T,Dim>& B,
-  const std::array<T,Dim>& origin,
-  const std::array<T,Dim>& h)
+  const ippl::Vector<T,Dim>& A,
+  const ippl::Vector<T,Dim>& B,
+  const ippl::Vector<T,Dim>& origin,
+  const ippl::Vector<T,Dim>& h)
 {
   CutTimes<Dim,T> cuts;
   for (unsigned a=0; a<Dim; ++a) cuts.t[a] = (T)2; // sentinel (>1)
@@ -100,10 +100,10 @@ template<unsigned Dim, typename T, typename Rule>
 KOKKOS_INLINE_FUNCTION
 std::array<Segment<Dim,T>, Dim+1>
 GridPathSegmenter<Dim,T,Rule>::split(
-    const std::array<T,Dim>& A,
-    const std::array<T,Dim>& B,
-    const std::array<T,Dim>& origin,
-    const std::array<T,Dim>& h)
+    const ippl::Vector<T,Dim>& A,
+    const ippl::Vector<T,Dim>& B,
+    const ippl::Vector<T,Dim>& origin,
+    const ippl::Vector<T,Dim>& h)
 {
   const auto cuts = compute_axis_cuts_default<Dim,T>(A,B,origin,h);
 

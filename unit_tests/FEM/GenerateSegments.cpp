@@ -17,8 +17,8 @@ public:
   using Rule = ippl::DefaultCellCrossingRule;
 
   struct Scenario {
-    std::array<T,Dim> A{};
-    std::array<T,Dim> B{};
+    ippl::Vector<T,Dim> A{};
+    ippl::Vector<T,Dim> B{};
     std::size_t expected_segments = 0; // expected REAL segments (after compacting zero-length)
     const char* name = "";
   };
@@ -26,13 +26,14 @@ public:
 private:
 
   static KOKKOS_INLINE_FUNCTION T plane(unsigned a, std::size_t k,
-                                        const std::array<T,Dim>& origin,
-                                        const std::array<T,Dim>& h) {
+                                        const ippl::Vector<T,Dim>& origin,
+                                        const ippl::Vector<T,Dim>& h) {
     return origin[a] + T(k) * h[a];
   }
 
-  static std::array<T,Dim> basis_scaled(unsigned a, const std::array<T,Dim>& h, T s) {
-    std::array<T,Dim> v{}; for (unsigned d=0; d<Dim; ++d) v[d]=T(0);
+  static ippl::Vector<T,Dim> basis_scaled(unsigned a, const ippl::Vector<T,Dim>& h, T s) {
+    ippl::Vector<T,Dim> v{}; 
+    for (unsigned d=0; d<Dim; ++d) v[d]=T(0);
     v[a] = s * h[a];
     return v;
   }
@@ -40,9 +41,9 @@ private:
 public:
 
   // Same cell: no plane crossings → 1 real segment
-  Scenario same_cell(const std::array<T,Dim>& origin,
-                     const std::array<T,Dim>& h) const {
-    std::array<T,Dim> A{}, B{};
+  Scenario same_cell(const ippl::Vector<T,Dim>& origin,
+                     const ippl::Vector<T,Dim>& h) const {
+    ippl::Vector<T,Dim> A{}, B{};
     for (unsigned d=0; d<Dim; ++d) {
       A[d] = origin[d] + T(0.25) * h[d];
       B[d] = origin[d] + T(0.75) * h[d];
@@ -52,9 +53,9 @@ public:
 
   // Single-axis forward cut: cross plane once along +axis → 2 segments
   Scenario single_axis_forward(unsigned axis,
-                               const std::array<T,Dim>& origin,
-                               const std::array<T,Dim>& h) const {
-    std::array<T,Dim> A{}, B{};
+                               const ippl::Vector<T,Dim>& origin,
+                               const ippl::Vector<T,Dim>& h) const {
+    ippl::Vector<T,Dim> A{}, B{};
     for (unsigned d=0; d<Dim; ++d) A[d] = origin[d] + T(0.2) * h[d];
     // Start near the upper face along 'axis' to guarantee a crossing
     A[axis] = origin[axis] + T(0.9) * h[axis];
@@ -64,10 +65,10 @@ public:
   }
 
   Scenario two_axes_forward(unsigned axis0, unsigned axis1,
-                            const std::array<T,Dim>& origin,
-                            const std::array<T,Dim>& h) const {
+                            const ippl::Vector<T,Dim>& origin,
+                            const ippl::Vector<T,Dim>& h) const {
     static_assert(Dim >= 2, "two_axes_forward requires Dim>=2");
-    std::array<T,Dim> A{}, B{};
+    ippl::Vector<T,Dim> A{}, B{};
     for (unsigned d=0; d<Dim; ++d) A[d] = origin[d] + T(0.2) * h[d];
     A[axis0] = origin[axis0] + T(0.9) * h[axis0];
     A[axis1] = origin[axis1] + T(0.85) * h[axis1];
@@ -77,10 +78,10 @@ public:
     return {A, B, 3u, "two_axes_forward"};
   }
 
-  Scenario three_axes_forward(const std::array<T,Dim>& origin,
-                              const std::array<T,Dim>& h) const {
+  Scenario three_axes_forward(const ippl::Vector<T,Dim>& origin,
+                              const ippl::Vector<T,Dim>& h) const {
     static_assert(Dim >= 3, "three_axes_forward requires Dim>=3");
-    std::array<T,Dim> A{}, B{};
+    ippl::Vector<T,Dim> A{}, B{};
 
     A[0] = origin[0] + T(0.9)  * h[0];  // dist to plane = 0.1h
     A[1] = origin[1] + T(0.85) * h[1];  // dist to plane = 0.15h
@@ -95,9 +96,9 @@ public:
   }
 
   Scenario start_on_plane(unsigned axis,
-                          const std::array<T,Dim>& origin,
-                          const std::array<T,Dim>& h) const {
-    std::array<T,Dim> A{}, B{};
+                          const ippl::Vector<T,Dim>& origin,
+                          const ippl::Vector<T,Dim>& h) const {
+    ippl::Vector<T,Dim> A{}, B{};
     for (unsigned d=0; d<Dim; ++d) A[d] = origin[d] + T(0.3) * h[d];
     // Put A exactly at plane k=1 on 'axis'
     A[axis] = plane(axis, 1, origin, h);
@@ -106,9 +107,9 @@ public:
     return {A, B, 1u, "start_on_plane"};
   }
 
-  Scenario vertex_hit(const std::array<T,Dim>& origin,
-                      const std::array<T,Dim>& h) const {
-    std::array<T,Dim> A{}, B{};
+  Scenario vertex_hit(const ippl::Vector<T,Dim>& origin,
+                      const ippl::Vector<T,Dim>& h) const {
+    ippl::Vector<T,Dim> A{}, B{};
     for (unsigned d = 0; d < Dim; ++d) {
       A[d] = origin[d] + T(0.9) * h[d];
     }
@@ -119,21 +120,21 @@ public:
     return {A, B, 2u, "vertex_hit"};
   }
 
-  static std::array<T,Dim> ones() {
-    std::array<T,Dim> a{}; for (unsigned d=0; d<Dim; ++d) a[d] = T(1); return a;
+  static ippl::Vector<T,Dim> ones() {
+    ippl::Vector<T,Dim> a{}; for (unsigned d=0; d<Dim; ++d) a[d] = T(1); return a;
   }
-  static std::array<T,Dim> zeros() {
-    std::array<T,Dim> a{}; for (unsigned d=0; d<Dim; ++d) a[d] = T(0); return a;
+  static ippl::Vector<T,Dim> zeros() {
+    ippl::Vector<T,Dim> a{}; for (unsigned d=0; d<Dim; ++d) a[d] = T(0); return a;
   }
 
   struct OriginH {
-    std::array<T,Dim> origin{};
-    std::array<T,Dim> h{};
+    ippl::Vector<T,Dim> origin{};
+    ippl::Vector<T,Dim> h{};
     const char* name{};
   };
 
   std::vector<Scenario>
-  scenario_cases(const std::array<T,Dim>& origin, const std::array<T,Dim>& h) {
+  scenario_cases(const ippl::Vector<T,Dim>& origin, const ippl::Vector<T,Dim>& h) {
     std::vector<Scenario> v;
 
     // Always useful
@@ -166,11 +167,13 @@ public:
   }
 
 private:
-  static std::array<T,Dim> fill_val(T v) {
-    std::array<T,Dim> a{}; a.fill(v); return a;
+  static ippl::Vector<T,Dim> fill_val(T v) {
+    ippl::Vector<T,Dim> a; 
+    a = v; 
+    return a;
   }
-  static std::array<T,Dim> fill_seq(T base, T step) {
-    std::array<T,Dim> a{};
+  static ippl::Vector<T,Dim> fill_seq(T base, T step) {
+    ippl::Vector<T,Dim> a{};
     for (unsigned d=0; d<Dim; ++d) a[d] = base + step*T(d);
     return a;
   }
