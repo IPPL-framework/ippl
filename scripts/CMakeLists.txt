@@ -13,9 +13,13 @@ endif()
 # ------------------------------------------------------------------------------
 function(get_target_location target result)
   file(TO_NATIVE_PATH "/" _separator)
-  #
+  # use BiNARY_DIR unless IPPL_USE_STANDARD_FOLDERS is ON, then use RUNTIME_OUTPUT_DIRECTORY
   get_target_property(_dir ${target} BINARY_DIR)
   get_target_property(_name ${target} NAME)
+  get_target_property(_rundir ${target} RUNTIME_OUTPUT_DIRECTORY)
+  if(_rundir)
+    set(_dir ${_rundir})
+  endif()
   #
   set(${result} "${_dir}${_separator}${_name}" PARENT_SCOPE)
 endfunction()
