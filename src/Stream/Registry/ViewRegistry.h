@@ -70,6 +70,10 @@ public:
      * @brief Remove all objects from the registry.
      */
     void clear();
+
+    size_t size() const {
+        return m_storage.size();
+    }
 };
 
 }

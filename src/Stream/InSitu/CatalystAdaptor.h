@@ -33,39 +33,42 @@
 
 // ############################################
 // Possible TODO:
-// ability to initialize new objects or reinitialize 
-// with completely new set of objects
-// - keep node structure and only reset data ...
-// - remember function
-// - figure out why the field and particles work differetnly
+// 
+// DONE:
+// - figure out why the field and particles work differetnly adapt vis frame for particles
+// - iterate over all attributes for visualisation
 // - reduce virtual function calls get rid of execute_FIeld set_data and execute particle this
+// - added attribute names to ParticleAttribBase
+// 
+// NEXT: 
+// - improve avoidance of ghost duplicates 
+// - remember functionality to allow visualisation for potetnial and density at the same time ..
+// - test 2D
+// - full versatile steering ...
+// - use same topology and mesh for all steerable channels??...
+// 
+// 
+// MAYBE:
+// - keep node structure and only reset data ... 
+//   but more than initialially thought needs to eb reset every iteration anew...
+// - move exece_entry purely to the visitor structure???
 // - test no copy visualisation
 // 
-// how do we get attribute identifier
-// - enable pure attribute not make sense in location inf is missing...
 // 
 // 
-// CatalystAdaptor.h needs VisRegistryRuntime.h
-// VisRegistryRuntime.h needs CataylstVistors.h (only Visitors)
-// CataylstVistors.h need CatalystAdaptors.h
+//
+// UNLIKELY:
 // 
 // 
-// 
-// A -> forward declare VisRegistryRuntime in Catalyst Adaptors
-//   -> will will only allow registry to be member via smartpointer
-// B -> (?)move Visitor structs out of the cATALYST Catalyst Adaptor,
-//       (might nto work easily)
-// 
-// 
-// 
-// ->A
-// 
+// - ability to initialize new objects or reinitialize 
+//   with completely new set of objects
+//
 // 
 // ############################################
 
 
 /* are passing const references through functions faster than having 
-member variables .. */
+member variables ... maybe not ...*/
 
 namespace ippl{
 
@@ -79,26 +82,35 @@ class CatalystAdaptor {
     std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry;
     
     ViewRegistry viewRegistry;
+    // conduit_cpp::Node node_init;
     conduit_cpp::Node node;
     conduit_cpp::Node results;
+    Inform ca_m;
+    Inform ca_warn;
+    const int level = ippl::Info->getOutputLevel();
 
-
-    /* taken from environemnt can be const... */
-    std::filesystem::path source_dir;
-    bool png_extracts;
-
-
-    // conduit_cpp::Node node_results;
-    
     // conduit_cpp::Node node_forward;
     // conduit_cpp::Node node_backward;
 
 
+
+    /* taken from environemnt can be const... */
+    std::filesystem::path source_dir;
+    bool png_extracts ;
+    bool vtk_extracts ;
+    bool steer_enabled;
+
+
     public:
 
-    using View_vector =
-        Kokkos::View<Vector<double, 3>***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+    CatalystAdaptor() : ca_m("CatalystAdaptor"), ca_warn("CatalystAdaptor", std::cerr){
+        ca_m.setOutputLevel(3);
+        ca_warn.setOutputLevel(0);
+    }
 
+    CatalystAdaptor(int level) : ca_m("CatalystAdaptor::"){
+        ca_m.setOutputLevel(level);
+    }
 
 
     /*  sets a file path to a certain node, first tries to fetch from environment, afterwards uses the dafault path passed  */
@@ -228,6 +240,56 @@ class CatalystAdaptor {
     // ==========================================================
     // CHANNEL EXECUTIONERS =====================================
     // ==========================================================
+               
+        /* VECTOR FIELDS - handles both reference and shared_ptr */
+     
+        /* SCALAR FIELDS - handles both reference and shared_ptr */
+        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
+        // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
+        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
+    /**
+     * @brief Executes a vector field entry, populating the Conduit node and updating the view registry.
+     *
+     * @tparam T Vector value type.
+     * @tparam Dim Field dimension.
+     * @tparam Dim_v Vector dimension.
+     * @tparam ViewArgs Additional template arguments for the field.
+     * @param entry The vector field to execute.
+     * @param label The label for the field/channel.
+     * @param node The Conduit node to populate.
+     * @param vr The view registry to update.
+    
+     * @brief Executes a scalar field entry, populating the Conduit node and updating the view registry.
+     *
+     * @tparam T Field value type.
+     * @tparam Dim Field dimension.
+     * @tparam ViewArgs Additional template arguments for the field.
+     * @param entry The scalar field to execute.
+     * @param label The label for the field/channel.
+     * @param node The Conduit node to populate.
+     * @param vr The view registry to update.
+     *
+     * @brief Populates a Conduit node with field data for Catalyst (3D fields only).
+     *
+     * @tparam Field Field type (must have dim == 3).
+     * @param channelName The name of the channel.
+     * @param field Pointer to the field.
+     * @param host_view_layout_left Host mirror view for field data.
+     * @param node The Conduit node to populate.
+    */
+    template<typename T, unsigned Dim, class... ViewArgs>
+    void execute_entry(    
+                        const Field<T, Dim, ViewArgs...>& entry
+                     ,  const std::string label
+    );
+
+
+
+    /* instead of maps storing kokkos view in scope we use the registry to keep everything in frame .... and be totally type indepedent
+    we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
+    to redzcede unncessary computin type ...) */
+
+
 
 
     /**
@@ -241,139 +303,6 @@ class CatalystAdaptor {
      * @param ID_host Host mirror of ID attribute.
      * @param node The Conduit node to populate.
      */
-    void Execute_Particle(
-         const std::string& channelName ,
-         const auto& particleContainer
-         , const auto& R_host
-         , const auto& P_host
-         , const auto& q_host
-         , const auto& ID_host
-    );
-    
-
-    /**
-     * @brief Sets electrostatic vector field data in a Conduit node.
-     *
-     * @param node The Conduit node to populate.
-     * @param view The Kokkos vector view containing field data.
-     */
-    inline void setData(conduit_cpp::Node& field_node, const View_vector& view);
-
-    using View_scalar = Kokkos::View<double***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-    /**
-     * @brief Sets scalar field data in a Conduit node.
-     *
-     * @param node The Conduit node to populate.
-     * @param view The Kokkos scalar view containing field data.
-     */
-    inline void setData(conduit_cpp::Node& field_node, const View_scalar& view);
-
-
-    /* this needs to be overworked ... */
-    /**
-    * @brief Populates a Conduit node with field data for Catalyst (3D fields only).
-    *
-    * @tparam Field Field type (must have dim == 3).
-    * @param channelName The name of the channel.
-    * @param field Pointer to the field.
-    * @param host_view_layout_left Host mirror view for field data.
-    * @param node The Conduit node to populate.
-    */
-    template<typename T, unsigned Dim, class... ViewArgs>
-    void Execute_Field(
-        const Field<T, Dim, ViewArgs...>& entry, 
-        const std::string& label
-    );
-
-
-
-        // Handle fields
-        // // Map of all Kokkos::Views. This keeps a reference on all Kokkos::Views
-        // // which ensures that Kokkos does not free the memory before the end of this function.
-
-
-        /* SCALAR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-    /**
-     * @brief Executes a scalar field entry, populating the Conduit node and updating the view registry.
-     *
-     * @tparam T Field value type.
-     * @tparam Dim Field dimension.
-     * @tparam ViewArgs Additional template arguments for the field.
-     * @param entry The scalar field to execute.
-     * @param label The label for the field/channel.
-     * @param node The Conduit node to populate.
-     * @param vr The view registry to update.
-     */
-    template<typename T, unsigned Dim, class... ViewArgs>
-    void execute_entry(    
-                        const Field<T, Dim, ViewArgs...>& entry
-                     ,  const std::string label
-    );
-
-
-
-    /* could catch this for overall case distinction
-    but this isnt re */
-       
-// execute visualisation for VECTOR FIELDS  
-// // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
-//         /* VECTOR FIELDS - handles both reference and shared_ptr */
-//         // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-//     /**
-//      * @brief Executes a vector field entry, populating the Conduit node and updating the view registry.
-//      *
-//      * @tparam T Vector value type.
-//      * @tparam Dim Field dimension.
-//      * @tparam Dim_v Vector dimension.
-//      * @tparam ViewArgs Additional template arguments for the field.
-//      * @param entry The vector field to execute.
-//      * @param label The label for the field/channel.
-//      * @param node The Conduit node to populate.
-//      * @param vr The view registry to update.
-//      */
-//     template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-//     void execute_entry(  
-//                         const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry 
-//                       , const std::string label
-//     );
-
-
-        // const std::string& fieldName = "E";
-    // You remove const for particles in your execute_entry function
-    // because you need to call non-const member functions 
-    // (like getHostMirror()) on the particle attributes, which
-    // are not marked as const in their class definition. For 
-    // fields, you can keep const because the field-related
-    // functions you call (like getView(), getLayout(), etc.) 
-    // are either const or do not modify the object.
-
-
-
-
-    /* instead of maps storing kokkos view in scope we use the registry to keep everything in frame .... and be totally type indepedent
-    we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
-    to redzcede unncessary computin type ...) */
-
-
-    template<typename T>
-    void execute_attribute(const ParticleAttrib<T> & pa);
-
-    template<typename T, unsigned Dim_v>
-    void execute_attribute(const ParticleAttrib<Vector<T, Dim_v>> & pa);
-
-
-
-    // template<typename T, unsigned Dim_v, typename memspace>
-    
-    // template <typename memspace>
-    // template <typename T>
-    template<typename T, typename memspace>
-    void execute_attribute(const detail::ParticleAttribBase<memspace>& pa);
-    
-
-
-
     // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
     /**
      * @brief Executes a particle container entry (derived from ParticleBaseBase), populating the Conduit node and updating the view registry.
@@ -439,10 +368,7 @@ class CatalystAdaptor {
      * @param node The Conduit node to update.
      */
     template<typename T>
-    void AddSteerableChannel( 
-                           T steerable_scalar_forwardpass
-                         , std::string steerable_suffix
-    );
+    void AddSteerableChannel(   const T& steerable_scalar_forwardpass,  std::string steerable_suffix);
 
 
     /* maybe use function overloading instead ... */
