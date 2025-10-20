@@ -133,27 +133,21 @@ def auto_camera_from_bounds(view, bounds):
 
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
-print_info("==='%s'======================="[0:28]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
 # ----------------------------------------------------------------
 # Parse arguments received via conduit node
 # ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
-print_info(f"Arguments received: {arg_list}")
+# print_info(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
-
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
-
-
 parsed = parser.parse_args(arg_list)
-
 exp_string = parsed.experiment_name
-
-
-
-print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
+# channel_string = parsed.channel_name
+print_info("_global__scope__()::" + parsed.channel_name)
+# print_info(f"Parsed VTK extract options: {parsed.channel_name}")
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
 # ----------------------------------------------------------------
@@ -254,7 +248,7 @@ if __name__ == '__main__':
 
 # ------------------------------------------------------------------------------
 def catalyst_execute(info):
-    print_info("'%s::catalyst_execute()'", __name__)
+    print_info("catalyst_execute()::"+parsed.channel_name)
     global ippl_particle
     global renderView1
     # print(info)

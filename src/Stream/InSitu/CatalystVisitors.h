@@ -10,7 +10,7 @@
 
 namespace ippl{
 
-
+/* in the advanced version we might want to get rid of this virtual function call */
 struct CatalystAdaptor::InitVisitor {
     CatalystAdaptor& ca;
 
@@ -58,8 +58,8 @@ struct CatalystAdaptor::ExecuteVisitor {
 struct CatalystAdaptor::SteerForwardVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
-    void operator()(const std::string& label, S value) const {
+    template<class S> requires std::is_scalar_v<std::decay_t<S>>
+    void operator()(const std::string& label, const S& value) const {
         ca.AddSteerableChannel(value, label);
     }
 

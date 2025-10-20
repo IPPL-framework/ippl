@@ -20,6 +20,18 @@
 #include <Stream/InSitu/CatalystAdaptor.h>
 
 
+// Yes, you can use if constexpr to generate a single function body that
+//  results in different return types based on a compile-time condition on 
+//  a template parameter.
+
+// // However, the function's declared return type must be able to
+//  resolve to the correct type for every possible branch. This
+//  is typically achieved using auto for the return type (for C++14/17 
+//     return type deduction) or by using decltype(auto) or a
+//  specific type trait that resolves conditionally.
+
+
+
 // Category traits
 namespace ippl {
 

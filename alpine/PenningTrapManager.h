@@ -407,7 +407,7 @@ public:
         
         
 #ifdef IPPL_ENABLE_CATALYST
-        
+
         
         // auto myR_steer = ippl::MakeRegistry<  "magnetic",
         //                                 "electric">
@@ -441,9 +441,7 @@ public:
 
 
         // CatalystAdaptor::
-        cat_vis.ExecuteRuntime(
-                                // *runtime_vis_registry_, *runtime_steer_registry_, 
-                                 it, this->time_m, ippl::Comm->rank());
+        cat_vis.ExecuteRuntime(  it, this->time_m);
 
 
 
@@ -488,10 +486,9 @@ public:
         this->grid2par();
 
 
-        
-
 
 // #ifdef IPPL_ENABLE_CATALYST
+// cat_vis.ExecuteRuntime( it, this->time_m);
 //         auto myR_vis2 = MakeRegistry<"potential">
 //                                     (this->fcontainer_m->getRho() );
 

@@ -67,7 +67,9 @@ inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::val
             void signConduitBlueprintNode_rememberHostCopy(
                               const size_type Np_local
                             , conduit_cpp::Node& node_fields
-                            , ViewRegistry& vr
+                            , ViewRegistry& viewRegistry
+                            , Inform& ca_m
+                            , Inform& ca_warn
                         ) const override ;       
             #endif
 

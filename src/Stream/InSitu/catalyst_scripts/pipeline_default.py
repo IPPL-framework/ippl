@@ -60,11 +60,10 @@ paraview.simple._DisableFirstRenderCameraReset()
 
 
 
-print_info("\n\n\n")
 # ------------------------------------------------------------------------------
-print_info("=================================================="[0:40]+"|")
-print_info("'%s'===EXECUTING CATALYST PIPELINE================"[0:40]+"|", __name__)
-print_info("=================================================="[0:40]+"|")
+print_info("==========================================================0"[0:55]+"|")
+print_info("======= EXECUTING catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
+print_info("==========================================================0"[0:55]+"|")
 # ------------------------------------------------------------------------------
 
 
@@ -78,7 +77,7 @@ arg_list = paraview.catalyst.get_args()
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_names", nargs="*",
                      help="Pass All Channel Names for which we need to update the privial producer each round")
-parser.add_argument("--VTKextract", type=bool, default=False, help="Enable the VTK extracts of all incoming channels")
+parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parsed = parser.parse_args(arg_list)
@@ -93,14 +92,14 @@ print_info(f"Parsed steering option:         {parsed.steer}")
 # create a new 'XML Partitioned Dataset Reader'
 # Dynamically create PVTrivialProducer objects for each channel name
 # ----------------------------------------------------------------
-print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) =======0")
+print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|0")
 channel_readers = {}
 if parsed.channel_names:
     for cname in parsed.channel_names:
         channel_readers[cname] = PVTrivialProducer(registrationName=cname)
 else:
     print_info("No channel names provided in parsed.channel_names.")
-print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) =======1")
+print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
 
 
 
@@ -108,11 +107,11 @@ print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) =======1")
 # Optionally create VTPD extractors for each channel
 # ------------------------------------------------------------------------------
 extractors = {}
-if parsed.VTKextract and parsed.channel_names:
-    print_info("===SETTING VTK DATA EXTRAXCTION================"[0:30]+"|0")
+if parsed.VTKextract == "ON" and parsed.channel_names:
+    print_info("=== SETTING VTK DATA EXTRAXCTION================"[0:40]+"|0")
     for cname, reader in channel_readers.items():
         extractors[cname] = create_VTPD_extractor(cname, reader, 1)
-    print_info("===SETTING VTK DATA EXTRACTION==================="[0:30]+"|1")
+    print_info("=== SETTING VTK DATA EXTRACTION==================="[0:40]+"|1")
 
 
 
@@ -131,7 +130,7 @@ options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
 # Setup steering channels
 # ------------------------------------------------------------------------------
 if parsed.steer == "ON" :
-    print_info("===CREATING STEERABLES============="[0:30]+"|0")
+    print_info("===CREATING STEERABLES============="[0:40]+"|0")
     
     # ------------------------------------------------------------------------------
     # forward / incoming steering channels
@@ -171,26 +170,26 @@ if parsed.steer == "ON" :
     except Exception as e:
         print_info(f"Exception while loading (backward) SteerableParameters: {e}")
     
-    print_info("===CREATING STEERABLES=============="[0:30]+"|1")
+    print_info("===CREATING STEERABLES=============="[0:40]+"|1")
 
 
 
 
 # ------------------------------------------------------------------------------
-print_info("=== Printing Proxy Overview ============"[0:30]+"0")
+print_info("=== Printing Proxy Overview ============"[0:40]+"0")
 print_proxy_overview()
-print_info("=== Printing Proxy Overview ============"[0:30]+"1")
+print_info("=== Printing Proxy Overview ============"[0:40]+"1")
 # ------------------------------------------------------------------------------
 
 
 
 # ------------------------------------------------------------------------------
 def catalyst_initialize():
-    print_info("in '%s::catalyst_initialize'", __name__)
-    # print_info("===CALLING catalyst_initialize()===="[0:30]+">0")
+    print_info("catalyst_initialize()"+exp_string)
+    # print_info("===CALLING catalyst_initialize()===="[0:40]+">0")
 
     # arg_list = paraview.catalyst.get_args()
-    # print_info("===CALLING catalyst_initialize()===="[0:30]+">1")
+    # print_info("===CALLING catalyst_initialize()===="[0:40]+">1")
 # ------------------------------------------------------------------------------
 
 
@@ -199,7 +198,7 @@ def catalyst_initialize():
 # ------------------------------------------------------------------------------
 def catalyst_execute(info):
     print_info("_________executing (cycle={}, time={})___________".format(info.cycle, info.time))
-    print_info("'%s::catalyst_execute()'", __name__)
+    print_info("catalyst_execute()::"+exp_string)
 
     global parsed
     global channel_readers
@@ -222,9 +221,9 @@ def catalyst_execute(info):
 
 # ------------------------------------------------------------------------------
 def catalyst_finalize():
-    print_info("in '%s::catalyst_finalize'", __name__)
-    print_info("===CALLING catalyst_finalize()===="[0:30]+"|0")
-    print_info("===CALLING catalyst_finalize()===="[0:30]+"|1")
+    print_info("catalyst_finalize()::" + exp_string)
+    # print_info("===CALLING catalyst_finalize()===="[0:40]+"|0")
+    # print_info("===CALLING catalyst_finalize()===="[0:40]+"|1")
 # ------------------------------------------------------------------------------
 
 
@@ -233,9 +232,9 @@ def catalyst_finalize():
 
 
 # ------------------------------------------------------------------------------
-print_info("================================================"[0:40]+"|")
-print_info("'%s'===END OF CATALYST PIPELINE================="[0:40]+"|", __name__)
-print_info("================================================"[0:40]+"|\n\n\n")
+print_info("==========================================================="[0:55]+"|")
+print_info("========== END OF catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
+print_info("==========================================================="[0:55]+"|\n\n")
 # ------------------------------------------------------------------------------
 
 

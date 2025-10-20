@@ -151,7 +151,6 @@ def auto_camera_from_bounds(view, bounds):
 
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
-print_info("==='%s'=============================="[0:30]+">",__name__)
 paraview.simple._DisableFirstRenderCameraReset()
 SetActiveView(None)
 # ----------------------------------------------------------------
@@ -165,7 +164,8 @@ parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parsed = parser.parse_args(arg_list)
 exp_string = parsed.experiment_name
-print_info(f"Parsed VTK extract options:     {parsed.channel_name}")
+print_info("_global__scope__()::" + parsed.channel_name)
+# print_info(f"Parsed VTK extract options: {parsed.channel_name}")
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
 # ----------------------------------------------------------------
@@ -186,7 +186,7 @@ renderView1.AxesGrid.Visibility = 1
 renderView1.UseColorPaletteForBackground = 0
 renderView1.BackgroundColorMode = 'Gradient'
 # renderView1.Background2 = [0.0, 0.6666666666666666, 1.0]
-# renderView1.Background = [0.0, 0.0, 0.4980392156862745]
+# renderView1.Background = [0.0, 0.0, 0.4980392156862750]
 SetActiveView(renderView1)
 # ----------------------------------------------------------------
 # Initial adaptive Camera set
@@ -287,7 +287,8 @@ if __name__ == '__main__':
 
 # ------------------------------------------------------------------------------
 def catalyst_execute(info):
-    print_info("'%s::catalyst_execute()'", __name__)
+    # print_info((parsed.channel_name+"::%s::catalyst_execute()")[0:50], __name__)
+    print_info("catalyst_execute()::"+parsed.channel_name)
 
     global ippl_scalar
     global densityLUT
@@ -309,7 +310,6 @@ def catalyst_execute(info):
         # bounds for fields dont vary normally...
         # Adjust camera dynamically;
         auto_camera_from_bounds(renderView1, bounds)
-        print(bounds)
         # Adjust grid bounds dynamically, should happen automaically..
         # renderView1.AxesGrid.UseCustomBounds = 1
         # renderView1.AxesGrid.CustomBounds = bounds

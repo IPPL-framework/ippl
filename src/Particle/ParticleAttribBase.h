@@ -46,7 +46,9 @@ namespace ippl {
             virtual void signConduitBlueprintNode_rememberHostCopy(
                               const size_type Np_local
                             , conduit_cpp::Node& node_fields
-                            , ViewRegistry& vr
+                            , ViewRegistry& viewRegistry
+                            , Inform& ca_m
+                            , Inform& ca_warn
                         )  const = 0;
             // virtual void rememberHostCopy(ViewRegistry& vr) const  = 0;
             #endif
