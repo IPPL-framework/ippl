@@ -24,7 +24,6 @@
 # Possible TODO:
 #  - Customize extraction frequency
 #  - Customize "rescale" frequency
-#  - Together with CPP don't rely on hard coded attributes
 #  - More
 # 
 # 
@@ -110,19 +109,23 @@ def auto_camera_from_bounds(view, bounds):
     dz = bounds[5] - bounds[4]
     diagonal = math.sqrt(dx * dx + dy * dy + dz * dz)
 
-    # "Nice" rounding for center and diagonal
-    def nice_value(val):
-        if val == 0:
-            return 0
-        order = math.floor(math.log10(abs(val)))
-        scale = 10 ** order
-        if val > 0:
-            return math.ceil(val / scale) * scale
-        else:
-            return math.floor(val / scale) * scale
+    # # "Nice" rounding for center and diagonal
+    # def nice_value(val):
+    #     if val == 0:
+    #         return 0
+    #     order = math.floor(math.log10(abs(val)))
+    #     scale = 10 ** order
+    #     if val > 0:
+    #         return math.ceil(val / scale) * scale
+    #     else:
+    #         return math.floor(val / scale) * scale
 
-    nice_center = [nice_value(c) for c in center]
-    nice_diagonal = nice_value(diagonal)
+    # nice_center = [nice_value(c) for c in center]
+    # nice_diagonal = nice_value(diagonal)
+
+    nice_center = center
+    nice_diagonal = diagonal
+
 
     # Camera position: look from a diagonal direction
     direction = [1, 1.3, 0.6]
@@ -147,6 +150,10 @@ def auto_camera_from_bounds(view, bounds):
 
 
 
+def print_info_(s, level=0):
+    global verbosity
+    if verbosity>level:
+        print_info(s)
 
 
 # ----------------------------------------------------------------
@@ -157,15 +164,16 @@ SetActiveView(None)
 # Parse arguments received via conduit node
 # ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
-# print_info(f"Arguments received: {arg_list}")
+# print_info_(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
-
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
+parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 parsed = parser.parse_args(arg_list)
+
 exp_string = parsed.experiment_name
-print_info("_global__scope__()::" + parsed.channel_name)
-# print_info(f"Parsed VTK extract options: {parsed.channel_name}")
+verbosity = parsed.verbosity
+print_info_("_global__scope__()::" + parsed.channel_name)
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
 # ----------------------------------------------------------------
@@ -287,8 +295,8 @@ if __name__ == '__main__':
 
 # ------------------------------------------------------------------------------
 def catalyst_execute(info):
-    # print_info((parsed.channel_name+"::%s::catalyst_execute()")[0:50], __name__)
-    print_info("catalyst_execute()::"+parsed.channel_name)
+    # print_info_((parsed.channel_name+"::%s::catalyst_execute()")[0:50], __name__)
+    print_info_("catalyst_execute()::"+parsed.channel_name)
 
     global ippl_scalar
     global densityLUT
@@ -318,8 +326,8 @@ def catalyst_execute(info):
         vmin, vmax = density_array_info.GetComponentRange(-1)
         nice_min, nice_max = nice_bounds_sym(vmin, vmax)
         # Update color and opacity transfer function
-        # print_info("==RESCALING COLOUR AND OPACITY BAR")
+        # print_info_("==RESCALING COLOUR AND OPACITY BAR")
         densityLUT.RescaleTransferFunction(nice_min, nice_max)
         densityPWF.RescaleTransferFunction(nice_min, nice_max)
 
-        # print_info(f"Updated Opacity Map at cycle {info.cycle}: {densityPWF.Points}")
+        # print_info_(f"Updated Opacity Map at cycle {info.cycle}: {densityPWF.Points}")

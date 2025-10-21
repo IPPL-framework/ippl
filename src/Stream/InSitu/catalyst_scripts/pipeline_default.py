@@ -63,50 +63,60 @@ paraview.simple._DisableFirstRenderCameraReset()
 
 
 
-# ------------------------------------------------------------------------------
-print_info("==========================================================0"[0:55]+"|")
-print_info("======= EXECUTING catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
-print_info("==========================================================0"[0:55]+"|")
-# ------------------------------------------------------------------------------
-
-
+def print_info_(s, level=0):
+    global verbosity
+    if verbosity>level:
+        print_info(s)
 
 
 # ----------------------------------------------------------------
 # Parse arguments received via conduit node
 # ----------------------------------------------------------------
 arg_list = paraview.catalyst.get_args()
-# print_info(f"Arguments received: {arg_list}")
+# print_info_(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_names", nargs="*",
                      help="Pass All Channel Names for which we need to update the privial producer each round")
 parser.add_argument("--steer_channel_names", nargs="*",
                      help="Pass All Channel Names for Steering scalar parameters")
 
+parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
+
 parsed = parser.parse_args(arg_list)
+
 exp_string = parsed.experiment_name
-print_info(f"Parsed steer_channel_names:     {parsed.steer_channel_names}")
-print_info(f"Parsed channel_names:           {parsed.channel_names}")
-print_info(f"Parsed VTK extract options:     {parsed.VTKextract}")
-print_info(f"Parsed steering option:         {parsed.steer}")
+verbosity = parsed.verbosity
 
 
+# ------------------------------------------------------------------------------
+print_info_("==========================================================0"[0:55]+"|")
+print_info_("======= EXECUTING catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
+print_info_("==========================================================0"[0:55]+"|")
+# ------------------------------------------------------------------------------
+
+
+
+print_info_(f"Parsed steer_channel_names:     {parsed.steer_channel_names}")
+print_info_(f"Parsed channel_names:           {parsed.channel_names}")
+print_info_(f"Parsed verbosity level:         {parsed.verbosity}")
+print_info_(f"Parsed VTK extract options:     {parsed.VTKextract}")
+print_info_(f"Parsed steering option:         {parsed.steer}")
 
 # ----------------------------------------------------------------
 # create a new 'XML Partitioned Dataset Reader'
 # Dynamically create PVTrivialProducer objects for each channel name
 # ----------------------------------------------------------------
-print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|0")
+print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|0")
 channel_readers = {}
 if parsed.channel_names:
     for cname in parsed.channel_names:
         channel_readers[cname] = PVTrivialProducer(registrationName=cname)
 else:
-    print_info("No channel names provided in parsed.channel_names.")
-print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
+    print_info_("No channel names provided in parsed.channel_names.")
+print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
 
 
 
@@ -115,10 +125,10 @@ print_info("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
 # ------------------------------------------------------------------------------
 extractors = {}
 if parsed.VTKextract == "ON" and parsed.channel_names:
-    print_info("=== SETTING VTK DATA EXTRAXCTION================"[0:40]+"|0")
+    print_info_("=== SETTING VTK DATA EXTRAXCTION================"[0:40]+"|0")
     for cname, reader in channel_readers.items():
         extractors[cname] = create_VTPD_extractor(cname, reader, 1)
-    print_info("=== SETTING VTK DATA EXTRACTION==================="[0:40]+"|1")
+    print_info_("=== SETTING VTK DATA EXTRACTION==================="[0:40]+"|1")
 
 
 
@@ -143,18 +153,18 @@ steer_channels = {}
 
 if parsed.steer == "ON":
     if parsed.steer_channel_names :
-        print_info("===CREATING STEERABLES============="[0:40]+"|0")
+        print_info_("===CREATING STEERABLES============="[0:40]+"|0")
 
         # ------------------------------------------------------------------------------
         # forward / incoming steering channels
         # ------------------------------------------------------------------------------
-        print_info("FORWARD")
+        print_info_("FORWARD")
         for sname in parsed.steer_channel_names:
 
-            print_info(sname)
+            print_info_(sname)
             steer_channel_readers[sname] = PVTrivialProducer(registrationName="steerable_channel_forward_"+sname)
     else:
-        print_info("No channel names provided in parsed.channel_names.")
+        print_info_("No channel names provided in parsed.channel_names.")
 
     # EG:
     # steerable_field_in_magnetic = PVTrivialProducer(registrationName='steerable_channel_forward_magnetic')
@@ -164,7 +174,7 @@ if parsed.steer == "ON":
     # ------------------------------------------------------------------------------
     # backward / outgoing steering channels
     # ------------------------------------------------------------------------------
-    print_info("BACKWARD")
+    print_info_("BACKWARD")
     try:    
         for sname in parsed.steer_channel_names:
             steer_channel_senders[sname] = CreateSteerableParameters(
@@ -173,9 +183,9 @@ if parsed.steer == "ON":
                                     result_mesh_name                    = "steerable_channel_backward_"+sname
             )
             if steer_channel_senders[sname] is None:
-                print_info("Error: SteerableParameters_"+sname+" proxy not found (CreateSteerableParameters returned None).")
+                print_info_("Error: SteerableParameters_"+sname+" proxy not found (CreateSteerableParameters returned None).")
             else:
-                print_info("SteerableParameters_" + sname + " loaded successfully.")
+                print_info_("SteerableParameters_" + sname + " loaded successfully.")
         
         # EG:
         # steerable_parameters_magnetic =  CreateSteerableParameters(
@@ -184,13 +194,13 @@ if parsed.steer == "ON":
         #                             result_mesh_name                    = "steerable_channel_backward_magnetic"
         #                         )
         # if steerable_parameters_magnetic is None:
-        #     print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
+        #     print_info_("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
         # else:
-        #     print_info("SteerableParameters_magnetic loaded successfully.")
+        #     print_info_("SteerableParameters_magnetic loaded successfully.")
     except Exception as e:
-        print_info(f"Exception while loading (backward) SteerableParameters: {e}")
+        print_info_(f"Exception while loading (backward) SteerableParameters: {e}")
     
-    print_info("===CREATING STEERABLES=============="[0:40]+"|1")
+    print_info_("===CREATING STEERABLES=============="[0:40]+"|1")
 
 
 
@@ -200,20 +210,17 @@ for sname in parsed.steer_channel_names:
 
 
 # ------------------------------------------------------------------------------
-print_info("=== Printing Proxy Overview ============"[0:40]+"0")
-print_proxy_overview()
-print_info("=== Printing Proxy Overview ============"[0:40]+"1")
+print_info_("=== Printing Proxy Overview ============"[0:40]+"0")
+if verbosity > 0: 
+    print_proxy_overview()
+print_info_("=== Printing Proxy Overview ============"[0:40]+"1")
 # ------------------------------------------------------------------------------
 
 
 
 # ------------------------------------------------------------------------------
 def catalyst_initialize():
-    print_info("catalyst_initialize()"+exp_string)
-    # print_info("===CALLING catalyst_initialize()===="[0:40]+">0")
-
-    # arg_list = paraview.catalyst.get_args()
-    # print_info("===CALLING catalyst_initialize()===="[0:40]+">1")
+    print_info_("catalyst_initialize()"+exp_string)
 # ------------------------------------------------------------------------------
 
 
@@ -221,8 +228,8 @@ def catalyst_initialize():
 
 # ------------------------------------------------------------------------------
 def catalyst_execute(info):
-    print_info("_________executing (cycle={}, time={})___________".format(info.cycle, info.time))
-    print_info("catalyst_execute()::"+exp_string)
+    print_info_("_________executing (cycle={}, time={})___________".format(info.cycle, info.time))
+    print_info_("catalyst_execute()::"+exp_string)
 
     global parsed
     global channel_readers
@@ -238,7 +245,7 @@ def catalyst_execute(info):
         # global steerable_parameters_magnetic
         # for reader in steer_channel_readers.values():
         
-        print_info("setting backward steerables")
+        print_info_("setting backward steerables")
 
         
         global steer_channels
@@ -283,9 +290,9 @@ def catalyst_execute(info):
                             #         if initial_value is not None:
                             #             sender.scaleFactor[0] = float(initial_value)
                             #             # _initialized_steer_defaults.add(name)
-                            #             print_info(f"Initialized steerable '{name}' from forward channel: {initial_value}")
+                            #             print_info_(f"Initialized steerable '{name}' from forward channel: {initial_value}")
                             #         else:
-                            #             print_info(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
+                            #             print_info_(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
 
 
                             # try:
@@ -296,9 +303,9 @@ def catalyst_execute(info):
                             #     if initial_value is not None:
                             #         sender.scaleFactor[0] = initial_value
                             #         # _initialized_steer_defaults.add(name)
-                            #         print_info(f"Initialized steerable '{name}' from forward channel: {initial_value}")
+                            #         print_info_(f"Initialized steerable '{name}' from forward channel: {initial_value}")
                             #     else:
-                            #         print_info(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
+                            #         print_info_(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
 
 
 
@@ -325,7 +332,7 @@ def catalyst_execute(info):
                             # steerable_parameters_electric.scaleFactor[0] = 31 + info.cycle
                             # steerable_parameters_magnetic.scaleFactor[0] = 31 + info.cycle
                         
-                            print_info(f"SteerableParameter[{name}] intermediate value: {sender.scaleFactor[0]}")
+                            print_info_(f"SteerableParameter[{name}] intermediate value: {sender.scaleFactor[0]}")
 
 
 
@@ -350,9 +357,7 @@ def catalyst_execute(info):
 
 # ------------------------------------------------------------------------------
 def catalyst_finalize():
-    print_info("catalyst_finalize()::" + exp_string)
-    # print_info("===CALLING catalyst_finalize()===="[0:40]+"|0")
-    # print_info("===CALLING catalyst_finalize()===="[0:40]+"|1")
+    print_info_("catalyst_finalize()::" + exp_string)
 # ------------------------------------------------------------------------------
 
 
@@ -361,9 +366,9 @@ def catalyst_finalize():
 
 
 # ------------------------------------------------------------------------------
-print_info("==========================================================="[0:55]+"|")
-print_info("========== END OF catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
-print_info("==========================================================="[0:55]+"|\n\n")
+print_info_("==========================================================="[0:55]+"|")
+print_info_("========== END OF catalyst_pipeline GLOBAL SCOPE =========0"[0:55]+"|")
+print_info_("==========================================================="[0:55]+"|\n\n")
 # ------------------------------------------------------------------------------
 
 

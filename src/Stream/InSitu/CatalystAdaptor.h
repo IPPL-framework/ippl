@@ -87,7 +87,7 @@ class CatalystAdaptor {
     conduit_cpp::Node results;
     Inform ca_m;
     Inform ca_warn;
-    const int level;
+
 
     // conduit_cpp::Node node_forward;
     // conduit_cpp::Node node_backward;
@@ -110,12 +110,12 @@ class CatalystAdaptor {
 
     public:
 
-    CatalystAdaptor() : CatalystAdaptor(3){}
+    CatalystAdaptor() : CatalystAdaptor(ippl::Info->getOutputLevel()){}
 
-    CatalystAdaptor(int level) : 
+    CatalystAdaptor(int outputLevel_) : 
+    // CatalystAdaptor() : 
                 ca_m("CatalystAdaptor::"), 
-                ca_warn("CatalystAdaptor", std::cerr),
-                level(ippl::Info->getOutputLevel()),
+                ca_warn("CatalystAdaptor_WARNING", std::cerr),
                 catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
                 catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
                 catalyst_steer(std::getenv("IPPL_CATALYST_STEER")),
@@ -125,11 +125,50 @@ class CatalystAdaptor {
                 steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
                 source_dir(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
     {
-        ca_m.setOutputLevel(level);
-        ca_warn.setOutputLevel(0);
+
+
+        ca_m.setOutputLevel(outputLevel_);
+        // ca_warn.setOutputLevel(5);
+        // ca_m.setMessageLevel(2);
+        // ca_warn.setMessageLevel(5);
+
+
+        /* 
+            Default Message and Output Level are set to global Message and Output Level.
+
+            When Inform Output level are set to e.g 3, messages from this inform with
+            level bigger than 3 {4,5} are no longer printed because MessageLevel>OutPutLevel.
+
+            Message Level will always be 1 and Output according to setting...
+
+
+
+            so if the output level is fixed e.g via global output level and not changed,
+            I can give my message a low level eg 2 so my message will be printed for most verboity levels
+            globalOutputLevel >=  informMessageLevel 2-5 and only not printed for very low verbosity levels 
+            0,1 = globalOutputLevel < informMessageLevel = 2 wont likely be pri
+            But Message Level is reset to minimum after message has been sent, so this is useless for me atm
+            why ?? why no alternatve
+            and why is [2] in print statment -_-
+
+            so i need to manually level every message which, then let the user overwrite with setOutpt
+            if he wants to overwrite the global verbosits option for visualisation.
+
+            Currently Message Level are forced to 1 so any output level other than 0 will print everything ...
+        */
+
+
+
+       
+        ca_warn << "Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
+        ca_warn << "Catalyst Info Output  Level setting: " << ca_m.getOutputLevel() << endl;
+        ca_warn << "Catalyst Warn Output  Level setting: " << ca_warn.getOutputLevel() << endl;
+      
+        
+
 
         ca_m << "::CatalystAdaptor()   using source_dir = " << source_dir.string() << endl;
-
+        
 
         if  (png_extracts) 
             { ca_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 

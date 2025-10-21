@@ -152,6 +152,9 @@ void CatalystAdaptor::init_entry(
                 args.append().set_string("--experiment_name");
                 args.append().set_string(std::string(TestName));
             }
+
+            args.append().set_string("--verbosity");
+            args.append().set_string(std::to_string(ca_m.getOutputLevel()));
         }
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
@@ -191,7 +194,10 @@ void CatalystAdaptor::init_entry(
                 args.append().set_string("--experiment_name");
                 args.append().set_string(std::string(TestName));
             }
+            args.append().set_string("--verbosity");
+            args.append().set_string(std::to_string(ca_m.getOutputLevel()));
         }
+
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
@@ -230,6 +236,9 @@ void CatalystAdaptor::init_entry(
                     args.append().set_string("--experiment_name");
                     args.append().set_string(std::string(TestName));
                 }
+
+                args.append().set_string("--verbosity");
+                args.append().set_string(std::to_string(ca_m.getOutputLevel()));
             }
 
             conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
@@ -843,6 +852,10 @@ void CatalystAdaptor::InitializeRuntime(
 
     
 
+    args.append().set_string("--verbosity");
+    args.append().set_string(std::to_string(ca_m.getOutputLevel()));
+
+
     args.append().set_string("--VTKextract");
     args.append().set_string(std::string(catalyst_vtk));
 
@@ -919,9 +932,9 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
 
 
 
-    if( cycle == 0){
+    if(cycle == 0){
         ca_m << "::Execute()   Printing first Conduit Node passed to catalyst_execute() ==>" << endl;
-        if(level >= ca_m.getOutputLevel() && ippl::Comm->rank()==0) node.print();
+        if(ca_m.getOutputLevel() > 0 && ippl::Comm->rank()==0) node.print();
         // if(level >= 5 && ippl::Comm->rank()==0)  node.print();
 
         ca_m    << "::Execute() During first catalyst_execute() catalyst will "     << endl

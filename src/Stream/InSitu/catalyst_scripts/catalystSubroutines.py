@@ -28,6 +28,69 @@ def create_VTPD_extractor(name, object, fr = 10):
 
 
 
+# from paraview import servermanager
+# # ...existing code...
+
+# # ----------------------------------------------------------------
+# # Helpers to fetch a dataset and a scalar value from a PVTrivialProducer
+# # ----------------------------------------------------------------
+# def _first_dataset_from_composite(obj):
+#     # Try vtkPartitionedDataSetCollection
+#     if hasattr(obj, "GetPartition"):
+#         try:
+#             ds = obj.GetPartition(0, 0)  # (pdsc index, partition index)
+#             if ds is not None:
+#                 return ds
+#         except TypeError:
+#             # Some versions expose GetPartition(i) on vtkPartitionedDataSet
+#             try:
+#                 ds = obj.GetPartition(0)
+#                 if ds is not None:
+#                     return ds
+#             except Exception:
+#                 pass
+#     # Fallback to first block (e.g., vtkMultiBlockDataSet)
+#     if hasattr(obj, "GetBlock"):
+#         try:
+#             blk = obj.GetBlock(0)
+#             if blk is not None:
+#                 return blk
+#         except Exception:
+#             pass
+#     # If it's already a dataset, return as-is
+#     if hasattr(obj, "GetPointData"):
+#         return obj
+#     return None
+
+
+# def _fetch_first_dataset(src_proxy):
+#     # Fetch brings a VTK data object to Python-side (safe in Catalyst Python)
+#     obj = servermanager.Fetch(src_proxy)
+#     if obj is None:
+#         return None
+#     return _first_dataset_from_composite(obj)
+
+
+# def _get_first_scalar_from_any_assoc(ds, array_name):
+#     # Try point data, then cell data, then field data
+#     if ds is None:
+#         return None
+#     if hasattr(ds, "GetPointData") and ds.GetPointData():
+#         arr = ds.GetPointData().GetArray(array_name)
+#         if arr:
+#             return float(arr.GetTuple1(0))
+#     if hasattr(ds, "GetCellData") and ds.GetCellData():
+#         arr = ds.GetCellData().GetArray(array_name)
+#         if arr:
+#             return float(arr.GetTuple1(0))
+#     if hasattr(ds, "GetFieldData") and ds.GetFieldData():
+#         arr = ds.GetFieldData().GetArray(array_name)
+#         if arr:
+#             return float(arr.GetTuple1(0))
+#     return None
+
+
+
 
 # --- lightweight logging with levels ---
 _LEVELS = {"DEBUG": 10, "INFO": 20, "WARN": 30, "ERROR": 40, "NONE": 100}
