@@ -87,7 +87,7 @@ class CatalystAdaptor {
     conduit_cpp::Node results;
     Inform ca_m;
     Inform ca_warn;
-    const int level = ippl::Info->getOutputLevel();
+    const int level;
 
     // conduit_cpp::Node node_forward;
     // conduit_cpp::Node node_backward;
@@ -95,21 +95,52 @@ class CatalystAdaptor {
 
 
     /* taken from environemnt can be const... */
-    std::filesystem::path source_dir;
-    bool png_extracts ;
-    bool vtk_extracts ;
-    bool steer_enabled;
+    
+    
+    const char* catalyst_png  ;
+    const char* catalyst_vtk  ;
+    const char* catalyst_steer;
+    const char* catalyst_vis  ;
 
+    const bool png_extracts ;
+    const bool vtk_extracts ;
+    const bool steer_enabled;
+
+    const std::filesystem::path source_dir;
 
     public:
 
-    CatalystAdaptor() : ca_m("CatalystAdaptor"), ca_warn("CatalystAdaptor", std::cerr){
-        ca_m.setOutputLevel(3);
-        ca_warn.setOutputLevel(0);
-    }
+    CatalystAdaptor() : CatalystAdaptor(3){}
 
-    CatalystAdaptor(int level) : ca_m("CatalystAdaptor::"){
+    CatalystAdaptor(int level) : 
+                ca_m("CatalystAdaptor::"), 
+                ca_warn("CatalystAdaptor", std::cerr),
+                level(ippl::Info->getOutputLevel()),
+                catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
+                catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
+                catalyst_steer(std::getenv("IPPL_CATALYST_STEER")),
+                catalyst_vis(std::getenv("IPPL_CATALYST_VIS")),
+                png_extracts(catalyst_png && std::string(catalyst_png) == "ON"),
+                vtk_extracts(catalyst_vtk && std::string(catalyst_vtk) == "ON"),
+                steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
+                source_dir(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
+    {
         ca_m.setOutputLevel(level);
+        ca_warn.setOutputLevel(0);
+
+        ca_m << "::CatalystAdaptor()   using source_dir = " << source_dir.string() << endl;
+
+
+        if  (png_extracts) 
+            { ca_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 
+        else{ ca_m << "::CatalystAdaptor()   PNG extraction DEACTIVATED" << endl;}
+        if  (vtk_extracts) 
+            { ca_m << "::CatalystAdaptor()   VTK extraction ACTIVATED"   << endl;}
+        else{ ca_m << "::CatalystAdaptor()   VTK extraction DEACTIVATED" << endl;}
+        if  (steer_enabled) 
+            { ca_m << "::CatalystAdaptor()   Steering       ACTIVATED"   << endl;}
+        else{ ca_m << "::CatalystAdaptor()   Steering       DEACTIVATED" << endl;}
+
     }
 
 
@@ -123,9 +154,20 @@ class CatalystAdaptor {
      */
     void set_node_script(
         conduit_cpp::Node node_path,
-        const char* env_var,
+        // const char* env_var,
+        const std::string env_var,
         const std::filesystem::path default_file_path
     );
+
+
+
+    bool replace_in_file(const std::string& input_filename,
+                     const std::string& output_filename,
+                     const std::string& search_string,
+                     const std::string& replace_string);
+
+    bool create_new_proxy_file(const std::string & label);
+
 
 
     // ==========================================================
@@ -356,6 +398,8 @@ class CatalystAdaptor {
     );
 
 
+    template<typename T>
+    void InitSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& label );
 
 
 
@@ -368,7 +412,7 @@ class CatalystAdaptor {
      * @param node The Conduit node to update.
      */
     template<typename T>
-    void AddSteerableChannel(   const T& steerable_scalar_forwardpass,  std::string steerable_suffix);
+    void AddSteerableChannel(const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix);
 
 
     /* maybe use function overloading instead ... */
@@ -387,10 +431,7 @@ class CatalystAdaptor {
      * @param results The Conduit node containing results.
      */
     template<typename T>
-    void FetchSteerableChannelValue( 
-                           T& steerable_scalar_backwardpass
-                         , std::string steerable_suffix
-    );
+    void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, const std::string& steerable_suffix);
         
 
     /**
@@ -431,6 +472,7 @@ class CatalystAdaptor {
     // put into Base Adaptor
     struct InitVisitor;
     struct ExecuteVisitor;
+    struct SteerInitVisitor;
     struct SteerForwardVisitor;
     struct SteerFetchVisitor;
 

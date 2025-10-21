@@ -1,7 +1,7 @@
 <ServerManagerConfiguration>
 
     <ProxyGroup name="sources">
-        <SourceProxy name="SteerableParameters_electric" class="vtkSteeringDataGenerator" >
+        <SourceProxy name="SteerableParameters_EXAMPLE" class="vtkSteeringDataGenerator" >
 
             <IntVectorProperty name="PartitionType"
                                command="SetPartitionType"
@@ -17,16 +17,16 @@
                                panel_visibility="never">
             </IntVectorProperty>
 
-            <DoubleVectorProperty name="scaleFactor_e"
+            <DoubleVectorProperty name="scaleFactor"
                              command="SetTuple1Double"
                              clean_command="Clear"
                              use_index="1"
-                             initial_string="steerable_field_b_electric"
+                             initial_string="steerable_field_b_EXAMPLE"
                              number_of_elements_per_command="1"
                              repeat_command="1">
             </DoubleVectorProperty>
 
-            <PropertyGroup label="SteerableParameters_LABEL_ELECTRIC" panel_widget="PropertyCollection">
+            <PropertyGroup label="SteerableParameters_LABEL_EXAMPLE" panel_widget="PropertyCollection">
 
                 <Hints>
                   <PropertyCollectionWidgetPrototype group="misc" name="SteerableParametersPrototype" />
@@ -34,9 +34,9 @@
             </PropertyGroup>
             <Hints>
             <!-- correct -->
-              <CatalystInitializePropertiesWithMesh mesh="steerable_channel_forward_electric">
+              <CatalystInitializePropertiesWithMesh mesh="steerable_channel_forward_EXAMPLE">
               <!-- correct -->
-                <Property name="scaleFactor_e" association="point" array="steerable_field_f_electric" />
+                <Property name="scaleFactor" association="point" array="steerable_field_f_EXAMPLE" />
               </CatalystInitializePropertiesWithMesh>
             </Hints>
             

@@ -93,6 +93,7 @@ struct access_traits<T*> {
 class VisRegistryRuntime {
     using InitVisitor_t          = CatalystAdaptor::InitVisitor;
     using ExecuteVisitor_t       = CatalystAdaptor::ExecuteVisitor;
+    using SteerInitVisitor_t     = CatalystAdaptor::SteerInitVisitor;
     using SteerForwardVisitor_t  = CatalystAdaptor::SteerForwardVisitor;
     using SteerFetchVisitor_t    = CatalystAdaptor::SteerFetchVisitor;
 
@@ -104,10 +105,11 @@ class VisRegistryRuntime {
     struct Entry {
         std::string label;
         // Per-visitor callbacks; only relevant ones are set per entry
-        std::function<void(InitVisitor_t&)> do_init;
-        std::function<void(ExecuteVisitor_t&)> do_exec;
+        std::function<void(InitVisitor_t&)>         do_init;
+        std::function<void(ExecuteVisitor_t&)>      do_exec;
+        std::function<void(SteerInitVisitor_t&)>    do_steer_init;
         std::function<void(SteerForwardVisitor_t&)> do_steer_fwd;
-        std::function<void(SteerFetchVisitor_t&)> do_steer_fetch;
+        std::function<void(SteerFetchVisitor_t&)>   do_steer_fetch;
     };
 
     /**
@@ -130,6 +132,9 @@ public:
      */
     void for_each(ExecuteVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_exec) e.do_exec(v);
+    }
+    void for_each(SteerInitVisitor_t& v) const {
+        for (auto const& e : entries_) if (e.do_steer_init) e.do_steer_init(v);
     }
     /**
      * @brief Apply a visitor to all entries with a steer forward callback.

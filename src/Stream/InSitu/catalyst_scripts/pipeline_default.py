@@ -53,7 +53,10 @@ sys.path.append(os.path.dirname(__file__))
 
 from catalystSubroutines import (
     print_proxy_overview,
-    create_VTPD_extractor
+    create_VTPD_extractor,
+    _first_dataset_from_composite,
+    _fetch_first_dataset,
+    _get_first_scalar_from_any_assoc
 )
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
@@ -77,11 +80,15 @@ arg_list = paraview.catalyst.get_args()
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_names", nargs="*",
                      help="Pass All Channel Names for which we need to update the privial producer each round")
+parser.add_argument("--steer_channel_names", nargs="*",
+                     help="Pass All Channel Names for Steering scalar parameters")
+
 parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parsed = parser.parse_args(arg_list)
 exp_string = parsed.experiment_name
+print_info(f"Parsed steer_channel_names:     {parsed.steer_channel_names}")
 print_info(f"Parsed channel_names:           {parsed.channel_names}")
 print_info(f"Parsed VTK extract options:     {parsed.VTKextract}")
 print_info(f"Parsed steering option:         {parsed.steer}")
@@ -129,49 +136,66 @@ options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
 # ------------------------------------------------------------------------------
 # Setup steering channels
 # ------------------------------------------------------------------------------
-if parsed.steer == "ON" :
-    print_info("===CREATING STEERABLES============="[0:40]+"|0")
-    
-    # ------------------------------------------------------------------------------
-    # forward / incoming steering channels
-    # ------------------------------------------------------------------------------
 
-    steerable_field_in_electric = PVTrivialProducer(registrationName='steerable_channel_forward_electric')
-    steerable_field_in_magnetic = PVTrivialProducer(registrationName='steerable_channel_forward_magnetic')
+steer_channel_readers = {}
+steer_channel_senders = {}
+steer_channels = {}
+
+if parsed.steer == "ON":
+    if parsed.steer_channel_names :
+        print_info("===CREATING STEERABLES============="[0:40]+"|0")
+
+        # ------------------------------------------------------------------------------
+        # forward / incoming steering channels
+        # ------------------------------------------------------------------------------
+        print_info("FORWARD")
+        for sname in parsed.steer_channel_names:
+
+            print_info(sname)
+            steer_channel_readers[sname] = PVTrivialProducer(registrationName="steerable_channel_forward_"+sname)
+    else:
+        print_info("No channel names provided in parsed.channel_names.")
+
+    # EG:
+    # steerable_field_in_magnetic = PVTrivialProducer(registrationName='steerable_channel_forward_magnetic')
+
+
 
     # ------------------------------------------------------------------------------
     # backward / outgoing steering channels
     # ------------------------------------------------------------------------------
-
+    print_info("BACKWARD")
     try:    
-        steerable_parameters_electric =  CreateSteerableParameters(
-                                    steerable_proxy_type_name           = "SteerableParameters_electric",
-                                    steerable_proxy_registration_name   = "SteeringParameters_electric",
-                                    result_mesh_name                    = "steerable_channel_backward_electric"
-                                )
+        for sname in parsed.steer_channel_names:
+            steer_channel_senders[sname] = CreateSteerableParameters(
+                                    steerable_proxy_type_name           = "SteerableParameters_"+sname,
+                                    steerable_proxy_registration_name   = "SteeringParameters_"+sname,
+                                    result_mesh_name                    = "steerable_channel_backward_"+sname
+            )
+            if steer_channel_senders[sname] is None:
+                print_info("Error: SteerableParameters_"+sname+" proxy not found (CreateSteerableParameters returned None).")
+            else:
+                print_info("SteerableParameters_" + sname + " loaded successfully.")
         
-        steerable_parameters_magnetic =  CreateSteerableParameters(
-                                    steerable_proxy_type_name           = "SteerableParameters_magnetic",
-                                    steerable_proxy_registration_name   = "SteeringParameters_magnetic",
-                                    result_mesh_name                    = "steerable_channel_backward_magnetic"
-                                )
-    
-    
-        if steerable_parameters_electric is None:
-            print_info("Error: SteerableParameters_electric proxy not found (CreateSteerableParameters returned None).")
-        else:
-            print_info("SteerableParameters_electric loaded successfully.")
-        
-        if steerable_parameters_magnetic is None:
-            print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
-        else:
-            print_info("SteerableParameters_magnetic loaded successfully.")
-    
+        # EG:
+        # steerable_parameters_magnetic =  CreateSteerableParameters(
+        #                             steerable_proxy_type_name           = "SteerableParameters_magnetic",
+        #                             steerable_proxy_registration_name   = "SteeringParameters_magnetic",
+        #                             result_mesh_name                    = "steerable_channel_backward_magnetic"
+        #                         )
+        # if steerable_parameters_magnetic is None:
+        #     print_info("Error: SteerableParameters_magnetic proxy not found (CreateSteerableParameters returned None).")
+        # else:
+        #     print_info("SteerableParameters_magnetic loaded successfully.")
     except Exception as e:
         print_info(f"Exception while loading (backward) SteerableParameters: {e}")
     
     print_info("===CREATING STEERABLES=============="[0:40]+"|1")
 
+
+
+for sname in parsed.steer_channel_names:
+    steer_channels[sname] = (steer_channel_readers[sname], steer_channel_senders[sname])
 
 
 
@@ -205,13 +229,118 @@ def catalyst_execute(info):
     # Update all channel readers
     for reader in channel_readers.values():
         reader.UpdatePipeline()
+        
 
     if parsed.steer == "ON":
+
+        # global steer_channel_readers
+        # global steer_channel_senders
+        # global steerable_parameters_magnetic
+        # for reader in steer_channel_readers.values():
+        
         print_info("setting backward steerables")
-        global steerable_parameters_electric
-        global steerable_parameters_magnetic
-        steerable_parameters_electric.scaleFactor_e[0] = 31 + info.cycle
-        steerable_parameters_magnetic.scaleFactor_m[0] = 31 + info.cycle
+
+        
+        global steer_channels
+        for name, (reader, sender) in steer_channels.items():
+            
+            reader.UpdatePipeline()
+            sender.UpdatePipeline()
+             
+            if sender is None:
+                print("Error: SteerableParameters proxy not found (CreateSteerableParameters returned None).")
+            else:
+                            # # --- Set initial value from incoming channel if available ---
+                            try:
+                                # Access the incoming 'steerable' channel (PVTrivialProducer)
+                                output = reader.GetClientSideObject().GetOutput()
+                                # output = reader.GetClientSideObject().GetOutputDataObject(0)
+                                partition = output.GetPartition(0)
+                                # partition = output.GetBlock(0)
+                                # partition = output  # fallback, may not work
+
+                                if partition is not None and hasattr(partition, "GetPointData"):
+                                    data_info = partition.GetPointData()
+                                    # data_info = partition.GetFieldData()
+                                    if data_info is not None and data_info.GetNumberOfArrays() > 0:
+                                            initial_value = data_info.GetArray("steerable_field_f_"+name).GetTuple1(0)
+                                            sender.scaleFactor[0] =  initial_value
+                                else:
+                                    print("Could not find a valid partition with point data for steerable channel.")
+
+                            # try:
+                            #     # Only set initial default once (don’t clobber later user edits)
+                            #     # if info.cycle == 0 and name not in _initialized_steer_defaults:
+                            #         # Preferred: fetch a VTK object to Python and extract the first dataset
+                            #         ds = _fetch_first_dataset(reader)
+
+                            #         # Fallback: access server-side object correctly
+                            #         if ds is None:
+                            #             obj = reader.GetClientSideObject().GetOutputDataObject(0)
+                            #             ds = _first_dataset_from_composite(obj)
+
+                            #         initial_value = _get_first_scalar_from_any_assoc(ds, "steerable_field_f_" + name)
+                            #         if initial_value is not None:
+                            #             sender.scaleFactor[0] = float(initial_value)
+                            #             # _initialized_steer_defaults.add(name)
+                            #             print_info(f"Initialized steerable '{name}' from forward channel: {initial_value}")
+                            #         else:
+                            #             print_info(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
+
+
+                            # try:
+                            #         # Only set the initial default once (on first execute)
+                            #         # if info.cycle == 0 and name not in _initialized_steer_defaults:
+                            #     ds = _fetch_first_dataset(reader)
+                            #     initial_value = _get_first_scalar_from_any_assoc(ds, "steerable_field_f_" + name)
+                            #     if initial_value is not None:
+                            #         sender.scaleFactor[0] = initial_value
+                            #         # _initialized_steer_defaults.add(name)
+                            #         print_info(f"Initialized steerable '{name}' from forward channel: {initial_value}")
+                            #     else:
+                            #         print_info(f"Could not find array 'steerable_field_f_{name}' on forward channel.")
+
+
+
+
+
+
+
+
+                            except Exception as e:
+                                print(f"Could not set initial steerable value from simulation for '{name}': {e}")
+
+                            
+                            """ something like this should also work...
+                            but might reduce integration... """
+                            # steer=servermanager.Fetch(FindSource("steerable")).GetPartition(0,0)
+                            # steer_array = steer.GetPointData().GetArray("steerable")
+                            # # steer_array = steer.GetFieldData().GetArray("steerable")
+                            # steer_atm = 1
+                            # if steer_array:
+                            #       steer_atm = steer_array.GetTuple1(0)
+                                    # steerable_parameters.scaleFactor[0] = steer_atm
+                                                                    #  works...
+
+                            # steerable_parameters_electric.scaleFactor[0] = 31 + info.cycle
+                            # steerable_parameters_magnetic.scaleFactor[0] = 31 + info.cycle
+                        
+                            print_info(f"SteerableParameter[{name}] intermediate value: {sender.scaleFactor[0]}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     if options.EnableCatalystLive:
         time.sleep(0.2)

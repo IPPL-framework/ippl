@@ -17,9 +17,12 @@ namespace ippl {
         } else if constexpr (is_particle_v<T>) {
             e.do_init = [&value, label](InitVisitor_t& v) { v(label, value); };
             e.do_exec = [&value, label](ExecuteVisitor_t& v) { v(label, value); };
-        } else if constexpr (is_scalar_v<T>) {
+        } 
+        /*  dont need scalar vis?... */
+        else if constexpr (is_scalar_v<T>) {
+            e.do_steer_init = [&value, label](SteerInitVisitor_t& v)    { v(label, value); };
             e.do_steer_fwd  = [&value, label](SteerForwardVisitor_t& v) { v(label, value); };
-            e.do_steer_fetch= [&value, label](SteerFetchVisitor_t& v) { v(label, value); };
+            e.do_steer_fetch= [&value, label](SteerFetchVisitor_t& v)   { v(label, value); };
         }
         entries_.push_back(std::move(e));
     }

@@ -54,6 +54,36 @@ struct CatalystAdaptor::ExecuteVisitor {
     }
 };
 
+// Initialize steerable channel
+struct CatalystAdaptor::SteerInitVisitor {
+    CatalystAdaptor& ca;
+
+    template<class S> requires std::is_scalar_v<std::decay_t<S>>
+    void operator()(const std::string& label, const S& value) const {
+        ca.InitSteerableChannel(value, label);
+    }
+
+
+    template<class S> requires is_vector_v<std::decay_t<S>>
+    void operator()(const std::string& label, const S& value) const {
+        
+        throw IpplException("CatalystAdaptor::InitSteerableChannel", "Steerable Vector has not yet been implemented " + label);
+        /* pass 3 scalars??... */
+
+    }
+
+    template<class T>
+    requires (!std::is_scalar_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
+    void operator()(const std::string& label , const T&) const {
+
+        throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + label);
+        
+    }
+
+
+};
+
+
 // Forward steering: add steerable scalar channels only
 struct CatalystAdaptor::SteerForwardVisitor {
     CatalystAdaptor& ca;
@@ -63,11 +93,24 @@ struct CatalystAdaptor::SteerForwardVisitor {
         ca.AddSteerableChannel(value, label);
     }
 
-    template<class T>
-    requires (!std::is_arithmetic_v<std::decay_t<T>>)
-    void operator()(const std::string&, const T&) const {
-        /* ignore non-scalars */ 
+
+    template<class S> requires is_vector_v<std::decay_t<S>>
+    void operator()(const std::string& label, const S& value) const {
+        
+        throw IpplException("CatalystAdaptor::AddSteerableChannel", "Steerable Vector has not yet been implemented " + label);
+        /* pass 3 scalars??... */
+
     }
+
+    template<class T>
+    requires (!std::is_scalar_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
+    void operator()(const std::string& label , const T&) const {
+
+        throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + label);
+        
+    }
+
+
 };
 
 // Backward steering fetch (mutates external scalars)
