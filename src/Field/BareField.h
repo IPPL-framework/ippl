@@ -64,7 +64,7 @@ namespace ippl {
          * checks in the rest of the BareField methods to check that the field has
          * been properly initialized.
          */
-        BareField();
+        BareField(const std::string& name_="UNNAMED_BareField");
 
         BareField(const BareField&) = default;
 
@@ -72,7 +72,7 @@ namespace ippl {
          * @param l of field
          * @param nghost number of ghost layers
          */
-        BareField(Layout_t& l, int nghost = 1);
+        BareField(Layout_t& l, int nghost = 1, const std::string& name_="UNNAMED_BareField");
 
         /*!
          * Creates a new BareField with the same properties and contents
@@ -171,6 +171,8 @@ namespace ippl {
         const view_type& getView() const { return dview_m; }
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+
+        const std::string get_name() const{ return dview_m.label(); }
 
         /*!
          * Generate the range policy for iterating over the field,

@@ -34,7 +34,7 @@ namespace ippl {
         // 'initialize' function before doing anything else.  There are no special
         // checks in the rest of the Field methods to check that the Field has
         // been properly initialized.
-        Field();
+        Field(const std::string& name_="UNNAMED_Field");
 
         Field(const Field&) = default;
 
@@ -47,7 +47,7 @@ namespace ippl {
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
-        Field(Mesh_t&, Layout_t&, int nghost = 1);
+        Field(Mesh_t&, Layout_t&, int nghost = 1, const std::string& name_="UNNAMED_Field");
 
         // Initialize the Field, also specifying a mesh
         void initialize(Mesh_t&, Layout_t&, int nghost = 1);
