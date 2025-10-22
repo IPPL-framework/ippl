@@ -74,6 +74,10 @@ public:
     size_t size() const {
         return m_storage.size();
     }
+
+    bool contains(const std::string& key) const {
+        return m_storage.contains( key );
+    }
 };
 
 }

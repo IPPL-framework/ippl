@@ -136,7 +136,10 @@ void CatalystAdaptor::init_entry(
                 )
 {
         ca_m << "::Initialize()::init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << endl;
-            
+        
+
+        forceHostCopy[label] = false;
+
         const std::string channelName = "ippl_sField_" + label; 
         if(png_extracts){
             const std::string script = "catalyst/scripts/" + label;
@@ -148,6 +151,8 @@ void CatalystAdaptor::init_entry(
             conduit_cpp::Node args = node[script + "/args"];
             args.append().set_string("--channel_name");
             args.append().set_string(channelName);
+            args.append().set_string("--label");
+            args.append().set_string(label);
             if(TestName){
                 args.append().set_string("--experiment_name");
                 args.append().set_string(std::string(TestName));
@@ -176,6 +181,8 @@ void CatalystAdaptor::init_entry(
                 << typeid(T).name() << "," << Dim_v << ">," << Dim 
                 << ">) called" << endl;
 
+        forceHostCopy[label] = false;
+
                 
         const std::string channelName = "ippl_vField_" + label;
         if(png_extracts){
@@ -190,6 +197,8 @@ void CatalystAdaptor::init_entry(
             conduit_cpp::Node args = node[script + "/args"];
             args.append().set_string("--channel_name");
             args.append().set_string(channelName);
+            args.append().set_string("--label");
+            args.append().set_string(label);
             if(TestName){
                 args.append().set_string("--experiment_name");
                 args.append().set_string(std::string(TestName));
@@ -218,6 +227,9 @@ void CatalystAdaptor::init_entry(
                 << typeid(particle_value_t<T>).name() << ","<< particle_dim_v<T> 
                 << ",...>...> [or subclass]) called" << endl;
                     
+            
+        forceHostCopy[label] = false;
+
             const std::string channelName = "ippl_particles_" + label;
             if(png_extracts){
                 const std::string script = "catalyst/scripts/"+ label;
@@ -232,6 +244,9 @@ void CatalystAdaptor::init_entry(
                 conduit_cpp::Node args = node[script + "/args"];
                     args.append().set_string("--channel_name");
                     args.append().set_string(channelName);
+                    args.append().set_string("--label");
+                    args.append().set_string(label);
+
                 if(TestName){
                     args.append().set_string("--experiment_name");
                     args.append().set_string(std::string(TestName));
@@ -298,6 +313,7 @@ void CatalystAdaptor::init_entry([[maybe_unused]] const T& entry, const std::str
 template<typename T, unsigned Dim, class... ViewArgs>
 void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, const std::string label)
 {
+    if(viewRegistry.contains(label)) return;
 
         const Field<T, Dim, ViewArgs...>* field = &entry;
         std::string channelName;
@@ -377,6 +393,17 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
         const size_t ny = (Dim >= 2) ? LocalNDIndex_[1].length() : 1;
         const size_t nz = (Dim >= 3) ? LocalNDIndex_[2].length() : 1;
         
+
+
+        // if we get reid of double copying and for loops we need to integrate
+        // if(forceHostCopy[label]){
+            // use create_mirror and deep copy, guarantees copy!!
+        // }else{
+            // create_mirror_view_and_copy only copies if view is not on same Space (takes over changes and ruins Remember_now)
+        // }
+
+
+
         /* upscale to 3D host in all cases ... view not ideal but should work */
         Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> 
         hostMirrorNoGhosts
@@ -388,37 +415,11 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
             nz
         );
 
+
         // Creates a host-accessible mirror view and copies the data from the device view to the host.
         auto hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
         
-        viewRegistry.set(hostMirrorNoGhosts);
-
-
-        // // Copy data from field to the memory+style which will be passed to Catalyst
-        // for (size_t i = 0; i < nx; ++i) {
-        //     if constexpr(Dim >= 2){
-        //         for (size_t j = 0; j <ny; ++j) {
-        //             if constexpr(Dim >= 2) {
-        //                 for (size_t k = 0; k < ny; ++k) {
-        //                     hostMirrorNoGhosts(i, j, k) = hostMirror(i + nGhost, j + nGhost, k + nGhost);
-        //                 }
-        //             }
-        //             else{
-        //                     hostMirrorNoGhosts(i, j) = hostMirror(i + nGhost, j + nGhost);
-        //             }
-        //         }
-        //     }
-        //     else {
-        //         hostMirrorNoGhosts(i) = hostMirror(i + nGhost);
-        //     }
-        // }
-
-        
-        // auto at = [&](auto& v, size_t i, size_t j, size_t k) -> auto& {
-        //     if constexpr (Dim == 1) return v(i);
-        //     else if constexpr (Dim == 2) return v(i, j);
-        //     else return v(i, j, k);
-        // };
+        viewRegistry.set(label, hostMirrorNoGhosts);
         
         // The compiler will see that ny or nz is 1 for lower dimensions, so the loops 
         // will execute only once, but the loop structure itself will remain. The code 
@@ -486,7 +487,9 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
 template<typename T>
 requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
 void CatalystAdaptor::execute_entry(const T& entry, const std::string label) 
-{
+{   
+    if(viewRegistry.contains(label)) return;
+
         ca_m        << "::Execute()::execute_entry(" << label << ") | Type : ParticleBase<PLayout<" 
                     << typeid(particle_value_t<T>).name() 
                     << ","
@@ -511,28 +514,42 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         
         
         /* avoid hardcoded and shortenn ,... */
-        // ParticleAttrib<std::int64_t>::HostMirror      ID_hostMirror;
-        // ParticleAttrib<Vector<double, 3>>::HostMirror R_hostMirror;
-        // ID_hostMirror = particleContainer->ID.getHostMirror();
-        // R_hostMirror  = particleContainer->R.getHostMirror();
-        // Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
-        // Kokkos::deep_copy(R_hostMirror ,  particleContainer->R.getView());
         
         
         // Creates a host-accessible mirror view and copies the data from the device view to the host.
         // compared to get_mirror and get_mirror_view host space is not guaranteed default behaviour so we specify...
         // comType HostMirror would let the function auto deduct the wanted space ...
+        
+        // Get attribute types for ID and R, then their HostMirror types
+        using IDAttrib_t = std::remove_reference_t<decltype(particleContainer->ID)>;
+        using RAttrib_t  = std::remove_reference_t<decltype(particleContainer->R)>;
 
+        using hostMirror_ID_t = typename IDAttrib_t::HostMirror;
+        using hostMirror_R_t  = typename RAttrib_t::HostMirror;
 
-        // ID_view = particleContainer->ID.getView();
-        // R_view  = particleContainer->R.getView()
-        // decltype(ID_view)::host_mirror_type::
-        // ID_view::HostMirror 
-        /* if original is on host space no copy will b created and any changs will be taken over ... */
-        auto ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
-        auto  R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
-        viewRegistry.set(ID_hostMirror);
-        viewRegistry.set(R_hostMirror);
+        hostMirror_ID_t ID_hostMirror ;
+        hostMirror_R_t  R_hostMirror  ;
+
+        if(forceHostCopy[label]){
+            // ParticleAttrib<std::int64_t>::HostMirror      ID_hostMirror;
+            // ParticleAttrib<Vector<double, 3>>::HostMirror R_hostMirror;
+            // auto ID_hostMirror = particleContainer->ID.getHostMirror();
+            // auto R_hostMirror  = particleContainer->R.getHostMirror();
+            ID_hostMirror = particleContainer->ID.getHostMirror();
+            R_hostMirror  = particleContainer->R.getHostMirror();
+            Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
+            Kokkos::deep_copy(R_hostMirror ,  particleContainer->R.getView());
+            viewRegistry.set(label, ID_hostMirror);
+            viewRegistry.set(R_hostMirror);
+        }else{
+            /* if original is on host space no copy will b created and any changs will be taken over ... */
+            // auto ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
+            // auto  R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
+            ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
+            R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
+            viewRegistry.set(label, ID_hostMirror);
+            viewRegistry.set(R_hostMirror);
+        }
 
 
 
@@ -630,10 +647,11 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
             const auto attribute = entry.getAttribute(i);
             const std::string  attribute_name = attribute->get_name();
             // ca_m << "Execute attribute: " << attribute_name << endl;
-            attribute->signConduitBlueprintNode_rememberHostCopy(particleContainer->getLocalNum(), fields, viewRegistry, ca_m, ca_warn);
+            attribute->signConduitBlueprintNode_rememberHostCopy(particleContainer->getLocalNum(), fields, viewRegistry, ca_m, ca_warn, forceHostCopy[label]);
         }
         
 }
+
 
 // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
 template<typename T>
@@ -643,7 +661,8 @@ requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
         ca_m << "  Entry type can't be processed: ID "<< label <<" "<< typeid(std::decay_t<T>).name() << endl;
     }
 
-    /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
+
+/* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
 template<typename T>
  void CatalystAdaptor::execute_entry(   const std::shared_ptr<T>& entry,const std::string  label )
 {
@@ -905,11 +924,28 @@ void CatalystAdaptor::InitializeRuntime(
     
 }
 
+
+
+
+void CatalystAdaptor::Remember_now(const std::string label){
+    auto it  = forceHostCopy.find(label);
+    if (it == forceHostCopy.end()){
+            // return false;
+            throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Label not present in vis executable objects: " + label);
+    }
+    bool tmp = it->second;
+    forceHostCopy[label] = true;
+    
+    ExecuteVisitor execV{*this};
+    visRegistry->for_one(label, execV); 
+
+    forceHostCopy[label] = tmp;
+
+}
+
 void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* default = ippl::Comm->rank() */) {
     ca_m << "::Execute() START =============================================================== 0" << endl;
     
-    const char* catalyst_steer = std::getenv("IPPL_CATALYST_STEER");
-    const char* catalyst_vis = std::getenv("IPPL_CATALYST_VIS");
 
     auto state = node["catalyst/state"];
     state["cycle"].set(cycle);

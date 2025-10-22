@@ -108,6 +108,9 @@ class CatalystAdaptor {
 
     const std::filesystem::path source_dir;
 
+
+    std::unordered_map<std::string, bool> forceHostCopy;    
+
     public:
 
     CatalystAdaptor() : CatalystAdaptor(ippl::Info->getOutputLevel()){}
@@ -499,6 +502,11 @@ class CatalystAdaptor {
                            const std::shared_ptr<VisRegistryRuntime>& visReg,
                            const std::shared_ptr<VisRegistryRuntime>& steerReg
     );
+
+    void Remember_now(const std::string);
+
+
+
 
     // Execute Catalyst for a given timestep using runtime registry.
     // Populates forward steerable values and fetches back updated ones.

@@ -117,6 +117,9 @@ class VisRegistryRuntime {
      */
     std::vector<Entry> entries_;
 
+    // Fast index for execute-ables: last one wins on duplicate labels.
+    std::unordered_map<std::string, std::size_t> index_exec_;
+
 public:
 
     /**
@@ -149,6 +152,29 @@ public:
      */
     void for_each(SteerFetchVisitor_t& v) const {
         for (auto const& e : entries_) if (e.do_steer_fetch) e.do_steer_fetch(v);
+    }
+
+    /**
+     * @brief we guarenteed that label is in index_entry_ by checking in remember function
+     * 
+     *
+     * @brief Apply ExecuteVisitor to a single entry identified by label.
+     * @return true if found and executed, false otherwise.
+     */
+    bool for_one(const std::string label, ExecuteVisitor_t& v) const {
+        auto it = index_exec_.find(label);
+        // if (it == index_exec_.end()){
+            // return false;
+        // // }
+        const auto& e = entries_[it->second];
+
+
+        // const auto& e = entries_[index_exec_[label]];
+        if (!e.do_exec){
+            return false;
+        }
+        e.do_exec(v);
+        return true;
     }
 
 public:

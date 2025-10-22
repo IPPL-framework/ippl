@@ -25,6 +25,13 @@ namespace ippl {
             e.do_steer_fetch= [&value, label](SteerFetchVisitor_t& v)   { v(label, value); };
         }
         entries_.push_back(std::move(e));
+
+        // Maintain execute index only for entries that can execute.
+        const std::size_t idx = entries_.size() - 1;
+        // if (entries_.back().do_exec) 
+        // {
+            index_exec_[label] = idx;
+        // }
     }
 
 

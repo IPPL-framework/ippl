@@ -49,8 +49,8 @@ namespace ippl {
                             , ViewRegistry& viewRegistry
                             , Inform& ca_m
                             , Inform& ca_warn
+                            , const bool forceHostCopy
                         )  const = 0;
-            // virtual void rememberHostCopy(ViewRegistry& vr) const  = 0;
             #endif
 
             using hash_type       = ippl::detail::hash_type<MemorySpace>;

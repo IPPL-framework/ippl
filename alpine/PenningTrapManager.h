@@ -207,7 +207,8 @@ public:
                                     "ions",             this->pcontainer_m, 
                                     // "ions",             *this->pcontainer_m, 
                                     "electrostatic",    this->fcontainer_m->getE(), 
-                                    "density",          this->fcontainer_m->getRho() 
+                                    "density",          this->fcontainer_m->getRho(), 
+                                    "potential",          this->fcontainer_m->getRho() 
                                 );
 
         // CatalystAdaptor::
@@ -441,10 +442,8 @@ public:
 
 
         // CatalystAdaptor::
-        cat_vis.ExecuteRuntime(  it, this->time_m);
-
-
-
+        cat_vis.Remember_now("density");
+        // cat_vis.ExecuteRuntime(  it, this->time_m);
 
 
 
@@ -487,13 +486,15 @@ public:
 
 
 
-// #ifdef IPPL_ENABLE_CATALYST
+#ifdef IPPL_ENABLE_CATALYST
 // cat_vis.ExecuteRuntime( it, this->time_m);
 //         auto myR_vis2 = MakeRegistry<"potential">
 //                                     (this->fcontainer_m->getRho() );
 
 //         CatalystAdaptor::Execute(*myR_vis2, *myR_steer, it, this->time_m, ippl::Comm->rank());
-// #endif
+
+        cat_vis.ExecuteRuntime(it, this->time_m);
+#endif
 
 
 

@@ -61,16 +61,21 @@ namespace ippl {
         conduit_cpp::Node& node_fields, 
         ViewRegistry& viewRegistry,
         Inform& ca_m,
-        Inform& ca_warn
+        Inform& ca_warn,
+        const bool forceHostCopy
     )  const 
     {
-        // HostMirror  hostMirror;
-        // hostMirror  = this->getHostMirror();
-        // Kokkos::deep_copy(hostMirror ,  this->getView());
+        HostMirror  hostMirror;
 
-        // Creates a host-accessible mirror view and copies the data from the device view to the host.
-        // comType HostMirror would let the function auto deduct the wanted space ...
-        HostMirror hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
+        if(forceHostCopy){
+            hostMirror  = this->getHostMirror();
+            Kokkos::deep_copy(hostMirror ,  this->getView());
+        } else{
+            // Creates a host-accessible mirror view and copies the data from the device view to the host.
+            // comType HostMirror would let the function auto deduct the wanted space ...
+            hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
+        }
+
 
     
         auto field = node_fields[this->name];

@@ -70,6 +70,7 @@ inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::val
                             , ViewRegistry& viewRegistry
                             , Inform& ca_m
                             , Inform& ca_warn
+                            , const bool forceHostCopy
                         ) const override ;       
             #endif
 
