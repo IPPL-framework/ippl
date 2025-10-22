@@ -16,8 +16,8 @@ namespace ippl {
     // checks in the rest of the Field methods to check that the Field has
     // been properly initialized
     template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
-    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field()
-        : BareField_t()
+    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field(const std::string& name_)
+        : BareField_t(name_)
         , mesh_m(nullptr)
         , bc_m() {}
 
@@ -34,8 +34,8 @@ namespace ippl {
     //////////////////////////////////////////////////////////////////////////
     // Constructors which include a Mesh object as argument
     template <class T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
-    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field(Mesh_t& m, Layout_t& l, int nghost)
-        : BareField_t(l, nghost)
+    Field<T, Dim, Mesh, Centering, ViewArgs...>::Field(Mesh_t& m, Layout_t& l, int nghost, const std::string& name_)
+        : BareField_t(l, nghost, name_)
         , mesh_m(&m) {
         for (unsigned int face = 0; face < 2 * Dim; ++face) {
             bc_m[face] =

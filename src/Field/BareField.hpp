@@ -86,8 +86,9 @@ namespace ippl {
     }  // namespace detail
 
     template <typename T, unsigned Dim, class... ViewArgs>
-    BareField<T, Dim, ViewArgs...>::BareField()
+    BareField<T, Dim, ViewArgs...>::BareField(const std::string& name_)
         : nghost_m(1)
+        , dview_m(name_)
         , layout_m(nullptr) {}
 
     template <typename T, unsigned Dim, class... ViewArgs>
@@ -98,8 +99,9 @@ namespace ippl {
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
-    BareField<T, Dim, ViewArgs...>::BareField(Layout_t& l, int nghost)
+    BareField<T, Dim, ViewArgs...>::BareField(Layout_t& l, int nghost, const std::string& name_)
         : nghost_m(nghost)
+        , dview_m(name_)
         //     , owned_m(0)
         , layout_m(&l) {
         setup();

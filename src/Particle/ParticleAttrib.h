@@ -46,6 +46,8 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
+        ParticleAttrib(const std::string& name_ = "UNNAMED_ParticleAttrib") : dview_m(name_){}
+
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
         void create(size_type) override;
@@ -100,9 +102,7 @@ namespace ippl {
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
         
-        void  set_name(const std::string & name_) override { this->name_m = name_; }
-
-        std::string get_name() const override { return this->name_m; }
+        const std::string get_name() const override { return dview_m.label(); }
 
         /*!
          * Assign the same value to the whole attribute.
