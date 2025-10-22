@@ -97,14 +97,17 @@ class CatalystAdaptor {
     /* taken from environemnt can be const... */
     
     
+    const char* catalyst_vis  ;
+    const char* catalyst_steer;
     const char* catalyst_png  ;
     const char* catalyst_vtk  ;
-    const char* catalyst_steer;
-    const char* catalyst_vis  ;
+    const char* ghost_mask  ;
 
+    const bool vis_enabled;
+    const bool steer_enabled;
     const bool png_extracts ;
     const bool vtk_extracts ;
-    const bool steer_enabled;
+    const bool use_ghost_masks;
 
     const std::filesystem::path source_dir;
 
@@ -119,13 +122,16 @@ class CatalystAdaptor {
     // CatalystAdaptor() : 
                 ca_m("CatalystAdaptor::"), 
                 ca_warn("CatalystAdaptor_WARNING", std::cerr),
+                catalyst_vis(std::getenv("IPPL_CATALYST_VIS")),
+                catalyst_steer(std::getenv("IPPL_CATALYST_STEER")),
                 catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
                 catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
-                catalyst_steer(std::getenv("IPPL_CATALYST_STEER")),
-                catalyst_vis(std::getenv("IPPL_CATALYST_VIS")),
+                ghost_mask(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
+                vis_enabled(catalyst_vis && std::string(catalyst_vis) == "ON"),
+                steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
                 png_extracts(catalyst_png && std::string(catalyst_png) == "ON"),
                 vtk_extracts(catalyst_vtk && std::string(catalyst_vtk) == "ON"),
-                steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
+                use_ghost_masks(ghost_mask && std::string(ghost_mask) == "ON"),
                 source_dir(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
     {
 

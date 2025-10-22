@@ -306,6 +306,20 @@ void CatalystAdaptor::init_entry([[maybe_unused]] const T& entry, const std::str
 // Kokkos :: d e ep c op y ( hostView , view );
                
 
+            /* options can diverge in the following levels:
+            /type =="mesh" or multimesh
+            channels/ *** /data/fields/     *** -> changes
+                               /coordsets/  *** -> stays the same
+                               /topologies/ *** -> stays the same for al
+        
+            Currently we are using the same topology and mesh we can
+            technically reuse the same channel ->
+            but for advanced uses might not be the case
+            the labeling og coordsets and topologies in accordances with 
+            the layouts ids of ippl would be interesting    */
+
+
+
 
 // execute visualisation for FIELDS: check dimension independence
 // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
@@ -314,6 +328,7 @@ template<typename T, unsigned Dim, class... ViewArgs>
 void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, const std::string label)
 {
     if(viewRegistry.contains(label)) return;
+
 
         const Field<T, Dim, ViewArgs...>* field = &entry;
         std::string channelName;
@@ -332,24 +347,14 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                     << "    implemented in ippl. Therefore this type of field is not \n"
                     << "    supported for visualisation." << endl;
         }
-            /* options can diverge in the following levels:
-            /type =="mesh" or multimesh
-            channels/ *** /data/fields/     *** -> changes
-                               /coordsets/  *** -> stays the same
-                               /topologies/ *** -> stays the same for al
-        
-            Currently we are using the same topology and mesh we can
-            technically reuse the same channel ->
-            but for advanced uses might not be the case
-            the labeling og coordsets and topologies in accordances with 
-            the layouts ids of ippl would be interesting    */
-
         // channel for this field
         // channel of type mesh adheres to conduits mesh blueprint
         auto channel = node["catalyst/channels/"+ channelName];
         channel["type"].set_string("mesh");
         auto data   = channel["data"];
         auto fields = channel["data/fields"];
+
+
         auto field_node = fields[label];
         // add topology anmed fmesh_topo of type uniform
         data["topologies/fmesh_topo/type"].set_string("uniform");
@@ -360,123 +365,275 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
 
         const auto Layout_        = field->getLayout();
         const auto Mesh_          = field->get_mesh();
-        const auto nGhost         = field->getNghost();
-
-
+        const size_t nGhost       = field->getNghost();
         const auto LocalNDIndex_  = Layout_.getLocalNDIndex();
         const auto Origin_        = Mesh_.getOrigin();
         const auto Spacing_       = Mesh_.getMeshSpacing();
 
+        const size_t extra        = (use_ghost_masks) ?  2*nGhost   :  0 ;
+        const size_t index_offset = (use_ghost_masks) ?    nGhost   :  0 ;
+
+        const size_t Ox = Origin_[0] + (LocalNDIndex_[0].first() - index_offset) * Spacing_[0];
+        const size_t Oy = Origin_[1] + (LocalNDIndex_[1].first() - index_offset) * Spacing_[1];
+        const size_t Oz = Origin_[2] + (LocalNDIndex_[2].first() - index_offset) * Spacing_[2];
+
+        const size_t nx =               LocalNDIndex_[0].length() + extra                 ;
+        const size_t ny = (Dim >= 2) ?  LocalNDIndex_[1].length() + extra      :         1;
+        const size_t nz = (Dim >= 3) ?  LocalNDIndex_[2].length() + extra      :         1;
+
         {
-            data["coordsets/cart_uniform_coords/dims/i"].set(LocalNDIndex_[0].length() + 1);
+            data["coordsets/cart_uniform_coords/dims/i"].set(nx + 1);
             data["coordsets/cart_uniform_coords/spacing/dx"].set(Spacing_[0]);
-            data["coordsets/cart_uniform_coords/origin/x"].set( Origin_[0] + LocalNDIndex_[0].first() * Spacing_[0] );
-            data["topologies/fmesh_topo/origin/x"].set(  Origin_[0] + LocalNDIndex_[0].first() * Spacing_[0] );
+            data["coordsets/cart_uniform_coords/origin/x"].set( Ox );
+            data["topologies/fmesh_topo/origin/x"].set(         Ox );
         }
         if constexpr(Dim >= 2){
-            data["coordsets/cart_uniform_coords/dims/j"].set(LocalNDIndex_[1].length() + 1);
+            data["coordsets/cart_uniform_coords/dims/j"].set(ny + 1);
             data["coordsets/cart_uniform_coords/spacing/dy"].set(Spacing_[1]);
-            data["coordsets/cart_uniform_coords/origin/y"].set( Origin_[1] + LocalNDIndex_[1].first() * Spacing_[1] );
-            data["topologies/fmesh_topo/origin/y"].set(  Origin_[1] + LocalNDIndex_[1].first() * Spacing_[1] );
+            data["coordsets/cart_uniform_coords/origin/y"].set( Oy );
+            data["topologies/fmesh_topo/origin/y"].set(         Oy );
         }
         if constexpr(Dim >= 3){
-            data["coordsets/cart_uniform_coords/dims/k"].set(LocalNDIndex_[2].length() + 1);
+            data["coordsets/cart_uniform_coords/dims/k"].set(nz + 1);
             data["coordsets/cart_uniform_coords/spacing/dz"].set(Spacing_[2]);
-            data["coordsets/cart_uniform_coords/origin/z"].set( Origin_[2] + LocalNDIndex_[2].first() * Spacing_[2] );
-            data["topologies/fmesh_topo/origin/z"].set(  Origin_[2] + LocalNDIndex_[2].first() * Spacing_[2] );
+            data["coordsets/cart_uniform_coords/origin/z"].set( Oz );
+            data["topologies/fmesh_topo/origin/z"].set(         Oz );
         }
 
-        // host_view_layout_left 
-        // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
-        // hostMirrorNoGhosts;
-        const size_t nx = LocalNDIndex_[0].length();
-        const size_t ny = (Dim >= 2) ? LocalNDIndex_[1].length() : 1;
-        const size_t nz = (Dim >= 3) ? LocalNDIndex_[2].length() : 1;
+
+
+        const auto& fullDeviceView = field->getView(); // Assuming this is your original view
+
+        // using HostView_t =
+            // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+        /* i don't know why we use layout left here so im not sure if it is dangerous to give it up here  */
+        // NOTE: This assumes LayoutLeft for the subview, or a layout conversion could be needed.
+        // afdter i stopped force of use layout left the visualisation seems to have flipped somehow!!!!
+
+        
         
 
-
-        // if we get reid of double copying and for loops we need to integrate
-        // if(forceHostCopy[label]){
-            // use create_mirror and deep copy, guarantees copy!!
-        // }else{
-            // create_mirror_view_and_copy only copies if view is not on same Space (takes over changes and ruins Remember_now)
-        // }
-
-
-
-        /* upscale to 3D host in all cases ... view not ideal but should work */
-        Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace> 
-        hostMirrorNoGhosts
-        (
-        //    "host_view_layout_left",
-            "hostMirrorNoGhosts",
-            nx,
-            ny,
-            nz
-        );
-
-
-        // Creates a host-accessible mirror view and copies the data from the device view to the host.
-        auto hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field->getView());
         
-        viewRegistry.set(label, hostMirrorNoGhosts);
+        using device_view_type = typename Field<T, Dim, ViewArgs...>::view_type;
+        using device_memory_space =
+                typename Kokkos::View<typename device_view_type::data_type>::memory_space;
+
+        // --- NEED OF FIX ---
+        // using HostView_t =
+        //     Kokkos::View<typename device_view_type::data_type,
+        //                  typename device_view_type::array_layout,
+        //                  Kokkos::HostSpace>;
+        // --- START OF FIX ---
+        // Change HostView_t to use LayoutLeft, the layout ParaView wants.
+        using HostView_t = Kokkos::View<
+            typename device_view_type::data_type,
+            Kokkos::LayoutLeft,  // <-- THE IMPORTANT CHANGE
+            Kokkos::HostSpace
+        >;
+        // --- END OF FIX ---
+                         
+
+
+        auto getHostMirrorView_noGhosts = [&]() -> HostView_t {
+            /* CREATE VIEW OF DATA WITHOUT GHOSTS */
+
+            auto r0 = 
+                        Kokkos::make_pair(nGhost, nGhost + nx);
+            auto r1 = (Dim >= 2) 
+                      ? Kokkos::make_pair(nGhost, nGhost + ny)
+                      : Kokkos::make_pair(size_t(0), fullDeviceView.extent(1));
+            auto r2 = (Dim >= 3) 
+                      ? Kokkos::make_pair(nGhost, nGhost + nz)
+                      : Kokkos::make_pair(size_t(0), fullDeviceView.extent(2));
+
+            auto deviceSubView = Kokkos::subview(fullDeviceView, r0, r1, r2);
+
+
+                // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
+                // can't use subview direct since data of subview isn't meaningfull accessible in raw format with data() // so we  can't avoid deep copy
+                // B. DEEP COPY (Different memory spaces OR deep copy explicitly forced)
+                // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
+                //     deviceSubView.extent(0),  deviceSubView.extent(1), deviceSubView.extent(2)
+
+            
+            // --- NEED OF FIX ---
+                // HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts",nx,ny,nz);               
+                // Kokkos::deep_copy(hostMirrorFinal, deviceSubView);
+            // --- START OF FIX ---
+            // 1. Allocate the destination view with LayoutLeft
+            HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts_LayoutLeft", nx, ny, nz);
+            
+            // 2. This single deep_copy now performs:
+            //    - Device-to-Host transfer
+            //    - LayoutRight-to-LayoutLeft transpose
+            Kokkos::deep_copy(hostMirrorFinal, deviceSubView);
+            // --- END OF FIX ---
+
+
+            return hostMirrorFinal  ;
+        };
         
-        // The compiler will see that ny or nz is 1 for lower dimensions, so the loops 
-        // will execute only once, but the loop structure itself will remain. The code 
-        // will still perform the extra loop(s), just with a single iteration.
-        // But this code will be more maintainable for higher dimension (if there ever are any ...)
-        for (size_t i = 0; i < nx; ++i) {
-            for (size_t j = 0; j < ny; ++j) {
-                for (size_t k = 0; k < nz; ++k) {
-                    // at(hostMirrorNoGhosts, i, j, k) =
-                    //     at(hostMirror,
-                    //        i + nGhost,
-                    //        (Dim >= 2) ? j + nGhost : 0,
-                    //        (Dim >= 3) ? k + nGhost : 0);
-                    hostMirrorNoGhosts(i, j, k) = hostMirror(i + nGhost, j + nGhost, k + nGhost);
-                }
+        
+        auto getHostMirrorView_withGhosts = [&]() -> HostView_t {
+            /* CREATE VIEW OF DATA WITHOUT GHOSTS + ADD GHOST FIELD TO CONDUIT*/
+            
+            // using MaskViewType = Kokkos::View<char***, typename Field<T, Dim, ViewArgs...>::view_type::array_layout, typename Field<T, Dim, ViewArgs...>::view_type::device_type>;
+            // not sure if this type is mandatory vs short or signed char
+            using m_t = unsigned char;
+            // Allocate a mask field matching the source field (same mesh/layout/nghost)
+            auto & meshRef   = field->get_mesh();
+            auto & layoutRef = field->getLayout();
+            Field<m_t, Dim, ViewArgs...> ghostMask(meshRef, layoutRef, static_cast<int>(nGhost));
+            //Fill entire allocation (owned + ghosts) with 1
+            ghostMask = static_cast<m_t>(1);
+            // ghostMask.write();
+            //Zero the owned (interior) region only
+            auto maskView   = ghostMask.getView();
+            // ghost here means number of ghost to include in the range policy, can swap to default = 0
+            auto interior   = ghostMask.template getFieldRangePolicy<>(); 
+            // // using index_type = typename ippl::RangePolicy<Dim>::index_array_type;
+            // using index_type = typename ippl::RangePolicy<Dim>::index_type;
+            // Kokkos::parallel_for("ZeroOwnedMaskND", interior, KOKKOS_LAMBDA(const index_type& i, m_t& val ???) {
+            //         // maskView(i) = static_cast<m_t >(0);
+            //         // i = static_cast<m_t >(0); 
+            //         // ippl::apply(maskView, i) 
+            //         // val = static_cast<m_t>(0);
+            // });
+            if constexpr (Dim == 1) {
+                Kokkos::parallel_for("ZeroOwnedMask1D", interior, KOKKOS_LAMBDA(const int i) {
+                    maskView(i) = static_cast<m_t >(0);
+                });
+            } else if constexpr (Dim == 2) {
+                Kokkos::parallel_for("ZeroOwnedMask2D", interior, KOKKOS_LAMBDA(const int i, const int j) {
+                    maskView(i,j) = static_cast<m_t>(0);
+                });
+            } else { // Dim == 3
+                Kokkos::parallel_for("ZeroOwnedMask3D", interior, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    maskView(i,j,k) = static_cast<m_t>(0);
+                });
             }
-        }
+            Kokkos::fence();
+            // ghostMask.write();
 
 
 
+            // --- NEED OF FIX ---
+            // using HostMaskView_t = Kokkos::View<typename decltype(maskView)::data_type,
+            //                                     typename decltype(maskView)::array_layout,
+            //                                     Kokkos::HostSpace>;
+            // HostMaskView_t hostMaskView("hostGhostMask",
+            //                             maskView.extent(0),
+            //                             maskView.extent(1),
+            //                             maskView.extent(2));                                   
+            // Kokkos::deep_copy(hostMaskView, maskView);
+            // --- FIX FOR GHOST MASK ---
+            // 1. Define the HOST MASK view with LayoutLeft
+            using HostMaskView_t = Kokkos::View<
+                typename decltype(maskView)::data_type,
+                Kokkos::LayoutLeft, // <-- Use LayoutLeft
+                Kokkos::HostSpace
+            >;    
+            // 2. Allocate the host mask
+            HostMaskView_t hostMaskView("hostGhostMask_LayoutLeft",
+                                        maskView.extent(0),
+                                        maskView.extent(1),
+                                        maskView.extent(2));
+        
+            // 3. Perform the transforming D->H + R->L copy
+            Kokkos::deep_copy(hostMaskView, maskView);
+            // --- END FIX FOR GHOST MASK ---
+
+
+
+            /* REMEMEBER MASK AND SET CONDUIT NODE */
+            viewRegistry.set(hostMaskView);
+            // FIELD NAME IN DATA/FIELDS AND META_DATA/VTK_FIELDS SHOULD COINCIDE
+            // auto ghostMask_field_meta  =  data["metadata/vtk_fields/GhostMask_field"]; 
+            auto ghostMask_field_meta  =  data["metadata/vtk_fields/vtkGhostType"]; 
+            ghostMask_field_meta["attribute_type"] = "Ghosts";  // same as set string??...
+
+            // auto ghostMask_field_node  =  fields["ghostMask_field"];
+            auto ghostMask_field_node  =  fields["vtkGhostType"];
+            ghostMask_field_node["association"].set_string("element");
+            ghostMask_field_node["topology"].set_string("fmesh_topo");
+            ghostMask_field_node["volume_dependent"].set_string("false");
+            ghostMask_field_node["values"].set_external(hostMaskView.data(), maskView.size());
+            // auto hostMask = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), maskView);
+            // viewRegistry.set(label, hostMask); // 1-byte per element
+
+            // using HostMaskViewType = Kokkos::View<signed char***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+            // HostMaskViewType hostMask = Kokkos::create_mirror_view(ghostMask);
+            // Kokkos::deep_copy(hostMask, ghostMask);
+            // viewRegistry.set(label, hostMask); // Conduit will now store 1-byte elements
+            // HostView_t hostMirrorFinal = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), fullDeviceView);
+            // return hostMirrorFinal;
+
+
+
+            // --- NEED OF FIX ---
+            // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
+            // {   /* can't use this way since subview isnt accessible this way */
+            //     // A. SHALLOW COPY (No deep copy needed, device is on host memory)
+            //     // NOTE: This assumes LayoutLeft for the subview, or a layout conversion could be needed.
+            //     HostView_t hostMirrorFinal = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), fullDeviceView);
+            //     return hostMirrorFinal;
+            // } 
+            // else
+            // {   
+            //     // B. DEEP COPY (Different memory spaces OR deep copy explicitly forced)
+            //     // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
+            //     HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts",nx,ny,nz);
+            //     //     fullDeviceView.extent(0),
+            //     Kokkos::deep_copy(hostMirrorFinal, fullDeviceView);
+            //     return hostMirrorFinal;
+            // }
+            // --- FIX FOR MAIN FIELD ---
+            // 1. Allocate the destination view with LayoutLeft
+            //    (Note: 'nx, ny, nz' are correct here, as you pointed out)
+            HostView_t hostMirrorFinal = HostView_t("hostMirrorWithGhosts_LayoutLeft", nx, ny, nz);
+            // 2. Perform the transforming D->H + R->L copy
+            Kokkos::deep_copy(hostMirrorFinal, fullDeviceView);
+            return hostMirrorFinal;
+            // --- END FIX FOR MAIN FIELD ---
+        };
+
+         
+        HostView_t hostMirrorFinal = (use_ghost_masks) ? getHostMirrorView_withGhosts() : getHostMirrorView_noGhosts();
+
+
+
+        
+        
+        /* FOR BOTH CASES FINAL NODE SETTINS ARE DONE AND WE HAVE THE DATA INSIDE hostMirrorFinal */
+        using elem_t = std::remove_pointer_t<decltype(hostMirrorFinal.data())>;
+        // will return size of vector and amounts of vectors (not double)
+        const auto n_elems = hostMirrorFinal.size();
+        // Use true element size as stride (handles padding)
+        static constexpr size_t stride_bytes = sizeof(elem_t);
+        // offset is zero?? guaranteed?
+        const size_t offset = 0;
 
         if constexpr (std::is_scalar_v<T>) {
             // --- SCALAR FIELD CASE ---
             field_node["association"].set_string("element");
             field_node["topology"].set_string("fmesh_topo");
             field_node["volume_dependent"].set_string("false");
-            field_node["values"].set_external(hostMirrorNoGhosts.data(), hostMirrorNoGhosts.size());
-
+            field_node["values"].set_external(hostMirrorFinal.data(), n_elems);
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR FIELD CASE ---
             field_node["association"].set_string("element");
             field_node["topology"].set_string("fmesh_topo");
             field_node["volume_dependent"].set_string("false");
-            
-            
-            // Use true AoS element size as stride (handles padding)
-            // const size_t stride_bytes = sizeof(typename T::value_type)*T::dim;
-            // will this surely not be double but vector<double 
-            // returning size of vector and amounts of vectorss
-
-
-            auto n_elems = hostMirrorNoGhosts.size();
-            // constexpr auto stride_bytes = T::dim*sizeof(typename T::value_type);
-            using elem_t = std::remove_pointer_t<decltype(hostMirrorNoGhosts.data())>;
-            static constexpr size_t stride_bytes = sizeof(elem_t);
-
-    
-            // offset is zero?? guaranteed?
-            // stride was 1 in predecessor code? how did this work?...
-                                     field_node["values/x"].set_external(&hostMirrorNoGhosts.data()[0][0], n_elems, 0, stride_bytes);
-            if constexpr (T::dim>=2) field_node["values/y"].set_external(&hostMirrorNoGhosts.data()[0][1], n_elems, 0, stride_bytes);
-            if constexpr (T::dim>=3) field_node["values/z"].set_external(&hostMirrorNoGhosts.data()[0][2], n_elems, 0, stride_bytes);        
-                
+                                    // stride was 1 in predecessor code? how did this work?...
+                                     field_node["values/x"].set_external(&hostMirrorFinal.data()[0][0], n_elems, offset, stride_bytes);
+            if constexpr (T::dim>=2) field_node["values/y"].set_external(&hostMirrorFinal.data()[0][1], n_elems, offset, stride_bytes);
+            if constexpr (T::dim>=3) field_node["values/z"].set_external(&hostMirrorFinal.data()[0][2], n_elems, offset, stride_bytes);        
         } 
         // else {
             // --- INVALID CASE ---
         // }
+        /* SAVE VIEW SO DATA ISNT DISCARDED*/
+        viewRegistry.set(label, hostMirrorFinal);
 }
 
 

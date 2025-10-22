@@ -16,9 +16,14 @@ export PENNINGTRAP_BINDIR=./build/alpine
 # #####################################################################
 #  CONFIGURE CATALYST OPTIONS
 # #####################################################################
-export IPPL_CATALYST_STEER=OFF
+
+export IPPL_CATALYST_VIS=ON
+export IPPL_CATALYST_STEER=ON
+
 export IPPL_CATALYST_PNG=ON
 export IPPL_CATALYST_VTK=OFF
+
+export IPPL_CATALYST_GHOST_MASKS=ON
 
 
 # #####################################################################
