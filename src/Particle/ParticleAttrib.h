@@ -46,9 +46,7 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
-        ParticleAttrib() : dview_m("UNNAMED_ParticleAttrib"){}
-
-        ParticleAttrib(const std::string& name_) : dview_m(name_){}
+        ParticleAttrib(const std::string& name_ = "UNNAMED_ParticleAttrib") : dview_m(name_){}
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.
