@@ -37,7 +37,7 @@ namespace ippl {
             template <typename... Properties>
             using with_properties = typename WithMemSpace<Properties...>::type;
 
-            ParticleAttribBase(){this->name = "UNNAMED_attribute";}
+            ParticleAttribBase(){this->name_m = "UNNAMED_attribute";}
 
             virtual void set_name(const std::string & name_) = 0;
             
@@ -68,7 +68,7 @@ namespace ippl {
 
         protected:
             const size_type* localNum_mp;
-            std::string name;
+            std::string name_m;
         };
     }  // namespace detail
 }  // namespace ippl
