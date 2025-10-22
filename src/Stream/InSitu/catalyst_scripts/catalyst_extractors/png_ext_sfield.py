@@ -11,7 +11,7 @@
 # 
 # Currently hard coded to rely on attributes:
 # - 'position'
-# - 'density'
+# - label
 # Is adaptive: Attempts to set Camera Angle and colouring 
 # of paraviews Volume Rendering  (dependent on scalar
 # field values) adaptive to current frame, range and 
@@ -166,11 +166,14 @@ SetActiveView(None)
 arg_list = paraview.catalyst.get_args()
 # print_info_(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
+parser.add_argument("--label", default="AAAAAA", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 parsed = parser.parse_args(arg_list)
 
+label = parsed.label
+exp_chann = parsed.channel_name
 exp_string = parsed.experiment_name
 verbosity = parsed.verbosity
 print_info_("_global__scope__()::" + parsed.channel_name)
@@ -209,19 +212,19 @@ ippl_scalarDisplay = Show(ippl_scalar, renderView1, 'UniformGridRepresentation')
 # ----------------------------------------------------------------
 # setup initial transfer function for colouring and opacity
 # ----------------------------------------------------------------
-# get 2D transfer function for 'density'
-densityTF2D = GetTransferFunction2D('density')
+# get 2D transfer function for label
+densityTF2D = GetTransferFunction2D(label)
 densityTF2D.Range = [-2.00, 2.00, 0.0, 1.0]
 densityTF2D.ScalarRangeInitialized = 1
-# get color transfer function/color map for 'density'
-densityLUT = GetColorTransferFunction('density')
+# get color transfer function/color map for label
+densityLUT = GetColorTransferFunction(label)
 densityLUT.TransferFunction2D = densityTF2D
 densityLUT.RGBPoints = [-2.00, 0.231373, 0.298039, 0.752941, 
                          0.00, 0.865003, 0.865003, 0.865003, 
                          2.00, 0.705882, 0.0156863, 0.14902]
 densityLUT.ScalarRangeInitialized = 1.0
-# get opacity transfer function/opacity map for 'density'
-densityPWF = GetOpacityTransferFunction('density')
+# get opacity transfer function/opacity map for label
+densityPWF = GetOpacityTransferFunction(label)
 densityPWF.Points = [-2.00, 1.00, 0.5, 0.0, 
                      -1.20, 0.75, 0.5, 0.0, 
                      -0.80, 0.25, 0.5, 0.0, 
@@ -251,15 +254,15 @@ ippl_scalarDisplay.ScaleFactor = 2.0
 ippl_scalarDisplay.GaussianRadius = 0.1
 ippl_scalarDisplay.DataAxesGrid = 'Grid Axes Representation'
 ippl_scalarDisplay.TransferFunction2D = densityTF2D
-ippl_scalarDisplay.ColorArrayName = ['CELLS', 'density']
-ippl_scalarDisplay.ColorArray2Name = ['CELLS', 'density']
-ippl_scalarDisplay.OpacityArrayName = ['CELLS', 'density']
+ippl_scalarDisplay.ColorArrayName = ['CELLS', label]
+ippl_scalarDisplay.ColorArray2Name = ['CELLS', label]
+ippl_scalarDisplay.OpacityArrayName = ['CELLS', label]
 ippl_scalarDisplay.OpacityTransferFunction = 'Piecewise Function'
 ippl_scalarDisplay.ScalarOpacityUnitDistance = 4.00
 ippl_scalarDisplay.ScalarOpacityFunction = densityPWF
 
 densityLUTColorBar = GetScalarBar(densityLUT, renderView1)
-densityLUTColorBar.Title = 'density'
+densityLUTColorBar.Title = label
 densityLUTColorBar.ComponentTitle = 'Magnitude'
 densityLUTColorBar.Visibility = 1
 densityLUTColorBar.DrawAnnotations = 1 
@@ -271,7 +274,7 @@ ippl_scalarDisplay.SetScalarBarVisibility(renderView1, True)
 pNG1 = CreateExtractor('PNG', renderView1, registrationName='PNG1')
 pNG1.Trigger = 'Time Step'
 pNG1.Trigger.Frequency = 1
-pNG1.Writer.FileName = 'ScalarField_{timestep:06d}{camera}.png'
+pNG1.Writer.FileName = label+'_ScalarField_{timestep:06d}{camera}.png'
 pNG1.Writer.ImageResolution = [2000, 1500]
 pNG1.Writer.Format = 'PNG'
 SetActiveSource(pNG1)
@@ -283,7 +286,7 @@ options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
-options.ExtractsOutputDirectory = 'data_png_extracts_' + exp_string
+options.ExtractsOutputDirectory = 'data_png_extracts_' + exp_string 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     from paraview.simple import SaveExtractsUsingCatalystOptions
@@ -310,7 +313,7 @@ def catalyst_execute(info):
         scalar_info = ippl_scalar.GetDataInformation()
         bounds = scalar_info.GetBounds()
         cell_data_info = scalar_info.GetCellDataInformation()
-        density_array_info = cell_data_info.GetArrayInformation('density')
+        density_array_info = cell_data_info.GetArrayInformation(label)
         # print(bounds)
         # print(cell_data_info)
 

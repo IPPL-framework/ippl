@@ -141,10 +141,12 @@ arg_list = paraview.catalyst.get_args()
 # print_info_(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
+parser.add_argument("--label", default="DEFAULAAAAAAAAT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 parsed = parser.parse_args(arg_list)
 
+label = parsed.label
 exp_string = parsed.experiment_name
 verbosity = parsed.verbosity
 print_info_("_global__scope__()::" + parsed.channel_name)
@@ -221,7 +223,7 @@ ippl_particleDisplay.SetScalarBarVisibility(renderView1, True)
 # --------------------------------------------------------------
 pNG1 = CreateExtractor('PNG', renderView1, registrationName='PNG1')
 pNG1.Trigger = 'TimeStep'
-pNG1.Writer.FileName = 'Particles_{timestep:06d}{camera}.png'
+pNG1.Writer.FileName = label+'_Particles_{timestep:06d}{camera}.png'
 pNG1.Writer.ImageResolution = [2000, 1500]
 pNG1.Writer.TransparentBackground = 0
 pNG1.Writer.Format = 'PNG'

@@ -54,9 +54,9 @@ sys.path.append(os.path.dirname(__file__))
 from catalystSubroutines import (
     print_proxy_overview,
     create_VTPD_extractor,
-    _first_dataset_from_composite,
-    _fetch_first_dataset,
-    _get_first_scalar_from_any_assoc
+    # _first_dataset_from_composite,
+    # _fetch_first_dataset,
+    # _get_first_scalar_from_any_assoc
 )
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()

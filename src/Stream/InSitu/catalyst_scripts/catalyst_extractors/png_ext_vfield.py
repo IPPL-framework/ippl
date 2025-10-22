@@ -11,7 +11,7 @@
 # 
 # Currently hard coded to rely on attributes:
 # - 'position'
-# - 'electrostatic'
+# - label
 # Is adaptive: Attempts to set Camera Angle and colouring 
 # of the glyph (dependent on the fieldStrength / -magnitude of
 # electrostatic attribute) adaptive to 
@@ -156,11 +156,13 @@ SetActiveView(None)
 arg_list = paraview.catalyst.get_args()
 # print_info_(f"Arguments received: {arg_list}")
 parser = argparse.ArgumentParser()
+parser.add_argument("--label", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 
 parsed = parser.parse_args(arg_list)
+label = parsed.label
 exp_string = parsed.experiment_name
 verbosity = parsed.verbosity
 print_info_("_global__scope__()::" + parsed.channel_name)
@@ -199,7 +201,7 @@ diag = compute_bounding_box_scale(bounds)
 # Vector Field from Vector data
 # ----------------------------------------------------------------
 glyph1 = Glyph(registrationName='Glyph1', Input=ippl_vector_field, GlyphType='Arrow')
-glyph1.OrientationArray = ['CELLS', 'electrostatic']
+glyph1.OrientationArray = ['CELLS', label]
 glyph1.GlyphTransform = 'Transform2'
 glyph1.ScaleFactor = diag/30
 # ----------------------------------------------------------------
@@ -213,7 +215,7 @@ glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
 #  ## dimension dependent scaling... depends on data ...
 # glyph1.ScaleFactor = [1.0, 0.5, 2.0] 
 ## field proportional scaling, sometimes turns graph illegible
-# glyph1.ScaleArray = ['CELLS', 'electrostatic']
+# glyph1.ScaleArray = ['CELLS', label]
 
 # init 'Arrow' selected for 'GlyphType' ... stay at defaults...
 # print(f"Default TipResolution: {glyph1.GlyphType.TipResolution}")
@@ -227,10 +229,10 @@ glyph1Display = Show(glyph1, renderView1, 'GeometryRepresentation')
 # print(f"Opacity Transfer Function Points: {fieldStrengthPWF.Points}")
 # print(f"Color Transfer Function Range: {fieldStrengthLUT.RGBPoints}")
 
-fieldStrengthTF2D = GetTransferFunction2D('electrostatic')
+fieldStrengthTF2D = GetTransferFunction2D(label)
 fieldStrengthTF2D.ScalarRangeInitialized = 1
 fieldStrengthTF2D.Range = [0.00, 2.00, 0.0, 1.0]
-fieldStrengthLUT = GetColorTransferFunction('electrostatic')
+fieldStrengthLUT = GetColorTransferFunction(label)
 fieldStrengthLUT.TransferFunction2D = fieldStrengthTF2D
 fieldStrengthLUT.ScalarRangeInitialized = 1
 fieldStrengthLUT.RGBPoints = [0.00, 0.231373, 0.298039, 0.752941, 
@@ -241,7 +243,7 @@ fieldStrengthLUTColorBar.Title = 'fieldStrength'
 fieldStrengthLUTColorBar.ComponentTitle = 'Magnitude'
 fieldStrengthLUTColorBar.Visibility = 1
 fieldStrengthLUT.EnableOpacityMapping = True
-fieldStrengthPWF = GetOpacityTransferFunction('electrostatic')
+fieldStrengthPWF = GetOpacityTransferFunction(label)
 fieldStrengthPWF.ScalarRangeInitialized = 1
 fieldStrengthPWF.Points = [0.00, 0.0, 0.5, 0.0, 
                            0.50, 0.2, 0.5, 0.0, 
@@ -251,8 +253,8 @@ fieldStrengthPWF.Points = [0.00, 0.0, 0.5, 0.0,
 # ----------------------------------------------------------------
 glyph1Display.Representation = 'Surface'
 glyph1Display.LookupTable = fieldStrengthLUT
-glyph1Display.ColorArrayName = ['POINTS', 'electrostatic']
-# glyph1Display.ColorArrayName = ['CELLS', 'electrostatic']
+glyph1Display.ColorArrayName = ['POINTS', label]
+# glyph1Display.ColorArrayName = ['CELLS', label]
 glyph1Display.OpacityTransferFunction = fieldStrengthPWF
 glyph1Display.DataAxesGrid = 'Grid Axes Representation'
 glyph1Display.SetScalarBarVisibility(renderView1, True)
@@ -299,7 +301,7 @@ def catalyst_execute(info):
         vector_info = ippl_vector_field.GetDataInformation()
         bounds = vector_info.GetBounds()
         cell_data_info = vector_info.GetCellDataInformation()
-        fieldStrength_array_info = cell_data_info.GetArrayInformation('electrostatic')
+        fieldStrength_array_info = cell_data_info.GetArrayInformation(label)
 
 
         # bounds for fields dont vary normally,butmight ...-> Adjust camera dynamically;
