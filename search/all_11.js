@@ -1,8 +1,8 @@
 var searchData=
 [
   ['r_0',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
-  ['r_5fm_1',['r_m',['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner::r_m()'],['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner::r_m()']]],
-  ['r_5fm_2',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
+  ['r_5fm_1',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
+  ['r_5fm_2',['r_m',['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner::r_m()'],['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner::r_m()']]],
   ['rand_5fpool_3',['rand_pool',['../structgenerate__random.html#a99c5ce762539da3fabbbb189cd214ae6',1,'generate_random::rand_pool()'],['../structippl_1_1random_1_1randu.html#a6eaf433f7513a6bebb72b09cb8f8e886',1,'ippl::random::randu::rand_pool()'],['../structippl_1_1random_1_1randn.html#a55d072fee6d6c3a5850fd1da89c919c8',1,'ippl::random::randn::rand_pool()']]],
   ['randn_4',['randn',['../structippl_1_1random_1_1randn.html',1,'ippl::random::randn&lt; T, Dim &gt;'],['../structippl_1_1random_1_1randn.html#a391e47a951a49c4b4dfe2582595387ca',1,'ippl::random::randn::randn(view_type v_, GeneratorPool rand_pool_)'],['../structippl_1_1random_1_1randn.html#a75b9f30b7550dcaeb3363ff273a610a4',1,'ippl::random::randn::randn(view_type v_, GeneratorPool rand_pool_, T *mu_p, T *sd_p)']]],
   ['randn_2eh_5',['Randn.h',['../Randn_8h.html',1,'']]],
