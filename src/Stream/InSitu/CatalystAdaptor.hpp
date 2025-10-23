@@ -326,19 +326,20 @@ void CatalystAdaptor::init_entry([[maybe_unused]] const T& entry, const std::str
 // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
 void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, const std::string label)
-{
+{   /* HANDLES CASE IF ENTRY HAS BEEN EXECUTED WITH REMEMBER_NOW */
     if(viewRegistry.contains(label)) return;
 
+    using Field_type = Field<T, Dim, ViewArgs...>;
+    const Field_type* field = &entry;
 
-        const Field<T, Dim, ViewArgs...>* field = &entry;
         std::string channelName;
         if constexpr (std::is_scalar_v<T>) {
             channelName = "ippl_sField_" + label;
-            ca_m << "::Execute()::execute_entry(" << label << ") |Type:ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << endl;
+            ca_m << "::Execute()::execute_entry(" << label << ") | Type:ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << endl;
                 
         } else if constexpr (is_vector_v<T>) {
             channelName = "ippl_vField_" + label;
-            ca_m << "::Execute()::execute_entry(" << label << ") |Type: ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">)" << endl;
+            ca_m << "::Execute()::execute_entry(" << label << ") | Type: ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">)" << endl;
         }else{
             channelName = "ippl_errorField_" + label;
 
@@ -363,38 +364,72 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
         // add a coordinate set named cart_uniform_coords  of type uniform
         data["coordsets/cart_uniform_coords/type"].set_string("uniform");
 
-        const auto Layout_        = field->getLayout();
-        const auto Mesh_          = field->get_mesh();
-        const size_t nGhost       = field->getNghost();
+        typename Field_type::Layout_t& Layout_ = field->getLayout();
+        typename Field_type::Mesh_t&   Mesh_   = field->get_mesh();
+
+        
         const auto LocalNDIndex_  = Layout_.getLocalNDIndex();
         const auto Origin_        = Mesh_.getOrigin();
         const auto Spacing_       = Mesh_.getMeshSpacing();
 
-        const size_t extra        = (use_ghost_masks) ?  2*nGhost   :  0 ;
-        const size_t index_offset = (use_ghost_masks) ?    nGhost   :  0 ;
+        const size_t nGhost       = field->getNghost(); // returns int
 
-        const size_t Ox = Origin_[0] + (LocalNDIndex_[0].first() - index_offset) * Spacing_[0];
-        const size_t Oy = Origin_[1] + (LocalNDIndex_[1].first() - index_offset) * Spacing_[1];
-        const size_t Oz = Origin_[2] + (LocalNDIndex_[2].first() - index_offset) * Spacing_[2];
+        
+        const size_t extra        = (use_ghost_masks) ?  size_t(2*nGhost)   :  0 ;
+        const size_t index_offset = (use_ghost_masks) ?    size_t(nGhost)   :  0 ; 
+        // const size_t index_offset = (use_ghost_masks) ?    nGhost   :  nGhost ;
+
+        const auto Ox = Origin_[0] + double(int(LocalNDIndex_[0].first()) - int(index_offset)) * Spacing_[0];
+        const auto Oy = Origin_[1] + double(int(LocalNDIndex_[1].first()) - int(index_offset)) * Spacing_[1];
+        const auto Oz = Origin_[2] + double(int(LocalNDIndex_[2].first()) - int(index_offset)) * Spacing_[2];
 
         const size_t nx =               LocalNDIndex_[0].length() + extra                 ;
         const size_t ny = (Dim >= 2) ?  LocalNDIndex_[1].length() + extra      :         1;
         const size_t nz = (Dim >= 3) ?  LocalNDIndex_[2].length() + extra      :         1;
 
+        const void* meshKey   = static_cast<const void*>(&Mesh_);
+        const void* layoutKey = static_cast<const void*>(&Layout_);
+        auto ghostKey = GhostKey_t{meshKey, layoutKey, nGhost};
+
+
+        std::cout << "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" << std::endl;
+        std::cout << nGhost << std::endl;
+        std::cout << extra << std::endl;
+        std::cout << index_offset << std::endl;
+
+
+        std::cout << 
+        Origin_[0] << " " << 
+        Origin_[1] << " " << 
+        Origin_[2] << std::endl;
+
+
+
+        std::cout << 
+        LocalNDIndex_[0].first() << " " << 
+        LocalNDIndex_[1].first() << " " << 
+        LocalNDIndex_[2].first() << std::endl;
+
+
+        std::cout << Ox << " " << Oy << " " << Oz << std::endl;
+
+        // int aa = 0;
+        int aa = 1;
+
         {
-            data["coordsets/cart_uniform_coords/dims/i"].set(nx + 1);
+            data["coordsets/cart_uniform_coords/dims/i"].set(nx + aa);
             data["coordsets/cart_uniform_coords/spacing/dx"].set(Spacing_[0]);
             data["coordsets/cart_uniform_coords/origin/x"].set( Ox );
             data["topologies/fmesh_topo/origin/x"].set(         Ox );
         }
         if constexpr(Dim >= 2){
-            data["coordsets/cart_uniform_coords/dims/j"].set(ny + 1);
+            data["coordsets/cart_uniform_coords/dims/j"].set(ny + aa);
             data["coordsets/cart_uniform_coords/spacing/dy"].set(Spacing_[1]);
             data["coordsets/cart_uniform_coords/origin/y"].set( Oy );
             data["topologies/fmesh_topo/origin/y"].set(         Oy );
         }
         if constexpr(Dim >= 3){
-            data["coordsets/cart_uniform_coords/dims/k"].set(nz + 1);
+            data["coordsets/cart_uniform_coords/dims/k"].set(nz + aa);
             data["coordsets/cart_uniform_coords/spacing/dz"].set(Spacing_[2]);
             data["coordsets/cart_uniform_coords/origin/z"].set( Oz );
             data["topologies/fmesh_topo/origin/z"].set(         Oz );
@@ -403,36 +438,24 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
 
 
         const auto& fullDeviceView = field->getView(); // Assuming this is your original view
-
+        using DeviceView_t = typename Field<T, Dim, ViewArgs...>::view_type;
+        // using device_memory_space =
+                // typename Kokkos::View<typename DeviceView_t::data_type>::memory_space;
+        // --- NEEDED OF FIX : LAYOUT ---
+        // in genral if Layout of IPPL and Catalyst would align we could use 
+        // create_mirror_view_and_copy over enforced deep copy.
         // using HostView_t =
-            // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-        /* i don't know why we use layout left here so im not sure if it is dangerous to give it up here  */
-        // NOTE: This assumes LayoutLeft for the subview, or a layout conversion could be needed.
-        // afdter i stopped force of use layout left the visualisation seems to have flipped somehow!!!!
-
-        
-        
-
-        
-        using device_view_type = typename Field<T, Dim, ViewArgs...>::view_type;
-        using device_memory_space =
-                typename Kokkos::View<typename device_view_type::data_type>::memory_space;
-
-        // --- NEED OF FIX ---
-        // using HostView_t =
-        //     Kokkos::View<typename device_view_type::data_type,
-        //                  typename device_view_type::array_layout,
+        //     Kokkos::View<typename DeviceView_t::data_type,
+        //                  typename DeviceView_t::array_layout,
         //                  Kokkos::HostSpace>;
         // --- START OF FIX ---
         // Change HostView_t to use LayoutLeft, the layout ParaView wants.
         using HostView_t = Kokkos::View<
-            typename device_view_type::data_type,
+            typename DeviceView_t::data_type,
             Kokkos::LayoutLeft,  // <-- THE IMPORTANT CHANGE
             Kokkos::HostSpace
         >;
         // --- END OF FIX ---
-                         
-
 
         auto getHostMirrorView_noGhosts = [&]() -> HostView_t {
             /* CREATE VIEW OF DATA WITHOUT GHOSTS */
@@ -447,23 +470,15 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                       : Kokkos::make_pair(size_t(0), fullDeviceView.extent(2));
 
             auto deviceSubView = Kokkos::subview(fullDeviceView, r0, r1, r2);
-
-
-                // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
-                // can't use subview direct since data of subview isn't meaningfull accessible in raw format with data() // so we  can't avoid deep copy
-                // B. DEEP COPY (Different memory spaces OR deep copy explicitly forced)
-                // Kokkos::View<typename Field<T, Dim, ViewArgs...>::view_type::data_type, Kokkos::LayoutLeft, Kokkos::HostSpace>
-                //     deviceSubView.extent(0),  deviceSubView.extent(1), deviceSubView.extent(2)
-
-            
-            // --- NEED OF FIX ---
-                // HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts",nx,ny,nz);               
-                // Kokkos::deep_copy(hostMirrorFinal, deviceSubView);
-            // --- START OF FIX ---
-            // 1. Allocate the destination view with LayoutLeft
+                
+            // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
+            //      can't use subview direct since data of subview isn't meaningfull accessible in raw format with data() 
+            //      further this function can't convert from LayoutRight to LayoutLeft  // so we can't use SHALLOW_COPY
+            // B. DEEP COPY (Different memory spaces OR deep copy explicitly forced)
+            // --- NEEDED OF FIX: LAYOUT ---
+            // HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts",nx,ny,nz); 
             HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts_LayoutLeft", nx, ny, nz);
-            
-            // 2. This single deep_copy now performs:
+            // This single deep_copy now performs:
             //    - Device-to-Host transfer
             //    - LayoutRight-to-LayoutLeft transpose
             Kokkos::deep_copy(hostMirrorFinal, deviceSubView);
@@ -474,103 +489,135 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
         };
         
         
-        auto getHostMirrorView_withGhosts = [&]() -> HostView_t {
-            /* CREATE VIEW OF DATA WITHOUT GHOSTS + ADD GHOST FIELD TO CONDUIT*/
+        auto getHostMirrorView_withGhosts = [&]() -> HostView_t 
+        {
             
-            // using MaskViewType = Kokkos::View<char***, typename Field<T, Dim, ViewArgs...>::view_type::array_layout, typename Field<T, Dim, ViewArgs...>::view_type::device_type>;
-            // not sure if this type is mandatory vs short or signed char
+            // --- START OF CACHING LOGIC ---
+            // HostMaskView_t hostMaskView; // Declare view
+            /* CREATE VIEW OF DATA WITH GHOSTS + ADD GHOST FIELD TO CONDUIT*/
+            
+
             using m_t = unsigned char;
-            // Allocate a mask field matching the source field (same mesh/layout/nghost)
-            auto & meshRef   = field->get_mesh();
-            auto & layoutRef = field->getLayout();
-            Field<m_t, Dim, ViewArgs...> ghostMask(meshRef, layoutRef, static_cast<int>(nGhost));
-            //Fill entire allocation (owned + ghosts) with 1
-            ghostMask = static_cast<m_t>(1);
-            // ghostMask.write();
-            //Zero the owned (interior) region only
-            auto maskView   = ghostMask.getView();
-            // ghost here means number of ghost to include in the range policy, can swap to default = 0
-            auto interior   = ghostMask.template getFieldRangePolicy<>(); 
-            // // using index_type = typename ippl::RangePolicy<Dim>::index_array_type;
-            // using index_type = typename ippl::RangePolicy<Dim>::index_type;
-            // Kokkos::parallel_for("ZeroOwnedMaskND", interior, KOKKOS_LAMBDA(const index_type& i, m_t& val ???) {
-            //         // maskView(i) = static_cast<m_t >(0);
-            //         // i = static_cast<m_t >(0); 
-            //         // ippl::apply(maskView, i) 
-            //         // val = static_cast<m_t>(0);
-            // });
-            if constexpr (Dim == 1) {
-                Kokkos::parallel_for("ZeroOwnedMask1D", interior, KOKKOS_LAMBDA(const int i) {
-                    maskView(i) = static_cast<m_t >(0);
-                });
-            } else if constexpr (Dim == 2) {
-                Kokkos::parallel_for("ZeroOwnedMask2D", interior, KOKKOS_LAMBDA(const int i, const int j) {
-                    maskView(i,j) = static_cast<m_t>(0);
-                });
-            } else { // Dim == 3
-                Kokkos::parallel_for("ZeroOwnedMask3D", interior, KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    maskView(i,j,k) = static_cast<m_t>(0);
-                });
-            }
-            Kokkos::fence();
-            // ghostMask.write();
 
-
-
-            // --- NEED OF FIX ---
-            // using HostMaskView_t = Kokkos::View<typename decltype(maskView)::data_type,
-            //                                     typename decltype(maskView)::array_layout,
-            //                                     Kokkos::HostSpace>;
-            // HostMaskView_t hostMaskView("hostGhostMask",
-            //                             maskView.extent(0),
-            //                             maskView.extent(1),
-            //                             maskView.extent(2));                                   
-            // Kokkos::deep_copy(hostMaskView, maskView);
-            // --- FIX FOR GHOST MASK ---
-            // 1. Define the HOST MASK view with LayoutLeft
+            // 3. Define the N-D Host View type we need for the copy
+            using DeviceMaskView_t = typename Field<m_t, Dim, ViewArgs...>::view_type;
+            /* STORAGE */
+            using HostMaskView1D_t = Kokkos::View<m_t*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+            /* WRAPPER */
             using HostMaskView_t = Kokkos::View<
-                typename decltype(maskView)::data_type,
-                Kokkos::LayoutLeft, // <-- Use LayoutLeft
+                typename DeviceMaskView_t::data_type, // e.g., unsigned char***
+                Kokkos::LayoutLeft,
                 Kokkos::HostSpace
-            >;    
-            // 2. Allocate the host mask
-            HostMaskView_t hostMaskView("hostGhostMask_LayoutLeft",
-                                        maskView.extent(0),
-                                        maskView.extent(1),
-                                        maskView.extent(2));
-        
-            // 3. Perform the transforming D->H + R->L copy
-            Kokkos::deep_copy(hostMaskView, maskView);
-            // --- END FIX FOR GHOST MASK ---
+            >;
+            
+            HostMaskView1D_t hostMaskView1D; // Declare view
+            
+            
+            auto it = ghostMaskCache.find(ghostKey);
+            if (it != ghostMaskCache.end()) 
+            {
+                // --- CACHE HIT ---// Re-use the existing ghost view from the cache
+                ca_m << "::Execute()::execute_entry(" << label << ") | GhostCache HIT" << endl;
+                hostMaskView1D = it->second;
+            } 
+            else 
+            {   
+
+                // --- CACHE MISS ---
+                ca_m << "::Execute()::execute_entry(" << label << ") | GhostCache MISS" << endl;
+                // Allocate a mask field matching the source field (same mesh/layout/nghost)
+                // auto & meshRef   = field->get_mesh();
+                // auto & layoutRef = field->getLayout();
+                Field<m_t, Dim, ViewArgs...> ghostMaskField(Mesh_, Layout_, static_cast<int>(nGhost));
+                //Fill entire allocation (owned + ghosts) with 1
+                ghostMaskField = static_cast<m_t>(1);
+                DeviceMaskView_t deviceMaskView   = ghostMaskField.getView();
+                auto interior   = ghostMaskField.template getFieldRangePolicy<>(); 
+                //  TODO(?): use ippl dimension independent iterators
+                if constexpr (Dim == 1) {
+                    Kokkos::parallel_for("ZeroOwnedMask1D", interior, KOKKOS_LAMBDA(const int i) {
+                        deviceMaskView(i) = static_cast<m_t >(0);
+                    });
+                } else if constexpr (Dim == 2) {
+                    Kokkos::parallel_for("ZeroOwnedMask2D", interior, KOKKOS_LAMBDA(const int i, const int j) {
+                        deviceMaskView(i,j) = static_cast<m_t>(0);
+                    });
+                } else if ( Dim == 3){ // Dim == 3
+                    Kokkos::parallel_for("ZeroOwnedMask3D", interior, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                        deviceMaskView(i,j,k) = static_cast<m_t>(0);
+                    });
+                } else{
+                    throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported Field Dimnesion > 3 for Field:" + label);
+                }
+                Kokkos::fence();
+                
+                
+                //    Allocate the 1D host view that will own the memory
+                //    This view has the correct LayoutLeft for ParaView.
+                hostMaskView1D = HostMaskView1D_t("hostGhostMask_1D", deviceMaskView.size());
+
+                //    Create a temporary, UNMANAGED N-D view
+                //    that wraps the 1D view's data. This is our copy target.
+                //    This constructor handles any rank automatically.
+                HostMaskView_t hostMaskView_N_Rank(
+                    hostMaskView1D.data(),
+                    deviceMaskView.extent(0),
+                    deviceMaskView.extent(1),
+                    deviceMaskView.extent(2),
+                    deviceMaskView.extent(3),
+                    deviceMaskView.extent(4),
+                    deviceMaskView.extent(5),
+                    deviceMaskView.extent(6),
+                    deviceMaskView.extent(7) // Good for up to 8D
+                );
+                // The 8-dim extent constructor is flexible for any dimension
+                // but eg 3 analog is not .... seems so
+
+                //    Perform the transforming D->H + R->L copy
+                //    (Device, LayoutRight) -> (Host, LayoutLeft)
+                Kokkos::deep_copy(hostMaskView_N_Rank, deviceMaskView);
+
+                //    Store the 1D view (which owns the memory) in the cache, enough to keep in memory
+                ghostMaskCache[ghostKey] = hostMaskView1D;                
+                
+                // --- NEEDED OF FIX: LAYOUT ---
+                // using HostMaskView_t = Kokkos::View<typename decltype(deviceMaskView)::data_type,
+                //                                     typename decltype(deviceMaskView)::array_layout,
+                //                                     Kokkos::HostSpace>;
+                // ---                  ---
+                // using HostMaskView_t = Kokkos::View<
+                //     typename decltype(deviceMaskView)::data_type,
+                //     Kokkos::LayoutLeft, // <-- Use LayoutLeft
+                //     Kokkos::HostSpace
+                // >;    
+                // HostMaskView_t hostMaskView("hostGhostMask_LayoutLeft",
+                //                             deviceMaskView.extent(0),
+                //                             deviceMaskView.extent(1),
+                //                             deviceMaskView.extent(2));
+                // Kokkos::deep_copy(hostMaskView, deviceMaskView);
+                // //Store the newly created view in the cache
+                // ghostMaskCache[ghostKey] = hostMaskView;
+                // /* Cache Void pointer is not enough to not discard data->
+                // REMEMEBER MASK AND SET CONDUIT NODE */
+                // viewRegistry.set(hostMaskView);
+            }
+            // --- END OF CACHING LOGIC ---
+                
 
 
 
-            /* REMEMEBER MASK AND SET CONDUIT NODE */
-            viewRegistry.set(hostMaskView);
             // FIELD NAME IN DATA/FIELDS AND META_DATA/VTK_FIELDS SHOULD COINCIDE
-            // auto ghostMask_field_meta  =  data["metadata/vtk_fields/GhostMask_field"]; 
+            // auto ghostMask_field_meta  =  data["metadata/vtk_fields/GhostMask_field"]; // can't chooses arbitrary name!!!!
             auto ghostMask_field_meta  =  data["metadata/vtk_fields/vtkGhostType"]; 
             ghostMask_field_meta["attribute_type"] = "Ghosts";  // same as set string??...
-
-            // auto ghostMask_field_node  =  fields["ghostMask_field"];
+            // auto ghostMask_field_node  =  fields["ghostMask_field"]; // can't chooses arbitrary name!!!! must be vtkGhostType
             auto ghostMask_field_node  =  fields["vtkGhostType"];
             ghostMask_field_node["association"].set_string("element");
             ghostMask_field_node["topology"].set_string("fmesh_topo");
             ghostMask_field_node["volume_dependent"].set_string("false");
-            ghostMask_field_node["values"].set_external(hostMaskView.data(), maskView.size());
-            // auto hostMask = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), maskView);
-            // viewRegistry.set(label, hostMask); // 1-byte per element
-
-            // using HostMaskViewType = Kokkos::View<signed char***, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-            // HostMaskViewType hostMask = Kokkos::create_mirror_view(ghostMask);
-            // Kokkos::deep_copy(hostMask, ghostMask);
-            // viewRegistry.set(label, hostMask); // Conduit will now store 1-byte elements
-            // HostView_t hostMirrorFinal = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), fullDeviceView);
-            // return hostMirrorFinal;
-
-
-
-            // --- NEED OF FIX ---
+            // ghostMask_field_node["values"].set_external(hostMaskView.data(), hostMaskView.size());
+            ghostMask_field_node["values"].set_external(hostMaskView1D.data(), hostMaskView1D.size());
+            // --- NEEDED OF FIX: LAYOUT --- CANTT CHANGE LAYOUT SO WE ARE FORCED TO USE DEEP COPY OVER SHALLOW COPY
             // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
             // {   /* can't use this way since subview isnt accessible this way */
             //     // A. SHALLOW COPY (No deep copy needed, device is on host memory)
@@ -588,10 +635,7 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
             //     return hostMirrorFinal;
             // }
             // --- FIX FOR MAIN FIELD ---
-            // 1. Allocate the destination view with LayoutLeft
-            //    (Note: 'nx, ny, nz' are correct here, as you pointed out)
             HostView_t hostMirrorFinal = HostView_t("hostMirrorWithGhosts_LayoutLeft", nx, ny, nz);
-            // 2. Perform the transforming D->H + R->L copy
             Kokkos::deep_copy(hostMirrorFinal, fullDeviceView);
             return hostMirrorFinal;
             // --- END FIX FOR MAIN FIELD ---
@@ -599,11 +643,6 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
 
          
         HostView_t hostMirrorFinal = (use_ghost_masks) ? getHostMirrorView_withGhosts() : getHostMirrorView_noGhosts();
-
-
-
-        
-        
         /* FOR BOTH CASES FINAL NODE SETTINS ARE DONE AND WE HAVE THE DATA INSIDE hostMirrorFinal */
         using elem_t = std::remove_pointer_t<decltype(hostMirrorFinal.data())>;
         // will return size of vector and amounts of vectors (not double)
@@ -1126,7 +1165,7 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
 
 
     if(cycle == 0){
-        ca_m << "::Execute()   Printing first Conduit Node passed to catalyst_execute() ==>" << endl;
+        ca_m << "::Execute()   Printing first Conduit Node passed from RANK=1  to catalyst_execute() ==>" << endl;
         if(ca_m.getOutputLevel() > 0 && ippl::Comm->rank()==0) node.print();
         // if(level >= 5 && ippl::Comm->rank()==0)  node.print();
 
@@ -1160,6 +1199,7 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
     }
         Kokkos::fence();
         viewRegistry.clear();
+        ghostMaskCache.clear();
         node.reset();
         results.reset();
         

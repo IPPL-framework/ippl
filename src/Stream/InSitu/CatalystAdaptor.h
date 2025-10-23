@@ -39,13 +39,16 @@
 // - iterate over all attributes for visualisation
 // - reduce virtual function calls get rid of execute_FIeld set_data and execute particle this
 // - added attribute names to ParticleAttribBase
-// 
-// NEXT: 
 // - improve avoidance of ghost duplicates 
 // - remember functionality to allow visualisation for potetnial and density at the same time ..
-// - test 2D
 // - full versatile steering ...
-// - use same topology and mesh for all steerable channels??...
+// 
+// NEXT: 
+// - test 2D
+// - use same topology and mesh for all fields?
+// - at least avoid regenerating the same ghost data by using unordered map ....or similar
+// - use same topology and mesh for all steerable channels??
+// - inquire about improced versatile sttering
 // 
 // 
 // MAYBE:
@@ -53,8 +56,6 @@
 //   but more than initialially thought needs to eb reset every iteration anew...
 // - move exece_entry purely to the visitor structure???
 // - test no copy visualisation
-// 
-// 
 // 
 //
 // UNLIKELY:
@@ -75,6 +76,25 @@ namespace ippl{
     /* FORWARD DECLARATION */
 class VisRegistryRuntime;
 
+using HostMaskView1D_t = Kokkos::View<unsigned char*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
+// 1. Define an alias for your key type for cleanliness
+using GhostKey_t = std::tuple<const void*, const void*, size_t>;
+
+// 2. Define the custom hash function struct
+struct GhostKeyHash {
+    std::size_t operator()(const GhostKey_t& k) const {
+        // Get the hash for each element in the tuple
+        auto h1 = std::hash<const void*>{}(std::get<0>(k));
+        auto h2 = std::hash<const void*>{}(std::get<1>(k));
+        auto h3 = std::hash<size_t>{}(std::get<2>(k));
+
+        // Combine the hashes. This is a common pattern (based on boost::hash_combine)
+        // It xors and bit-shifts to mix the bits well.
+        h1 ^= h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2);
+        h1 ^= h3 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2);
+        return h1;
+    }
+};
 
 // namespace CatalystAdaptor {
 class CatalystAdaptor {
@@ -111,8 +131,10 @@ class CatalystAdaptor {
 
     const std::filesystem::path source_dir;
 
-
     std::unordered_map<std::string, bool> forceHostCopy;    
+
+    // std::unordered_map<std::tuple<const void*, const void*,const size_t>, HostMaskView1D_t> ghostMaskCache;
+    std::unordered_map<GhostKey_t, HostMaskView1D_t, GhostKeyHash> ghostMaskCache;
 
     public:
 
@@ -151,7 +173,6 @@ class CatalystAdaptor {
             Message Level will always be 1 and Output according to setting...
 
 
-
             so if the output level is fixed e.g via global output level and not changed,
             I can give my message a low level eg 2 so my message will be printed for most verboity levels
             globalOutputLevel >=  informMessageLevel 2-5 and only not printed for very low verbosity levels 
@@ -166,19 +187,10 @@ class CatalystAdaptor {
             Currently Message Level are forced to 1 so any output level other than 0 will print everything ...
         */
 
-
-
-       
         ca_warn << "Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
         ca_warn << "Catalyst Info Output  Level setting: " << ca_m.getOutputLevel() << endl;
         ca_warn << "Catalyst Warn Output  Level setting: " << ca_warn.getOutputLevel() << endl;
-      
-        
-
-
         ca_m << "::CatalystAdaptor()   using source_dir = " << source_dir.string() << endl;
-        
-
         if  (png_extracts) 
             { ca_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 
         else{ ca_m << "::CatalystAdaptor()   PNG extraction DEACTIVATED" << endl;}
