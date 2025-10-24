@@ -1,8 +1,6 @@
 <ServerManagerConfiguration>
-
     <ProxyGroup name="sources">
-        <SourceProxy name="SteerableParameters_EXAMPLE" class="vtkSteeringDataGenerator" >
-
+        <SourceProxy class="vtkSteeringDataGenerator" name="SteerableParameters_EXAMPLE">
             <IntVectorProperty name="PartitionType"
                                command="SetPartitionType"
                                number_of_elements="1"
@@ -17,41 +15,44 @@
                                panel_visibility="never">
             </IntVectorProperty>
 
+            <!-- Actual property: show a slider (0..10) -->
             <DoubleVectorProperty name="scaleFactor"
-                             command="SetTuple1Double"
-                             clean_command="Clear"
-                             use_index="1"
-                             initial_string="steerable_field_b_EXAMPLE"
-                             number_of_elements_per_command="1"
-                             repeat_command="1">
+                                  command="SetTuple1Double"
+                                  clean_command="Clear"
+                                  use_index="1"
+                                  initial_string="steerable_field_b_EXAMPLE"
+                                  number_of_elements_per_command="1"
+                                  repeat_command="1"
+                                  panel_widget="DoubleRange">
+              <DoubleRangeDomain name="range" min="0.0" max="50.0"/>
             </DoubleVectorProperty>
 
-            <PropertyGroup label="SteerableParameters_LABEL_EXAMPLE" panel_widget="PropertyCollection">
-
+            <PropertyGroup label="SteerableParameters" panel_widget="PropertyCollection">
+                <!-- Map to the prototype property below -->
+                <Property name="scaleFactor" function="PrototypescaleFactor" />
                 <Hints>
                   <PropertyCollectionWidgetPrototype group="misc" name="SteerableParametersPrototype" />
                 </Hints>
             </PropertyGroup>
+
             <Hints>
-            <!-- correct -->
               <CatalystInitializePropertiesWithMesh mesh="steerable_channel_forward_EXAMPLE">
-              <!-- correct -->
                 <Property name="scaleFactor" association="point" array="steerable_field_f_EXAMPLE" />
               </CatalystInitializePropertiesWithMesh>
             </Hints>
-            
         </SourceProxy>
     </ProxyGroup>
 
     <ProxyGroup name="misc">
-      <Proxy name="SteerableParametersPrototype" label="SteerableParameters" >
-
+      <Proxy name="SteerableParametersPrototype" label="SteerableParameters">
+        <!-- Prototype property: slider metadata for PropertyCollection -->
         <DoubleVectorProperty name="PrototypescaleFactor"
-                           label="scaleFactor"
-                           number_of_elements="1"
-                           default_values="1">
+                              label="scaleFactor"
+                              number_of_elements="1"
+                              default_values="33"
+                              panel_widget="DoubleRange">
+          <DoubleRangeDomain name="range" min="0.0" max="50.0"/>
         </DoubleVectorProperty>
-
       </Proxy>
     </ProxyGroup>
 </ServerManagerConfiguration>
