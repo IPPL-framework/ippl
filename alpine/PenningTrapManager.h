@@ -347,9 +347,9 @@ public:
         double alpha                            = this->alpha_m;
         double Bext                             = this->Bext_m;
         double DrInv                            = this->DrInv_m;
-        // double V0                               = scaleFactor * this->length_m[2];
-        // double V0                               = electric_scale * this->length_m[2];
-        double V0                               = 30 * this->length_m[2];
+
+        double V0                               = electric_scale * this->length_m[2];
+        // double V0                               = 30 * this->length_m[2];
         Vector_t<double, Dim> length            = this->length_m;
         Vector_t<double, Dim> origin            = this->origin_m;
         double dt                               = this->dt_m;
@@ -377,6 +377,9 @@ public:
                 Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
                 Pview(j)[2] += alpha * Eext_z;
         });
+
+
+
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);

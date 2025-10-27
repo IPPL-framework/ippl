@@ -18,6 +18,7 @@
 
 #include "Stream/Registry/ViewRegistry.h"
 
+#include "Stream/InSitu/ProxyWriter.h"
 #include "Stream/Registry/RegistryHelper.h"
 #include "Stream/Registry/VisRegistry.h"
 #include "Stream/Registry/VisRegistry_mini.h"
@@ -108,6 +109,8 @@ class CatalystAdaptor {
     Inform ca_m;
     Inform ca_warn;
 
+    ProxyWriter proxyWriter;
+
 
     // conduit_cpp::Node node_forward;
     // conduit_cpp::Node node_backward;
@@ -122,6 +125,7 @@ class CatalystAdaptor {
     const char* catalyst_png  ;
     const char* catalyst_vtk  ;
     const char* ghost_mask  ;
+    const char* write_proxies_only_run;
 
     const bool vis_enabled;
     const bool steer_enabled;
@@ -132,7 +136,7 @@ class CatalystAdaptor {
     const std::filesystem::path source_dir;
 
     std::unordered_map<std::string, bool> forceHostCopy;    
-
+    
     // std::unordered_map<std::tuple<const void*, const void*,const size_t>, HostMaskView1D_t> ghostMaskCache;
     std::unordered_map<GhostKey_t, HostMaskView1D_t, GhostKeyHash> ghostMaskCache;
 
@@ -149,6 +153,7 @@ class CatalystAdaptor {
                 catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
                 catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
                 ghost_mask(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
+                write_proxies_only_run(std::getenv("IPPL_CATALYST_PRODUCE_PROXIES_AND_THROW")),
                 vis_enabled(catalyst_vis && std::string(catalyst_vis) == "ON"),
                 steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
                 png_extracts(catalyst_png && std::string(catalyst_png) == "ON"),

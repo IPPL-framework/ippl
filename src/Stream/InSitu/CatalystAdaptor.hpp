@@ -392,26 +392,20 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
         auto ghostKey = GhostKey_t{meshKey, layoutKey, nGhost};
 
 
-        std::cout << "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" << std::endl;
-        std::cout << nGhost << std::endl;
-        std::cout << extra << std::endl;
-        std::cout << index_offset << std::endl;
+        // std::cout << nGhost << std::endl;
+        // std::cout << extra << std::endl;
+        // std::cout << index_offset << std::endl;
+        // std::cout << 
+        // Origin_[0] << " " << 
+        // Origin_[1] << " " << 
+        // Origin_[2] << std::endl;
+        // std::cout << 
+        // LocalNDIndex_[0].first() << " " << 
+        // LocalNDIndex_[1].first() << " " << 
+        // LocalNDIndex_[2].first() << std::endl;
+        // std::cout << Ox << " " << Oy << " " << Oz << std::endl;
 
 
-        std::cout << 
-        Origin_[0] << " " << 
-        Origin_[1] << " " << 
-        Origin_[2] << std::endl;
-
-
-
-        std::cout << 
-        LocalNDIndex_[0].first() << " " << 
-        LocalNDIndex_[1].first() << " " << 
-        LocalNDIndex_[2].first() << std::endl;
-
-
-        std::cout << Ox << " " << Oy << " " << Oz << std::endl;
 
         // int aa = 0;
         int aa = 1;
@@ -878,6 +872,7 @@ template<typename T>
 void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_scalar_forwardpass,  const std::string& label ){
     ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
     
+    proxyWriter.include(steerable_scalar_forwardpass, label);
     
     if(create_new_proxy_file(label)){
         ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Creating proxy file 'proxy_" << label << ".xml': SUCCESS "<< endl;
@@ -885,9 +880,9 @@ void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(label);
         
-        set_node_script(    node["catalyst/proxies/proxy_" + label +"/filename"],
-            "CATALYST_PROXYS_PATH_"+label,
-            source_dir / "catalyst_scripts" / "catalyst_proxies" / ("proxy_"+label+".xml") );   
+        // set_node_script(    node["catalyst/proxies/proxy_" + label +"/filename"],
+        //     "CATALYST_PROXYS_PATH_"+label,
+        //     source_dir / "catalyst_scripts" / "catalyst_proxies" / ("proxy_"+label+".xml") );   
     }
     else{
         ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Creating proxy file 'proxy_" << label << ".xml': FAILED "<< endl;
@@ -899,16 +894,13 @@ void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_
 
 
 
-
 template<typename T>
 void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix ) 
 {
         ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: " << typeid(T).name() << endl;
-
-        
-        
         
         auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+        // auto steerable_channel = node["catalyst/channels/steerable_channels_forward_all"];
 
         steerable_channel["type"].set("mesh");
         auto steerable_data = steerable_channel["data"];
@@ -938,11 +930,14 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
         // std::is_scalar_v<std::decay_t<T>>
         if constexpr(std::is_scalar_v<T>){
             values.set(steerable_scalar_forwardpass);
+            // lastForwardSteerVal[steerable_suffix] = static_cast<double>(steerable_scalar_forwardpass);
         }        
         else {
             throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
         }
 }
+
+
 
     /* maybe use function overloading instead ... */
         // const std::string value_path = ... 
@@ -951,68 +946,53 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
         /* ????? this should work?? */
         // if constexpr (std::is_same_v<std::remove_cvref_t<T>, double>) {
 
+
+
+
 template<typename T>
 void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, 
                                                     const std::string& label
+
                                                 ) {
-        ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: " << typeid(T).name() << endl;
+    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: " << typeid(T).name() << endl;
 
-            
-            conduit_cpp::Node steerable_channel     = results["catalyst/steerable_channel_backward_" + label];
-            conduit_cpp::Node steerable_field       = steerable_channel[ "fields/steerable_field_b_" + label];
-            conduit_cpp::Node values = steerable_field["values"];
+    std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
+                               "steerable_field_b_" + label + "/values";
 
-    if (!steerable_field["values"].dtype().is_number()) {
-          throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported steerable value type for channel: " + label);
+    std::string legacy_path  = std::string("catalyst/steerable_channel_backward_") + label +
+                               "/fields/steerable_field_b_" + label + "/values";
+
+    const std::string* chosen = nullptr;
+    if (results.has_path(unified_path)) {
+        chosen = &unified_path;
+    } else if (results.has_path(legacy_path)) {
+        chosen = &legacy_path;
+    } else {
+        ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | no backward result present; skipping." << endl;
+        return;
     }
-    else{
-        if constexpr (std::is_same_v<T, double>) {
-                steerable_scalar_backwardpass = steerable_field["values"].to_double();
-            // }
-            // else if (steerable_field["values"].dtype().is_float64()) {
-            //     auto ptr = steerable_field["values"].as_float64_ptr();
-            //     if (ptr){
-            //         steerable_scalar_backwardpass = ptr[0];
-            //         std::cout << "value vector fetched ..." << std::endl;
-            //     }
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + label);
-            // }
-        }
-        else if constexpr (std::is_same_v<T, float>) {
-            
-                steerable_scalar_backwardpass = steerable_field["values"].to_float();
-        
-            // else if (steerable_field["values"].dtype().is_float32()) {
-            //     auto ptr = steerable_field["values"].as_float64_ptr();
-            //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + label);
-            // }
-            
-        }
-        else if constexpr (std::is_same_v<T, int>) {
-                steerable_scalar_backwardpass = steerable_field["values"].to_int32();
-            
-            // else if (steerable_field["values"].dtype().is_float64()) {
-            //     auto ptr = steerable_field["values"].as_float64_ptr();
-            //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + label);
-            // }
-            
-        }
-        else if constexpr (std::is_same_v<T, unsigned int>) {
-                steerable_scalar_backwardpass = steerable_field["values"].to_uint32();
-            
-            // else if (steerable_field["values"].dtype().is_float64()) {
-            //     auto ptr = steerable_field["values"].as_float64_ptr();
-            //     if (ptr) steerable_scalar_backwardpass = ptr[0];
-            //     else throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Null pointer for steerable value: " + label);
-            // }
-        }
-        else {
-            throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "failed to fetch scalar value, Unsupported steerable type for channel: " + label);
-        } 
+
+    conduit_cpp::Node values_node = results[*chosen];
+    if (!values_node.dtype().is_number()) {
+        ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | backward value not numeric; skipping." << endl;
+        return;
     }
-    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | received:" << steerable_scalar_backwardpass << endl; 
+
+    // double v = 0.0;
+    if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = values_node.to_double();
+    else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<double>(values_node.to_float());
+    else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<double>(values_node.to_int32());
+    else if constexpr (std::is_same_v<T,unsigned>) steerable_scalar_backwardpass = static_cast<double>(values_node.to_uint32());
+    else {
+        throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported type for channel: " + label);
+    }
+
+    // if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = v;
+    // else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<float>(v);
+    // else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<int>(std::llround(v));
+    // else if constexpr (std::is_same_v<T,unsigned>) steerable_scalar_backwardpass = static_cast<unsigned>(std::llround(v));
+
+    ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | received:" << steerable_scalar_backwardpass << endl;
 }
 
 
@@ -1052,6 +1032,7 @@ void CatalystAdaptor::InitializeRuntime(
     steerRegistry = steerReg;
 
 
+
     // Pipeline script (allow override by environment)
     set_node_script(node["catalyst/scripts/script/filename"],
                     "CATALYST_PIPELINE_PATH",
@@ -1062,9 +1043,12 @@ void CatalystAdaptor::InitializeRuntime(
     
     // If PNG extraction requested, run init visitor over visualization registry
     // init_entry will also add channel names here into the node.
+
+    
     InitVisitor initV{*this};
     visRegistry->for_each(initV);
 
+  
     
 
     args.append().set_string("--verbosity");
@@ -1080,6 +1064,8 @@ void CatalystAdaptor::InitializeRuntime(
 
     args.append().set_string("--steer_channel_names");
         
+    auto proxy_path = (source_dir / "catalyst_scripts" / "catalyst_proxy.xml").string() ;
+    proxyWriter.initialize( proxy_path  );
     if (steer_enabled ) {
         // set_node_script(node["catalyst/proxies/proxy_e/filename"],
         //                 "CATALYST_PROXYS_PATH_E",
@@ -1094,7 +1080,16 @@ void CatalystAdaptor::InitializeRuntime(
     } 
     // else {
     // }
-
+    set_node_script(    node["catalyst/proxies/proxy_/filename"],
+        "CATALYST_PROXYS_PATH",
+        proxy_path
+    );
+    // Generate unified proxy with one source and many properties (one per steerable label)
+    proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
+    
+    if(write_proxies_only_run && std::string(write_proxies_only_run) == "ON"){
+        throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
+    }
 
 
 
@@ -1184,10 +1179,9 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
     }
 
     if (catalyst_steer && std::string(catalyst_steer) == "ON") {
-        // Conduit Node Backward pass from Catalyst in results
-        // conduit_cpp::Node results;
         fetchResults();
         if(cycle == 0){
+        // if(true){
             ca_m << "::Execute()   Printing first Conduit Node received from catalyst_execute() ==>" << endl;
             // ca_m << node.to_json() << endl;
             ca_m << results.to_yaml() << endl;
@@ -1196,12 +1190,13 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
         // backward Node: fetch updated steering values
         SteerFetchVisitor fetchV{*this};
         steerRegistry->for_each(fetchV);
+
     }
         Kokkos::fence();
         viewRegistry.clear();
         ghostMaskCache.clear();
         node.reset();
-        results.reset();
+        // results.reset();
         
     ca_m << "::Execute()  DONE =============================================================== 1" << endl;
  

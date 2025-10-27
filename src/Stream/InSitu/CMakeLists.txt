@@ -9,6 +9,7 @@ target_include_directories(ippl
 
 
 install(FILES
+    ProxyWriter.h
     CatalystAdaptor.h
     CatalystAdaptor.hpp
     CatalystVisitors.h
