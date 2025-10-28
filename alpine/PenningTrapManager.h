@@ -38,14 +38,16 @@ public:
 
     double scaleFactor;
     double electric_scale;
-    double magnetic_scale;
+    ippl::Vector<double, Dim> magnetic_scale;
+    ippl::Button button_m;
+    ippl::Switch switch_m;
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),
             scaleFactor(30),
             electric_scale(30),
-            magnetic_scale(30){
+            magnetic_scale({30,30,30}){
         }
 
     // PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
@@ -58,7 +60,7 @@ public:
         : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_),
             scaleFactor(30),
             electric_scale(30),
-            magnetic_scale(30) {}
+            magnetic_scale({30,30,30}){}
 
     ~PenningTrapManager(){}
 
@@ -197,8 +199,9 @@ public:
 
         std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr(
         //                ippl::VisRegistryRuntime    runtime_steer_registry = ippl::MakeVisRegistryRuntime(
-                                    "magnetic", magnetic_scale, 
-                                    "electric", electric_scale
+                                    "electric", electric_scale,
+                                    "magnetic", magnetic_scale,
+                                    "switch1",  switch_m
                                 );
         
         std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(

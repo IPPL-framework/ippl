@@ -63,13 +63,17 @@ struct CatalystAdaptor::SteerInitVisitor {
         ca.InitSteerableChannel(value, label);
     }
 
+    // Bool-like Switch overload
+    void operator()(const std::string& label, const ippl::Switch& value) const {
+        ca.InitSteerableChannel(value, label);
+    }
 
-    template<class S> requires is_vector_v<std::decay_t<S>>
-    void operator()(const std::string& label, const S& value) const {
-        
-        throw IpplException("CatalystAdaptor::InitSteerableChannel", "Steerable Vector has not yet been implemented " + label);
-        /* pass 3 scalars??... */
-
+    // // Vector overload: initialize steerable channel for vectors
+    // template<class V> requires is_vector_v<std::decay_t<V>>
+    // void operator()(const std::string& label, const V& value) const {
+    template<typename T, unsigned Dim_v>
+    void operator()( const std::string& label, const ippl::Vector<T, Dim_v>& value){
+            ca.InitSteerableChannel(value, label);
     }
 
     template<class T>
@@ -93,13 +97,15 @@ struct CatalystAdaptor::SteerForwardVisitor {
         ca.AddSteerableChannel(value, label);
     }
 
+    // Bool-like Switch overload
+    void operator()(const std::string& label, const ippl::Switch& value) const {
+        ca.AddSteerableChannel(value, label);
+    }
 
-    template<class S> requires is_vector_v<std::decay_t<S>>
-    void operator()(const std::string& label, const S& value) const {
-        
-        throw IpplException("CatalystAdaptor::AddSteerableChannel", "Steerable Vector has not yet been implemented " + label);
-        /* pass 3 scalars??... */
-
+    // Vector overload: forward steerable vector values
+    template<class V> requires is_vector_v<std::decay_t<V>>
+    void operator()(const std::string& label, const V& value) const {
+        ca.AddSteerableChannel(value, label);
     }
 
     template<class T>
@@ -122,10 +128,24 @@ struct CatalystAdaptor::SteerFetchVisitor {
         ca.FetchSteerableChannelValue(value, label);
     }
 
+    // Vector overload: fetch steerable vector values (if present)
+    template<class V> requires is_vector_v<std::decay_t<V>>
+    void operator()(const std::string& label, V& value) const {
+        ca.FetchSteerableChannelValue(value, label);
+    }
+
     template<class T>
     requires (!std::is_arithmetic_v<std::decay_t<T>>)
     void operator()(const std::string&, const T&) const {
         /* ignore non-scalars */ 
+    }
+
+    // Optional: fetch for Switch via bool bridge
+    void operator()(const std::string& label, ippl::Switch& value) const {
+        int iv = static_cast<int>(value.value);
+        // Reuse scalar fetch into an int (0/1)
+        ca.FetchSteerableChannelValue(iv, label);
+        value.value = (iv != 0);
     }
 };
 

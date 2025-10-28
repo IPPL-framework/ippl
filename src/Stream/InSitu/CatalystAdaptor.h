@@ -77,6 +77,21 @@ namespace ippl{
     /* FORWARD DECLARATION */
 class VisRegistryRuntime;
 
+
+    struct Button {
+        bool value = false;
+        Button() = default;
+        explicit Button(bool v) : value(v) {}
+        explicit operator bool() const { return value; }
+    }; 
+
+    struct Switch {
+        bool value = false;
+        Switch() = default;
+        explicit Switch(bool v) : value(v) {}
+        explicit operator bool() const { return value; }
+    };
+
 using HostMaskView1D_t = Kokkos::View<unsigned char*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
 // 1. Define an alias for your key type for cleanliness
 using GhostKey_t = std::tuple<const void*, const void*, size_t>;
@@ -466,6 +481,13 @@ class CatalystAdaptor {
     template<typename T>
     void InitSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& label );
 
+    // Bool-like switch overload
+    void InitSteerableChannel( const ippl::Switch& sw, const std::string& label );
+
+    // Vector overloads for steerable channels
+    template<typename T, unsigned Dim_v>
+    void InitSteerableChannel( const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass, const std::string& label );
+
 
 
     /**
@@ -478,6 +500,13 @@ class CatalystAdaptor {
      */
     template<typename T>
     void AddSteerableChannel(const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix);
+
+    // Bool-like switch overload
+    void AddSteerableChannel(const ippl::Switch& sw, const std::string& steerable_suffix);
+
+    // Vector overloads for steerable channels
+    template<typename T, unsigned Dim_v>
+    void AddSteerableChannel(const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass, const std::string& steerable_suffix);
 
 
     /* maybe use function overloading instead ... */
@@ -497,6 +526,10 @@ class CatalystAdaptor {
      */
     template<typename T>
     void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, const std::string& steerable_suffix);
+    
+    // Vector overloads for steerable channels
+    template<typename T, unsigned Dim_v>
+    void FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steerable_vec_backwardpass, const std::string& steerable_suffix);
         
 
     /**

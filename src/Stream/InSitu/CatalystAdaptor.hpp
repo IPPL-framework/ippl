@@ -339,7 +339,7 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                 
         } else if constexpr (is_vector_v<T>) {
             channelName = "ippl_vField_" + label;
-            ca_m << "::Execute()::execute_entry(" << label << ") | Type: ippl::Field<ippl::Vector<" << typeid(T).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">)" << endl;
+            ca_m << "::Execute()::execute_entry(" << label << ") | Type: ippl::Field<ippl::Vector<" << typeid(typename T::value_type).name() << "," << Field<T, Dim, ViewArgs...>::dim << ">," << Dim << ">)" << endl;
         }else{
             channelName = "ippl_errorField_" + label;
 
@@ -871,27 +871,22 @@ template<typename T>
 template<typename T>
 void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_scalar_forwardpass,  const std::string& label ){
     ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
-    
     proxyWriter.include(steerable_scalar_forwardpass, label);
-    
-    if(create_new_proxy_file(label)){
-        ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Creating proxy file 'proxy_" << label << ".xml': SUCCESS "<< endl;
-        
-        conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
-        script_args.append().set_string(label);
-        
-        // set_node_script(    node["catalyst/proxies/proxy_" + label +"/filename"],
-        //     "CATALYST_PROXYS_PATH_"+label,
-        //     source_dir / "catalyst_scripts" / "catalyst_proxies" / ("proxy_"+label+".xml") );   
-    }
-    else{
-        ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Creating proxy file 'proxy_" << label << ".xml': FAILED "<< endl;
-    }
-                        
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
 }
 
 
 
+
+// Bool-like Switch: init (checkbox in GUI)
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Switch& sw, const std::string& label ){
+    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: Switch" << endl;
+    proxyWriter.includeBool(label, static_cast<bool>(sw));
+
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
+}
 
 
 template<typename T>
@@ -937,6 +932,79 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
         }
 }
 
+// Bool-like Switch: forward as single-sample scalar (0/1)
+void CatalystAdaptor::AddSteerableChannel( const ippl::Switch& sw, const std::string& steerable_suffix )
+{
+    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Switch" << endl;
+    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    steerable_channel["type"].set("mesh");
+    auto steerable_data = steerable_channel["data"];
+    steerable_data["coordsets/coords/type"].set_string("explicit");
+    steerable_data["coordsets/coords/values/x"].set( 0 );
+
+    steerable_data["topologies/sMesh_topo/type"].set("unstructured");
+    steerable_data["topologies/sMesh_topo/coordset"].set("coords");
+    steerable_data["topologies/sMesh_topo/elements/shape"].set("point");
+    steerable_data["topologies/sMesh_topo/elements/connectivity"].set( 0 );
+
+    conduit_cpp::Node steerable_field = steerable_data["fields/steerable_field_f_" + steerable_suffix];
+    steerable_field["association"].set("vertex");
+    steerable_field["topology"].set("sMesh_topo");
+    steerable_field["volume_dependent"].set("false");
+    steerable_field["values"].set(static_cast<int>(sw.value ? 1 : 0));
+}
+
+// =========================
+// Vector steerable overloads
+// =========================
+template<typename T, unsigned Dim_v>
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass,
+                                            const std::string& label )
+{
+    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+    // Register this label as a vector channel in the proxy writer (limit to 3 comps in GUI)
+    proxyWriter.includeVector<T, Dim_v>(label);
+    (void)steerable_vec_forwardpass;
+
+    // Ensure the Python pipeline receives this label after `--steer_channel_names`
+    // so it creates the corresponding forward reader and unified sender wiring.
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
+}
+
+template<typename T, unsigned Dim_v>
+void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass,
+                                           const std::string& steerable_suffix )
+{
+    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+
+    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    steerable_channel["type"].set("mesh");
+    auto steerable_data = steerable_channel["data"];
+    steerable_data["coordsets/coords/type"].set_string("explicit");
+    steerable_data["coordsets/coords/values/x"].set(0);
+
+    steerable_data["topologies/sMesh_topo/type"].set("unstructured");
+    steerable_data["topologies/sMesh_topo/coordset"].set("coords");
+    steerable_data["topologies/sMesh_topo/elements/shape"].set("point");
+    steerable_data["topologies/sMesh_topo/elements/connectivity"].set(0);
+
+    // Single vector field with 3 components (x,y,z) under one name
+    const std::string base = std::string("fields/steerable_field_f_") + steerable_suffix;
+    auto fnode = steerable_data[base];
+    fnode["association"].set_string("vertex");
+    fnode["topology"].set_string("sMesh_topo");
+    fnode["volume_dependent"].set_string("false");
+
+    const double vx = (Dim_v >= 1) ? static_cast<double>(steerable_vec_forwardpass[0]) : 0.0;
+    const double vy = (Dim_v >= 2) ? static_cast<double>(steerable_vec_forwardpass[1]) : 0.0;
+    const double vz = (Dim_v >= 3) ? static_cast<double>(steerable_vec_forwardpass[2]) : 0.0;
+
+    fnode["values/x"].set(vx);
+    fnode["values/y"].set(vy);
+    fnode["values/z"].set(vz);
+}
+
 
 
     /* maybe use function overloading instead ... */
@@ -959,14 +1027,9 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
     std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
                                "steerable_field_b_" + label + "/values";
 
-    std::string legacy_path  = std::string("catalyst/steerable_channel_backward_") + label +
-                               "/fields/steerable_field_b_" + label + "/values";
-
     const std::string* chosen = nullptr;
     if (results.has_path(unified_path)) {
         chosen = &unified_path;
-    } else if (results.has_path(legacy_path)) {
-        chosen = &legacy_path;
     } else {
         ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | no backward result present; skipping." << endl;
         return;
@@ -978,7 +1041,6 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
         return;
     }
 
-    // double v = 0.0;
     if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = values_node.to_double();
     else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<double>(values_node.to_float());
     else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<double>(values_node.to_int32());
@@ -987,12 +1049,91 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
         throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported type for channel: " + label);
     }
 
+    // double v = 0.0;
     // if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = v;
     // else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<float>(v);
     // else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<int>(std::llround(v));
     // else if constexpr (std::is_same_v<T,unsigned>) steerable_scalar_backwardpass = static_cast<unsigned>(std::llround(v));
 
     ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | received:" << steerable_scalar_backwardpass << endl;
+}
+
+template<typename T, unsigned Dim_v>
+void CatalystAdaptor::FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steerable_vec_backwardpass,
+                                                  const std::string& label)
+{
+    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+
+    // static const char* comp_names[3] = {"x","y","z"};
+    const unsigned comps = Dim_v > 3 ? 3u : Dim_v;
+    // bool any_set = false;
+    // // Preferred: unified vector array with values/x,y,z
+    // for (unsigned c = 0; c < comps; ++c) {
+    //     std::string unified_vec_comp = std::string("catalyst/steerable_channel_backward_all/fields/") +
+    //                                    "steerable_field_b_" + label + "/values/" + comp_names[c];
+    //     if (results.has_path(unified_vec_comp)) {
+    //         conduit_cpp::Node vnode = results[unified_vec_comp];
+    //         if (vnode.dtype().is_number()) {
+    //             steerable_vec_backwardpass[c] = static_cast<T>(vnode.to_double());
+    //             any_set = true;
+    //             ca_m << "  read component '" << comp_names[c] << "' from " << unified_vec_comp
+    //                  << ": " << vnode.to_double() << endl;
+    //         }
+    //     }
+    // }
+
+    // Fallback: a flat numeric array at .../values holding at least `comps` elements
+    // if (!any_set) {
+    if (true) {
+        std::string unified_vec_values = std::string("catalyst/steerable_channel_backward_all/fields/") +
+                                         "steerable_field_b_" + label + "/values";
+        // std::string legacy_vec_values  = std::string("catalyst/steerable_channel_backward_") + label +
+                                        //  "/fields/steerable_field_b_" + label + "/values";
+        const std::string* chosen = nullptr;
+        if (results.has_path(unified_vec_values)) chosen = &unified_vec_values;
+        // else if (results.has_path(legacy_vec_values)) chosen = &legacy_vec_values;
+        if (chosen) {
+            conduit_cpp::Node vnode = results[*chosen];
+            
+            // auto n_elems = vnode.dtype().number_of_elements();
+            // if (vnode.dtype().is_number() && n_elems >= comps) {
+            //     const double* ptr = vnode.as_float64_ptr();
+            //     if (ptr) {
+            //         for (unsigned c = 0; c < comps; ++c) {
+            //             steerable_vec_backwardpass[c] = static_cast<T>(ptr[c]);
+            //         }
+            //         ca_m << "  read flat values from " << *chosen << ": ["
+            //              << ptr[0] << ", " << (comps>1?ptr[1]:0) << ", " << (comps>2?ptr[2]:0) << "]" << endl;
+            //     }
+            // }
+            // else {
+            
+                ca_m << "  vector result node with list-like values found at " << *chosen << endl;//" but not numeric or too few elements (" << n_elems << ")" << endl;
+                // Handle list-like layout: values/0, values/1, values/2
+                bool idx_read = true;
+                for (unsigned c = 0; c < comps; ++c) {
+                    std::string idx_path = *chosen + "/" + std::to_string(c);
+                    if (results.has_path(idx_path)) {
+                        conduit_cpp::Node ic = results[idx_path];
+                        if (ic.dtype().is_number()) {
+                            steerable_vec_backwardpass[c] = static_cast<T>(ic.to_double());
+                        } else {
+                            idx_read = false;
+                        }
+                    } else {
+                        idx_read = false;
+                    }
+                }
+                if (idx_read) {
+                    ca_m << "  read list-like values from " << *chosen << ":" << steerable_vec_backwardpass << endl;
+                    // any_set = true;
+                }
+            // }
+        }
+        else {
+            ca_warn << "  no backward vector found for label '" << label << "' under expected paths." << endl;
+        }
+    }
 }
 
 

@@ -247,47 +247,161 @@ def catalyst_execute(info):
 
             # 1) Read current value from forward (simulation) channel
             sim_val = None
-            # sim_val = 0
+            sim_vec = {}
+            
+
             try:
                 output = reader.GetClientSideObject().GetOutput()
                 part0 = output.GetPartition(0) if output else None
                 pd = part0.GetPointData() if part0 and hasattr(part0, "GetPointData") else None
-                arr = pd.GetArray(f"steerable_field_f_{name}") if pd else None
-                if arr is not None and arr.GetNumberOfTuples() > 0:
-                    sim_val = float(arr.GetTuple1(0))
+                # Prefer unified 3-component array first
+                arr_vec = pd.GetArray(f"steerable_field_f_{name}") if pd else None
+
+
+
+                if arr_vec is not None and arr_vec.GetNumberOfTuples() > 0:
+                    print_info("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                    try:
+                        ncomp = arr_vec.GetNumberOfComponents()
+                    except Exception:
+                        ncomp = 1
+                    if ncomp >= 3:
+                        t = arr_vec.GetTuple(0)
+                        sim_vec['x'] = float(t[0])
+                        sim_vec['y'] = float(t[1])
+                        sim_vec['z'] = float(t[2])
+                    elif ncomp == 1:
+                        sim_val = float(arr_vec.GetTuple1(0))
+
+
+
+                # Legacy fallback: separate x/y/z arrays
+                # if not sim_vec and sim_val is None:
+
+                #     print_info("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+                #     arr_x = pd.GetArray(f"steerable_field_f_{name}_x") if pd else None
+                #     arr_y = pd.GetArray(f"steerable_field_f_{name}_y") if pd else None
+                #     arr_z = pd.GetArray(f"steerable_field_f_{name}_z") if pd else None
+                #     if arr_x is not None and arr_x.GetNumberOfTuples() > 0:
+                #         sim_vec['x'] = float(arr_x.GetTuple1(0))
+                #     if arr_y is not None and arr_y.GetNumberOfTuples() > 0:
+                #         sim_vec['y'] = float(arr_y.GetTuple1(0))
+                #     if arr_z is not None and arr_z.GetNumberOfTuples() > 0:
+                #         sim_vec['z'] = float(arr_z.GetTuple1(0))
+
+
+
+                # Final fallback: scalar with unified name
+                # if not sim_vec and sim_val is None:
+
+                #     print_info("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+                #     arr_s = pd.GetArray(f"steerable_field_f_{name}") if pd else None
+                #     if arr_s is not None and arr_s.GetNumberOfTuples() > 0:
+                #         sim_val = float(arr_s.GetTuple1(0))
+
+
+
+
             except Exception as e:
                 print_info(f"Could not read sim value for '{name}': {e}")
 
+
+
+
+
             # --- Always set the checked value from simulation ---
-            if sim_val is not None:
-                # unified property name per label
-                try:
-                    prop_name = f"scaleFactor_{name}"
-                    prop = sender.GetProperty(prop_name)
+            # Always set checked values from simulation
+            try:
+                if sim_vec:
+
+                    print_info("11111111111111111111111")
+                    # Unified 3-element property bound to SetTuple3Double (label-named)
+                    prop_vec = sender.GetProperty(name)
+                    if prop_vec is not None:
+                        if 'x' in sim_vec: prop_vec.SetElement(0, sim_vec['x'])
+                        if 'y' in sim_vec: prop_vec.SetElement(1, sim_vec['y'])
+                        if 'z' in sim_vec: prop_vec.SetElement(2, sim_vec['z'])
+                        sender.UpdateVTKObjects()
+                        sender.UpdatePipeline()
+
+                elif sim_val is not None:
+
+                    print_info("222222222222222222222222222")
+                    # unified scalar (prefer label-named property)
+                    prop = sender.GetProperty(name) or sender.GetProperty(f"scaleFactor_{name}")
                     if prop is not None:
-                        prop.SetElement(0, sim_val)
-                        # Apply to server-side VTK objects and produce backward mesh with all fields
+                        try:
+                            # Coerce type to match the property backend: int for IntVectorProperty, float otherwise
+                            if hasattr(prop, 'IsA') and prop.IsA('vtkSMIntVectorProperty'):
+                                print_info("vtkSMIntVectorProperty")
+                                prop.SetElement(0, int(round(sim_val)))
+                            else:
+                                print_info("not vtkSMIntVectorProperty")
+                                prop.SetElement(0, float(sim_val))
+                        except Exception:
+                            print_info("exception handling with float")
+                            # Fallback: attempt float
+                            prop.SetElement(0, float(sim_val))
                         sender.UpdateVTKObjects()
                         sender.UpdatePipeline()
                     else:
-                        # Fallback for per-channel proxy (legacy)
-                        if hasattr(sender, "scaleFactor"):
-                            sender.scaleFactor[0] = sim_val
-                            sender.UpdateVTKObjects()
-                            sender.UpdatePipeline()
-                except Exception as e:
-                    print_info_(f"Failed to set unified property for '{name}': {e}")
+                        # Property not found via GetProperty; attempt simple-API attribute set
+
+                        print_info("unlikely fallback")
+                        try:
+                            coerced = int(round(sim_val))
+                            if hasattr(sender, name):
+                                print_info("fallback setattr(int)")
+                                setattr(sender, name, [coerced])
+                                sender.UpdateVTKObjects()
+                                sender.UpdatePipeline()
+                            else:
+                                print_info("property not found on sender (attribute)")
+                        except Exception:
+                            # try float attribute
+                            try:
+                                if hasattr(sender, name):
+                                    print_info("fallback setattr(float)")
+                                    setattr(sender, name, [float(sim_val)])
+                                    sender.UpdateVTKObjects()
+                                    sender.UpdatePipeline()
+                            except Exception:
+                                pass
+
+                        # print_info("else scaleFactor")
+                        # # Fallback for per-channel proxy (legacy)
+                        # if hasattr(sender, "scaleFactor"):
+                        #     sender.scaleFactor[0] = sim_val
+                        #     sender.UpdateVTKObjects()
+                        #     sender.UpdatePipeline()
+
+
+
+
+            except Exception as e:
+                print_info_(f"Failed to set unified property for '{name}': {e}")
 
             # Log applied value (checked)
             try:
 
-                try:
-                    prop = sender.GetProperty(f"scaleFactor_{name}")
-                    val = prop.GetElement(0) if prop is not None else (sender.scaleFactor[0] if hasattr(sender, "scaleFactor") else None)
-                except Exception:
-                    val = None
-                print_info_(f"=================================>>> SteerableParameter[{name}] received: {sim_val}")
-                print_info_(f"=================================>>> SteerableParameter[{name}]     sent: {val}")
+                if sim_vec:#vectors
+                    vals = {}
+                    try:
+                        prop_vec = sender.GetProperty(name)
+                        if prop_vec is not None:
+                            vals = { 'x': prop_vec.GetElement(0), 'y': prop_vec.GetElement(1), 'z': prop_vec.GetElement(2) }
+                    except Exception:
+                        pass
+                    print_info_(f"=================================>>> SteerableParameter[{name}] received: {sim_vec}")
+                    print_info_(f"=================================>>> SteerableParameter[{name}]     sent: {vals}")
+                else:#scalars
+                    try:
+                        prop = sender.GetProperty(name) or sender.GetProperty(f"scaleFactor_{name}")
+                        val = prop.GetElement(0) if prop is not None else (sender.scaleFactor[0] if hasattr(sender, "scaleFactor") else None)
+                    except Exception:
+                        val = None
+                    print_info_(f"=================================>>> SteerableParameter[{name}] received: {sim_val}")
+                    print_info_(f"=================================>>> SteerableParameter[{name}]     sent: {val}")
             except Exception:
                 pass
 

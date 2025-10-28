@@ -16,7 +16,13 @@ class ProxyWriter {
   struct Channel {
     std::string label;
     double      defaultValue{1.0};
+    bool        isVector{false};
+    bool        isBool{false};
+    unsigned    vecDim{1}; // for vectors, clamp to 3
   };
+
+  // Vector properties are driven directly with a 3-arg setter
+  // (SetTuple3Double(arrayName, x, y, z)) on the generator.
 
   std::filesystem::path outPath_;
   double rangeMin_ {-99};
@@ -45,13 +51,28 @@ public:
     resetStreams();
   }
 
+  // Vector properties always use SetTuple3Double; no alternate backend.
+
 
   // Include a new steerable scalar channel with a default value and label.
   // T must be a scalar arithmetic type (double/float/int/...).
   template <typename T>
   void include(const T& defaultValue, const std::string& label) {
     static_assert(std::is_arithmetic_v<T>, "ProxyWriter::include requires a scalar arithmetic type");
-    channels_.emplace_back(Channel{label, static_cast<double>(defaultValue)});
+    Channel ch; ch.label = label; ch.defaultValue = static_cast<double>(defaultValue); ch.isVector = false; ch.vecDim = 1;
+    channels_.emplace_back(std::move(ch));
+  }
+
+  // Include a steerable vector channel; only first 3 components are exposed to GUI.
+  template <typename T, unsigned Dim_v>
+  void includeVector(const std::string& label) {
+    Channel ch; ch.label = label; ch.defaultValue = 1.0; ch.isVector = true; ch.vecDim = (Dim_v > 3 ? 3u : Dim_v);
+    channels_.emplace_back(std::move(ch));
+  }
+
+  void includeBool(const std::string& label, bool defaultValue = false) {
+    Channel ch; ch.label = label; ch.defaultValue = defaultValue ? 1.0 : 0.0; ch.isVector = false; ch.isBool = true; ch.vecDim = 1;
+    channels_.emplace_back(std::move(ch));
   }
 
   // Generate and write the XML file. Returns true on success.
@@ -147,9 +168,11 @@ private:
              << "                                  repeat_command=\"1\"\n"
              << "                                  panel_widget=\"DoubleRange\">\n"
              << "              <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
-             << "            </DoubleVectorProperty>\n\n"
-             << "            <PropertyGroup label=\"SteerableParameters\" panel_widget=\"PropertyCollection\">\n"
-             << "                <Hints>\n"
+             << "            </DoubleVectorProperty>\n\n";
+  if(!ch.isBool){
+   sources_ << "            <PropertyGroup label=\"SteerableParameters\" panel_widget=\"PropertyCollection\">\n";
+  }
+   sources_ << "                <Hints>\n"
              << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableParametersPrototype\" />\n"
              << "                </Hints>\n"
              << "            </PropertyGroup>\n\n"
@@ -168,6 +191,20 @@ private:
           << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
           << "        </DoubleVectorProperty>\n"
           << "      </Proxy>\n";
+
+    // Vector prototype to drive 3-element vector editors in PropertyCollection
+    misc_ << "      <Proxy name=\"SteerableVectorPrototype\" label=\"" << prototypeLabel_ << " (Vector)\">\n"
+      << "        <DoubleVectorProperty name=\"vec3\" label=\"vec3\" number_of_elements=\"3\" default_values=\"1 1 1\" panel_widget=\"DoubleRange\">\n"
+      << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
+      << "        </DoubleVectorProperty>\n"
+      << "      </Proxy>\n";
+
+  // Bool prototype to drive checkbox in PropertyCollection (int-backed)
+  // misc_ << "      <Proxy name=\"SteerableBoolPrototype\" label=\"" << prototypeLabel_ << " (Bool)\">\n"
+  //   << "        <IntVectorProperty name=\"bool\" label=\"bool\" number_of_elements=\"1\" default_values=\"0\" panel_widget=\"CheckBox\">\n"
+  //   << "          <BooleanDomain name=\"bool\"/>\n"
+  //   << "        </IntVectorProperty>\n"
+  //   << "      </Proxy>\n";
   }
 
   // Build a single SourceProxy with many per-label scaleFactor properties
@@ -180,39 +217,114 @@ private:
              << "            <IntVectorProperty name=\"FieldAssociation\" command=\"SetFieldAssociation\" number_of_elements=\"1\" default_values=\"0\" panel_visibility=\"never\">\n"
              << "            </IntVectorProperty>\n\n";
 
-    // Add one property per channel (unique name: scaleFactor_<label>)
+    // Add properties per channel
     for (const auto& ch : channels_) {
       const std::string& L = ch.label;
-      sources_ << "            <DoubleVectorProperty name=\"scaleFactor_" << L << "\"\n"
-               << "                                  command=\"SetTuple1Double\"\n"
-               << "                                  clean_command=\"Clear\"\n"
-               << "                                  use_index=\"1\"\n"
-               << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
-               << "                                  number_of_elements_per_command=\"1\"\n"
-               << "                                  repeat_command=\"1\"\n"
-               << "                                  panel_widget=\"DoubleRange\">\n"
-               << "              <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
-               << "            </DoubleVectorProperty>\n\n";
+      if (ch.isBool) {
+        // // Checkbox boolean (0/1), int-backed and using SetTuple1Int
+        // // Make it an explicit 1-element property so GUI checkbox reliably triggers updates.
+        // sources_ << "            <IntVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
+        //          << "                                  command=\"SetTuple1Int\"\n"
+        //          << "                                  clean_command=\"Clear\"\n"
+        //          << "                                  use_index=\"1\"\n"
+        //          << "                                  number_of_elements=\"1\"\n"
+        //          << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+        //          << "                                  default_values=\"" << (ch.defaultValue != 0.0 ? 1 : 0) << "\"\n"
+        //          << "                                  number_of_elements_per_command=\"1\"\n"
+        //          << "                                  repeat_command=\"1\"\n"
+        //          << "                                  panel_widget=\"CheckBox\">\n"
+        //          << "              <BooleanDomain name=\"bool\"/>\n"
+        //          << "            </IntVectorProperty>\n\n";
+
+        // Checkbox boolean (0/1), int-backed and using SetTuple1Int
+        // We define the panel_widget="CheckBox" right here.
+        sources_ << "            <IntVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
+                 << "                                  command=\"SetTuple1Int\"\n"
+                 << "                                  clean_command=\"Clear\"\n"
+                 << "                                  use_index=\"1\"\n"
+                 << "                                  number_of_elements=\"1\"\n"
+                 << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+                 << "                                  default_values=\"" << (ch.defaultValue != 0.0 ? 1 : 0) << "\"\n"
+                 << "                                  number_of_elements_per_command=\"1\"\n"
+                 << "                                  repeat_command=\"1\"\n"
+                 << "                                  panel_widget=\"CheckBox\">\n" // <-- This is key
+                 << "              <BooleanDomain name=\"bool\"/>\n"
+                 << "            </IntVectorProperty>\n\n";
+      } else if (!ch.isVector) {
+        sources_ << "            <DoubleVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
+                 << "                                  command=\"SetTuple1Double\"\n"
+                 << "                                  clean_command=\"Clear\"\n"
+                 << "                                  use_index=\"1\"\n"
+                 << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+                 << "                                  default_values=\"" << ch.defaultValue << "\"\n"
+                 << "                                  number_of_elements_per_command=\"1\"\n"
+                 << "                                  repeat_command=\"1\"\n"
+                 << "                                  panel_widget=\"DoubleRange\">\n"
+                 << "              <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
+                 << "            </DoubleVectorProperty>\n\n";
+      } else {
+        // Direct tuple3 command path (generator must provide SetTuple3Double)
+        sources_ << "            <DoubleVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
+                 << "                                  command=\"SetTuple3Double\"\n"
+                 << "                                  use_index=\"1\"\n"
+                 << "                                  clean_command=\"Clear\"\n"
+                 << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+                 << "                                  number_of_elements=\"3\"\n"
+                 << "                                  default_values=\"" << ch.defaultValue << " " << ch.defaultValue << " " << ch.defaultValue << "\"\n"
+                 << "                                  number_of_elements_per_command=\"3\"\n"
+                 << "                                  repeat_command=\"1\"\n"
+                 << "                                  panel_widget=\"DoubleRange\">\n"
+                 << "              <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
+                 << "            </DoubleVectorProperty>\n\n";
+      }
     }
 
     // Create one PropertyCollection group per label so the GUI shows separate sections
     for (const auto& ch : channels_) {
-      sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
-               << "\" panel_widget=\"PropertyCollection\">\n"
-               << "                <Hints>\n"
-               << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableParametersPrototype\" />\n"
-               << "                </Hints>\n"
-               << "                <Property name=\"scaleFactor_" << ch.label << "\" function=\"scaleFactor\" />\n"
-               << "            </PropertyGroup>\n\n";
+      // sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
+      //          << "\" panel_widget=\"PropertyCollection\">\n"
+               ;
+      if (ch.isBool) {
+
+      sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label<< "\">\n";
+        // sources_ << "                <Hints>\n"
+                //  << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableBoolPrototype\" />\n"
+                //  << "                </Hints>\n";
+        sources_ << "                <Property name=\"" << ch.label << "\" function=\"bool\" label=\"" << ch.label << "\" />\n";
+      } 
+      else 
+      if (!ch.isVector) {
+
+        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
+                 << "\" panel_widget=\"PropertyCollection\">\n";
+        sources_ << "                <Hints>\n"
+                 << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableParametersPrototype\" />\n"
+                 << "                </Hints>\n";
+        // Use scalar prototype for nicer slider
+        sources_ << "                <Property name=\"" << ch.label << "\" function=\"scaleFactor\" label=\"" << ch.label << "\" />\n";
+      } 
+      else {
+        // For vectors, use a dedicated vector prototype to present a 3-element editor
+
+        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
+                 << "\" panel_widget=\"PropertyCollection\">\n";
+        sources_ << "                <Hints>\n"
+                 << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableVectorPrototype\" />\n"
+                 << "                </Hints>\n";
+        sources_ << "                <Property name=\"" << ch.label << "\" function=\"vec3\" label=\"" << ch.label << "\" />\n";
+      }
+      sources_ << "            </PropertyGroup>\n\n";
     }
 
     // Initialization hints: pull defaults from forward channels per label
     sources_ << "            <Hints>\n";
     for (const auto& ch : channels_) {
       const std::string& L = ch.label;
-      sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
-               << "                <Property name=\"scaleFactor_" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
-               << "              </CatalystInitializePropertiesWithMesh>\n";
+      // if (!ch.isVector) {
+        sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
+                 << "                <Property name=\"" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
+                 << "              </CatalystInitializePropertiesWithMesh>\n";
+
     }
     sources_ << "            </Hints>\n";
 
@@ -223,3 +335,31 @@ private:
 };
 
 } // namespace ippl
+
+
+// Yes—no extra channels needed. You can present sliders for a single unified vector property, and it already fits your current design.
+
+// What you have now
+
+// In the unified proxy we emit a 3-element property bound to SetTuple3Double:
+// DoubleVectorProperty name="<label>" command="SetTuple3Double" number_of_elements="3" panel_widget="DoubleRange"
+// Range controlled by DoubleRangeDomain (ProxyWriter.initialize’s rangeMin/rangeMax).
+// In the PropertyCollection we use a dedicated vector prototype:
+// SteerableVectorPrototype with DoubleVectorProperty vec3 (3 elements, panel_widget="DoubleRange").
+// The forward channel carries a single 3-component array (values/x, y, z), and the backward proxy keeps one property per vector label. So still one channel, one property.
+// What the UI shows
+
+// ParaView will render a 3-element DoubleVectorProperty with the “DoubleRange” widget as three editors. Depending on ParaView version/theme, you’ll see:
+// Three numeric inputs, and typically slider UI per component under the DoubleRange widget.
+// Range limits respected from the domain you set (-99..99 by default via ProxyWriter).
+// No hidden channels or extra meshes are required—just that single vector property per label.
+
+// Tuning
+
+// Per-component slider range: set via ProxyWriter.initialize(rangeMin, rangeMax).
+// Labels/tooltips: you can add <Documentation> in the XML for nicer UI text, or prefix the Property label to include (X/Y/Z) context.
+// If your ParaView build doesn’t show sliders for 3-element DoubleVectorProperty, it will still show 3 numeric fields. You can keep the same property and switch panel_widget to a different vector-friendly widget in your version, but “DoubleRange” is the standard.
+// Optional variants without new channels
+
+// If you prefer truly separate per-axis sliders (still one channel), you can define three properties (X/Y/Z) on the same proxy and implement component setters in your vtkSteeringDataGenerator (e.g., SetVectorXDouble, SetVectorYDouble, SetVectorZDouble). That’s extra properties, not extra channels. Your current generator already supports SetTuple3Double, so the single 3-element property is simplest and works today.
+// Bottom line: You can have slider-based steering for vectors with your current unified vector property; no additional or hidden channels required.
