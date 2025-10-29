@@ -96,15 +96,12 @@ namespace ippl {
 
                 locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
 
-                // Convert to the element's linear index
-                const size_t e_lin = space.getElementIndex(e_nd);
-
                 // DOFs for this element
-                const auto dofs = space.getGlobalDOFIndices(e_lin);
+                const auto dofs = space.getGlobalDOFIndices(e_nd);
 
                 // Deposit into each vertex/DOF
                 for (size_t a = 0; a < dofs.dim; ++a) {
-                    const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]); 
+                    const size_t local = space.getLocalDOFIndex(e_nd, dofs[a]); 
                     const T w = space.evaluateRefElementShapeFunction(local, xi);
 
                     const auto v_nd = space.getMeshVertexNDIndex(dofs[a]); // ND coords (global, vertex-centered)
