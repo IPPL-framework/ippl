@@ -205,8 +205,6 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
   auto rhs    = TestFixture::make_zero_field(mesh, layout);
   auto space  = TestFixture::make_space(mesh);
 
-  auto device_space = space.getDeviceMirror();
-
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
 

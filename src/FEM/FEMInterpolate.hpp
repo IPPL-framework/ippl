@@ -86,6 +86,9 @@ namespace ippl {
         auto d_attr = attrib.getView();  // scalar weight per particle (e.g. charge)
         auto d_pos  = pp.getView();      // positions (Vector<T,Dim>) per particle
 
+        // make device copy of space
+        auto device_space = space.getDeviceMirror();
+
         Kokkos::parallel_for("assemble_rhs_from_particles_P1", iteration_policy,
             KOKKOS_LAMBDA(const size_t p) {
                 const Vector<T, Dim> x = d_pos(p);
@@ -97,14 +100,15 @@ namespace ippl {
                 locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
 
                 // DOFs for this element
-                const auto dofs = space.getGlobalDOFIndices(e_nd);
+                const auto dofs = device_space.getGlobalDOFIndices(e_nd);
 
                 // Deposit into each vertex/DOF
                 for (size_t a = 0; a < dofs.dim; ++a) {
-                    const size_t local = space.getLocalDOFIndex(e_nd, dofs[a]); 
-                    const T w = space.evaluateRefElementShapeFunction(local, xi);
+                    const size_t local = device_space.getLocalDOFIndex(e_nd, dofs[a]); 
+                    const T w = device_space.evaluateRefElementShapeFunction(local, xi);
 
-                    const auto v_nd = space.getMeshVertexNDIndex(dofs[a]); // ND coords (global, vertex-centered)
+                    // ND coords (global, vertex-centered)
+                    const auto v_nd = device_space.getMeshVertexNDIndex(dofs[a]);
                     Vector<size_t, Dim> I; // indices into view
 
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -179,6 +183,8 @@ namespace ippl {
         auto d_pos = pp.getView();
         auto d_out = attrib_out.getView();
 
+        // make device copy of space
+        auto device_space = space.getDeviceMirror();
         Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
                 KOKKOS_LAMBDA(const size_t p) {
 
@@ -188,15 +194,15 @@ namespace ippl {
             Vector<T, Dim> xi;
             locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
 
-            const auto dofs = space.getGlobalDOFIndices(e_nd);
+            const auto dofs = device_space.getGlobalDOFIndices(e_nd);
 
             field_value_type up = field_value_type(0);
 
             for (size_t a = 0; a < dofs.dim; ++a) {
-                const size_t local = space.getLocalDOFIndex(e_nd, dofs[a]);
-                const field_value_type w = space.evaluateRefElementShapeFunction(local, xi);
+                const size_t local = device_space.getLocalDOFIndex(e_nd, dofs[a]);
+                const field_value_type w = device_space.evaluateRefElementShapeFunction(local, xi);
 
-                const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
+                const auto v_nd = device_space.getMeshVertexNDIndex(dofs[a]);
                 Vector<size_t, Dim> I;
                 for (unsigned d = 0; d < Dim; ++d) {
                     I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
