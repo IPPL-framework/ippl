@@ -83,6 +83,7 @@ parser.add_argument("--steer_channel_names", nargs="*",
 parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
 parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
+parser.add_argument("--show_forward_channels", default="OFF", help="Show forward steerable channels in the GUI (PVTrivialProducer)")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
 
 parsed = parser.parse_args(arg_list)
@@ -117,6 +118,17 @@ if parsed.channel_names:
 else:
     print_info_("No channel names provided in parsed.channel_names.")
 print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
+
+
+# Proactively remove the forward 0D mesh source from the GUI if it was auto-created
+if parsed.steer == "ON" and parsed.show_forward_channels == "OFF":
+    try:
+        src = paraview.simple.FindSource("steerable_channel_0D_mesh")
+        if src is not None:
+            print_info_("Hiding auto-created steerable_channel_0D_mesh from GUI")
+            paraview.simple.Delete(src)
+    except Exception as e:
+        print_info_(f"Could not hide steerable_channel_0D_mesh: {e}")
 
 
 
@@ -159,10 +171,16 @@ if parsed.steer == "ON":
         # forward / incoming steering channels
         # ------------------------------------------------------------------------------
         print_info_("FORWARD")
-        for sname in parsed.steer_channel_names:
-
-            print_info_(sname)
-            steer_channel_readers[sname] = PVTrivialProducer(registrationName="steerable_channel_forward_"+sname)
+        if parsed.show_forward_channels == "ON":
+            for sname in parsed.steer_channel_names:
+                print_info_(sname)
+                # All steerables share a single 0D mesh channel; reuse the same producer for each entry
+                steer_channel_readers[sname] = PVTrivialProducer(registrationName="steerable_channel_0D_mesh")
+        else:
+            # Suppress creating pipeline objects so nothing appears in the GUI
+            for sname in parsed.steer_channel_names:
+                print_info_(f"(hidden) {sname}")
+                steer_channel_readers[sname] = None
     else:
         print_info_("No channel names provided in parsed.channel_names.")
 

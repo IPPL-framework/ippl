@@ -196,7 +196,7 @@ private:
              << "                </Hints>\n"
              << "            </PropertyGroup>\n\n"
              << "            <Hints>\n"
-             << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
+             << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_0D_mesh\">\n"
              << "                <Property name=\"scaleFactor\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
              << "              </CatalystInitializePropertiesWithMesh>\n"
              << "            </Hints>\n"
@@ -318,11 +318,11 @@ private:
                  << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
                  << "                                  number_of_elements_per_command=\"1\"\n"
                  << "                                  repeat_command=\"1\"\n"
-                 << "                                  \n\n\n"
-                 << "                           number_of_elements=\"1\"\n"
-                 << "                           default_values=\"" << ch.defaultInt << "\"\n"
-                 << "                           immediate_apply=\"1\"\n"
-                 << "                                  \n\n\n"
+                 << "                                  \n"
+                 << "                                  number_of_elements=\"1\"\n"
+                 << "                                  default_values=\"" << ch.defaultInt << "\"\n"
+                 << "                                  immediate_apply=\"1\"\n"
+                 << "                                  \n"
                  << "                                  >\n"
                  << "            </IntVectorProperty>\n\n";
       } else if (!ch.isVector) {
@@ -405,17 +405,16 @@ private:
   sources_ << "            </PropertyGroup>\n\n";
     }
 
-    // Initialization hints: pull defaults from forward channels per label
+    // Initialization hints: pull defaults from a single shared forward mesh
     // Skip buttons - they should not be initialized from simulation state
     sources_ << "            <Hints>\n";
+    sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_0D_mesh\">\n";
     for (const auto& ch : channels_) {
       if (ch.isButton) continue; // Buttons are GUI-only, don't initialize from forward channel
       const std::string& L = ch.label;
-      sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
-               << "                <Property name=\"" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
-               << "              </CatalystInitializePropertiesWithMesh>\n";
-
+      sources_ << "                <Property name=\"" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n";
     }
+    sources_ << "              </CatalystInitializePropertiesWithMesh>\n";
     sources_ << "            </Hints>\n";
 
     sources_ << "        </SourceProxy>\n\n";

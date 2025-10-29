@@ -926,7 +926,7 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
 {
         ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: " << typeid(T).name() << endl;
         
-        auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    auto steerable_channel = node["catalyst/channels/steerable_channel_0D_mesh"];
         // auto steerable_channel = node["catalyst/channels/steerable_channels_forward_all"];
 
         steerable_channel["type"].set("mesh");
@@ -973,7 +973,7 @@ requires (std::is_enum_v<std::decay_t<E>>)
 void CatalystAdaptor::AddSteerableChannel( const E& e, const std::string& steerable_suffix )
 {
     ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Enum" << endl;
-    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    auto steerable_channel = node["catalyst/channels/steerable_channel_0D_mesh"];
     steerable_channel["type"].set("mesh");
     auto steerable_data = steerable_channel["data"];    
     steerable_data["coordsets/coords/type"].set_string("explicit");
@@ -994,7 +994,7 @@ void CatalystAdaptor::AddSteerableChannel( const bool& sw, const std::string& st
 {
     ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: bool/Switch" << endl;
     
-    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    auto steerable_channel = node["catalyst/channels/steerable_channel_0D_mesh"];
     steerable_channel["type"].set("mesh");
     auto steerable_data = steerable_channel["data"];
     steerable_data["coordsets/coords/type"].set_string("explicit");
@@ -1018,7 +1018,7 @@ void CatalystAdaptor::AddSteerableChannel( const bool& sw, const std::string& st
 void CatalystAdaptor::AddSteerableChannel( const ippl::Button& btn, const std::string& steerable_suffix )
 {
     ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Button" << endl;
-    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    auto steerable_channel = node["catalyst/channels/steerable_channel_0D_mesh"];
     steerable_channel["type"].set("mesh");
     auto steerable_data = steerable_channel["data"];
     steerable_data["coordsets/coords/type"].set_string("explicit");
@@ -1042,7 +1042,7 @@ void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerab
 {
     ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
 
-    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    auto steerable_channel = node["catalyst/channels/steerable_channel_0D_mesh"];
     steerable_channel["type"].set("mesh");
     auto steerable_data = steerable_channel["data"];
     steerable_data["coordsets/coords/type"].set_string("explicit");
