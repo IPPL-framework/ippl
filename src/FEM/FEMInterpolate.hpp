@@ -192,6 +192,7 @@ namespace ippl {
 
         // make device copy of space
         auto device_space = space.getDeviceMirror();
+
         Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
                 KOKKOS_LAMBDA(const size_t p) {
 
@@ -270,6 +271,9 @@ namespace ippl {
         auto d_pos = pp.getView();
         auto d_out = attrib_out.getView();
 
+        // make device copy of space
+        auto device_space = space.getDeviceMirror();
+
         Kokkos::parallel_for("interpolate_to_diracs_P1", iteration_policy,
                 KOKKOS_LAMBDA(const size_t p) {
 
@@ -279,16 +283,16 @@ namespace ippl {
             Vector<T, Dim> xi;
             locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
 
-            const auto dofs = space.getGlobalDOFIndices(e_nd);
+            const auto dofs = device_space.getGlobalDOFIndices(e_nd);
 
             Vector<T, Dim> up(0.0);
 
             for (size_t a = 0; a < dofs.dim; ++a) {
-                const size_t local = space.getLocalDOFIndex(e_nd, dofs[a]);
-                Vector<T, Dim> w = space.evaluateRefElementShapeFunctionGradient(local, xi);
+                const size_t local = device_space.getLocalDOFIndex(e_nd, dofs[a]);
+                Vector<T, Dim> w = device_space.evaluateRefElementShapeFunctionGradient(local, xi);
                 w = DPhiInvT * w;
 
-                const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
+                const auto v_nd = device_space.getMeshVertexNDIndex(dofs[a]);
                 Vector<size_t,Dim> I;
                 for (unsigned d = 0; d < Dim; ++d) {
                     I[d] = static_cast<size_t>(v_nd[d] - lDom.first()[d] + nghost);
