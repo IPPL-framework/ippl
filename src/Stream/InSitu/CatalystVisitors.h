@@ -65,7 +65,7 @@ struct CatalystAdaptor::ExecuteVisitor {
 struct CatalystAdaptor::SteerInitVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
+    template<class S> requires (std::is_arithmetic_v<std::decay_t<S>> || std::is_enum_v<std::decay_t<S>>)
     void operator()(const std::string& label, const S& value) const {
         ca.InitSteerableChannel(value, label);
     }
@@ -89,7 +89,7 @@ struct CatalystAdaptor::SteerInitVisitor {
     }
 
     template<class T>
-    requires (!std::is_arithmetic_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
+    requires (!std::is_arithmetic_v<std::decay_t<T>> && !std::is_enum_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
     void operator()(const std::string& label , const T&) const {
 
         throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + label);
@@ -104,7 +104,7 @@ struct CatalystAdaptor::SteerInitVisitor {
 struct CatalystAdaptor::SteerForwardVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
+    template<class S> requires (std::is_arithmetic_v<std::decay_t<S>> || std::is_enum_v<std::decay_t<S>>)
     void operator()(const std::string& label, const S& value) const {
         ca.AddSteerableChannel(value, label);
     }
@@ -126,7 +126,7 @@ struct CatalystAdaptor::SteerForwardVisitor {
     }
 
     template<class T>
-    requires (!std::is_scalar_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
+    requires (!std::is_scalar_v<std::decay_t<T>> && !std::is_enum_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
     void operator()(const std::string& label , const T&) const {
 
         throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + label);
@@ -140,7 +140,7 @@ struct CatalystAdaptor::SteerForwardVisitor {
 struct CatalystAdaptor::SteerFetchVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
+    template<class S> requires (std::is_arithmetic_v<std::decay_t<S>> || std::is_enum_v<std::decay_t<S>>)
     void operator()(const std::string& label, S& value) const {
         ca.FetchSteerableChannelValue(value, label);
     }
@@ -152,7 +152,7 @@ struct CatalystAdaptor::SteerFetchVisitor {
     }
 
     template<class T>
-    requires (!std::is_arithmetic_v<std::decay_t<T>>)
+    requires (!std::is_arithmetic_v<std::decay_t<T>> && !std::is_enum_v<std::decay_t<T>>)
     void operator()(const std::string&, const T&) const {
         ca.ca_m << "INVALID FETCH CALLEd" << endl;    }
 

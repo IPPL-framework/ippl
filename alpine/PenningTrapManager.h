@@ -28,6 +28,26 @@
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
+enum experiment_enum {
+    PenningTrap,
+    LandauDamping,
+    UniformPlasma
+};
+
+// 1. Write a helper function
+std::string to_string(experiment_enum c) {
+    switch (c) {
+        case experiment_enum::PenningTrap:
+            return "PenningTrap";
+        case experiment_enum::LandauDamping:
+            return "LandauDamping";
+        case experiment_enum::UniformPlasma:
+            return "UniformPlasma";
+        default:
+            return "Unknown";
+    }
+}
+
 template <typename T, unsigned Dim>
 class PenningTrapManager : public AlpineManager<T, Dim> {
 public:
@@ -41,6 +61,7 @@ public:
     ippl::Vector<double, Dim> magnetic_scale;
     ippl::Button button_m;
     bool switch_m;
+    experiment_enum e_m;
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_, double lbt_,
                          std::string& solver_, std::string& stepMethod_)
@@ -49,7 +70,8 @@ public:
             electric_scale(30),
             magnetic_scale({30,30,30}),
             button_m(false),
-            switch_m(false) {
+            switch_m(false),
+            e_m(PenningTrap) {
         }
 
     // PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
@@ -64,7 +86,8 @@ public:
             electric_scale(30),
             magnetic_scale({30,30,30}),
             button_m(false),
-            switch_m(false) {}
+            switch_m(false),
+            e_m(PenningTrap) {}
 
     ~PenningTrapManager(){}
 
@@ -172,18 +195,27 @@ public:
                                     "electric", electric_scale,
                                     "magnetic", magnetic_scale,
                                     "switch1",  switch_m,
-                                    "button1_btn",  button_m
+                                    "button1_btn",  button_m,
+                                    "experiment", e_m
                                 );
         
         std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
         // ippl::VisRegistryRuntime runtime_vis_registry   = ippl::MakeVisRegistryRuntime(
 
-                                    "ions",             this->pcontainer_m, 
+                                    // "ions",             this->pcontainer_m, 
                                     // "ions",             *this->pcontainer_m, 
-                                    "electrostatic",    this->fcontainer_m->getE(), 
-                                    "density",          this->fcontainer_m->getRho(), 
-                                    "potential",          this->fcontainer_m->getRho() 
+                                    // "electrostatic",    this->fcontainer_m->getE(), 
+                                    "density",          this->fcontainer_m->getRho()
+                                    // , 
+                                    // "potential",          this->fcontainer_m->getRho() 
                                 );
+
+        // Register enum choices for dropdowns before initialization
+        cat_vis.RegisterEnumChoices("experiment", {
+            {"PenningTrap",   static_cast<int>(PenningTrap)},
+            {"LandauDamping", static_cast<int>(LandauDamping)},
+            {"UniformPlasma", static_cast<int>(UniformPlasma)}
+        });
 
         // CatalystAdaptor::
         cat_vis.InitializeRuntime(runtime_vis_registry, runtime_steer_registry);

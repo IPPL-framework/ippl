@@ -174,6 +174,8 @@ class CatalystAdaptor {
     private:
 
     ProxyWriter proxyWriter;
+    // Optional enum metadata: label -> list of (text,value) choices
+    std::unordered_map<std::string, std::vector<std::pair<std::string,int>>> enumChoices_;
 
 
     // conduit_cpp::Node node_forward;
@@ -189,7 +191,7 @@ class CatalystAdaptor {
     const char* catalyst_png  ;
     const char* catalyst_vtk  ;
     const char* ghost_mask  ;
-    const char* write_proxies_only_run;
+    const char* proxy_option;
 
     const bool vis_enabled;
     const bool steer_enabled;
@@ -217,7 +219,7 @@ class CatalystAdaptor {
                 catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
                 catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
                 ghost_mask(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
-                write_proxies_only_run(std::getenv("IPPL_CATALYST_PRODUCE_PROXIES_AND_THROW")),
+                proxy_option(std::getenv("IPPL_CATALYST_PROXY_OPTION")),
                 vis_enabled(catalyst_vis && std::string(catalyst_vis) == "ON"),
                 steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
                 png_extracts(catalyst_png && std::string(catalyst_png) == "ON"),
@@ -528,7 +530,13 @@ class CatalystAdaptor {
 
 
     template<typename T>
+    requires (!std::is_enum_v<std::decay_t<T>>)
     void InitSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& label );
+
+    // Enum overloads (arbitrary enum types)
+    template<typename E>
+    requires (std::is_enum_v<std::decay_t<E>>)
+    void InitSteerableChannel( const E& e, const std::string& label );
 
     // Bool-like switch overload
     void InitSteerableChannel( const bool& sw, const std::string& label );
@@ -548,7 +556,13 @@ class CatalystAdaptor {
      * @param node The Conduit node to update.
      */
     template<typename T>
+    requires (!std::is_enum_v<std::decay_t<T>>)
     void AddSteerableChannel(const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix);
+
+    // Enum overloads (arbitrary enum types)
+    template<typename E>
+    requires (std::is_enum_v<std::decay_t<E>>)
+    void AddSteerableChannel(const E& e, const std::string& steerable_suffix);
 
     // Bool-like switch overload
     void AddSteerableChannel(const bool& sw, const std::string& steerable_suffix);
@@ -577,7 +591,12 @@ class CatalystAdaptor {
      * @param results The Conduit node containing results.
      */
     template<typename T>
+    requires (!std::is_enum_v<std::decay_t<T>>)
     void FetchSteerableChannelValue( T& steerable_scalar_backwardpass, const std::string& steerable_suffix);
+    // Enum overloads (arbitrary enum types)
+    template<typename E>
+    requires (std::is_enum_v<std::decay_t<E>>)
+    void FetchSteerableChannelValue( E& e, const std::string& steerable_suffix);
     
     // Vector overloads for steerable channels
     template<typename T, unsigned Dim_v>
@@ -610,6 +629,13 @@ class CatalystAdaptor {
                            const std::shared_ptr<VisRegistryRuntime>& visReg,
                            const std::shared_ptr<VisRegistryRuntime>& steerReg
     );
+
+    // Provide enum choices metadata before InitializeRuntime, so the GUI shows a dropdown.
+    // Example: RegisterEnumChoices("mode", {{"Off",0},{"Basic",1},{"Advanced",2}});
+    void RegisterEnumChoices(const std::string& label,
+                             const std::vector<std::pair<std::string,int>>& entries) {
+        enumChoices_[label] = entries;
+    }
 
     void Remember_now(const std::string);
 

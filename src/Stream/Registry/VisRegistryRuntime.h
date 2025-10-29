@@ -51,7 +51,13 @@ template<class T>
 inline constexpr bool is_field_v = is_field<typename std::decay<T>::type>::value;
 
 template<class T>
-inline constexpr bool AllowedVisType_v = is_scalar_v<T> || is_particle_v<T> || is_field_v<T>|| is_vector_v<T> || std::is_same_v<T,Button>;
+inline constexpr bool AllowedVisType_v =
+    is_scalar_v<T>
+    || std::is_enum_v<typename std::decay<T>::type>
+    || is_particle_v<T>
+    || is_field_v<T>
+    || is_vector_v<T>
+    || std::is_same_v<T,Button>;
 
 // Accept shared_ptr<U> when U is allowed
 template<class T>

@@ -19,6 +19,9 @@ class ProxyWriter {
     bool        isVector{false};
     bool        isBool{false};
     bool        isButton{false};
+    bool        isEnum{false};
+    std::vector<std::pair<std::string,int>> enumEntries{}; // for enums: text/value pairs
+    int         defaultInt{0};
     unsigned    vecDim{1}; // for vectors, clamp to 3
   };
 
@@ -79,6 +82,15 @@ public:
   // Include a steerable push-button channel (momentary action)
   void includeButton(const std::string& label) {
     Channel ch; ch.label = label; ch.defaultValue = 0.0; ch.isVector = false; ch.isBool = false; ch.isButton = true; ch.vecDim = 1;
+    channels_.emplace_back(std::move(ch));
+  }
+
+  // Include a steerable enum channel with choices and default value (by integer value)
+  void includeEnum(const std::string& label,
+                   const std::vector<std::pair<std::string,int>>& entries,
+                   int defaultValue = 0) {
+    Channel ch; ch.label = label; ch.isEnum = true; ch.defaultInt = defaultValue; ch.vecDim = 1;
+    ch.enumEntries = entries;
     channels_.emplace_back(std::move(ch));
   }
 
@@ -206,6 +218,26 @@ private:
       << "        </DoubleVectorProperty>\n"
       << "      </Proxy>\n";
 
+    // Enum prototypes: one per enum channel so choices can differ per label
+    for (const auto& ch : channels_) {
+      if (!ch.isEnum || ch.enumEntries.empty()) continue;
+      const std::string& L = ch.label;
+      misc_ << "\n      <Proxy name=\"SteerableEnumPrototype_" << L << "\" label=\"" << prototypeLabel_ << " Enum\">\n"
+            << "        <IntVectorProperty name=\"PrototypeEnum_" << L << "\"\n"
+            << "                           label=\"" << L << "\"\n"
+            << "                           number_of_elements=\"1\"\n"
+            << "                           default_values=\"" << ch.defaultInt << "\"\n"
+            << "                           immediate_apply=\"1\"\n"
+            << "                           >\n"
+            << "          <EnumerationDomain name=\"enum\">\n";
+      for (const auto& [text, val] : ch.enumEntries) {
+        misc_ << "                <Entry text=\"" << text << "\" value=\"" << val << "\"/>\n";
+      }
+      misc_ << "          </EnumerationDomain>\n"
+            << "        </IntVectorProperty>\n"
+            << "      </Proxy>\n";
+    }
+
   // Bool prototype to drive checkbox in PropertyCollection (int-backed)
   // misc_ << "      <Proxy name=\"SteerableBoolPrototype\" label=\"" << prototypeLabel_ << " (Bool)\">\n"
   //   << "        <IntVectorProperty name=\"bool\" label=\"bool\" number_of_elements=\"1\" default_values=\"0\" panel_widget=\"CheckBox\">\n"
@@ -277,11 +309,28 @@ private:
                  << "                Check this box to trigger the button action. The simulation will automatically uncheck it internally  after processing.\n"
                  << "              </Documentation>\n"
                  << "            </IntVectorProperty>\n\n";
+      } else if (ch.isEnum) {
+        // Integer-backed enum property in the source; the actual EnumerationDomain is provided via a misc prototype.
+        sources_ << "            <IntVectorProperty name=\"" << L << "\"\n"
+                 << "                                  command=\"SetTuple1Int\"\n"
+                 << "                                  clean_command=\"Clear\"\n"
+                 << "                                  use_index=\"1\"\n"
+                 << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+                 << "                                  number_of_elements_per_command=\"1\"\n"
+                 << "                                  repeat_command=\"1\"\n"
+                 << "                                  \n\n\n"
+                 << "                           number_of_elements=\"1\"\n"
+                 << "                           default_values=\"" << ch.defaultInt << "\"\n"
+                 << "                           immediate_apply=\"1\"\n"
+                 << "                                  \n\n\n"
+                 << "                                  >\n"
+                 << "            </IntVectorProperty>\n\n";
       } else if (!ch.isVector) {
         sources_ << "            <DoubleVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
                  << "                                  command=\"SetTuple1Double\"\n"
                  << "                                  clean_command=\"Clear\"\n"
                  << "                                  use_index=\"1\"\n"
+                 << "                                  number_of_elements=\"1\"\n"
                  << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
                  << "                                  default_values=\"" << ch.defaultValue << "\"\n"
                  << "                                  number_of_elements_per_command=\"1\"\n"
@@ -319,6 +368,14 @@ private:
                 //  << "                </Hints>\n";
         sources_ << "                <Property name=\"" << ch.label << "\" function=\"bool\" label=\"" << ch.label << "\" />\n";
       } 
+      else if (ch.isEnum) {
+        // Use a PropertyCollection with the enum prototype specific to this label
+        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label << "\" panel_widget=\"PropertyCollection\">\n";
+        sources_ << "             <Hints>\n";
+        sources_ << "               <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableEnumPrototype_" << ch.label << "\" />\n";
+        sources_ << "             </Hints>\n";
+        sources_ << "             <Property name=\"" << ch.label << "\" function=\"PrototypeEnum_" << ch.label << "\"  label=\"" << ch.label << "\"/> \n";
+      }
       else if (ch.isButton) {
         sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label<< "\">\n";
         // sources_ << "                <Property name=\"" << ch.label << "\" function=\"button\" label=\"" << ch.label << "\" />\n";
@@ -345,7 +402,7 @@ private:
                  << "                </Hints>\n";
         sources_ << "                <Property name=\"" << ch.label << "\" function=\"vec3\" label=\"" << ch.label << "\" />\n";
       }
-      sources_ << "            </PropertyGroup>\n\n";
+  sources_ << "            </PropertyGroup>\n\n";
     }
 
     // Initialization hints: pull defaults from forward channels per label

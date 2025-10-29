@@ -862,9 +862,26 @@ template<typename T>
 
 
 template<typename T>
+requires (!std::is_enum_v<std::decay_t<T>>)
 void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_scalar_forwardpass,  const std::string& label ){
     ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
     proxyWriter.include(steerable_scalar_forwardpass, label);
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
+}
+
+// Enum overload (explicit) to ensure proper dropdown setup even if template above is shadowed
+template<typename E>
+requires (std::is_enum_v<std::decay_t<E>>)
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const E& e, const std::string& label ){
+    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: Enum" << endl;
+    auto it = enumChoices_.find(label);
+    if (it != enumChoices_.end()) {
+        proxyWriter.includeEnum(label, it->second, static_cast<int>(e));
+    } else {
+        // Fallback to an int-like property without dropdown (simplest path is to use Int checkbox placeholder replaced above)
+        proxyWriter.includeBool(label, false);
+    }
     conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
     script_args.append().set_string(label);
 }
@@ -904,6 +921,7 @@ void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Vector<
 
 
 template<typename T>
+requires (!std::is_enum_v<std::decay_t<T>>)
 void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix ) 
 {
         ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: " << typeid(T).name() << endl;
@@ -937,13 +955,38 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
         conduit_cpp::Node values = steerable_field["values"];
 
         // std::is_scalar_v<std::decay_t<T>>
-        if constexpr(std::is_scalar_v<T>){
+        if constexpr(std::is_enum_v<std::decay_t<T>>){
+            values.set(static_cast<int>(steerable_scalar_forwardpass));
+        }
+        else if constexpr(std::is_scalar_v<T>){
             values.set(steerable_scalar_forwardpass);
             // lastForwardSteerVal[steerable_suffix] = static_cast<double>(steerable_scalar_forwardpass);
         }        
         else {
             throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
         }
+}
+
+// Enum overload explicit (clarity)
+template<typename E>
+requires (std::is_enum_v<std::decay_t<E>>)
+void CatalystAdaptor::AddSteerableChannel( const E& e, const std::string& steerable_suffix )
+{
+    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Enum" << endl;
+    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    steerable_channel["type"].set("mesh");
+    auto steerable_data = steerable_channel["data"];    
+    steerable_data["coordsets/coords/type"].set_string("explicit");
+    steerable_data["coordsets/coords/values/x"].set( 0 );
+    steerable_data["topologies/sMesh_topo/type"].set("unstructured");
+    steerable_data["topologies/sMesh_topo/coordset"].set("coords");
+    steerable_data["topologies/sMesh_topo/elements/shape"].set("point");
+    steerable_data["topologies/sMesh_topo/elements/connectivity"].set( 0 );
+    auto steerable_field = steerable_data["fields/steerable_field_f_" + steerable_suffix];
+    steerable_field["association"].set("vertex");
+    steerable_field["topology"].set("sMesh_topo");
+    steerable_field["volume_dependent"].set("false");
+    steerable_field["values"].set(static_cast<int>(e));
 }
 
 // Bool-like Switch: forward as single-sample scalar (0/1)
@@ -1029,6 +1072,7 @@ void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerab
 
 /* overload for: Scalar, Bool(switch), Button */
 template<typename T>
+requires (!std::is_enum_v<std::decay_t<T>>)
 void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, const std::string& label) {
     ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: " << typeid(T).name() << endl;
 
@@ -1049,7 +1093,8 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
         return;
     }
 
-    if constexpr (std::is_same_v<T,double>)             steerable_scalar_backwardpass = values_node.to_double();
+    if constexpr (std::is_enum_v<std::decay_t<T>>)      steerable_scalar_backwardpass = static_cast<T>(values_node.to_int32());
+    else if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = values_node.to_double();
     else if constexpr (std::is_same_v<T,float>)         steerable_scalar_backwardpass = static_cast<float>(values_node.to_float());
     else if constexpr (std::is_same_v<T,int>)           steerable_scalar_backwardpass = static_cast<int>(values_node.to_int32());
     else if constexpr (std::is_same_v<T,unsigned>)      steerable_scalar_backwardpass = static_cast<unsigned>(values_node.to_uint32());
@@ -1060,6 +1105,25 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
     }
 
     ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | received:" << steerable_scalar_backwardpass << endl;
+}
+
+// Enum overload explicit (clarity)
+template<typename E>
+requires (std::is_enum_v<std::decay_t<E>>)
+void CatalystAdaptor::FetchSteerableChannelValue( E& e, const std::string& label)
+{
+    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: Enum| Value sent:" << to_string(e) << endl;
+    std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
+                               "steerable_field_b_" + label + "/values";
+    if (!results.has_path(unified_path)) {
+        ca_m << "  no backward enum found for label '" << label << "'" << endl;
+        return;
+    }
+    conduit_cpp::Node values_node = results[unified_path];
+    if (!values_node.dtype().is_number()) return;
+    e = static_cast<E>(values_node.to_int32());
+
+    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: Enum|  received:" << to_string(e) << endl;
 }
 
 
@@ -1230,10 +1294,26 @@ void CatalystAdaptor::InitializeRuntime(
         "CATALYST_PROXYS_PATH",
         proxy_path
     );
-    // Generate unified proxy with one source and many properties (one per steerable label)
-    if(write_proxies_only_run && std::string(write_proxies_only_run) == "ON"){
+
+    
+
+    // switch (proxy_option){
+    //     case "PRODUCE_ONLY":
+    //         proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
+    //         throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
+    //     case "OFF":
+    //         break;
+    //     case "PRODUCE": 
+    //     default:
+    //     proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
+    // }
+
+    if( std::string(proxy_option) == "PRODUCE_ONLY"){
+            proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
+            throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run: proxies have been printed");
+    }else if( std::string(proxy_option) == "OFF"){
+    }else{
         proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
-        // throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
     }
 
 
