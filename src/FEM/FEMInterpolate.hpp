@@ -79,8 +79,8 @@ namespace ippl {
         const auto origin = mesh.getOrigin();
 
         const FieldLayout<Dim>& layout = f.getLayout();
-        const NDIndex<Dim>&     lDom   = layout.getLocalNDIndex();
-        const int                     nghost = f.getNghost();
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = f.getNghost();
 
         // Particle attribute/device views
         auto d_attr = attrib.getView();  // scalar weight per particle (e.g. charge)
@@ -88,11 +88,11 @@ namespace ippl {
 
         Kokkos::parallel_for("assemble_rhs_from_particles_P1", iteration_policy,
             KOKKOS_LAMBDA(const size_t p) {
-                const Vector<T, Dim> x   = d_pos(p);
+                const Vector<T, Dim> x = d_pos(p);
                 const T val = d_attr(p);  
 
                 Vector<size_t, Dim> e_nd;
-                Vector<T, Dim>      xi;
+                Vector<T, Dim> xi;
 
                 locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
 
@@ -100,7 +100,7 @@ namespace ippl {
                 const size_t e_lin = space.getElementIndex(e_nd);
 
                 // DOFs for this element
-                const auto dofs  = space.getGlobalDOFIndices(e_lin);
+                const auto dofs = space.getGlobalDOFIndices(e_lin);
 
                 // Deposit into each vertex/DOF
                 for (size_t a = 0; a < dofs.dim; ++a) {
@@ -175,8 +175,8 @@ namespace ippl {
         const auto origin = mesh.getOrigin();
 
         const FieldLayout<Dim>& layout = coeffs.getLayout();
-        const NDIndex<Dim>&     lDom   = layout.getLocalNDIndex();
-        const int                     nghost = coeffs.getNghost();
+        const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
+        const int nghost = coeffs.getNghost();
 
         // Particle device views
         auto d_pos = pp.getView();
@@ -188,7 +188,7 @@ namespace ippl {
             const Vector<T, Dim> x = d_pos(p);
 
             Vector<size_t, Dim> e_nd;
-            Vector<T, Dim>      xi;
+            Vector<T, Dim> xi;
             locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
             const size_t e_lin = space.getElementIndex(e_nd);
 
