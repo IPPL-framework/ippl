@@ -187,14 +187,13 @@ namespace ippl {
             Vector<size_t, Dim> e_nd;
             Vector<T, Dim> xi;
             locate_element_nd_and_xi<T, Dim>(hr, origin, x, e_nd, xi);
-            const size_t e_lin = space.getElementIndex(e_nd);
 
-            const auto dofs = space.getGlobalDOFIndices(e_lin);
+            const auto dofs = space.getGlobalDOFIndices(e_nd);
 
             field_value_type up = field_value_type(0);
 
             for (size_t a = 0; a < dofs.dim; ++a) {
-                const size_t local = space.getLocalDOFIndex(e_lin, dofs[a]);
+                const size_t local = space.getLocalDOFIndex(e_nd, dofs[a]);
                 const field_value_type w = space.evaluateRefElementShapeFunction(local, xi);
 
                 const auto v_nd = space.getMeshVertexNDIndex(dofs[a]);
