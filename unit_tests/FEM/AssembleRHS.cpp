@@ -205,8 +205,6 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
   auto rhs    = TestFixture::make_zero_field(mesh, layout);
   auto space  = TestFixture::make_space(mesh);
 
-  auto device_space = space.getDeviceMirror();
-
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
 
@@ -217,7 +215,7 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
   const double local_w = TestFixture::fill_uniform_particles(bunch, n_local, xmin, xmax);
 
   auto policy = Kokkos::RangePolicy<exec_space>(0, bunch.getLocalNum());
-  ippl::assemble_rhs_from_particles(bunch.Q, rhs, bunch.R, device_space, policy);
+  ippl::assemble_rhs_from_particles(bunch.Q, rhs, bunch.R, space, policy);
 
   const double global_w = TestFixture::mpi_sum(local_w);
   const double rhs_sum  = static_cast<double>(rhs.sum());
