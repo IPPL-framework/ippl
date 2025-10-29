@@ -248,6 +248,9 @@ def catalyst_execute(info):
             # 1) Read current value from forward (simulation) channel
             sim_val = None
             sim_vec = {}
+
+            # if name.endswith("_btn"):
+                # continue
             
 
             try:
@@ -334,39 +337,45 @@ def catalyst_execute(info):
                             # Coerce type to match the property backend: int for IntVectorProperty, float otherwise
                             if hasattr(prop, 'IsA') and prop.IsA('vtkSMIntVectorProperty'):
                                 print_info("vtkSMIntVectorProperty")
-                                prop.SetElement(0, int(round(sim_val)))
+                                # prop.SetElement(0, int(round(sim_val)))
+                                # """ not setting seems to work?? """
                             else:
                                 print_info("not vtkSMIntVectorProperty")
                                 prop.SetElement(0, float(sim_val))
+
                         except Exception:
                             print_info("exception handling with float")
                             # Fallback: attempt float
                             prop.SetElement(0, float(sim_val))
+
                         sender.UpdateVTKObjects()
                         sender.UpdatePipeline()
-                    else:
+
+
+
+                    # else:
                         # Property not found via GetProperty; attempt simple-API attribute set
 
-                        print_info("unlikely fallback")
-                        try:
-                            coerced = int(round(sim_val))
-                            if hasattr(sender, name):
-                                print_info("fallback setattr(int)")
-                                setattr(sender, name, [coerced])
-                                sender.UpdateVTKObjects()
-                                sender.UpdatePipeline()
-                            else:
-                                print_info("property not found on sender (attribute)")
-                        except Exception:
-                            # try float attribute
-                            try:
-                                if hasattr(sender, name):
-                                    print_info("fallback setattr(float)")
-                                    setattr(sender, name, [float(sim_val)])
-                                    sender.UpdateVTKObjects()
-                                    sender.UpdatePipeline()
-                            except Exception:
-                                pass
+                        # print_info("unlikely fallback")
+                        # try:
+                        #     coerced = int(round(sim_val))
+                        #     if hasattr(sender, name):
+                        #         print_info("fallback setattr(int)")
+                        #         setattr(sender, name, [coerced])
+                        #         sender.UpdateVTKObjects()
+                        #         sender.UpdatePipeline()
+                        #     else:
+                        #         print_info("property not found on sender (attribute)")
+                        # except Exception:
+                        #     # try float attribute
+                        #     try:
+                        #         if hasattr(sender, name):
+                        #             print_info("fallback setattr(float)")
+                        #             setattr(sender, name, [float(sim_val)])
+                        #             sender.UpdateVTKObjects()
+                        #             sender.UpdatePipeline()
+                        #     except Exception:
+                        #         pass
 
                         # print_info("else scaleFactor")
                         # # Fallback for per-channel proxy (legacy)

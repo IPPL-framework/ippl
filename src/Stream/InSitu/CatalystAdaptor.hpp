@@ -7,9 +7,15 @@
 we can set with name (but since we likely will not have the need to ever retrieve we can just stire nameless
 to redzcede unncessary computin type ...) */
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 namespace ippl{
 
-// META PRPOGRAMMING HELPERS
+// ==============================================================================================
+// META PRPOGRAMMING HELPERS ====================================================================
+// ==============================================================================================
 
 template <typename T, typename = void>
 struct has_getRegionLayout : std::false_type {};
@@ -24,12 +30,9 @@ constexpr bool has_getRegionLayout_v = has_getRegionLayout<T>::value;
 
 
 
-
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-
+// ==============================================================================================
+//  HELPERS =====================================================================================
+// ==============================================================================================
 /**
  * @brief Replaces all occurrences of a string in a file and writes the content to a new file.
  *
@@ -97,15 +100,11 @@ bool CatalystAdaptor::create_new_proxy_file(const std::string & label){
 
 
 
-
-
-
     
 /*  sets a file path to a certain node, first tries to fetch from environment, 
 afterwards uses the dafault path passed  */
 void CatalystAdaptor::set_node_script(
     conduit_cpp::Node node_path,
-    // const char* env_var,
     const std::string env_var,
     const std::filesystem::path default_file_path
 ){           
@@ -126,18 +125,16 @@ void CatalystAdaptor::set_node_script(
 }
 
 
+// ==============================================================================================
+// VIS CHANNEL INITIALIZER:======================================================================
+// ==============================================================================================
+
 // init visualisation for SCALAR FIELDS 
 // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
 template<typename T, unsigned Dim, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
-                    [[maybe_unused]]  
-                      const Field<T, Dim, ViewArgs...>& entry
-                    , const std::string label
-                )
+void CatalystAdaptor::init_entry( [[maybe_unused]]  const Field<T, Dim, ViewArgs...>& entry , const std::string label)
 {
         ca_m << "::Initialize()::init_entry(ippl::Field<" << typeid(T).name() << "," << Dim << ">) called" << endl;
-        
-
         forceHostCopy[label] = false;
 
         const std::string channelName = "ippl_sField_" + label; 
@@ -164,18 +161,13 @@ void CatalystAdaptor::init_entry(
 
         conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
         script_args.append().set_string(channelName);
-
-    }
+}
 
 
 // init visualisation for VECTOR FIELDS  
 // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-void CatalystAdaptor::init_entry( 
-                                [[maybe_unused]]  
-                                  const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry
-                                , const std::string label
-                            )
+void CatalystAdaptor::init_entry( [[maybe_unused]]  const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry , const std::string label)
 {
         ca_m    << "::Initialize()::init_entry(ippl::Field<ippl::Vector<"
                 << typeid(T).name() << "," << Dim_v << ">," << Dim 
@@ -217,11 +209,7 @@ void CatalystAdaptor::init_entry(
 // == ippl::ParticleBase<PLayout<T, dim>,...>,...>
 template<typename T>
 requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
-void CatalystAdaptor::init_entry( 
-                                [[maybe_unused]]  
-                                  const T& entry
-                                , const std::string label
-                            )
+void CatalystAdaptor::init_entry( [[maybe_unused]]  const T& entry, const std::string label)
 {
         ca_m    << "::Initialize()::init_entry(ParticleBase<PLayout<" 
                 << typeid(particle_value_t<T>).name() << ","<< particle_dim_v<T> 
@@ -291,9 +279,9 @@ void CatalystAdaptor::init_entry([[maybe_unused]] const T& entry, const std::str
   
 
 
-// ==========================================================
-// CHANNEL EXECUTIONERS =====================================
-// ==========================================================
+// ==============================================================================================
+// CHANNEL EXECUTIONERS =========================================================================
+// ==============================================================================================
 
 // ▶ create_mirror_view:           allocates data only if the host process cannot access view’s data, 
 //                                  otherwise hostView references the same data.
@@ -868,6 +856,11 @@ template<typename T>
 
 
 
+// =====================================================================================
+// STEERING:
+// =====================================================================================
+
+
 template<typename T>
 void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_scalar_forwardpass,  const std::string& label ){
     ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
@@ -876,17 +869,38 @@ void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const T& steerable_
     script_args.append().set_string(label);
 }
 
-
-
-
 // Bool-like Switch: init (checkbox in GUI)
-void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Switch& sw, const std::string& label ){
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const bool& sw, const std::string& label ){
     ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: Switch" << endl;
     proxyWriter.includeBool(label, static_cast<bool>(sw));
 
     conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
     script_args.append().set_string(label);
 }
+
+// Button-like: init (push button in GUI)
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Button& btn, const std::string& label ){
+    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Type: Button" << endl;
+    proxyWriter.includeButton(label);
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
+}
+
+// Vector steerable overloads
+template<typename T, unsigned Dim_v>
+void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass, const std::string& label )
+{
+    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+    // Register this label as a vector channel in the proxy writer (limit to 3 comps in GUI)
+    proxyWriter.includeVector<T, Dim_v>(label);
+    (void)steerable_vec_forwardpass;
+
+    // Ensure the Python pipeline receives this label after `--steer_channel_names`
+    // so it creates the corresponding forward reader and unified sender wiring.
+    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
+    script_args.append().set_string(label);
+}
+
 
 
 template<typename T>
@@ -933,9 +947,10 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
 }
 
 // Bool-like Switch: forward as single-sample scalar (0/1)
-void CatalystAdaptor::AddSteerableChannel( const ippl::Switch& sw, const std::string& steerable_suffix )
+void CatalystAdaptor::AddSteerableChannel( const bool& sw, const std::string& steerable_suffix )
 {
-    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Switch" << endl;
+    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: bool/Switch" << endl;
+    
     auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
     steerable_channel["type"].set("mesh");
     auto steerable_data = steerable_channel["data"];
@@ -951,30 +966,36 @@ void CatalystAdaptor::AddSteerableChannel( const ippl::Switch& sw, const std::st
     steerable_field["association"].set("vertex");
     steerable_field["topology"].set("sMesh_topo");
     steerable_field["volume_dependent"].set("false");
-    steerable_field["values"].set(static_cast<int>(sw.value ? 1 : 0));
+    
+    int bool_as_int = sw ? 1 : 0;
+    steerable_field["values"].set(bool_as_int);
 }
 
-// =========================
-// Vector steerable overloads
-// =========================
-template<typename T, unsigned Dim_v>
-void CatalystAdaptor::InitSteerableChannel( [[maybe_unused]] const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass,
-                                            const std::string& label )
+// Button-like: forward as single-sample scalar (0/1)
+void CatalystAdaptor::AddSteerableChannel( const ippl::Button& btn, const std::string& steerable_suffix )
 {
-    ca_m << "::Initialize()::InitSteerableChannel(" << label << "):  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
-    // Register this label as a vector channel in the proxy writer (limit to 3 comps in GUI)
-    proxyWriter.includeVector<T, Dim_v>(label);
-    (void)steerable_vec_forwardpass;
+    ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Type: Button" << endl;
+    auto steerable_channel = node["catalyst/channels/steerable_channel_forward_" + steerable_suffix];
+    steerable_channel["type"].set("mesh");
+    auto steerable_data = steerable_channel["data"];
+    steerable_data["coordsets/coords/type"].set_string("explicit");
+    steerable_data["coordsets/coords/values/x"].set( 0 );
 
-    // Ensure the Python pipeline receives this label after `--steer_channel_names`
-    // so it creates the corresponding forward reader and unified sender wiring.
-    conduit_cpp::Node script_args = node["catalyst/scripts/script/args"];
-    script_args.append().set_string(label);
+    steerable_data["topologies/sMesh_topo/type"].set("unstructured");
+    steerable_data["topologies/sMesh_topo/coordset"].set("coords");
+    steerable_data["topologies/sMesh_topo/elements/shape"].set("point");
+    steerable_data["topologies/sMesh_topo/elements/connectivity"].set( 0 );
+
+    conduit_cpp::Node steerable_field = steerable_data["fields/steerable_field_f_" + steerable_suffix];
+    steerable_field["association"].set("vertex");
+    steerable_field["topology"].set("sMesh_topo");
+    steerable_field["volume_dependent"].set("false");
+    steerable_field["values"].set(static_cast<int>(btn ? 1 : 0));
 }
 
+// ippl::Vector overload
 template<typename T, unsigned Dim_v>
-void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass,
-                                           const std::string& steerable_suffix )
+void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerable_vec_forwardpass, const std::string& steerable_suffix )
 {
     ca_m << "::Execute()::AddSteerableChannel(" << steerable_suffix << ");  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
 
@@ -1006,22 +1027,9 @@ void CatalystAdaptor::AddSteerableChannel( const ippl::Vector<T, Dim_v>& steerab
 }
 
 
-
-    /* maybe use function overloading instead ... */
-        // const std::string value_path = ... 
-        // steerable_scalar_backwardpass = static_cast<T>(results[value_path].value());
-        // steerable_scalar_backwardpass = results[value_path].value()[0];
-        /* ????? this should work?? */
-        // if constexpr (std::is_same_v<std::remove_cvref_t<T>, double>) {
-
-
-
-
+/* overload for: Scalar, Bool(switch), Button */
 template<typename T>
-void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, 
-                                                    const std::string& label
-
-                                                ) {
+void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpass, const std::string& label) {
     ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: " << typeid(T).name() << endl;
 
     std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
@@ -1041,26 +1049,23 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
         return;
     }
 
-    if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = values_node.to_double();
-    else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<double>(values_node.to_float());
-    else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<double>(values_node.to_int32());
-    else if constexpr (std::is_same_v<T,unsigned>) steerable_scalar_backwardpass = static_cast<double>(values_node.to_uint32());
+    if constexpr (std::is_same_v<T,double>)             steerable_scalar_backwardpass = values_node.to_double();
+    else if constexpr (std::is_same_v<T,float>)         steerable_scalar_backwardpass = static_cast<float>(values_node.to_float());
+    else if constexpr (std::is_same_v<T,int>)           steerable_scalar_backwardpass = static_cast<int>(values_node.to_int32());
+    else if constexpr (std::is_same_v<T,unsigned>)      steerable_scalar_backwardpass = static_cast<unsigned>(values_node.to_uint32());
+    else if constexpr (std::is_same_v<T,bool>)          steerable_scalar_backwardpass = static_cast<bool>(values_node.to_int32());
+    else if constexpr (std::is_same_v<T,ippl::Button>)  steerable_scalar_backwardpass = static_cast<bool>(values_node.to_int32());
     else {
         throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported type for channel: " + label);
     }
 
-    // double v = 0.0;
-    // if constexpr (std::is_same_v<T,double>)        steerable_scalar_backwardpass = v;
-    // else if constexpr (std::is_same_v<T,float>)    steerable_scalar_backwardpass = static_cast<float>(v);
-    // else if constexpr (std::is_same_v<T,int>)      steerable_scalar_backwardpass = static_cast<int>(std::llround(v));
-    // else if constexpr (std::is_same_v<T,unsigned>) steerable_scalar_backwardpass = static_cast<unsigned>(std::llround(v));
-
     ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | received:" << steerable_scalar_backwardpass << endl;
 }
 
+
+/* overload for: ippl::Vector */
 template<typename T, unsigned Dim_v>
-void CatalystAdaptor::FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steerable_vec_backwardpass,
-                                                  const std::string& label)
+void CatalystAdaptor::FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steerable_vec_backwardpass, const std::string& label)
 {
     ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
 
@@ -1226,10 +1231,9 @@ void CatalystAdaptor::InitializeRuntime(
         proxy_path
     );
     // Generate unified proxy with one source and many properties (one per steerable label)
-    proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
-    
     if(write_proxies_only_run && std::string(write_proxies_only_run) == "ON"){
-        throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
+        proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
+        // throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
     }
 
 

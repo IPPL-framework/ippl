@@ -19,7 +19,7 @@ namespace ippl {
             e.do_exec = [&value, label](ExecuteVisitor_t& v) { v(label, value); };
         } 
         /*  dont need scalar vis?... */
-        else if constexpr (is_scalar_v<T> || is_vector_v<T> || std::is_same_v<typename std::decay<T>::type, Switch> || std::is_same_v<typename std::decay<T>::type, Button>) {
+        else if constexpr (is_scalar_v<T> || is_vector_v<T> || std::is_same_v<typename std::decay<T>::type,Button>) {
             e.do_steer_init = [&value, label](SteerInitVisitor_t& v)    { v(label, value); };
             e.do_steer_fwd  = [&value, label](SteerForwardVisitor_t& v) { v(label, value); };
             e.do_steer_fetch= [&value, label](SteerFetchVisitor_t& v)   { v(label, value); };

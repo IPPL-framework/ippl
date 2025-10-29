@@ -79,18 +79,65 @@ class VisRegistryRuntime;
 
 
     struct Button {
-        bool value = false;
         Button() = default;
-        explicit Button(bool v) : value(v) {}
-        explicit operator bool() const { return value; }
+        
+        // explicit not explicit allows: if(my_btn) to work  
+        operator bool() const { return value; }
+        
+        // explicit Button(bool v) : value(v) {}
+        explicit Button(bool v){
+
+            if(v){ // Button is initialized pressd
+                value = true;
+                prior_state=false;
+            }
+            else /* if(!v) */{ // Button is initialized  unpressd
+                value=false;
+                prior_state = false;
+            }
+
+        }
+
+
+        // Assignment operator: Button = bool
+        Button& operator=(bool v) {
+            if(v) { // Button is being pressed
+                if(!value && !prior_state) { // True unpressed state
+                    value = true;
+                    prior_state = false;  // Fixed typo: was "priot_state"
+                }
+                else if(value && !prior_state) { // Button was pressed last iteration and is still "being pushed down"
+                    // Internal button needs to snap back! And mark it as "freshly snapped"
+                    value = false;
+                    prior_state = true;
+                }
+                else if(!value && prior_state) { // Button was pressed at some previous iteration and is still "being pushed down"
+                    // Button needs to stay in freshly snapped back state
+                    value = false;
+                    prior_state = true;
+                }
+                else if(value && prior_state) { // Impossible state
+                    throw IpplException("CatalystAdaptor::Button Assignment", "Impossible State: Button is malfunctioning!!!");
+                }
+            }
+            else { // Button is unpressed
+                value = false;
+                prior_state = false;
+            }
+            return *this;  // CRITICAL: Return reference to this object for chaining
+        }
+
+        // Friend function to overload << operator for output streams
+        friend std::ostream& operator<<(std::ostream& os, const Button& btn) {
+            os << (btn.value ? "PUSHED" : "not PUSHED");
+            return os;
+        }
+
+        private: 
+            bool value = false;
+            bool prior_state = false;
     }; 
 
-    struct Switch {
-        bool value = false;
-        Switch() = default;
-        explicit Switch(bool v) : value(v) {}
-        explicit operator bool() const { return value; }
-    };
 
 using HostMaskView1D_t = Kokkos::View<unsigned char*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
 // 1. Define an alias for your key type for cleanliness
@@ -121,8 +168,10 @@ class CatalystAdaptor {
     // conduit_cpp::Node node_init;
     conduit_cpp::Node node;
     conduit_cpp::Node results;
+    public:
     Inform ca_m;
     Inform ca_warn;
+    private:
 
     ProxyWriter proxyWriter;
 
@@ -482,7 +531,7 @@ class CatalystAdaptor {
     void InitSteerableChannel( const T& steerable_scalar_forwardpass,  const std::string& label );
 
     // Bool-like switch overload
-    void InitSteerableChannel( const ippl::Switch& sw, const std::string& label );
+    void InitSteerableChannel( const bool& sw, const std::string& label );
 
     // Vector overloads for steerable channels
     template<typename T, unsigned Dim_v>
@@ -502,7 +551,10 @@ class CatalystAdaptor {
     void AddSteerableChannel(const T& steerable_scalar_forwardpass,  const std::string& steerable_suffix);
 
     // Bool-like switch overload
-    void AddSteerableChannel(const ippl::Switch& sw, const std::string& steerable_suffix);
+    void AddSteerableChannel(const bool& sw, const std::string& steerable_suffix);
+    // Button-like push overloads
+    void InitSteerableChannel( const ippl::Button& btn, const std::string& label );
+    void AddSteerableChannel(const ippl::Button& btn, const std::string& steerable_suffix);
 
     // Vector overloads for steerable channels
     template<typename T, unsigned Dim_v>

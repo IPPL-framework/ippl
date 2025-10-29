@@ -18,6 +18,7 @@ class ProxyWriter {
     double      defaultValue{1.0};
     bool        isVector{false};
     bool        isBool{false};
+    bool        isButton{false};
     unsigned    vecDim{1}; // for vectors, clamp to 3
   };
 
@@ -72,6 +73,12 @@ public:
 
   void includeBool(const std::string& label, bool defaultValue = false) {
     Channel ch; ch.label = label; ch.defaultValue = defaultValue ? 1.0 : 0.0; ch.isVector = false; ch.isBool = true; ch.vecDim = 1;
+    channels_.emplace_back(std::move(ch));
+  }
+
+  // Include a steerable push-button channel (momentary action)
+  void includeButton(const std::string& label) {
+    Channel ch; ch.label = label; ch.defaultValue = 0.0; ch.isVector = false; ch.isBool = false; ch.isButton = true; ch.vecDim = 1;
     channels_.emplace_back(std::move(ch));
   }
 
@@ -250,6 +257,26 @@ private:
                  << "                                  panel_widget=\"CheckBox\">\n" // <-- This is key
                  << "              <BooleanDomain name=\"bool\"/>\n"
                  << "            </IntVectorProperty>\n\n";
+      } else if (ch.isButton) {
+        // Momentary button as checkbox: Check to trigger, simulation unchecks after processing
+        // Uses CheckBox widget with IntVectorProperty (same as Switch but for momentary action)
+        // command_button implementation did no seem to work...?...
+        sources_ << "            <IntVectorProperty name=\"" << L << "\" label=\"" << L << " (Trigger)\"\n"
+                 << "                                  command=\"SetTuple1Int\"\n"
+                 << "                                  clean_command=\"Clear\"\n"
+                 << "                                  use_index=\"1\"\n"
+                 << "                                  number_of_elements=\"1\"\n"
+                 << "                                  initial_string=\"steerable_field_b_" << L << "\"\n"
+                 << "                                  default_values=\"0\"\n"
+                 << "                                  number_of_elements_per_command=\"1\"\n"
+                 << "                                  repeat_command=\"1\"\n"
+                 << "                                  immediate_apply=\"1\"\n"
+                 << "                                  panel_widget=\"CheckBox\">\n"
+                 << "              <BooleanDomain name=\"bool\"/>\n"
+                 << "              <Documentation>\n"
+                 << "                Check this box to trigger the button action. The simulation will automatically uncheck it internally  after processing.\n"
+                 << "              </Documentation>\n"
+                 << "            </IntVectorProperty>\n\n";
       } else if (!ch.isVector) {
         sources_ << "            <DoubleVectorProperty name=\"" << L << "\" label=\"" << L << "\"\n"
                  << "                                  command=\"SetTuple1Double\"\n"
@@ -292,6 +319,11 @@ private:
                 //  << "                </Hints>\n";
         sources_ << "                <Property name=\"" << ch.label << "\" function=\"bool\" label=\"" << ch.label << "\" />\n";
       } 
+      else if (ch.isButton) {
+        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label<< "\">\n";
+        // sources_ << "                <Property name=\"" << ch.label << "\" function=\"button\" label=\"" << ch.label << "\" />\n";
+        sources_ << "                <Property name=\"" << ch.label <<  "\" />\n";
+      } 
       else 
       if (!ch.isVector) {
 
@@ -317,13 +349,14 @@ private:
     }
 
     // Initialization hints: pull defaults from forward channels per label
+    // Skip buttons - they should not be initialized from simulation state
     sources_ << "            <Hints>\n";
     for (const auto& ch : channels_) {
+      if (ch.isButton) continue; // Buttons are GUI-only, don't initialize from forward channel
       const std::string& L = ch.label;
-      // if (!ch.isVector) {
-        sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
-                 << "                <Property name=\"" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
-                 << "              </CatalystInitializePropertiesWithMesh>\n";
+      sources_ << "              <CatalystInitializePropertiesWithMesh mesh=\"steerable_channel_forward_" << L << "\">\n"
+               << "                <Property name=\"" << L << "\" association=\"point\" array=\"steerable_field_f_" << L << "\" />\n"
+               << "              </CatalystInitializePropertiesWithMesh>\n";
 
     }
     sources_ << "            </Hints>\n";
@@ -336,30 +369,3 @@ private:
 
 } // namespace ippl
 
-
-// Yes—no extra channels needed. You can present sliders for a single unified vector property, and it already fits your current design.
-
-// What you have now
-
-// In the unified proxy we emit a 3-element property bound to SetTuple3Double:
-// DoubleVectorProperty name="<label>" command="SetTuple3Double" number_of_elements="3" panel_widget="DoubleRange"
-// Range controlled by DoubleRangeDomain (ProxyWriter.initialize’s rangeMin/rangeMax).
-// In the PropertyCollection we use a dedicated vector prototype:
-// SteerableVectorPrototype with DoubleVectorProperty vec3 (3 elements, panel_widget="DoubleRange").
-// The forward channel carries a single 3-component array (values/x, y, z), and the backward proxy keeps one property per vector label. So still one channel, one property.
-// What the UI shows
-
-// ParaView will render a 3-element DoubleVectorProperty with the “DoubleRange” widget as three editors. Depending on ParaView version/theme, you’ll see:
-// Three numeric inputs, and typically slider UI per component under the DoubleRange widget.
-// Range limits respected from the domain you set (-99..99 by default via ProxyWriter).
-// No hidden channels or extra meshes are required—just that single vector property per label.
-
-// Tuning
-
-// Per-component slider range: set via ProxyWriter.initialize(rangeMin, rangeMax).
-// Labels/tooltips: you can add <Documentation> in the XML for nicer UI text, or prefix the Property label to include (X/Y/Z) context.
-// If your ParaView build doesn’t show sliders for 3-element DoubleVectorProperty, it will still show 3 numeric fields. You can keep the same property and switch panel_widget to a different vector-friendly widget in your version, but “DoubleRange” is the standard.
-// Optional variants without new channels
-
-// If you prefer truly separate per-axis sliders (still one channel), you can define three properties (X/Y/Z) on the same proxy and implement component setters in your vtkSteeringDataGenerator (e.g., SetVectorXDouble, SetVectorYDouble, SetVectorZDouble). That’s extra properties, not extra channels. Your current generator already supports SetTuple3Double, so the single 3-element property is simplest and works today.
-// Bottom line: You can have slider-based steering for vectors with your current unified vector property; no additional or hidden channels required.

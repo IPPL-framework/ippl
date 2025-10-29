@@ -6,6 +6,13 @@
 #include <Stream/InSitu/CatalystAdaptor.h>
 #include <catalyst.hpp>
 
+// template<class T>
+// struct is_scalar : std::integral_constant<bool, std::is_arithmetic<T>::value
+//                                              || std::is_enum<T>::value
+//                                              || std::is_pointer<T>::value
+//                                              || std::is_member_pointer<T>::value
+//                                              || std::is_null_pointer<T>::value>
+
 
 
 namespace ippl{
@@ -58,13 +65,18 @@ struct CatalystAdaptor::ExecuteVisitor {
 struct CatalystAdaptor::SteerInitVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_scalar_v<std::decay_t<S>>
+    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
     void operator()(const std::string& label, const S& value) const {
         ca.InitSteerableChannel(value, label);
     }
 
     // Bool-like Switch overload
-    void operator()(const std::string& label, const ippl::Switch& value) const {
+    void operator()(const std::string& label, const bool& value) const {
+        ca.InitSteerableChannel(value, label);
+    }
+
+    // Button-like overload
+    void operator()(const std::string& label, const ippl::Button& value) const {
         ca.InitSteerableChannel(value, label);
     }
 
@@ -77,7 +89,7 @@ struct CatalystAdaptor::SteerInitVisitor {
     }
 
     template<class T>
-    requires (!std::is_scalar_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
+    requires (!std::is_arithmetic_v<std::decay_t<T>> && !is_vector_v<std::decay_t<T>>)
     void operator()(const std::string& label , const T&) const {
 
         throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + label);
@@ -92,13 +104,18 @@ struct CatalystAdaptor::SteerInitVisitor {
 struct CatalystAdaptor::SteerForwardVisitor {
     CatalystAdaptor& ca;
 
-    template<class S> requires std::is_scalar_v<std::decay_t<S>>
+    template<class S> requires std::is_arithmetic_v<std::decay_t<S>>
     void operator()(const std::string& label, const S& value) const {
         ca.AddSteerableChannel(value, label);
     }
 
-    // Bool-like Switch overload
-    void operator()(const std::string& label, const ippl::Switch& value) const {
+    // Bool-like Switch overload (diverts to scalar)
+    void operator()(const std::string& label, const bool& value) const {
+        ca.AddSteerableChannel(value, label);
+    }
+
+    // Button-like overload (diverts to scalar version)
+    void operator()(const std::string& label, const ippl::Button& value) const {
         ca.AddSteerableChannel(value, label);
     }
 
@@ -137,15 +154,20 @@ struct CatalystAdaptor::SteerFetchVisitor {
     template<class T>
     requires (!std::is_arithmetic_v<std::decay_t<T>>)
     void operator()(const std::string&, const T&) const {
-        /* ignore non-scalars */ 
-    }
+        ca.ca_m << "INVALID FETCH CALLEd" << endl;    }
 
     // Optional: fetch for Switch via bool bridge
-    void operator()(const std::string& label, ippl::Switch& value) const {
-        int iv = static_cast<int>(value.value);
-        // Reuse scalar fetch into an int (0/1)
-        ca.FetchSteerableChannelValue(iv, label);
-        value.value = (iv != 0);
+    void operator()(const std::string& label, bool& value) const {
+        ca.FetchSteerableChannelValue(value, label);
+    }
+
+    // Optional: fetch for Button via bool bridge (momentary action)
+    void operator()(const std::string& label, ippl::Button& value) const {
+        /* diverge to normal scalar overload ... */
+        // bool iv = bool(value);
+        // ca.FetchSteerableChannelValue(value, label);
+        ca.FetchSteerableChannelValue(value, label);
+        // value = ippl::Button(iv);
     }
 };
 
