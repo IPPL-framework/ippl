@@ -78,7 +78,7 @@ namespace ippl {
         const auto hr = mesh.getMeshSpacing();
         const auto origin = mesh.getOrigin();
 
-        const FieldLayout<Dim>& layout = f.getLayout();
+        FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom = layout.getLocalNDIndex();
         const int nghost = f.getNghost();
 
