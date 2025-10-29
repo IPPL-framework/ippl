@@ -21,7 +21,7 @@ namespace ippl {
 
         for (unsigned d = 0; d < Dim; ++d) {
             const T s = (x[d] - origin[d]) / hr[d]; // To cell units
-            const size_t e = static_cast<size_t>(std::floor(s));
+            const size_t e = static_cast<size_t>(Kokkos::floor(s));
             e_nd[d] = e;
             xi[d] = s - static_cast<T>(e);
         }
