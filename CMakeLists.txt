@@ -30,7 +30,7 @@ include(ProjectSetup)
 # ------------------------------------------------------------------------------
 # Primary IPPL options
 # ------------------------------------------------------------------------------
-set(IPPL_PLATFORMS "Platforms to build IPPL for" CACHE STRING "OPENMP;CUDA")
+set(IPPL_PLATFORMS "OPENMP;CUDA" CACHE STRING "Platforms to build IPPL for")
 option(BUILD_SHARED_LIBS "Build IPPL as a shared library" OFF)
 option(IPPL_ENABLE_UNIT_TESTS "Enable unit tests using GoogleTest" OFF)
 option(IPPL_ENABLE_FFT "Enable FFT support" OFF)
@@ -46,7 +46,9 @@ option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" OFF)
 option(IPPL_SKIP_FAILING_TESTS "Do not build/test tests that are currently marked as failing" OFF)
-# option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
+option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
+
+# "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()
 
@@ -142,4 +144,8 @@ endif()
 
 if(IPPL_ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if(IPPL_ENABLE_SCRIPTS)
+  add_subdirectory(scripts)
 endif()

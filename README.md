@@ -18,6 +18,7 @@
       - [OpenMP release build with alpine and FFTW](#openmp-release-build-with-alpine-and-fftw)
       - [Cuda alpine release build](#cuda-alpine-release-build)
       - [HIP release build (LUMI)](#hip-release-build-lumi)
+      - [Enable Scripts](#enable-scripts)
 - [Contributions](#contributions)
   - [Citing IPPL](#citing-ippl)
 - [Job scripts for running on Merlin and Gwendolen (at PSI)](#job-scripts-for-running-on-merlin-and-gwendolen-at-psi)
@@ -75,7 +76,8 @@ The relevant options of IPPL are
 - `IPPL_ENABLE_ALPINE`, default `OFF`
 - `IPPL_USE_ALTERNATIVE_VARIANT`, default `OFF`. Can be turned on for GPU builds where the use of the system-provided variant doesn't work.  
 - `IPPL_ENABLE_SANITIZER`, default `OFF`
-
+- `IPPL_ENABLE_SCRIPTS`, default `OFF`
+  
 `Kokkos` and `Heffte` by default will try to use version that are found on the sytem, if the system has `kokkos@4.6` and you set `Kokkos_VERSION=4.5` then cmake's find_package will consider the system version a match (newer than requested) and use it. The same applies for `Heffte`. You can override the variable to checkout any version by setting a git tag/sha/branch such as 
 ```
 cmake -DKokkos_version=git.4.7.01 -DHeffte_VERSION=git.v2.4.1 ...  
@@ -188,6 +190,26 @@ m-6.0.3/lib/llvm/lib"
 - `AMD_GFX90A` (LUMI machine)
 - `HOPPER90` (Merlin7 GPUs)
 
+### Enable Scripts
+We add `IPPL_ENABLE_SCRIPTS=ON/OFF` and when enabled, cmake will use `configure_file` to copy the scripts to the build dir, and replace some strings in them with cmake generated ones with the correct paths/values in. This allows the user to
+```
+cmake -DIPPL_ENABLE_SCRIPTS=ON  ....
+make LandauDamping
+...
+-- Scripts configured in /capstor/scratch/cscs/biddisco/build-santis/scripts
+```
+then
+```
+./scripts/landau/strong-scaling-alps/generate.sh
+```
+and the result will be something like
+```
+Generating job for node count 004 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_004
+Submitted batch job 396349
+...
+Generating job for node count 256 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_256
+Submitted batch job 396355
+```
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
 

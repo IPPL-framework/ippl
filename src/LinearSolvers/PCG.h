@@ -354,6 +354,12 @@ namespace ippl {
                               richardson_preconditioner<FieldLHS, UpperLowerF, InverseDiagF>>(
                         std::move(upper_and_lower), std::move(inverse_diagonal),
                         richardson_iterations));
+            } else if (preconditioner_type == "richardson_alt") {
+                preconditioner_m =
+                    std::move(std::make_unique<
+                              richardson_preconditioner_alt<FieldLHS, OperatorF, InverseDiagF>>(
+                        std::move(op), std::move(inverse_diagonal),
+                        richardson_iterations));
             } else if (preconditioner_type == "gauss-seidel") {
                 preconditioner_m = std::move(
                     std::make_unique<gs_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF>>(
