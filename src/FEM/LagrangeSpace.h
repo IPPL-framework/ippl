@@ -296,6 +296,8 @@ namespace ippl {
 
             KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
                 const point_t& localPoint) const;
+            KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
+                const size_t& localDOF, const point_t& localPoint) const;
         };
 
         DeviceStruct getDeviceMirror() const; 

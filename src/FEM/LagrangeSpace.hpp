@@ -1830,6 +1830,60 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::point_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+    DeviceStruct::evaluateRefElementShapeFunctionGradient(const size_t& localDOF,
+            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                FieldRHS>::point_t& localPoint) const {
+        // TODO fix not order independent, only works for order 1
+        static_assert(Order == 1 && "Only order 1 is supported at the moment");
+
+        // Assert that the local vertex index is valid.
+        assert(localDOF < numElementDOFs && "The local vertex index is invalid");
+
+        assert(this->ref_element_m.isPointInRefElement(localPoint)
+               && "Point is not in reference element");
+
+        // Get the local dof nd_index
+        const vertex_points_t local_vertex_points = this->ref_element_m.getLocalVertices();
+
+        const point_t& local_vertex_point = local_vertex_points[localDOF];
+
+        point_t gradient(1);
+
+        // To construct the gradient we need to loop over the dimensions and multiply the
+        // shape functions in each dimension except the current one. The one of the current
+        // dimension is replaced by the derivative of the shape function in that dimension,
+        // which is either 1 or -1.
+        for (size_t d = 0; d < Dim; d++) {
+            // The variable that accumulates the product of the shape functions.
+            T product = 1;
+
+            for (size_t d2 = 0; d2 < Dim; d2++) {
+                if (d2 == d) {
+                    if (localPoint[d] < local_vertex_point[d]) {
+                        product *= 1;
+                    } else {
+                        product *= -1;
+                    }
+                } else {
+                    if (localPoint[d2] < local_vertex_point[d2]) {
+                        product *= localPoint[d2];
+                    } else {
+                        product *= 1.0 - localPoint[d2];
+                    }
+                }
+            }
+
+            gradient[d] = product;
+        }
+
+        return gradient;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
                                            FieldLHS, FieldRHS>::indices_t
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
