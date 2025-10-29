@@ -275,7 +275,7 @@ void InterpolatesAffineExactly() {
 
   auto policy = Kokkos::RangePolicy<exec_space>(0, bunch.getLocalNum());
   Kokkos::deep_copy(bunch.Q.getView(), T(0));
-  ippl::interpolate_to_diracs(bunch.Q, coeffs, bunch.R, device_space, policy);
+  ippl::interpolate_to_diracs(bunch.Q, coeffs, bunch.R, space, policy);
 
   auto d_pos = bunch.R.getView();
   auto d_out = bunch.Q.getView();
