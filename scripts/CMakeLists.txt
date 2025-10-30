@@ -1,4 +1,5 @@
 # update files with correct build dir vars etc
+include("MachineName")
 
 # ------------------------------------------------------------------------------
 # for slurm submission, we will need an account name
