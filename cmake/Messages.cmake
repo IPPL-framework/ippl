@@ -34,7 +34,10 @@ endif()
 # Coloured message
 # ------------------------------------------------------------------------------
 macro(colour_message TYPE COLOUR message)
-  message("${TYPE}" "${COLOUR}${message}${ColourReset}")
+  foreach(msg ${ARGN})
+    set(msg_xtra "${msg_xtra} ${msg}")
+  endforeach()
+  message("${TYPE}" "${COLOUR}${message}${ColourReset}" "${msg_xtra}")
 endmacro()
 
 # ------------------------------------------------------------------------------
