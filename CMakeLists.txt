@@ -30,7 +30,7 @@ include(ProjectSetup)
 # ------------------------------------------------------------------------------
 # Primary IPPL options
 # ------------------------------------------------------------------------------
-set(IPPL_PLATFORMS "OPENMP;CUDA" CACHE STRING "Platforms to build IPPL for")
+set(IPPL_PLATFORMS "SERIAL" CACHE STRING "Platforms to build IPPL for")
 option(BUILD_SHARED_LIBS "Build IPPL as a shared library" OFF)
 option(IPPL_ENABLE_UNIT_TESTS "Enable unit tests using GoogleTest" OFF)
 option(IPPL_ENABLE_FFT "Enable FFT support" OFF)
