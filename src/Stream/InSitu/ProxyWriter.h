@@ -204,46 +204,35 @@ private:
   }
 
   void appendPrototype() {
-    // Single prototype used by all PropertyCollection groups above.
-    misc_ << "      <Proxy name=\"SteerableParametersPrototype\" label=\"" << prototypeLabel_ << "\">\n"
-          << "        <DoubleVectorProperty name=\"scaleFactor\" label=\"scaleFactor\" number_of_elements=\"1\" default_values=\"1\" panel_widget=\"DoubleRange\">\n"
-          << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
-          << "        </DoubleVectorProperty>\n"
-          << "      </Proxy>\n";
+    // Prototype for numeric steerables (scalars and vectors)
+    misc_ << "      <Proxy name=\"SteerableNumericsPrototype\" label=\" Numerics-Collective-Prototype (don't cancel or add new)>\" \n";
+    for (const auto& ch : channels_) {
+      if (ch.isBool || ch.isButton || ch.isEnum) continue;
+      if (ch.isVector) {
+        misc_ << "        <DoubleVectorProperty name=\"vec3_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"3\" default_values=\"" << ch.defaultValue << " " << ch.defaultValue << " " << ch.defaultValue << "\" panel_widget=\"DoubleRange\">\n";
+        misc_ << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n";
+        misc_ << "        </DoubleVectorProperty>\n";
+      } else {
+        misc_ << "        <DoubleVectorProperty name=\"scaleFactor_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"1\" default_values=\"" << ch.defaultValue << "\" panel_widget=\"DoubleRange\">\n";
+        misc_ << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n";
+        misc_ << "        </DoubleVectorProperty>\n";
+      }
+    }
+    misc_ << "      </Proxy>\n\n";
 
-    // Vector prototype to drive 3-element vector editors in PropertyCollection
-    misc_ << "      <Proxy name=\"SteerableVectorPrototype\" label=\"" << prototypeLabel_ << " (Vector)\">\n"
-      << "        <DoubleVectorProperty name=\"vec3\" label=\"vec3\" number_of_elements=\"3\" default_values=\"1 1 1\" panel_widget=\"DoubleRange\">\n"
-      << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
-      << "        </DoubleVectorProperty>\n"
-      << "      </Proxy>\n";
-
-    // Enum prototypes: one per enum channel so choices can differ per label
+    // Prototype for enum steerables
+    misc_ << "      <Proxy name=\"SteerableEnumsPrototype\" label=\"Enums-Collective-Prototype (don't cancel or add new)\">\n";
     for (const auto& ch : channels_) {
       if (!ch.isEnum || ch.enumEntries.empty()) continue;
-      const std::string& L = ch.label;
-      misc_ << "\n      <Proxy name=\"SteerableEnumPrototype_" << L << "\" label=\"" << prototypeLabel_ << " Enum\">\n"
-            << "        <IntVectorProperty name=\"PrototypeEnum_" << L << "\"\n"
-            << "                           label=\"" << L << "\"\n"
-            << "                           number_of_elements=\"1\"\n"
-            << "                           default_values=\"" << ch.defaultInt << "\"\n"
-            << "                           immediate_apply=\"1\"\n"
-            << "                           >\n"
-            << "          <EnumerationDomain name=\"enum\">\n";
+      misc_ << "        <IntVectorProperty name=\"PrototypeEnum_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"1\" default_values=\"" << ch.defaultInt << "\" immediate_apply=\"1\">\n";
+      misc_ << "          <EnumerationDomain name=\"enum\">\n";
       for (const auto& [text, val] : ch.enumEntries) {
-        misc_ << "                <Entry text=\"" << text << "\" value=\"" << val << "\"/>\n";
+        misc_ << "            <Entry text=\"" << text << "\" value=\"" << val << "\"/>\n";
       }
-      misc_ << "          </EnumerationDomain>\n"
-            << "        </IntVectorProperty>\n"
-            << "      </Proxy>\n";
+      misc_ << "          </EnumerationDomain>\n";
+      misc_ << "        </IntVectorProperty>\n";
     }
-
-  // Bool prototype to drive checkbox in PropertyCollection (int-backed)
-  // misc_ << "      <Proxy name=\"SteerableBoolPrototype\" label=\"" << prototypeLabel_ << " (Bool)\">\n"
-  //   << "        <IntVectorProperty name=\"bool\" label=\"bool\" number_of_elements=\"1\" default_values=\"0\" panel_widget=\"CheckBox\">\n"
-  //   << "          <BooleanDomain name=\"bool\"/>\n"
-  //   << "        </IntVectorProperty>\n"
-  //   << "      </Proxy>\n";
+    misc_ << "      </Proxy>\n";
   }
 
   // Build a single SourceProxy with many per-label scaleFactor properties
@@ -355,54 +344,82 @@ private:
       }
     }
 
-    // Create one PropertyCollection group per label so the GUI shows separate sections
+    // Create one PropertyGroup for numeric steerables (scalars and vectors), referencing the unified prototype
+    bool hasNumerics = false;
     for (const auto& ch : channels_) {
-      // sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
-      //          << "\" panel_widget=\"PropertyCollection\">\n"
-               ;
+      if (!ch.isBool && !ch.isButton && !ch.isEnum) {
+        hasNumerics = true;
+        break;
+      }
+    }
+    if (hasNumerics) {
+      sources_ << "            <PropertyGroup label=\"Numerics\" panel_widget=\"PropertyCollection\">\n";
+      sources_ << "                <Hints>\n";
+      sources_ << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableNumericsPrototype\" />\n";
+      sources_ << "                </Hints>\n";
+      for (const auto& ch : channels_) {
+        if (ch.isBool || ch.isButton || ch.isEnum) continue;
+        if (ch.isVector) {
+          sources_ << "                <Property name=\"" << ch.label << "\" function=\"vec3_" << ch.label << "\" label=\"" << ch.label << "\"/>\n";
+        } else {
+          sources_ << "                <Property name=\"" << ch.label << "\" function=\"scaleFactor_" << ch.label << "\" label=\"" << ch.label << "\"/>\n";
+        }
+      }
+      sources_ << "            </PropertyGroup>\n\n";
+    }
+
+    // Create one PropertyGroup for enums
+    bool hasEnums = false;
+    for (const auto& ch : channels_) {
+      if (ch.isEnum && !ch.enumEntries.empty()) {
+        hasEnums = true;
+        break;
+      }
+    }
+    if (hasEnums) {
+      sources_ << "            <PropertyGroup label=\"Enums\" panel_widget=\"PropertyCollection\">\n";
+      sources_ << "                <Hints>\n";
+      sources_ << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableEnumsPrototype\" />\n";
+      sources_ << "                </Hints>\n";
+      for (const auto& ch : channels_) {
+        if (!ch.isEnum || ch.enumEntries.empty()) continue;
+        sources_ << "                <Property name=\"" << ch.label << "\" function=\"PrototypeEnum_" << ch.label << "\" label=\"" << ch.label << "\"/>\n";
+      }
+      sources_ << "            </PropertyGroup>\n\n";
+    }
+
+    // Create one PropertyGroup for all switches (bools)
+    bool hasSwitches = false;
+    for (const auto& ch : channels_) {
       if (ch.isBool) {
-
-      sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label<< "\">\n";
-        // sources_ << "                <Hints>\n"
-                //  << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableBoolPrototype\" />\n"
-                //  << "                </Hints>\n";
+        hasSwitches = true;
+        break;
+      }
+    }
+    if (hasSwitches) {
+      sources_ << "            <PropertyGroup label=\"Switches\">\n";
+      for (const auto& ch : channels_) {
+        if (!ch.isBool) continue;
         sources_ << "                <Property name=\"" << ch.label << "\" function=\"bool\" label=\"" << ch.label << "\" />\n";
-      } 
-      else if (ch.isEnum) {
-        // Use a PropertyCollection with the enum prototype specific to this label
-        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label << "\" panel_widget=\"PropertyCollection\">\n";
-        sources_ << "             <Hints>\n";
-        sources_ << "               <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableEnumPrototype_" << ch.label << "\" />\n";
-        sources_ << "             </Hints>\n";
-        sources_ << "             <Property name=\"" << ch.label << "\" function=\"PrototypeEnum_" << ch.label << "\"  label=\"" << ch.label << "\"/> \n";
       }
-      else if (ch.isButton) {
-        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label<< "\">\n";
-        // sources_ << "                <Property name=\"" << ch.label << "\" function=\"button\" label=\"" << ch.label << "\" />\n";
+      sources_ << "            </PropertyGroup>\n\n";
+    }
+
+    // Create one PropertyGroup for all buttons
+    bool hasButtons = false;
+    for (const auto& ch : channels_) {
+      if (ch.isButton) {
+        hasButtons = true;
+        break;
+      }
+    }
+    if (hasButtons) {
+      sources_ << "            <PropertyGroup label=\"Buttons\">\n";
+      for (const auto& ch : channels_) {
+        if (!ch.isButton) continue;
         sources_ << "                <Property name=\"" << ch.label <<  "\" />\n";
-      } 
-      else 
-      if (!ch.isVector) {
-
-        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
-                 << "\" panel_widget=\"PropertyCollection\">\n";
-        sources_ << "                <Hints>\n"
-                 << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableParametersPrototype\" />\n"
-                 << "                </Hints>\n";
-        // Use scalar prototype for nicer slider
-        sources_ << "                <Property name=\"" << ch.label << "\" function=\"scaleFactor\" label=\"" << ch.label << "\" />\n";
-      } 
-      else {
-        // For vectors, use a dedicated vector prototype to present a 3-element editor
-
-        sources_ << "            <PropertyGroup label=\"" << groupLabel << "_" << ch.label
-                 << "\" panel_widget=\"PropertyCollection\">\n";
-        sources_ << "                <Hints>\n"
-                 << "                  <PropertyCollectionWidgetPrototype group=\"misc\" name=\"SteerableVectorPrototype\" />\n"
-                 << "                </Hints>\n";
-        sources_ << "                <Property name=\"" << ch.label << "\" function=\"vec3\" label=\"" << ch.label << "\" />\n";
       }
-  sources_ << "            </PropertyGroup>\n\n";
+      sources_ << "            </PropertyGroup>\n\n";
     }
 
     // Initialization hints: pull defaults from a single shared forward mesh

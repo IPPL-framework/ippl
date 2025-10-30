@@ -1156,29 +1156,10 @@ void CatalystAdaptor::FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steera
     if (true) {
         std::string unified_vec_values = std::string("catalyst/steerable_channel_backward_all/fields/") +
                                          "steerable_field_b_" + label + "/values";
-        // std::string legacy_vec_values  = std::string("catalyst/steerable_channel_backward_") + label +
-                                        //  "/fields/steerable_field_b_" + label + "/values";
         const std::string* chosen = nullptr;
         if (results.has_path(unified_vec_values)) chosen = &unified_vec_values;
-        // else if (results.has_path(legacy_vec_values)) chosen = &legacy_vec_values;
         if (chosen) {
             conduit_cpp::Node vnode = results[*chosen];
-            
-            // auto n_elems = vnode.dtype().number_of_elements();
-            // if (vnode.dtype().is_number() && n_elems >= comps) {
-            //     const double* ptr = vnode.as_float64_ptr();
-            //     if (ptr) {
-            //         for (unsigned c = 0; c < comps; ++c) {
-            //             steerable_vec_backwardpass[c] = static_cast<T>(ptr[c]);
-            //         }
-            //         ca_m << "  read flat values from " << *chosen << ": ["
-            //              << ptr[0] << ", " << (comps>1?ptr[1]:0) << ", " << (comps>2?ptr[2]:0) << "]" << endl;
-            //     }
-            // }
-            // else {
-            
-                ca_m << "  vector result node with list-like values found at " << *chosen << endl;//" but not numeric or too few elements (" << n_elems << ")" << endl;
-                // Handle list-like layout: values/0, values/1, values/2
                 bool idx_read = true;
                 for (unsigned c = 0; c < comps; ++c) {
                     std::string idx_path = *chosen + "/" + std::to_string(c);
@@ -1194,13 +1175,15 @@ void CatalystAdaptor::FetchSteerableChannelValue( ippl::Vector<T, Dim_v>& steera
                     }
                 }
                 if (idx_read) {
-                    ca_m << "  read list-like values from " << *chosen << ":" << steerable_vec_backwardpass << endl;
-                    // any_set = true;
+                    // ca_m << "  read list-like values from " << *chosen << ":" << steerable_vec_backwardpass << endl;
+                    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Vector<" << typeid(T).name() << "," << Dim_v << "> | received: " << steerable_vec_backwardpass << endl;
+                
                 }
             // }
         }
         else {
             ca_warn << "  no backward vector found for label '" << label << "' under expected paths." << endl;
+
         }
     }
 }
