@@ -33,7 +33,7 @@ endfunction()
 if(TARGET LandauDamping)
   get_target_location(LandauDamping LANDAU_BINARY)
   #
-  set(LANDAU_SCRIPT_NAME jobscript-gh200.slurm)
+  set(LANDAU_SCRIPT_NAME jobscript-gh200.slurm jobscript-lumig.slurm)
   #
   set(_script_path landau/strong-scaling-alps)
   set(_landau_files generate.sh ${LANDAU_SCRIPT_NAME})
