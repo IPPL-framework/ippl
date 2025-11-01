@@ -62,7 +62,7 @@ cmake <src_dir> -D<option>=<value>
 The relevant options of IPPL are
 - IPPL_PLATFORMS, can be one of `SERIAL, OPENMP, CUDA, "OPENMP;CUDA"`, default `SERIAL`
 - `Kokkos_VERSION`, default `4.5.00` 
-- `Heffte_VERSION`, default `4.7.1`
+- `Heffte_VERSION`, default `2.4.0`
   - If set to `MASTER`, an additional flag `Heffte_COMMIT_HASH` can be set, default `9eab7c0eb18e86acaccc2b5699b30e85a9e7bdda`
   - Currently, this is the only compatible commit of Heffte
 - `IPPL_DYL`, default `OFF`
