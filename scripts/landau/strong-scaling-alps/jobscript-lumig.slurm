@@ -33,9 +33,9 @@ chmod +x ./select_gpu
 export EXE=@LANDAU_BINARY@
 
 mkdir -p data
-#export OMP_PROC_BIND=spread
-#export OMP_PLACES=threads
-#export OMP_NUM_THREADS=6
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+export OMP_NUM_THREADS=6
 export MPICH_GPU_SUPPORT_ENABLED=1
 
 #CPU_BIND="mask_cpu:fe000000000000,fe00000000000000"
