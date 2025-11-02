@@ -26,19 +26,17 @@ if (@Kokkos_FOUND@)
     set(Kokkos_DIR @Kokkos_DIR@)
     find_dependency(Kokkos REQUIRED)
 else()
-    # Kokkos was built "in-tree" via FetchContent
-    # we will instruct cmake to find Kokkos either in build or install tree 
+    # Make sure Kokkos is corrrectly picked up, regardless of where we got it or built it
     if(_INSTALL_TREE)
         set(Kokkos_ROOT "${_install_dir}")
         find_dependency(Kokkos REQUIRED)
         message(STATUS "Using Kokkos_ROOT in the ippl install tree ${_install_dir}")
     elseif(_BUILD_TREE)
-        set(Kokkos_ROOT "${_build_dir}")
-        message(FATAL_ERROR 
+      set(Kokkos_ROOT "${Kokkos_BINARY_DIR}")
+      find_dependency(Kokkos REQUIRED)
+      message(STATUS
             "You are using IPPL directly from the IPPL build tree with Kokkos compiled from source "
-            "(inside the IPPL tree). "
-            "CMake can't find correctly find Kokkos unless it has been 'installed', so please use an "
-            "install tree of IPPL (where Kokkos will also be installed")
+            "inside the IPPL tree ${Kokkos_ROOT}")
     else()
         message(FATAL_ERROR "IPPLConfig.cmake location does not match IPPL build or install tree")
     endif()
