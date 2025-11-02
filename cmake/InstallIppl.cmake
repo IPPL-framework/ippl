@@ -86,6 +86,8 @@ export(
   FILE "${PROJECT_BINARY_DIR}/IPPLTargets.cmake"
   NAMESPACE IPPL::)
 
+# cmake-format: on
+
 # -------------------------------------------------------
 # Create the project ConfigVersion file
 # -------------------------------------------------------
@@ -115,4 +117,10 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfigVersion.cmake"
         DESTINATION ${IPPL_INSTALL_CMAKEDIR})
 
-# cmake-format: on
+# -------------------------------------------------------
+# Fix/Hack: Ensure extern dependencies are exported correctly if they were built in-tree. This is
+# needed for Heffte because it doesn't fully use CMake's export target mechanism
+# -------------------------------------------------------
+if(TARGET Heffte)
+  install(TARGETS Heffte EXPORT ipplTargets DESTINATION lib)
+endif()
