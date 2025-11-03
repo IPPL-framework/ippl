@@ -24,8 +24,7 @@
 
 #include "Stream/InSitu/ProxyWriter.h"
 #include "Stream/Registry/RegistryHelper.h"
-#include "Stream/Registry/VisRegistry.h"
-#include "Stream/Registry/VisRegistry_mini.h"
+
 // #include "Stream/InSitu/VisBaseAdaptor.h"
 
 

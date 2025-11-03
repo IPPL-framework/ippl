@@ -14,10 +14,6 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
-
-#include "Stream/Registry/VisRegistry.h"
-#include "Stream/Registry/ViewRegistry.h"
-#include "Stream/InSitu/VisBaseAdaptor.h"
 #ifdef IPPL_ENABLE_CATALYST
 #include "Stream/InSitu/CatalystAdaptor.h"
 #endif
@@ -155,20 +151,7 @@ public:
 
         #ifdef IPPL_ENABLE_CATALYST
             m << "Catalyst is enabled" << endl; 
-
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-        auto myR_steer = MakeRegistry();
-        
-        auto myR_vis = MakeRegistry<"2ions",
-                                    "2electrostatic",
-                                    "2density">
-                                    (this->pcontainer_m, 
-                                    this->fcontainer_m->getE(), 
-                                    this->fcontainer_m->getRho() );
-
-        CatalystAdaptor::Initialize(*myR_vis, *myR_steer);
-
+            
         #endif
         
 
@@ -320,19 +303,6 @@ public:
 
 #ifdef IPPL_ENABLE_CATALYST
         
-        auto myR_steer = MakeRegistry();
-        
-        
-       
-        
-        auto myR_vis = MakeRegistry<"2ions",
-                                    "2electrostatic",
-                                    "2density">
-                                    (pc, 
-                                    this->fcontainer_m->getE(), 
-                                    this->fcontainer_m->getRho() );
-
-        CatalystAdaptor::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
 
  #endif
 

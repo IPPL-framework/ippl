@@ -98,9 +98,6 @@ int main(int argc, char* argv[]) {
         msg << "End." << endl;
 
 
-        #ifdef IPPL_ENABLE_CATALYST
-        CatalystAdaptor::Finalize();
-        #endif
 
         IpplTimings::stopTimer(mainTimer);
         // IpplTimings::print();
