@@ -1418,7 +1418,22 @@ void CatalystAdaptor::InitializeRuntime(
     args.append().set_string("--steer_channel_names");
         
     auto proxy_path = (source_dir / "catalyst_scripts" / "catalyst_proxy.xml").string() ;
-    proxyWriter.initialize( proxy_path  );
+    // Config YAML: env override IPPL_PROXY_CONFIG_YAML, else default in catalyst_scripts
+    std::string cfg_yaml;
+    if (const char* cfg_env = std::getenv("IPPL_PROXY_CONFIG_YAML")) {
+        if (std::filesystem::exists(cfg_env)) {
+            cfg_yaml = std::string(cfg_env);
+        } else {
+            ca_m << "::Initialize() IPPL_PROXY_CONFIG_YAML set but file not found: '" << cfg_env << "', using default." << endl;
+        }
+    }
+    if (cfg_yaml.empty()) {
+        auto default_cfg_yaml = (source_dir / "catalyst_scripts" / "proxy_default_config.yaml").string();
+        if (std::filesystem::exists(default_cfg_yaml)) {
+            cfg_yaml = std::move(default_cfg_yaml);
+        } // else leave empty -> ProxyWriter proceeds without config
+    }
+    proxyWriter.initialize(proxy_path, cfg_yaml);
     if (steer_enabled ) {
         // set_node_script(node["catalyst/proxies/proxy_e/filename"],
         //                 "CATALYST_PROXYS_PATH_E",
