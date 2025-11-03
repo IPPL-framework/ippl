@@ -16,28 +16,71 @@ export PENNINGTRAP_BINDIR=./build/alpine
 # #####################################################################
 #  CONFIGURE CATALYST OPTIONS
 # #####################################################################
+# any invalid input will switch to default case, check output during initialisation for parsed settings
+# TODO overwrite proxy path:
 
+# does nothing atm
+# "ON":
+#  any/"OFF": (default)
 export IPPL_CATALYST_VIS=ON
+
+
+# "ON":
+#  any/"OFF": (default)
 export IPPL_CATALYST_STEER=ON
 
-export IPPL_CATALYST_PNG=ON
+#  activate/deactivate extractors (frequencies can be overwritten in scripts directly for now)
+
+# "ON":
+#  any/"OFF": (default)
+export IPPL_CATALYST_PNG=OFF
+
+# "ON":
+#  any/"OFF": (default)
 export IPPL_CATALYST_VTK=OFF
 
-export IPPL_CATALYST_GHOST_MASKS=ON
+# any/"ON":(default)    writes catalyst_scripts/catalyst_proxy.xml and continues simulation
+# "PRODUCE_ONLY":       writes and throws exception
+# "OFF":                doesn't write but (still tries to access old catalyst_scripts/catalyst_proxy.xml 
+#                       if CATALYST_PROXY_PATH is not set) and runs simulation
+export IPPL_CATALYST_PROXY_OPTION=ON
 
+
+#######################################################################
+# DON'T CHANGE FOR NOW
+
+# "ON":                 <-> masking GHOST_MASKS <-> not finally tested 
+#  any/"OFF": (default) <-> cutting GHOST_MASKS <->  works
+export IPPL_CATALYST_GHOST_MASKS=OFF
+
+# any/"element" (default)
+# "vertex"
+export IPPL_CATALYST_ASSOCIATE="element"
+
+
+
+#######################################################################
+# DON'T USE FOR NOW:
 
 # #####################################################################
 # Catalyst Adaptor will try to fetch paths from environment else switch to
-# harcoded preconfigured defaults inside IPPL src directory definde via cmake.
+# harcoded preconfigured defaults inside IPPL src directory (helped via cmake)
 # #####################################################################
 
-# export  CATALYST_PIPELINE_PATH=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/pipeline_default.py
-# export  CATALYST_EXTRACTOR_SCRIPT_P=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_particle.py
-# export  CATALYST_EXTRACTOR_SCRIPT_S=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_sfield.py
-# export  CATALYST_EXTRACTOR_SCRIPT_V=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/catalyst_extractors/png_ext_vfield.py
+# overwrites catalyst main script/pipeline:
+# export CATALYST_PIPELINE_PATH=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/pipeline_default.py
 
-# export  CATALYST_PROXY_PATH_M=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/proxy_default_magnetic.xml
-# export  CATALYST_PROXY_PATH_E=${IPPL_DIR}/src/Stream/InSitu/catalyst_scripts/proxy_default_electric.xml
+# overwrites catalyst script (png extraction) for arbitrary vis channels
+# export CATALYST_EXTRACTOR_SCRIPT_" +label
+
+# overwrite steering proxies completeley by referencing different file:
+# export CATALYST_PROXYS_PATH = 
+
+# change default ranges for stering channels:
+# export IPPL_PROXY_CONFIG_YAML
+
+
+
 
 
 # #####################################################################
