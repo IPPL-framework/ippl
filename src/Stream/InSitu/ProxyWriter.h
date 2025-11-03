@@ -8,6 +8,12 @@
 #include <type_traits>
 #include <utility>
 
+/* 
+Buttons: not fesasible
+Combo Box ...? maybe ...
+Advanced prototypes ...
+
+ */
 namespace ippl {
 
 class ProxyWriter {
@@ -205,12 +211,19 @@ private:
 
   void appendPrototype() {
     // Prototype for numeric steerables (scalars and vectors)
-    misc_ << "      <Proxy name=\"SteerableNumericsPrototype\" label=\" Numerics-Collective-Prototype (don't cancel or add new)>\" \n";
+    misc_ << "      <Proxy name=\"SteerableNumericsPrototype\" label=\" Numerics-Collective-Prototype (don't cancel [x] or add new [+]!!)\"> \n";
     for (const auto& ch : channels_) {
       if (ch.isBool || ch.isButton || ch.isEnum) continue;
       if (ch.isVector) {
-        misc_ << "        <DoubleVectorProperty name=\"vec3_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"3\" default_values=\"" << ch.defaultValue << " " << ch.defaultValue << " " << ch.defaultValue << "\" panel_widget=\"DoubleRange\">\n";
+        misc_ << "        <DoubleVectorProperty name=\"vec3_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"3\" default_values=\"" << ch.defaultValue << " " << ch.defaultValue << " " << ch.defaultValue << "\">\n";
         misc_ << "          <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n";
+        misc_ << "          <Hints>\n";
+        misc_ << "            <ShowComponentLabels>\n";
+        misc_ << "              <ComponentLabel component=\"0\" label=\"X\"/>\n";
+        misc_ << "              <ComponentLabel component=\"1\" label=\"Y\"/>\n";
+        misc_ << "              <ComponentLabel component=\"2\" label=\"Z\"/>\n";
+        misc_ << "            </ShowComponentLabels>\n";
+        misc_ << "          </Hints>\n";
         misc_ << "        </DoubleVectorProperty>\n";
       } else {
         misc_ << "        <DoubleVectorProperty name=\"scaleFactor_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"1\" default_values=\"" << ch.defaultValue << "\" panel_widget=\"DoubleRange\">\n";
@@ -221,7 +234,7 @@ private:
     misc_ << "      </Proxy>\n\n";
 
     // Prototype for enum steerables
-    misc_ << "      <Proxy name=\"SteerableEnumsPrototype\" label=\"Enums-Collective-Prototype (don't cancel or add new)\">\n";
+    misc_ << "      <Proxy name=\"SteerableEnumsPrototype\" label=\"Enums-Collective-Prototype (don't cancel [x] or add new [+]!!)\">\n";
     for (const auto& ch : channels_) {
       if (!ch.isEnum || ch.enumEntries.empty()) continue;
       misc_ << "        <IntVectorProperty name=\"PrototypeEnum_" << ch.label << "\" label=\"" << ch.label << "\" number_of_elements=\"1\" default_values=\"" << ch.defaultInt << "\" immediate_apply=\"1\">\n";
@@ -237,7 +250,7 @@ private:
 
   // Build a single SourceProxy with many per-label scaleFactor properties
   void appendUnifiedSourceProxy(const std::string& proxyName,
-                                const std::string& groupLabel)
+                                [[maybe_unused]] const std::string& groupLabel)
   {
     sources_ << "        <SourceProxy class=\"vtkSteeringDataGenerator\" name=\"" << proxyName << "\">\n"
              << "            <IntVectorProperty name=\"PartitionType\" command=\"SetPartitionType\" number_of_elements=\"1\" default_values=\"1\" panel_visibility=\"never\">\n"
@@ -282,7 +295,7 @@ private:
         // Momentary button as checkbox: Check to trigger, simulation unchecks after processing
         // Uses CheckBox widget with IntVectorProperty (same as Switch but for momentary action)
         // command_button implementation did no seem to work...?...
-        sources_ << "            <IntVectorProperty name=\"" << L << "\" label=\"" << L << " (Trigger)\"\n"
+        sources_ << "            <IntVectorProperty name=\"" << L << "\" label=\"" << L << " \"\n"
                  << "                                  command=\"SetTuple1Int\"\n"
                  << "                                  clean_command=\"Clear\"\n"
                  << "                                  use_index=\"1\"\n"
@@ -337,9 +350,15 @@ private:
                  << "                                  number_of_elements=\"3\"\n"
                  << "                                  default_values=\"" << ch.defaultValue << " " << ch.defaultValue << " " << ch.defaultValue << "\"\n"
                  << "                                  number_of_elements_per_command=\"3\"\n"
-                 << "                                  repeat_command=\"1\"\n"
-                 << "                                  panel_widget=\"DoubleRange\">\n"
+                 << "                                  repeat_command=\"1\">\n"
                  << "              <DoubleRangeDomain name=\"range\" min=\"" << rangeMin_ << "\" max=\"" << rangeMax_ << "\"/>\n"
+                 << "              <Hints>\n"
+                 << "                <ShowComponentLabels>\n"
+                 << "                  <ComponentLabel component=\"0\" label=\"X\"/>\n"
+                 << "                  <ComponentLabel component=\"1\" label=\"Y\"/>\n"
+                 << "                  <ComponentLabel component=\"2\" label=\"Z\"/>\n"
+                 << "                </ShowComponentLabels>\n"
+                 << "              </Hints>\n"
                  << "            </DoubleVectorProperty>\n\n";
       }
     }
@@ -414,7 +433,7 @@ private:
       }
     }
     if (hasButtons) {
-      sources_ << "            <PropertyGroup label=\"Buttons\">\n";
+      sources_ << "            <PropertyGroup label=\"Buttons / Triggers\">\n";
       for (const auto& ch : channels_) {
         if (!ch.isButton) continue;
         sources_ << "                <Property name=\"" << ch.label <<  "\" />\n";
