@@ -164,7 +164,6 @@ endfunction()
 #   * if the requested version is not found on the system
 #   * if the requested version is found but doesn't have the backends/platforms we need
 # then build from source. 
-# We use FIND_PACKAGE_ARGS (cmake 3.24+) to allow FetchContent to find a system version
 # cmake-format: on
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set

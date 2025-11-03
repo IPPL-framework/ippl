@@ -44,7 +44,7 @@ endif()
 # cmake-format: on
 
 # ------------------------------------------------------------------------------
-# Turn off colour when using cmake
+# Turn off colour when using ccmake
 # ------------------------------------------------------------------------------
 execute_process(COMMAND ps -o comm= OUTPUT_VARIABLE PS_OUT OUTPUT_STRIP_TRAILING_WHITESPACE)
 

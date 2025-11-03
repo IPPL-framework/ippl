@@ -31,7 +31,7 @@
         "IPPL_ENABLE_COSMOLOGY": "ON",
         "IPPL_ENABLE_TESTS": "OFF",
         "IPPL_ENABLE_UNIT_TESTS": "OFF",
-        "IPPL_USE_STANDARD_FOLDERS": "OFF"
+        "IPPL_USE_STANDARD_FOLDERS": "ON"
       }
     },
     {

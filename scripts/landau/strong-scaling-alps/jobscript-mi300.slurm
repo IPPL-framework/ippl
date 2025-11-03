@@ -10,7 +10,7 @@
 #SBATCH --nodes=_n_
 #SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-node=4
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=48
 #SBATCH --exclusive
 
 #SBATCH --uenv=/capstor/scratch/cscs/biddisco/opal-x-mi300-mpich-gcc-2025-10-27.squashfs
@@ -30,7 +30,10 @@ export OMP_PROC_BIND=spread
 export OMP_PLACES=threads
 export OMP_NUM_THREADS=8
 
-#BIND="--cpu-bind=mask_cpu:fffe000000000000,0000fffe00000000,00000000fffe0000,000000000000fffe",
+# short version, remove leading 0's
+BIND="mask_cpu:0xFFFFFF,0xFFFFFF000000,0xFFFFFF000000000000,0xFFFFFF000000000000000000"
+# long version with all bits and hyperthreading cores included
+BIND="--cpu-bind=mask_cpu:0x000000000000000000FFFFFF000000000000000000FFFFFF,0x000000000000FFFFFF000000000000000000FFFFFF000000,0x000000FFFFFF000000000000000000FFFFFF000000000000,0xFFFFFF000000000000000000FFFFFF000000000000000000",
 
 # --------------------
 iterations=100
