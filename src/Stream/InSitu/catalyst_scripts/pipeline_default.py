@@ -38,9 +38,18 @@ import paraview.simple as pvs
 from paraview.simple import (
     LoadPlugin,
     CreateSteerableParameters,
-    PVTrivialProducer
+    PVTrivialProducer,
+    MergeBlocks, 
+    ExtractSubset,
+    Show,
+    ResampleToImage,
+    AdaptiveResampleToImage,
+    CellDatatoPointData,
+    Glyph,
+    GetColorTransferFunction
 )
 from paraview import servermanager
+from paraview import servermanager as sm
 from paraview import print_info
 
 import argparse
@@ -62,6 +71,17 @@ from catalystSubroutines import (
 paraview.simple._DisableFirstRenderCameraReset()
 
 
+def _log(msg):
+    """Logs a message from the Catalyst script."""
+
+    controller = sm.vtkProcessModule.GetProcessModule().GetGlobalController()
+    rank = 0
+    if controller:
+        rank = controller.GetLocalProcessId()
+        msg =  "[rank " + str(rank) + "]:  " + msg
+    
+
+    print( msg  )
 
 def print_info_(s, level=0):
     global verbosity
@@ -106,41 +126,6 @@ print_info_(f"Parsed verbosity level:         {parsed.verbosity}")
 print_info_(f"Parsed VTK extract options:     {parsed.VTKextract}")
 print_info_(f"Parsed steering option:         {parsed.steer}")
 
-# ----------------------------------------------------------------
-# create a new 'XML Partitioned Dataset Reader'
-# Dynamically create PVTrivialProducer objects for each channel name
-# ----------------------------------------------------------------
-print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|0")
-channel_readers = {}
-if parsed.channel_names:
-    for cname in parsed.channel_names:
-        channel_readers[cname] = PVTrivialProducer(registrationName=cname)
-else:
-    print_info_("No channel names provided in parsed.channel_names.")
-print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
-
-
-# Proactively remove the forward 0D mesh source from the GUI if it was auto-created
-if parsed.steer == "ON" and parsed.show_forward_channels == "OFF":
-    try:
-        src = paraview.simple.FindSource("steerable_channel_0D_mesh")
-        if src is not None:
-            print_info_("Hiding auto-created steerable_channel_0D_mesh from GUI")
-            paraview.simple.Delete(src)
-    except Exception as e:
-        print_info_(f"Could not hide steerable_channel_0D_mesh: {e}")
-
-
-
-# ------------------------------------------------------------------------------
-# Optionally create VTPD extractors for each channel
-# ------------------------------------------------------------------------------
-extractors = {}
-if parsed.VTKextract == "ON" and parsed.channel_names:
-    print_info_("=== SETTING VTK DATA EXTRAXCTION================"[0:40]+"|0")
-    for cname, reader in channel_readers.items():
-        extractors[cname] = create_VTPD_extractor(cname, reader, 1)
-    print_info_("=== SETTING VTK DATA EXTRACTION==================="[0:40]+"|1")
 
 
 
@@ -152,6 +137,157 @@ options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
 options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
+
+
+
+
+# ------------------------------------------------------------------------------
+# Proactively remove the forward 0D mesh source from the GUI if it was auto-created
+# ------------------------------------------------------------------------------
+if parsed.steer == "ON" and parsed.show_forward_channels == "OFF":
+    try:
+        src = paraview.simple.FindSource("steerable_channel_0D_mesh")
+        if src is not None:
+            print_info_("Hiding auto-created steerable_channel_0D_mesh from GUI")
+            paraview.simple.Delete(src)
+    except Exception as e:
+        print_info_(f"Could not hide steerable_channel_0D_mesh: {e}")
+
+
+
+
+# # ----------------------------------------------------------------
+# # create a new 'XML Partitioned Dataset Reader'
+# # Dynamically create PVTrivialProducer objects for each channel name
+# # ----------------------------------------------------------------
+# print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|0")
+# vis_channel_readers = {}
+# # vis_channel_producers = {}
+# if parsed.channel_names:
+#     for cname in parsed.channel_names:
+#         vis_channel_readers[cname] = PVTrivialProducer(registrationName=cname)
+
+#         # # Raw producer provides a PartitionedDataSet across ranks
+#         # prod = PVTrivialProducer(registrationName=cname)
+#         # vis_channel_producers[cname] = prod
+
+#         # # Merge partitions into a single dataset for robust rendering (volume/slice/etc.)
+#         # merged = MergeBlocks(Input=prod)
+#         # merged.MergePartitions = 1
+#         # vis_channel_readers[cname] = merged
+
+#         # # Create a representation so it shows up when Live connects
+#         # Show(merged)
+
+
+# else:
+#     print_info_("No channel names provided in parsed.channel_names.")
+# print_info_("=== SETTING TRIVIAL PRODUCERS (LIVE) ======="[0:40]+"|1")
+
+# # ------------------------------------------------------------------------------
+# # Optionally create VTPD extractors for each channel
+# # ------------------------------------------------------------------------------
+# extractors = {}
+# if parsed.VTKextract == "ON" and parsed.channel_names:
+#     print_info_("=== SETTING VTK DATA EXTRAXCTION================"[0:40]+"|0")
+#     for cname, reader in vis_channel_readers.items():
+#         extractors[cname] = create_VTPD_extractor(cname, reader, 1)
+#     print_info_("=== SETTING VTK DATA EXTRACTION==================="[0:40]+"|1")
+
+
+
+# NEW / ALT APPROAH:
+
+# Global dictionaries to store proxies and filters
+extractors = {}
+_sources = {}
+_live_filters = {} # For the MergeBlocks filters
+_shows={}
+
+# Find proxies and set up pipelines in the global scope
+pm = servermanager.ProxyManager()
+for cname in parsed.channel_names:
+    # 1. Find the raw Conduit proxy that Catalyst creates for this channel
+    proxy = pm.GetProxy("sources", cname) 
+    if not proxy:
+        _log(f"WARNING: Could not find auto-generated proxy for channel '{cname}'")
+        continue
+
+    _log(f"Found auto-generated source proxy: {cname} ({proxy.GetXMLName()})")
+    _sources[cname] = proxy
+    
+    # 2. Setup File Extraction (attaches to the raw proxy)
+    if parsed.VTKextract == "ON":
+        _log(f"Attaching VTPD extractor to raw proxy '{cname}'")
+        extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
+
+    # 3. Setup Live Visualization (create filter, but don't show it yet)
+    if options.EnableCatalystLive:
+        _log(f"Creating MergeBlocks Subset  filter for Live-Vis on '{cname}'")
+        
+
+        # no need to merge unstructured data pv live succeeds without help.
+        # need to find better case distinction
+        if "particles" in cname:
+            pass
+
+        if "sField" in cname:
+            # Assumes channels are structured grids
+            _log("   -> Using MergeBlocks for structured scalar field data.")
+            merged = MergeBlocks(registrationName=cname[12:]+'_MergedBlocks',Input=proxy)
+            _log("   -> Using CellDataToPointtData for structured scalar field data.")
+            cell2point = CellDatatoPointData(registrationName=cname[12:]+'_Cell2Point', Input=merged)
+
+            merged.MergePartitionsOnly = 1
+            # cellDatatoPointData2.CellDataArraytoprocess = ['RankID', 'density']
+            Show(merged)
+            Show(cell2point)
+            _live_filters
+
+
+
+            glyphShow = Show(cell2point)
+            glyphShow.ColorArrayName = ['CELLS', cname[12:]] 
+
+            # Create and apply a default color map (e.g., Cool to Warm)
+            lut = GetColorTransferFunction(cname[12:])
+            lut.ApplyPreset('Cool to Warm', True)
+            # lut.RescaleTransferFunctionToDataRange(True, False)
+            glyphShow.LookupTable = lut
+
+
+
+# Assuming 'proxy' is the input from the Catalyst channel
+# and 'cname' is the channel name (e.g., 'data_channelvField')
+
+
+
+        if "vField" in cname:
+            # Assumes channels are structured grids
+            _log("   -> Using MergeBlocks for structured vector field data.")
+            merged = MergeBlocks(registrationName=cname[12:]+'_MergedBlocks',Input=proxy)
+            _log("   -> Using Glyph for structured vector field data.")
+
+            glyph = Glyph(registrationName=cname[12:]+'_Glyph', Input=merged, GlyphType='Arrow')
+            # glyph.OrientationArray = ['CELLS', 'electippl-frk/src/Stream/InSitu/catalyst_scripts/pipeline_default.pyrostatic']
+            glyph.OrientationArray = ['CELLS', cname[12:]]
+            
+            merged.MergePartitionsOnly = 1
+            Show(merged)
+            glyphShow = Show(glyph)
+
+            _live_filters[cname] = (merged, glyph)
+
+            # array_name = cname[12:] # e.g., 'vField' if cname is 'data_channelvField' 
+
+
+            # help(glyph)
+            # help(glyphShow)
+
+            glyphShow.ColorArrayName = ['CELLS', 'RankID']
+
+            # ... colour enforcemen nt possible....
+
 
 
 
@@ -251,16 +387,63 @@ def catalyst_execute(info):
     print_info_("catalyst_execute()::"+exp_string)
 
     global parsed
-    global channel_readers
+    # global vis_channel_readers
+    global steer_channels
+
+    global _parsed 
+    global _sources
+    global extractors
+    global _live_filters
+    
+    # for name, channel in vis_channel_readers.items():
+    #     channel.UpdatePipeline()
+    #     channel.UpdateVTKObjects()
+
+    # # Update data channels
+    # for reader in channel_readers.values():
+    #     reader.UpdatePipeline()
+
+        
+    pm = servermanager.ProxyManager()
+
+    # Loop over all registered vis channels
+    for name in _sources.keys():
+        
+        # 1. Get the proxy for this channel
+        #    The Catalyst bridge has *already* updated this proxy with new data.
+        proxy = pm.GetProxy("sources", name)
+        if not proxy:
+             _log(f"WARNING: proxy '{name}' not found in step {info.cycle}")
+             continue
+
+        # 2. Manually update the proxy's pipeline.
+        #    This is necessary to make the new data available
+        #    to downstream filters (like the extractors).
+        proxy.UpdatePipeline()
+        proxy.UpdateVTKObjects()
+
+
+
+
+            
+        if name in _live_filters:
+            pass
+            # live_filter = _live_filters[name]
+            # live_filter.Input = proxy
+            # (merged_filter, _) = _live_filters[name]
+            # merged_filter.Input = proxy
+            # Show(merged_filter)
+            # merged_filter.UpdatePipeline()
 
 
     if parsed.steer == "ON":
         for name, (reader, sender) in steer_channels.items():
+            # not needed proxy handles all of steering...
 
             # reader.UpdatePipeline()
+            # sender.UpdatePipeline()
             # reader.UpdateVTKObjects()
             # sender.UpdateVTKObjects()
-            # sender.UpdatePipeline()
 
             pass
 

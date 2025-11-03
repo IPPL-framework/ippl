@@ -14,6 +14,10 @@
 #include <list>
 #include<filesystem>
 
+#if defined(MPI_VERSION)
+#include <mpi.h>
+#endif
+
 #include "Utility/IpplException.h"
 
 #include "Stream/Registry/ViewRegistry.h"
@@ -192,6 +196,8 @@ class CatalystAdaptor {
     const char* catalyst_vtk  ;
     const char* ghost_mask  ;
     const char* proxy_option;
+    const char* associate_;
+    std::string associate;
 
     const bool vis_enabled;
     const bool steer_enabled;
@@ -212,14 +218,15 @@ class CatalystAdaptor {
 
     CatalystAdaptor(int outputLevel_) : 
     // CatalystAdaptor() : 
-                ca_m("CatalystAdaptor::"), 
-                ca_warn("CatalystAdaptor_WARNING", std::cerr),
+                ca_m("CatalystAdaptor::", 0),  // Only print on rank 0
+                ca_warn("CatalystAdaptor_WARNING", std::cerr, INFORM_ALL_NODES), 
                 catalyst_vis(std::getenv("IPPL_CATALYST_VIS")),
                 catalyst_steer(std::getenv("IPPL_CATALYST_STEER")),
                 catalyst_png(std::getenv("IPPL_CATALYST_PNG")),
                 catalyst_vtk(std::getenv("IPPL_CATALYST_VTK")),
                 ghost_mask(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
                 proxy_option(std::getenv("IPPL_CATALYST_PROXY_OPTION")),
+                associate_(std::getenv("IPPL_CATALYST_ASSOCIATE")),
                 vis_enabled(catalyst_vis && std::string(catalyst_vis) == "ON"),
                 steer_enabled(catalyst_steer && std::string(catalyst_steer) == "ON"),
                 png_extracts(catalyst_png && std::string(catalyst_png) == "ON"),
@@ -227,9 +234,28 @@ class CatalystAdaptor {
                 use_ghost_masks(ghost_mask && std::string(ghost_mask) == "ON"),
                 source_dir(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
     {
+        
+        
+        associate = std::string(associate_);
+
+        // if(!associate) associate = "element";
+        if(! (associate==std::string("vertex"))   )   associate="element";
+
+        ca_m << associate << endl;
 
 
         ca_m.setOutputLevel(outputLevel_);
+        
+        #if defined(MPI_VERSION)
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(ippl::Comm->rank()==0) ca_warn << "[rank = 0 size=" << ippl::Comm->size() << "]" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(ippl::Comm->rank()==1) ca_warn << "[rank= 1 size=" << ippl::Comm->size() << "]" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
+
+
+        // ca_warn << "[rank=" << ippl::Comm->rank() << " size=" << ippl::Comm->size() << "]" << endl;
         // ca_warn.setOutputLevel(5);
         // ca_m.setMessageLevel(2);
         // ca_warn.setMessageLevel(5);
@@ -258,9 +284,9 @@ class CatalystAdaptor {
             Currently Message Level are forced to 1 so any output level other than 0 will print everything ...
         */
 
-        ca_warn << "Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
-        ca_warn << "Catalyst Info Output  Level setting: " << ca_m.getOutputLevel() << endl;
-        ca_warn << "Catalyst Warn Output  Level setting: " << ca_warn.getOutputLevel() << endl;
+        ca_m << "::CatalystAdaptor()   Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
+        ca_m << "::CatalystAdaptor()   Catalyst Info Output  Level setting: " << ca_m.getOutputLevel() << endl;
+        ca_m << "::CatalystAdaptor()   Catalyst Warn Output  Level setting: " << ca_warn.getOutputLevel() << endl;
         ca_m << "::CatalystAdaptor()   using source_dir = " << source_dir.string() << endl;
         if  (png_extracts) 
             { ca_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 

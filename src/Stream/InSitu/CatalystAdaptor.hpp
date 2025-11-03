@@ -253,7 +253,7 @@ template<typename T>
 void CatalystAdaptor::init_entry( const std::shared_ptr<T>&   entry, const std::string label)
 {
     if (entry) {
-        // std::cout << "  dereferencing shared pointer and reattempting execute..." << std::endl;
+        // ca_m << "  dereferencing shared pointer and reattempting execute..." << endl;
         init_entry(  *entry
                     , label
         );
@@ -317,6 +317,12 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
 {   /* HANDLES CASE IF ENTRY HAS BEEN EXECUTED WITH REMEMBER_NOW */
     if(viewRegistry.contains(label)) return;
 
+    // bool associate_by_element = 1;
+    // if(associate_by_element)
+    // std::string associate = "element";
+    // std::string associate = "vertex";
+
+
     using Field_type = Field<T, Dim, ViewArgs...>;
     const Field_type* field = &entry;
 
@@ -336,20 +342,29 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                     << "    implemented in ippl. Therefore this type of field is not \n"
                     << "    supported for visualisation." << endl;
         }
+
+        
         // channel for this field
         // channel of type mesh adheres to conduits mesh blueprint
         auto channel = node["catalyst/channels/"+ channelName];
+        auto channel_state = channel["state"];
+        // channel_state["multiblock"].set(1);
+
         channel["type"].set_string("mesh");
         auto data   = channel["data"];
-        auto fields = channel["data/fields"];
-
-
+        
+        
+        // multimesh?
+        // const std::string blockName = "block_rank" + std::to_string(ippl::Comm->rank());
+        // const std::string blockName = "block_allRanks";
+        // channel["type"].set_string("multimesh");
+        // auto data   = channel["data"][blockName];
+        
+        
+        auto fields = data["fields"];
         auto field_node = fields[label];
-        // add topology anmed fmesh_topo of type uniform
         data["topologies/fmesh_topo/type"].set_string("uniform");
-        // define which coordinates to use 
         data["topologies/fmesh_topo/coordset"].set_string("cart_uniform_coords");
-        // add a coordinate set named cart_uniform_coords  of type uniform
         data["coordsets/cart_uniform_coords/type"].set_string("uniform");
 
         typename Field_type::Layout_t& Layout_ = field->getLayout();
@@ -361,57 +376,104 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
         const auto Spacing_       = Mesh_.getMeshSpacing();
 
         const size_t nGhost       = field->getNghost(); // returns int
-
         
         const size_t extra        = (use_ghost_masks) ?  size_t(2*nGhost)   :  0 ;
         const size_t index_offset = (use_ghost_masks) ?    size_t(nGhost)   :  0 ; 
-        // const size_t index_offset = (use_ghost_masks) ?    nGhost   :  nGhost ;
 
-        const auto Ox = Origin_[0] + double(int(LocalNDIndex_[0].first()) - int(index_offset)) * Spacing_[0];
-        const auto Oy = Origin_[1] + double(int(LocalNDIndex_[1].first()) - int(index_offset)) * Spacing_[1];
-        const auto Oz = Origin_[2] + double(int(LocalNDIndex_[2].first()) - int(index_offset)) * Spacing_[2];
+        int dims_n=1;
+        double extra_origin=0;
+        if (associate == "element"){
+            // dims_n = 1;
+            // extra_origin=0;
+        }
+        else if (associate == "vertex"){
+            // std::cout << "VERTEEEEX" << std::endl;
+            dims_n = 0;
+            extra_origin = 0.5;
+        }
+
+        const auto Ox = Origin_[0] + (double(int(LocalNDIndex_[0].first()) - int(index_offset)) + extra_origin) * Spacing_[0];
+        const auto Oy = Origin_[1] + (double(int(LocalNDIndex_[1].first()) - int(index_offset)) + extra_origin) * Spacing_[1];
+        const auto Oz = Origin_[2] + (double(int(LocalNDIndex_[2].first()) - int(index_offset)) + extra_origin) * Spacing_[2];
+
+        
 
         const size_t nx =               LocalNDIndex_[0].length() + extra                 ;
         const size_t ny = (Dim >= 2) ?  LocalNDIndex_[1].length() + extra      :         1;
         const size_t nz = (Dim >= 3) ?  LocalNDIndex_[2].length() + extra      :         1;
 
+
+
         const void* meshKey   = static_cast<const void*>(&Mesh_);
         const void* layoutKey = static_cast<const void*>(&Layout_);
         auto ghostKey = GhostKey_t{meshKey, layoutKey, nGhost};
 
+        const size_t localNumCells = nx * ny * nz;
+        const int rank = ippl::Comm->rank();
 
-        // std::cout << nGhost << std::endl;
-        // std::cout << extra << std::endl;
-        // std::cout << index_offset << std::endl;
-        // std::cout << 
-        // Origin_[0] << " " << 
-        // Origin_[1] << " " << 
-        // Origin_[2] << std::endl;
-        // std::cout << 
-        // LocalNDIndex_[0].first() << " " << 
-        // LocalNDIndex_[1].first() << " " << 
-        // LocalNDIndex_[2].first() << std::endl;
-        // std::cout << Ox << " " << Oy << " " << Oz << std::endl;
+        // using RankViewCells_t = Kokkos::View<int*, Kokkos::HostSpace>;
+        using RankViewCells_t = Kokkos::View<int***, Kokkos::HostSpace>;
+        using HostExecSpace = Kokkos::DefaultHostExecutionSpace;
+        // RankViewCells_t rank_id_view_cells("rank_id_view_cells", localNumCells);
+        RankViewCells_t rank_id_view_cells("rank_id_view_cells_3D", nx, ny, nz);
+
+        if (localNumCells > 0) {
+            Kokkos::MDRangePolicy<HostExecSpace, Kokkos::Rank<3>> host_policy(
+                {0, 0, 0},      // Start indices {i, j, k}
+                {nx, ny, nz}    // End indices {i, j, k}
+            );
+            // auto host_policy = getRangePolicy(rank_id_view_cells);
+            Kokkos::parallel_for("fill_rank_ids_3D", host_policy, 
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                rank_id_view_cells(i, j, k) = rank;
+            });
+        }
+
+        auto rank_field = fields["RankID"];
+        rank_field["association"].set_string(associate); // vs vertex ...
+        rank_field["topology"].set_string("fmesh_topo");
+        rank_field["volume_dependent"].set_string("false");
+        if (localNumCells > 0) {
+            rank_field["values"].set_external(rank_id_view_cells.data(), localNumCells);
+        } else {
+            rank_field["values"].set_external(static_cast<int*>(nullptr), 0);
+        }
+        data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
+        viewRegistry.set(label + "_rank_id_cells", rank_id_view_cells);
+
+       
 
 
+        auto print_ranked_mesh_info = [&](){
+            ca_warn << "[  rank="          << ippl::Comm->rank() << "]"
+                    << " | dims(points)="  << nx << "x" << ny << "x" << nz
+                    << " | ghost: "        << nGhost 
+                    << " | origin=("       << Ox << "," << Oy << "," << Oz << ")"
+                    << " | spacing=("      << Spacing_[0] << "," << (Dim>=2?Spacing_[1]:0)<< "," << (Dim>=3?Spacing_[2]:0) << ")" << endl;
+        };
 
-        // int aa = 0;
-        int aa = 1;
-
+        #if defined(MPI_VERSION)
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(ippl::Comm->rank()==0)  print_ranked_mesh_info();
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(ippl::Comm->rank()==1)  print_ranked_mesh_info();
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
+     
         {
-            data["coordsets/cart_uniform_coords/dims/i"].set(nx + aa);
+            data["coordsets/cart_uniform_coords/dims/i"].set(nx+ dims_n );
             data["coordsets/cart_uniform_coords/spacing/dx"].set(Spacing_[0]);
             data["coordsets/cart_uniform_coords/origin/x"].set( Ox );
             data["topologies/fmesh_topo/origin/x"].set(         Ox );
         }
         if constexpr(Dim >= 2){
-            data["coordsets/cart_uniform_coords/dims/j"].set(ny + aa);
+            data["coordsets/cart_uniform_coords/dims/j"].set(ny+ dims_n);
             data["coordsets/cart_uniform_coords/spacing/dy"].set(Spacing_[1]);
             data["coordsets/cart_uniform_coords/origin/y"].set( Oy );
             data["topologies/fmesh_topo/origin/y"].set(         Oy );
         }
         if constexpr(Dim >= 3){
-            data["coordsets/cart_uniform_coords/dims/k"].set(nz + aa);
+            data["coordsets/cart_uniform_coords/dims/k"].set(nz+ dims_n);
             data["coordsets/cart_uniform_coords/spacing/dz"].set(Spacing_[2]);
             data["coordsets/cart_uniform_coords/origin/z"].set( Oz );
             data["topologies/fmesh_topo/origin/z"].set(         Oz );
@@ -451,6 +513,7 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                       ? Kokkos::make_pair(nGhost, nGhost + nz)
                       : Kokkos::make_pair(size_t(0), fullDeviceView.extent(2));
 
+            
             auto deviceSubView = Kokkos::subview(fullDeviceView, r0, r1, r2);
                 
             // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
@@ -529,7 +592,8 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
                         deviceMaskView(i,j,k) = static_cast<m_t>(0);
                     });
                 } else{
-                    throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported Field Dimnesion > 3 for Field:" + label);
+                    throw IpplException("Stream::InSitu::CatalystAdaptor::Execute()::execute_entry(" + label + ") | Type:ippl::Field<" + typeid(T).name() + "," + std::to_string(Dim) + ">)", 
+                                        "Unsupported Field Dimnesion (Dim > 3) for Visualisation with Catalyst Paraview");
                 }
                 Kokkos::fence();
                 
@@ -594,11 +658,25 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
             ghostMask_field_meta["attribute_type"] = "Ghosts";  // same as set string??...
             // auto ghostMask_field_node  =  fields["ghostMask_field"]; // can't chooses arbitrary name!!!! must be vtkGhostType
             auto ghostMask_field_node  =  fields["vtkGhostType"];
-            ghostMask_field_node["association"].set_string("element");
+            ghostMask_field_node["association"].set_string(associate); // vs vertex ...
             ghostMask_field_node["topology"].set_string("fmesh_topo");
             ghostMask_field_node["volume_dependent"].set_string("false");
             // ghostMask_field_node["values"].set_external(hostMaskView.data(), hostMaskView.size());
             ghostMask_field_node["values"].set_external(hostMaskView1D.data(), hostMaskView1D.size());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // --- NEEDED OF FIX: LAYOUT --- CANTT CHANGE LAYOUT SO WE ARE FORCED TO USE DEEP COPY OVER SHALLOW COPY
             // if (!forceHostCopy[label] && std::is_same<device_memory_space, Kokkos::HostSpace>::value) 
             // {   /* can't use this way since subview isnt accessible this way */
@@ -619,32 +697,33 @@ void CatalystAdaptor::execute_entry(const Field<T, Dim, ViewArgs...>& entry, con
             // --- FIX FOR MAIN FIELD ---
             HostView_t hostMirrorFinal = HostView_t("hostMirrorWithGhosts_LayoutLeft", nx, ny, nz);
             Kokkos::deep_copy(hostMirrorFinal, fullDeviceView);
+
+            // hostMirrorFinal = fullDeviceView;
+
             return hostMirrorFinal;
             // --- END FIX FOR MAIN FIELD ---
         };
 
          
         HostView_t hostMirrorFinal = (use_ghost_masks) ? getHostMirrorView_withGhosts() : getHostMirrorView_noGhosts();
-        /* FOR BOTH CASES FINAL NODE SETTINS ARE DONE AND WE HAVE THE DATA INSIDE hostMirrorFinal */
+            /* FOR BOTH CASES FINAL NODE SETTINS ARE DONE AND WE HAVE THE DATA INSIDE hostMirrorFinal */
         using elem_t = std::remove_pointer_t<decltype(hostMirrorFinal.data())>;
-        // will return size of vector and amounts of vectors (not double)
+            // will return size of vector and amounts of vectors (not double)
         const auto n_elems = hostMirrorFinal.size();
-        // Use true element size as stride (handles padding)
+            // Use true element size as stride (handles padding)
         static constexpr size_t stride_bytes = sizeof(elem_t);
-        // offset is zero?? guaranteed?
+            // offset is zero?? guaranteed?
         const size_t offset = 0;
 
+
+        field_node["association"].set_string(associate);
+        field_node["topology"].set_string("fmesh_topo");
+        field_node["volume_dependent"].set_string("false");
         if constexpr (std::is_scalar_v<T>) {
             // --- SCALAR FIELD CASE ---
-            field_node["association"].set_string("element");
-            field_node["topology"].set_string("fmesh_topo");
-            field_node["volume_dependent"].set_string("false");
             field_node["values"].set_external(hostMirrorFinal.data(), n_elems);
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR FIELD CASE ---
-            field_node["association"].set_string("element");
-            field_node["topology"].set_string("fmesh_topo");
-            field_node["volume_dependent"].set_string("false");
                                     // stride was 1 in predecessor code? how did this work?...
                                      field_node["values/x"].set_external(&hostMirrorFinal.data()[0][0], n_elems, offset, stride_bytes);
             if constexpr (T::dim>=2) field_node["values/y"].set_external(&hostMirrorFinal.data()[0][1], n_elems, offset, stride_bytes);
@@ -678,20 +757,21 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         auto particleContainer = &entry;
         assert((particleContainer->ID.getView().data() != nullptr) && "ID view should not be nullptr, might be missing the right execution space");
 
+        const std::string blockName = "block_allRanks";
+        // const std::string blockName = "block_rank" + std::to_string(ippl::Comm->rank());
+
         // channel for this particleContainer
         // channel of type mesh adheres to conduits mesh blueprint
+
+
         auto channel = node["catalyst/channels/"+ channelName];
         channel["type"].set_string("mesh");
-        
-
-        // conduit_cpp::Node data =
-        auto data = 
-        channel["data"];
-        auto fields = channel["data/fields"];
-        
-        
-        
-        /* avoid hardcoded and shortenn ,... */
+        auto data =     channel["data"];
+        // multimesh ??
+        // auto channel = node["catalyst/channels/"+ channelName];
+        // channel["type"].set_string("multimesh");
+        // auto data   = channel["data"][blockName];
+        auto fields = data["fields"];
         
         
         // Creates a host-accessible mirror view and copies the data from the device view to the host.
@@ -785,47 +865,127 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
             //     data["coordsets/bound_helper_coords/origin/x"].set(  0);
             //     data["topologies/bound_helper_topo/origin/x"].set(   1);
             // }....
-    // }
+        // }
         
         
         /* ATTRIBUTES HARDCODED IN PARTICELBASE are identity ID and position R */
         /* EXPLICIT COORDINATES -> EACH PARTICLE POSITION */
-        data["coordsets/p_explicit_coords/type"].set_string("explicit");
-        data["coordsets/p_explicit_coords/values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
-        data["coordsets/p_explicit_coords/values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
-        data["coordsets/p_explicit_coords/values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
-        
+        const size_t localNum = particleContainer->getLocalNum();
+        const int rank = ippl::Comm->rank(); 
 
-        /* UNSTRUCTURED TOPOLOGY RELYING ON UNIQUE PARTICLE ID'S */
-        data["topologies/p_unstructured_topo/type"].set_string("unstructured");
-        data["topologies/p_unstructured_topo/coordset"].set_string("p_explicit_coords");
-        data["topologies/p_unstructured_topo/elements/shape"].set_string("point");
-        data["topologies/p_unstructured_topo/elements/connectivity"].set_external(ID_hostMirror.data(),particleContainer->getLocalNum());
-        /* concept for no copy in situ vis would be */
-        //mesh["topologies/p_unstructured_topo/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
+        #if defined(MPI_VERSION)
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // if(ippl::Comm->rank()==0)  ca_m << "[Rank 0] Local Particles: " << localNum << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        ca_warn << "Local Particles: " << localNum << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
         
-        /* POSITION ATTRIBUTE */
-        // this can be left hardcodeed or made part of the for loop, but more efficient to do it right here since we already have the hostView
-        fields["position/association"].set_string("vertex");
-        fields["position/topology"].set_string("p_unstructured_topo");
-        fields["position/volume_dependent"].set_string("false");
-        fields["position/values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
-        fields["position/values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
-        fields["position/values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+        
+        using IotaView_t = Kokkos::View<int64_t*, Kokkos::HostSpace>;
+        using RankView_t = Kokkos::View<int*, Kokkos::HostSpace>;
+        IotaView_t iota_view("iota", localNum);
+        RankView_t rank_id_view("rank_id_view", localNum);
+        if (localNum > 0) {
+            using HostExecSpace = Kokkos::DefaultHostExecutionSpace;
+            Kokkos::RangePolicy<HostExecSpace> host_policy(0, localNum);
+            Kokkos::parallel_for("fill_iota_host", host_policy, KOKKOS_LAMBDA(const int64_t i) {
+                iota_view(i) = i;
+            });
+            // Kokkos::Experimental::fill(HostExecSpace(), rank_id_view, rank);
+            Kokkos::parallel_for("fill_rank_ids", host_policy, KOKKOS_LAMBDA(const int64_t i) {
+                rank_id_view(i) = rank; 
+            });
+        }
+
+        viewRegistry.set(label + "_iota", iota_view);
+        viewRegistry.set(label + "_rank_id", rank_id_view);
+
+
+
+            data["coordsets/p_explicit_coords/type"].set_string("explicit");
+            /* UNSTRUCTURED TOPOLOGY RELYING ON UNIQUE PARTICLE ID'S */
+            data["topologies/p_unstructured_topo/coordset"].set_string("p_explicit_coords");
+            data["topologies/p_unstructured_topo/type"].set_string("unstructured");
+            data["topologies/p_unstructured_topo/elements/shape"].set_string("point");
+            data["topologies/p_unstructured_topo/elements/connectivity"].set_external(iota_view.data(),particleContainer->getLocalNum());
+            //OLD bug !! only works rank 1 since it is supposed to be an index for access when global ids are passed access will be out of bounds!!!
+            // data["topologies/p_unstructured_topo/elements/connectivity"].set_external(ID_hostMirror.data(),particleContainer->getLocalNum()); 
+
             
-        /* "no way" to know what dimensions and types particle attributes will have
-        from pointer instance since is base pointer make execute member method instead to 
-        use virtual functions. Is most pragmatic approach. */
+            // this can be left hardcodeed or made part of the for loop, but more efficient to do it right here since we already have the hostView
 
-        // entry.template forAllAttributes<void>(
-        //     [&]<typename Attributes>(const Attributes& atts) {
-        //         for (auto* attribute : atts) {
+            /* Process ID ATTRIBUTE */
+            auto rank_field = fields["RankID"]; // You can name this anything
+            rank_field["association"].set_string("vertex");
+            rank_field["topology"].set_string("p_unstructured_topo");
+            rank_field["volume_dependent"].set_string("false");
+            rank_field["values"].set_external(rank_id_view.data(), localNum);
+            data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
+
+            /* Global ID ATTRIBUTE */
+            auto id_field = fields["ParticleIDs"];
+            id_field["association"].set_string("vertex");
+            id_field["topology"].set_string("p_unstructured_topo");
+            id_field["volume_dependent"].set_string("false");
+            id_field["values"].set_external(ID_hostMirror.data(), localNum);
+            data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
+
+            /* POSITION ATTRIBUTE */
+            auto R_field = fields["position"];
+            R_field["association"].set_string("vertex");
+            R_field["topology"].set_string("p_unstructured_topo");
+            R_field["volume_dependent"].set_string("false");
+
+
+        if (localNum > 0)
+        {   
+            /* COORDINATE DEFINITION... */
+            data["coordsets/p_explicit_coords/values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            data["coordsets/p_explicit_coords/values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            data["coordsets/p_explicit_coords/values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            
+            /* POSITION ATTRIBUTE */
+            R_field["values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            R_field["values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            R_field["values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            
+            /* concept for no copy in situ vis would be */
+            //mesh["topologies/p_unstructured_topo/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
+        }else 
+        {
+            // In case a rank has no particles-> data()[0] is nulllptr dereferencing !!!!!
+            using component_type = typename R_elem_t::value_type;
+            data["coordsets/p_explicit_coords/values/x"].set_external(static_cast<component_type*>(nullptr), 0);
+            data["coordsets/p_explicit_coords/values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+            data["coordsets/p_explicit_coords/values/z"].set_external(static_cast<component_type*>(nullptr), 0);       
+            R_field["values/x"].set_external(static_cast<component_type*>(nullptr), 0);
+            R_field["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+            R_field["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+        }
+
+
+
+         /* "no way" to know what dimensions and types particle attributes will have
+            from pointer instance since is base pointer make execute member method instead to 
+            use virtual functions. Is most pragmatic approach. */
+
+            // entry.template forAllAttributes<void>(
+            //     [&]<typename Attributes>(const Attributes& atts) {
+            //         for (auto* attribute : atts) {
+            // const size_t n_attributes =  entry.getAttributeNum();
+            // for(size_t i = 2; i < n_attributes; ++i){
+            //     const auto attribute = entry.getAttribute(i);
+            //     const std::string  attribute_name = attribute->get_name();
+            //     // ca_m << "Execute attribute: " << attribute_name << endl;
+            //     attribute->signConduitBlueprintNode_rememberHostCopy(particleContainer->getLocalNum(), fields, viewRegistry, ca_m, ca_warn, forceHostCopy[label]);
+            // }
+
+        // (This function must also be safe for localNum == 0)
         const size_t n_attributes =  entry.getAttributeNum();
         for(size_t i = 2; i < n_attributes; ++i){
             const auto attribute = entry.getAttribute(i);
-            const std::string  attribute_name = attribute->get_name();
-            // ca_m << "Execute attribute: " << attribute_name << endl;
-            attribute->signConduitBlueprintNode_rememberHostCopy(particleContainer->getLocalNum(), fields, viewRegistry, ca_m, ca_warn, forceHostCopy[label]);
+            attribute->signConduitBlueprintNode_rememberHostCopy(localNum, fields, viewRegistry, ca_m, ca_warn, forceHostCopy[label]);
         }
         
 }
@@ -837,7 +997,7 @@ requires (!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
  void CatalystAdaptor::execute_entry(   [[maybe_unused]] T&& entry,  const std::string label)
 {
         ca_m << "  Entry type can't be processed: ID "<< label <<" "<< typeid(std::decay_t<T>).name() << endl;
-    }
+}
 
 
 /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
@@ -963,7 +1123,7 @@ void CatalystAdaptor::AddSteerableChannel( const T& steerable_scalar_forwardpass
             // lastForwardSteerVal[steerable_suffix] = static_cast<double>(steerable_scalar_forwardpass);
         }        
         else {
-            throw IpplException("CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
+            throw IpplException("Stream::InSitu::CatalystAdaptor::AddSteerableChannel", "Unsupported steerable type for channel: " + steerable_suffix);
         }
 }
 
@@ -1101,7 +1261,7 @@ void CatalystAdaptor::FetchSteerableChannelValue( T& steerable_scalar_backwardpa
     else if constexpr (std::is_same_v<T,bool>)          steerable_scalar_backwardpass = static_cast<bool>(values_node.to_int32());
     else if constexpr (std::is_same_v<T,ippl::Button>)  steerable_scalar_backwardpass = static_cast<bool>(values_node.to_int32());
     else {
-        throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Unsupported type for channel: " + label);
+        throw IpplException("Stream::InSitu::CatalystAdaptor::FetchSteerableChannelValue(" + label +  ")", "Unsupported type for channel: " + label);
     }
 
     ca_m << "::Execute()::FetchSteerableChannel(" << label << ") | received:" << steerable_scalar_backwardpass << endl;
@@ -1198,11 +1358,6 @@ void CatalystAdaptor::fetchResults() {
         {
             std::cerr << "Failed to execute Catalyst-results: " << err << std::endl;
         }
-        // else
-        // {
-        //     std::cout << "Result Node dump:" << std::endl;
-        //     results.print();
-        // }   
     }
 
 
@@ -1223,6 +1378,11 @@ void CatalystAdaptor::InitializeRuntime(
                     
     visRegistry   = visReg;
     steerRegistry = steerReg;
+
+
+    const int fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);
+    const int64_t fcomm64 = static_cast<int64_t>(fcomm);
+    node["catalyst/mpi_comm"].set(fcomm64);   
 
 
 
@@ -1280,17 +1440,6 @@ void CatalystAdaptor::InitializeRuntime(
 
     
 
-    // switch (proxy_option){
-    //     case "PRODUCE_ONLY":
-    //         proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
-    //         throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run is ON, proxies have been printed");
-    //     case "OFF":
-    //         break;
-    //     case "PRODUCE": 
-    //     default:
-    //     proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
-    // }
-
     if( std::string(proxy_option) == "PRODUCE_ONLY"){
             proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
             throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run: proxies have been printed");
@@ -1314,7 +1463,7 @@ void CatalystAdaptor::InitializeRuntime(
     catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node));
     if (err != catalyst_status_ok) {
         ca_m << "::Initialize()   Catalyst initialization failed." << endl;
-        throw IpplException("Stream::InSitu::CatalystAdaptor", "Failed to initialize Catalyst!!!");
+        throw IpplException("Stream::InSitu::CatalystAdaptor::Initialize()", "Failed to initialize Catalyst!!!");
     } else {
         ca_m << "::Initialize()   Catalyst initialized successfully." << endl;
     }
@@ -1330,7 +1479,7 @@ void CatalystAdaptor::Remember_now(const std::string label){
     auto it  = forceHostCopy.find(label);
     if (it == forceHostCopy.end()){
             // return false;
-            throw IpplException("CatalystAdaptor::FetchSteerableChannelValue", "Label not present in vis executable objects: " + label);
+            throw IpplException("Stream::InSitu::CatalystAdaptor::Remember_now", "Label not present in Visualisation Registry: " + label);
     }
     bool tmp = it->second;
     forceHostCopy[label] = true;
@@ -1345,11 +1494,17 @@ void CatalystAdaptor::Remember_now(const std::string label){
 void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* default = ippl::Comm->rank() */) {
     ca_m << "::Execute() START =============================================================== 0" << endl;
     
-
+                
     auto state = node["catalyst/state"];
     state["cycle"].set(cycle);
     state["time"].set(time);
     state["domain_id"].set(rank);
+    // state["multiblock"].set(1);
+    
+    #if defined(MPI_VERSION)
+    // state["mpi_rank"].set(static_cast<int64_t>(rank));
+    // state["mpi_size"].set(static_cast<int64_t>(ippl::Comm->size()));
+    #endif
 
     // m << "Catalyst Visualisation was deactivated via setting env variable IPPL_CATALYST_VIS=OFF" << endl;
     if ( !(catalyst_vis && std::string(catalyst_vis) == "OFF") ){
@@ -1358,7 +1513,6 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
         visRegistry->for_each(execV); 
 
     }
-
     if (catalyst_steer && std::string(catalyst_steer) == "ON") {
         // forward Node: add steering channels
         SteerForwardVisitor steerV{*this};
@@ -1368,8 +1522,20 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
 
 
     if(cycle == 0){
-        ca_m << "::Execute()   Printing first Conduit Node passed from RANK=1  to catalyst_execute() ==>" << endl;
-        if(ca_m.getOutputLevel() > 0 && ippl::Comm->rank()==0) node.print();
+        #if defined(MPI_VERSION)
+        MPI_Barrier(MPI_COMM_WORLD);
+            ca_m << "::Execute() [rank = 0]  Printing first Conduit Node passed from  to catalyst_execute() ==>" << endl;
+            if(ca_m.getOutputLevel() > 0 && ippl::Comm->rank()==0) node.print();
+            ca_m << "::Execute() [rank = 1]  Printing first Conduit Node passed from  to catalyst_execute() ==>" << endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+            if(ca_m.getOutputLevel() > 0 && ippl::Comm->rank()==1) node.print();
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
+        
+        
+        
+        
+        
         // if(level >= 5 && ippl::Comm->rank()==0)  node.print();
 
         ca_m    << "::Execute() During first catalyst_execute() catalyst will "     << endl
@@ -1381,7 +1547,26 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
     
     ca_m << "::Execute()::catalyst_execute() ==>" << endl;
     // Conduit Node Forward pass to Catalyst
+
+    Kokkos::fence();
+
+    #if defined(MPI_VERSION)
+    MPI_Barrier(MPI_COMM_WORLD);
+    #endif
+    #if defined(MPI_VERSION)
+    int all_ready = 1;
+    MPI_Allreduce(MPI_IN_PLACE, &all_ready, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    ca_m << "::Execute() All ranks ready for catalyst_execute: " << all_ready << " ranks" << endl;  
+    #endif
+
+    
     catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node));
+    #if defined(MPI_VERSION)
+    MPI_Barrier(MPI_COMM_WORLD);
+    #endif
+
+    Kokkos::fence();
+
     if (err != catalyst_status_ok) {
         std::cerr << "::Execute()   Failed to execute Catalyst (runtime path): " << err << std::endl;
     }

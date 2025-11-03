@@ -66,7 +66,6 @@ namespace ippl {
     )  const 
     {
         HostMirror  hostMirror;
-
         if(forceHostCopy){
             hostMirror  = this->getHostMirror();
             Kokkos::deep_copy(hostMirror ,  this->getView());
@@ -75,16 +74,12 @@ namespace ippl {
             // comType HostMirror would let the function auto deduct the wanted space ...
             hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
         }
-
-
-    
         auto field = node_fields[this->name];
         // auto field = node_fields["tester"];
         field["association"].set_string("vertex");
         // must name a topology defined in the channel
         field["topology"].set_string("p_unstructured_topo");
         field["volume_dependent"].set_string("false");
-    
     
     
         if constexpr (std::is_scalar_v<T>) {
@@ -94,6 +89,8 @@ namespace ippl {
                 << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
             
             field["values"].set_external(hostMirror.data(), Np_local);
+
+
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR CASE ---
           ca_m  << "::Execute()excute_entry() for attribute: "<<this->name << endl
@@ -107,17 +104,26 @@ namespace ippl {
             const size_t stride_bytes = sizeof(elem_t);
             // static constexpr size_t stride_bytes = sizeof(elem_t);
 
+            if(Np_local>0){
+                                field["values/x"].set_external(&hostMirror.data()[0][0], Np_local, 0 , stride_bytes );
+                            if constexpr (T::dim>=2){
+                                //ca_m <<"2"<<endl;
+                                field["values/y"].set_external(&hostMirror.data()[0][1], Np_local, 0 ,  stride_bytes );
+                            }
+                            if constexpr (T::dim>=3) {
+                                // ca_m <<"3"<<endl;
+                                field["values/z"].set_external(&hostMirror.data()[0][2], Np_local, 0 ,  stride_bytes  );
+                            }
+            }else /* (Np_local=0) */ {
 
 
+            // Np_local is 0. We MUST provide valid, empty arrays for the gather to work.
+            using component_type = typename T::value_type;
             
-                field["values/x"].set_external(&hostMirror.data()[0][0], Np_local, 0 , stride_bytes );
-            if constexpr (T::dim>=2){
-                //ca_m <<"2"<<endl;
-                field["values/y"].set_external(&hostMirror.data()[0][1], Np_local, 0 ,  stride_bytes );
-            }
-            if constexpr (T::dim>=3) {
-                // ca_m <<"3"<<endl;
-                field["values/z"].set_external(&hostMirror.data()[0][2], Np_local, 0 ,  stride_bytes  );
+
+                                     field["values/x"].set_external(static_cast<component_type*>(nullptr), 0);
+            if constexpr (T::dim>=2) field["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+            if constexpr (T::dim>=3) field["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
             }
         } else {
             // --- INVALID CASE ---

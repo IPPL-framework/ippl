@@ -59,7 +59,8 @@ int main(int argc, char* argv[]) {
 
 
     ippl::initialize(argc, argv);
-    {
+    {   
+    try{
 
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
@@ -117,7 +118,16 @@ int main(int argc, char* argv[]) {
 
         // IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
-    }
+
+
+      } 
+          catch (const IpplException& e) {
+              if (ippl::Comm->rank() == 0) {
+                  std::cerr << "IPPL exception caught: "<<  e.what() << "| at:" << e.where() << std::endl;
+              }
+              std::exit(0);
+          }
+        }
     ippl::finalize();
 
     return 0;
