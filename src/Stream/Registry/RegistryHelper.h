@@ -1,3 +1,7 @@
+/**
+ * @file RegistryHelper.h
+ * @brief Compile-time utilities and traits for fluent visualization registries.
+ */
 #pragma once
 // Fluent variant: forward declarations, utilities, and public includes
 // This mirrors src_static's sectioned layout, with notes on fluent-specific changes.
@@ -35,6 +39,9 @@ namespace ippl{
 // === Compile-time ID utilities ===
 // fixed_string: C++20 NTTP string literal wrapper used to name registry slots at compile time.
 // operator== enables comparing IDs at compile time.
+/**
+ * @brief Fixed-size string usable as a non-type template parameter.
+ */
 
 template <std::size_t N>
 struct fixed_string {
@@ -55,6 +62,9 @@ constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
 // Tag type and inline variable to reference IDs without angle brackets
 // Fluent-only: avoids needing 'template' at call sites in dependent contexts.
 // Usage: vis.get(id<"density">)
+/**
+ * @brief Tag type that carries a compile-time ID.
+ */
 
 template <fixed_string Id>
 struct id_tag { static constexpr auto value = Id; };
@@ -63,6 +73,9 @@ template <fixed_string Id>
 inline constexpr id_tag<Id> id{};
 
 // Slot<"id", T> declares one compile-time entry.
+/**
+ * @brief Compile-time slot pairing an ID with a type.
+ */
 template <fixed_string IdV, typename T>
 struct Slot {
     static constexpr auto Id = IdV;
@@ -72,6 +85,9 @@ struct Slot {
 // === Registry metaprogramming (compile-time Slots and lookup) ===
 // nth<I, Ts...> selects the I-th type from a parameter pack.
 // find_index_rec locates the index of a Slot by its compile-time ID (or -1 if not found).
+/**
+ * @brief Metafunction utilities for compile-time slot indexing and uniqueness checks.
+ */
 
 template <std::size_t I, typename First, typename... Rest>
 struct nth { using type = typename nth<I - 1, Rest...>::type; };

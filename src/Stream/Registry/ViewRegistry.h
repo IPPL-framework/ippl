@@ -1,3 +1,7 @@
+/**
+ * @file ViewRegistry.h
+ * @brief Dynamic registry for storing and retrieving named visualization-related views.
+ */
 #pragma once
 #include <any>
 #include <string>
@@ -75,6 +79,11 @@ public:
         return m_storage.size();
     }
 
+    /**
+     * @brief Check whether an entry with the given key exists.
+     * @param key The name to look up.
+     * @return true if present, false otherwise.
+     */
     bool contains(const std::string& key) const {
         return m_storage.contains( key );
     }

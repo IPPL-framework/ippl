@@ -1,3 +1,10 @@
+"""! \file catalystSubroutines.py
+\brief Helper utilities for Catalyst extractors and diagnostics.
+\details Provides logging helpers, proxy inspection, and convenience creators
+for extractors (e.g., VTPD). Intended for use by Catalyst pipeline/extractor
+scripts in this package.
+"""
+
 # Utilities for Catalyst PNG extractor/view management and diagnostics
 
 
@@ -14,81 +21,6 @@ def create_VTPD_extractor(name, object, fr = 10):
     vTPD.Writer.FileName = 'ippl_'+name+'_{timestep:06d}.vtpd'
     return vTPD
     
-
-    # Alternative: If you want to extract individual partitions as separate files,
-    # you could use PVD format:
-    # vPVD_field = CreateExtractor('PVD', ippl_field, registrationName='PVD_field')
-    # vPVD_field.Trigger = 'Time Step'
-    # vPVD_field.Writer.FileName = 'ippl_field_{timestep:06d}.pvd'
-
-    # not working: ...?
-    # create extractor (VTU, U = unstructured)
-    # create extractor (VTI, I = Image Data for regular Grids ...) 
-
-
-
-
-# from paraview import servermanager
-# # ...existing code...
-
-# # ----------------------------------------------------------------
-# # Helpers to fetch a dataset and a scalar value from a PVTrivialProducer
-# # ----------------------------------------------------------------
-# def _first_dataset_from_composite(obj):
-#     # Try vtkPartitionedDataSetCollection
-#     if hasattr(obj, "GetPartition"):
-#         try:
-#             ds = obj.GetPartition(0, 0)  # (pdsc index, partition index)
-#             if ds is not None:
-#                 return ds
-#         except TypeError:
-#             # Some versions expose GetPartition(i) on vtkPartitionedDataSet
-#             try:
-#                 ds = obj.GetPartition(0)
-#                 if ds is not None:
-#                     return ds
-#             except Exception:
-#                 pass
-#     # Fallback to first block (e.g., vtkMultiBlockDataSet)
-#     if hasattr(obj, "GetBlock"):
-#         try:
-#             blk = obj.GetBlock(0)
-#             if blk is not None:
-#                 return blk
-#         except Exception:
-#             pass
-#     # If it's already a dataset, return as-is
-#     if hasattr(obj, "GetPointData"):
-#         return obj
-#     return None
-
-
-# def _fetch_first_dataset(src_proxy):
-#     # Fetch brings a VTK data object to Python-side (safe in Catalyst Python)
-#     obj = servermanager.Fetch(src_proxy)
-#     if obj is None:
-#         return None
-#     return _first_dataset_from_composite(obj)
-
-
-# def _get_first_scalar_from_any_assoc(ds, array_name):
-#     # Try point data, then cell data, then field data
-#     if ds is None:
-#         return None
-#     if hasattr(ds, "GetPointData") and ds.GetPointData():
-#         arr = ds.GetPointData().GetArray(array_name)
-#         if arr:
-#             return float(arr.GetTuple1(0))
-#     if hasattr(ds, "GetCellData") and ds.GetCellData():
-#         arr = ds.GetCellData().GetArray(array_name)
-#         if arr:
-#             return float(arr.GetTuple1(0))
-#     if hasattr(ds, "GetFieldData") and ds.GetFieldData():
-#         arr = ds.GetFieldData().GetArray(array_name)
-#         if arr:
-#             return float(arr.GetTuple1(0))
-#     return None
-
 
 
 
@@ -145,7 +77,6 @@ def print_proxy_overview():
         for prop_name in proxy.ListProperties():
             _log(f"     - {prop_name}", "INFO")
 
-# print_proxy_overview()
 
 
 

@@ -1,3 +1,11 @@
+/**
+ * @file CatalystAdaptor.h
+ * @brief Declarations and lightweight types for ParaView Catalyst in-situ integration.
+ *
+ * This header provides helper types, forward declarations, and includes used by the
+ * Catalyst adaptor. Heavy implementation details live in `CatalystAdaptor.hpp` to
+ * keep compile times down.
+ */
 #ifndef CatalystAdaptor_h
 #define CatalystAdaptor_h
 
@@ -46,13 +54,17 @@
 // - improve avoidance of ghost duplicates 
 // - remember functionality to allow visualisation for potetnial and density at the same time ..
 // - full versatile steering ...
+// - extend and test for multirank (MPI 2 rank local works)
+// - at least avoid regenerating the same ghost data by caching logic
+// - use same channel for all steerable channels backwards and forwards
 // 
 // NEXT: 
 // - test 2D
-// - use same topology and mesh for all fields?
-// - at least avoid regenerating the same ghost data by using unordered map ....or similar
-// - use same topology and mesh for all steerable channels??
-// - inquire about improced versatile sttering
+// - use same channel (topology and mesh) for all vis fields?
+//
+// - inquire jens about 
+//           improved versatile sttering
+//          strucutural mesh multirank bug...
 // 
 // 
 // MAYBE:
@@ -81,6 +93,14 @@ namespace ippl{
 class VisRegistryRuntime;
 
 
+    /**
+     * @struct Button
+     * @brief Momentary-action control for steering.
+     *
+     * A Button acts like an edge-trigger: it reports a single transition when
+     * pressed and then resets. Useful for one-shot actions triggered from the
+     * Catalyst GUI without latching state.
+     */
     struct Button {
         Button() = default;
         
@@ -141,12 +161,25 @@ class VisRegistryRuntime;
             bool prior_state = false;
     }; 
 
-
+ /**
+  * @brief Host-side 1D mask view (0/1) used for ghost/halo flags.
+  */
 using HostMaskView1D_t = Kokkos::View<unsigned char*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
 // 1. Define an alias for your key type for cleanliness
+ /**
+  * @brief Cache key for ghosted data.
+  *
+  * Tuple components:
+  *  - pointer identifying the mesh/topology
+  *  - pointer identifying the owning view/container
+  *  - size/extent of the ghost region
+  */
 using GhostKey_t = std::tuple<const void*, const void*, size_t>;
 
 // 2. Define the custom hash function struct
+/**
+ * @brief Hash functor for GhostKey_t used in unordered caches.
+ */
 struct GhostKeyHash {
     std::size_t operator()(const GhostKey_t& k) const {
         // Get the hash for each element in the tuple
@@ -163,6 +196,15 @@ struct GhostKeyHash {
 };
 
 // namespace CatalystAdaptor {
+/**
+ * @class CatalystAdaptor
+ * @brief High-level orchestrator for Catalyst initialization, execution, and steering.
+ *
+ * The adaptor wires up registered fields/particles and steerables to Conduit nodes,
+ * invokes Catalyst scripts, and forwards/fetches steering values between the
+ * simulation and the GUI. Use the runtime registry API (InitializeRuntime/ExecuteRuntime)
+ * for flexible, non-templated integration.
+ */
 class CatalystAdaptor {
     std::shared_ptr<ippl::VisRegistryRuntime> visRegistry;
     std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry;

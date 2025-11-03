@@ -1,3 +1,7 @@
+/**
+ * @file ProxyWriter.h
+ * @brief Declarations for generating ParaView Catalyst proxy XML for steerable parameters.
+ */
 // ============= ProxyWriter: Declarations and Doxygen documentation =============
 // This header contains only declarations and small structs; templates are
 // defined in ProxyWriter.hpp and non-templates in ProxyWriter.cpp
@@ -100,14 +104,39 @@ public:
   template <typename T, unsigned Dim_v>
   void includeVector(const std::string& label);
 
+  /**
+   * @brief Register a boolean switch channel.
+   * @param label UI label and XML property name.
+   * @param defaultValue Initial value if not overridden by config.
+   */
   void includeBool(const std::string& label, bool defaultValue = false);
+  /**
+   * @brief Register a momentary button channel (edge-triggered action).
+   * @param label UI label and XML property name.
+   */
   void includeButton(const std::string& label);
+  /**
+   * @brief Register an enum channel with named entries.
+   * @param label UI label and XML property name.
+   * @param entries Vector of (display name, integer value) pairs.
+   * @param defaultValue Initial selected entry index or value, depending on consumer.
+   */
   void includeEnum(const std::string& label,
                    const std::vector<std::pair<std::string,int>>& entries,
                    int defaultValue = 0);
 
   // Emit XML files
+  /**
+   * @brief Produce one XML file per registered channel.
+   * @return true on success, false otherwise.
+   */
   bool produce();
+  /**
+   * @brief Produce a single XML containing a unified source proxy encompassing all channels.
+   * @param unifiedProxyName XML proxy name.
+   * @param unifiedGroupLabel Group label in ParaView.
+   * @return true on success, false otherwise.
+   */
   bool produceUnified(const std::string& unifiedProxyName,
                       const std::string& unifiedGroupLabel);
 

@@ -1,3 +1,10 @@
+"""! \file png_ext_particle.py
+\brief Catalyst PNG extractor for 3D particles (ParticleContainer/ParticleBase).
+\details Visualizes particle point data with adaptive camera and velocity-based
+coloring. Expects 'position' and 'velocity' arrays and is orchestrated by
+pipeline_default.py. Generates PNG extracts and supports Catalyst Live.
+"""
+
 # script-version: 2.0
 # Catalyst state generated using paraview version 5.12.0
 

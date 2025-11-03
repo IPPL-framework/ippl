@@ -1,3 +1,10 @@
+"""! \file pipeline_default.py
+\brief Main ParaView Catalyst pipeline: live visualization, VTK extracts, and steering.
+\details Discovers channel proxies, wires optional extractors, updates live views,
+and forwards/fetches steerable parameters between the simulation and the GUI.
+Designed to orchestrate the per-channel extractor scripts in catalyst_extractors/.
+"""
+
 # script-version: 2.0
 # for more details check https://www.paraview.org/paraview-docs/latest/cxx/CatalystPythonScriptsV2.html
 
@@ -7,23 +14,18 @@
 # steering capabilities and updating pipelines of all channels 
 # Visualizes 3D particles. (ParticleContainer/ParticleBase)
 # 
-# Currently hard coded to rely on attributes:
-# - 
-# 
-# Currently coded to rely on hardcoded steering labels
-#  - "electric"
-#  - "magnetic"
-# 
-# 
-# Possible TODO:
+#  DONE:
 #  - Make Steering more Versatile
 #  - Together with CPP don't rely on hard coded attributes
 #  - additionally pass field string to have constistent bounds
 #    and don't have to guess reference frame ...
 #  - figure out how to also display glyphs inside the PV 
 #    client GUI (worked when wasnt in a separate script ...)
-#  - (alternative or additionally) write working macros for glyph filter   
-#  - More
+# 
+# Possible TODO:
+#  - (alternative or additionally) write working MACROS for inaccessible PV settings  
+#  - Colouring in GUI
+#  - currently extractor scriots rely on velocity attribute ...
 ########################################################
 ########################################################
 
@@ -62,10 +64,7 @@ sys.path.append(os.path.dirname(__file__))
 
 from catalystSubroutines import (
     print_proxy_overview,
-    create_VTPD_extractor,
-    # _first_dataset_from_composite,
-    # _fetch_first_dataset,
-    # _get_first_scalar_from_any_assoc
+    create_VTPD_extractor
 )
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()

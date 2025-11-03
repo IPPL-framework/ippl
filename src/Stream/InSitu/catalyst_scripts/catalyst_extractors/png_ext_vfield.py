@@ -1,3 +1,9 @@
+"""! \file png_ext_vfield.py
+\brief Catalyst PNG extractor for 3D vector fields (e.g., ippl::Field<Vector<T,3>,3>).
+\details Uses glyph-based rendering with adaptive camera and magnitude-driven
+color/opacity. Driven by pipeline_default.py and compatible with Catalyst Live.
+"""
+
 # script-version: 2.0
 # Catalyst state generated using paraview version 5.12.0
 

@@ -1,3 +1,9 @@
+"""! \file png_ext_sfield.py
+\brief Catalyst PNG extractor for 3D scalar fields (e.g., ippl::Field<T,3>).
+\details Performs volume rendering with adaptive camera and transfer functions.
+Relies on pipeline_default.py for pipeline updates and can run with Catalyst Live.
+"""
+
 # script-version: 2.0
 # Catalyst state generated using paraview version 5.12.0
 

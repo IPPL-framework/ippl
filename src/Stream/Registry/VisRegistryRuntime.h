@@ -1,3 +1,7 @@
+/**
+ * @file VisRegistryRuntime.h
+ * @brief Non-templated heterogeneous registry for visualization and steering.
+ */
 #pragma once
 // VisRegistryRuntime: Non-templated heterogeneous registry for visualization & steering.
 // Stores only three allowed categories:

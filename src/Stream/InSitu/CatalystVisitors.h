@@ -1,3 +1,7 @@
+/**
+ * @file CatalystVisitors.h
+ * @brief Visitor functors used by CatalystAdaptor for init, execute, and steering.
+ */
 #pragma once
 #include <filesystem>
 #include <string>
@@ -18,6 +22,10 @@
 namespace ippl{
 
 /* in the advanced version we might want to get rid of this virtual function call */
+/**
+ * @struct CatalystAdaptor::InitVisitor
+ * @brief Builds Conduit channel metadata for registered fields/particles.
+ */
 struct CatalystAdaptor::InitVisitor {
     CatalystAdaptor& ca;
 
@@ -43,6 +51,10 @@ struct CatalystAdaptor::InitVisitor {
     // }
 };
 
+/**
+ * @struct CatalystAdaptor::ExecuteVisitor
+ * @brief Publishes data views each step for registered fields/particles.
+ */
 struct CatalystAdaptor::ExecuteVisitor {
     CatalystAdaptor& ca;
 
@@ -61,7 +73,10 @@ struct CatalystAdaptor::ExecuteVisitor {
     }
 };
 
-// Initialize steerable channel
+/**
+ * @struct CatalystAdaptor::SteerInitVisitor
+ * @brief Declares steerable properties (scalars/vectors/bools/buttons/enums) for the GUI.
+ */
 struct CatalystAdaptor::SteerInitVisitor {
     CatalystAdaptor& ca;
 
@@ -100,7 +115,10 @@ struct CatalystAdaptor::SteerInitVisitor {
 };
 
 
-// Forward steering: add steerable scalar channels only
+/**
+ * @struct CatalystAdaptor::SteerForwardVisitor
+ * @brief Sends current simulation values forward into Catalyst for display.
+ */
 struct CatalystAdaptor::SteerForwardVisitor {
     CatalystAdaptor& ca;
 
@@ -136,7 +154,10 @@ struct CatalystAdaptor::SteerForwardVisitor {
 
 };
 
-// Backward steering fetch (mutates external scalars)
+/**
+ * @struct CatalystAdaptor::SteerFetchVisitor
+ * @brief Retrieves updated values from Catalyst and writes back into the simulation.
+ */
 struct CatalystAdaptor::SteerFetchVisitor {
     CatalystAdaptor& ca;
 
