@@ -191,7 +191,7 @@ public:
         #ifdef IPPL_ENABLE_CATALYST
             m << "Catalyst is enabled" << endl; 
         std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr(
-        //                ippl::VisRegistryRuntime    runtime_steer_registry = ippl::MakeVisRegistryRuntime(
+                    //    ippl::VisRegistryRuntime    runtime_steer_registry = ippl::MakeVisRegistryRuntime(
                                     "electric", electric_scale,
                                     "magnetic", magnetic_scale,
                                     "switch1",  switch_m,
@@ -203,14 +203,13 @@ public:
         // ippl::VisRegistryRuntime runtime_vis_registry   = ippl::MakeVisRegistryRuntime(
 
                                     // "ions",             this->pcontainer_m, 
-                                    // "ions",             *this->pcontainer_m, 
-                                    // "electrostatic",    this->fcontainer_m->getE(), 
-                                    "density",          this->fcontainer_m->getRho()
-                                    // , 
-                                    // "potential",          this->fcontainer_m->getRho() 
+                                    "ions",             *this->pcontainer_m
+                                    , "electrostatic",    this->fcontainer_m->getE()
+                                    ,"density",          this->fcontainer_m->getRho()
+                                    , "potential",          this->fcontainer_m->getRho()
                                 );
 
-        // Register enum choices for dropdowns before initialization
+        /* Register enum choices for dropdowns before initialization */
         cat_vis.RegisterEnumChoices("experiment", {
             {"PenningTrap",   static_cast<int>(PenningTrap)},
             {"LandauDamping", static_cast<int>(LandauDamping)},
@@ -228,7 +227,7 @@ public:
         #endif
         
         #ifdef IPPL_ENABLE_ASCENT
-            m << "Ascemt is enabled" << endl; 
+            m << "Ascent is enabled" << endl; 
             ippl::AscentAdaptor::Initialize();
         #endif
 
@@ -417,55 +416,9 @@ public:
         
         
 #ifdef IPPL_ENABLE_CATALYST
-
-        
-        // auto myR_steer = ippl::MakeRegistry<  "magnetic",
-        //                                 "electric">
-        //                                 (magnetic_scale,
-        //                                  electric_scale);
-        
-        // auto myR_vis = ippl::MakeRegistry<"ions",
-        //                             "electrostatic",
-        //                             "density">
-        //                             (pc, 
-        //                             this->fcontainer_m->getE(), 
-        //                             this->fcontainer_m->getRho() );
-
-        // ippl::CatalystAdaptor_ns::Execute(*myR_vis, *myR_steer, it, this->time_m, ippl::Comm->rank());
-
-
-
-
-        // auto myR_steer_mini =   ippl::MakeVisRegistry_mini(  "magnetic", magnetic_scale, 
-        //                                                 "electric", electric_scale);
-        
-        // auto myR_vis_mini   =   ippl::MakeVisRegistry_mini(
-        //                             "ions",pc, 
-        //                             // "2ions",this->pcontainer_m, 
-        //                             "electrostatic", this->fcontainer_m->getE(), 
-        //                             "density",this->fcontainer_m->getRho() 
-        //                         );
-
-        // ippl::CatalystAdaptor_ns::Execute(*myR_vis_mini, *myR_steer_mini, it, this->time_m, ippl::Comm->rank());
-
-
-
         // CatalystAdaptor::
         cat_vis.Remember_now("density");
-        // cat_vis.ExecuteRuntime(  it, this->time_m);
-
-
-
-
-
 #endif
-
-
-        /* extra wrapping for testing ... */
-        // auto e_ptr  = std::make_shared<const VField_t<double, 3>>(this->fcontainer_m->getE());
-        // auto rho_ptr = std::make_shared<const Field_t<3>>(this->fcontainer_m->getRho());
-        // auto myR_vis = MakeRegistry<"particle","field_v","field_s">(pc, e_ptr, rho_ptr);
-
 
 
 
@@ -496,12 +449,6 @@ public:
 
 
 #ifdef IPPL_ENABLE_CATALYST
-// cat_vis.ExecuteRuntime( it, this->time_m);
-//         auto myR_vis2 = MakeRegistry<"potential">
-//                                     (this->fcontainer_m->getRho() );
-
-//         CatalystAdaptor::Execute(*myR_vis2, *myR_steer, it, this->time_m, ippl::Comm->rank());
-
         cat_vis.ExecuteRuntime(it, this->time_m);
 #endif
 
@@ -537,8 +484,8 @@ public:
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);
         
-        // std::cout << "\n\nsleeping a bitz..........." << std::endl;
-        // sleep(3);
+        std::cout << "PTManager: sleeping a quarter second..." << std::endl;
+        sleep(0.25);
     }
 
     void dump() override {

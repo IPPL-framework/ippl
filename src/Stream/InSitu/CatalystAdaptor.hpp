@@ -765,13 +765,27 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
 
 
         auto channel = node["catalyst/channels/"+ channelName];
-        channel["type"].set_string("mesh");
-        auto data =     channel["data"];
+        // channel["type"].set_string("mesh");
+        channel["type"].set_string("multimesh");
+    
+
+        auto data =     channel["data/block_main"];
+        auto data_help =     channel["data/block_help"];
+        channel["assembly/main"] = "block_main";
+        channel["assembly/help"] = "block_help";
+        // channel["assembly/ALL"].append().set_string("block_main");
+        // channel["assembly/ALL"].append().set_string("block_help");
+
+
         // multimesh ??
         // auto channel = node["catalyst/channels/"+ channelName];
         // channel["type"].set_string("multimesh");
         // auto data   = channel["data"][blockName];
         auto fields = data["fields"];
+
+        data["type"].set_string("mesh");
+
+        
         
         
         // Creates a host-accessible mirror view and copies the data from the device view to the host.
@@ -829,28 +843,28 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
             const NDRegion_t ndr = particleContainer->getLayout().getRegionLayout().getDomain();
             
             /* HELPER COORDINATES TO PASS THE BOUNDING BOX in vtk format*/
-            data["coordsets/bound_helper_coords/type"].set_string("uniform");
             /* HELPER TOPOLOGY    TO PASS THE BOUNDING BOX (??even needed??)  in vtk format */
-            data["topologies/bound_helper_topo/coordset"].set_string("bound_helper_coords");
-            data["topologies/bound_helper_topo/type"].set_string("uniform");
+            data_help["coordsets/bound_helper_coords/type"].set_string("uniform");
+            data_help["topologies/bound_helper_topo/coordset"].set_string("bound_helper_coords");
+            data_help["topologies/bound_helper_topo/type"].set_string("uniform");
             /* create unfirom coordinate mesh only consisting of the corner points of the domain */ 
             {
-                data["coordsets/bound_helper_coords/dims/i"].set(2);
-                data["coordsets/bound_helper_coords/spacing/dx"].set( ndr[0].max()  - ndr[0].min() );
-                data["coordsets/bound_helper_coords/origin/x"].set(   ndr[0].min() );
-                data["topologies/bound_helper_topo/origin/x"].set(    ndr[0].min() );
+                data_help["coordsets/bound_helper_coords/dims/i"].set(2);
+                data_help["coordsets/bound_helper_coords/spacing/dx"].set( ndr[0].max()  - ndr[0].min() );
+                data_help["coordsets/bound_helper_coords/origin/x"].set(   ndr[0].min() );
+                // data["topologies/bound_helper_topo/origin/x"].set(    ndr[0].min() );
             }
             if constexpr(dim_ >= 2){
-                data["coordsets/bound_helper_coords/dims/j"].set(2);
-                data["coordsets/bound_helper_coords/spacing/dy"].set( ndr[1].max()- ndr[1].min() );
-                data["coordsets/bound_helper_coords/origin/y"].set(   ndr[1].min()               );
-                data["topologies/bound_helper_topo/origin/y"].set(    ndr[1].min()               );
+                data_help["coordsets/bound_helper_coords/dims/j"].set(2);
+                data_help["coordsets/bound_helper_coords/spacing/dy"].set( ndr[1].max()- ndr[1].min() );
+                data_help["coordsets/bound_helper_coords/origin/y"].set(   ndr[1].min()               );
+                // data["topologies/bound_helper_topo/origin/y"].set(    ndr[1].min()               );
             }
             if constexpr(dim_ >= 3){
-                data["coordsets/bound_helper_coords/dims/k"].set(2);
-                data["coordsets/bound_helper_coords/spacing/dz"].set( ndr[2].max()- ndr[1].min() );
-                data["coordsets/bound_helper_coords/origin/z"].set(   ndr[2].min()               );
-                data["topologies/bound_helper_topo/origin/z"].set(    ndr[2].min()               );
+                data_help["coordsets/bound_helper_coords/dims/k"].set(2);
+                data_help["coordsets/bound_helper_coords/spacing/dz"].set( ndr[2].max()- ndr[1].min() );
+                data_help["coordsets/bound_helper_coords/origin/z"].set(   ndr[2].min()               );
+                // data["topologies/bound_helper_topo/origin/z"].set(    ndr[2].min()               );
             }
     } 
     // else {
@@ -1272,7 +1286,7 @@ template<typename E>
 requires (std::is_enum_v<std::decay_t<E>>)
 void CatalystAdaptor::FetchSteerableChannelValue( E& e, const std::string& label)
 {
-    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: Enum| Value sent:" << to_string(e) << endl;
+    ca_m << "::Execute()::FetchSteerableChannel(" << label  << ") | Type: Enum| Value sent:" << /* enumChoices_[label].second  */to_string(e) << endl;
     std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
                                "steerable_field_b_" + label + "/values";
     if (!results.has_path(unified_path)) {
