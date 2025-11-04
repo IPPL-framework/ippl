@@ -1,0 +1,33 @@
+# Default steering ranges and defaults for ProxyWriter
+# Extra/unknown fields are ignored.
+
+
+# Global type defaults applied if no label override exists.
+type_defaults:
+  scalar:
+    min: 0.0
+    max: 100.0
+    step: 1.0      # optional, currently informational
+    default: 30.0
+    clamp: true    # optional, currently informational
+    widget: slider # optional, currently informational
+  vector:
+    component_defaults:
+      min: -99.0
+      max: 99.0
+      step: 1.0
+      default: 30.0
+      clamp: true
+      widget: slider3
+
+# Label-specific overrides (take precedence over type_defaults)
+# EG:
+
+steer_params:
+  electric: {min: 0.0, max: 50.0, step: 1.0, default: 30.0, clamp: true, widget: slider}
+
+  magnetic:
+    components:
+      x: { min: 0.0, max: 10.0, step: 0.1, default: 5.0, clamp: true }
+      y: { min: 0.0, max: 10.0, step: 0.1, default: 5.0, clamp: true }
+      z: { min: 0.0, max: 10.0, step: 0.1, default: 5.0, clamp: true }
