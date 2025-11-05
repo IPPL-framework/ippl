@@ -9,25 +9,9 @@
 #include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
+#include "EvalFunctor.h"
 
 namespace ippl {
-
-    template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
-    struct EvalFunctor {
-        const Vector<Tlhs, Dim> DPhiInvT;
-        const Tlhs absDetDPhi;
-
-        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi)
-            : DPhiInvT(DPhiInvT)
-            , absDetDPhi(absDetDPhi) {}
-
-        KOKKOS_FUNCTION auto operator()(
-            const size_t& i, const size_t& j,
-            const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
-            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
-        }
-    };
-
     /**
      * @brief A solver for the poisson equation using finite element methods and
      * Conjugate Gradient (CG)
