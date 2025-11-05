@@ -420,8 +420,9 @@ public:
     // Monte Carlo computation of the integral, computing it from particles
     // instead of using the E-field on the grid.
     void dumpLandau() {
-        std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-        size_type localParticles                = pc->getLocalNum();
+
+        auto Eview = this->pcontainer_m->E.getView();
+        size_type localParticles = this->pcontainer_m->getLocalNum();
 
         using exec_space = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -431,7 +432,7 @@ public:
         Kokkos::parallel_reduce(
             "Ex stats", iteration_policy,
             KOKKOS_LAMBDA(const size_t i, double& E2) {
-                double val = (pc->E(i))[0];
+                double val = Eview(i)[0];
                 double e2  = Kokkos::pow(val, 2);
                 E2 += e2;
             },
