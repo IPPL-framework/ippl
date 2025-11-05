@@ -143,7 +143,7 @@ public:
     }
 
     void par2grid() override {
-        if (getSolver() == "FEM") {
+        if ((getSolver() == "FEM") || (getSolver() == "FEM_PRECON")) {
             scatterFEM();
         } else {
             scatterCIC();
