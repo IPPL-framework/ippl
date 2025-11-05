@@ -82,6 +82,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -119,6 +120,12 @@ Collaboration diagram for ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, Qu
 </map>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html">DeviceStruct</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device struct for copies //////////////////////////////////////////.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:ac8eeceeda13c087c38524c5be1a9140a"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FiniteElementSpace.html">FiniteElementSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1LagrangeSpace.html#a765bd4f2cfe74d8c52f4497896a834f7">numElementDOFs</a>, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::indices_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a></td></tr>
@@ -213,6 +220,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a08f3b640834bd1d15761ef67fc7f6ea0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a08f3b640834bd1d15761ef67fc7f6ea0">computeAvg</a> (const FieldLHS &amp;u_h) const</td></tr>
 <tr class="memdesc:a08f3b640834bd1d15761ef67fc7f6ea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a field, compute the average.  <a href="classippl_1_1LagrangeSpace.html#a08f3b640834bd1d15761ef67fc7f6ea0">More...</a><br /></td></tr>
 <tr class="separator:a08f3b640834bd1d15761ef67fc7f6ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html">DeviceStruct</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7">getDeviceMirror</a> () const</td></tr>
+<tr class="memdesc:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device struct definitions /////////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7">More...</a><br /></td></tr>
+<tr class="separator:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1FiniteElementSpace"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1FiniteElementSpace')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace&lt; T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memitem:a22431704078c7819295ae0d912e3cd90 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">FiniteElementSpace</a> (<a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;mesh, ElementType &amp;ref_element, const QuadratureType &amp;quadrature)</td></tr>
 <tr class="memdesc:a22431704078c7819295ae0d912e3cd90 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new FiniteElementSpace object.  <a href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">More...</a><br /></td></tr>
@@ -580,6 +590,7 @@ template&lt;typename F &gt; </div>
 </div><div class="memdoc">
 
 <p>Error norm computations ///////////////////////////////////////////. </p>
+<p >Functions for error computations, etc. ////////////////////////////.</p>
 <p >Given two fields, compute the L2 norm error</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -947,6 +958,24 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
+<a id="a5c83b8a2bc0065c8e2c820cbeadfd9b7" name="a5c83b8a2bc0065c8e2c820cbeadfd9b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c83b8a2bc0065c8e2c820cbeadfd9b7">&#9670;&#160;</a></span>getDeviceMirror()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::getDeviceMirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Device struct definitions /////////////////////////////////////////. </p>
+
+</div>
+</div>
 <a id="afbdfb51518d6813977577d676aaf7ee0" name="afbdfb51518d6813977577d676aaf7ee0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afbdfb51518d6813977577d676aaf7ee0">&#9670;&#160;</a></span>getGlobalDOFIndex()</h2>
 
@@ -1298,6 +1327,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Private member containing the element indices owned by //////////// my MPI rank. ////////////////////////////////////////////////////// </p>
 
 </div>
 </div>

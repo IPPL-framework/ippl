@@ -400,10 +400,10 @@ Functions</h2></td></tr>
 <tr class="memitem:aef7a455fedb25128d4d4c40b391245c1"><td class="memTemplParams" colspan="2">template&lt;typename E1 , size_t N1, typename E2 , size_t N2&gt; </td></tr>
 <tr class="memitem:aef7a455fedb25128d4d4c40b391245c1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1detail_1_1meta__dot.html">detail::meta_dot</a>&lt; E1, E2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#aef7a455fedb25128d4d4c40b391245c1">dot</a> (const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E1, N1 &gt; &amp;u, const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E2, N2 &gt; &amp;v)</td></tr>
 <tr class="separator:aef7a455fedb25128d4d4c40b391245c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &gt; </td></tr>
-<tr class="memitem:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a82d8ba8db0a45eaee29d37c1e1e19f5a">locate_element_nd_and_xi</a> (const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;x, <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;e_nd, <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;xi)</td></tr>
-<tr class="memdesc:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mapping from global position to element ND index and reference coordinates (xi ∈ [0,1)^Dim) on a <a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a> mesh.  <a href="namespaceippl.html#a82d8ba8db0a45eaee29d37c1e1e19f5a">More...</a><br /></td></tr>
-<tr class="separator:a82d8ba8db0a45eaee29d37c1e1e19f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82bda2094ea2e98ef819797986b052f1"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
+<tr class="memitem:a82bda2094ea2e98ef819797986b052f1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a82bda2094ea2e98ef819797986b052f1">locate_element_nd_and_xi</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;hr, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;origin, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;x, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;e_nd, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;xi)</td></tr>
+<tr class="memdesc:a82bda2094ea2e98ef819797986b052f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mapping from global position to element ND index and reference coordinates (xi ∈ [0,1)^Dim) on a <a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a> mesh.  <a href="namespaceippl.html#a82bda2094ea2e98ef819797986b052f1">More...</a><br /></td></tr>
+<tr class="separator:a82bda2094ea2e98ef819797986b052f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d0768e2295c95728852481be1c25984"><td class="memTemplParams" colspan="2">template&lt;class View , class IVec , std::size_t... Is&gt; </td></tr>
 <tr class="memitem:a5d0768e2295c95728852481be1c25984"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a5d0768e2295c95728852481be1c25984">view_ptr_impl</a> (View &amp;v, const IVec &amp;I, std::index_sequence&lt; Is... &gt;) -&gt; decltype(&amp;v(I[Is]...))</td></tr>
 <tr class="separator:a5d0768e2295c95728852481be1c25984"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2079,36 +2079,42 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt;
 
 </div>
 </div>
-<a id="a82d8ba8db0a45eaee29d37c1e1e19f5a" name="a82d8ba8db0a45eaee29d37c1e1e19f5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82d8ba8db0a45eaee29d37c1e1e19f5a">&#9670;&#160;</a></span>locate_element_nd_and_xi()</h2>
+<a id="a82bda2094ea2e98ef819797986b052f1" name="a82bda2094ea2e98ef819797986b052f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82bda2094ea2e98ef819797986b052f1">&#9670;&#160;</a></span>locate_element_nd_and_xi()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &gt; </div>
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_INLINE_FUNCTION void ippl::locate_element_nd_and_xi </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>hr</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>origin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>x</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>e_nd</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>xi</em>&#160;</td>
         </tr>
         <tr>

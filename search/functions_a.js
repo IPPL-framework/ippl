@@ -16,7 +16,7 @@ var searchData=
   ['lexicographicalless_13',['lexicographicalLess',['../structippl_1_1Tuple.html#a8fc429fa3dc7d96ebae86074b55500f4',1,'ippl::Tuple']]],
   ['loadbalancer_14',['LoadBalancer',['../classLoadBalancer.html#a504012e3872d3e8e4c1c3ac60d763cf5',1,'LoadBalancer']]],
   ['localtoglobal_15',['localToGlobal',['../classippl_1_1QuadrilateralElement.html#add98f4fddd8ea0db329bc2fe9ca46171',1,'ippl::QuadrilateralElement::localToGlobal()'],['../classippl_1_1HexahedralElement.html#ae4f40edb02dc21f86251f0adb343967e',1,'ippl::HexahedralElement::localToGlobal()'],['../classippl_1_1EdgeElement.html#ad206f75c47af1736d7883c29484ee677',1,'ippl::EdgeElement::localToGlobal()']]],
-  ['locate_5felement_5fnd_5fand_5fxi_16',['locate_element_nd_and_xi',['../namespaceippl.html#a82d8ba8db0a45eaee29d37c1e1e19f5a',1,'ippl']]],
+  ['locate_5felement_5fnd_5fand_5fxi_16',['locate_element_nd_and_xi',['../namespaceippl.html#a82bda2094ea2e98ef819797986b052f1',1,'ippl']]],
   ['locateparticles_17',['locateParticles',['../classippl_1_1ParticleSpatialLayout.html#a47a5361e8684f1a4512c021d827ea489',1,'ippl::ParticleSpatialLayout::locateParticles()'],['../classippl_1_1ParticleSpatialOverlapLayout.html#a9b49c8159dd375c811771dc3ad9cb7a9',1,'ippl::ParticleSpatialOverlapLayout::locateParticles()'],['../classippl_1_1ParticleSpatialLayout.html#ad8f339f8e44b1d6338c706e96dabc127',1,'ippl::ParticleSpatialLayout::locateParticles()']]],
   ['lock_18',['lock',['../classippl_1_1mpi_1_1rma_1_1Window.html#addd5c1c6558aaa3a18f864e7b6f13037',1,'ippl::mpi::rma::Window']]],
   ['lockall_19',['lockall',['../classippl_1_1mpi_1_1rma_1_1Window.html#a4ff9719c39d0ca469fb123b28f6332f2',1,'ippl::mpi::rma::Window']]],
