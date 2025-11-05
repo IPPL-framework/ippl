@@ -59,7 +59,8 @@ public:
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
 
-        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM") {
+        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
+            fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
             phi_m->setFieldBC(phi_m->getFieldBC());
         }

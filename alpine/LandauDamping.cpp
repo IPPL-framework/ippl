@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<std::string> preconditioner_params;
 
-        if (solver == "PCG" || solver == "FEM") {
+        if (solver == "PCG" || solver == "FEM_PRECON") {
             for (int i = 0; i < 5; i++) {
                 preconditioner_params.push_back(argv[arg++]);
             }

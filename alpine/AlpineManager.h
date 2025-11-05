@@ -117,7 +117,7 @@ public:
     }
 
     void grid2par() override { 
-        if (getSolver() == "FEM") {
+        if ((getSolver() == "FEM") || (getSolver() == "FEM_PRECON")) {
             gatherFEM();
         } else {
             gatherCIC();
@@ -135,6 +135,9 @@ public:
         policy_type iteration_policy(0, localParticles);
 
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        if (getSolver() == "FEM_PRECON") {
+            auto& space = (std::get<FEMPreconSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        }
 
         interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
                                    this->pcontainer_m->R, space, iteration_policy);
@@ -184,6 +187,9 @@ public:
         policy_type iteration_policy(0, localParticles);
 
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        if (getSolver() == "FEM_PRECON") {
+            auto& space = (std::get<FEMPreconSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        }
 
         assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
 
@@ -219,7 +225,7 @@ public:
         Vector_t<double, Dim> hr                 = this->hr_m;
         double Q                                 = Q_m;
 
-        if (this->fsolver_m->getStype() != "FEM") {
+        if ((this->fsolver_m->getStype() != "FEM") || (this->fsolver_m->getStype() != "FEM_PRECON")) {
             double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
             (*rho)            = (*rho) / cellVolume;
         }
