@@ -134,10 +134,9 @@ public:
         size_type localParticles = this->pcontainer_m->getLocalNum();
         policy_type iteration_policy(0, localParticles);
 
+        // Since the interpolation is agnostic to preconditioning, we can keep 
+        // this hard-coded without any ifs (FEM or FEM_PRECON).
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
-        if (getSolver() == "FEM_PRECON") {
-            auto& space = (std::get<FEMPreconSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
-        }
 
         interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
                                    this->pcontainer_m->R, space, iteration_policy);
@@ -186,10 +185,9 @@ public:
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
+        // Since the interpolation is agnostic to preconditioning, we can keep 
+        // this hard-coded without any ifs (FEM or FEM_PRECON).
         auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
-        if (getSolver() == "FEM_PRECON") {
-            auto& space = (std::get<FEMPreconSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
-        }
 
         assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
 
