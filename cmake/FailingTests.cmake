@@ -10,8 +10,6 @@
 
 if(BUILD_TESTING AND IPPL_SKIP_FAILING_TESTS)
   set(IPPL_DISABLED_TEST_LIST
-      AssembleRHS
-      InterpolateDiracs
       ParticleSendRecv
       ORB
       PIC
