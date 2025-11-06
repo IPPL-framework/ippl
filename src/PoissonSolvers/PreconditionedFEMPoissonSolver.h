@@ -82,10 +82,6 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            // start a timer
-            static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
-            IpplTimings::startTimer(solve);
-
             // create load vector for the problem
             this->rhs_mp->fillHalo();
             lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
@@ -218,8 +214,6 @@ namespace ippl {
             (this->lhs_mp)->fillHalo();
 
             IpplTimings::stopTimer(pcgTimer);
-
-            IpplTimings::stopTimer(solve);
         }
 
         /**

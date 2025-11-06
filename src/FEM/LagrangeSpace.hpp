@@ -350,9 +350,15 @@ namespace ippl {
                            FieldRHS>::evaluateAx(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
-        // start a timer
+        // declare timers
         static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        static IpplTimings::TimerRef evalAx_outer = IpplTimings::getTimer("evaluateAx: outer loop");
+        static IpplTimings::TimerRef evalAx_bc = IpplTimings::getTimer("evaluateAx: BCs");
+        static IpplTimings::TimerRef evalAx_setup = IpplTimings::getTimer("evaluateAx: setup");
+
+        // start a timer
         IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_setup);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -407,9 +413,10 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        IpplTimings::stopTimer(evalAx_setup);
+
         // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
+        IpplTimings::startTimer(evalAx_outer);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -472,7 +479,10 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalAx_outer);
+
+        // start a timer
+        IpplTimings::startTimer(evalAx_bc);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -482,6 +492,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
+        IpplTimings::stopTimer(evalAx_bc);
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
@@ -494,9 +505,11 @@ namespace ippl {
                            FieldRHS>::evaluateAx_lower(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_lower = IpplTimings::getTimer("evaluateAxLower");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_lower);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -550,10 +563,6 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -620,7 +629,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -630,7 +638,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_lower);
 
         return resultField;
     }
@@ -642,9 +650,11 @@ namespace ippl {
                            FieldRHS>::evaluateAx_upper(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_upper = IpplTimings::getTimer("evaluateAxUpper");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_upper);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -698,10 +708,6 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -768,7 +774,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -778,7 +783,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_upper);
 
         return resultField;
     }
@@ -790,9 +795,11 @@ namespace ippl {
                            FieldRHS>::evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_upperlower = IpplTimings::getTimer("evaluateAxUpperLower");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_upperlower);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -846,10 +853,6 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -913,7 +916,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -923,7 +925,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_upperlower);
 
         return resultField;
     }
@@ -935,9 +937,11 @@ namespace ippl {
                            FieldRHS>::evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_invdiag = IpplTimings::getTimer("evaluateAxInvDiag");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_invdiag);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -989,10 +993,6 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -1057,9 +1057,7 @@ namespace ippl {
                     apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
-
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_invdiag);
 
         return resultField;
     }
@@ -1070,10 +1068,12 @@ namespace ippl {
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                            FieldRHS>::evaluateAx_diag(FieldLHS& field, F& evalFunction) const {
         Inform m("");
+        
+        // declare timer
+        static IpplTimings::TimerRef evalAx_diag = IpplTimings::getTimer("evaluateAxDiag");
 
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_diag);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -1126,10 +1126,6 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
-
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
@@ -1175,7 +1171,6 @@ namespace ippl {
                     apply(resultView, I_nd) += A_K_diag[i] * apply(view, I_nd);
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -1185,7 +1180,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_diag);
 
         return resultField;
     }
@@ -1196,6 +1191,12 @@ namespace ippl {
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                            FieldRHS>::evaluateAx_lift(FieldLHS& field, F& evalFunction) const {
         Inform m("");
+
+        // declare timer
+        static IpplTimings::TimerRef evalLifting = IpplTimings::getTimer("evaluateLifting");
+
+        // start a timer
+        IpplTimings::startTimer(evalLifting);
 
         // get number of ghost cells in field
         const int nghost = field.getNghost();
@@ -1299,6 +1300,8 @@ namespace ippl {
             });
         resultField.accumulateHalo();
 
+        IpplTimings::stopTimer(evalLifting);
+
         return resultField;
     }
 
@@ -1308,8 +1311,10 @@ namespace ippl {
                        FieldRHS>::evaluateLoadVector(FieldRHS& field) const {
         Inform m("");
 
-        // start a timer
+        // declare timer
         static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
+
+        // start a timer
         IpplTimings::startTimer(evalLoadV);
 
         // List of quadrature weights
@@ -1353,11 +1358,6 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop =
-            IpplTimings::getTimer("evaluateLoadVec: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -1412,8 +1412,6 @@ namespace ippl {
 
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
-
         temp_field.accumulateHalo();
 
         if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
