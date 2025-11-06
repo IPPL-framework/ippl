@@ -330,5 +330,15 @@ public:
             throw std::runtime_error("Unsupported dimensionality for OPEN solver");
         }
     }
+
+    auto& getSpace() {
+        if (this->getStype() == "FEM") {
+            return std::get<FEMSolver_t<T, Dim>>(this->getSolver()).getSpace();
+        } else if (this->getStype() == "FEM_PRECON") {
+            return std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver()).getSpace();
+        } else {
+            throw std::runtime_error("getSpace() called on non-FEM solver");
+        }
+    }
 };
 #endif

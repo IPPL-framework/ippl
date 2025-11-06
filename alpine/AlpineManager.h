@@ -134,9 +134,8 @@ public:
         size_type localParticles = this->pcontainer_m->getLocalNum();
         policy_type iteration_policy(0, localParticles);
 
-        // Since the interpolation is agnostic to preconditioning, we can keep 
-        // this hard-coded without any ifs (FEM or FEM_PRECON).
-        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
+        auto& space = solver->getSpace();
 
         interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
                                    this->pcontainer_m->R, space, iteration_policy);
@@ -185,9 +184,8 @@ public:
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
-        // Since the interpolation is agnostic to preconditioning, we can keep 
-        // this hard-coded without any ifs (FEM or FEM_PRECON).
-        auto& space = (std::get<FEMSolver_t<T, Dim>>(this->fsolver_m->getSolver())).getSpace();
+        auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
+        auto& space = solver->getSpace();
 
         assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
 
@@ -223,7 +221,7 @@ public:
         Vector_t<double, Dim> hr                 = this->hr_m;
         double Q                                 = Q_m;
 
-        if ((this->fsolver_m->getStype() != "FEM") || (this->fsolver_m->getStype() != "FEM_PRECON")) {
+        if ((this->fsolver_m->getStype() != "FEM") && (this->fsolver_m->getStype() != "FEM_PRECON")) {
             double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
             (*rho)            = (*rho) / cellVolume;
         }
