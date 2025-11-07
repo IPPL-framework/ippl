@@ -120,7 +120,7 @@ This will set the following variables automatically (exact values may change ove
 ```
 Users are encouraged to define additional sets of flags and create presets for them.
 
-#### Serial debug build with tests and newest Kokkos
+#### Serial debug build with tests and a Kokkos version
 ```
 cmake .. \
     -DCMAKE_BUILD_TYPE=Debug \
@@ -145,6 +145,7 @@ cmake .. \
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DKokkos_ARCH_[architecture]=ON \
+    -DCMAKE_CUDA_ARCHITECTURES=<architecture compute capability> \
     -DCMAKE_CXX_STANDARD=20 \
     -DIPPL_ENABLE_FFT=ON \
     -DIPPL_ENABLE_TESTS=ON \
