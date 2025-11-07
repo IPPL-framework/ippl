@@ -168,7 +168,8 @@ namespace ippl {
                 // we do not need to send to ourselves
                 continue;
             }
-            window_m.put<size_type>(rankSendCount_hview(rank), rank, Comm->rank());
+            const int* src_ptr = &rankSendCount_hview(rank);
+            window_m.put<int>(src_ptr, rank, Comm->rank());
         }
         window_m.fence(0);
 
