@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1detail_1_1ParticleAttribBase_1_1WithMemSpace.html" title=" " alt="" coords="5,5,260,60"/>
+<area shape="rect" id="node1" href="$structippl_1_1detail_1_1ParticleBC.html" title=" " alt="" coords="5,69,152,109"/>
+<area shape="rect" id="node2" href="$structippl_1_1detail_1_1PeriodicBC.html" title=" " alt="" coords="207,5,357,45"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1ReflectiveBC.html" title=" " alt="" coords="200,69,364,109"/>
+<area shape="rect" id="node4" href="$structippl_1_1detail_1_1SinkBC.html" title=" " alt="" coords="209,133,355,173"/>
 </map>

@@ -1,5 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="5,31,224,115"/>
-<area shape="rect" id="node2" href="$classippl_1_1NedelecSpace.html" title=" " alt="" coords="275,5,465,60"/>
-<area shape="rect" id="node3" href="$classippl_1_1NedelecSpace.html" title="A class representing a Nedelec space for finite element methods on a structured, rectilinear grid." alt="" coords="272,84,468,139"/>
+<area shape="rect" id="node1" href="$classippl_1_1FiniteElementSpace.html" title="The FiniteElementSpace class handles the mesh index mapping to vertices and elements and is the base ..." alt="" coords="5,5,208,75"/>
+<area shape="rect" id="node2" href="$classippl_1_1LagrangeSpace.html" title=" " alt="" coords="256,5,444,75"/>
 </map>

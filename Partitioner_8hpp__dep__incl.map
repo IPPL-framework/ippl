@@ -12,8 +12,8 @@
 <area shape="rect" id="node24" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="729,753,907,779"/>
 <area shape="rect" id="node25" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="999,753,1154,779"/>
 <area shape="rect" id="node26" href="$IpplCore_8h.html" title=" " alt="" coords="1741,753,1821,779"/>
-<area shape="rect" id="node33" href="$FieldLayout_8hpp.html" title=" " alt="" coords="5,900,119,925"/>
-<area shape="rect" id="node35" href="$SubFieldLayout_8h.html" title=" " alt="" coords="2063,973,2186,999"/>
+<area shape="rect" id="node32" href="$FieldLayout_8hpp.html" title=" " alt="" coords="5,900,119,925"/>
+<area shape="rect" id="node35" href="$SubFieldLayout_8h.html" title=" " alt="" coords="2019,973,2142,999"/>
 <area shape="rect" id="node36" href="$Maxwell_8h.html" title=" " alt="" coords="1120,599,1199,625"/>
 <area shape="rect" id="node41" href="$BcTypes_8h.html" title=" " alt="" coords="1565,599,1647,625"/>
 <area shape="rect" id="node43" href="$HaloCells_8h.html" title=" " alt="" coords="1159,225,1247,251"/>
@@ -39,9 +39,9 @@
 <area shape="rect" id="node28" href="$BareField_8hpp.html" title=" " alt="" coords="1235,900,1337,925"/>
 <area shape="rect" id="node29" href="$BaseManager_8h.html" title=" " alt="" coords="1361,900,1473,925"/>
 <area shape="rect" id="node30" href="$Buffers_8cpp.html" title=" " alt="" coords="1548,900,1635,925"/>
-<area shape="rect" id="node31" href="$Communicate_8cpp.html" title=" " alt="" coords="1659,900,1785,925"/>
-<area shape="rect" id="node32" href="$Environment_8cpp.html" title=" " alt="" coords="1809,900,1928,925"/>
-<area shape="rect" id="node34" href="$SubFieldLayout_8hpp.html" title=" " alt="" coords="2003,900,2139,925"/>
+<area shape="rect" id="node31" href="$Environment_8cpp.html" title=" " alt="" coords="1659,900,1777,925"/>
+<area shape="rect" id="node33" href="$Inform_8cpp.html" title=" " alt="" coords="1802,900,1885,925"/>
+<area shape="rect" id="node34" href="$SubFieldLayout_8hpp.html" title=" " alt="" coords="1959,900,2095,925"/>
 <area shape="rect" id="node37" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="1216,680,1409,705"/>
 <area shape="rect" id="node40" href="$UniformCartesian_8h.html" title=" " alt="" coords="989,519,1122,544"/>
 <area shape="rect" id="node42" href="$BConds_8h.html" title=" " alt="" coords="1587,680,1665,705"/>

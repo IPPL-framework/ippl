@@ -12,6 +12,5 @@ var searchData=
   ['buf_5fm_9',['buf_m',['../classippl_1_1ParticleAttrib.html#aeb0fbbf91f91d51d74c0165311afae9d',1,'ippl::ParticleAttrib']]],
   ['buffer_10',['buffer',['../structippl_1_1detail_1_1CapturedExpression.html#a4b0db64fdced30e27a47a0f8086e25d7',1,'ippl::detail::CapturedExpression::buffer()'],['../structippl_1_1detail_1_1FieldBufferData.html#a0f0d9d8de8da637c4d50c72b8603b6c7',1,'ippl::detail::FieldBufferData::buffer()']]],
   ['buffer_5fhandlers_5fm_11',['buffer_handlers_m',['../classippl_1_1mpi_1_1Communicator.html#aca662db780e48ce6a7f4823c2372f1ee',1,'ippl::mpi::Communicator']]],
-  ['buffer_5fm_12',['buffer_m',['../classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1',1,'ippl::detail::Archive']]],
-  ['buffers_5fm_13',['buffers_m',['../classippl_1_1Communicate.html#a6fda3416b85984732877951d27e7e2df',1,'ippl::Communicate']]]
+  ['buffer_5fm_12',['buffer_m',['../classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1',1,'ippl::detail::Archive']]]
 ];
