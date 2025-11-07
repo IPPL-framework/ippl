@@ -121,8 +121,8 @@ Collaboration diagram for ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, Element
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a6b97fda253e7a66a575212b4f53f6ec3"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a> = long double</td></tr>
-<tr class="separator:a6b97fda253e7a66a575212b4f53f6ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262a79ff21713fadb80b2aaf633c58c9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">scalar_t</a> = double</td></tr>
+<tr class="separator:a262a79ff21713fadb80b2aaf633c58c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -131,7 +131,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6db2d7042cd27abfd7efcab57c7cb6d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe827561c6d1b3146ae178c725a87162"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#afe827561c6d1b3146ae178c725a87162">computeNodesAndWeights</a> () override</td></tr>
 <tr class="separator:afe827561c6d1b3146ae178c725a87162"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a152540b5732fb7e08a3cff8f8f8a5f29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a152540b5732fb7e08a3cff8f8f8a5f29">getChebyshevNodes</a> (const size_t &amp;i) const</td></tr>
+<tr class="memitem:a152540b5732fb7e08a3cff8f8f8a5f29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">scalar_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a152540b5732fb7e08a3cff8f8f8a5f29">getChebyshevNodes</a> (const size_t &amp;i) const</td></tr>
 <tr class="memdesc:a152540b5732fb7e08a3cff8f8f8a5f29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the i-th Chebyshev node, used as initial guess for the Newton iterations.  <a href="classippl_1_1GaussJacobiQuadrature.html#a152540b5732fb7e08a3cff8f8f8a5f29">More...</a><br /></td></tr>
 <tr class="separator:a152540b5732fb7e08a3cff8f8f8a5f29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1Quadrature"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1Quadrature')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1Quadrature.html">ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;</a></td></tr>
@@ -162,7 +162,7 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:ad815336e63e6206434955f6dd28d7390"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#ad815336e63e6206434955f6dd28d7390">getLehrFEMInitialGuess</a> (const size_t &amp;i, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>, NumNodes1D &gt; &amp;integration_nodes) const</td></tr>
+<tr class="memitem:ad815336e63e6206434955f6dd28d7390"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">scalar_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html#ad815336e63e6206434955f6dd28d7390">getLehrFEMInitialGuess</a> (const size_t &amp;i, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">scalar_t</a>, NumNodes1D &gt; &amp;integration_nodes) const</td></tr>
 <tr class="memdesc:ad815336e63e6206434955f6dd28d7390"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the initial guess for the Newton iterations, the way they are computed in the implementation from LehrFEM++.  <a href="classippl_1_1GaussJacobiQuadrature.html#ad815336e63e6206434955f6dd28d7390">More...</a><br /></td></tr>
 <tr class="separator:ad815336e63e6206434955f6dd28d7390"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -212,8 +212,8 @@ class ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt;</div><p >T
   </dd>
 </dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a6b97fda253e7a66a575212b4f53f6ec3" name="a6b97fda253e7a66a575212b4f53f6ec3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b97fda253e7a66a575212b4f53f6ec3">&#9670;&#160;</a></span>scalar_t</h2>
+<a id="a262a79ff21713fadb80b2aaf633c58c9" name="a262a79ff21713fadb80b2aaf633c58c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a262a79ff21713fadb80b2aaf633c58c9">&#9670;&#160;</a></span>scalar_t</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -221,7 +221,7 @@ class ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt;</div><p >T
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::scalar_t =  long double</td>
+          <td class="memname">using <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::scalar_t =  double</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -327,7 +327,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned NumNodes1D, typename ElementType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;<a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">::scalar_t</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::getChebyshevNodes </td>
+          <td class="memname"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;<a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">::scalar_t</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::getChebyshevNodes </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -359,7 +359,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;<a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">::scalar_t</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::getLehrFEMInitialGuess </td>
+          <td class="memname"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;<a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">::scalar_t</a> <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">ippl::GaussJacobiQuadrature</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, NumNodes1D, ElementType &gt;::getLehrFEMInitialGuess </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>i</em>, </td>
@@ -367,7 +367,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a6b97fda253e7a66a575212b4f53f6ec3">scalar_t</a>, NumNodes1D &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#a262a79ff21713fadb80b2aaf633c58c9">scalar_t</a>, NumNodes1D &gt; &amp;&#160;</td>
           <td class="paramname"><em>integration_nodes</em>&#160;</td>
         </tr>
         <tr>
