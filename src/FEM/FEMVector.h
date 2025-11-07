@@ -78,7 +78,7 @@ namespace ippl {
          * 
          * @param other The other vector we are copying from.
          */
-        FEMVector(const FEMVector<T>& other);
+        KOKKOS_FUNCTION FEMVector(const FEMVector<T>& other);
 
         
         /**
