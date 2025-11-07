@@ -207,7 +207,7 @@ CMakeUserPresets</h4>
 <div class="line">&quot;IPPL_USE_STANDARD_FOLDERS&quot;: &quot;OFF&quot;</div>
 </div><!-- fragment --><p> Users are encouraged to define additional sets of flags and create presets for them.</p>
 <h4><a class="anchor" id="autotoc_md10"></a>
-Serial debug build with tests and newest Kokkos</h4>
+Serial debug build with tests and a Kokkos version</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Debug \</div>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
@@ -229,6 +229,7 @@ Cuda alpine release build</h4>
 <div class="fragment"><div class="line">cmake .. \</div>
 <div class="line">    -DCMAKE_BUILD_TYPE=Release \</div>
 <div class="line">    -DKokkos_ARCH_[architecture]=ON \</div>
+<div class="line">    -DCMAKE_CUDA_ARCHITECTURES=&lt;architecture compute capability&gt; \</div>
 <div class="line">    -DCMAKE_CXX_STANDARD=20 \</div>
 <div class="line">    -DIPPL_ENABLE_FFT=ON \</div>
 <div class="line">    -DIPPL_ENABLE_TESTS=ON \</div>
