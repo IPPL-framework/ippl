@@ -127,7 +127,7 @@ namespace ippl {
 
         // Get all the global DOFs for the element
         const Vector<size_t, numElementDOFs> global_dofs =
-            this->getGlobalDOFIndices(elementIndex);
+            this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
         // Find the global DOF in the vector and return the local DOF index
         // Note: It is important that this only works because the global_dofs 
@@ -150,7 +150,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                   FieldRHS>::getGlobalDOFIndex(const size_t& elementIndex,
                                                const size_t& localDOFIndex) const {
-        const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
+        const auto global_dofs = this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
     }
@@ -1480,7 +1480,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;
@@ -1564,7 +1564,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;

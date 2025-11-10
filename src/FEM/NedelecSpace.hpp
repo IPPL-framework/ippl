@@ -153,7 +153,7 @@ namespace ippl {
 
         // Get all the global DOFs for the element
         const Vector<size_t, numElementDOFs> global_dofs =
-            this->getGlobalDOFIndices(elementIndex);
+            this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
         ippl::Vector<size_t, numElementDOFs> dof_mapping;
         if (Dim == 2) {
@@ -180,7 +180,7 @@ namespace ippl {
                             ::getGlobalDOFIndex(const size_t& elementIndex,
                                 const size_t& localDOFIndex) const {
 
-        const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
+        const auto global_dofs = this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
     }
@@ -437,7 +437,7 @@ namespace ippl {
                 // Here we now retrieve the global DOF indices and their
                 // position inside of the FEMVector
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -949,7 +949,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
