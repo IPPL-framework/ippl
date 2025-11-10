@@ -1463,7 +1463,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
                 size_t i, I;
 
