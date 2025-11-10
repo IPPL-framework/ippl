@@ -139,6 +139,7 @@ options = catalyst.Options()
 options.GlobalTrigger = 'Time Step'
 options.EnableCatalystLive = 1
 options.CatalystLiveTrigger = 'Time Step'
+options.CatalystLiveURL = 'localhost:22222' #is also default
 options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
 
 
@@ -393,6 +394,11 @@ print_info_("=== Printing Proxy Overview ============"[0:40]+"1")
 # ------------------------------------------------------------------------------
 def catalyst_initialize():
     print_info_("catalyst_initialize()"+exp_string)
+    print_info("#################################################")
+    print_info("OPEN PV CLIENT NOW")
+    time.sleep(5)
+    print_info("#################################################")
+    
 # ------------------------------------------------------------------------------
 
 

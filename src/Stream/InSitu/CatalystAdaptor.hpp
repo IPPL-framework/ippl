@@ -1477,8 +1477,8 @@ void CatalystAdaptor::InitializeRuntime(
         proxyWriter.produceUnified("SteerableParameters_ALL", "SteerableParameters");
     }
 
-
-
+ // dont think this works ...  
+    // node["live/url"] = "tcp://localhost:11111";
 
 
 
@@ -1536,12 +1536,12 @@ void CatalystAdaptor::ExecuteRuntime( int cycle, double time, int rank /* defaul
     #endif
 
     // m << "Catalyst Visualisation was deactivated via setting env variable IPPL_CATALYST_VIS=OFF" << endl;
-    if ( !(catalyst_vis && std::string(catalyst_vis) == "OFF") ){
+    // if ( !(catalyst_vis && std::string(catalyst_vis) == "OFF") ){
         // forward Node: add visualisation channels
         ExecuteVisitor execV{*this};
         visRegistry->for_each(execV); 
+        // }
 
-    }
     if (catalyst_steer && std::string(catalyst_steer) == "ON") {
         // forward Node: add steering channels
         SteerForwardVisitor steerV{*this};

@@ -275,13 +275,23 @@ class CatalystAdaptor {
                 use_ghost_masks(ghost_mask && std::string(ghost_mask) == "ON"),
                 source_dir(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
     {
+
         
         
+        if( ! associate_ ) associate_ = "element";
         associate = std::string(associate_);
+        if(  !(associate==std::string("vertex"))  ) associate = "element";
 
-        // if(!associate) associate = "element";
-        if(! (associate==std::string("vertex"))   )   associate="element";
+        if(!vis_enabled) catalyst_vis = "ON";
+        if(!steer_enabled) catalyst_steer = "OFF";
+        if(!vtk_extracts) catalyst_vtk = "OFF";
+        if(!png_extracts) catalyst_png = "OFF";
+        if(!use_ghost_masks) ghost_mask = "OFF";
 
+        if(!proxy_option) proxy_option = "ON";
+
+
+        /* FEEDBACK OUTPUT: initialized with it */
         ca_m << associate << endl;
 
 
