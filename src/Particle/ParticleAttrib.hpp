@@ -22,15 +22,6 @@
 namespace ippl {
 
 
-    template <typename T, class... Properties>
-        void ParticleAttrib<T, Properties...>::set_name(const std::string & name_){
-            this->name = name_;
-        }
-
-    template <typename T, class... Properties>
-        std::string ParticleAttrib<T, Properties...>::get_name() const {
-            return this->name;
-        }
 
 
 
@@ -74,7 +65,7 @@ namespace ippl {
             // comType HostMirror would let the function auto deduct the wanted space ...
             hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
         }
-        auto field = node_fields[this->name];
+        auto field = node_fields[this->name_m];
         // auto field = node_fields["tester"];
         field["association"].set_string("vertex");
         // must name a topology defined in the channel
@@ -84,7 +75,7 @@ namespace ippl {
     
         if constexpr (std::is_scalar_v<T>) {
             // --- SCALAR CASE ---
-          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name << endl
+          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name_ << endl
                 << "                          call to:"  << endl
                 << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
             
@@ -93,7 +84,7 @@ namespace ippl {
 
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR CASE ---
-          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name << endl
+          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name_m << endl
                 << "                          call to:"  << endl
                 << "                          ParticleAttribute<ippl::vector<" << typeid(typename T::value_type).name()<<","<<T::dim<<">>::signConduitBlueprintNode()" << endl;
 
@@ -127,7 +118,7 @@ namespace ippl {
             }
         } else {
             // --- INVALID CASE ---
-            ca_warn << "::Execute()excute_entry() for attribute:"<<this->name << endl
+            ca_warn << "::Execute()excute_entry() for attribute:"<<this->name_m << endl
                     << "                          call to:"  << endl
                     << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl
                     << "                          For this type of Attribute the Conduit Blueprint description wasnt \n" 

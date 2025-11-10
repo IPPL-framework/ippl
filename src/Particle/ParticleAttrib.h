@@ -59,9 +59,6 @@ inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::val
 
         using size_type = detail::size_type;
 
-        void  set_name(const std::string & name_) override;
-        std::string get_name() const override;
-
 
             #ifdef IPPL_ENABLE_CATALYST
             void signConduitBlueprintNode_rememberHostCopy(

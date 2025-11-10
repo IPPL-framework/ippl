@@ -36,10 +36,10 @@ namespace ippl {
             };
 
         public:
-            ParticleAttribBase(){this->name = "UNNAMED";}
+            // ParticleAttribBase(){this->name = "UNNAMED";}
 
-            virtual void set_name(const std::string & name_) = 0;
-            virtual std::string get_name() const = 0;
+            // virtual void set_name(const std::string & name_) = 0;
+            // virtual std::string get_name() const = 0;
             
             
             #ifdef IPPL_ENABLE_CATALYST
