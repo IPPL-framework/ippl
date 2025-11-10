@@ -416,7 +416,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -560,7 +559,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -707,8 +705,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -856,7 +853,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -999,7 +995,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1135,7 +1130,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1251,7 +1245,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1364,7 +1357,6 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dofs  = this->LagrangeSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
