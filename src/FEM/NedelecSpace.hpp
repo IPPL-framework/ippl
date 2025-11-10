@@ -432,7 +432,7 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
                 const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> local_dof = this->NedelecSpace::getLocalDOFIndices();
                 
                 // Here we now retrieve the global DOF indices and their
                 // position inside of the FEMVector
@@ -542,9 +542,9 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> local_dofs  = this->NedelecSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -643,9 +643,9 @@ namespace ippl {
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
                 const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, numElementDOFs> local_dofs  = this->NedelecSpace::getLocalDOFIndices();
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
