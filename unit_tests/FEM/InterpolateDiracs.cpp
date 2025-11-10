@@ -266,6 +266,7 @@ void InterpolatesAffineExactly() {
   auto view  = coeffs.getView();
 
   auto space = TestFixture::make_space(mesh, layout);
+
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
 

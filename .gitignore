@@ -1,4 +1,22 @@
 
+doc/html
+doc/latex
+manual/*.aux
+manual/*.log
+manual/*.toc
+manual/*.idx
+manual/*.lof
+manual/*.lot
+manual/ippl_user_guide.pdf
+build*/
+*~
+*.~
+*.orig
+
+# ignore build directories
+build*/
+
+
 .vscode
 
 .cache
@@ -13,5 +31,3 @@
 *old*
 
 build/
-build*/
-

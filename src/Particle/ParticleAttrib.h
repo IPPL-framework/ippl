@@ -102,15 +102,15 @@ inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::val
         }
 
         virtual ~ParticleAttrib() = default;
-
+        
         size_type size() const override { return dview_m.extent(0); }
-
+        
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
-
+        
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
-
+        
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
@@ -128,6 +128,10 @@ inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::val
         const view_type& getView() const { return dview_m; }
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+        
+        void  set_name(const std::string & name_) override { this->name_m = name_; }
+
+        std::string get_name() const override { return this->name_m; }
 
         /*!
          * Assign the same value to the whole attribute.

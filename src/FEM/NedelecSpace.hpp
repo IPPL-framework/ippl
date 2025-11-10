@@ -169,7 +169,9 @@ namespace ippl {
                 return dof_mapping[i];
             }
         }
-        return std::numeric_limits<size_t>::quiet_NaN();
+        // it would be good to throw an error in this case
+        // just like the comment in the LagrangeSpace::getLocalDOFIndex()
+        return 0;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
