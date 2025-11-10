@@ -15,7 +15,7 @@ cmake_policy(SET CMP0155 OLD)
 # ------------------------------------------------------------------------------
 # Project declaration and version
 # ------------------------------------------------------------------------------
-project(IPPL VERSION 3.2 LANGUAGES CXX)
+project(IPPL VERSION 3.2 LANGUAGES CXX C)
 
 # ------------------------------------------------------------------------------
 # Module path, setup before including any cmake modules
@@ -41,6 +41,8 @@ option(IPPL_ENABLE_EXAMPLES "Enable building the Example module" OFF)
 option(IPPL_ENABLE_TESTS "Build integration tests in test/ directory" OFF)
 option(IPPL_ENABLE_COVERAGE "Enable code coverage" OFF)
 option(IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
+option(IPPL_ENABLE_CATALYST "Enable ParaView Catalyst" OFF)
+option(IPPL_ENABLE_ASCENT "Enable AlpineDAV ASCENT" OFF)
 option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)

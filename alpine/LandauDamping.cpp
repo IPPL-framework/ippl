@@ -18,6 +18,7 @@
 //     Example:
 //     srun ./LandauDamping 128 128 128 10000 10 FFT 0.01 LeapFrog --overallocate 2.0 --info 10
 
+// constexpr unsigned Dim = 2;
 constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "LandauDamping";
@@ -40,6 +41,11 @@ const char* TestName   = "LandauDamping";
 
 #include "LandauDampingManager.h"
 #include "Manager/PicManager.h"
+
+
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -91,8 +97,10 @@ int main(int argc, char* argv[]) {
 
         msg << "End." << endl;
 
+
+
         IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
+        // IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();

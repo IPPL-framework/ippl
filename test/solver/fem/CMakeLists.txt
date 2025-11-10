@@ -31,6 +31,8 @@ add_ippl_integration_test(TestMaxwellDiffusionPolyZeroBCTimed LABELS solver fem 
 add_ippl_integration_test(TestScaling_ZeroBC_sin_precon LABELS solver fem integration)
 add_ippl_integration_test(TestScaling_PeriodicBC_sinsin_precon LABELS solver fem integration)
 
+add_ippl_integration_test(TestFEMPlasmaSheath LABELS solver fem integration)
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables: mode: cmake cmake-tab-width: 4 indent-tabs-mode: nil require-final-newline: nil

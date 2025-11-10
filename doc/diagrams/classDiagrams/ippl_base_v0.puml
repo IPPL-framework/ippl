@@ -1,0 +1,193 @@
+@startuml
+
+
+
+
+/' COLOUR DESIGN '/
+skinparam class {
+BackgroundColor<<ippl>> Wheat
+BorderColor<<ippl>> Tomato
+
+BackgroundColor<<ippl_new>> LightBlue
+BorderColor<<ippl_new>> Blue
+
+BackgroundColor<<alpine>> GreenYellow
+BorderColor<<alpine>> ForestGreen
+}
+
+
+
+
+
+
+abstract "Expression<E,N>" <<ippl>>{
+
+    []()
+}
+
+
+abstract class   BaseManager <<ippl>> {
+    virt. prerun()
+    virt. prestep()
+    virt. poststep()
+    virt. advance()
+    run()
+}
+
+
+
+
+
+
+
+
+
+/' Particle Related '/
+abstract class  ParticleBase <<ippl>> {
+
+}
+
+abstract class  ParticleAttributeBase <<ippl>> {
+}
+
+class  ParticleAttribute <<ippl>> {
+}
+
+
+
+
+
+
+class ParticleLayout <<ippl>> {
+    setParticleBC()
+    applyBC()
+    update()
+}
+
+class ParticleSpatialLayout <<ippl>>{
+    * flayout_m
+    * rlayout_m
+
+
+}
+
+
+
+class  BareField <<ippl>> {}
+class Field <<ippl>>
+
+
+
+class FieldLayout <<ippl>>
+abstract class Mesh <<ippl>>
+
+
+
+struct ContainerForAllSpaces <<ippl>>
+
+class RegionLayout <<ippl>>
+
+
+' abstract VisBaseManager{
+' }
+
+
+abstract class VisBase <<ippl_new>> {
+}
+
+
+class AscentManager <<ippl_new>> {
+}
+class   CatalystManager <<ippl_new>> {
+}
+
+
+
+
+
+
+/' ########################################################### '/
+/' ########################################################### '/
+/' ########################################################### '/
+/' ########################################################### '/
+/' RELATIONS ... '/
+/' ########################################################### '/
+
+
+
+
+
+
+() SomeSolver
+
+BaseManager .[#red]. SomeSolver
+
+BaseManager .[#red]d. BareField
+BaseManager .[#red]d. Field
+
+BaseManager -[#red]d- ParticleBase
+
+
+
+
+
+
+
+"Expression<E,N>" <|-- BareField
+BareField  <|-- Field
+
+
+
+/' ########################################################### '/
+/' first Layer ... '/
+
+
+
+
+
+
+
+Field *--> Mesh
+Field *--> FieldLayout
+
+
+
+ParticleBase  *-- ParticleLayout 
+ParticleBase *-- ContainerForAllSpaces
+ContainerForAllSpaces *--ParticleAttributeBase
+ParticleAttributeBase <|-- ParticleAttribute 
+
+
+/' Layouts ############################## '/
+
+ParticleSpatialLayout -up-|> ParticleLayout
+ParticleSpatialLayout *--> RegionLayout
+ParticleSpatialLayout -[#Green]->FieldLayout
+RegionLayout -[#Green]-> FieldLayout
+RegionLayout -[#Green]-> Mesh
+
+
+
+
+
+/' VISUALISATION ############################## '/
+
+
+VisBase --[#Green]-> BareField
+VisBase --[#Green]-> Field
+VisBase --[#Green]-> ParticleBase
+
+CatalystManager --|> VisBase
+AscentManager --|> VisBase
+
+
+
+
+
+/' ###################################### '/
+/' LAYOUT HELP/ENFORCEMENT '/
+/' ###################################### '/
+/' Try to keep it minimal '/
+
+
+@endluml

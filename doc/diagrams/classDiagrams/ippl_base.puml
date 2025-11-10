@@ -1,0 +1,338 @@
+@startuml
+
+
+
+
+/' COLOUR DESIGN '/
+skinparam class {
+BackgroundColor<<ippl>> Wheat
+BorderColor<<ippl>> Tomato
+
+BackgroundColor<<alpine>> GreenYellow
+BorderColor<<alpine>> ForestGreen
+}
+
+
+
+
+' package legend{
+/' 
+<> x1 
+<> x2
+' <> z1
+' <> z2
+' <> a1
+' <> a2
+<> b1
+<> b2
+<> c1
+<> c2
+
+
+x1 -[#blue]r-> x2 : Pointer
+b1 -right-* b2  : Composition
+c1 -right-o c2  : Aggregation
+' z1 .right.|> z2 : Realisation  
+' a1 -right-|> a2 : Generalisation \n(Inheritance) 
+
+}
+
+ '/
+
+
+
+
+
+abstract "Expression<E,N>" <<ippl>>{
+
+    []()
+}
+
+
+abstract class   BaseManager <<ippl>> {
+    virt. prerun()
+    virt. prestep()
+    virt. poststep()
+    virt. advance()
+    run()
+}
+
+
+package PIC_Manager{
+
+    abstract class  PICManager <<ippl>> {
+        virt. part2grid()
+        virt. grid2part()
+
+        ' protected:
+        ' <fc> p_container
+        ' <pc> f_container
+        ' <lb> l_balancer
+        ' FieldSolverBase* f_solver
+
+    }
+
+
+
+    entity f_solver
+    entity f_container
+    entity p_container
+    entity l_balancer
+
+}
+
+package undefined  #GreenYellow/LightGoldenRodYellow {
+
+<> fs
+<> fc
+<> pc
+<> lb
+
+}
+
+
+
+
+entity layout_m
+entity attributes_m
+
+
+
+' entity fl_m
+' entity pl_m
+    ' dataclass phi_m
+    ' dataclass rho_m
+    ' dataclass E_m
+    ' entity mesh_m
+
+' bc_s ..|>  BConds
+
+
+
+
+
+/' Particle Related '/
+abstract class  ParticleBase <<ippl>> {
+
+}
+
+abstract class  ParticleAttributeBase <<ippl>> {
+}
+
+class  ParticleAttribute <<ippl>> {
+}
+
+
+
+
+
+
+class ParticleLayout <<ippl>> {
+    setParticleBC()
+    applyBC()
+    update()
+}
+
+class ParticleSpatialLayout <<ippl>>{
+    * flayout_m
+    * rlayout_m
+
+
+}
+
+
+
+abstract class  FieldSolverBase <<ippl>> {
+}
+abstract class Poisson <<ippl>> {
+}
+abstract class Maxwell <<ippl>> {
+}
+abstract class FiniteElementSpace <<ippl>> {
+}
+
+
+
+abstract class  BareField <<ippl>> {}
+class Field <<ippl>>
+
+
+
+class FieldLayout <<ippl>>
+abstract class Mesh <<ippl>>
+class UniformCartesian <<ippl>>
+
+
+
+struct ContainerForAllSpaces <<ippl>>
+
+class RegionLayout <<ippl>>
+
+
+
+
+
+
+
+
+
+
+/' ########################################################### '/
+/' ########################################################### '/
+/' ########################################################### '/
+/' ########################################################### '/
+/' RELATIONS ... '/
+/' ########################################################### '/
+
+BaseManager <|-- PICManager
+
+
+
+PICManager o-- p_container
+PICManager o-- f_container
+PICManager o-- l_balancer
+PICManager o-- f_solver
+
+
+
+
+"Expression<E,N>" <|-- BareField
+BareField  <|-- Field
+
+
+
+/' ########################################################### '/
+/' first Layer ... '/
+
+
+' f_solver -[#blue]-|> FieldSolverBase
+f_solver *..> fs
+fs .[#red]. FieldSolverBase
+fs .[#red]. Poisson
+fs ..[#red]. Maxwell
+fs ..[#red]. FiniteElementSapce
+
+
+
+' p_container ..|> ParticleBase
+p_container *..>pc
+pc -[#red]- ParticleBase
+
+
+
+f_container *..> fc
+' fc -[#red]- BareField
+fc -[#red]- Field
+
+l_balancer  *..> lb
+
+
+Field --> Mesh_m
+Field --> bcs_m
+
+Mesh_m -[#blue]-> Mesh
+
+
+/' LoadBalancer ########################### '/
+
+
+/' Solvers  ########################### '/
+
+
+
+
+
+
+/' Fields ########################### '/
+
+
+
+
+' mesh_m ..|> UniformCartesian
+UniformCartesian -up-|> Mesh
+
+
+
+
+/' Particles ########################### '/
+
+
+
+ParticleBase  o-u- layout_m : private
+ParticleBase o-u- attributes_m : private
+
+
+ParticleAttributeBase <|-- ParticleAttribute 
+attributes_m  *--  "mayn" ParticleAttributeBase
+attributes_m .up.|> ContainerForAllSpaces
+
+
+
+
+
+/' Layouts ############################## '/
+
+ParticleSpatialLayout -up-|> ParticleLayout
+
+ParticleSpatialLayout o-up- RegionLayout
+ParticleSpatialLayout -[#Blue]->FieldLayout
+
+
+
+layout_m *--> ParticleLayout
+
+bcs_m --o ParticleLayout
+
+
+
+RegionLayout -[#Blue]-> FieldLayout
+RegionLayout -[#Blue]-> Mesh
+
+
+
+
+
+
+
+
+
+
+/' ###################################### '/
+/' LAYOUT HELP/ENFORCEMENT '/
+/' ###################################### '/
+/' Try to keep it minimal '/
+
+
+@endluml
+
+/' ###################################### '/
+/' ###################################### '/
+/' ###################################### '/
+/' ###################################### '/
+/' ###################################### '/
+/' ###################################### '/
+/' Notes '/
+
+
+
+
+
+
+
+
+' dataclass q
+' dataclass p
+' dataclass E
+
+' attributes_m o-- q
+' attributes_m o-- p
+' attributes_m o-- E
+
+
+' q --|> ParticleAttribute  
+' p --|> ParticleAttribute  
+' E --|> ParticleAttribute  
+
+
+
+

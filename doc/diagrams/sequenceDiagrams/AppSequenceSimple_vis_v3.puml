@@ -1,0 +1,182 @@
+@startuml
+!pragma teoz true
+actor Terminal
+Database Disk
+
+participant main
+collections "ippl::" as ippl
+
+
+' participant "AppManager::" as AppManager
+' participant manager
+
+
+
+
+
+participant "VisBasePtr" as VisBase
+participant "VisBase_manager" as VisManager
+
+participant Field
+participant ParticleBaseChild as ParticleBase
+
+
+
+
+
+
+
+Terminal -> main : ./APP
+activate main #LightGreen
+
+
+' group Setup #LightBlue something
+' end
+' Alice -> Bob: Authentication Request
+' alt#Gold #LightBlue Successful case
+'     Bob -> Alice: Authentication Accepted
+' else #Pink Failure
+'     Bob -> Alice: Authentication Rejected
+' end
+
+== Initialization  == 
+
+    main --> ippl : "#include "ippl.h"
+    &ippl -> VisBase **: <<create>>
+
+    rnote over ParticleBase
+        defines function
+    endrnote
+
+    ' main -\ ippl
+    main -> ippl : initialize()
+    activate ippl #LightBlue
+        ||3||
+        ippl ->o VisBase: <<create>> and connect
+        &VisBase <-> VisManager **: 
+        ippl -> VisManager  : initialize()
+
+        activate VisManager #LightBlue
+            VisManager -[#Tomato]-> : visualizer.initialize()
+            ||2||
+        deactivate VisManager
+    
+    deactivate ippl
+    
+    
+    
+== Simulation Setup ==
+    
+    
+    ' main        ->>o ippl
+    ' &ippl       ->>o AppManager: ()
+    ' activate AppManager #LightGreen
+    '     &AppManager -> manager **: <<create>>
+    ' deactivate AppManager
+
+    main -> Field **: <<create>>
+    activate Field #LightBlue
+        ' Field -[#DarkRed]->
+        Field -> VisManager : ippl::VisBasePtr::RegisterField()
+        ||10||
+    deactivate Field
+
+
+    main -> ParticleBase **: <<create>>
+    activate ParticleBase #LightGreen
+        ' ParticleBase -[#DarkRed]->
+        ||10||
+    deactivate ParticleBase
+
+    main -[#blue]> ParticleBase : initialize(ParticleLayout)
+    activate ParticleBase #LightBlue
+        
+        rnote over ParticleBase
+        initializes
+        ParticleLayout
+        endrnote
+        ParticleBase -> VisManager : ippl::VisBasePtr::RegisterBunch()
+        ||10||
+    deactivate ParticleBase
+
+       
+== Simulation Run ==
+    
+
+
+    rnote over main
+    exact 
+    simulation
+    design 
+    unclear
+    endrnote
+
+    main -[#Blue]> ParticleBase : update()
+    activate ParticleBase #LightBlue
+
+        rnote over ParticleBase
+        updates
+        ParticleLayout
+        endrnote
+        ParticleBase -> VisManager : ippl::VisBasePtr::execute()
+            activate VisManager #LightBlue
+            VisManager -[#Tomato]-> : visualizer.execute()
+            ||2||
+            deactivate VisManager
+        
+        ||10||
+    deactivate ParticleBase
+
+
+
+
+
+
+
+    main -> Field: <<destroy>>
+    activate Field #LightBlue
+        Field -> VisManager : ippl::VisBase::DeregisterField()
+
+    main -[hidden]-> Field !!:
+
+
+
+    main -> ParticleBase : <<destroy>>
+    activate ParticleBase #LightBlue
+        ParticleBase -> VisManager : ippl::VisBase::DeregisterBunch()
+    main -[hidden]-> ParticleBase !!:
+
+
+
+||100||
+
+
+
+
+
+    
+== Finalization ==
+    
+    
+
+    main -> ippl : finalize()
+    activate ippl #LightBlue
+
+    ippl -> VisManager
+        activate VisManager #LightBlue
+            VisManager -[#Tomato]-> : visualizer.finalize()
+            ||2||
+        deactivate VisManager
+    ||2||
+        ippl -->
+        ippl <--
+        ippl -> VisManager ++:  <<destroy>>
+        ippl -[hidden]-> VisManager !!:
+        ||3||
+    deactivate ippl
+    main -> Terminal : return(0);
+
+    deactivate main
+
+@enduml
+

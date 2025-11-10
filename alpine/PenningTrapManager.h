@@ -3,10 +3,10 @@
 
 #include <memory>
 
-#include "AlpineManager.h"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
+#include "AlpineManager.h"
 #include "Manager/BaseManager.h"
 #include "ParticleContainer.hpp"
 #include "Random/Distribution.h"
@@ -14,27 +14,82 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+
+
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+// #include <vtkSMProxyManager.h>
+#endif
+
+
+#ifdef IPPL_ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
+#endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
+
+enum experiment_enum {
+    PenningTrap,
+    LandauDamping,
+    UniformPlasma
+};
+
+// 1. Write a helper function
+std::string to_string(experiment_enum c) {
+    switch (c) {
+        case experiment_enum::PenningTrap:
+            return "PenningTrap";
+        case experiment_enum::LandauDamping:
+            return "LandauDamping";
+        case experiment_enum::UniformPlasma:
+            return "UniformPlasma";
+        default:
+            return "Unknown";
+    }
+}
 
 template <typename T, unsigned Dim>
 class PenningTrapManager : public AlpineManager<T, Dim> {
 public:
     using ParticleContainer_t = ParticleContainer<T, Dim>;
-    using FieldContainer_t    = FieldContainer<T, Dim>;
-    using FieldSolver_t       = FieldSolver<T, Dim>;
-    using LoadBalancer_t      = LoadBalancer<T, Dim>;
+    using FieldContainer_t = FieldContainer<T, Dim>;
+    using FieldSolver_t= FieldSolver<T, Dim>;
+    using LoadBalancer_t= LoadBalancer<T, Dim>;
 
-    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                       std::string& solver_, std::string& stepMethod_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
+    double scaleFactor;
+    double electric_scale;
+    ippl::Vector<double, Dim> magnetic_scale;
+    ippl::Button button_m;
+    bool switch_m;
+    experiment_enum e_m;
+
+    PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim> &nr_, double lbt_,
+                         std::string& solver_, std::string& stepMethod_)
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_),
+            scaleFactor(30),
+            electric_scale(30),
+            magnetic_scale({30,30,30}),
+            button_m(false),
+            switch_m(false),
+            e_m(PenningTrap) {
+        }
+
+    // PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
+    //                    std::string& solver_, std::string& stepMethod_)
+    //     : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_) {}
 
     PenningTrapManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                        std::string& solver_, std::string& stepMethod_,
                        std::vector<std::string> preconditioner_params_)
-        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_,
-                                preconditioner_params_) {}
+        : AlpineManager<T, Dim>(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_),
+            scaleFactor(30),
+            electric_scale(30),
+            magnetic_scale({30,30,30}),
+            button_m(false),
+            switch_m(false),
+            e_m(PenningTrap) {}
 
-    ~PenningTrapManager() {}
+    ~PenningTrapManager(){}
 
 private:
     Vector_t<double, Dim> length_m;
@@ -43,8 +98,13 @@ private:
     double dxFinest_m;
     double alpha_m;
     double DrInv_m;
+    
+    public:
+    ippl::CatalystAdaptor cat_vis;
+
 
 public:
+
     void pre_run() override {
         Inform m("Pre Run");
         for (unsigned i = 0; i < Dim; i++) {
@@ -64,7 +124,7 @@ public:
 
         nrMax_m    = 2048;  // Max grid size in our studies
         dxFinest_m = length_m[0] / nrMax_m;
-        this->dt_m = 0.5 * dxFinest_m;  // size of timestep
+        this->dt_m = 0.05;//0.5 * dxFinest_m;  // size of timestep
 
         this->it_m   = 0;
         this->time_m = 0.0;
@@ -123,9 +183,60 @@ public:
 
         this->grid2par();
 
+
+
+
+
+
+        #ifdef IPPL_ENABLE_CATALYST
+            m << "Catalyst is enabled" << endl; 
+        std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr(
+                    //    ippl::VisRegistryRuntime    runtime_steer_registry = ippl::MakeVisRegistryRuntime(
+                                    "electric", electric_scale,
+                                    "magnetic", magnetic_scale,
+                                    "switch1",  switch_m,
+                                    "button1_btn",  button_m,
+                                    "experiment", e_m
+                                );
+        
+        std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
+        // ippl::VisRegistryRuntime runtime_vis_registry   = ippl::MakeVisRegistryRuntime(
+
+                                    // "ions",             this->pcontainer_m, 
+                                    "ions",             *this->pcontainer_m
+                                    , "electrostatic",    this->fcontainer_m->getE()
+                                    ,"density",          this->fcontainer_m->getRho()
+                                    , "potential",          this->fcontainer_m->getRho()
+                                );
+
+        /* Register enum choices for dropdowns before initialization */
+        cat_vis.RegisterEnumChoices("experiment", {
+            {"PenningTrap",   static_cast<int>(PenningTrap)},
+            {"LandauDamping", static_cast<int>(LandauDamping)},
+            {"UniformPlasma", static_cast<int>(UniformPlasma)}
+        });
+
+        // CatalystAdaptor::
+        cat_vis.InitializeRuntime(runtime_vis_registry, runtime_steer_registry);
+
+
+
+
+
+
+        #endif
+        
+        #ifdef IPPL_ENABLE_ASCENT
+            m << "Ascent is enabled" << endl; 
+            ippl::AscentAdaptor::Initialize();
+        #endif
+
+
+
+
         this->dump();
 
-        m << "Done";
+        m << "Done\n\n\n";
     }
 
     void initializeParticles() {
@@ -241,7 +352,9 @@ public:
         double alpha                            = this->alpha_m;
         double Bext                             = this->Bext_m;
         double DrInv                            = this->DrInv_m;
-        double V0                               = 30 * this->length_m[2];
+
+        double V0                               = electric_scale * this->length_m[2];
+        // double V0                               = 30 * this->length_m[2];
         Vector_t<double, Dim> length            = this->length_m;
         Vector_t<double, Dim> origin            = this->origin_m;
         double dt                               = this->dt_m;
@@ -268,7 +381,10 @@ public:
                 Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
                 Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
                 Pview(j)[2] += alpha * Eext_z;
-            });
+        });
+
+
+
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);
@@ -296,43 +412,80 @@ public:
 
         // scatter the charge onto the underlying grid
         this->par2grid();
+      
+        
+        
+#ifdef IPPL_ENABLE_CATALYST
+        // CatalystAdaptor::
+        cat_vis.Remember_now("density");
+#endif
 
-        // Field solve
+
+
+
+#ifdef IPPL_ENABLE_ASCENT
+
+        std::vector<AscentAdaptor::ParticlePair<T, Dim>> particles_asc = {
+            {"particle", std::shared_ptr<ParticleContainer<T, Dim> >(pc)},
+        };
+        std::vector<AscentAdaptor::FieldPair<T, Dim>> fields_asc = {
+            {"E",   AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getE())},
+            // {"roh", AscentAdaptor::FieldVariant<T, Dim>(&this->fcontainer_m->getRho())},
+            // {"phi", Ascent    ::FieldVariant<T, Dim>(&this->fcontainer_m->getPhi())},
+        };
+        ippl::AscentAdaptor::Execute(it, this->time_m ,  particles_asc, fields_asc);
+
+#endif
+
+
+        // Field solve-> vis density
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
-        IpplTimings::stopTimer(SolveTimer);
+        IpplTimings::stopTimer(SolveTimer); 
 
         // gather E field
         this->grid2par();
+
+
+
+#ifdef IPPL_ENABLE_CATALYST
+        cat_vis.ExecuteRuntime(it, this->time_m);
+#endif
+
+
+
+
+
+
+
 
         IpplTimings::startTimer(PTimer);
         auto R2view = pc->R.getView();
         auto P2view = pc->P.getView();
         auto E2view = pc->E.getView();
         Kokkos::parallel_for(
-            "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
-                double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
-                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
-                                * (V0 / (2 * Kokkos::pow(length[2], 2)));
-                double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
-                                * (V0 / (Kokkos::pow(length[2], 2)));
+           "Kick2", pc->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
+           double Eext_x = -(R2view(j)[0] - origin[0] - 0.5 * length[0])
+                         * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_y = -(R2view(j)[1] - origin[1] - 0.5 * length[1])
+                          * (V0 / (2 * Kokkos::pow(length[2], 2)));
+           double Eext_z = (R2view(j)[2] - origin[2] - 0.5 * length[2])
+                           * (V0 / (Kokkos::pow(length[2], 2)));
 
-                Eext_x += E2view(j)[0];
-                Eext_y += E2view(j)[1];
-                Eext_z += E2view(j)[2];
+           Eext_x += E2view(j)[0];
+           Eext_y += E2view(j)[1];
+           Eext_z += E2view(j)[2];
 
-                P2view(j)[0] = DrInv
-                               * (P2view(j)[0]
-                                  + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
-                P2view(j)[1] = DrInv
-                               * (P2view(j)[1]
-                                  + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
-                P2view(j)[2] += alpha * Eext_z;
-            });
+           P2view(j)[0] = DrInv * (P2view(j)[0] + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+           P2view(j)[1] = DrInv * (P2view(j)[1] + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+           P2view(j)[2] += alpha * Eext_z;
+        });
         Kokkos::fence();
         ippl::Comm->barrier();
         IpplTimings::stopTimer(PTimer);
+        
+        std::cout << "PTManager: sleeping a quarter second..." << std::endl;
+        sleep(0.25);
     }
 
     void dump() override {
@@ -347,8 +500,7 @@ public:
         double kinEnergy             = 0.0;
         double potEnergy             = 0.0;
         this->fcontainer_m->getRho() = dot(this->fcontainer_m->getE(), this->fcontainer_m->getE());
-        potEnergy                    = 0.5 * this->hr_m[0] * this->hr_m[1] * this->hr_m[2]
-                    * this->fcontainer_m->getRho().sum();
+        potEnergy = 0.5 * this->hr_m[0] * this->hr_m[1] * this->hr_m[2] * this->fcontainer_m->getRho().sum();
 
         Kokkos::parallel_reduce(
             "Particle Kinetic Energy", this->pcontainer_m->getLocalNum(),
@@ -380,7 +532,7 @@ public:
                 },
                 Kokkos::Sum<T>(temp));
             Kokkos::fence();
-            T globaltemp = 0.0;
+            T globaltemp          = 0.0;
             ippl::Comm->reduce(temp, globaltemp, 1, std::plus<double>());
 
             normE[d] = std::sqrt(globaltemp);
@@ -398,7 +550,7 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
 
-            if (std::fabs(this->time_m) < 1e-14) {
+            if ( std::fabs(this->time_m) < 1e-14 ) {
                 csvout << "time, Potential energy, Kinetic energy, Total energy, Rho_norm2";
                 for (unsigned d = 0; d < Dim; d++) {
                     csvout << ", E" << static_cast<char>((Dim <= 3 ? 'x' : '1') + d) << "_norm2";

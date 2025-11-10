@@ -23,6 +23,19 @@
 
 namespace ippl {
 
+
+
+template<class T>
+struct is_vector : std::false_type {};
+
+template<class V, unsigned Dim>
+struct is_vector<ippl::Vector<V, Dim>> : std::true_type {};
+
+template<class T>
+inline constexpr bool is_vector_v = is_vector<typename std::decay<T>::type>::value;
+
+
+
     // ParticleAttrib class definition
     template <typename T, class... Properties>
     class ParticleAttrib : public detail::ParticleAttribBase<>::with_properties<Properties...>,
@@ -45,6 +58,19 @@ namespace ippl {
         using execution_space = typename view_type::execution_space;
 
         using size_type = detail::size_type;
+
+
+            #ifdef IPPL_ENABLE_CATALYST
+            void signConduitBlueprintNode_rememberHostCopy(
+                              const size_type Np_local
+                            , conduit_cpp::Node& node_fields
+                            , ViewRegistry& viewRegistry
+                            , Inform& ca_m
+                            , Inform& ca_warn
+                            , const bool forceHostCopy
+                        ) const override ;       
+            #endif
+
 
         // Create storage for M particle attributes.  The storage is uninitialized.
         // New items are appended to the end of the array.

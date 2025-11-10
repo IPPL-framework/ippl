@@ -369,7 +369,16 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
+        // TO THINK ABOUT; IS IT?
         // Gradients of the basis functions for the DOF at the quadrature nodes
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
@@ -403,6 +412,10 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        Vector<int, Dim> shift;
+        for (unsigned d = 0; d <Dim; ++d) {
+            shift[d] = nghost - ldom[d].first();
+        }
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -569,7 +582,7 @@ namespace ippl {
                     global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
                 }
 
-                // local DOF indices
+                // local DOF indices (both i and j go from 0 to numDOFs-1 in the element)
                 size_t i, j;
 
                 // global DOF n-dimensional indices (Vector of N indices representing indices in
@@ -1429,6 +1442,129 @@ namespace ippl {
     ///////////////////////////////////////////////////////////////////////
     /// Functions for error computations, etc. ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    template <typename F>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::evaluateLoadVector(FieldRHS& field, F& evalFunction) const {
+        Inform m("");
+
+        // start a timer
+        static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
+        IpplTimings::startTimer(evalLoadV);
+
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, this->numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < this->numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        m << "weights = " << w << endl;
+        m << "nodes = " << q << endl;
+        m << "detJ = " << absDetDPhi << endl;
+
+        // Get domain information and ghost cells
+        auto ldom        = (field.getLayout()).getLocalNDIndex();
+        const int nghost = field.getNghost();
+        Vector<int, Dim> shift;
+        for (unsigned d = 0; d <Dim; ++d) {
+            shift[d] = nghost - ldom[d].first();
+        }
+
+        // Get boundary conditions from field
+        BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
+        FieldBC bcType = bcField[0]->getBCType();
+
+        FieldRHS temp_field(field.get_mesh(), field.getLayout(), nghost);
+        temp_field.setFieldBC(bcField);
+
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        // We work with a temporary field since we need to use field
+        // to evaluate the load vector; then we assign temp to RHS field
+        AtomicViewType atomic_view = temp_field.getView();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // start a timer
+        static IpplTimings::TimerRef outer_loop =
+            IpplTimings::getTimer("evaluateLoadVec: outer loop");
+        IpplTimings::startTimer(outer_loop);
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
+                const size_t elementIndex                              = elementIndices(index);
+                const Vector<size_t, this->numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const Vector<size_t, this->numElementDOFs> global_dofs =
+                    this->getGlobalDOFIndices(elementIndex);
+
+                size_t i, I;
+
+                // 1. Compute b_K
+                for (i = 0; i < this->numElementDOFs; ++i) {
+                    I = global_dofs[i];
+
+                    // TODO fix for higher order
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                    // Skip boundary DOFs (Zero and Constant Dirichlet BCs)
+                    if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
+                        && (this->isDOFOnBoundary(dof_ndindex_I))) {
+                        continue;
+                    }
+
+                    // calculate the contribution of this element
+                    T contrib = 0;
+                    for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        contrib += w[k] * evalFunction(i, basis_q[k], elementIndex, shift);
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
+
+                    // add the contribution of the element to the field
+                    apply(atomic_view, dof_ndindex_I) += contrib;
+
+                }
+            });
+        IpplTimings::stopTimer(outer_loop);
+
+        temp_field.accumulateHalo();
+
+        if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
+            bcField.apply(temp_field);
+            bcField.assignGhostToPhysical(temp_field);
+        }
+
+        field = temp_field;
+
+        m << "load vector" << endl;
+        field.write();
+
+        IpplTimings::stopTimer(evalLoadV);
+    }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>

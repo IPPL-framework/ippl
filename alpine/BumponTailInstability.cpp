@@ -42,6 +42,11 @@ const char* TestName   = "BumponTailInstability";
 #include "BumponTailInstabilityManager.h"
 #include "Manager/PicManager.h"
 
+
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -77,6 +82,10 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
+
+
+        #ifdef IPPL_ENABLE_CATALYST
+        #endif
 
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();

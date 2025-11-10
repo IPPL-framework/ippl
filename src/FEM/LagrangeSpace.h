@@ -243,6 +243,17 @@ namespace ippl {
          */
         void evaluateLoadVector(FieldRHS& field) const;
 
+        /**
+         * @brief Assemble the load vector b of the system Ax = b
+         *
+         * @param rhs_field The field to set with the load vector of 
+         * arbitrary form (RHS different from just a source f)
+         * @param evalFunction The lambda telling us how to compute the RHS
+         *
+         * @return FieldRHS - The RHS field containing b
+         */
+        template <typename F>
+        void evaluateLoadVector(FieldRHS& field, F& evalFunction) const;
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////

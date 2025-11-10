@@ -14,6 +14,7 @@ function(add_alpine_example name)
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
 
+add_alpine_example(AlpineSight)
 add_alpine_example(PenningTrap)
 add_alpine_example(LandauDamping)
 add_alpine_example(BumponTailInstability)

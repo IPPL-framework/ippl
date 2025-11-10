@@ -1,4 +1,4 @@
-build/
+
 doc/html
 doc/latex
 manual/*.aux
@@ -16,6 +16,18 @@ build*/
 # ignore build directories
 build*/
 
-# ignore .vscode directory
+
 .vscode
+
 .cache
+*pycache*
+*__pycache__
+
+*png
+*svg
+*puml*
+
+./old
+*old*
+
+build/

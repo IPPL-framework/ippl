@@ -42,12 +42,29 @@ const char* TestName   = "PenningTrap";
 #include "Manager/PicManager.h"
 #include "PenningTrapManager.h"
 
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
+#ifdef IPPL_ENABLE_ASCENT
+#include "Stream/InSitu/AscentAdaptor.h"
+#endif
+
+
 int main(int argc, char* argv[]) {
+
+        // #ifdef IPPL_ENABLE_CATALYST
+        //     std::cout << "Catalyst is enabled" << std::endl; 
+        // #endif
+
+
     ippl::initialize(argc, argv);
-    {
+    {   
+    try{
+
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
-
+        
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
@@ -73,11 +90,17 @@ int main(int argc, char* argv[]) {
             }
         }
 
+
+
+        
+        msg << "Creating Manager Instance" << endl;
         // Create an instance of a manger for the considered application
         PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
                                            preconditioner_params);
 
+                                          
         // Perform pre-run operations, including creating mesh, particles,...
+        msg << "manager.pre_run();" << endl;
         manager.pre_run();
 
         manager.setTime(0.0);
@@ -87,11 +110,24 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
-
+        #ifdef IPPL_ENABLE_CATALYST
+        // CatalystAdaptor::Finalize();
+        manager.cat_vis.Finalize();
+        #endif
         IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
+
+        // IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
-    }
+
+
+      } 
+          catch (const IpplException& e) {
+              if (ippl::Comm->rank() == 0) {
+                  std::cerr << "IPPL exception caught: "<<  e.what() << "| at:" << e.where() << std::endl;
+              }
+              std::exit(0);
+          }
+        }
     ippl::finalize();
 
     return 0;
