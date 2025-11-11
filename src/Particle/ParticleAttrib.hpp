@@ -75,7 +75,7 @@ namespace ippl {
     
         if constexpr (std::is_scalar_v<T>) {
             // --- SCALAR CASE ---
-          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name_ << endl
+          ca_m  << "::Execute()excute_entry() for attribute: "<<this->name_m << endl
                 << "                          call to:"  << endl
                 << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
             
