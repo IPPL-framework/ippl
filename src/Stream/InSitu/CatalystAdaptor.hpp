@@ -783,9 +783,31 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         // auto data   = channel["data"][blockName];
         auto fields = data["fields"];
 
+        const size_t localNum = particleContainer->getLocalNum();
+        const int rank = ippl::Comm->rank(); 
+
         data["type"].set_string("mesh");
 
+        size_t i = 0;
+
         
+        using IDAttrib_t = std::remove_reference_t<decltype(particleContainer->ID)>;
+        using hostMirror_ID_t = typename IDAttrib_t::HostMirror;
+        hostMirror_ID_t ID_hostMirror ;
+
+        if(forceHostCopy[label]){
+            ID_hostMirror = particleContainer->ID.getHostMirror();
+            Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
+            viewRegistry.set(label, ID_hostMirror);
+        }
+        else{
+            ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
+            viewRegistry.set(label, ID_hostMirror);
+        }
+        ++i;
+
+
+
         
         
         // Creates a host-accessible mirror view and copies the data from the device view to the host.
@@ -793,35 +815,40 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         // comType HostMirror would let the function auto deduct the wanted space ...
         
         // Get attribute types for ID and R, then their HostMirror types
-        using IDAttrib_t = std::remove_reference_t<decltype(particleContainer->ID)>;
         using RAttrib_t  = std::remove_reference_t<decltype(particleContainer->R)>;
-
-        using hostMirror_ID_t = typename IDAttrib_t::HostMirror;
         using hostMirror_R_t  = typename RAttrib_t::HostMirror;
+        hostMirror_R_t  R_hostMirror;
 
-        hostMirror_ID_t ID_hostMirror ;
-        hostMirror_R_t  R_hostMirror  ;
 
-        if(forceHostCopy[label]){
-            // ParticleAttrib<std::int64_t>::HostMirror      ID_hostMirror;
-            // ParticleAttrib<Vector<double, 3>>::HostMirror R_hostMirror;
-            // auto ID_hostMirror = particleContainer->ID.getHostMirror();
-            // auto R_hostMirror  = particleContainer->R.getHostMirror();
-            ID_hostMirror = particleContainer->ID.getHostMirror();
-            R_hostMirror  = particleContainer->R.getHostMirror();
-            Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
-            Kokkos::deep_copy(R_hostMirror ,  particleContainer->R.getView());
-            viewRegistry.set(label, ID_hostMirror);
-            viewRegistry.set(R_hostMirror);
-        }else{
-            /* if original is on host space no copy will b created and any changs will be taken over ... */
-            // auto ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
-            // auto  R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
-            ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
-            R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
-            viewRegistry.set(label, ID_hostMirror);
-            viewRegistry.set(R_hostMirror);
+        if constexpr (particleContainer->EnableIDs){
+            if(forceHostCopy[label]){
+                    // ParticleAttrib<std::int64_t>::HostMirror      ID_hostMirror;
+                    // ParticleAttrib<Vector<double, 3>>::HostMirror R_hostMirror;
+                    // auto ID_hostMirror = particleContainer->ID.getHostMirror();
+                    // auto R_hostMirror  = particleContainer->R.getHostMirror();
+                    R_hostMirror  = particleContainer->R.getHostMirror();
+                    Kokkos::deep_copy(R_hostMirror ,  particleContainer->R.getView());
+                    viewRegistry.set(R_hostMirror);
+            }else{
+                    /* if original is on host space no copy will b created and any changs will be taken over ... */
+                    // auto ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
+                    // auto  R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
+                    R_hostMirror  =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->R.getView());
+                    viewRegistry.set(R_hostMirror);
+            }
+
+            /* Global ID ATTRIBUTE */
+            auto id_field = fields["ParticleIDs"];
+            id_field["association"].set_string("vertex");
+            id_field["topology"].set_string("p_unstructured_topo");
+            id_field["volume_dependent"].set_string("false");
+            id_field["values"].set_external(ID_hostMirror.data(), localNum);
+            data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
+
+            ++i;
         }
+
+
 
 
 
@@ -884,8 +911,6 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         
         /* ATTRIBUTES HARDCODED IN PARTICELBASE are identity ID and position R */
         /* EXPLICIT COORDINATES -> EACH PARTICLE POSITION */
-        const size_t localNum = particleContainer->getLocalNum();
-        const int rank = ippl::Comm->rank(); 
 
         #if defined(MPI_VERSION)
         // MPI_Barrier(MPI_COMM_WORLD);
@@ -915,8 +940,6 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         viewRegistry.set(label + "_iota", iota_view);
         viewRegistry.set(label + "_rank_id", rank_id_view);
 
-
-
             data["coordsets/p_explicit_coords/type"].set_string("explicit");
             /* UNSTRUCTURED TOPOLOGY RELYING ON UNIQUE PARTICLE ID'S */
             data["topologies/p_unstructured_topo/coordset"].set_string("p_explicit_coords");
@@ -936,14 +959,6 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
             rank_field["volume_dependent"].set_string("false");
             rank_field["values"].set_external(rank_id_view.data(), localNum);
             data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
-
-            /* Global ID ATTRIBUTE */
-            auto id_field = fields["ParticleIDs"];
-            id_field["association"].set_string("vertex");
-            id_field["topology"].set_string("p_unstructured_topo");
-            id_field["volume_dependent"].set_string("false");
-            id_field["values"].set_external(ID_hostMirror.data(), localNum);
-            data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
 
             /* POSITION ATTRIBUTE */
             auto R_field = fields["position"];
@@ -997,7 +1012,7 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
 
         // (This function must also be safe for localNum == 0)
         const size_t n_attributes =  entry.getAttributeNum();
-        for(size_t i = 2; i < n_attributes; ++i){
+        for(; i < n_attributes; ++i){
             const auto attribute = entry.getAttribute(i);
             attribute->signConduitBlueprintNode_rememberHostCopy(localNum, fields, viewRegistry, ca_m, ca_warn, forceHostCopy[label]);
         }

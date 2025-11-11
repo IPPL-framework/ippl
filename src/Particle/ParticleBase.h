@@ -85,9 +85,9 @@ namespace ippl {
      */
     template <class PLayout, typename... IDProperties>
     class ParticleBase: public ParticleBaseBase {
+    public:
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
-    public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;

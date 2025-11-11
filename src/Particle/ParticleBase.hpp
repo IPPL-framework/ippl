@@ -60,9 +60,9 @@ namespace ippl {
         , numNodes_m(Comm->size()) {
         if constexpr (EnableIDs) {
             addAttribute(ID);
+            ID.set_name("ID");
         }
         addAttribute(R);
-        ID.set_name("ID");
         R.set_name("position");
     }
 
