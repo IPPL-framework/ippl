@@ -8,7 +8,7 @@ find_package(Threads REQUIRED)
 function(add_alpine_example name)
   add_executable(${name} ${name}.cpp)
 
-  target_link_libraries(${name} PRIVATE ippl::ippl)
+  target_link_libraries(${name} PRIVATE IPPL::ippl)
 
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
@@ -20,5 +20,5 @@ add_alpine_example(LandauDampingParameterList)
 
 # LandauDampingMixedExec needs extra Threads lib
 add_executable(LandauDampingMixedExec LandauDampingMixedExec.cpp)
-target_link_libraries(LandauDampingMixedExec PRIVATE ippl::ippl Threads::Threads)
+target_link_libraries(LandauDampingMixedExec PRIVATE IPPL::ippl Threads::Threads)
 target_include_directories(LandauDampingMixedExec PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
