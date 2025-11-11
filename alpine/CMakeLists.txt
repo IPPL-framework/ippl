@@ -9,7 +9,7 @@ add_subdirectory(ExamplesWithoutPicManager)
 function(add_alpine_example name)
   add_executable(${name} ${name}.cpp)
 
-  target_link_libraries(${name} PRIVATE ippl::ippl)
+  target_link_libraries(${name} PRIVATE IPPL::ippl)
 
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endfunction()
