@@ -1,7 +1,17 @@
 """! \file pipeline_default.py
 \brief Main ParaView Catalyst pipeline: live visualization, VTK extracts, and steering.
 \details Discovers channel proxies, wires optional extractors, updates live views,
-and forwards/fetches steerable parameters between the simulation and the GUI.
+and forwards/fetches steerable parameters between the simulation an        # Option 2: Extract only specific blocks (e.g., just particles without helper)
+        # Uncomment the following to extract only the main particle block:
+        # if parsed.VTKextract == "ON":
+        #     particles_block = ExtractBlock(
+        #         registrationName=f"{cname}_main_extract",
+        #         Input=proxy, 
+        #         Selectors=['//main']
+        #     )
+        #     particles_block.UpdatePipeline()
+        #     _log(f"Attaching VTPD extractor to MAIN particle block (via MergeBlocks) '{cname}'")
+        #     _extractors[cname+"_main_only"] = create_extractor_from_single_block(cname+"_main", particles_block, 1)UI.
 Designed to orchestrate the per-channel extractor scripts in catalyst_extractors/.
 """
 
@@ -67,11 +77,75 @@ sys.path.append(os.path.dirname(__file__))
 
 
 from catalystSubroutines import (
-    print_proxy_overview,
-    create_VTPD_extractor
+    print_proxy_overview
+    # ,
+    # create_VTPD_extractor
 )
 #### disable automatic camera rest on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
+
+
+from paraview.simple import CreateExtractor
+
+# ------------------------------------------------------------------------------
+# Extractor factory functions
+# ------------------------------------------------------------------------------
+# IMPORTANT: Match writer type to Conduit data structure:
+#   - Conduit "mesh" (uniform/structured) → VTPD (homogeneous partitions)
+#   - Conduit "multimesh" (heterogeneous blocks) → VTM (MultiBlock)
+# Using wrong writer causes: "Can not execute ... without output ports" error
+# ------------------------------------------------------------------------------
+
+def create_VTPD_extractor(name, object, fr = 10):
+    """Create a VTPD extractor for simple mesh data (uniform/structured grids).
+    
+    Use for: scalar fields, vector fields (Conduit type: "mesh")
+    Output: .vtpd files (XML Partitioned Dataset)
+    """
+    vTPD = CreateExtractor('VTPD', object, registrationName='VTPD_'+ name)
+    vTPD.Trigger.Frequency = fr
+    vTPD.Writer.FileName = 'ippl_'+name+'_{timestep:06d}.vtpd'
+    return vTPD
+
+def create_VTM_extractor(name, object, fr = 10):
+    """Create a VTPC extractor for multimesh particle data (Partitioned Dataset Collection).
+    
+    Use for: particle data with multiple block types (Conduit type: "multimesh")
+    Output: .vtpc files (XML Partitioned Dataset Collection)
+    Note: Conduit multimesh → vtkPartitionedDataSetCollection (not vtkMultiBlockDataSet)
+    """
+    # Use VTPC (Partitioned Dataset Collection) not VTM (MultiBlock)
+    vTPC = CreateExtractor('VTPC', object, registrationName='VTPC_'+ name)
+    vTPC.Trigger.Frequency = fr
+    vTPC.Writer.FileName = 'ippl_'+name+'_{timestep:06d}.vtpc'
+    return vTPC
+
+# def create_extractor_from_single_block(name, extract_block_filter, fr = 10):
+#     """Create an extractor for a single block from multimesh.
+    
+#     Use for: extracting just one block (e.g., only particles, no helper)
+#     Strategy: ExtractBlock → MergeBlocks to flatten → appropriate writer
+    
+#     Args:
+#         name: base name for output files
+#         extract_block_filter: an ExtractBlock filter with Selectors set
+#         fr: extraction frequency
+    
+#     Output: .vtpd or .vtu files depending on block content
+#     """
+#     # Merge blocks to flatten the extracted subset into a single partitioned dataset
+#     merged = MergeBlocks(
+#         registrationName=f"{name}_merged",
+#         Input=extract_block_filter
+#     )
+#     merged.MergePartitionsOnly = 1  # Keep partitions, just flatten hierarchy
+#     merged.UpdatePipeline()
+    
+#     # Now use VTPD which should work on the flattened structure
+#     vTPD = CreateExtractor('VTPD', merged, registrationName='VTPD_'+ name)
+#     vTPD.Trigger.Frequency = fr
+#     vTPD.Writer.FileName = 'ippl_'+name+'_{timestep:06d}.vtpd'
+#     return vTPD
 
 
 def _log(msg):
@@ -205,49 +279,57 @@ for cname in parsed.channel_names:
     proxy.UpdatePipeline()
     _sources[cname] = proxy
 
-    if options.EnableCatalystLive:
-        # _log(f"Live-Vis on '{cname}'")
-        pass
 
-        
-
-    # filters for particle proxies
     if "particles" in cname:
-        _log(f"Creating ExtractBlock filter to select main particle block for '{cname}'")
-
-        particles = ExtractBlock(
-            registrationName=f"{cname[15:]}_bunch",
-            Input=proxy,
-            Selectors=['//main']
-        )
-        helper = ExtractBlock(
-            registrationName=f"{cname[15:]}_box",
-            Input=proxy,
-            Selectors=['//help']
-            # Assembly= not needed....'
-        )
-            
-        # try:
-        #     particles.MaintainStructure = 1
-        # except Exception:
-        #     pass
-        # helper = proxy.GetSubsetDataInformation(0, "//block_helper", "Hierarchy")
-        # main = proxy.GetSubsetDataInformation(0, "//block_main", "Hierarchy")
-        
-        particles.UpdatePipeline()
-        helper.UpdatePipeline()
-
-        _filters[cname+"main"] = particles
-        _filters[cname+"help"] = helper
-
+        # For Live visualization: create ExtractBlock filters to show specific blocks
         if options.EnableCatalystLive:
-            pass
+            _log(f"Creating ExtractBlock filter(s) for particle channel '{cname}' (Live view)")
+            particles = ExtractBlock(
+                registrationName=f"{cname[15:]}_bunch",
+                Input=proxy,
+                Selectors=['//main']
+            )
+            helper = ExtractBlock(
+                registrationName=f"{cname[15:]}_box",
+                Input=proxy,
+                Selectors=['//help']
+            )
+            particles.UpdatePipeline()
+            helper.UpdatePipeline()
+
+            _filters[cname+"_main"] = particles
+            _filters[cname+"_help"] = helper
+            
+            Show(particles)
+            Show(helper)
+
+
+        # Particles come as multimesh with block_main and block_help
+        # Conduit multimesh → vtkPartitionedDataSetCollection → use VTPC writer
+        # Option 1: Extract entire multimesh (all blocks together)
+        if parsed.VTKextract == "ON":
+            _log(f"Attaching VTPC extractor to complete multimesh particle proxy '{cname}'")
+            _extractors[cname] = create_VTM_extractor(cname, proxy, 1)
+        
+
+        # DOESNT WORK....
+        # Option 2: Extract only specific blocks (e.g., just particles without helper)
+        # Uncomment the following to extract only the main particle block:
+        # if parsed.VTKextract == "ON":
+        #     particles_block = ExtractBlock(
+        #         registrationName=f"{cname}_main_extract_opt2",
+        #         Input=proxy, 
+        #         Selectors=['//main']
+        #     )
+        #     particles_block.UpdatePipeline()
+        #     _log(f"Attaching VTPD extractor (via MergeBlocks) to MAIN particle block only '{cname}'")
+        #     _extractors[cname+"_main_only"] = create_extractor_from_single_block(cname+"_main", particles_block, 1)
+
 
 
 
 
     if "sField" in cname:
-    # Assumes channels are structured grids
         if options.EnableCatalystLive:
 
             _log("   -> Using MergeBlocks for structured scalar field data.")
@@ -259,25 +341,22 @@ for cname in parsed.channel_names:
             _log("   -> Using CellDataToPointtData for structured scalar field data.")
             cell2point = CellDatatoPointData(registrationName=cname[12:]+'_Cell2Point', 
                                              Input=merged)
-            # glyphShow = 
             Show(cell2point)
 
             # cell2point.CellDataArraytoprocess = ['RankID', 'density']
             _filters[cname[12:]+"_merge"] = merged
             _filters[cname[12:]+"_glyph"] = merged
 
+        if parsed.VTKextract == "ON":
+            # _log(f"Attaching VTPD extractor to proxy '{cname}'")
+            _extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
 
-            # glyphShow.ColorArrayName = ['CELLS', cname[12:]] 
-            # lut = GetColorTransferFunction(cname[12:])
-            # lut.ApplyPreset('Cool to Warm', True)
-            # lut.RescaleTransferFunctionToDataRange(True, False)
-            # glyphShow.LookupTable = lut
+        
 
 
     if "vField" in cname:
         if options.EnableCatalystLive:
             
-            # Assumes channels are structured grids
             _log("   -> Using MergeBlocks for structured vector field data.")
             merged = MergeBlocks(registrationName=cname[12:]+'_MergedBlocks',Input=proxy)
             merged.MergePartitionsOnly = 1
@@ -288,22 +367,15 @@ for cname in parsed.channel_names:
             glyph.OrientationArray = ['CELLS', cname[12:]]
             # glyphShow = 
             Show(glyph)
-
             
             _filters[cname + "_merged"] = merged
             _filters[cname + "_glyph"]  = glyph
 
-            # glyphShow.ColorArrayName = ['CELLS', 'RankID']
-            # ... colour enforcemen nt possible....
+        if parsed.VTKextract == "ON":
+            # _log(f"Attaching VTPD extractor to proxy '{cname}'")
+            _extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
 
-
-
-    if parsed.VTKextract == "ON":
-        _log(f"Attaching VTPD extractor to raw proxy '{cname}'")
-        _extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
-
-
-
+        
 
 
 
@@ -403,6 +475,11 @@ def catalyst_initialize():
 
 
 # ------------------------------------------------------------------------------
+# Manually update the proxy's pipeline.# This is necessary to make the new data 
+# available for live and to downstream filters (like the extractors). Not sure when why vtk
+#  update is needed. Extractors objects themselves don't need to be updated i think.
+# Inputs also don't need to be reset. Backwards channels are entirely managed by the
+# proxy file so? no update calls needed?...
 def catalyst_execute(info):
     print_info_("_________executing (cycle={}, time={})___________".format(info.cycle, info.time))
     print_info_("catalyst_execute()::"+exp_string)
@@ -413,10 +490,6 @@ def catalyst_execute(info):
     global _extractors
     global _sources
     global _filters
-    
-    # for name, channel in vis_channel_readers.items():
-    #     channel.UpdatePipeline()
-    #     channel.UpdateVTKObjects()
         
 
     # Loop over all registered vis channels
@@ -427,15 +500,10 @@ def catalyst_execute(info):
             #  _log(f"WARNING: proxy '{name}' not found in step {info.cycle}")
             #  continue
         
-        # Manually update the proxy's pipeline.# This is necessary to make the new data 
-        # available for live and to downstream filters (like the extractors).
         proxy.UpdatePipeline()
         proxy.UpdateVTKObjects()
 
 
-            
-    # for name_, (filter, input) in _filters.items():
-            # live_filter.Input = ?? not needed
     for name_, filter in _filters.items():
             filter.UpdatePipeline()
             filter.UpdateVTKObjects()
@@ -444,16 +512,12 @@ def catalyst_execute(info):
 
     if parsed.steer == "ON" and  parsed.show_forward_channels == "ON":
         for name, (reader, sender) in steer_channels.items():
-            # not needed proxy handles all of steering...
             reader.UpdatePipeline()
             reader.UpdateVTKObjects()
-            # sender.UpdatePipeline()
-            # sender.UpdateVTKObjects()
 
 
-
-    if options.EnableCatalystLive:
-        time.sleep(0.1)
+    # if options.EnableCatalystLive:
+    #     time.sleep(0.01)
             
 # ------------------------------------------------------------------------------
 
