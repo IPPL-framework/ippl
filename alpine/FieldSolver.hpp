@@ -188,7 +188,7 @@ public:
         ippl::ParameterList sp;
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
-        sp.add("tolerance", 1e-10);
+        sp.add("tolerance", 1e-4);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
@@ -198,7 +198,7 @@ public:
         sp.add("solver", "preconditioned");
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
-        sp.add("tolerance", 1e-10);
+        sp.add("tolerance", 1e-4);
 
         int arg = 0;
 
@@ -244,7 +244,7 @@ public:
     void initFEMSolver() {
         ippl::ParameterList sp;
         sp.add("output_type", FEMSolver_t<T, Dim>::SOL);
-        sp.add("tolerance", 1e-7);
+        sp.add("tolerance", 1e-4);
 
         initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
     }
@@ -253,7 +253,7 @@ public:
         ippl::ParameterList sp;
         sp.add("solver", "preconditioned");
         sp.add("output_type", FEMPreconSolver_t<T, Dim>::SOL);
-        sp.add("tolerance", 1e-7);
+        sp.add("tolerance", 1e-4);
 
         int arg = 0;
 
