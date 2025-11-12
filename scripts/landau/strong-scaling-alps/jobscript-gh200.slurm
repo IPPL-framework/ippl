@@ -12,8 +12,8 @@
 #SBATCH --cpus-per-task=72
 #SBATCH --exclusive
 
-#SBATCH --uenv=/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
-#SBATCH --view=develop
+#SBATCH --uenv=@IPPL_SCRIPTS_UENV@
+#SBATCH --view=@IPPL_SCRIPTS_UENV_VIEW@
 
 #SBATCH --output=landau__n_.out
 #SBATCH --error=landau__n_.error
