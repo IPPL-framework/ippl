@@ -795,17 +795,34 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         using hostMirror_ID_t = typename IDAttrib_t::HostMirror;
         hostMirror_ID_t ID_hostMirror ;
 
-        if(forceHostCopy[label]){
-            ID_hostMirror = particleContainer->ID.getHostMirror();
-            Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
-            viewRegistry.set(label, ID_hostMirror);
-        }
-        else{
-            ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
-            viewRegistry.set(label, ID_hostMirror);
-        }
-        ++i;
+        if constexpr (particleContainer->EnableIDs){
 
+            if(forceHostCopy[label]){
+                ID_hostMirror = particleContainer->ID.getHostMirror();
+                Kokkos::deep_copy(ID_hostMirror,  particleContainer->ID.getView());
+                viewRegistry.set(label, ID_hostMirror);
+            }
+            else{
+                ID_hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), particleContainer->ID.getView());
+                viewRegistry.set(label, ID_hostMirror);
+            }
+
+
+
+
+            /* Global ID ATTRIBUTE */
+            auto id_field = fields["ParticleIDs"];
+            id_field["association"].set_string("vertex");
+            id_field["topology"].set_string("p_unstructured_topo");
+            id_field["volume_dependent"].set_string("false");
+            id_field["values"].set_external(ID_hostMirror.data(), localNum);
+            data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
+
+
+            
+            ++i;
+
+        }
 
 
         
@@ -820,7 +837,6 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
         hostMirror_R_t  R_hostMirror;
 
 
-        if constexpr (particleContainer->EnableIDs){
             if(forceHostCopy[label]){
                     // ParticleAttrib<std::int64_t>::HostMirror      ID_hostMirror;
                     // ParticleAttrib<Vector<double, 3>>::HostMirror R_hostMirror;
@@ -837,16 +853,8 @@ void CatalystAdaptor::execute_entry(const T& entry, const std::string label)
                     viewRegistry.set(R_hostMirror);
             }
 
-            /* Global ID ATTRIBUTE */
-            auto id_field = fields["ParticleIDs"];
-            id_field["association"].set_string("vertex");
-            id_field["topology"].set_string("p_unstructured_topo");
-            id_field["volume_dependent"].set_string("false");
-            id_field["values"].set_external(ID_hostMirror.data(), localNum);
-            data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
-
             ++i;
-        }
+        
 
 
 
