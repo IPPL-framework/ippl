@@ -445,6 +445,7 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
+                    /*
                     if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
@@ -454,6 +455,7 @@ namespace ippl {
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
                     }
+                    */
 
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -464,10 +466,12 @@ namespace ippl {
                         J_nd = global_dof_ndindices[j];
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        /*
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
+                        */
 
                         // get the appropriate index for the Kokkos view of the field
                         for (unsigned d = 0; d < Dim; ++d) {
@@ -878,6 +882,7 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
+                    /*
                     if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
@@ -887,6 +892,7 @@ namespace ippl {
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
                     }
+                    */
 
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -897,10 +903,12 @@ namespace ippl {
                         J_nd = global_dof_ndindices[j];
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
+                        /*
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
+                        */
 
                         // get the appropriate index for the Kokkos view of the field
                         for (unsigned d = 0; d < Dim; ++d) {
@@ -1017,6 +1025,7 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
+                    /*
                     if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
@@ -1026,6 +1035,7 @@ namespace ippl {
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
                     }
+                    */
 
                     // get the appropriate index for the Kokkos view of the field
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -1370,10 +1380,12 @@ namespace ippl {
                     auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
 
                     // Skip boundary DOFs (Zero and Constant Dirichlet BCs)
+                    /*
                     if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
                         && (this->isDOFOnBoundary(dof_ndindex_I))) {
                         continue;
                     }
+                    */
 
                     // calculate the contribution of this element
                     T contrib = 0;
