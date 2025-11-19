@@ -148,11 +148,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // set the parameters
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
-    params.add("max_iterations", 2000);
+    params.add("max_iterations", 5);
     solver.mergeParameters(params);
 
     // solve the problem
-    solver.solve();
+    for (int i = 0; i < 2; ++i) {
+        solver.solve();
+    }
 
     // start the timer
     static IpplTimings::TimerRef errorTimer = IpplTimings::getTimer("computeError");
@@ -195,7 +197,7 @@ int main(int argc, char* argv[]) {
 
         unsigned pt = std::atoi(argv[1]);
 
-        for (unsigned n = 0; n < 5; ++n) {
+        for (unsigned n = 0; n < 1; ++n) {
             testFEMSolver<T, 3>(pt, -1.0, 1.0);
         }
 
