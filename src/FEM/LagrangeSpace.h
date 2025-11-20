@@ -81,7 +81,7 @@ namespace ippl {
          * @param layout Reference to the field layout
          */
         LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature, const Layout_t& layout);
+                      const QuadratureType& quadrature, Layout_t& layout);
 
         /**
          * @brief Construct a new LagrangeSpace object (without layout)
@@ -101,14 +101,14 @@ namespace ippl {
          * @param mesh Reference to the mesh
          * @param layout Reference to the field layout
          */
-        void initialize(UniformCartesian<T, Dim>& mesh, const Layout_t& layout);
+        void initialize(UniformCartesian<T, Dim>& mesh, Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**
          * @brief Initialize a Kokkos view containing the element indices.
          * This distributes the elements among MPI ranks.
          */
-        void initializeElementIndices(const Layout_t& layout);
+        void initializeElementIndices(Layout_t& layout);
 
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -212,22 +212,22 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction);
 
         /**
          * @brief Assemble the left stiffness matrix A of the system 
@@ -240,7 +240,7 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx_lift(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_lift(FieldLHS& field, F& evalFunction);
 
         /**
          * @brief Assemble the load vector b of the system Ax = b
@@ -325,6 +325,9 @@ namespace ippl {
         /// my MPI rank. //////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
         Kokkos::View<size_t*> elementIndices;
+
+        // One time allocated field of type FieldLHS to store results
+        FieldLHS resultField;
     };
 
 }  // namespace ippl
