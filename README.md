@@ -40,7 +40,7 @@ Check out the latest [results](https://ippl-bc4558.pages.jsc.fz-juelich.de/)
 # Installing IPPL and its dependencies
 
 All the new developments of IPPL are merged into the `master` branch which can make it potentially unstable from time to time. So if you want a stable and more tested version
-please checkout the tagged branch correspodning to the latest release (e.g. `git checkout tags/IPPL-x.x.x`). Otherwise if you want the latest developments go with the master with the above caveat in mind.
+please checkout the tagged branch corresponding to the latest release (e.g. `git checkout tags/IPPL-x.x.x`). Otherwise if you want the latest developments go with the master with the above caveat in mind.
 
 ## Requirements
 

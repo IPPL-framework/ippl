@@ -35,8 +35,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
 
 add_library(ippl)
 
-add_library(ippl::ippl ALIAS ippl)
-
 target_compile_features(ippl PUBLIC cxx_std_20)
 
 target_compile_options(
@@ -111,5 +109,8 @@ if(IPPL_ENABLE_FFT)
     target_link_libraries(ippl PUBLIC cufinufft)
   endif()
   endif()
+
+# this alias should be created after all target properties have been set
+add_library(IPPL::ippl ALIAS ippl)
 
 include(InstallIppl)
