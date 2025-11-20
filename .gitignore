@@ -19,4 +19,5 @@ build*/
 # ignore .vscode directory
 .vscode
 .cache
-.idea/*
+.idea*
+cmake-build-*

@@ -108,7 +108,7 @@ if(IPPL_ENABLE_FFT)
   if("CUDA" IN_LIST IPPL_PLATFORMS)
     target_link_libraries(ippl PUBLIC cufinufft)
   endif()
-  endif()
+endif()
 
 # this alias should be created after all target properties have been set
 add_library(IPPL::ippl ALIAS ippl)
