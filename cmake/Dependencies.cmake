@@ -318,3 +318,21 @@ if(IPPL_ENABLE_TESTS)
        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h")
   message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
 endif()
+
+# ------------------------------------------------------------------------------
+# FINUFFT
+# ------------------------------------------------------------------------------
+# TODO (pfischill) If this is merged with master, use separate CMAKE Flag
+if(IPPL_ENABLE_FFT)
+  message(STATUS "Fetching FINUFFT for benchmarking")
+  FetchContent_Declare(
+          finufft
+          GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
+          GIT_SHALLOW TRUE
+  )
+  if("CUDA" IN_LIST IPPL_PLATFORMS)
+    set(FINUFFT_USE_CUDA ${KOKKOS_NUFFT_ENABLE_CUFINUFFT} CACHE BOOL "")
+  endif()
+  set(FINUFFT_USE_CPU ON CACHE BOOL "")
+  FetchContent_MakeAvailable(finufft)
+endif()

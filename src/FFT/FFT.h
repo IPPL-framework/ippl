@@ -17,6 +17,7 @@
 
 #include <Kokkos_Complex.hpp>
 #include <array>
+#include <finufft.h>
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
 #include <memory>
@@ -25,10 +26,16 @@
 #include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
 
+#include "Particle/ParticleAttrib.h"
+
 #include "Field/Field.h"
 
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
+
+#ifdef KOKKOS_ENABLE_CUDA
+#include <cufinufft.h>
+#endif
 
 namespace heffte {
     template <>
@@ -51,6 +58,11 @@ namespace ippl {
        Tag classes for Cosine of type 1 transforms
     */
     class Cos1Transform {};
+
+    /**
+     * NUFFT Tag class
+     */
+    class NUFFTransform {};
 
     enum FFTComm {
         a2av   = 0,
@@ -134,6 +146,75 @@ namespace ippl {
             using backendSine = heffte::backend::stock_sin;
             using backendCos  = heffte::backend::stock_cos;
             using backendCos1 = heffte::backend::stock_cos1;
+        };
+#endif
+
+        template <class T>
+        struct finufftType;
+#ifdef ENABLE_GPU_NUFFT
+#ifdef KOKKOS_ENABLE_CUDA
+
+        template <>
+        struct finufftType<float> {
+            std::function<int(int, int, int64_t*, int, int, float, cufinufftf_plan*,
+                              cufinufft_opts*)>
+                makeplan = cufinufftf_makeplan;
+            std::function<int(cufinufftf_plan, int, float*, float*, float*, int, float*, float*,
+                              float*)>
+                setpts = cufinufftf_setpts;
+            std::function<int(cufinufftf_plan, cuFloatComplex*, cuFloatComplex*)> execute =
+                cufinufftf_execute;
+            std::function<int(cufinufftf_plan)> destroy = cufinufftf_destroy;
+
+            using complexType = cuFloatComplex;
+            using plan_t      = cufinufftf_plan;
+        };
+
+        template <>
+        struct finufftType<double> {
+            std::function<int(int, int, int64_t*, int, int, double, cufinufft_plan*,
+                              cufinufft_opts*)>
+                makeplan = cufinufft_makeplan;
+            std::function<int(cufinufft_plan, int, double*, double*, double*, int, double*, double*,
+                              double*)>
+                setpts = cufinufft_setpts;
+            std::function<int(cufinufft_plan, cuDoubleComplex*, cuDoubleComplex*)> execute =
+                cufinufft_execute;
+            std::function<int(cufinufft_plan)> destroy = cufinufft_destroy;
+
+            using complexType = cuDoubleComplex;
+            using plan_t      = cufinufft_plan;
+        };
+#endif
+#else
+        template <>
+        struct finufftType<float> {
+            std::function<int(int, int, int64_t*, int, int, float, finufftf_plan*, finufft_opts*)>
+                makeplan = finufftf_makeplan;
+            std::function<int(finufftf_plan, int64_t, float*, float*, float*, int64_t, float*,
+                              float*, float*)>
+                setpts = finufftf_setpts;
+            std::function<int(finufftf_plan, std::complex<float>*, std::complex<float>*)> execute =
+                finufftf_execute;
+            std::function<int(finufftf_plan)> destroy = finufftf_destroy;
+
+            using complexType = std::complex<float>;
+            using plan_t      = finufftf_plan;
+        };
+
+        template <>
+        struct finufftType<double> {
+            std::function<int(int, int, int64_t*, int, int, double, finufft_plan*, finufft_opts*)>
+                makeplan = finufft_makeplan;
+            std::function<int(finufft_plan, int64_t, double*, double*, double*, int64_t, double*,
+                              double*, double*)>
+                setpts = finufft_setpts;
+            std::function<int(finufft_plan, std::complex<double>*, std::complex<double>*)> execute =
+                finufft_execute;
+            std::function<int(finufft_plan)> destroy = finufft_destroy;
+
+            using complexType = std::complex<double>;
+            using plan_t      = finufft_plan;
         };
 #endif
 
@@ -330,6 +411,60 @@ namespace ippl {
          * @param f Field whose transformation to compute (and overwrite)
          */
         void transform(TransformDirection direction, Field& f);
+    };
+
+    template <typename RealField>
+    class FFT<NUFFTransform, RealField> {
+        constexpr static unsigned Dim = RealField::dim;
+        using T                       = typename RealField::value_type;
+
+    public:
+        typedef FieldLayout<Dim> Layout_t;
+        typedef Kokkos::complex<T> KokkosComplex_t;
+        using ComplexField = typename Field<KokkosComplex_t, Dim, typename RealField::Mesh_t,
+                                            typename RealField::Centering_t,
+                                            typename RealField::execution_space>::uniform_type;
+        using complexType  = typename detail::finufftType<T>::complexType;
+        using plan_t       = typename detail::finufftType<T>::plan_t;
+        // Using LayoutRight for CPUs has an issue
+        using view_field_type =
+            typename detail::ViewType<complexType, 3, Kokkos::LayoutLeft>::view_type;
+        using view_particle_real_type =
+            typename detail::ViewType<T, 1, Kokkos::LayoutLeft>::view_type;
+        using view_particle_complex_type =
+            typename detail::ViewType<complexType, 1, Kokkos::LayoutLeft>::view_type;
+
+        FFT() = default;
+
+        /** Create a new FFT object with the layout for the input Field, type
+         * (1 or 2) for the NUFFT and parameters for FINUFFT.
+         */
+        FFT(const Layout_t& layout, const detail::size_type& localNp, int type,
+            const ParameterList& params);
+
+        // Destructor
+        ~FFT();
+
+        /** Do the NUFFT.
+         */
+        template <class... Properties>
+        void transform(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+                       ParticleAttrib<T, Properties...>& Q, ComplexField& f);
+
+    private:
+        /**
+           setup performs the initialization necessary.
+        */
+        void setup(std::array<int64_t, 3>& nmodes, const ParameterList& params);
+
+        detail::finufftType<T> nufft_m;
+        plan_t plan_m;
+        int ier_m;
+        T tol_m;
+        int type_m;
+        view_field_type tempField_m;
+        view_particle_real_type tempR_m[3] = {};
+        view_particle_complex_type tempQ_m;
     };
 }  // namespace ippl
 
