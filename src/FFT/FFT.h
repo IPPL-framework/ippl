@@ -26,7 +26,6 @@
 #include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
 
-#include "Particle/ParticleAttrib.h"
 
 #include "Field/Field.h"
 
@@ -412,6 +411,9 @@ namespace ippl {
          */
         void transform(TransformDirection direction, Field& f);
     };
+
+    // Forward-declare ParticleAttrib because ParticleAttrib uses FFT in the PINUFFT scatter/gather
+    template <typename T, class... Properties> class ParticleAttrib;
 
     template <typename RealField>
     class FFT<NUFFTransform, RealField> {

@@ -17,3 +17,5 @@ endfunction()
 add_alpine_example(PenningTrap)
 add_alpine_example(LandauDamping)
 add_alpine_example(BumponTailInstability)
+
+add_subdirectory(ElectrostaticPIF)

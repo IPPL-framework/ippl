@@ -330,7 +330,11 @@ if(IPPL_ENABLE_FFT)
           GIT_SHALLOW TRUE
   )
   if("CUDA" IN_LIST IPPL_PLATFORMS)
-    set(FINUFFT_USE_CUDA ${KOKKOS_NUFFT_ENABLE_CUFINUFFT} CACHE BOOL "")
+    set(FINUFFT_USE_CUDA ON CACHE BOOL "")
+    # (paul) probably there is a cleaner way but I have no motivation to look at the cmake
+    add_compile_definitions(ENABLE_GPU_NUFFT)
+    # This is checked at multiple palces, these should  be unified, or just check KOKKOS_ENABLE_CUDA everywhere
+    add_compile_definitions(FINUFFT_USE_CUDA)
   endif()
   set(FINUFFT_USE_CPU ON CACHE BOOL "")
   FetchContent_MakeAvailable(finufft)

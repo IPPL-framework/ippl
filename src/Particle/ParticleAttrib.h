@@ -20,6 +20,8 @@
 
 #include "Interpolation/CIC.h"
 #include "Particle/ParticleAttribBase.h"
+#include "FFT/FFT.h"
+
 
 namespace ippl {
 
@@ -173,6 +175,21 @@ namespace ippl {
         template <typename Field, typename P2>
         void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
                     const bool addToAttribute = false);
+
+
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
+        void
+        scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
+                FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                const MPI_Comm& spaceComm) const;
+
+        template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
+        void
+        gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
+                FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                ParticleAttrib<P4, Properties... >& q);
 
         T sum();
         T max();
