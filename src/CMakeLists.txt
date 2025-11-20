@@ -103,7 +103,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
 if(IPPL_ENABLE_FFT)
-  target_link_libraries(ippl PUBLIC Heffte::Heffte finufft)
+  target_link_libraries(ippl PUBLIC Heffte::Heffte finufft kokkos_nufft)
 
   if("CUDA" IN_LIST IPPL_PLATFORMS)
     target_link_libraries(ippl PUBLIC cufinufft)

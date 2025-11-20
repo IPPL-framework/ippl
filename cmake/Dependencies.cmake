@@ -323,7 +323,7 @@ endif()
 # ------------------------------------------------------------------------------
 # TODO (pfischill) If this is merged with master, use separate CMAKE Flag
 if(IPPL_ENABLE_FFT)
-  message(STATUS "Fetching FINUFFT for benchmarking")
+  message(STATUS "Fetching (CU)FINUFFT")
   FetchContent_Declare(
           finufft
           GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
@@ -338,4 +338,22 @@ if(IPPL_ENABLE_FFT)
   endif()
   set(FINUFFT_USE_CPU ON CACHE BOOL "")
   FetchContent_MakeAvailable(finufft)
+endif()
+
+
+# ------------------------------------------------------------------------------
+# FINUFFT
+# ------------------------------------------------------------------------------
+# TODO(pfischill) This is currently a private repo
+if(IPPL_ENABLE_FFT)
+  message(STATUS "Fetching kokkos_nufft")
+  FetchContent_Declare(
+          kokkos_nufft
+          GIT_REPOSITORY git@github.com:PaulFisch/kokkos-nufft.git
+          GIT_SHALLOW TRUE
+          GIT_TAG main
+  )
+  set(KOKKOS_NUFFT_ENABLE_CUDA ON CACHE BOOL "")
+  FetchContent_MakeAvailable(kokkos_nufft)
+  add_compile_definitions(KOKKOS_NUFFT_AVAILABLE)
 endif()

@@ -23,9 +23,12 @@
 #include <memory>
 #include <type_traits>
 
+#if KOKKOS_NUFFT_AVAILABLE
+#include <kokkos_nufft.h>
+#endif
+
 #include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
-
 
 #include "Field/Field.h"
 
@@ -413,7 +416,8 @@ namespace ippl {
     };
 
     // Forward-declare ParticleAttrib because ParticleAttrib uses FFT in the PINUFFT scatter/gather
-    template <typename T, class... Properties> class ParticleAttrib;
+    template <typename T, class... Properties>
+    class ParticleAttrib;
 
     template <typename RealField>
     class FFT<NUFFTransform, RealField> {
@@ -453,6 +457,38 @@ namespace ippl {
         void transform(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                        ParticleAttrib<T, Properties...>& Q, ComplexField& f);
 
+        // (paul) should move this to private but then I cannot use parallel_for in function, look
+        //       at what IPPL does in other places in these situations
+#ifdef KOKKOS_NUFFT_AVAILABLE
+        struct KokkosNUFFTSpreadConfig {
+            KOKKOS_INLINE_FUNCTION constexpr static nufft::SpreadType get_spread_type() {
+                return nufft::SpreadType::Tiled;
+            }
+
+            KOKKOS_INLINE_FUNCTION static constexpr nufft::array<int, Dim> get_tile_size() {
+                // Shared memory usage = tile_size^Dim * 2 * sizeof(double) = tile_size^Dim * 16
+                // bytes
+                if constexpr (Dim == 1)
+                    return {512};  // 8 KB
+                else if constexpr (Dim == 2)
+                    return {64, 64};  // 64 KB
+                else if constexpr (Dim == 3)
+                    return {8, 8, 8};  // 64 KB
+            }
+
+            KOKKOS_INLINE_FUNCTION static constexpr int get_team_size() { return 64; }
+
+            KOKKOS_INLINE_FUNCTION static constexpr int get_z_tiles() { return Dim == 3 ? 4 : 1; }
+
+            KOKKOS_INLINE_FUNCTION static constexpr bool do_sort() { return true; }
+        };
+        using kokkos_nufft_t =
+            nufft::NUFFT<Dim, typename RealField::execution_space, T, KokkosNUFFTSpreadConfig>;
+
+        template <class... Properties>
+        void transform_kokkos_nufft(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+                                    ParticleAttrib<T, Properties...>& Q, ComplexField& f);
+#endif
     private:
         /**
            setup performs the initialization necessary.
@@ -467,6 +503,11 @@ namespace ippl {
         view_field_type tempField_m;
         view_particle_real_type tempR_m[3] = {};
         view_particle_complex_type tempQ_m;
+        bool use_kokkos_nufft;
+
+#ifdef KOKKOS_NUFFT_AVAILABLE
+        std::unique_ptr<kokkos_nufft_t> kokkos_nufft_plan;
+#endif
     };
 }  // namespace ippl
 

@@ -469,6 +469,7 @@ namespace ippl {
             nmodes[d] = lDom[d].length();
             ;
         }
+        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
 
         type_m = type;
         if (tempField_m.size() < lDom.size()) {
@@ -491,53 +492,161 @@ namespace ippl {
     template <typename RealField>
     void FFT<NUFFTransform, RealField>::setup(std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
-#ifdef ENABLE_GPU_NUFFT
-        cufinufft_opts opts;
-        cufinufft_default_opts(&opts);
+        tol_m = params.get<T>("tolerance", 1e-6);
+
+        if (use_kokkos_nufft) {
+#ifdef KOKKOS_NUFFT_AVAILABLE
+            // Setup kokkos_nufft
+            nufft::array<typename RealField::memory_space::size_type, Dim> n_modes;
+            for (int d = 0; d < Dim; ++d) {
+                n_modes[d] = nmodes[d];
+            }
+
+            typename kokkos_nufft_t::Config cfg{tol_m};
+            kokkos_nufft_plan = std::make_unique<kokkos_nufft_t>(n_modes, cfg);
 #else
-        finufft_opts opts;
-        finufft_default_opts(&opts);
+            throw IpplException("FFT<NUFFTransform>::setup",
+                                "kokkos_nufft requested but not available");
 #endif
-        tol_m = 1e-6;
-
-        if (!params.get<bool>("use_finufft_defaults")) {
-            tol_m = params.get<T>("tolerance");
-#ifdef ENABLE_GPU_NUFFT
-            opts.gpu_method         = params.get<int>("gpu_method");
-            opts.gpu_sort           = params.get<int>("gpu_sort");
-            opts.gpu_kerevalmeth    = params.get<int>("gpu_kerevalmeth");
-            opts.gpu_binsizex       = params.get<int>("gpu_binsizex");
-            opts.gpu_binsizey       = params.get<int>("gpu_binsizey");
-            opts.gpu_binsizez       = params.get<int>("gpu_binsizez");
-            opts.gpu_maxsubprobsize = params.get<int>("gpu_maxsubprobsize");
-#else
-            opts.spread_sort        = params.get<int>("spread_sort");
-            opts.spread_kerevalmeth = params.get<int>("spread_kerevalmeth");
-            opts.nthreads           = params.get<int>("nthreads");
-#endif
-        }
-
-#ifdef ENABLE_GPU_NUFFT
-        opts.gpu_maxbatchsize = 0;  // default option. ignored for ntransf = 1 which
-                                    //  is our case
-        // For Perlmutter since the mask to hide the other GPUs in the node is
-        // somehow not working there
-        // opts.gpu_device_id = (int)(Ippl::Comm->rank() % 4);
-#endif
-
-        int iflag;
-
-        if (type_m == 1) {
-            iflag = -1;
-        } else if (type_m == 2) {
-            iflag = 1;
         } else {
-            throw std::logic_error("Only type 1 and type 2 NUFFT are allowed now");
-        }
+#ifdef ENABLE_GPU_NUFFT
+            cufinufft_opts opts;
+            cufinufft_default_opts(&opts);
+#else
+            finufft_opts opts;
+            finufft_default_opts(&opts);
+#endif
 
-        // dim in finufft is int
-        int dim = static_cast<int>(Dim);
-        ier_m   = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m, &plan_m, &opts);
+            if (!params.get<bool>("use_finufft_defaults")) {
+                tol_m = params.get<T>("tolerance");
+#ifdef ENABLE_GPU_NUFFT
+                opts.gpu_method         = params.get<int>("gpu_method");
+                opts.gpu_sort           = params.get<int>("gpu_sort");
+                opts.gpu_kerevalmeth    = params.get<int>("gpu_kerevalmeth");
+                opts.gpu_binsizex       = params.get<int>("gpu_binsizex");
+                opts.gpu_binsizey       = params.get<int>("gpu_binsizey");
+                opts.gpu_binsizez       = params.get<int>("gpu_binsizez");
+                opts.gpu_maxsubprobsize = params.get<int>("gpu_maxsubprobsize");
+#else
+                opts.spread_sort        = params.get<int>("spread_sort");
+                opts.spread_kerevalmeth = params.get<int>("spread_kerevalmeth");
+                opts.nthreads           = params.get<int>("nthreads");
+#endif
+            }
+
+#ifdef ENABLE_GPU_NUFFT
+            opts.gpu_maxbatchsize = 0;  // default option. ignored for ntransf = 1 which
+                                        //  is our case
+            // For Perlmutter since the mask to hide the other GPUs in the node is
+            // somehow not working there
+            // opts.gpu_device_id = (int)(Ippl::Comm->rank() % 4);
+#endif
+
+            int iflag;
+
+            if (type_m == 1) {
+                iflag = -1;
+            } else if (type_m == 2) {
+                iflag = 1;
+            } else {
+                throw std::logic_error("Only type 1 and type 2 NUFFT are allowed now");
+            }
+
+            // dim in finufft is int
+            int dim = static_cast<int>(Dim);
+            ier_m   = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m, &plan_m, &opts);
+        }
+    }
+
+    template <typename RealField>
+    template <class... Properties>
+    void FFT<NUFFTransform, RealField>::transform_kokkos_nufft(
+        const ParticleAttrib<Vector<T, Dim>, Properties...>& R, ParticleAttrib<T, Properties...>& Q,
+        ComplexField& f) {
+        auto fview       = f.getView();
+        auto Rview       = R.getView();
+        auto Qview       = Q.getView();
+        const int nghost = f.getNghost();
+        auto localNp     = R.getParticleCount();
+
+        // Get layout information
+        const Layout_t& layout               = f.getLayout();
+        const UniformCartesian<T, Dim>& mesh = f.get_mesh();
+        const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
+        const auto& domain                   = layout.getDomain();
+
+        Vector<T, Dim> Len;
+        for (unsigned d = 0; d < Dim; ++d) {
+            Len[d] = dx[d] * domain[d].length();
+        }
+        const double pi = std::acos(-1.0);
+
+        // Create views compatible with kokkos_nufft
+        using ExecSpace = typename RealField::execution_space;
+        using MemSpace  = typename ExecSpace::memory_space;
+
+        Kokkos::View<T* [Dim], MemSpace> x_nufft("x", localNp);
+        Kokkos::View<Kokkos::complex<T>*, MemSpace> c_nufft("c", localNp);
+
+        // Convert particle positions and charges
+        Kokkos::parallel_for(
+            "prepare_kokkos_nufft", localNp, KOKKOS_LAMBDA(const size_t i) {
+                for (size_t d = 0; d < Dim; ++d) {
+                    x_nufft(i, d) = Rview(i)[d] * (2.0 * pi / Len[d]);
+                }
+                c_nufft(i) = Kokkos::complex<T>(Qview(i), 0.0);
+            });
+
+        // Create output view
+        auto f_nufft = [&]() {
+            const auto& lDom = layout.getLocalNDIndex();
+            if constexpr (Dim == 1) {
+                return Kokkos::View<Kokkos::complex<T>*, MemSpace>("f", lDom[0].length());
+            } else if constexpr (Dim == 2) {
+                return Kokkos::View<Kokkos::complex<T>**, MemSpace>("f", lDom[0].length(),
+                                                                    lDom[1].length());
+            } else {
+                return Kokkos::View<Kokkos::complex<T>***, MemSpace>(
+                    "f", lDom[0].length(), lDom[1].length(), lDom[2].length());
+            }
+        }();
+
+        // Execute transform
+        if (type_m == 1) {
+            kokkos_nufft_plan->type1(x_nufft, c_nufft, f_nufft);
+        } else if (type_m == 2) {
+            kokkos_nufft_plan->type2(f_nufft, x_nufft, c_nufft);
+        }
+        Kokkos::fence();
+
+        // Copy results back
+        if (type_m == 1) {
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            Kokkos::parallel_for(
+                "copy_to_field",
+                mdrange_type(
+                    {nghost, nghost, nghost},
+                    {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                    // (paul) These useless statements are there because nvcc complains on
+                    // first-captures
+                    //        in if-constexpr contexts.
+                    fview;
+                    f_nufft;
+                    nghost;
+                    if constexpr (Dim == 3) {
+                        fview(i, j, k) = f_nufft(i - nghost, j - nghost, k - nghost);
+                    } else if constexpr (Dim == 2) {
+                        fview(i, j, k) = f_nufft(i - nghost, j - nghost);
+                    } else {
+                        fview(i, j, k) = f_nufft(i - nghost);
+                    }
+                });
+        } else if (type_m == 2) {
+            Kokkos::parallel_for(
+                "copy_to_particles", localNp,
+                KOKKOS_LAMBDA(const size_t i) { Qview(i) = c_nufft(i).real(); });
+        }
     }
 
     template <typename RealField>
@@ -545,104 +654,115 @@ namespace ippl {
     void FFT<NUFFTransform, RealField>::transform(
         const ParticleAttrib<Vector<T, Dim>, Properties...>& R, ParticleAttrib<T, Properties...>& Q,
         typename FFT<NUFFTransform, RealField>::ComplexField& f) {
-        auto fview       = f.getView();
-        auto Rview       = R.getView();
-        auto Qview       = Q.getView();
-        const int nghost = f.getNghost();
-
-        auto localNp = R.getParticleCount();
-
-        const Layout_t& layout               = f.getLayout();
-        const UniformCartesian<T, Dim>& mesh = f.get_mesh();
-        const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
-        const Vector<T, Dim>& origin         = mesh.getOrigin();
-        const auto& domain                   = layout.getDomain();
-        Vector<T, Dim> Len;
-        Vector<int, Dim> N;
-
-        for (unsigned d = 0; d < Dim; ++d) {
-            N[d]   = domain[d].length();
-            Len[d] = dx[d] * N[d];
-        }
-
-        const double pi = std::acos(-1.0);
-
-        auto tempField                                = tempField_m;
-        auto tempQ                                    = tempQ_m;
-        Kokkos::View<T*, Kokkos::LayoutLeft> tempR[3] = {};
-
-        for (size_t d = 0; d < Dim; ++d) {
-            tempR[d] = tempR_m[d];
-        }
-        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-
-        Kokkos::parallel_for(
-            "copy from field data NUFFT",
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-#ifdef ENABLE_GPU_NUFFT
-                tempField(i - nghost, j - nghost, k - nghost).x = fview(i, j, k).real();
-                tempField(i - nghost, j - nghost, k - nghost).y = fview(i, j, k).imag();
-#else
-                tempField(i - nghost, j - nghost, k - nghost).real(fview(i, j, k).real());
-                tempField(i - nghost, j - nghost, k - nghost).imag(fview(i, j, k).imag());
+        if (use_kokkos_nufft) {
+#ifdef KOKKOS_NUFFT_AVAILABLE
+            transform_kokkos_nufft(R, Q, f);
 #endif
-            });
+        } else {
+            auto fview       = f.getView();
+            auto Rview       = R.getView();
+            auto Qview       = Q.getView();
+            const int nghost = f.getNghost();
 
-        Kokkos::parallel_for(
-            "copy from particle data NUFFT", localNp, KOKKOS_LAMBDA(const size_t i) {
-                for (size_t d = 0; d < Dim; ++d) {
-                    // tempR[d](i) = (Rview(i)[d] - (twopiFactor * 2.0 * pi)) * (2.0 * pi / Len[d]);
-                    tempR[d](i) = Rview(i)[d] * (2.0 * pi / Len[d]);
-                    // tempR[d](i) = Rview(i)[d];
-                }
-#ifdef ENABLE_GPU_NUFFT
-                tempQ(i).x = Qview(i);
-                tempQ(i).y = 0.0;
-#else
-                                 tempQ(i).real(Qview(i));
-                                 tempQ(i).imag(0.0);
-#endif
-            });
+            auto localNp = R.getParticleCount();
 
-        ier_m = nufft_m.setpts(plan_m, localNp, tempR[0].data(), tempR[1].data(), tempR[2].data(),
-                               0, NULL, NULL, NULL);
+            const Layout_t& layout               = f.getLayout();
+            const UniformCartesian<T, Dim>& mesh = f.get_mesh();
+            const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
+            const Vector<T, Dim>& origin         = mesh.getOrigin();
+            const auto& domain                   = layout.getDomain();
+            Vector<T, Dim> Len;
+            Vector<int, Dim> N;
 
-        ier_m = nufft_m.execute(plan_m, tempQ.data(), tempField.data());
-        Kokkos::fence();
+            for (unsigned d = 0; d < Dim; ++d) {
+                N[d]   = domain[d].length();
+                Len[d] = dx[d] * N[d];
+            }
 
-        if (type_m == 1) {
+            const double pi = std::acos(-1.0);
+
+            auto tempField                                = tempField_m;
+            auto tempQ                                    = tempQ_m;
+            Kokkos::View<T*, Kokkos::LayoutLeft> tempR[3] = {};
+
+            for (size_t d = 0; d < Dim; ++d) {
+                tempR[d] = tempR_m[d];
+            }
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
             Kokkos::parallel_for(
-                "copy to field data NUFFT",
+                "copy from field data NUFFT",
                 mdrange_type(
                     {nghost, nghost, nghost},
                     {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
 #ifdef ENABLE_GPU_NUFFT
-                    fview(i, j, k).real() = tempField(i - nghost, j - nghost, k - nghost).x;
-                    fview(i, j, k).imag() = tempField(i - nghost, j - nghost, k - nghost).y;
+                    tempField(i - nghost, j - nghost, k - nghost).x = fview(i, j, k).real();
+                    tempField(i - nghost, j - nghost, k - nghost).y = fview(i, j, k).imag();
 #else
-                    fview(i, j, k).real() = tempField(i - nghost, j - nghost, k - nghost).real();
-                    fview(i, j, k).imag() = tempField(i - nghost, j - nghost, k - nghost).imag();
+                    tempField(i - nghost, j - nghost, k - nghost).real(fview(i, j, k).real());
+                    tempField(i - nghost, j - nghost, k - nghost).imag(fview(i, j, k).imag());
 #endif
                 });
-        } else if (type_m == 2) {
+
             Kokkos::parallel_for(
-                "copy to particle data NUFFT", localNp, KOKKOS_LAMBDA(const size_t i) {
+                "copy from particle data NUFFT", localNp, KOKKOS_LAMBDA(const size_t i) {
+                    for (size_t d = 0; d < Dim; ++d) {
+                        // tempR[d](i) = (Rview(i)[d] - (twopiFactor * 2.0 * pi)) * (2.0 * pi /
+                        // Len[d]);
+                        tempR[d](i) = Rview(i)[d] * (2.0 * pi / Len[d]);
+                        // tempR[d](i) = Rview(i)[d];
+                    }
 #ifdef ENABLE_GPU_NUFFT
-                    Qview(i) = tempQ(i).x;
+                    tempQ(i).x = Qview(i);
+                    tempQ(i).y = 0.0;
 #else
-                                     Qview(i) = tempQ(i).real();
+                                     tempQ(i).real(Qview(i));
+                                     tempQ(i).imag(0.0);
 #endif
                 });
+
+            ier_m = nufft_m.setpts(plan_m, localNp, tempR[0].data(), tempR[1].data(),
+                                   tempR[2].data(), 0, NULL, NULL, NULL);
+
+            ier_m = nufft_m.execute(plan_m, tempQ.data(), tempField.data());
+            Kokkos::fence();
+
+            if (type_m == 1) {
+                Kokkos::parallel_for(
+                    "copy to field data NUFFT",
+                    mdrange_type({nghost, nghost, nghost},
+                                 {fview.extent(0) - nghost, fview.extent(1) - nghost,
+                                  fview.extent(2) - nghost}),
+                    KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+#ifdef ENABLE_GPU_NUFFT
+                        fview(i, j, k).real() = tempField(i - nghost, j - nghost, k - nghost).x;
+                        fview(i, j, k).imag() = tempField(i - nghost, j - nghost, k - nghost).y;
+#else
+                        fview(i, j, k).real() =
+                            tempField(i - nghost, j - nghost, k - nghost).real();
+                        fview(i, j, k).imag() =
+                            tempField(i - nghost, j - nghost, k - nghost).imag();
+#endif
+                    });
+            } else if (type_m == 2) {
+                Kokkos::parallel_for(
+                    "copy to particle data NUFFT", localNp, KOKKOS_LAMBDA(const size_t i) {
+#ifdef ENABLE_GPU_NUFFT
+                        Qview(i) = tempQ(i).x;
+#else
+                                         Qview(i) = tempQ(i).real();
+#endif
+                    });
+            }
         }
     }
 
     template <typename RealField>
     FFT<NUFFTransform, RealField>::~FFT() {
-        ier_m = nufft_m.destroy(plan_m);
+        if (!use_kokkos_nufft) {
+            ier_m = nufft_m.destroy(plan_m);
+        }
     }
 
 }  // namespace ippl
