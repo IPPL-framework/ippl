@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
         }
 
         std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(true);
+        isParallel.fill(false);
 
         // create mesh and layout objects for this problem domain
         Vector_t kw  = {0.5, 0.5, 0.5};

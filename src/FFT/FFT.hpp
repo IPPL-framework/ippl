@@ -469,7 +469,7 @@ namespace ippl {
             nmodes[d] = lDom[d].length();
             ;
         }
-        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
+        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", true);
 
         type_m = type;
         if (tempField_m.size() < lDom.size()) {

@@ -1,14 +1,17 @@
-// Electrostatic Two-stream/Bump-on-tail instability test with Particle-in-Fourier schemes
+// Electrostatic Penning trap test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./BumponTailInstabilityPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol>
-//     --info 5 nx       = No. of Fourier modes in the x-direction ny       = No. of Fourier modes
-//     in the y-direction nz       = No. of Fourier modes in the z-direction Np       = Total no. of
-//     macro-particles in the simulation Nt       = Number of time steps dt       = Time stepsize
+//     srun ./PenningTrapPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol> --info 5
+//     nx       = No. of Fourier modes in the x-direction
+//     ny       = No. of Fourier modes in the y-direction
+//     nz       = No. of Fourier modes in the z-direction
+//     Np       = Total no. of macro-particles in the simulation
+//     Nt       = Number of time steps
+//     dt       = Time stepsize
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     tol = tolerance of NUFFT
 //     Example:
-//     srun ./BumponTailInstabilityPIF 32 32 32 655360 20 0.05 B-spline 1 1e-4 --info 5
+//     srun ./PenningTrapPIF 32 32 32 655360 20 0.05 B-spline 1 1e-4 --info 5
 //
 // Copyright (c) 2023, Sriramkrishnan Muralikrishnan,
 // Jülich Supercomputing Centre, Jülich, Germany.
@@ -38,39 +41,44 @@
 
 #include "ChargedParticlesPIF.hpp"
 
+#ifdef ENABLE_CATALYST
+#include "CatalystAdaptor.h"
+#endif
+
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
     int max_iter = 20;
     double pi    = std::acos(-1.0);
 
-    T k, delta, u;
+    T mu, sigma, u;
 
     KOKKOS_INLINE_FUNCTION Newton1D() {}
 
-    KOKKOS_INLINE_FUNCTION Newton1D(const T& k_, const T& delta_, const T& u_)
-        : k(k_)
-        , delta(delta_)
+    KOKKOS_INLINE_FUNCTION Newton1D(const T& mu_, const T& sigma_, const T& u_)
+        : mu(mu_)
+        , sigma(sigma_)
         , u(u_) {}
 
     KOKKOS_INLINE_FUNCTION ~Newton1D() {}
 
     KOKKOS_INLINE_FUNCTION T f(T& x) {
         T F;
-        F = x + (delta * (std::sin(k * x) / k)) - u;
+        F = std::erf((x - mu) / (sigma * std::sqrt(2.0))) - 2 * u + 1;
         return F;
     }
 
     KOKKOS_INLINE_FUNCTION T fprime(T& x) {
         T Fprime;
-        Fprime = 1 + (delta * std::cos(k * x));
+        Fprime =
+            (1 / sigma) * std::sqrt(2 / pi) * std::exp(-0.5 * (std::pow(((x - mu) / sigma), 2)));
         return Fprime;
     }
 
     KOKKOS_FUNCTION
     void solve(T& x) {
         int iterations = 0;
-        while (iterations < max_iter && std::fabs(f(x)) > tol) {
+        while ((iterations < max_iter) && (std::fabs(f(x)) > tol)) {
             x = x - (f(x) / fprime(x));
             iterations += 1;
         }
@@ -87,24 +95,18 @@ struct generate_random {
     // The GeneratorPool
     GeneratorPool rand_pool;
 
-    value_type delta, sigma, muBulk, muBeam;
-    size_type nlocBulk;
+    T mu, sigma, minU, maxU;
 
-    T k, minU, maxU;
+    double pi = std::acos(-1.0);
 
     // Initialize all members
-    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, value_type& delta_, T& k_,
-                    value_type& sigma_, value_type& muBulk_, value_type& muBeam_,
-                    size_type& nlocBulk_, T& minU_, T& maxU_)
+    generate_random(view_type x_, view_type v_, GeneratorPool rand_pool_, T& mu_, T& sigma_,
+                    T& minU_, T& maxU_)
         : x(x_)
         , v(v_)
         , rand_pool(rand_pool_)
-        , delta(delta_)
+        , mu(mu_)
         , sigma(sigma_)
-        , muBulk(muBulk_)
-        , muBeam(muBeam_)
-        , nlocBulk(nlocBulk_)
-        , k(k_)
         , minU(minU_)
         , maxU(maxU_) {}
 
@@ -112,37 +114,41 @@ struct generate_random {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-        bool isBeam = (i >= nlocBulk);
-
-        value_type muZ = (value_type)(((!isBeam) * muBulk) + (isBeam * muBeam));
-
-        for (unsigned d = 0; d < Dim - 1; ++d) {
-            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
-            v(i)[d] = rand_gen.normal(0.0, sigma);
+        value_type u;
+        for (unsigned d = 0; d < Dim; ++d) {
+            u       = rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = (std::sqrt(pi / 2) * (2 * u - 1)) * sigma[d] + mu[d];
+            Newton1D<value_type> solver(mu[d], sigma[d], u);
+            solver.solve(x(i)[d]);
+            v(i)[d] = rand_gen.normal(0.0, 1.0);
         }
-        v(i)[Dim - 1] = rand_gen.normal(muZ, sigma);
-
-        value_type u  = rand_gen.drand(minU[Dim - 1], maxU[Dim - 1]);
-        x(i)[Dim - 1] = u / (1 + delta);
-        Newton1D<value_type> solver(k[Dim - 1], delta, u);
-        solver.solve(x(i)[Dim - 1]);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
     }
 };
 
-double CDF(const double& x, const double& delta, const double& k, const unsigned& dim) {
-    bool isDimZ = (dim == (Dim - 1));
-    double cdf  = x + (double)(isDimZ * ((delta / k) * std::sin(k * x)));
+double CDF(const double& x, const double& mu, const double& sigma) {
+    double cdf = 0.5 * (1.0 + std::erf((x - mu) / (sigma * std::sqrt(2))));
     return cdf;
 }
 
-const char* TestName = "TwoStreamInstabilityPIF";
+const char* TestName = "PenningTrapPIF";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
+#ifdef ENABLE_CATALYST
+        char* script = nullptr;
+        for (int i = 1; i < argc; ++i) {
+            if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
+                script = argv[i + 1];
+                i++;
+            }
+        }
+        char* reducedArgv[] = {argv[0], script};
+        CatalystAdaptor::Initialize(2, reducedArgv);
+#endif
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
@@ -163,9 +169,19 @@ int main(int argc, char* argv[]) {
         const unsigned int nt  = std::atoi(argv[5]);
         const double dt        = std::atof(argv[6]);
 
+        double factor             = 1.0 / ippl::Comm->size();
+        size_type nloc            = (size_type)(factor * totalP);
+        size_type Total_particles = 0;
+
+        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                      ippl::Comm->getCommunicator());
+
+        msg << TestName << endl
+            << "nt " << nt << " Np= " << Total_particles << " Fourier modes = " << nr << endl;
+
         using bunch_type = ChargedParticlesPIF<PLayout_t>;
 
-        std::unique_ptr<bunch_type> P;
+        std::shared_ptr<bunch_type> P;
 
         ippl::NDIndex<Dim> domain;
         for (unsigned i = 0; i < Dim; i++) {
@@ -176,41 +192,25 @@ int main(int argc, char* argv[]) {
         isParallel.fill(false);
 
         // create mesh and layout objects for this problem domain
-        Vector_t kw;
-        double sigma, muBulk, muBeam, epsilon, delta;
-
-        if (std::strcmp(TestName, "TwoStreamInstabilityPIF") == 0) {
-            // Parameters for two stream instability as in
-            //  https://www.frontiersin.org/articles/10.3389/fphy.2018.00105/full
-            kw      = {0.5, 0.5, 0.5};
-            sigma   = 0.1;
-            epsilon = 0.5;
-            muBulk  = -pi / 2.0;
-            muBeam  = pi / 2.0;
-            delta   = 0.01;
-        } else if (std::strcmp(TestName, "BumponTailInstabilityPIF") == 0) {
-            kw      = {0.21, 0.21, 0.21};
-            sigma   = 1.0 / std::sqrt(2.0);
-            epsilon = 0.1;
-            muBulk  = 0.0;
-            muBeam  = 4.0;
-            delta   = 0.01;
-        } else {
-            // Default value is two stream instability
-            kw      = {0.5, 0.5, 0.5};
-            sigma   = 0.1;
-            epsilon = 0.5;
-            muBulk  = -pi / 2.0;
-            muBeam  = pi / 2.0;
-            delta   = 0.01;
-        }
-
         Vector_t rmin(0.0);
-        Vector_t rmax   = 2 * pi / kw;
+        Vector_t rmax(25.0);
+        double dx = rmax[0] / nr[0];
+        double dy = rmax[1] / nr[1];
+        double dz = rmax[2] / nr[2];
+
         Vector_t length = rmax - rmin;
-        double dx       = rmax[0] / nr[0];
-        double dy       = rmax[1] / nr[1];
-        double dz       = rmax[2] / nr[2];
+
+        Vector_t mu, sd;
+
+        for (unsigned d = 0; d < Dim; d++) {
+            mu[d] = 0.5 * length[d];
+        }
+        // sd[0] = 0.15*length[0];
+        // sd[1] = 0.05*length[1];
+        // sd[2] = 0.20*length[2];
+        sd[0] = 0.10 * 20.0;  // length[0];
+        sd[1] = 0.05 * 20.0;  // length[1];
+        sd[2] = 0.15 * 20.0;  // length[2];
 
         Vector_t hr     = {dx, dy, dz};
         Vector_t origin = {rmin[0], rmin[1], rmin[2]};
@@ -220,23 +220,10 @@ int main(int argc, char* argv[]) {
         FieldLayout_t FL(*ippl::Comm, domain, isParallel);
         PLayout_t PL(FL, mesh);
 
-        double factorConf         = 1.0 / ippl::Comm->size();
-        double factorVelBulk      = 1.0 - epsilon;
-        double factorVelBeam      = 1.0 - factorVelBulk;
-        size_type nlocBulk        = (size_type)(factorConf * factorVelBulk * totalP);
-        size_type nlocBeam        = (size_type)(factorConf * factorVelBeam * totalP);
-        size_type nloc            = nlocBulk + nlocBeam;
-        size_type Total_particles = 0;
-
-        MPI_Allreduce(&nloc, &Total_particles, 1, MPI_UNSIGNED_LONG, MPI_SUM,
-                      ippl::Comm->getCommunicator());
-
-        msg << TestName << endl
-            << "nt " << nt << " Np= " << Total_particles << " Fourier modes = " << nr << endl;
-
-        // Q = -\int\int f dx dv
-        double Q = -rmax[0] * rmax[1] * rmax[2];
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, Total_particles);
+        double Q    = -1562.5;
+        double Bext = 5.0;
+        // P = std::make_unique<bunch_type>(PL,hr,rmin,rmax,decomp,Q,Total_particles);
+        P = std::make_shared<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, Total_particles);
 
         P->nr_m = nr;
 
@@ -293,8 +280,8 @@ int main(int argc, char* argv[]) {
 
         Vector_t minU, maxU;
         for (unsigned d = 0; d < Dim; ++d) {
-            minU[d] = CDF(rmin[d], delta, kw[d], d);
-            maxU[d] = CDF(rmax[d], delta, kw[d], d);
+            minU[d] = CDF(rmin[d], mu[d], sd[d]);
+            maxU[d] = CDF(rmax[d], mu[d], sd[d]);
         }
 
         // int rest = (int) (totalP - Total_particles);
@@ -304,9 +291,9 @@ int main(int argc, char* argv[]) {
 
         P->create(nloc);
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + 100 * ippl::Comm->rank()));
-        Kokkos::parallel_for(nloc, generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
-                                       P->R.getView(), P->P.getView(), rand_pool64, delta, kw,
-                                       sigma, muBulk, muBeam, nlocBulk, minU, maxU));
+        Kokkos::parallel_for(nloc,
+                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
+                                 P->R.getView(), P->P.getView(), rand_pool64, mu, sd, minU, maxU));
 
         Kokkos::fence();
         ippl::Comm->barrier();
@@ -327,21 +314,50 @@ int main(int argc, char* argv[]) {
         P->gather();
 
         IpplTimings::startTimer(dumpDataTimer);
-        P->dumpBumponTail();
-        P->dumpEnergy();
+        // P->dumpEnergy();
+#ifdef ENABLE_CATALYST
+        P->rhoPIFreal_m = (1 / (hr[0] * hr[1] * hr[2])) * P->rhoPIFreal_m;
+        std::vector<CatalystAdaptor::FieldPair> fields = {
+            {"rhoK", CatalystAdaptor::FieldVariant(&P->rhoPIFFourierMag_m)},
+            {"rhoR", CatalystAdaptor::FieldVariant(&P->rhoPIFreal_m)}};
+        CatalystAdaptor::Execute(0, P->time_m, Ippl::Comm->rank(), P, fields);
+#endif
         IpplTimings::stopTimer(dumpDataTimer);
 
+        double alpha = -0.5 * dt;
+        double DrInv = 1.0 / (1 + (std::pow((alpha * Bext), 2)));
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         for (unsigned int it = 0; it < nt; it++) {
-            // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
+            // Staggered Leap frog or Boris algorithm as per
+            // https://www.sciencedirect.com/science/article/pii/S2590055219300526
+            // eqns 4(a)-4(c). Note we don't use the Boris trick here and do
+            // the analytical matrix inversion which is not complex in this case.
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
             // an attribute
             // kick
-
             IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
+            auto Rview = P->R.getView();
+            auto Pview = P->P.getView();
+            auto Eview = P->E.getView();
+            double V0  = 30 * rmax[2];
+            Kokkos::parallel_for(
+                "Kick1", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
+                    double Eext_x =
+                        -(Rview(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * std::pow(rmax[2], 2)));
+                    double Eext_y =
+                        -(Rview(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * std::pow(rmax[2], 2)));
+                    double Eext_z = (Rview(j)[2] - 0.5 * rmax[2]) * (V0 / (std::pow(rmax[2], 2)));
+
+                    Eext_x += Eview(j)[0];
+                    Eext_y += Eview(j)[1];
+                    Eext_z += Eview(j)[2];
+
+                    Pview(j)[0] += alpha * (Eext_x + Pview(j)[1] * Bext);
+                    Pview(j)[1] += alpha * (Eext_y - Pview(j)[0] * Bext);
+                    Pview(j)[2] += alpha * Eext_z;
+                });
             IpplTimings::stopTimer(PTimer);
 
             // drift
@@ -362,23 +378,54 @@ int main(int argc, char* argv[]) {
 
             // kick
             IpplTimings::startTimer(PTimer);
-            P->P = P->P - 0.5 * dt * P->E;
+            auto R2view = P->R.getView();
+            auto P2view = P->P.getView();
+            auto E2view = P->E.getView();
+            Kokkos::parallel_for(
+                "Kick2", P->getLocalNum(), KOKKOS_LAMBDA(const size_t j) {
+                    double Eext_x =
+                        -(R2view(j)[0] - 0.5 * rmax[0]) * (V0 / (2 * std::pow(rmax[2], 2)));
+                    double Eext_y =
+                        -(R2view(j)[1] - 0.5 * rmax[1]) * (V0 / (2 * std::pow(rmax[2], 2)));
+                    double Eext_z = (R2view(j)[2] - 0.5 * rmax[2]) * (V0 / (std::pow(rmax[2], 2)));
+
+                    Eext_x += E2view(j)[0];
+                    Eext_y += E2view(j)[1];
+                    Eext_z += E2view(j)[2];
+
+                    P2view(j)[0] =
+                        DrInv
+                        * (P2view(j)[0]
+                           + alpha * (Eext_x + P2view(j)[1] * Bext + alpha * Bext * Eext_y));
+                    P2view(j)[1] =
+                        DrInv
+                        * (P2view(j)[1]
+                           + alpha * (Eext_y - P2view(j)[0] * Bext - alpha * Bext * Eext_x));
+                    P2view(j)[2] += alpha * Eext_z;
+                });
             IpplTimings::stopTimer(PTimer);
 
             P->time_m += dt;
             IpplTimings::startTimer(dumpDataTimer);
-            P->dumpBumponTail();
-            P->dumpEnergy();
+            // P->dumpEnergy();
+#ifdef ENABLE_CATALYST
+            P->rhoPIFreal_m = (1 / (hr[0] * hr[1] * hr[2])) * P->rhoPIFreal_m;
+            CatalystAdaptor::Execute(it, P->time_m, Ippl::Comm->rank(), P, fields);
+#endif
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
         }
 
-        msg << "BumponTailInstability: End." << endl;
+        msg << TestName << " End." << endl;
+
+#ifdef ENABLE_CATALYST
+        CatalystAdaptor::Finalize();
+#endif
+
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
-
     return 0;
 }

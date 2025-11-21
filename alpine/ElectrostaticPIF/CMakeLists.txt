@@ -19,8 +19,8 @@ target_link_libraries (LandauDampingPIF ${IPPL_LIBS})
 add_executable (BumponTailInstabilityPIF BumponTailInstabilityPIF.cpp)
 target_link_libraries (BumponTailInstabilityPIF ${IPPL_LIBS})
 
-#add_executable (PenningTrapPIF PenningTrapPIF.cpp)
-#target_link_libraries (PenningTrapPIF ${IPPL_LIBS})
+add_executable (PenningTrapPIF PenningTrapPIF.cpp)
+target_link_libraries (PenningTrapPIF ${IPPL_LIBS})
 
 # vi: set et ts=4 sw=4 sts=4:
 
