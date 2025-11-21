@@ -367,7 +367,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_setup);
 
         // set result field to 0
-        resultField = 0.0;
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -515,7 +515,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_lower);
 
         // set result field to 0
-        resultField = 0.0;
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -657,7 +657,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_upper);
 
         // set result field to 0
-        resultField = 0.0;
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -799,7 +799,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_upperlower);
 
         // set result field to 0
-        resultField = 0.0;
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -938,7 +938,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_invdiag);
 
         // set result field to 0
-        resultField = 0.0;
+        FieldLHS resultField_inversediag(field.get_mesh(), field.getLayout());
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -972,7 +972,7 @@ namespace ippl {
         // Get field data and atomic result data,
         // since it will be added to during the kokkos loop
         ViewType view             = field.getView();
-        AtomicViewType resultView = resultField.getView();
+        AtomicViewType resultView = resultField_inversediag.getView();
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
@@ -1033,11 +1033,11 @@ namespace ippl {
             });
 
         if (bcType == PERIODIC_FACE) {
-            resultField.accumulateHalo();
-            bcField.apply(resultField);
-            bcField.assignGhostToPhysical(resultField);
+            resultField_inversediag.accumulateHalo();
+            bcField.apply(resultField_inversediag);
+            bcField.assignGhostToPhysical(resultField_inversediag);
         } else {
-            resultField.accumulateHalo_noghost();
+            resultField_inversediag.accumulateHalo_noghost();
         }
 
         // apply the inverse diagonal after already summed all contributions from element matrices
@@ -1050,7 +1050,7 @@ namespace ippl {
             });
         IpplTimings::stopTimer(evalAx_invdiag);
 
-        return resultField;
+        return resultField_inversediag;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
@@ -1067,7 +1067,7 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_diag);
 
         // set result field to 0
-        resultField = 0.0;
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
