@@ -114,7 +114,7 @@ namespace ippl {
 
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            residueNorm       = std::sqrt(delta1);
+            residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q(mesh, layout);
@@ -137,7 +137,7 @@ namespace ippl {
                 delta1 = innerProduct(r, r);
                 T beta = delta1 / delta0;
 
-                residueNorm = std::sqrt(delta1);
+                residueNorm = Kokkos::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
             }
@@ -236,7 +236,7 @@ namespace ippl {
             //d.setFieldBC(bc);
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            residueNorm       = std::sqrt(delta1);
+            residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q = lhs.deepCopy();
@@ -262,7 +262,7 @@ namespace ippl {
                 delta1 = innerProduct(r, r);
                 T beta = delta1 / delta0;
 
-                residueNorm = std::sqrt(delta1);
+                residueNorm = Kokkos::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
 
