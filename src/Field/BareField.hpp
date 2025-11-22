@@ -83,13 +83,24 @@ namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class... ViewArgs>
         struct isExpression<BareField<T, Dim, ViewArgs...>> : std::true_type {};
+    
+        template <typename view_T, size_t... I>
+        view_T make_zero_extent_view(const std::string& name, std::index_sequence<I...>) {
+            // Expands to dview_m(name, 0, 0, ..., 0) with Dim zeros
+            return view_T(name, ((void)I, 0)...);
+    }
+    
     }  // namespace detail
 
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...>::BareField(const std::string& name_)
         : nghost_m(1)
-        , dview_m(name_)
+        , dview_m([&]{return detail::make_zero_extent_view(name_, std::make_index_sequence<Dim>{});}())
         , layout_m(nullptr) {}
+
+
+
+
 
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...> BareField<T, Dim, ViewArgs...>::deepCopy() const {
@@ -101,7 +112,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...>::BareField(Layout_t& l, int nghost, const std::string& name_)
         : nghost_m(nghost)
-        , dview_m(name_)
+        , dview_m([&]{return detail::make_zero_extent_view(name_, std::make_index_sequence<Dim>{});}())
         //     , owned_m(0)
         , layout_m(&l) {
         setup();
