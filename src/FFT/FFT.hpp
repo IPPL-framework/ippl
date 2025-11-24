@@ -469,7 +469,7 @@ namespace ippl {
             nmodes[d] = lDom[d].length();
             ;
         }
-        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", true);
+        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
 
         type_m = type;
         if (tempField_m.size() < lDom.size()) {
@@ -493,6 +493,7 @@ namespace ippl {
     void FFT<NUFFTransform, RealField>::setup(std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
         tol_m = params.get<T>("tolerance", 1e-6);
+        this->n_modes = nmodes;
 
         if (use_kokkos_nufft) {
 #ifdef KOKKOS_NUFFT_AVAILABLE
@@ -556,7 +557,7 @@ namespace ippl {
 
             // dim in finufft is int
             int dim = static_cast<int>(Dim);
-            ier_m   = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m, &plan_m, &opts);
+            ier_m   = nufft_m.makeplan(type_m, dim, this->n_modes.data(), iflag, 1, tol_m, &plan_m, &opts);
 #endif
         }
     }
