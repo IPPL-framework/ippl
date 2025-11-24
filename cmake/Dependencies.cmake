@@ -322,7 +322,7 @@ endif()
 # FINUFFT
 # ------------------------------------------------------------------------------
 # TODO (pfischill) If this is merged with master, use separate CMAKE Flag
-if(IPPL_ENABLE_FFT)
+if(IPPL_ENABLE_FFT AND IPPL_ENABLE_FINUFFT)
   message(STATUS "Fetching (CU)FINUFFT")
   FetchContent_Declare(
           finufft
@@ -338,6 +338,8 @@ if(IPPL_ENABLE_FFT)
   endif()
   set(FINUFFT_USE_CPU ON CACHE BOOL "")
   FetchContent_MakeAvailable(finufft)
+
+  add_compile_definitions(ENABLE_FINUFFT)
 endif()
 
 
@@ -345,7 +347,7 @@ endif()
 # FINUFFT
 # ------------------------------------------------------------------------------
 # TODO(pfischill) This is currently a private repo
-if(IPPL_ENABLE_FFT)
+if(IPPL_ENABLE_FFT AND IPPL_ENABLE_KOKKOS_NUFFT)
   message(STATUS "Fetching kokkos_nufft")
   FetchContent_Declare(
           kokkos_nufft

@@ -509,7 +509,9 @@ namespace ippl {
                                 "kokkos_nufft requested but not available");
 #endif
         } else {
-#ifdef ENABLE_GPU_NUFFT
+#ifdef ENABLE_FINUFFT
+
+#if ENABLE_GPU_NUFFT
             cufinufft_opts opts;
             cufinufft_default_opts(&opts);
 #else
@@ -555,9 +557,11 @@ namespace ippl {
             // dim in finufft is int
             int dim = static_cast<int>(Dim);
             ier_m   = nufft_m.makeplan(type_m, dim, nmodes.data(), iflag, 1, tol_m, &plan_m, &opts);
+#endif
         }
     }
 
+#ifdef KOKKOS_NUFFT_AVAILABLE
     template <typename RealField>
     template <class... Properties>
     void FFT<NUFFTransform, RealField>::transform_kokkos_nufft(
@@ -648,6 +652,7 @@ namespace ippl {
                 KOKKOS_LAMBDA(const size_t i) { Qview(i) = c_nufft(i).real(); });
         }
     }
+#endif
 
     template <typename RealField>
     template <class... Properties>
@@ -659,6 +664,7 @@ namespace ippl {
             transform_kokkos_nufft(R, Q, f);
 #endif
         } else {
+#ifdef ENABLE_FINUFFT
             auto fview       = f.getView();
             auto Rview       = R.getView();
             auto Qview       = Q.getView();
@@ -755,14 +761,18 @@ namespace ippl {
 #endif
                     });
             }
+
+#endif
         }
     }
 
     template <typename RealField>
     FFT<NUFFTransform, RealField>::~FFT() {
+#ifdef ENABLE_FINFUFT
         if (!use_kokkos_nufft) {
             ier_m = nufft_m.destroy(plan_m);
         }
+#endif
     }
 
 }  // namespace ippl

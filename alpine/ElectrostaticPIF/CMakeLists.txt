@@ -14,7 +14,7 @@ set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (LandauDampingPIF LandauDampingPIF.cpp)
-target_link_libraries (LandauDampingPIF ${IPPL_LIBS})
+target_link_libraries (LandauDampingPIF PRIVATE cufinufft finufft ${IPPL_LIBS})
 
 add_executable (BumponTailInstabilityPIF BumponTailInstabilityPIF.cpp)
 target_link_libraries (BumponTailInstabilityPIF ${IPPL_LIBS})

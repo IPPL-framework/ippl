@@ -17,7 +17,6 @@
 
 #include <Kokkos_Complex.hpp>
 #include <array>
-#include <finufft.h>
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
 #include <memory>
@@ -35,8 +34,12 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
 
+
+#ifdef ENABLE_FINUFFT
+#include <finufft.h>
 #ifdef KOKKOS_ENABLE_CUDA
 #include <cufinufft.h>
+#endif
 #endif
 
 namespace heffte {
@@ -151,6 +154,7 @@ namespace ippl {
         };
 #endif
 
+#ifdef ENABLE_FINUFFT
         template <class T>
         struct finufftType;
 #ifdef ENABLE_GPU_NUFFT
@@ -220,6 +224,8 @@ namespace ippl {
         };
 #endif
 
+
+#endif
     }  // namespace detail
 
     template <typename Field, template <typename...> class FFT, typename Backend,
@@ -430,8 +436,12 @@ namespace ippl {
         using ComplexField = typename Field<KokkosComplex_t, Dim, typename RealField::Mesh_t,
                                             typename RealField::Centering_t,
                                             typename RealField::execution_space>::uniform_type;
+#ifdef ENABLE_FINUFFT
         using complexType  = typename detail::finufftType<T>::complexType;
         using plan_t       = typename detail::finufftType<T>::plan_t;
+#else
+        using complexType = Kokkos::complex<T>;
+#endif
         // Using LayoutRight for CPUs has an issue
         using view_field_type =
             typename detail::ViewType<complexType, 3, Kokkos::LayoutLeft>::view_type;
@@ -495,8 +505,10 @@ namespace ippl {
         */
         void setup(std::array<int64_t, 3>& nmodes, const ParameterList& params);
 
+#ifdef ENABLE_FINUFFT
         detail::finufftType<T> nufft_m;
         plan_t plan_m;
+#endif
         int ier_m;
         T tol_m;
         int type_m;
