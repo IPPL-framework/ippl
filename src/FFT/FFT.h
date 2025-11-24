@@ -507,6 +507,7 @@ namespace ippl {
 
 #ifdef KOKKOS_NUFFT_AVAILABLE
         std::unique_ptr<kokkos_nufft_t> kokkos_nufft_plan;
+        std::array<int64_t, 3> n_modes;
 #endif
     };
 }  // namespace ippl
