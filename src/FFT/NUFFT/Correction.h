@@ -148,24 +148,29 @@ namespace NUFFT {
             const int ny = static_cast<int>(n_modes[1]);
             const int nz = static_cast<int>(n_modes[2]);
 
+            // Capture factors by value
+            auto f0 = factors[0];
+            auto f1 = factors[1];
+            auto f2 = factors[2];
+
             Kokkos::parallel_for("precorr_type2_3d",
                 Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
                     {0, 0, 0}, {nx, ny, nz}),
                 KOKKOS_LAMBDA(int64_t k0, int64_t k1, int64_t k2) {
-                    // Map output grid index (corner-DC format)
-                    int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
-                    int64_t i1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
-                    int64_t i2 = (k2 < nz / 2) ? k2 : n_grid[2] - (nz - k2);
+                    // Map both input and output using same formula (no shift, no conjugation)
+                    int64_t in_idx0 = (k0 < nx / 2) ? k0 : n_modes[0] - (nx - k0);
+                    int64_t in_idx1 = (k1 < ny / 2) ? k1 : n_modes[1] - (ny - k1);
+                    int64_t in_idx2 = (k2 < nz / 2) ? k2 : n_modes[2] - (nz - k2);
 
-                    // Map input index: apply FFT-shift from centered to corner-DC
-                    int64_t j0 = (k0 + nx/2) % nx;
-                    int64_t j1 = (k1 + ny/2) % ny;
-                    int64_t j2 = (k2 + nz/2) % nz;
+                    int64_t out_idx0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+                    int64_t out_idx1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
+                    int64_t out_idx2 = (k2 < nz / 2) ? k2 : n_grid[2] - (nz - k2);
 
-                    complex_type factor = factors[0](k0) * factors[1](k1) * factors[2](k2);
-                    // Conjugate and apply deconvolution
-                    output(i0, i1, i2) = Kokkos::conj(input(j0, j1, j2)) * factor;
+                    complex_type factor = f0(k0) * f1(k1) * f2(k2);
+                    output(out_idx0, out_idx1, out_idx2) = input(in_idx0, in_idx1, in_idx2) * factor;
                 });
+
+            Kokkos::fence();
         } else if constexpr (Dim == 2) {
             const int nx = static_cast<int>(n_modes[0]);
             const int ny = static_cast<int>(n_modes[1]);

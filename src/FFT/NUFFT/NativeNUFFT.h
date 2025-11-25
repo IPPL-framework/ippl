@@ -229,96 +229,16 @@ namespace ippl {
                 auto t0      = std::chrono::high_resolution_clock::now();
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
 
-                std::cout << "[NativeNUFFT] Starting type1 transform" << std::endl;
-                std::cout << "[NativeNUFFT] n_grid = (" << n_grid_[0] << ", " << n_grid_[1] << ", " << n_grid_[2] << ")" << std::endl;
-                std::cout << "[NativeNUFFT] grid origin = (" << grid_mesh_->getOrigin()[0] << ", " << grid_mesh_->getOrigin()[1] << ", " << grid_mesh_->getOrigin()[2] << ")" << std::endl;
-                std::cout << "[NativeNUFFT] grid spacing = (" << grid_mesh_->getMeshSpacing()[0] << ", " << grid_mesh_->getMeshSpacing()[1] << ", " << grid_mesh_->getMeshSpacing()[2] << ")" << std::endl;
-                std::cout << "[NativeNUFFT] kernel width = " << kernel_.width() << ", beta = " << kernel_.beta() << std::endl;
-                std::cout << "[NativeNUFFT] kernel(0) = " << kernel_(T(0)) << std::endl;
-                std::cout << "[NativeNUFFT] kernel(0.5) = " << kernel_(T(0.5)) << std::endl;
-
-                // DEBUG: Compute kernel normalization
-                {
-                    int w = kernel_.width();
-                    T inv_hw = T(2.0) / w;
-                    T sum_1d = 0;
-                    for (int i = 0; i < w; ++i) {
-                        T x = (T(0.5) - T(i)) * inv_hw;  // Particle at center of cell
-                        sum_1d += kernel_(x);
-                    }
-                    T sum_3d = sum_1d * sum_1d * sum_1d;
-                    std::cout << "[NativeNUFFT] Kernel 1D sum = " << sum_1d << ", 3D sum = " << sum_3d << std::endl;
-                }
-
-                // DEBUG: Print first 3 particles and sum of charges
-                {
-                    auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), R.getView());
-                    auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
-                    size_t npart = R.getParticleCount();
-                    std::cout << "[NativeNUFFT] Type 1 - First 3 particles:" << std::endl;
-                    for (size_t i = 0; i < std::min(size_t(3), npart); ++i) {
-                        std::cout << "  x[" << i << "] = (" << R_host(i)[0] << ", " << R_host(i)[1] << ", " << R_host(i)[2]
-                                  << "), c[" << i << "] = (" << Q_host(i) << ", 0)" << std::endl;
-                    }
-
-                    // Compute sum of charges
-                    T sum_q = 0;
-                    for (size_t i = 0; i < npart; ++i) {
-                        sum_q += Q_host(i);
-                    }
-                    std::cout << "[NativeNUFFT] Sum of input charges = " << sum_q << std::endl;
-                }
-
                 // Use scatterES for spreading
                 Q.scatterES(*grid_field_, R, kernel_, cfg_.sort);
                 Kokkos::fence();
-
-                std::cout << "[NativeNUFFT] Spreading complete" << std::endl;
-
-                // DEBUG: Check a single value after spreading and compute sum
-                {
-                    auto grid_host = grid_field_->getHostMirror();
-                    Kokkos::deep_copy(grid_host, grid_field_->getView());
-                    int ng = grid_field_->getNghost();
-                    int mid = n_grid_[0]/2 + ng;
-                    std::cout << "[NativeNUFFT] grid[mid,mid,mid] after spread = "
-                             << grid_host(mid, mid, mid) << std::endl;
-
-                    // Compute sum of grid
-                    complex_type sum = 0;
-                    for (size_t i = ng; i < n_grid_[0] + ng; ++i) {
-                        for (size_t j = ng; j < n_grid_[1] + ng; ++j) {
-                            for (size_t k = ng; k < n_grid_[2] + ng; ++k) {
-                                sum += grid_host(i, j, k);
-                            }
-                        }
-                    }
-                    std::cout << "[NativeNUFFT] grid sum after spread = " << sum << std::endl;
-                }
 
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
                 // Step 2: Inverse FFT
-                std::cout << "[NativeNUFFT] Performing inverse FFT..." << std::endl;
                 performFFT(-1);
-                std::cout << "[NativeNUFFT] FFT complete (norm_factor = " << (n_grid_[0] * n_grid_[1] * n_grid_[2]) << ")" << std::endl;
-
-                // DEBUG: Check a single value after FFT and look for imaginary parts
-                {
-                    auto grid_host = grid_field_->getHostMirror();
-                    Kokkos::deep_copy(grid_host, grid_field_->getView());
-                    int ng = grid_field_->getNghost();
-                    int mid = n_grid_[0]/2 + ng;
-                    std::cout << "[NativeNUFFT] grid[mid,mid,mid] after FFT = "
-                             << grid_host(mid, mid, mid) << std::endl;
-                    // Check a few other points for imaginary parts
-                    std::cout << "[NativeNUFFT] grid[mid+1,mid,mid] after FFT = "
-                             << grid_host(mid+1, mid, mid) << std::endl;
-                    std::cout << "[NativeNUFFT] grid[mid,mid+1,mid] after FFT = "
-                             << grid_host(mid, mid+1, mid) << std::endl;
-                }
 
                 t0 = std::chrono::high_resolution_clock::now();
 
@@ -359,24 +279,6 @@ namespace ippl {
 
                 // Copy result back to output field
                 copyOutputToField(output_view_temp, f, nmodes);
-
-                // DEBUG: Check output field
-                {
-                    auto f_host = f.getHostMirror();
-                    Kokkos::deep_copy(f_host, f.getView());
-                    int ng = f.getNghost();
-                    int mid = n_modes_[0]/2 + ng;
-                    std::cout << "[NativeNUFFT] output[0,0,0] after copy = "
-                             << f_host(ng, ng, ng) << std::endl;
-                    std::cout << "[NativeNUFFT] output[mid,mid,mid] after copy = "
-                             << f_host(mid, mid, mid) << std::endl;
-                    // Also check test index (k = (0.37*16, 0.26*16, 0.13*16) = (5,4,2))
-                    int test_i = n_modes_[0]/2 + 5 + ng;
-                    int test_j = n_modes_[1]/2 + 4 + ng;
-                    int test_k = n_modes_[2]/2 + 2 + ng;
-                    std::cout << "[NativeNUFFT] output[" << test_i << "," << test_j << "," << test_k << "] = "
-                             << f_host(test_i, test_j, test_k) << std::endl;
-                }
 
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
@@ -420,15 +322,124 @@ namespace ippl {
 
                 // Step 1: Pre-correction and zero-padding
                 auto t0 = std::chrono::high_resolution_clock::now();
-                applyPreCorrectionType2<Dim, ExecSpace, T>(
-                    f.getView(), factors_, grid_field_->getView(), n_modes_, n_grid_);
+
+                // Copy no-ghost region of input field to temporary view with proper layout
+                using view_type = typename detail::ViewType<complex_type, Dim>::view_type;
+                auto f_view_full = f.getView();
+                int f_nghost = f.getNghost();
+
+                // Create temporary view with correct layout for n_modes
+                view_type f_temp;
+                if constexpr (Dim == 3) {
+                    f_temp = view_type("f_temp_noghost", n_modes_[0], n_modes_[1], n_modes_[2]);
+                } else if constexpr (Dim == 2) {
+                    f_temp = view_type("f_temp_noghost", n_modes_[0], n_modes_[1]);
+                } else {
+                    f_temp = view_type("f_temp_noghost", n_modes_[0]);
+                }
+
+                // Copy no-ghost region with FFT-shift (corner -> centered format)
+                // This matches what kokkos_nufft wrapper does in FFT.hpp
+                if constexpr (Dim == 3) {
+                    const int nx = n_modes_[0];
+                    const int ny = n_modes_[1];
+                    const int nz = n_modes_[2];
+                    Kokkos::parallel_for("copy_fftshift_3d",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {0, 0, 0}, {nx, ny, nz}),
+                        KOKKOS_LAMBDA(int i, int j, int k) {
+                            // FFT-shift: map from corner to centered convention
+                            const int ii_shift = (i + nx/2) % nx;
+                            const int jj_shift = (j + ny/2) % ny;
+                            const int kk_shift = (k + nz/2) % nz;
+                            f_temp(ii_shift, jj_shift, kk_shift) = f_view_full(i + f_nghost, j + f_nghost, k + f_nghost);
+                        });
+                } else if constexpr (Dim == 2) {
+                    const int nx = n_modes_[0];
+                    const int ny = n_modes_[1];
+                    Kokkos::parallel_for("copy_fftshift_2d",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
+                            {0, 0}, {nx, ny}),
+                        KOKKOS_LAMBDA(int i, int j) {
+                            const int ii_shift = (i + nx/2) % nx;
+                            const int jj_shift = (j + ny/2) % ny;
+                            f_temp(ii_shift, jj_shift) = f_view_full(i + f_nghost, j + f_nghost);
+                        });
+                } else {
+                    const int nx = n_modes_[0];
+                    Kokkos::parallel_for("copy_fftshift_1d",
+                        Kokkos::RangePolicy<ExecSpace>(0, nx),
+                        KOKKOS_LAMBDA(int i) {
+                            const int ii_shift = (i + nx/2) % nx;
+                            f_temp(ii_shift) = f_view_full(i + f_nghost);
+                        });
+                }
+                Kokkos::fence();
+
+                // Use kokkos_nufft's apply_correction (same as Type 1)
+                // Create no-ghost grid views
+                auto grid_view_full = grid_field_->getView();
+                int grid_nghost = grid_field_->getNghost();
+
+                // Create temporary views with correct layout
+                using kokkos_size_type = typename memory_space::size_type;
+                Kokkos::Array<kokkos_size_type, Dim> nmodes{};
+                Kokkos::Array<kokkos_size_type, Dim> ngrid{};
+
+                for (unsigned d = 0; d < Dim; ++d) {
+                    nmodes[d] = static_cast<kokkos_size_type>(n_modes_[d]);
+                    ngrid[d]  = static_cast<kokkos_size_type>(n_grid_[d]);
+                }
+
+                auto grid_view_temp = nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
+
+                // Convert factors to Kokkos::Array
+                Kokkos::Array<complex_view_1d, Dim> factors_kokkos;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    factors_kokkos[d] = factors_[d];
+                }
+
+                nufft::apply_correction<ExecSpace, T, Dim>(
+                    f_temp,             // input modes (LayoutRight, no ghosts)
+                    factors_kokkos,     // deconvolution factors
+                    grid_view_temp,     // output upsampled grid (LayoutRight, no ghosts)
+                    nmodes,             // number of modes
+                    nmodes,             // input extents (same as nmodes for Type 2)
+                    ngrid,              // output upsampled grid extents
+                    timing_.correct     // timing output
+                );
+
+                // Copy grid_view_temp back to grid_field with ghosts
+                if constexpr (Dim == 3) {
+                    Kokkos::parallel_for("copy_grid_withghosts_3d",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {0, 0, 0}, {(int)n_grid_[0], (int)n_grid_[1], (int)n_grid_[2]}),
+                        KOKKOS_LAMBDA(int i, int j, int k) {
+                            grid_view_full(i + grid_nghost, j + grid_nghost, k + grid_nghost) = grid_view_temp(i, j, k);
+                        });
+                } else if constexpr (Dim == 2) {
+                    Kokkos::parallel_for("copy_grid_withghosts_2d",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
+                            {0, 0}, {(int)n_grid_[0], (int)n_grid_[1]}),
+                        KOKKOS_LAMBDA(int i, int j) {
+                            grid_view_full(i + grid_nghost, j + grid_nghost) = grid_view_temp(i, j);
+                        });
+                } else {
+                    Kokkos::parallel_for("copy_grid_withghosts_1d",
+                        Kokkos::RangePolicy<ExecSpace>(0, n_grid_[0]),
+                        KOKKOS_LAMBDA(int i) {
+                            grid_view_full(i + grid_nghost) = grid_view_temp(i);
+                        });
+                }
+                Kokkos::fence();
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // Step 2: FFT (forward direction for type 2)
+                // Step 2: Inverse FFT (same as Type 1, matches kokkos_nufft Type 2)
                 t0 = std::chrono::high_resolution_clock::now();
-                heffte_fft_->transform(FORWARD, *grid_field_);
+                performFFT(-1);
+
                 timing_.fft =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
@@ -440,18 +451,6 @@ namespace ippl {
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
-
-                // DEBUG: Print first few particle outputs
-                {
-                    auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
-                    auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), R.getView());
-                    size_t npart = R.getParticleCount();
-                    std::cout << "[NativeNUFFT] Type 2 - First 5 particles:" << std::endl;
-                    for (size_t i = 0; i < std::min(size_t(5), npart); ++i) {
-                        std::cout << "  x[" << i << "] = (" << R_host(i)[0] << ", " << R_host(i)[1] << ", " << R_host(i)[2]
-                                  << "), c_out[" << i << "] = (" << Q_host(i) << ", 0)" << std::endl;
-                    }
-                }
 
                 timing_.total =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)

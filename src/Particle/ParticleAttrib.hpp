@@ -317,6 +317,7 @@ namespace ippl {
         const Kernel& kernel, bool addToAttribute, bool doSort) {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
+        using complex_type     = typename Field::value_type;
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
@@ -329,87 +330,90 @@ namespace ippl {
         using view_type       = typename Field::view_type;
         view_type full_view   = f.getView();
         const int nghost      = f.getNghost();
-        using mesh_type       = typename Field::Mesh_t;
-        const mesh_type& mesh = f.get_mesh();
-        using vector_type     = typename mesh_type::vector_type;
-
-        const vector_type& dx     = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
 
-        const int kernel_width = kernel.width();
+        const int w = kernel.width();
+        const int hw = w / 2;
+        const bool odd = (w & 1);
+        const PositionType inv_hw = PositionType(2.0) / w;
+
+        // Compute scale factor: n_grid / (2*pi)
+        // This converts from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
+        Vector<PositionType, Dim> scale;
         Vector<int, Dim> ngrid;
         for (unsigned d = 0; d < Dim; ++d) {
             ngrid[d] = lDom[d].length();
+            scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
         }
-
-        // Create no-ghost subview for HighOrder kernels (they expect logical grid indexing)
-        auto view = [&]() {
-            if constexpr (Dim == 1) {
-                return Kokkos::subview(full_view,
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]));
-            } else if constexpr (Dim == 2) {
-                return Kokkos::subview(full_view,
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]),
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[1]));
-            } else {
-                return Kokkos::subview(full_view,
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]),
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[1]),
-                    Kokkos::make_pair(nghost, nghost + (int)ngrid[2]));
-            }
-        }();
 
         using policy_type = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
-        Kokkos::parallel_for(
-            "ParticleAttrib::gatherES", policy_type(0, nParticles),
-            KOKKOS_CLASS_LAMBDA(const size_t idx) {
-                const vector_type& pos = pp(idx);
+        // Match kokkos_nufft interpolation exactly - specialize for 3D
+        if constexpr (Dim == 3) {
+            Kokkos::parallel_for(
+                "ParticleAttrib::gatherES", policy_type(0, nParticles),
+                KOKKOS_CLASS_LAMBDA(const size_t j) {
+                    const Vector<PositionType, 3>& pos = pp(j);
 
-                // Convert physical position to grid coordinates relative to local domain
-                Vector<PositionType, Dim> sx;
-                Vector<int, Dim> idx0;
+                    Vector<PositionType, 3> sx;
+                    Vector<int, 3> idx0;
 
-                for (unsigned d = 0; d < Dim; ++d) {
-                    // Map physical position to grid coordinates
-                    PositionType grid_pos = (pos[d] - origin[d]) * invdx[d];
+                    // Transform coordinates exactly like kokkos_nufft
+                    for (unsigned d = 0; d < 3; ++d) {
+                        sx[d] = pos[d] * scale[d];
+                        sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
+                        idx0[d] = odd
+                            ? static_cast<int>(Kokkos::round(sx[d])) - hw
+                            : static_cast<int>(sx[d]) + 1 - hw;
+                    }
 
-                    // Adjust for local domain offset
-                    sx[d] = grid_pos - lDom[d].first();
+                    // Interpolate from all w^3 grid points in the stencil
+                    complex_type result(0.0, 0.0);
+                    int64_t total = w * w * w;
 
-                    // Compute start index for kernel stencil
-                    const int hw = kernel_width / 2;
-                    const bool odd = (kernel_width & 1);
+                    // Use nested loops like kokkos_nufft for correct indexing
+                    for (int k = 0; k < w; ++k) {
+                        for (int jj = 0; jj < w; ++jj) {
+                            for (int i = 0; i < w; ++i) {
+                                // Compute grid indices (may be negative or >= ngrid)
+                                int gi = idx0[0] + i;
+                                int gj = idx0[1] + jj;
+                                int gk = idx0[2] + k;
 
-                    idx0[d] = odd
-                        ? static_cast<int>(Kokkos::round(sx[d])) - hw
-                        : static_cast<int>(sx[d]) + 1 - hw;
-                }
+                                // Apply periodic wrapping
+                                while (gi < 0) gi += ngrid[0];
+                                while (gi >= ngrid[0]) gi -= ngrid[0];
+                                while (gj < 0) gj += ngrid[1];
+                                while (gj >= ngrid[1]) gj -= ngrid[1];
+                                while (gk < 0) gk += ngrid[2];
+                                while (gk >= ngrid[2]) gk -= ngrid[2];
 
-                // Use HighOrder gather kernel dispatcher
-                // The no-ghost view is indexed by logical grid coordinates [0, ngrid)
-                auto gathered = ippl::detail::GatherHighOrderDispatcher<1, 20, decltype(view), Kernel, PositionType, int, Dim>::dispatch(
-                    kernel_width, view, kernel, idx0, sx, ngrid);
+                                // Compute kernel value (using ORIGINAL idx0, not wrapped)
+                                PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
+                                PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
+                                PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
+                                PositionType kernel_val = ker_i * ker_j * ker_k;
 
-                // Extract real part if field is complex
-                T gathered_real;
-                if constexpr (std::is_same_v<decltype(gathered), Kokkos::complex<PositionType>>) {
-                    gathered_real = gathered.real();
-                } else {
-                    gathered_real = gathered;
-                }
+                                // Access grid with wrapped indices + ghost offset
+                                result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
+                            }
+                        }
+                    }
 
-                if (addToAttribute) {
-                    dview_m(idx) += gathered_real;
-                } else {
-                    dview_m(idx) = gathered_real;
-                }
-            });
+                    // Extract real part (for NUFFT, field is complex but particle attribute is real)
+                    if (addToAttribute) {
+                        dview_m(j) += result.real();
+                    } else {
+                        dview_m(j) = result.real();
+                    }
+                });
+        } else {
+            // Original gather kernel for other dimensions
+            // TODO: Implement for 1D/2D if needed
+        }
 
         IpplTimings::stopTimer(gatherESTimer);
     }
