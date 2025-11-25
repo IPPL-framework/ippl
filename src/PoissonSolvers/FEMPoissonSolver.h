@@ -61,12 +61,14 @@ namespace ippl {
         {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+            pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
         }
 
         void setRhs(rhs_type& rhs) override {
             Base::setRhs(rhs);
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
+            pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
         }
 
         /**

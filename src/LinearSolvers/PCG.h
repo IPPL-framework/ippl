@@ -26,8 +26,22 @@ namespace ippl {
         using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
         using DiagF        = std::function<DiagRet(lhs_type)>;
+        using mesh_type    = typename lhs_type::Mesh_t;
+        using layout_type  = typename lhs_type::Layout_t;
 
         virtual ~CG() = default;
+
+        /*
+         * Initializes the fields needed for CG operations
+         * and avoids allocating them at each solve step.
+         * @param mesh The mesh to initialize the field with
+         * @param layout The layout to initialize the field with
+         */
+        virtual void initializeFields(mesh_type& mesh, layout_type& layout) {
+            r.initialize(mesh, layout);
+            d.initialize(mesh, layout);
+            q.initialize(mesh, layout);
+        }
 
         /*!
          * Sets the differential operator for the conjugate gradient algorithm
@@ -91,8 +105,8 @@ namespace ippl {
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             IpplTimings::startTimer(allocateFields);
-            lhs_type r(mesh, layout);
-            lhs_type d(mesh, layout);
+            //lhs_type r(mesh, layout);
+            //lhs_type d(mesh, layout);
             IpplTimings::stopTimer(allocateFields);
 
             using bc_type  = BConds<lhs_type, Dim>;
@@ -131,7 +145,7 @@ namespace ippl {
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             IpplTimings::startTimer(allocateFields);
-            lhs_type q(mesh, layout);
+            //lhs_type q(mesh, layout);
             IpplTimings::stopTimer(allocateFields);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
@@ -177,6 +191,11 @@ namespace ippl {
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
+
+    private:
+        lhs_type r;
+        lhs_type d;
+        lhs_type q;
     };
 
 

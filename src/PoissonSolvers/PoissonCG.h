@@ -46,6 +46,12 @@ namespace ippl {
             , algo_m(nullptr) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
+            setRhs(rhs);
+        }
+
+        void setRhs(rhs_type& rhs) override {
+            Base::setRhs(rhs);
+            algo_m->initializeFields(rhs.get_mesh(), rhs.getLayout());
         }
 
         void setSolver(lhs_type lhs) {
