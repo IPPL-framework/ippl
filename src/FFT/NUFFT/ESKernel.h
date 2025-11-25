@@ -52,7 +52,7 @@ namespace NUFFT {
         /**
          * @brief Evaluate the ES kernel at position x in [-1, 1].
          * @param x Normalized position
-         * @return Kernel value
+         * @return Normalized kernel value
          */
         KOKKOS_INLINE_FUNCTION
         T operator()(T x) const {

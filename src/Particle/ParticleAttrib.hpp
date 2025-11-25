@@ -20,6 +20,7 @@
 #include "Utility/IpplTimings.h"
 
 #include "FFT/FFT.h"
+#include "Interpolation/HighOrder.h"
 
 namespace ippl {
 
@@ -216,6 +217,201 @@ namespace ippl {
                 }
             });
         IpplTimings::stopTimer(gatherTimer);
+    }
+
+    template <typename T, class... Properties>
+    template <typename Field, typename P2, typename Kernel>
+    void ParticleAttrib<T, Properties...>::scatterES(
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+        const Kernel& kernel, bool doSort) const {
+        constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
+        using complex_type     = typename Field::value_type;
+
+        static IpplTimings::TimerRef scatterESTimer = IpplTimings::getTimer("scatterES");
+        IpplTimings::startTimer(scatterESTimer);
+
+        using view_type       = typename Field::view_type;
+        view_type full_view   = f.getView();
+        const int nghost      = f.getNghost();
+
+        const FieldLayout<Dim>& layout = f.getLayout();
+        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+
+        const int w = kernel.width();
+        const int hw = w / 2;
+        const bool odd = (w & 1);
+        const PositionType inv_hw = PositionType(2.0) / w;
+
+        // Compute scale factor: n_grid / (2*pi)
+        // This converts from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
+        Vector<PositionType, Dim> scale;
+        Vector<int, Dim> ngrid;
+        for (unsigned d = 0; d < Dim; ++d) {
+            ngrid[d] = lDom[d].length();
+            scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
+        }
+
+        using policy_type = Kokkos::RangePolicy<execution_space>;
+        const size_t nParticles = *(this->localNum_mp);
+
+        // Match kokkos_nufft atomic spread exactly
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatterES", policy_type(0, nParticles),
+            KOKKOS_CLASS_LAMBDA(const size_t j) {
+                const T& val = dview_m(j);
+                const Vector<PositionType, Dim>& pos = pp(j);
+
+                Vector<PositionType, Dim> sx;
+                Vector<int, Dim> idx0;
+
+                // Transform coordinates exactly like kokkos_nufft
+                for (unsigned d = 0; d < Dim; ++d) {
+                    // Convert to grid coordinates [0, n_grid) in the GLOBAL grid
+                    sx[d] = pos[d] * scale[d];
+                    // Wrap to [0, n_grid) - handles periodicity
+                    sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
+
+                    // Compute starting index for kernel stencil
+                    idx0[d] = odd
+                        ? static_cast<int>(Kokkos::round(sx[d])) - hw
+                        : static_cast<int>(sx[d]) + 1 - hw;
+                }
+
+                // Spread to all w^Dim grid points in the stencil
+                int64_t total = 1;
+                for (unsigned d = 0; d < Dim; ++d) total *= w;
+
+                for (int64_t flat = 0; flat < total; ++flat) {
+                    Vector<int, Dim> idx;
+                    PositionType kernel_val = val;
+                    int64_t tmp = flat;
+
+                    // Decode flat index to Dim-dimensional index
+                    for (int d = Dim - 1; d >= 0; --d) {
+                        int k = tmp % w;
+                        tmp /= w;
+                        idx[d] = idx0[d] + k;
+
+                        // Periodic boundary conditions
+                        if (idx[d] < 0) idx[d] += ngrid[d];
+                        else if (idx[d] >= ngrid[d]) idx[d] -= ngrid[d];
+
+                        // Multiply by kernel value
+                        kernel_val *= kernel((sx[d] - static_cast<PositionType>(idx0[d] + k)) * inv_hw);
+                    }
+
+                    // Atomic add to grid (with ghost offset)
+                    // Add to real part only (imaginary part stays 0 for Type 1)
+                    Kokkos::atomic_add(&full_view(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost).real(), kernel_val);
+                }
+            });
+
+        IpplTimings::stopTimer(scatterESTimer);
+    }
+
+    template <typename T, class... Properties>
+    template <typename Field, typename P2, typename Kernel>
+    void ParticleAttrib<T, Properties...>::gatherES(
+        Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+        const Kernel& kernel, bool addToAttribute, bool doSort) {
+        constexpr unsigned Dim = Field::dim;
+        using PositionType     = typename Field::Mesh_t::value_type;
+
+        static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
+        IpplTimings::startTimer(fillHaloTimer);
+        f.fillHalo();
+        IpplTimings::stopTimer(fillHaloTimer);
+
+        static IpplTimings::TimerRef gatherESTimer = IpplTimings::getTimer("gatherES");
+        IpplTimings::startTimer(gatherESTimer);
+
+        using view_type       = typename Field::view_type;
+        view_type full_view   = f.getView();
+        const int nghost      = f.getNghost();
+        using mesh_type       = typename Field::Mesh_t;
+        const mesh_type& mesh = f.get_mesh();
+        using vector_type     = typename mesh_type::vector_type;
+
+        const vector_type& dx     = mesh.getMeshSpacing();
+        const vector_type& origin = mesh.getOrigin();
+        const vector_type invdx   = 1.0 / dx;
+
+        const FieldLayout<Dim>& layout = f.getLayout();
+        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+
+        const int kernel_width = kernel.width();
+        Vector<int, Dim> ngrid;
+        for (unsigned d = 0; d < Dim; ++d) {
+            ngrid[d] = lDom[d].length();
+        }
+
+        // Create no-ghost subview for HighOrder kernels (they expect logical grid indexing)
+        auto view = [&]() {
+            if constexpr (Dim == 1) {
+                return Kokkos::subview(full_view,
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]));
+            } else if constexpr (Dim == 2) {
+                return Kokkos::subview(full_view,
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]),
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[1]));
+            } else {
+                return Kokkos::subview(full_view,
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[0]),
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[1]),
+                    Kokkos::make_pair(nghost, nghost + (int)ngrid[2]));
+            }
+        }();
+
+        using policy_type = Kokkos::RangePolicy<execution_space>;
+        const size_t nParticles = *(this->localNum_mp);
+
+        Kokkos::parallel_for(
+            "ParticleAttrib::gatherES", policy_type(0, nParticles),
+            KOKKOS_CLASS_LAMBDA(const size_t idx) {
+                const vector_type& pos = pp(idx);
+
+                // Convert physical position to grid coordinates relative to local domain
+                Vector<PositionType, Dim> sx;
+                Vector<int, Dim> idx0;
+
+                for (unsigned d = 0; d < Dim; ++d) {
+                    // Map physical position to grid coordinates
+                    PositionType grid_pos = (pos[d] - origin[d]) * invdx[d];
+
+                    // Adjust for local domain offset
+                    sx[d] = grid_pos - lDom[d].first();
+
+                    // Compute start index for kernel stencil
+                    const int hw = kernel_width / 2;
+                    const bool odd = (kernel_width & 1);
+
+                    idx0[d] = odd
+                        ? static_cast<int>(Kokkos::round(sx[d])) - hw
+                        : static_cast<int>(sx[d]) + 1 - hw;
+                }
+
+                // Use HighOrder gather kernel dispatcher
+                // The no-ghost view is indexed by logical grid coordinates [0, ngrid)
+                auto gathered = ippl::detail::GatherHighOrderDispatcher<1, 20, decltype(view), Kernel, PositionType, int, Dim>::dispatch(
+                    kernel_width, view, kernel, idx0, sx, ngrid);
+
+                // Extract real part if field is complex
+                T gathered_real;
+                if constexpr (std::is_same_v<decltype(gathered), Kokkos::complex<PositionType>>) {
+                    gathered_real = gathered.real();
+                } else {
+                    gathered_real = gathered;
+                }
+
+                if (addToAttribute) {
+                    dview_m(idx) += gathered_real;
+                } else {
+                    dview_m(idx) = gathered_real;
+                }
+            });
+
+        IpplTimings::stopTimer(gatherESTimer);
     }
 
     template <typename T, class... Properties>

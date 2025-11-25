@@ -176,6 +176,19 @@ namespace ippl {
         void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
                     const bool addToAttribute = false);
 
+        /**
+         * @brief Scatter particle data to field using ES kernel (for native NUFFT)
+         */
+        template <typename Field, typename P2, typename Kernel>
+        void scatterES(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                      const Kernel& kernel, bool doSort = true) const;
+
+        /**
+         * @brief Gather field data at particle positions using ES kernel (for native NUFFT)
+         */
+        template <typename Field, typename P2, typename Kernel>
+        void gatherES(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                     const Kernel& kernel, bool addToAttribute = false, bool doSort = true);
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void

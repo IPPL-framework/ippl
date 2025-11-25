@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
 #endif
 
         fftParams.add("use_finufft_defaults", false);
-        fftParams.add("use_kokkos_nufft", true);
+        fftParams.add("use_kokkos_nufft", false);
 
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 

@@ -483,7 +483,7 @@ namespace ippl {
                 else if constexpr (Dim == 2)
                     return {64, 64};  // 64 KB
                 else if constexpr (Dim == 3)
-                    return {8, 8, 8};  // 64 KB
+                    return {4, 4, 4};  // 64 KB
             }
 
             KOKKOS_INLINE_FUNCTION static constexpr int get_team_size() { return 64; }
@@ -521,6 +521,9 @@ namespace ippl {
         std::unique_ptr<kokkos_nufft_t> kokkos_nufft_plan;
         std::array<int64_t, 3> n_modes;
 #endif
+
+        // Native NUFFT implementation (opaque pointer, actual type defined in FFT.hpp)
+        void* native_nufft_;
     };
 }  // namespace ippl
 

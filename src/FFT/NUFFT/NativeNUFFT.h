@@ -230,6 +230,44 @@ namespace ippl {
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
 
                 std::cout << "[NativeNUFFT] Starting type1 transform" << std::endl;
+                std::cout << "[NativeNUFFT] n_grid = (" << n_grid_[0] << ", " << n_grid_[1] << ", " << n_grid_[2] << ")" << std::endl;
+                std::cout << "[NativeNUFFT] grid origin = (" << grid_mesh_->getOrigin()[0] << ", " << grid_mesh_->getOrigin()[1] << ", " << grid_mesh_->getOrigin()[2] << ")" << std::endl;
+                std::cout << "[NativeNUFFT] grid spacing = (" << grid_mesh_->getMeshSpacing()[0] << ", " << grid_mesh_->getMeshSpacing()[1] << ", " << grid_mesh_->getMeshSpacing()[2] << ")" << std::endl;
+                std::cout << "[NativeNUFFT] kernel width = " << kernel_.width() << ", beta = " << kernel_.beta() << std::endl;
+                std::cout << "[NativeNUFFT] kernel(0) = " << kernel_(T(0)) << std::endl;
+                std::cout << "[NativeNUFFT] kernel(0.5) = " << kernel_(T(0.5)) << std::endl;
+
+                // DEBUG: Compute kernel normalization
+                {
+                    int w = kernel_.width();
+                    T inv_hw = T(2.0) / w;
+                    T sum_1d = 0;
+                    for (int i = 0; i < w; ++i) {
+                        T x = (T(0.5) - T(i)) * inv_hw;  // Particle at center of cell
+                        sum_1d += kernel_(x);
+                    }
+                    T sum_3d = sum_1d * sum_1d * sum_1d;
+                    std::cout << "[NativeNUFFT] Kernel 1D sum = " << sum_1d << ", 3D sum = " << sum_3d << std::endl;
+                }
+
+                // DEBUG: Print first 3 particles and sum of charges
+                {
+                    auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), R.getView());
+                    auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
+                    size_t npart = R.getParticleCount();
+                    std::cout << "[NativeNUFFT] Type 1 - First 3 particles:" << std::endl;
+                    for (size_t i = 0; i < std::min(size_t(3), npart); ++i) {
+                        std::cout << "  x[" << i << "] = (" << R_host(i)[0] << ", " << R_host(i)[1] << ", " << R_host(i)[2]
+                                  << "), c[" << i << "] = (" << Q_host(i) << ", 0)" << std::endl;
+                    }
+
+                    // Compute sum of charges
+                    T sum_q = 0;
+                    for (size_t i = 0; i < npart; ++i) {
+                        sum_q += Q_host(i);
+                    }
+                    std::cout << "[NativeNUFFT] Sum of input charges = " << sum_q << std::endl;
+                }
 
                 // Use scatterES for spreading
                 Q.scatterES(*grid_field_, R, kernel_, cfg_.sort);
@@ -237,7 +275,7 @@ namespace ippl {
 
                 std::cout << "[NativeNUFFT] Spreading complete" << std::endl;
 
-                // DEBUG: Check a single value after spreading
+                // DEBUG: Check a single value after spreading and compute sum
                 {
                     auto grid_host = grid_field_->getHostMirror();
                     Kokkos::deep_copy(grid_host, grid_field_->getView());
@@ -245,6 +283,17 @@ namespace ippl {
                     int mid = n_grid_[0]/2 + ng;
                     std::cout << "[NativeNUFFT] grid[mid,mid,mid] after spread = "
                              << grid_host(mid, mid, mid) << std::endl;
+
+                    // Compute sum of grid
+                    complex_type sum = 0;
+                    for (size_t i = ng; i < n_grid_[0] + ng; ++i) {
+                        for (size_t j = ng; j < n_grid_[1] + ng; ++j) {
+                            for (size_t k = ng; k < n_grid_[2] + ng; ++k) {
+                                sum += grid_host(i, j, k);
+                            }
+                        }
+                    }
+                    std::cout << "[NativeNUFFT] grid sum after spread = " << sum << std::endl;
                 }
 
                 timing_.spread =
@@ -287,12 +336,9 @@ namespace ippl {
                 auto grid_view_temp = nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
                 auto output_view_temp = nufft::make_view<complex_type, Dim, memory_space>("output_temp", nmodes);
 
-                // Copy grid data to temporary view and normalize by 1/N^D
-                // (KokkosFFT uses unnormalized IFFT)
-                T norm_factor = T(1);
-                for (unsigned d = 0; d < Dim; ++d) {
-                    norm_factor *= static_cast<T>(n_grid_[d]);
-                }
+                // Copy grid data to temporary view WITHOUT normalization
+                // heFFTe uses its own normalization convention
+                T norm_factor = T(1);  // No normalization
                 copyGridToTempNormalized(grid_view_temp, ngrid, norm_factor);
 
                 // Convert factors std::array to Kokkos::Array
@@ -320,6 +366,8 @@ namespace ippl {
                     Kokkos::deep_copy(f_host, f.getView());
                     int ng = f.getNghost();
                     int mid = n_modes_[0]/2 + ng;
+                    std::cout << "[NativeNUFFT] output[0,0,0] after copy = "
+                             << f_host(ng, ng, ng) << std::endl;
                     std::cout << "[NativeNUFFT] output[mid,mid,mid] after copy = "
                              << f_host(mid, mid, mid) << std::endl;
                     // Also check test index (k = (0.37*16, 0.26*16, 0.13*16) = (5,4,2))
@@ -487,25 +535,41 @@ namespace ippl {
                 using policy_type = Kokkos::MDRangePolicy<execution_space, Kokkos::Rank<Dim>>;
 
                 if constexpr (Dim == 3) {
-                    policy_type policy({0, 0, 0}, {static_cast<int>(nmodes[0]),
-                                                    static_cast<int>(nmodes[1]),
-                                                    static_cast<int>(nmodes[2])});
+                    const int nx = static_cast<int>(nmodes[0]);
+                    const int ny = static_cast<int>(nmodes[1]);
+                    const int nz = static_cast<int>(nmodes[2]);
+
+                    policy_type policy({0, 0, 0}, {nx, ny, nz});
                     Kokkos::parallel_for("copyOutputToField", policy,
                         KOKKOS_LAMBDA(int i, int j, int k) {
-                            dst_view(i + nghost, j + nghost, k + nghost) = src(i, j, k);
+                            // apply_correction outputs in corner-DC format
+                            // Apply FFT-shift to convert to IPPL's centered format
+                            // and conjugate to match kokkos_nufft convention
+                            const int ii_shift = (i + nx/2) % nx;
+                            const int jj_shift = (j + ny/2) % ny;
+                            const int kk_shift = (k + nz/2) % nz;
+                            dst_view(i + nghost, j + nghost, k + nghost) =
+                                Kokkos::conj(src(ii_shift, jj_shift, kk_shift));
                         });
                 } else if constexpr (Dim == 2) {
-                    policy_type policy({0, 0}, {static_cast<int>(nmodes[0]),
-                                                 static_cast<int>(nmodes[1])});
+                    const int nx = static_cast<int>(nmodes[0]);
+                    const int ny = static_cast<int>(nmodes[1]);
+
+                    policy_type policy({0, 0}, {nx, ny});
                     Kokkos::parallel_for("copyOutputToField", policy,
                         KOKKOS_LAMBDA(int i, int j) {
-                            dst_view(i + nghost, j + nghost) = src(i, j);
+                            const int ii_shift = (i + nx/2) % nx;
+                            const int jj_shift = (j + ny/2) % ny;
+                            dst_view(i + nghost, j + nghost) =
+                                Kokkos::conj(src(ii_shift, jj_shift));
                         });
                 } else {
+                    const int nx = static_cast<int>(nmodes[0]);
                     Kokkos::parallel_for("copyOutputToField",
-                        Kokkos::RangePolicy<execution_space>(0, nmodes[0]),
+                        Kokkos::RangePolicy<execution_space>(0, nx),
                         KOKKOS_LAMBDA(int i) {
-                            dst_view(i + nghost) = src(i);
+                            const int ii_shift = (i + nx/2) % nx;
+                            dst_view(i + nghost) = Kokkos::conj(src(ii_shift));
                         });
                 }
                 Kokkos::fence();

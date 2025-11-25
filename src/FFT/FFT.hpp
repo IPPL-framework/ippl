@@ -20,6 +20,7 @@
    Implementations for FFT constructor/destructor and transforms
 */
 
+#include "FFT/NUFFT/NativeNUFFT.h"
 #include "Utility/IpplTimings.h"
 
 #include "Field/BareField.h"
@@ -469,7 +470,7 @@ namespace ippl {
             nmodes[d] = lDom[d].length();
             ;
         }
-        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
+        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", true);
 
         type_m = type;
         if (tempField_m.size() < lDom.size()) {
@@ -558,6 +559,23 @@ namespace ippl {
             // dim in finufft is int
             int dim = static_cast<int>(Dim);
             ier_m   = nufft_m.makeplan(type_m, dim, this->n_modes.data(), iflag, 1, tol_m, &plan_m, &opts);
+#else
+            // Use native NUFFT implementation when FINUFFT is not available
+            using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
+
+            Vector<size_t, Dim> n_modes_vec;
+            for (unsigned d = 0; d < Dim; ++d) {
+                n_modes_vec[d] = nmodes[d];
+            }
+
+            typename NativeNUFFT_t::Config cfg;
+            cfg.tol = tol_m;
+            cfg.sigma = params.get<T>("sigma", T(2.0));
+            cfg.sort = params.get<bool>("sort", true);
+
+            auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
+            nufft_ptr->initialize(MPI_COMM_WORLD);
+            native_nufft_ = static_cast<void*>(nufft_ptr);
 #endif
         }
     }
@@ -616,41 +634,117 @@ namespace ippl {
             }
         }();
 
+        // Debug: Print first few particle positions and charges
+        auto x_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), x_nufft);
+        auto c_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), c_nufft);
+        std::cout << "[KOKKOS_NUFFT] Type " << type_m << " - First 3 particles:" << std::endl;
+        for (size_t i = 0; i < std::min(size_t(3), localNp); ++i) {
+            std::cout << "  x[" << i << "] = (" << x_host(i, 0) << ", " << x_host(i, 1) << ", " << x_host(i, 2)
+                      << "), c[" << i << "] = (" << c_host(i).real() << ", " << c_host(i).imag() << ")" << std::endl;
+        }
+
         // Execute transform
         if (type_m == 1) {
             kokkos_nufft_plan->type1(x_nufft, c_nufft, f_nufft);
         } else if (type_m == 2) {
+            // For Type 2: FFT-shift input field (no conjugation, we'll conjugate output instead)
+            const auto& lDom = layout.getLocalNDIndex();
+            const size_t nx = lDom[0].length();
+            const size_t ny = lDom[1].length();
+            const size_t nz = lDom[2].length();
+
+            using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+            Kokkos::parallel_for(
+                "prepare_type2_input_fftshift",
+                mdrange_type({nghost, nghost, nghost},
+                            {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                    const size_t ii = i - nghost;
+                    const size_t jj = j - nghost;
+                    const size_t kk = k - nghost;
+
+                    // FFT-shift: map from corner to centered convention
+                    const size_t ii_shift = (ii + nx/2) % nx;
+                    const size_t jj_shift = (jj + ny/2) % ny;
+                    const size_t kk_shift = (kk + nz/2) % nz;
+
+                    // Dummy captures for nvcc
+                    fview;
+                    f_nufft;
+
+                    // Just FFT-shift, no conjugation
+                    if constexpr (Dim == 3) {
+                        f_nufft(ii_shift, jj_shift, kk_shift) = fview(i, j, k);
+                    } else if constexpr (Dim == 2) {
+                        f_nufft(ii_shift, jj_shift) = fview(i, j, k);
+                    } else {
+                        f_nufft(ii_shift) = fview(i, j, k);
+                    }
+                });
+
             kokkos_nufft_plan->type2(f_nufft, x_nufft, c_nufft);
         }
         Kokkos::fence();
 
-        // Copy results back
+        // Debug: Print first few output values
         if (type_m == 1) {
+            auto f_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), f_nufft);
+            std::cout << "[KOKKOS_NUFFT] Type 1 output - Grid shape: (" << f_nufft.extent(0) << ", " << f_nufft.extent(1) << ", " << f_nufft.extent(2) << ")" << std::endl;
+            std::cout << "[KOKKOS_NUFFT] Type 1 output - First few modes:" << std::endl;
+            std::cout << "  f[0,0,0] = (" << f_host(0, 0, 0).real() << ", " << f_host(0, 0, 0).imag() << ")" << std::endl;
+            std::cout << "  f[1,0,0] = (" << f_host(1, 0, 0).real() << ", " << f_host(1, 0, 0).imag() << ")" << std::endl;
+            std::cout << "  f[0,1,0] = (" << f_host(0, 1, 0).real() << ", " << f_host(0, 1, 0).imag() << ")" << std::endl;
+            std::cout << "  f[8,8,8] (center) = (" << f_host(8, 8, 8).real() << ", " << f_host(8, 8, 8).imag() << ")" << std::endl;
+        } else if (type_m == 2) {
+            auto c_out = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), c_nufft);
+            std::cout << "[KOKKOS_NUFFT] Type 2 output - First 5 particles:" << std::endl;
+            for (size_t i = 0; i < std::min(size_t(5), localNp); ++i) {
+                std::cout << "  c_out[" << i << "] = (" << c_out(i).real() << ", " << c_out(i).imag() << ")" << std::endl;
+            }
+        }
+
+        // Copy results back with FFT-shift and conjugate to match FINUFFT convention
+        if (type_m == 1) {
+            const auto& lDom = layout.getLocalNDIndex();
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
-                "copy_to_field",
+                "copy_to_field_with_fftshift_conj",
                 mdrange_type(
                     {nghost, nghost, nghost},
                     {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    // (paul) These useless statements are there because nvcc complains on
-                    // first-captures
-                    //        in if-constexpr contexts.
+                    // kokkos_nufft returns FFT-shifted and conjugated output
+                    const size_t nx = lDom[0].length();
+                    const size_t ny = lDom[1].length();
+                    const size_t nz = lDom[2].length();
+
+                    const size_t ii = i - nghost;
+                    const size_t jj = j - nghost;
+                    const size_t kk = k - nghost;
+
+                    // FFT-shift: map from centered to corner convention
+                    const size_t ii_shift = (ii + nx/2) % nx;
+                    const size_t jj_shift = (jj + ny/2) % ny;
+                    const size_t kk_shift = (kk + nz/2) % nz;
+
                     fview;
                     f_nufft;
-                    nghost;
                     if constexpr (Dim == 3) {
-                        fview(i, j, k) = f_nufft(i - nghost, j - nghost, k - nghost);
+                        fview(i, j, k) = Kokkos::conj(f_nufft(ii_shift, jj_shift, kk_shift));
                     } else if constexpr (Dim == 2) {
-                        fview(i, j, k) = f_nufft(i - nghost, j - nghost);
+                        fview(i, j, k) = Kokkos::conj(f_nufft(ii_shift, jj_shift));
                     } else {
-                        fview(i, j, k) = f_nufft(i - nghost);
+                        fview(i, j, k) = Kokkos::conj(f_nufft(ii_shift));
                     }
                 });
         } else if (type_m == 2) {
+            // Type 2: Conjugate output to fix sign (kokkos uses -1, FINUFFT uses +1)
             Kokkos::parallel_for(
-                "copy_to_particles", localNp,
-                KOKKOS_LAMBDA(const size_t i) { Qview(i) = c_nufft(i).real(); });
+                "copy_to_particles_conj", localNp,
+                KOKKOS_LAMBDA(const size_t i) {
+                    // Conjugate and take real part
+                    Qview(i) = Kokkos::conj(c_nufft(i)).real();
+                });
         }
     }
 #endif
@@ -732,8 +826,51 @@ namespace ippl {
             ier_m = nufft_m.setpts(plan_m, localNp, tempR[0].data(), tempR[1].data(),
                                    tempR[2].data(), 0, NULL, NULL, NULL);
 
+            // Debug: Print first few particle positions and charges
+            auto tempR_host_0 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[0]);
+            auto tempR_host_1 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[1]);
+            auto tempR_host_2 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[2]);
+            auto tempQ_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempQ);
+            std::cout << "[FINUFFT] Type " << type_m << " - First 3 particles:" << std::endl;
+            for (size_t i = 0; i < std::min(size_t(3), localNp); ++i) {
+#ifdef ENABLE_GPU_NUFFT
+                std::cout << "  x[" << i << "] = (" << tempR_host_0(i) << ", " << tempR_host_1(i) << ", " << tempR_host_2(i)
+                          << "), c[" << i << "] = (" << tempQ_host(i).x << ", " << tempQ_host(i).y << ")" << std::endl;
+#else
+                std::cout << "  x[" << i << "] = (" << tempR_host_0(i) << ", " << tempR_host_1(i) << ", " << tempR_host_2(i)
+                          << "), c[" << i << "] = (" << tempQ_host(i).real() << ", " << tempQ_host(i).imag() << ")" << std::endl;
+#endif
+            }
+
             ier_m = nufft_m.execute(plan_m, tempQ.data(), tempField.data());
             Kokkos::fence();
+
+            // Debug: Print first few output values after FINUFFT
+            if (type_m == 1) {
+                auto tempField_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempField);
+                std::cout << "[FINUFFT] Type 1 output - First few modes:" << std::endl;
+#ifdef ENABLE_GPU_NUFFT
+                std::cout << "  f[0,0,0] = (" << tempField_host(0, 0, 0).x << ", " << tempField_host(0, 0, 0).y << ")" << std::endl;
+                std::cout << "  f[1,0,0] = (" << tempField_host(1, 0, 0).x << ", " << tempField_host(1, 0, 0).y << ")" << std::endl;
+                std::cout << "  f[0,1,0] = (" << tempField_host(0, 1, 0).x << ", " << tempField_host(0, 1, 0).y << ")" << std::endl;
+                std::cout << "  f[8,8,8] (center) = (" << tempField_host(8, 8, 8).x << ", " << tempField_host(8, 8, 8).y << ")" << std::endl;
+#else
+                std::cout << "  f[0,0,0] = (" << tempField_host(0, 0, 0).real() << ", " << tempField_host(0, 0, 0).imag() << ")" << std::endl;
+                std::cout << "  f[1,0,0] = (" << tempField_host(1, 0, 0).real() << ", " << tempField_host(1, 0, 0).imag() << ")" << std::endl;
+                std::cout << "  f[0,1,0] = (" << tempField_host(0, 1, 0).real() << ", " << tempField_host(0, 1, 0).imag() << ")" << std::endl;
+                std::cout << "  f[8,8,8] (center) = (" << tempField_host(8, 8, 8).real() << ", " << tempField_host(8, 8, 8).imag() << ")" << std::endl;
+#endif
+            } else if (type_m == 2) {
+                auto tempQ_out = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempQ);
+                std::cout << "[FINUFFT] Type 2 output - First 5 particles:" << std::endl;
+                for (size_t i = 0; i < std::min(size_t(5), localNp); ++i) {
+#ifdef ENABLE_GPU_NUFFT
+                    std::cout << "  c_out[" << i << "] = (" << tempQ_out(i).x << ", " << tempQ_out(i).y << ")" << std::endl;
+#else
+                    std::cout << "  c_out[" << i << "] = (" << tempQ_out(i).real() << ", " << tempQ_out(i).imag() << ")" << std::endl;
+#endif
+                }
+            }
 
             if (type_m == 1) {
                 Kokkos::parallel_for(
@@ -763,6 +900,16 @@ namespace ippl {
                     });
             }
 
+#else
+            // Use native NUFFT implementation
+            using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
+            auto* nufft = static_cast<NativeNUFFT_t*>(native_nufft_);
+
+            if (type_m == 1) {
+                nufft->type1(R, Q, f);
+            } else if (type_m == 2) {
+                nufft->type2(f, R, Q);  // Note: argument order is different for type2
+            }
 #endif
         }
     }
@@ -772,6 +919,13 @@ namespace ippl {
 #ifdef ENABLE_FINFUFT
         if (!use_kokkos_nufft) {
             ier_m = nufft_m.destroy(plan_m);
+        }
+#else
+        // Clean up native NUFFT
+        if (native_nufft_) {
+            using NativeNUFFT_t = NUFFT::NativeNUFFT<RealField::dim, typename RealField::value_type, typename RealField::execution_space>;
+            delete static_cast<NativeNUFFT_t*>(native_nufft_);
+            native_nufft_ = nullptr;
         }
 #endif
     }
