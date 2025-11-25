@@ -22,14 +22,8 @@
 #include "FFT/FFT.h"
 #include "FFT/NUFFT/Correction.h"
 #include "FFT/NUFFT/ESKernel.h"
+#include "FFT/NUFFT/NUFFTUtilities.h"
 #include "Particle/ParticleAttrib.h"
-
-// TODO(paul) this is for testing, remove at some point
-#include <KokkosFFT.hpp>
-
-#include "correction.h"
-#include "es_kernel.h"
-#include "nufft_types.h"
 
 namespace ippl {
     namespace NUFFT {
@@ -182,12 +176,12 @@ namespace ippl {
                 auto t0 = std::chrono::high_resolution_clock::now();
 
                 // Build a kokkos-nufft kernel with same tolerance as your IPPL kernel/config
-                nufft::ES_Kernel<ExecSpace, T> nufft_kernel(cfg_.tol);
+                ESKernel<T> nufft_kernel(cfg_.tol);
 
                 for (unsigned d = 0; d < Dim; ++d) {
                     factors_[d] = complex_view_1d("deconv_factors", n_modes_[d]);
 
-                    nufft::compute_deconvolution_factors<ExecSpace, T>(
+                    ippl::nufft::compute_deconvolution_factors<ExecSpace, T>(
                         factors_[d],
                         static_cast<int64_t>(n_modes_[d]),
                         static_cast<int64_t>(n_grid_[d]),
@@ -253,8 +247,8 @@ namespace ippl {
                 }
 
                 // Create temporary input/output views with LayoutRight for apply_correction
-                auto grid_view_temp = nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
-                auto output_view_temp = nufft::make_view<complex_type, Dim, memory_space>("output_temp", nmodes);
+                auto grid_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
+                auto output_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("output_temp", nmodes);
 
                 // Copy grid data to temporary view WITHOUT normalization
                 // heFFTe uses its own normalization convention
@@ -267,7 +261,7 @@ namespace ippl {
                     factors_kokkos[d] = factors_[d];
                 }
 
-                nufft::apply_correction<ExecSpace, T, Dim>(
+                ippl::nufft::apply_correction<ExecSpace, T, Dim>(
                     grid_view_temp,     // upsampled grid (LayoutRight)
                     factors_kokkos,     // deconvolution factors
                     output_view_temp,   // output modes field view (LayoutRight)
@@ -391,7 +385,7 @@ namespace ippl {
                     ngrid[d]  = static_cast<kokkos_size_type>(n_grid_[d]);
                 }
 
-                auto grid_view_temp = nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
+                auto grid_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
 
                 // Convert factors to Kokkos::Array
                 Kokkos::Array<complex_view_1d, Dim> factors_kokkos;
@@ -399,7 +393,7 @@ namespace ippl {
                     factors_kokkos[d] = factors_[d];
                 }
 
-                nufft::apply_correction<ExecSpace, T, Dim>(
+                ippl::nufft::apply_correction<ExecSpace, T, Dim>(
                     f_temp,             // input modes (LayoutRight, no ghosts)
                     factors_kokkos,     // deconvolution factors
                     grid_view_temp,     // output upsampled grid (LayoutRight, no ghosts)
@@ -587,120 +581,9 @@ namespace ippl {
             }
 
             void performFFT(int sign) {
-                using exec_space = execution_space;
-
-                // Ghost-free logical grid (LayoutStride)
-                auto grid_ng = this->gridViewNoGhosts();
-
-                const auto t0 = std::chrono::high_resolution_clock::now();
-
-                if constexpr (Dim == 1) {
-                    const auto n0 = static_cast<int>(n_grid_[0]);
-
-                    // 1D scratch view with LayoutRight
-                    Kokkos::View<complex_type*, Kokkos::LayoutRight, memory_space> fft_view(
-                        "fft_view", n0);
-
-                    // Copy from subview to scratch (manual copy for layout compatibility)
-                    Kokkos::parallel_for(
-                        "copy_to_fft_view_1d",
-                        Kokkos::RangePolicy<exec_space>(0, n0),
-                        KOKKOS_LAMBDA(int i) { fft_view(i) = grid_ng(i); });
-
-                    Kokkos::fence();
-
-                    if (sign < 0) {
-                        KokkosFFT::ifft(exec_space{}, fft_view, fft_view,
-                                        KokkosFFT::Normalization::none);
-                    } else {
-                        KokkosFFT::fft(exec_space{}, fft_view, fft_view,
-                                       KokkosFFT::Normalization::none);
-                    }
-
-                    // Copy back into subview
-                    Kokkos::parallel_for(
-                        "copy_from_fft_view_1d",
-                        Kokkos::RangePolicy<exec_space>(0, n0),
-                        KOKKOS_LAMBDA(int i) { grid_ng(i) = fft_view(i); });
-
-                    Kokkos::fence();
-
-                } else if constexpr (Dim == 2) {
-                    const auto n0 = static_cast<int>(n_grid_[0]);
-                    const auto n1 = static_cast<int>(n_grid_[1]);
-
-                    Kokkos::View<complex_type**, Kokkos::LayoutRight, memory_space> fft_view(
-                        "fft_view", n0, n1);
-
-                    // Copy from subview to scratch
-                    Kokkos::parallel_for(
-                        "copy_to_fft_view_2d",
-                        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<2>>({0, 0}, {n0, n1}),
-                        KOKKOS_LAMBDA(int i, int j) { fft_view(i, j) = grid_ng(i, j); });
-
-                    Kokkos::fence();
-
-                    // Axes 0,1 (row-major on LayoutRight)
-                    std::array<int, 2> axes = {0, 1};
-
-                    if (sign < 0) {
-                        KokkosFFT::ifftn(exec_space{}, fft_view, fft_view, axes,
-                                         KokkosFFT::Normalization::none);
-                    } else {
-                        KokkosFFT::fftn(exec_space{}, fft_view, fft_view, axes,
-                                        KokkosFFT::Normalization::none);
-                    }
-
-                    // Copy back into subview
-                    Kokkos::parallel_for(
-                        "copy_from_fft_view_2d",
-                        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<2>>({0, 0}, {n0, n1}),
-                        KOKKOS_LAMBDA(int i, int j) { grid_ng(i, j) = fft_view(i, j); });
-
-                    Kokkos::fence();
-
-                } else if constexpr (Dim == 3) {
-                    const auto n0 = static_cast<int>(n_grid_[0]);
-                    const auto n1 = static_cast<int>(n_grid_[1]);
-                    const auto n2 = static_cast<int>(n_grid_[2]);
-
-                    Kokkos::View<complex_type***, Kokkos::LayoutRight, memory_space> fft_view(
-                        "fft_view", n0, n1, n2);
-
-                    // Copy from subview to scratch
-                    Kokkos::parallel_for(
-                        "copy_to_fft_view_3d",
-                        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>({0, 0, 0}, {n0, n1, n2}),
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            fft_view(i, j, k) = grid_ng(i, j, k);
-                        });
-
-                    Kokkos::fence();
-
-                    std::array<int, 3> axes = {0, 1, 2};
-
-                    if (sign < 0) {
-                        KokkosFFT::ifftn(exec_space{}, fft_view, fft_view, axes,
-                                         KokkosFFT::Normalization::none);
-                    } else {
-                        KokkosFFT::fftn(exec_space{}, fft_view, fft_view, axes,
-                                        KokkosFFT::Normalization::none);
-                    }
-
-                    // Copy back into subview
-                    Kokkos::parallel_for(
-                        "copy_from_fft_view_3d",
-                        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>({0, 0, 0}, {n0, n1, n2}),
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            grid_ng(i, j, k) = fft_view(i, j, k);
-                        });
-
-                    Kokkos::fence();
-                }
-
-                timing_.fft =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
+                // Use heFFTe through IPPL FFT interface
+                TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
+                heffte_fft_->transform(direction, *grid_field_);
             }
 
             // TODO(paul) this is for testing
