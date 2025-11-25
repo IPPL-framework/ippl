@@ -472,7 +472,7 @@ namespace ippl {
 #ifdef KOKKOS_NUFFT_AVAILABLE
         struct KokkosNUFFTSpreadConfig {
             KOKKOS_INLINE_FUNCTION constexpr static nufft::SpreadType get_spread_type() {
-                return nufft::SpreadType::Tiled;
+                return nufft::SpreadType::Atomic;
             }
 
             KOKKOS_INLINE_FUNCTION static constexpr nufft::array<int, Dim> get_tile_size() {
