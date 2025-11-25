@@ -123,9 +123,9 @@ namespace ippl {
             d = r.deepCopy();
             d.setFieldBC(bc);
 
-            IpplTimings::startTimer(innerProduct);
+            IpplTimings::startTimer(inner);
             T delta1          = innerProduct(r, d);
-            IpplTimings::stopTimer(innerProduct);
+            IpplTimings::stopTimer(inner);
             T delta0          = delta1;
             residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
@@ -140,9 +140,9 @@ namespace ippl {
                 q = op_m(d);
                 IpplTimings::stopTimer(apply);
 
-                IpplTimings::startTimer(innerProduct);
+                IpplTimings::startTimer(inner);
                 T alpha = delta1 / innerProduct(d, q);
-                IpplTimings::stopTimer(innerProduct);
+                IpplTimings::stopTimer(inner);
                 lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
@@ -154,9 +154,9 @@ namespace ippl {
                 // iterations to offset accumulated floating point errors
                 r      = r - alpha * q;
                 delta0 = delta1;
-                IpplTimings::startTimer(innerProduct);
+                IpplTimings::startTimer(inner);
                 delta1 = innerProduct(r, r);
-                IpplTimings::stopTimer(innerProduct);
+                IpplTimings::stopTimer(inner);
                 T beta = delta1 / delta0;
 
                 residueNorm = Kokkos::sqrt(delta1);
