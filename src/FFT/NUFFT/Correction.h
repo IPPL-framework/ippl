@@ -144,39 +144,54 @@ namespace NUFFT {
         Kokkos::deep_copy(output, complex_type(0, 0));
 
         if constexpr (Dim == 3) {
+            const int nx = static_cast<int>(n_modes[0]);
+            const int ny = static_cast<int>(n_modes[1]);
+            const int nz = static_cast<int>(n_modes[2]);
+
             Kokkos::parallel_for("precorr_type2_3d",
                 Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                    {0, 0, 0},
-                    {static_cast<int64_t>(n_modes[0]),
-                     static_cast<int64_t>(n_modes[1]),
-                     static_cast<int64_t>(n_modes[2])}),
+                    {0, 0, 0}, {nx, ny, nz}),
                 KOKKOS_LAMBDA(int64_t k0, int64_t k1, int64_t k2) {
-                    int64_t i0 = (k0 < static_cast<int64_t>(n_modes[0]) / 2) ? k0 : n_grid[0] - (n_modes[0] - k0);
-                    int64_t i1 = (k1 < static_cast<int64_t>(n_modes[1]) / 2) ? k1 : n_grid[1] - (n_modes[1] - k1);
-                    int64_t i2 = (k2 < static_cast<int64_t>(n_modes[2]) / 2) ? k2 : n_grid[2] - (n_modes[2] - k2);
+                    // Map output grid index (corner-DC format)
+                    int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+                    int64_t i1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
+                    int64_t i2 = (k2 < nz / 2) ? k2 : n_grid[2] - (nz - k2);
+
+                    // Map input index: apply FFT-shift from centered to corner-DC
+                    int64_t j0 = (k0 + nx/2) % nx;
+                    int64_t j1 = (k1 + ny/2) % ny;
+                    int64_t j2 = (k2 + nz/2) % nz;
 
                     complex_type factor = factors[0](k0) * factors[1](k1) * factors[2](k2);
-                    output(i0, i1, i2) = input(k0, k1, k2) * factor;
+                    // Conjugate and apply deconvolution
+                    output(i0, i1, i2) = Kokkos::conj(input(j0, j1, j2)) * factor;
                 });
         } else if constexpr (Dim == 2) {
+            const int nx = static_cast<int>(n_modes[0]);
+            const int ny = static_cast<int>(n_modes[1]);
+
             Kokkos::parallel_for("precorr_type2_2d",
                 Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
-                    {0, 0},
-                    {static_cast<int64_t>(n_modes[0]),
-                     static_cast<int64_t>(n_modes[1])}),
+                    {0, 0}, {nx, ny}),
                 KOKKOS_LAMBDA(int64_t k0, int64_t k1) {
-                    int64_t i0 = (k0 < static_cast<int64_t>(n_modes[0]) / 2) ? k0 : n_grid[0] - (n_modes[0] - k0);
-                    int64_t i1 = (k1 < static_cast<int64_t>(n_modes[1]) / 2) ? k1 : n_grid[1] - (n_modes[1] - k1);
+                    int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+                    int64_t i1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
+
+                    int64_t j0 = (k0 + nx/2) % nx;
+                    int64_t j1 = (k1 + ny/2) % ny;
 
                     complex_type factor = factors[0](k0) * factors[1](k1);
-                    output(i0, i1) = input(k0, k1) * factor;
+                    output(i0, i1) = Kokkos::conj(input(j0, j1)) * factor;
                 });
         } else {
+            const int nx = static_cast<int>(n_modes[0]);
+
             Kokkos::parallel_for("precorr_type2_1d",
-                Kokkos::RangePolicy<ExecSpace>(0, n_modes[0]),
+                Kokkos::RangePolicy<ExecSpace>(0, nx),
                 KOKKOS_LAMBDA(int64_t k0) {
-                    int64_t i0 = (k0 < static_cast<int64_t>(n_modes[0]) / 2) ? k0 : n_grid[0] - (n_modes[0] - k0);
-                    output(i0) = input(k0) * factors[0](k0);
+                    int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+                    int64_t j0 = (k0 + nx/2) % nx;
+                    output(i0) = Kokkos::conj(input(j0)) * factors[0](k0);
                 });
         }
 

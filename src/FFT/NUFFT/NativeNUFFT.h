@@ -441,6 +441,18 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
+                // DEBUG: Print first few particle outputs
+                {
+                    auto Q_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
+                    auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), R.getView());
+                    size_t npart = R.getParticleCount();
+                    std::cout << "[NativeNUFFT] Type 2 - First 5 particles:" << std::endl;
+                    for (size_t i = 0; i < std::min(size_t(5), npart); ++i) {
+                        std::cout << "  x[" << i << "] = (" << R_host(i)[0] << ", " << R_host(i)[1] << ", " << R_host(i)[2]
+                                  << "), c_out[" << i << "] = (" << Q_host(i) << ", 0)" << std::endl;
+                    }
+                }
+
                 timing_.total =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
                         .count()
