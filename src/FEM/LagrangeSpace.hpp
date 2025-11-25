@@ -361,6 +361,7 @@ namespace ippl {
         static IpplTimings::TimerRef evalAx_outer = IpplTimings::getTimer("evaluateAx: outer loop");
         static IpplTimings::TimerRef evalAx_bc = IpplTimings::getTimer("evaluateAx: BCs");
         static IpplTimings::TimerRef evalAx_setup = IpplTimings::getTimer("evaluateAx: setup");
+        static IpplTimings::TimerRef accumHalo = IpplTimings::getTimer("evaluateAx: accumHalo");
 
         // start a timer
         IpplTimings::startTimer(evalAx);
@@ -488,7 +489,9 @@ namespace ippl {
         IpplTimings::startTimer(evalAx_bc);
 
         if (bcType == PERIODIC_FACE) {
+            IpplTimings::startTimer(accumHalo);
             resultField.accumulateHalo();
+            IpplTimings::stopTimer(accumHalo);
             bcField.apply(resultField);
             bcField.assignGhostToPhysical(resultField);
         } else {

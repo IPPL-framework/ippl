@@ -78,13 +78,22 @@ namespace ippl {
             typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
             typename lhs_type::Layout_t layout = lhs.getLayout();
 
+            static IpplTimings::TimerRef cg_ops = IpplTimings::getTimer("CG");
+            static IpplTimings::TimerRef allocateFields = IpplTimings::getTimer("allocateFields");
+            static IpplTimings::TimerRef apply = IpplTimings::getTimer("applyOp");
+            static IpplTimings::TimerRef inner = IpplTimings::getTimer("innerProduct");
+
+            IpplTimings::startTimer(cg_ops);
+
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
+            IpplTimings::startTimer(allocateFields);
             lhs_type r(mesh, layout);
             lhs_type d(mesh, layout);
+            IpplTimings::stopTimer(allocateFields);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -108,21 +117,32 @@ namespace ippl {
                 }
             }
 
+            IpplTimings::startTimer(apply);
             r = rhs - op_m(lhs);
+            IpplTimings::stopTimer(apply);
             d = r.deepCopy();
             d.setFieldBC(bc);
 
+            IpplTimings::startTimer(innerProduct);
             T delta1          = innerProduct(r, d);
+            IpplTimings::stopTimer(innerProduct);
             T delta0          = delta1;
             residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
+            IpplTimings::startTimer(allocateFields);
             lhs_type q(mesh, layout);
+            IpplTimings::stopTimer(allocateFields);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                q = op_m(d);
 
+                IpplTimings::startTimer(apply);
+                q = op_m(d);
+                IpplTimings::stopTimer(apply);
+
+                IpplTimings::startTimer(innerProduct);
                 T alpha = delta1 / innerProduct(d, q);
+                IpplTimings::stopTimer(innerProduct);
                 lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
@@ -134,7 +154,9 @@ namespace ippl {
                 // iterations to offset accumulated floating point errors
                 r      = r - alpha * q;
                 delta0 = delta1;
+                IpplTimings::startTimer(innerProduct);
                 delta1 = innerProduct(r, r);
+                IpplTimings::stopTimer(innerProduct);
                 T beta = delta1 / delta0;
 
                 residueNorm = Kokkos::sqrt(delta1);
@@ -146,6 +168,7 @@ namespace ippl {
                 T avg = lhs.getVolumeAverage();
                 lhs   = lhs - avg;
             }
+            IpplTimings::stopTimer(cg_ops);
         }
 
         virtual T getResidue() const { return residueNorm; }
