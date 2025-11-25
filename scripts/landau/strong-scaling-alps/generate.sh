@@ -9,17 +9,20 @@ else
   SCRIPT_DIR="$(readlink -f $(dirname $0))"
 fi
 
-# usual node counts
+# usual node counts (4 may be too small on some systems)
 nodes=(004 008 016 032 064 128 256)
 current_dir=$PWD
-script_name=@LANDAU_SCRIPT_NAME@
+script_name=@JOB_LAUNCH_SCRIPT_NAME@
 
 for g in "${nodes[@]}"; do
   jobdir="strongscaling_landau/nodes_$g"
   echo "Generating job for node count $g in $current_dir/$jobdir"
   mkdir -p "$current_dir/$jobdir"
   cp "$SCRIPT_DIR/$script_name" "$jobdir/$script_name"
-  sed -i "s/_n_/$g/g" "$current_dir/$jobdir/$script_name"
+  sed -i "s|_n_|$g|g"                  "$current_dir/$jobdir/$script_name"
+  sed -i "s|base_dir|$current_dir|g"   "$current_dir/$jobdir/$script_name"
+  sed -i "s|job_dir|$jobdir|g"         "$current_dir/$jobdir/$script_name"
+  sed -i "s|script_dir|$SCRIPT_DIR|g"  "$current_dir/$jobdir/$script_name"
   cd "$jobdir"
   sbatch $script_name
   cd "$current_dir"
