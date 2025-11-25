@@ -105,6 +105,7 @@ namespace ippl {
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             IpplTimings::startTimer(allocateFields);
+            // TODO add a check if mesh and layout changed to update fields
             //lhs_type r(mesh, layout);
             //lhs_type d(mesh, layout);
             IpplTimings::stopTimer(allocateFields);

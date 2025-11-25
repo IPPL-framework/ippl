@@ -46,12 +46,12 @@ namespace ippl {
             , algo_m(nullptr) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-            algo_m->initializeFields(rhs.get_mesh(), rhs.getLayout());
+            setSolver(*(this->lhs_mp));
         }
 
-        void setRhs(rhs_type& rhs) override {
-            Base::setRhs(rhs);
-            algo_m->initializeFields(rhs.get_mesh(), rhs.getLayout());
+        void setLhs(lhs_type& lhs) override {
+            Base::setLhs(lhs);
+            setSolver(lhs);
         }
 
         void setSolver(lhs_type lhs) {
@@ -124,10 +124,12 @@ namespace ippl {
                     std::make_unique<CG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
                                         InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
             }
+            algo_m->initializeFields(lhs.get_mesh(), lhs.getLayout());
         }
 
         void solve() override {
-            setSolver(*(this->lhs_mp));
+            // TODO add a check for mesh changes for alpha and beta for preconditioners
+
             algo_m->setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
             algo_m->operator()(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
 
