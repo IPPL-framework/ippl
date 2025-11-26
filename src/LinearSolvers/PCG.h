@@ -91,7 +91,7 @@ namespace ippl {
             constexpr unsigned Dim = lhs_type::dim;
 
             static IpplTimings::TimerRef cg_ops = IpplTimings::getTimer("CG");
-            static IpplTimings::TimerRef allocateFields = IpplTimings::getTimer("allocateFields");
+            static IpplTimings::TimerRef up_layout = IpplTimings::getTimer("updateLayout");
             static IpplTimings::TimerRef apply = IpplTimings::getTimer("applyOp");
             static IpplTimings::TimerRef inner = IpplTimings::getTimer("innerProduct");
 
@@ -102,11 +102,11 @@ namespace ippl {
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            IpplTimings::startTimer(allocateFields);
-            if (!(lhs.getLayout() == r.getLayout())) {
-                initializeFields(lhs.get_mesh(), lhs.getLayout()); 
-            }
-            IpplTimings::stopTimer(allocateFields);
+            IpplTimings::startTimer(up_layout);
+            r.updateLayout(lhs.getLayout());
+            d.updateLayout(lhs.getLayout());
+            q.updateLayout(lhs.getLayout());
+            IpplTimings::stopTimer(up_layout);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -143,10 +143,6 @@ namespace ippl {
             T delta0          = delta1;
             residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
-
-            IpplTimings::startTimer(allocateFields);
-            //lhs_type q(mesh, layout);
-            IpplTimings::stopTimer(allocateFields);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
 
