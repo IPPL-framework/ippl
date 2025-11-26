@@ -19,8 +19,9 @@ namespace detail {
      * @tparam ExecSpace The Kokkos execution space
      * @tparam KernelType The kernel function type (must have operator()(RealType) and width())
      * @tparam ValueType The type of values being scattered (can be scalar or complex)
+     * @tparam GridViewType The type of the grid view (can differ from ValueType, e.g. real values to complex grid)
      */
-    template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType>
+    template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType, typename GridViewType>
     struct TiledScatterFunctor3D {
         using real_type = RealType;
         using value_type = ValueType;
@@ -36,7 +37,7 @@ namespace detail {
         Kokkos::View<size_type*, memory_space> permute;
         Kokkos::View<real_type*[3], memory_space> x;  // Particle positions in GRID coordinates [0, n_grid)
         Kokkos::View<value_type*, memory_space> values;  // Values to scatter
-        Kokkos::View<value_type***, memory_space> grid;  // Output grid
+        GridViewType grid;  // Output grid
 
         // Parameters
         Kokkos::Array<size_type, 3> n_grid;
@@ -92,13 +93,17 @@ namespace detail {
             const int hz = hist_size_z();
 
             // Allocate shared memory histogram (separate real/complex parts)
-            constexpr bool is_complex = std::is_same_v<value_type, Kokkos::complex<real_type>>;
+            // Determine if grid is complex (values might be real even if grid is complex)
+            using grid_element_type = std::remove_reference_t<decltype(grid(0, 0, 0))>;
+            constexpr bool value_is_complex = std::is_same_v<value_type, Kokkos::complex<real_type>>;
+            constexpr bool grid_is_complex = std::is_same_v<grid_element_type, Kokkos::complex<real_type>>;
+
             const size_t hist_total = hx * hy * hz;
 
-            // Allocate shared memory - for complex, we need two arrays
+            // Allocate shared memory - for complex grid, we need two arrays
             shared_real_view hist_r(team.team_scratch(0), hist_total);
             shared_real_view hist_c;
-            if constexpr (is_complex) {
+            if constexpr (grid_is_complex) {
                 hist_c = shared_real_view(team.team_scratch(0), hist_total);
             }
 
@@ -106,7 +111,7 @@ namespace detail {
             Kokkos::parallel_for(Kokkos::TeamThreadRange(team, hist_total),
                 [&](int i) {
                     hist_r(i) = 0;
-                    if constexpr (is_complex) {
+                    if constexpr (grid_is_complex) {
                         hist_c(i) = 0;
                     }
                 });
@@ -182,10 +187,15 @@ namespace detail {
                                 const real_type kernel_val = kernel_x[wx] * kernel_y[wy] * kernel_z[wz];
                                 const int hist_idx = ((idx_z + wz) * hy + (idx_y + wy)) * hx + (idx_x + wx);
 
-                                if constexpr (is_complex) {
+                                if constexpr (value_is_complex && grid_is_complex) {
+                                    // Complex values to complex grid
                                     Kokkos::atomic_add(&hist_r(hist_idx), val.real() * kernel_val);
                                     Kokkos::atomic_add(&hist_c(hist_idx), val.imag() * kernel_val);
+                                } else if constexpr (!value_is_complex && grid_is_complex) {
+                                    // Real values to complex grid (scatter to real part only)
+                                    Kokkos::atomic_add(&hist_r(hist_idx), val * kernel_val);
                                 } else {
+                                    // Real values to real grid
                                     Kokkos::atomic_add(&hist_r(hist_idx), val * kernel_val);
                                 }
                             }
@@ -213,7 +223,7 @@ namespace detail {
                     if (global_z < 0) global_z += n_grid[2];
                     else if (global_z >= static_cast<int>(n_grid[2])) global_z -= n_grid[2];
 
-                    if constexpr (is_complex) {
+                    if constexpr (grid_is_complex) {
 #ifdef KOKKOS_ENABLE_CUDA
                         if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
                             double* addr_as_double = reinterpret_cast<double*>(

@@ -292,14 +292,6 @@ namespace ippl {
             Interpolation::detail::bin_sort_3d<PositionType, execution_space>(
                 x_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
 
-            // Create values view - wrap particle data with complex type
-            // TODO: Modify TiledSpreadFunctor3D to accept real values directly
-            Kokkos::View<complex_type*, typename execution_space::memory_space> c_view("c", nParticles);
-            Kokkos::parallel_for("copy_values", policy_type(0, nParticles),
-                KOKKOS_CLASS_LAMBDA(const size_t i) {
-                    c_view(i) = complex_type(dview_m(i), PositionType(0));
-                });
-
             // Note: Field zeroing is the caller's responsibility (e.g., NativeNUFFT::type1)
             // to avoid redundant kernel launches
 
@@ -309,9 +301,9 @@ namespace ippl {
                 num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
 
-            // Create tiled spread functor - use generic implementation
-            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, complex_type> functor{
-                bin_offsets, permute, x_view, c_view, full_view,
+            // Create tiled spread functor - pass real values directly to complex grid
+            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, T, view_type> functor{
+                bin_offsets, permute, x_view, dview_m, full_view,
                 n_grid_arr, num_tiles,
                 w, config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
                 config.z_tiles, nghost, inv_hw, kernel
