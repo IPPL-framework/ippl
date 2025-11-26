@@ -1,6 +1,6 @@
 //
 // Native NUFFT Implementation
-//   NUFFT using scatterES/gatherES and heFFTe FFT.
+//   NUFFT using kernel-based scatter/gather and heFFTe FFT.
 //   Does not depend on external NUFFT libraries.
 //
 #ifndef IPPL_NATIVE_NUFFT_H
@@ -24,6 +24,7 @@
 #include "FFT/NUFFT/ESKernel.h"
 #include "FFT/NUFFT/NUFFTUtilities.h"
 #include "Particle/ParticleAttrib.h"
+#include "Interpolation/ScatterConfig.h"
 
 namespace ippl {
     namespace NUFFT {
@@ -32,10 +33,10 @@ namespace ippl {
          * @brief Native NUFFT implementation using IPPL components.
          *
          * Type 1: Spread from nonuniform points to uniform Fourier modes
-         *         (scatterES -> FFT -> deconvolution)
+         *         (scatter -> FFT -> deconvolution)
          *
          * Type 2: Interpolate uniform Fourier modes at nonuniform points
-         *         (correction -> FFT -> gatherES)
+         *         (correction -> FFT -> gather)
          *
          * @tparam Dim Number of dimensions
          * @tparam T Floating point type
@@ -63,7 +64,7 @@ namespace ippl {
             struct Config {
                 T tol     = T(1e-6);  // Error tolerance
                 T sigma   = T(2.0);   // Upsampling factor
-                bool sort = true;     // Sort particles for cache efficiency
+                Interpolation::ScatterConfig spread;  // Spread/gather configuration
             };
 
             struct TimingInfo {
@@ -150,8 +151,11 @@ namespace ippl {
 
                 grid_mesh_ = std::make_unique<Mesh_t>(domain, hx, origin);
 
-                // Create upsampled grid field
-                grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_);
+                // Create upsampled grid field with sufficient ghost cells for kernel width
+                // Native NUFFT uses field ghosts directly instead of creating extended grid
+                const int hw = kernel_.width() / 2;
+                const int nghost = hw;  // Need nghost >= hw for kernel width w
+                grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
 
                 // Initialize heFFTe FFT
                 ParameterList fftParams;
@@ -223,8 +227,8 @@ namespace ippl {
                 auto t0      = std::chrono::high_resolution_clock::now();
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
 
-                // Use scatterES for spreading
-                Q.scatterES(*grid_field_, R, kernel_, cfg_.sort);
+                // Use kernel-based scatter for spreading
+                Q.scatter(*grid_field_, R, kernel_, cfg_.spread);
                 Kokkos::fence();
 
                 timing_.spread =
@@ -234,57 +238,16 @@ namespace ippl {
                 // Step 2: Inverse FFT
                 performFFT(-1);
 
+                // Step 3: Deconvolution and truncation to output modes
+                // Work directly with Field views, no temporaries needed
                 t0 = std::chrono::high_resolution_clock::now();
-
-                // Build the same shape arrays the original NUFFT uses
-                using kokkos_size_type = typename memory_space::size_type;
-                Kokkos::Array<kokkos_size_type, Dim> nmodes{};
-                Kokkos::Array<kokkos_size_type, Dim> ngrid{};
-
-                for (unsigned d = 0; d < Dim; ++d) {
-                    nmodes[d] = static_cast<kokkos_size_type>(n_modes_[d]);
-                    ngrid[d]  = static_cast<kokkos_size_type>(n_grid_[d]);
-                }
-
-                // Create temporary input/output views with LayoutRight for apply_correction
-                auto grid_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
-                auto output_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("output_temp", nmodes);
-
-                // Copy grid data to temporary view WITHOUT normalization
-                // heFFTe uses its own normalization convention
-                T norm_factor = T(1);  // No normalization
-                copyGridToTempNormalized(grid_view_temp, ngrid, norm_factor);
-
-                // Convert factors std::array to Kokkos::Array
-                Kokkos::Array<complex_view_1d, Dim> factors_kokkos;
-                for (unsigned d = 0; d < Dim; ++d) {
-                    factors_kokkos[d] = factors_[d];
-                }
-
-                ippl::nufft::apply_correction<ExecSpace, T, Dim>(
-                    grid_view_temp,     // upsampled grid (LayoutRight)
-                    factors_kokkos,     // deconvolution factors
-                    output_view_temp,   // output modes field view (LayoutRight)
-                    nmodes,             // number of modes (output extents)
-                    ngrid,              // upsampled grid extents
-                    nmodes,             // "target" modes (same as nmodes here)
-                    timing_.correct     // timing (will be written by apply_correction)
-                );
-
-                // Copy result back to output field
-                copyOutputToField(output_view_temp, f, nmodes);
-
+                applyDeconvolutionType1<Dim, ExecSpace, T>(
+                    grid_field_->getView(), factors_,
+                    f.getView(), n_modes_, n_grid_,
+                    grid_field_->getNghost(), f.getNghost());
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
-
-                // // Step 3: Deconvolution and truncation to output modes
-                // t0 = std::chrono::high_resolution_clock::now();
-                // applyDeconvolutionType1<Dim, ExecSpace, T>(grid_field_->getView(), factors_,
-                //                                            f.getView(), n_modes_, n_grid_);
-                // timing_.correct =
-                //     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                //         .count();
 
                 timing_.total =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
@@ -314,118 +277,15 @@ namespace ippl {
                 resetTimings();
                 auto ttot = std::chrono::high_resolution_clock::now();
 
-                // Step 1: Pre-correction and zero-padding
+                // Step 1: Apply pre-correction directly to IPPL Field views (no temporaries)
                 auto t0 = std::chrono::high_resolution_clock::now();
 
-                // Copy no-ghost region of input field to temporary view with proper layout
-                using view_type = typename detail::ViewType<complex_type, Dim>::view_type;
-                auto f_view_full = f.getView();
-                int f_nghost = f.getNghost();
+                applyPreCorrectionType2<Dim, ExecSpace, T>(
+                    f.getView(), factors_,
+                    grid_field_->getView(),
+                    n_modes_, n_grid_,
+                    f.getNghost(), grid_field_->getNghost());
 
-                // Create temporary view with correct layout for n_modes
-                view_type f_temp;
-                if constexpr (Dim == 3) {
-                    f_temp = view_type("f_temp_noghost", n_modes_[0], n_modes_[1], n_modes_[2]);
-                } else if constexpr (Dim == 2) {
-                    f_temp = view_type("f_temp_noghost", n_modes_[0], n_modes_[1]);
-                } else {
-                    f_temp = view_type("f_temp_noghost", n_modes_[0]);
-                }
-
-                // Copy no-ghost region with FFT-shift (corner -> centered format)
-                // This matches what kokkos_nufft wrapper does in FFT.hpp
-                if constexpr (Dim == 3) {
-                    const int nx = n_modes_[0];
-                    const int ny = n_modes_[1];
-                    const int nz = n_modes_[2];
-                    Kokkos::parallel_for("copy_fftshift_3d",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                            {0, 0, 0}, {nx, ny, nz}),
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            // FFT-shift: map from corner to centered convention
-                            const int ii_shift = (i + nx/2) % nx;
-                            const int jj_shift = (j + ny/2) % ny;
-                            const int kk_shift = (k + nz/2) % nz;
-                            f_temp(ii_shift, jj_shift, kk_shift) = f_view_full(i + f_nghost, j + f_nghost, k + f_nghost);
-                        });
-                } else if constexpr (Dim == 2) {
-                    const int nx = n_modes_[0];
-                    const int ny = n_modes_[1];
-                    Kokkos::parallel_for("copy_fftshift_2d",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
-                            {0, 0}, {nx, ny}),
-                        KOKKOS_LAMBDA(int i, int j) {
-                            const int ii_shift = (i + nx/2) % nx;
-                            const int jj_shift = (j + ny/2) % ny;
-                            f_temp(ii_shift, jj_shift) = f_view_full(i + f_nghost, j + f_nghost);
-                        });
-                } else {
-                    const int nx = n_modes_[0];
-                    Kokkos::parallel_for("copy_fftshift_1d",
-                        Kokkos::RangePolicy<ExecSpace>(0, nx),
-                        KOKKOS_LAMBDA(int i) {
-                            const int ii_shift = (i + nx/2) % nx;
-                            f_temp(ii_shift) = f_view_full(i + f_nghost);
-                        });
-                }
-                Kokkos::fence();
-
-                // Use kokkos_nufft's apply_correction (same as Type 1)
-                // Create no-ghost grid views
-                auto grid_view_full = grid_field_->getView();
-                int grid_nghost = grid_field_->getNghost();
-
-                // Create temporary views with correct layout
-                using kokkos_size_type = typename memory_space::size_type;
-                Kokkos::Array<kokkos_size_type, Dim> nmodes{};
-                Kokkos::Array<kokkos_size_type, Dim> ngrid{};
-
-                for (unsigned d = 0; d < Dim; ++d) {
-                    nmodes[d] = static_cast<kokkos_size_type>(n_modes_[d]);
-                    ngrid[d]  = static_cast<kokkos_size_type>(n_grid_[d]);
-                }
-
-                auto grid_view_temp = ippl::nufft::make_view<complex_type, Dim, memory_space>("grid_temp", ngrid);
-
-                // Convert factors to Kokkos::Array
-                Kokkos::Array<complex_view_1d, Dim> factors_kokkos;
-                for (unsigned d = 0; d < Dim; ++d) {
-                    factors_kokkos[d] = factors_[d];
-                }
-
-                ippl::nufft::apply_correction<ExecSpace, T, Dim>(
-                    f_temp,             // input modes (LayoutRight, no ghosts)
-                    factors_kokkos,     // deconvolution factors
-                    grid_view_temp,     // output upsampled grid (LayoutRight, no ghosts)
-                    nmodes,             // number of modes
-                    nmodes,             // input extents (same as nmodes for Type 2)
-                    ngrid,              // output upsampled grid extents
-                    timing_.correct     // timing output
-                );
-
-                // Copy grid_view_temp back to grid_field with ghosts
-                if constexpr (Dim == 3) {
-                    Kokkos::parallel_for("copy_grid_withghosts_3d",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                            {0, 0, 0}, {(int)n_grid_[0], (int)n_grid_[1], (int)n_grid_[2]}),
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            grid_view_full(i + grid_nghost, j + grid_nghost, k + grid_nghost) = grid_view_temp(i, j, k);
-                        });
-                } else if constexpr (Dim == 2) {
-                    Kokkos::parallel_for("copy_grid_withghosts_2d",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
-                            {0, 0}, {(int)n_grid_[0], (int)n_grid_[1]}),
-                        KOKKOS_LAMBDA(int i, int j) {
-                            grid_view_full(i + grid_nghost, j + grid_nghost) = grid_view_temp(i, j);
-                        });
-                } else {
-                    Kokkos::parallel_for("copy_grid_withghosts_1d",
-                        Kokkos::RangePolicy<ExecSpace>(0, n_grid_[0]),
-                        KOKKOS_LAMBDA(int i) {
-                            grid_view_full(i + grid_nghost) = grid_view_temp(i);
-                        });
-                }
-                Kokkos::fence();
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
@@ -440,7 +300,7 @@ namespace ippl {
 
                 // Step 3: Gather/interpolate at particle positions
                 t0 = std::chrono::high_resolution_clock::now();
-                Q.gatherES(*grid_field_, R, kernel_, false, cfg_.sort);
+                Q.gather(*grid_field_, R, kernel_, false, cfg_.spread);
                 Kokkos::fence();
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)

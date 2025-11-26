@@ -131,8 +131,10 @@ int main(int argc, char* argv[]) {
             field_type;
         typedef ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type real_field_type;
 
-
-        field_type field(mesh, layout);
+        // Use nghost=16 to support kernel widths up to 32 (hw=16)
+        // This is required for native NUFFT which uses field ghosts directly
+        const int nghost = 16;
+        field_type field(mesh, layout, nghost);
 
         ippl::ParameterList fftParams;
 
@@ -150,6 +152,10 @@ int main(int argc, char* argv[]) {
         fftParams.add("use_finufft_defaults", false);
         fftParams.add("use_kokkos_nufft", false);
 
+        // Test tiled interpolation method
+        fftParams.add("spread_method", "tiled");
+        fftParams.add("sort", true);
+
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         std::unique_ptr<FFT_type> fft;
@@ -161,7 +167,7 @@ int main(int argc, char* argv[]) {
         bunch.create(nloc);
         fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
 
-        const int nghost = field.getNghost();
+        // nghost already defined at field creation (line 136)
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto fview         = field.getView();
 

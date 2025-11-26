@@ -129,6 +129,13 @@ int main(int argc, char* argv[]) {
         fftParams.add("use_finufft_defaults", false);
         fftParams.add("use_kokkos_nufft", false);
 
+        // Test tiled spread method with z-striding
+        fftParams.add("spread_method", "tiled");
+        fftParams.add("tile_size_3d", 6);
+        fftParams.add("z_tiles", 1);
+        fftParams.add("team_size", 32);  // Must be multiple of warp size (32) for CUDA
+        fftParams.add("sort", true);
+
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         std::unique_ptr<FFT_type> fft;

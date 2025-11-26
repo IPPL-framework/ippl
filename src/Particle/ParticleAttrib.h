@@ -21,6 +21,7 @@
 #include "Interpolation/CIC.h"
 #include "Particle/ParticleAttribBase.h"
 #include "FFT/FFT.h"
+#include "Interpolation/ScatterConfig.h"
 
 
 namespace ippl {
@@ -177,18 +178,42 @@ namespace ippl {
                     const bool addToAttribute = false);
 
         /**
-         * @brief Scatter particle data to field using ES kernel (for native NUFFT)
+         * @brief Scatter particle data to field using a higher-order kernel
+         *
+         * This method uses a kernel-based scatter with support for various spread methods
+         * (atomic, tiled) and is optimized for NUFFT and other high-accuracy applications.
+         *
+         * @tparam Field The type of the field
+         * @tparam P2 The type for the position attribute
+         * @tparam Kernel The kernel type (e.g., ESKernel)
+         * @param f The field onto which data is scattered
+         * @param pp The ParticleAttrib representing particle positions
+         * @param kernel The interpolation kernel
+         * @param config Spread configuration (method, sorting, etc.)
          */
         template <typename Field, typename P2, typename Kernel>
-        void scatterES(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-                      const Kernel& kernel, bool doSort = true) const;
+        void scatter(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                    const Kernel& kernel, const Interpolation::ScatterConfig& config = Interpolation::ScatterConfig()) const;
 
         /**
-         * @brief Gather field data at particle positions using ES kernel (for native NUFFT)
+         * @brief Gather field data using a higher-order kernel
+         *
+         * This method uses a kernel-based gather with support for various interpolation methods
+         * and is optimized for NUFFT and other high-accuracy applications.
+         *
+         * @tparam Field The type of the field
+         * @tparam P2 The type for the position attribute
+         * @tparam Kernel The kernel type (e.g., ESKernel)
+         * @param f The field from which data is gathered
+         * @param pp The ParticleAttrib representing particle positions
+         * @param kernel The interpolation kernel
+         * @param addToAttribute If true, add to existing values; otherwise overwrite
+         * @param config Spread configuration (method, sorting, etc.)
          */
         template <typename Field, typename P2, typename Kernel>
-        void gatherES(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-                     const Kernel& kernel, bool addToAttribute = false, bool doSort = true);
+        void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+                   const Kernel& kernel, bool addToAttribute = false,
+                   const Interpolation::ScatterConfig& config = Interpolation::ScatterConfig());
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void

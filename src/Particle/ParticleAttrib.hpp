@@ -20,7 +20,13 @@
 #include "Utility/IpplTimings.h"
 
 #include "FFT/FFT.h"
-#include "Interpolation/HighOrder.h"
+#include "Interpolation/TiledScatter.h"
+#include "Interpolation/TiledGather.h"
+#include "Interpolation/AtomicScatter.h"
+#include "Interpolation/AtomicGather.h"
+#include "Interpolation/Binning.h"
+#include "Particle/ParticleSort.h"
+#include "Interpolation/ScatterConfig.h"
 
 namespace ippl {
 
@@ -219,17 +225,18 @@ namespace ippl {
         IpplTimings::stopTimer(gatherTimer);
     }
 
+    // Kernel-based scatter (new generalized interface)
     template <typename T, class... Properties>
     template <typename Field, typename P2, typename Kernel>
-    void ParticleAttrib<T, Properties...>::scatterES(
+    void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-        const Kernel& kernel, bool doSort) const {
+        const Kernel& kernel, const Interpolation::ScatterConfig& config) const {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
         using complex_type     = typename Field::value_type;
 
-        static IpplTimings::TimerRef scatterESTimer = IpplTimings::getTimer("scatterES");
-        IpplTimings::startTimer(scatterESTimer);
+        static IpplTimings::TimerRef scatterKernelTimer = IpplTimings::getTimer("scatterKernel");
+        IpplTimings::startTimer(scatterKernelTimer);
 
         using view_type       = typename Field::view_type;
         view_type full_view   = f.getView();
@@ -255,6 +262,88 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
+        // Dispatch based on spread method
+        if (config.method == Interpolation::ScatterMethod::Tiled && Dim == 3) {
+            // Tiled spread for 3D - use team policies and shared memory
+            using size_type = typename execution_space::memory_space::size_type;
+
+            // Prepare grid dimensions
+            Kokkos::Array<size_type, 3> n_grid_arr;
+            Kokkos::Array<int, 3> tile_size_arr;
+            for (unsigned d = 0; d < 3; ++d) {
+                n_grid_arr[d] = ngrid[d];
+                tile_size_arr[d] = config.tile_size_3d;
+            }
+
+            // Copy positions directly (functor will do coordinate transformation)
+            Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+            auto pp_view = pp.getView();
+            Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
+                KOKKOS_LAMBDA(const size_t i) {
+                    for (unsigned d = 0; d < 3; ++d) {
+                        x_view(i, d) = pp_view(i)[d];
+                    }
+                });
+
+            // Sort particles by tile
+            Kokkos::View<size_type*, typename execution_space::memory_space> permute;
+            Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
+
+            Interpolation::detail::bin_sort_3d<PositionType, execution_space>(
+                x_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
+
+            // Create values view - wrap particle data with complex type
+            // TODO: Modify TiledSpreadFunctor3D to accept real values directly
+            Kokkos::View<complex_type*, typename execution_space::memory_space> c_view("c", nParticles);
+            Kokkos::parallel_for("copy_values", policy_type(0, nParticles),
+                KOKKOS_CLASS_LAMBDA(const size_t i) {
+                    c_view(i) = complex_type(dview_m(i), PositionType(0));
+                });
+
+            // Initialize field interior to zero (spread will write with ghost offset)
+            Kokkos::parallel_for("zero_field",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>, execution_space>(
+                    {0, 0, 0}, {ngrid[0], ngrid[1], ngrid[2]}),
+                KOKKOS_LAMBDA(int i, int j, int k) {
+                    full_view(i + nghost, j + nghost, k + nghost) = complex_type(0, 0);
+                });
+
+            // Calculate number of tiles
+            Kokkos::Array<size_type, 3> num_tiles;
+            for (unsigned d = 0; d < 3; ++d) {
+                num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
+            }
+
+            // Create tiled spread functor - use generic implementation
+            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, complex_type> functor{
+                bin_offsets, permute, x_view, c_view, full_view,
+                n_grid_arr, num_tiles,
+                w, config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
+                config.z_tiles, nghost, inv_hw, kernel
+            };
+
+            // Calculate scratch memory size
+            const size_t hist_size = functor.hist_size_x() * functor.hist_size_y() * functor.hist_size_z();
+            constexpr bool is_complex = std::is_same_v<complex_type, Kokkos::complex<PositionType>>;
+            const size_t scratch_size = is_complex ? 2 * hist_size : hist_size;
+            const size_t scratch_bytes = scratch_size * sizeof(PositionType);
+
+            // Launch team policy
+            const size_type n_tiles_total = num_tiles[0] * num_tiles[1] * num_tiles[2];
+            const int threads_per_tile = (config.z_tiles + w - 1) / config.z_tiles;
+            const size_type n_teams = n_tiles_total * threads_per_tile;
+
+            using team_policy = Kokkos::TeamPolicy<execution_space>;
+            team_policy policy(n_teams, config.team_size);
+            policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
+
+            Kokkos::parallel_for("tiled_spread", policy, functor);
+
+            IpplTimings::stopTimer(scatterKernelTimer);
+            return;
+        }
+
+        // Fall back to atomic implementation
         // Match kokkos_nufft atomic spread exactly
         Kokkos::parallel_for(
             "ParticleAttrib::scatterES", policy_type(0, nParticles),
@@ -307,14 +396,15 @@ namespace ippl {
                 }
             });
 
-        IpplTimings::stopTimer(scatterESTimer);
+        IpplTimings::stopTimer(scatterKernelTimer);
     }
 
+    // Kernel-based gather (new generalized interface)
     template <typename T, class... Properties>
     template <typename Field, typename P2, typename Kernel>
-    void ParticleAttrib<T, Properties...>::gatherES(
+    void ParticleAttrib<T, Properties...>::gather(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-        const Kernel& kernel, bool addToAttribute, bool doSort) {
+        const Kernel& kernel, bool addToAttribute, const Interpolation::ScatterConfig& config) {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
         using complex_type     = typename Field::value_type;
@@ -324,8 +414,8 @@ namespace ippl {
         f.fillHalo();
         IpplTimings::stopTimer(fillHaloTimer);
 
-        static IpplTimings::TimerRef gatherESTimer = IpplTimings::getTimer("gatherES");
-        IpplTimings::startTimer(gatherESTimer);
+        static IpplTimings::TimerRef gatherKernelTimer = IpplTimings::getTimer("gatherKernel");
+        IpplTimings::startTimer(gatherKernelTimer);
 
         using view_type       = typename Field::view_type;
         view_type full_view   = f.getView();
@@ -351,71 +441,192 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
-        // Match kokkos_nufft interpolation exactly - specialize for 3D
+        // Dispatch based on method
         if constexpr (Dim == 3) {
-            Kokkos::parallel_for(
-                "ParticleAttrib::gatherES", policy_type(0, nParticles),
-                KOKKOS_CLASS_LAMBDA(const size_t j) {
-                    const Vector<PositionType, 3>& pos = pp(j);
-
-                    Vector<PositionType, 3> sx;
-                    Vector<int, 3> idx0;
-
-                    // Transform coordinates exactly like kokkos_nufft
-                    for (unsigned d = 0; d < 3; ++d) {
-                        sx[d] = pos[d] * scale[d];
-                        sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
-                        idx0[d] = odd
-                            ? static_cast<int>(Kokkos::round(sx[d])) - hw
-                            : static_cast<int>(sx[d]) + 1 - hw;
+            if (config.method == Interpolation::ScatterMethod::Tiled) {
+                // Use optimized tiled interpolation with warp-level parallelism
+#ifdef KOKKOS_ENABLE_CUDA
+                if constexpr (std::is_same_v<execution_space, Kokkos::Cuda>) {
+                    // Verify field has sufficient ghost cells for kernel width
+                    if (nghost < hw) {
+                        throw std::runtime_error(
+                            "Field ghost cells (nghost=" + std::to_string(nghost) +
+                            ") insufficient for kernel width (" + std::to_string(w) +
+                            "). Need nghost >= " + std::to_string(hw));
                     }
 
-                    // Interpolate from all w^3 grid points in the stencil
-                    complex_type result(0.0, 0.0);
-                    int64_t total = w * w * w;
+                    using memory_space = typename execution_space::memory_space;
 
-                    // Use nested loops like kokkos_nufft for correct indexing
-                    for (int k = 0; k < w; ++k) {
-                        for (int jj = 0; jj < w; ++jj) {
-                            for (int i = 0; i < w; ++i) {
-                                // Compute grid indices (may be negative or >= ngrid)
-                                int gi = idx0[0] + i;
-                                int gj = idx0[1] + jj;
-                                int gk = idx0[2] + k;
+                    // Sort particles by Morton code
+                    auto x_view = pp.getView();
+                    Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
 
-                                // Apply periodic wrapping
-                                while (gi < 0) gi += ngrid[0];
-                                while (gi >= ngrid[0]) gi -= ngrid[0];
-                                while (gj < 0) gj += ngrid[1];
-                                while (gj >= ngrid[1]) gj -= ngrid[1];
-                                while (gk < 0) gk += ngrid[2];
-                                while (gk >= ngrid[2]) gk -= ngrid[2];
+                    Vector<PositionType, 3> origin;
+                    Vector<PositionType, 3> invdx;
+                    Vector<size_t, 3> ngrid_vec;
+                    for (unsigned d = 0; d < 3; ++d) {
+                        origin[d] = -M_PI;
+                        invdx[d] = scale[d];
+                        ngrid_vec[d] = ngrid[d];
+                    }
 
-                                // Compute kernel value (using ORIGINAL idx0, not wrapped)
-                                PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
-                                PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
-                                PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
-                                PositionType kernel_val = ker_i * ker_j * ker_k;
+                    detail::sortParticles<3, execution_space, PositionType>(
+                        x_view, permute, origin, invdx, ngrid_vec, nParticles);
 
-                                // Access grid with wrapped indices + ghost offset
-                                result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
+                    // Apply permutation to coordinates and scale to grid space
+                    Kokkos::View<PositionType*[3], memory_space> x_sorted("x_sorted", nParticles);
+
+                    // Simple permutation and scaling kernel
+                    Kokkos::parallel_for("apply_permutation",
+                        policy_type(0, nParticles),
+                        KOKKOS_CLASS_LAMBDA(size_t i) {
+                            const size_t j = permute(i);
+
+                            for (int d = 0; d < 3; ++d) {
+                                // Convert from [-pi, pi] to [0, n_grid)
+                                // Following kokkos_nufft: scale = L / (2*pi)
+                                const PositionType L = ngrid[d];
+                                const PositionType scale_factor = L / (PositionType(2.0) * std::numbers::pi_v<PositionType>);
+                                PositionType s = x_view(j)[d] * scale_factor;
+                                s -= L * Kokkos::floor(s / L);
+                                x_sorted(i, d) = s;
+                            }
+                        });
+                    Kokkos::fence();
+
+                    // Allocate sorted results
+                    Kokkos::View<complex_type*, memory_space> c_sorted("c_sorted", nParticles);
+
+                    // Dispatch to CUDA kernel based on kernel width - use generic implementation
+                    constexpr int MaxW = 20;
+                    int n0 = ngrid[0], n1 = ngrid[1], n2 = ngrid[2];
+                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<PositionType, decltype(full_view), Kernel, complex_type>(
+                        w, nParticles,
+                        x_sorted, full_view, c_sorted,
+                        hw, nghost, n0, n1, n2, inv_hw, kernel);
+
+                    cudaDeviceSynchronize();
+
+                    // Apply inverse permutation and extract real part
+                    Kokkos::parallel_for("apply_inverse_permutation",
+                        policy_type(0, nParticles),
+                        KOKKOS_CLASS_LAMBDA(size_t i) {
+                            const size_t j = permute(i);
+                            if (addToAttribute) {
+                                dview_m(j) += c_sorted(i).real();
+                            } else {
+                                dview_m(j) = c_sorted(i).real();
+                            }
+                        });
+                    Kokkos::fence();
+                } else
+#endif
+                {
+                    // Fallback to atomic for non-CUDA
+                    Kokkos::parallel_for(
+                        "ParticleAttrib::gatherES", policy_type(0, nParticles),
+                        KOKKOS_CLASS_LAMBDA(const size_t j) {
+                            const Vector<PositionType, 3>& pos = pp(j);
+
+                            Vector<PositionType, 3> sx;
+                            Vector<int, 3> idx0;
+
+                            for (unsigned d = 0; d < 3; ++d) {
+                                sx[d] = pos[d] * scale[d];
+                                sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
+                                idx0[d] = odd
+                                    ? static_cast<int>(Kokkos::round(sx[d])) - hw
+                                    : static_cast<int>(sx[d]) + 1 - hw;
+                            }
+
+                            complex_type result(0.0, 0.0);
+                            for (int k = 0; k < w; ++k) {
+                                for (int jj = 0; jj < w; ++jj) {
+                                    for (int i = 0; i < w; ++i) {
+                                        int gi = idx0[0] + i;
+                                        int gj = idx0[1] + jj;
+                                        int gk = idx0[2] + k;
+
+                                        while (gi < 0) gi += ngrid[0];
+                                        while (gi >= ngrid[0]) gi -= ngrid[0];
+                                        while (gj < 0) gj += ngrid[1];
+                                        while (gj >= ngrid[1]) gj -= ngrid[1];
+                                        while (gk < 0) gk += ngrid[2];
+                                        while (gk >= ngrid[2]) gk -= ngrid[2];
+
+                                        PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
+                                        PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
+                                        PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
+                                        PositionType kernel_val = ker_i * ker_j * ker_k;
+
+                                        result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
+                                    }
+                                }
+                            }
+
+                            if (addToAttribute) {
+                                dview_m(j) += result.real();
+                            } else {
+                                dview_m(j) = result.real();
+                            }
+                        });
+                }
+            } else {
+                // Atomic method (default)
+                Kokkos::parallel_for(
+                    "ParticleAttrib::gatherES", policy_type(0, nParticles),
+                    KOKKOS_CLASS_LAMBDA(const size_t j) {
+                        const Vector<PositionType, 3>& pos = pp(j);
+
+                        Vector<PositionType, 3> sx;
+                        Vector<int, 3> idx0;
+
+                        for (unsigned d = 0; d < 3; ++d) {
+                            sx[d] = pos[d] * scale[d];
+                            sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
+                            idx0[d] = odd
+                                ? static_cast<int>(Kokkos::round(sx[d])) - hw
+                                : static_cast<int>(sx[d]) + 1 - hw;
+                        }
+
+                        complex_type result(0.0, 0.0);
+                        for (int k = 0; k < w; ++k) {
+                            for (int jj = 0; jj < w; ++jj) {
+                                for (int i = 0; i < w; ++i) {
+                                    int gi = idx0[0] + i;
+                                    int gj = idx0[1] + jj;
+                                    int gk = idx0[2] + k;
+
+                                    while (gi < 0) gi += ngrid[0];
+                                    while (gi >= ngrid[0]) gi -= ngrid[0];
+                                    while (gj < 0) gj += ngrid[1];
+                                    while (gj >= ngrid[1]) gj -= ngrid[1];
+                                    while (gk < 0) gk += ngrid[2];
+                                    while (gk >= ngrid[2]) gk -= ngrid[2];
+
+                                    PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
+                                    PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
+                                    PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
+                                    PositionType kernel_val = ker_i * ker_j * ker_k;
+
+                                    result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
+                                }
                             }
                         }
-                    }
 
-                    // Extract real part (for NUFFT, field is complex but particle attribute is real)
-                    if (addToAttribute) {
-                        dview_m(j) += result.real();
-                    } else {
-                        dview_m(j) = result.real();
-                    }
-                });
+                        if (addToAttribute) {
+                            dview_m(j) += result.real();
+                        } else {
+                            dview_m(j) = result.real();
+                        }
+                    });
+            }
         } else {
             // Original gather kernel for other dimensions
             // TODO: Implement for 1D/2D if needed
         }
 
-        IpplTimings::stopTimer(gatherESTimer);
+        IpplTimings::stopTimer(gatherKernelTimer);
     }
 
     template <typename T, class... Properties>

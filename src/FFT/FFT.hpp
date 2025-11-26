@@ -571,7 +571,20 @@ namespace ippl {
             typename NativeNUFFT_t::Config cfg;
             cfg.tol = tol_m;
             cfg.sigma = params.get<T>("sigma", T(2.0));
-            cfg.sort = params.get<bool>("sort", true);
+            cfg.spread.sort = params.get<bool>("sort", true);
+
+            // Configure spread method
+            std::string spread_method = params.get<std::string>("spread_method", "atomic");
+            if (spread_method == "tiled") {
+                cfg.spread.method = Interpolation::ScatterMethod::Tiled;
+                cfg.spread.tile_size_3d = params.get<int>("tile_size_3d", 16);
+                cfg.spread.z_tiles = params.get<int>("z_tiles", 2);
+                cfg.spread.team_size = params.get<int>("team_size", 16);
+            } else if (spread_method == "scatterview") {
+                cfg.spread.method = Interpolation::ScatterMethod::ScatterView;
+            } else {
+                cfg.spread.method = Interpolation::ScatterMethod::Atomic;
+            }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
             nufft_ptr->initialize(MPI_COMM_WORLD);
@@ -634,15 +647,6 @@ namespace ippl {
             }
         }();
 
-        // Debug: Print first few particle positions and charges
-        auto x_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), x_nufft);
-        auto c_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), c_nufft);
-        std::cout << "[KOKKOS_NUFFT] Type " << type_m << " - First 3 particles:" << std::endl;
-        for (size_t i = 0; i < std::min(size_t(3), localNp); ++i) {
-            std::cout << "  x[" << i << "] = (" << x_host(i, 0) << ", " << x_host(i, 1) << ", " << x_host(i, 2)
-                      << "), c[" << i << "] = (" << c_host(i).real() << ", " << c_host(i).imag() << ")" << std::endl;
-        }
-
         // Execute transform
         if (type_m == 1) {
             kokkos_nufft_plan->type1(x_nufft, c_nufft, f_nufft);
@@ -682,36 +686,9 @@ namespace ippl {
                     }
                 });
 
-            // DEBUG: Trace input to kokkos_nufft for Type 2
-            if (type_m == 2) {
-                auto f_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), f_nufft);
-                std::cout << "[KOKKOS_NUFFT DEBUG] Type 2 input to kokkos_nufft:" << std::endl;
-                std::cout << "  f_nufft[0,0,0] = " << f_host(0, 0, 0) << std::endl;
-                std::cout << "  f_nufft[1,1,1] = " << f_host(1, 1, 1) << std::endl;
-                std::cout << "  f_nufft[32,32,32] = " << f_host(32, 32, 32) << std::endl;
-            }
-
             kokkos_nufft_plan->type2(f_nufft, x_nufft, c_nufft);
         }
         Kokkos::fence();
-
-        // Debug: Print first few output values
-        if (type_m == 1) {
-            auto f_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), f_nufft);
-            std::cout << "[KOKKOS_NUFFT] Type 1 output - Grid shape: (" << f_nufft.extent(0) << ", " << f_nufft.extent(1) << ", " << f_nufft.extent(2) << ")" << std::endl;
-            std::cout << "[KOKKOS_NUFFT] Type 1 output - First few modes:" << std::endl;
-            std::cout << "  f[0,0,0] = (" << f_host(0, 0, 0).real() << ", " << f_host(0, 0, 0).imag() << ")" << std::endl;
-            std::cout << "  f[1,0,0] = (" << f_host(1, 0, 0).real() << ", " << f_host(1, 0, 0).imag() << ")" << std::endl;
-            std::cout << "  f[0,1,0] = (" << f_host(0, 1, 0).real() << ", " << f_host(0, 1, 0).imag() << ")" << std::endl;
-            std::cout << "  f[8,8,8] (center) = (" << f_host(8, 8, 8).real() << ", " << f_host(8, 8, 8).imag() << ")" << std::endl;
-        } else if (type_m == 2) {
-            auto c_out = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), c_nufft);
-            auto x_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), x_nufft);
-            size_t mid_idx = localNp / 2;
-            std::cout << "[KOKKOS_NUFFT] Type 2 - Middle particle (unsorted, idx=" << mid_idx << "):" << std::endl;
-            std::cout << "  pos = (" << x_host(mid_idx, 0) << ", " << x_host(mid_idx, 1) << ", " << x_host(mid_idx, 2) << ")" << std::endl;
-            std::cout << "  c_out (before conj) = (" << c_out(mid_idx).real() << ", " << c_out(mid_idx).imag() << ")" << std::endl;
-        }
 
         // Copy results back with FFT-shift and conjugate to match FINUFFT convention
         if (type_m == 1) {
@@ -749,7 +726,6 @@ namespace ippl {
                 });
         } else if (type_m == 2) {
             // Type 2: Conjugate output to fix sign (kokkos uses -1, FINUFFT uses +1)
-            size_t mid_idx = localNp / 2;
             Kokkos::parallel_for(
                 "copy_to_particles_conj", localNp,
                 KOKKOS_LAMBDA(const size_t i) {
@@ -757,12 +733,6 @@ namespace ippl {
                     auto val = c_nufft(i);
                     auto conj_val = Kokkos::conj(val);
                     Qview(i) = conj_val.real();
-
-                    // DEBUG: Print middle particle
-                    if (i == mid_idx) {
-                        printf("[kokkos_nufft] middle particle %zu: val=(%f,%f), conj=(%f,%f), real=%f\n",
-                               i, val.real(), val.imag(), conj_val.real(), conj_val.imag(), conj_val.real());
-                    }
                 });
         }
     }

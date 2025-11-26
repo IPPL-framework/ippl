@@ -1,0 +1,146 @@
+#ifndef IPPL_INTERPOLATION_BINNING_H
+#define IPPL_INTERPOLATION_BINNING_H
+
+#include <Kokkos_Core.hpp>
+#include <Kokkos_Sort.hpp>
+
+namespace ippl {
+namespace Interpolation {
+namespace detail {
+
+    /**
+     * @brief Generic BinOp for 3D tiled scatter/gather
+     *
+     * Bins particles into tiles based on their grid coordinates.
+     * This is a generic implementation that works with any coordinate system.
+     *
+     * @tparam RealType Floating point type
+     * @tparam ExecSpace Kokkos execution space
+     */
+    template<typename RealType, typename ExecSpace>
+    struct BinOp3D {
+        using size_type = typename ExecSpace::memory_space::size_type;
+
+        Kokkos::Array<size_type, 3> n_grid;      // Grid dimensions
+        Kokkos::Array<int, 3> tile_size;          // Tile size per dimension
+        Kokkos::Array<size_type, 3> num_tiles;    // Number of tiles per dimension
+        int w;  // kernel width
+
+        KOKKOS_INLINE_FUNCTION
+        int max_bins() const {
+            return num_tiles[0] * num_tiles[1] * num_tiles[2] + 1;
+        }
+
+        template<class ViewType>
+        KOKKOS_INLINE_FUNCTION
+        int bin(ViewType& keys, int i) const {
+            // Compute tile index for each dimension
+            // keys contains particle positions in grid coordinates [0, n_grid)
+            int tile_x = compute_bin(keys(i, 0), 0);
+            int tile_y = compute_bin(keys(i, 1), 1);
+            int tile_z = compute_bin(keys(i, 2), 2);
+
+            // Flatten to single bin index
+            return tile_z * (num_tiles[0] * num_tiles[1]) + tile_y * num_tiles[0] + tile_x;
+        }
+
+        template<class ViewType, typename IndexType>
+        KOKKOS_INLINE_FUNCTION
+        bool operator()(ViewType& keys, IndexType i1, IndexType i2) const {
+            // Lexicographic comparison by tile indices
+            int bin1_x = compute_bin(keys(i1, 0), 0);
+            int bin2_x = compute_bin(keys(i2, 0), 0);
+            if (bin1_x < bin2_x) return true;
+            if (bin1_x > bin2_x) return false;
+
+            int bin1_y = compute_bin(keys(i1, 1), 1);
+            int bin2_y = compute_bin(keys(i2, 1), 1);
+            if (bin1_y < bin2_y) return true;
+            if (bin1_y > bin2_y) return false;
+
+            int bin1_z = compute_bin(keys(i1, 2), 2);
+            int bin2_z = compute_bin(keys(i2, 2), 2);
+            return bin1_z < bin2_z;
+        }
+
+        KOKKOS_INLINE_FUNCTION
+        int compute_bin(RealType val, int dim) const {
+            // Transform from [-pi, pi] to grid coordinates [0, n_grid)
+            constexpr RealType inv_two_pi = RealType(0.5) / RealType(3.14159265358979323846);
+
+            RealType k = val * inv_two_pi;
+            k = k - Kokkos::floor(k);
+
+            RealType sx = k * n_grid[dim];
+            int idx_0 = (w & 1)
+                            ? static_cast<int>(sx + RealType{0.5})
+                            : static_cast<int>(sx);
+
+            // Periodic boundary handling
+            if (idx_0 < 0) idx_0 += n_grid[dim];
+            else if (idx_0 >= static_cast<int>(n_grid[dim])) idx_0 -= n_grid[dim];
+
+            return idx_0 / tile_size[dim];
+        }
+    };
+
+    /**
+     * @brief Sort particles by tile and compute bin offsets using Kokkos::BinSort
+     *
+     * This is a generic implementation that works with any coordinate system.
+     * The input coordinates x must already be in grid coordinates [0, n_grid).
+     *
+     * @tparam RealType Floating point type
+     * @tparam ExecSpace Kokkos execution space
+     */
+    template<typename RealType, typename ExecSpace>
+    void bin_sort_3d(
+        Kokkos::View<RealType*[3], typename ExecSpace::memory_space> x,  // Positions in GRID coordinates
+        Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
+        Kokkos::Array<int, 3> tile_size,
+        int w,
+        Kokkos::View<typename ExecSpace::memory_space::size_type*, typename ExecSpace::memory_space>& permute,
+        Kokkos::View<typename ExecSpace::memory_space::size_type*, typename ExecSpace::memory_space>& bin_offsets) {
+
+        using size_type = typename ExecSpace::memory_space::size_type;
+        using memory_space = typename ExecSpace::memory_space;
+        const size_type n_particles = x.extent(0);
+
+        // Calculate number of tiles
+        Kokkos::Array<size_type, 3> num_tiles;
+        num_tiles[0] = (n_grid[0] + tile_size[0] - 1) / tile_size[0];
+        num_tiles[1] = (n_grid[1] + tile_size[1] - 1) / tile_size[1];
+        num_tiles[2] = (n_grid[2] + tile_size[2] - 1) / tile_size[2];
+        size_type n_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
+
+        // Allocate outputs
+        Kokkos::realloc(permute, n_particles);
+        Kokkos::realloc(bin_offsets, n_tiles + 1);
+
+        // Create BinOp
+        BinOp3D<RealType, ExecSpace> bin_op{n_grid, tile_size, num_tiles, w};
+
+        // Use Kokkos::BinSort
+        Kokkos::BinSort<decltype(x), BinOp3D<RealType, ExecSpace>> sorter(
+            x, 0, n_particles, bin_op, false);
+
+        sorter.create_permute_vector();
+        auto perm_view = sorter.get_permute_vector();
+        Kokkos::deep_copy(permute, perm_view);
+
+        // Get bin offsets from sorter
+        auto offsets_view = sorter.get_bin_offsets();
+        Kokkos::parallel_for("copy_bin_offsets",
+            Kokkos::RangePolicy<ExecSpace>(0, n_tiles + 1),
+            KOKKOS_LAMBDA(size_type i) {
+                bin_offsets(i) = offsets_view(i);
+            });
+
+        Kokkos::fence();
+    }
+
+}  // namespace detail
+}  // namespace Interpolation
+}  // namespace ippl
+
+#endif  // IPPL_INTERPOLATION_BINNING_H
