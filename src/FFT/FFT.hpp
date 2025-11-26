@@ -20,11 +20,11 @@
    Implementations for FFT constructor/destructor and transforms
 */
 
-#include "FFT/NUFFT/NativeNUFFT.h"
 #include "Utility/IpplTimings.h"
 
 #include "Field/BareField.h"
 
+#include "FFT/NUFFT/NativeNUFFT.h"
 #include "FieldLayout/FieldLayout.h"
 
 namespace ippl {
@@ -470,7 +470,8 @@ namespace ippl {
             nmodes[d] = lDom[d].length();
             ;
         }
-        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", true);
+        use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
+        use_finufft      = params.get<bool>("use_finufft_defaults", false);
 
         type_m = type;
         if (tempField_m.size() < lDom.size()) {
@@ -493,7 +494,7 @@ namespace ippl {
     template <typename RealField>
     void FFT<NUFFTransform, RealField>::setup(std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
-        tol_m = params.get<T>("tolerance", 1e-6);
+        tol_m         = params.get<T>("tolerance", 1e-6);
         this->n_modes = nmodes;
 
         if (use_kokkos_nufft) {
@@ -510,7 +511,7 @@ namespace ippl {
             throw IpplException("FFT<NUFFTransform>::setup",
                                 "kokkos_nufft requested but not available");
 #endif
-        } else {
+        } else if (use_finufft) {
 #ifdef ENABLE_FINUFFT
 
 #if ENABLE_GPU_NUFFT
@@ -521,22 +522,21 @@ namespace ippl {
             finufft_default_opts(&opts);
 #endif
 
-            if (!params.get<bool>("use_finufft_defaults")) {
-                tol_m = params.get<T>("tolerance");
+            tol_m = params.get<T>("tolerance");
 #ifdef ENABLE_GPU_NUFFT
-                opts.gpu_method         = params.get<int>("gpu_method");
-                opts.gpu_sort           = params.get<int>("gpu_sort");
-                opts.gpu_kerevalmeth    = params.get<int>("gpu_kerevalmeth");
-                opts.gpu_binsizex       = params.get<int>("gpu_binsizex");
-                opts.gpu_binsizey       = params.get<int>("gpu_binsizey");
-                opts.gpu_binsizez       = params.get<int>("gpu_binsizez");
-                opts.gpu_maxsubprobsize = params.get<int>("gpu_maxsubprobsize");
+            opts.gpu_method      = params.get<int>("gpu_method", opts.gpu_method);
+            opts.gpu_sort        = params.get<int>("gpu_sort", opts.gpu_sort);
+            opts.gpu_kerevalmeth = params.get<int>("gpu_kerevalmeth", opts.gpu_kerevalmeth);
+            opts.gpu_binsizex    = params.get<int>("gpu_binsizex", opts.gpu_binsizex);
+            opts.gpu_binsizey    = params.get<int>("gpu_binsizey", opts.gpu_binsizey);
+            opts.gpu_binsizez    = params.get<int>("gpu_binsizez", opts.gpu_binsizez);
+            opts.gpu_maxsubprobsize =
+                params.get<int>("gpu_maxsubprobsize", opts.gpu_maxsubprobsize);
 #else
-                opts.spread_sort        = params.get<int>("spread_sort");
-                opts.spread_kerevalmeth = params.get<int>("spread_kerevalmeth");
-                opts.nthreads           = params.get<int>("nthreads");
+            opts.spread_sort        = params.get<int>("spread_sort");
+            opts.spread_kerevalmeth = params.get<int>("spread_kerevalmeth");
+            opts.nthreads           = params.get<int>("nthreads");
 #endif
-            }
 
 #ifdef ENABLE_GPU_NUFFT
             opts.gpu_maxbatchsize = 0;  // default option. ignored for ntransf = 1 which
@@ -558,9 +558,15 @@ namespace ippl {
 
             // dim in finufft is int
             int dim = static_cast<int>(Dim);
-            ier_m   = nufft_m.makeplan(type_m, dim, this->n_modes.data(), iflag, 1, tol_m, &plan_m, &opts);
+            ier_m   = nufft_m.makeplan(type_m, dim, this->n_modes.data(), iflag, 1, tol_m, &plan_m,
+                                       &opts);
 #else
-            // Use native NUFFT implementation when FINUFFT is not available
+            throw IpplException(
+                "FFT<NUFFTransform>::setup",
+                "FINUFFT requested but not available (IPPL_ENABLE_FINUFFT not set)");
+#endif
+        } else {
+            // Use native NUFFT implementation (default path)
             using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
 
             Vector<size_t, Dim> n_modes_vec;
@@ -569,27 +575,20 @@ namespace ippl {
             }
 
             typename NativeNUFFT_t::Config cfg;
-            cfg.tol = tol_m;
+            cfg.tol   = tol_m;
             cfg.sigma = params.get<T>("sigma", T(2.0));
-            cfg.spread.sort = params.get<bool>("sort", true);
+            cfg.spread =
+                Interpolation::ScatterConfig::get_default<typename RealField::execution_space>();
 
             // Configure spread method
             std::string spread_method = params.get<std::string>("spread_method", "atomic");
-            if (spread_method == "tiled") {
-                cfg.spread.method = Interpolation::ScatterMethod::Tiled;
-                cfg.spread.tile_size_3d = params.get<int>("tile_size_3d", 16);
-                cfg.spread.z_tiles = params.get<int>("z_tiles", 2);
-                cfg.spread.team_size = params.get<int>("team_size", 16);
-            } else if (spread_method == "scatterview") {
-                cfg.spread.method = Interpolation::ScatterMethod::ScatterView;
-            } else {
+            if (spread_method == "atomic") {
                 cfg.spread.method = Interpolation::ScatterMethod::Atomic;
             }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
             nufft_ptr->initialize(MPI_COMM_WORLD);
             native_nufft_ = static_cast<void*>(nufft_ptr);
-#endif
         }
     }
 
@@ -653,24 +652,25 @@ namespace ippl {
         } else if (type_m == 2) {
             // For Type 2: FFT-shift input field (no conjugation, we'll conjugate output instead)
             const auto& lDom = layout.getLocalNDIndex();
-            const size_t nx = lDom[0].length();
-            const size_t ny = lDom[1].length();
-            const size_t nz = lDom[2].length();
+            const size_t nx  = lDom[0].length();
+            const size_t ny  = lDom[1].length();
+            const size_t nz  = lDom[2].length();
 
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
                 "prepare_type2_input_fftshift",
-                mdrange_type({nghost, nghost, nghost},
-                            {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+                mdrange_type(
+                    {nghost, nghost, nghost},
+                    {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
                     const size_t ii = i - nghost;
                     const size_t jj = j - nghost;
                     const size_t kk = k - nghost;
 
                     // FFT-shift: map from corner to centered convention
-                    const size_t ii_shift = (ii + nx/2) % nx;
-                    const size_t jj_shift = (jj + ny/2) % ny;
-                    const size_t kk_shift = (kk + nz/2) % nz;
+                    const size_t ii_shift = (ii + nx / 2) % nx;
+                    const size_t jj_shift = (jj + ny / 2) % ny;
+                    const size_t kk_shift = (kk + nz / 2) % nz;
 
                     // Dummy captures for nvcc
                     fview;
@@ -692,7 +692,7 @@ namespace ippl {
 
         // Copy results back with FFT-shift and conjugate to match FINUFFT convention
         if (type_m == 1) {
-            const auto& lDom = layout.getLocalNDIndex();
+            const auto& lDom   = layout.getLocalNDIndex();
             using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
             Kokkos::parallel_for(
                 "copy_to_field_with_fftshift_conj",
@@ -710,9 +710,9 @@ namespace ippl {
                     const size_t kk = k - nghost;
 
                     // FFT-shift: map from centered to corner convention
-                    const size_t ii_shift = (ii + nx/2) % nx;
-                    const size_t jj_shift = (jj + ny/2) % ny;
-                    const size_t kk_shift = (kk + nz/2) % nz;
+                    const size_t ii_shift = (ii + nx / 2) % nx;
+                    const size_t jj_shift = (jj + ny / 2) % ny;
+                    const size_t kk_shift = (kk + nz / 2) % nz;
 
                     fview;
                     f_nufft;
@@ -727,12 +727,11 @@ namespace ippl {
         } else if (type_m == 2) {
             // Type 2: Conjugate output to fix sign (kokkos uses -1, FINUFFT uses +1)
             Kokkos::parallel_for(
-                "copy_to_particles_conj", localNp,
-                KOKKOS_LAMBDA(const size_t i) {
+                "copy_to_particles_conj", localNp, KOKKOS_LAMBDA(const size_t i) {
                     // Conjugate and take real part
-                    auto val = c_nufft(i);
+                    auto val      = c_nufft(i);
                     auto conj_val = Kokkos::conj(val);
-                    Qview(i) = conj_val.real();
+                    Qview(i)      = conj_val.real();
                 });
         }
     }
@@ -747,7 +746,7 @@ namespace ippl {
 #ifdef KOKKOS_NUFFT_AVAILABLE
             transform_kokkos_nufft(R, Q, f);
 #endif
-        } else {
+        } else if (use_finufft) {
 #ifdef ENABLE_FINUFFT
             auto fview       = f.getView();
             auto Rview       = R.getView();
@@ -815,51 +814,8 @@ namespace ippl {
             ier_m = nufft_m.setpts(plan_m, localNp, tempR[0].data(), tempR[1].data(),
                                    tempR[2].data(), 0, NULL, NULL, NULL);
 
-            // Debug: Print first few particle positions and charges
-            auto tempR_host_0 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[0]);
-            auto tempR_host_1 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[1]);
-            auto tempR_host_2 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempR[2]);
-            auto tempQ_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempQ);
-            std::cout << "[FINUFFT] Type " << type_m << " - First 3 particles:" << std::endl;
-            for (size_t i = 0; i < std::min(size_t(3), localNp); ++i) {
-#ifdef ENABLE_GPU_NUFFT
-                std::cout << "  x[" << i << "] = (" << tempR_host_0(i) << ", " << tempR_host_1(i) << ", " << tempR_host_2(i)
-                          << "), c[" << i << "] = (" << tempQ_host(i).x << ", " << tempQ_host(i).y << ")" << std::endl;
-#else
-                std::cout << "  x[" << i << "] = (" << tempR_host_0(i) << ", " << tempR_host_1(i) << ", " << tempR_host_2(i)
-                          << "), c[" << i << "] = (" << tempQ_host(i).real() << ", " << tempQ_host(i).imag() << ")" << std::endl;
-#endif
-            }
-
             ier_m = nufft_m.execute(plan_m, tempQ.data(), tempField.data());
             Kokkos::fence();
-
-            // Debug: Print first few output values after FINUFFT
-            if (type_m == 1) {
-                auto tempField_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempField);
-                std::cout << "[FINUFFT] Type 1 output - First few modes:" << std::endl;
-#ifdef ENABLE_GPU_NUFFT
-                std::cout << "  f[0,0,0] = (" << tempField_host(0, 0, 0).x << ", " << tempField_host(0, 0, 0).y << ")" << std::endl;
-                std::cout << "  f[1,0,0] = (" << tempField_host(1, 0, 0).x << ", " << tempField_host(1, 0, 0).y << ")" << std::endl;
-                std::cout << "  f[0,1,0] = (" << tempField_host(0, 1, 0).x << ", " << tempField_host(0, 1, 0).y << ")" << std::endl;
-                std::cout << "  f[8,8,8] (center) = (" << tempField_host(8, 8, 8).x << ", " << tempField_host(8, 8, 8).y << ")" << std::endl;
-#else
-                std::cout << "  f[0,0,0] = (" << tempField_host(0, 0, 0).real() << ", " << tempField_host(0, 0, 0).imag() << ")" << std::endl;
-                std::cout << "  f[1,0,0] = (" << tempField_host(1, 0, 0).real() << ", " << tempField_host(1, 0, 0).imag() << ")" << std::endl;
-                std::cout << "  f[0,1,0] = (" << tempField_host(0, 1, 0).real() << ", " << tempField_host(0, 1, 0).imag() << ")" << std::endl;
-                std::cout << "  f[8,8,8] (center) = (" << tempField_host(8, 8, 8).real() << ", " << tempField_host(8, 8, 8).imag() << ")" << std::endl;
-#endif
-            } else if (type_m == 2) {
-                auto tempQ_out = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tempQ);
-                std::cout << "[FINUFFT] Type 2 output - First 5 particles:" << std::endl;
-                for (size_t i = 0; i < std::min(size_t(5), localNp); ++i) {
-#ifdef ENABLE_GPU_NUFFT
-                    std::cout << "  c_out[" << i << "] = (" << tempQ_out(i).x << ", " << tempQ_out(i).y << ")" << std::endl;
-#else
-                    std::cout << "  c_out[" << i << "] = (" << tempQ_out(i).real() << ", " << tempQ_out(i).imag() << ")" << std::endl;
-#endif
-                }
-            }
 
             if (type_m == 1) {
                 Kokkos::parallel_for(
@@ -888,35 +844,37 @@ namespace ippl {
 #endif
                     });
             }
-
 #else
-            // Use native NUFFT implementation
+            throw IpplException("FFT<NUFFTransform>::transform",
+                                "FINUFFT requested but not available");
+#endif
+        } else {
+            // Use native NUFFT implementation (default path)
             using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
-            auto* nufft = static_cast<NativeNUFFT_t*>(native_nufft_);
+            auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
 
             if (type_m == 1) {
                 nufft->type1(R, Q, f);
             } else if (type_m == 2) {
                 nufft->type2(f, R, Q);  // Note: argument order is different for type2
             }
-#endif
         }
     }
 
     template <typename RealField>
     FFT<NUFFTransform, RealField>::~FFT() {
-#ifdef ENABLE_FINFUFT
-        if (!use_kokkos_nufft) {
+#ifdef ENABLE_FINUFFT
+        if (use_finufft) {
             ier_m = nufft_m.destroy(plan_m);
         }
-#else
-        // Clean up native NUFFT
-        if (native_nufft_) {
-            using NativeNUFFT_t = NUFFT::NativeNUFFT<RealField::dim, typename RealField::value_type, typename RealField::execution_space>;
+#endif
+        // Clean up native NUFFT (when not using kokkos_nufft or finufft)
+        if (!use_kokkos_nufft && !use_finufft && native_nufft_) {
+            using NativeNUFFT_t = NUFFT::NativeNUFFT<RealField::dim, typename RealField::value_type,
+                                                     typename RealField::execution_space>;
             delete static_cast<NativeNUFFT_t*>(native_nufft_);
             native_nufft_ = nullptr;
         }
-#endif
     }
 
 }  // namespace ippl

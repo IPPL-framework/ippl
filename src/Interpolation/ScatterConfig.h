@@ -10,12 +10,10 @@ namespace Interpolation {
      * Different methods offer various performance characteristics:
      * - Atomic: Simple atomic operations, works everywhere
      * - Tiled: Cache-friendly tiling with team policies and shared memory histograms
-     * - ScatterView: Uses Kokkos::ScatterView for better performance (TODO)
      */
     enum class ScatterMethod {
         Atomic,        // Simple atomic operations
         Tiled,         // Tiled for cache locality with shared memory optimization
-        ScatterView    // Using Kokkos::ScatterView (TODO)
     };
 
     /**
@@ -60,7 +58,7 @@ namespace Interpolation {
         ScatterConfig config;
         config.method = ScatterMethod::Tiled;
         config.sort = true;
-        config.tile_size_3d = 9;
+        config.tile_size_3d = 6;
         config.z_tiles = 2;
         config.team_size = 64;
         return config;

@@ -12,7 +12,7 @@ namespace detail {
      * @brief Generic atomic scatter functor for particle-to-grid operations
      *
      * This is a simple atomic implementation that works with any kernel function
-     * and any dimension. It's generic but not optimized for specific hardware.
+     * and any dimension.
      *
      * Template parameters:
      * @tparam Dim The dimension (1, 2, or 3)

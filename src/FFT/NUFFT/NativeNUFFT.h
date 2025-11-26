@@ -30,7 +30,7 @@ namespace ippl {
     namespace NUFFT {
 
         /**
-         * @brief Native NUFFT implementation using IPPL components.
+         * @brief NUFFT implementation.
          *
          * Type 1: Spread from nonuniform points to uniform Fourier modes
          *         (scatter -> FFT -> deconvolution)
@@ -55,7 +55,7 @@ namespace ippl {
             using complex_view_1d = Kokkos::View<complex_type*, memory_space>;
             using real_view_1d    = Kokkos::View<T*, memory_space>;
 
-            // Field types (using uniform Cartesian mesh)
+            // Field types
             using Mesh_t       = UniformCartesian<T, Dim>;
             using Centering_t  = Cell;
             using ComplexField = Field<complex_type, Dim, Mesh_t, Centering_t, ExecSpace>;
@@ -64,7 +64,7 @@ namespace ippl {
             struct Config {
                 T tol     = T(1e-6);  // Error tolerance
                 T sigma   = T(2.0);   // Upsampling factor
-                Interpolation::ScatterConfig spread;  // Spread/gather configuration
+                Interpolation::ScatterConfig spread;  // Spread/gather configuration (chooses impl/tiling/..)
             };
 
             struct TimingInfo {
@@ -134,19 +134,18 @@ namespace ippl {
                     domain[d] = Index(n_grid_[d]);
                 }
 
-                // Create decomposition (single rank for now)
+                // Create decomposition
                 std::array<bool, Dim> isParallel;
                 isParallel.fill(false);
 
                 grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel);
 
                 // Create mesh for upsampled grid
-                // Use origin at -π to match typical NUFFT convention of [-π, π]^Dim
                 Vector<T, Dim> origin, hx;
                 for (unsigned d = 0; d < Dim; ++d) {
                     origin[d] = -M_PI;
                     T extent = T(2.0) * M_PI;
-                    hx[d] = extent / n_grid_[d];  // Mesh spacing, not extent!
+                    hx[d] = extent / n_grid_[d];
                 }
 
                 grid_mesh_ = std::make_unique<Mesh_t>(domain, hx, origin);
@@ -164,24 +163,9 @@ namespace ippl {
                     std::make_unique<FFT<CCTransform, ComplexField>>(*grid_layout_, fftParams);
 
                 // Precompute deconvolution factors
-                // auto t0 = std::chrono::high_resolution_clock::now();
-                // for (unsigned d = 0; d < Dim; ++d) {
-                //     factors_[d] = complex_view_1d("deconv_factors", n_modes_[d]);
-                //     computeDeconvolutionFactors<ExecSpace, T>(factors_[d], n_modes_[d],
-                //     n_grid_[d],
-                //                                               kernel_);
-                // }
-                // Kokkos::fence();
-                // timing_.precompute =
-                //     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                //         .count();
-
-                // Precompute deconvolution factors using kokkos-nufft’s ES_Kernel
                 auto t0 = std::chrono::high_resolution_clock::now();
 
-                // Build a kokkos-nufft kernel with same tolerance as your IPPL kernel/config
                 ESKernel<T> nufft_kernel(cfg_.tol);
-
                 for (unsigned d = 0; d < Dim; ++d) {
                     factors_[d] = complex_view_1d("deconv_factors", n_modes_[d]);
 
@@ -226,8 +210,6 @@ namespace ippl {
                 // Step 1: Spread particles to upsampled grid
                 auto t0      = std::chrono::high_resolution_clock::now();
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
-
-                // Use kernel-based scatter for spreading
                 Q.scatter(*grid_field_, R, kernel_, cfg_.spread);
                 Kokkos::fence();
 
@@ -239,7 +221,6 @@ namespace ippl {
                 performFFT(-1);
 
                 // Step 3: Deconvolution and truncation to output modes
-                // Work directly with Field views, no temporaries needed
                 t0 = std::chrono::high_resolution_clock::now();
                 applyDeconvolutionType1<Dim, ExecSpace, T>(
                     grid_field_->getView(), factors_,
@@ -277,7 +258,7 @@ namespace ippl {
                 resetTimings();
                 auto ttot = std::chrono::high_resolution_clock::now();
 
-                // Step 1: Apply pre-correction directly to IPPL Field views (no temporaries)
+                // Step 1: Apply pre-correction
                 auto t0 = std::chrono::high_resolution_clock::now();
 
                 applyPreCorrectionType2<Dim, ExecSpace, T>(
@@ -290,7 +271,7 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // Step 2: Inverse FFT (same as Type 1, matches kokkos_nufft Type 2)
+                // Step 2: Inverse FFT
                 t0 = std::chrono::high_resolution_clock::now();
                 performFFT(-1);
 
@@ -324,156 +305,9 @@ namespace ippl {
                 timing_.correct = 0;
             }
 
-            // Helper to copy grid data from IPPL field to temporary view
-            template <typename TempView, typename SizeType>
-            void copyGridToTemp(TempView& dst, const Kokkos::Array<SizeType, Dim>& ngrid) {
-                auto src_view = grid_field_->getView();
-                const int nghost = grid_field_->getNghost();
-
-                using policy_type = Kokkos::MDRangePolicy<execution_space, Kokkos::Rank<Dim>>;
-
-                if constexpr (Dim == 3) {
-                    policy_type policy({0, 0, 0}, {static_cast<int>(ngrid[0]),
-                                                    static_cast<int>(ngrid[1]),
-                                                    static_cast<int>(ngrid[2])});
-                    Kokkos::parallel_for("copyGridToTemp", policy,
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            dst(i, j, k) = src_view(i + nghost, j + nghost, k + nghost);
-                        });
-                } else if constexpr (Dim == 2) {
-                    policy_type policy({0, 0}, {static_cast<int>(ngrid[0]),
-                                                 static_cast<int>(ngrid[1])});
-                    Kokkos::parallel_for("copyGridToTemp", policy,
-                        KOKKOS_LAMBDA(int i, int j) {
-                            dst(i, j) = src_view(i + nghost, j + nghost);
-                        });
-                } else {
-                    Kokkos::parallel_for("copyGridToTemp",
-                        Kokkos::RangePolicy<execution_space>(0, ngrid[0]),
-                        KOKKOS_LAMBDA(int i) {
-                            dst(i) = src_view(i + nghost);
-                        });
-                }
-                Kokkos::fence();
-            }
-
-            // Helper to copy grid data from IPPL field to temporary view with normalization
-            template <typename TempView, typename SizeType>
-            void copyGridToTempNormalized(TempView& dst, const Kokkos::Array<SizeType, Dim>& ngrid, T norm_factor) {
-                auto src_view = grid_field_->getView();
-                const int nghost = grid_field_->getNghost();
-
-                using policy_type = Kokkos::MDRangePolicy<execution_space, Kokkos::Rank<Dim>>;
-
-                if constexpr (Dim == 3) {
-                    policy_type policy({0, 0, 0}, {static_cast<int>(ngrid[0]),
-                                                    static_cast<int>(ngrid[1]),
-                                                    static_cast<int>(ngrid[2])});
-                    Kokkos::parallel_for("copyGridToTemp", policy,
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            dst(i, j, k) = src_view(i + nghost, j + nghost, k + nghost) / norm_factor;
-                        });
-                } else if constexpr (Dim == 2) {
-                    policy_type policy({0, 0}, {static_cast<int>(ngrid[0]),
-                                                 static_cast<int>(ngrid[1])});
-                    Kokkos::parallel_for("copyGridToTemp", policy,
-                        KOKKOS_LAMBDA(int i, int j) {
-                            dst(i, j) = src_view(i + nghost, j + nghost) / norm_factor;
-                        });
-                } else {
-                    Kokkos::parallel_for("copyGridToTemp",
-                        Kokkos::RangePolicy<execution_space>(0, ngrid[0]),
-                        KOKKOS_LAMBDA(int i) {
-                            dst(i) = src_view(i + nghost) / norm_factor;
-                        });
-                }
-                Kokkos::fence();
-            }
-
-            // Helper to copy from nufft output view to IPPL field
-            template <typename OutputView, typename OutField, typename SizeType>
-            void copyOutputToField(const OutputView& src, OutField& dst,
-                                   const Kokkos::Array<SizeType, Dim>& nmodes) {
-                auto dst_view = dst.getView();
-                const int nghost = dst.getNghost();
-
-                using policy_type = Kokkos::MDRangePolicy<execution_space, Kokkos::Rank<Dim>>;
-
-                if constexpr (Dim == 3) {
-                    const int nx = static_cast<int>(nmodes[0]);
-                    const int ny = static_cast<int>(nmodes[1]);
-                    const int nz = static_cast<int>(nmodes[2]);
-
-                    policy_type policy({0, 0, 0}, {nx, ny, nz});
-                    Kokkos::parallel_for("copyOutputToField", policy,
-                        KOKKOS_LAMBDA(int i, int j, int k) {
-                            // apply_correction outputs in corner-DC format
-                            // Apply FFT-shift to convert to IPPL's centered format
-                            // and conjugate to match kokkos_nufft convention
-                            const int ii_shift = (i + nx/2) % nx;
-                            const int jj_shift = (j + ny/2) % ny;
-                            const int kk_shift = (k + nz/2) % nz;
-                            dst_view(i + nghost, j + nghost, k + nghost) =
-                                Kokkos::conj(src(ii_shift, jj_shift, kk_shift));
-                        });
-                } else if constexpr (Dim == 2) {
-                    const int nx = static_cast<int>(nmodes[0]);
-                    const int ny = static_cast<int>(nmodes[1]);
-
-                    policy_type policy({0, 0}, {nx, ny});
-                    Kokkos::parallel_for("copyOutputToField", policy,
-                        KOKKOS_LAMBDA(int i, int j) {
-                            const int ii_shift = (i + nx/2) % nx;
-                            const int jj_shift = (j + ny/2) % ny;
-                            dst_view(i + nghost, j + nghost) =
-                                Kokkos::conj(src(ii_shift, jj_shift));
-                        });
-                } else {
-                    const int nx = static_cast<int>(nmodes[0]);
-                    Kokkos::parallel_for("copyOutputToField",
-                        Kokkos::RangePolicy<execution_space>(0, nx),
-                        KOKKOS_LAMBDA(int i) {
-                            const int ii_shift = (i + nx/2) % nx;
-                            dst_view(i + nghost) = Kokkos::conj(src(ii_shift));
-                        });
-                }
-                Kokkos::fence();
-            }
-
             void performFFT(int sign) {
-                // Use heFFTe through IPPL FFT interface
                 TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
                 heffte_fft_->transform(direction, *grid_field_);
-            }
-
-            // TODO(paul) this is for testing
-            auto gridViewNoGhosts() {
-                using view_type = typename ComplexField::view_type;
-                view_type full  = grid_field_->getView();
-
-                const int nghost = grid_field_->getNghost();
-
-                if constexpr (Dim == 1) {
-                    return Kokkos::subview(
-                        full, Kokkos::make_pair(static_cast<int>(nghost),
-                                                static_cast<int>(nghost + n_grid_[0])));
-                } else if constexpr (Dim == 2) {
-                    return Kokkos::subview(
-                        full,
-                        Kokkos::make_pair(static_cast<int>(nghost),
-                                          static_cast<int>(nghost + n_grid_[0])),
-                        Kokkos::make_pair(static_cast<int>(nghost),
-                                          static_cast<int>(nghost + n_grid_[1])));
-                } else {  // Dim == 3
-                    return Kokkos::subview(
-                        full,
-                        Kokkos::make_pair(static_cast<int>(nghost),
-                                          static_cast<int>(nghost + n_grid_[0])),
-                        Kokkos::make_pair(static_cast<int>(nghost),
-                                          static_cast<int>(nghost + n_grid_[1])),
-                        Kokkos::make_pair(static_cast<int>(nghost),
-                                          static_cast<int>(nghost + n_grid_[2])));
-                }
             }
         };
 

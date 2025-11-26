@@ -304,6 +304,23 @@ int main(int argc, char* argv[]) {
                         double time_ms = benchmarkType1(*fft, field, bunch, "kokkos_nufft");
                         printResult("kokkos_nufft", time_ms, Np, grid_size, "1");
                     }
+
+#ifdef ENABLE_FINUFFT
+                    // FINUFFT/cuFINUFFT reference
+                    {
+                        ippl::ParameterList fftParams;
+                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("use_finufft_defaults", true);
+
+                        auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
+                        double time_ms = benchmarkType1(*fft, field, bunch, "FINUFFT");
+#ifdef ENABLE_GPU_NUFFT
+                        printResult("cuFINUFFT", time_ms, Np, grid_size, "1");
+#else
+                        printResult("FINUFFT", time_ms, Np, grid_size, "1");
+#endif
+                    }
+#endif
                 }
 
                 // ============================================================
@@ -391,6 +408,23 @@ int main(int argc, char* argv[]) {
                         double time_ms = benchmarkType2(*fft, field, bunch, "kokkos_nufft");
                         printResult("kokkos_nufft", time_ms, Np, grid_size, "2");
                     }
+
+#ifdef ENABLE_FINUFFT
+                    // FINUFFT/cuFINUFFT reference
+                    {
+                        ippl::ParameterList fftParams;
+                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("use_finufft_defaults", true);
+
+                        auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
+                        double time_ms = benchmarkType2(*fft, field, bunch, "FINUFFT");
+#ifdef ENABLE_GPU_NUFFT
+                        printResult("cuFINUFFT", time_ms, Np, grid_size, "2");
+#else
+                        printResult("FINUFFT", time_ms, Np, grid_size, "2");
+#endif
+                    }
+#endif
                 }
 
                 std::cout << std::endl;

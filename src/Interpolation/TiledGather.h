@@ -21,27 +21,31 @@ namespace detail {
      * Template parameters:
      * @tparam w The kernel width (compile-time constant for optimization)
      * @tparam RealType The floating point type (float or double)
+     * @tparam PositionViewType The position view type
      * @tparam FieldViewType The field view type (generic, can be any Kokkos::View)
      * @tparam KernelType The kernel function type
      * @tparam ValueType The type of values being gathered (can be scalar or complex)
      */
-    template<int w, typename RealType, typename FieldViewType, typename KernelType, typename ValueType>
+    template<int w, typename RealType, typename PositionViewType, typename PermuteViewType, typename FieldViewType, typename KernelType, typename ValueType>
     __global__ void tiled_gather_3d_cuda_kernel(
-        Kokkos::View<RealType*[3], Kokkos::CudaSpace> x_sorted,  // Particle positions in GRID coordinates [0, n_grid)
+        PositionViewType x,  // Particle positions in PHYSICAL coordinates [-pi, pi]
+        PermuteViewType permute,  // Permutation array
         FieldViewType field_view,  // Input field with ghosts
-        Kokkos::View<ValueType*, Kokkos::CudaSpace> c_sorted,  // Output values
+        Kokkos::View<ValueType*, Kokkos::CudaSpace> output,  // Output values (written at permuted indices)
         int64_t n_points,
         int hw,  // half width
         int nghost,
         int n0, int n1, int n2,  // Grid dimensions
         RealType inv_hw,  // 1 / half_width for kernel scaling
-        KernelType kernel) {
+        KernelType kernel,
+        bool add_to_attribute) {
 
         constexpr bool odd = w % 2 == 1;
         constexpr bool is_complex = std::is_same_v<ValueType, Kokkos::complex<RealType>>;
-        using size_type = typename Kokkos::CudaSpace::size_type;
+        using size_type = typename PermuteViewType::value_type;
         constexpr int w3 = w * w * w;
         constexpr int WARP_SIZE = 32;
+        constexpr RealType inv_two_pi = RealType(0.5) / RealType(3.14159265358979323846);
 
         // Determine which particle this warp is processing
         const size_type warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
@@ -50,18 +54,37 @@ namespace detail {
         const int lane_id = threadIdx.x % WARP_SIZE;
         const int warp_in_block = threadIdx.x / WARP_SIZE;
 
+        // Apply permutation to get actual particle index
+        const size_type particle_idx = permute(warp_id);
+
+        // Helper to access position component - works with both View<T*[3]> and View<Vector<T,3>*>
+        auto get_pos = [&](int d) -> RealType {
+            if constexpr (std::is_same_v<PositionViewType, Kokkos::View<RealType*[3], Kokkos::CudaSpace>>) {
+                return x(particle_idx, d);
+            } else {
+                return x(particle_idx)[d];
+            }
+        };
+
+        // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
+        auto transform_coord = [&](RealType pos_phys, int grid_size) -> RealType {
+            RealType k = pos_phys * inv_two_pi;
+            k = k - Kokkos::floor(k);
+            return k * grid_size;
+        };
+
         // Shared memory: kernel values for each warp in the block
         constexpr int max_warps_per_block = 256 / WARP_SIZE;
         __shared__ RealType ker_shared[max_warps_per_block][3 * w];
 
-        // Particle position in grid coordinates [0, n_grid)
-        RealType sx = x_sorted(warp_id, 0);
+        // Particle positions in grid coordinates [0, n_grid)
+        RealType sx = transform_coord(get_pos(0), n0);
         size_type idx0_0 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
 
-        sx = x_sorted(warp_id, 1);
+        sx = transform_coord(get_pos(1), n1);
         size_type idx0_1 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
 
-        sx = x_sorted(warp_id, 2);
+        sx = transform_coord(get_pos(2), n2);
         size_type idx0_2 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
 
         // Collaboratively compute kernel values within the warp
@@ -69,16 +92,34 @@ namespace detail {
             int d = i / w;
             int k = i % w;
 
-            auto sx_loc = x_sorted(warp_id, d);
-            auto idx0_loc = (d == 2) ? idx0_2 : (d == 1) ? idx0_1 : idx0_0;
+            RealType sx_loc;
+            size_type idx0_loc;
+            int grid_size_loc;
+
+            if (d == 0) {
+                sx_loc = transform_coord(get_pos(0), n0);
+                idx0_loc = idx0_0;
+            } else if (d == 1) {
+                sx_loc = transform_coord(get_pos(1), n1);
+                idx0_loc = idx0_1;
+            } else {
+                sx_loc = transform_coord(get_pos(2), n2);
+                idx0_loc = idx0_2;
+            }
 
             ker_shared[warp_in_block][i] =
                 kernel((sx_loc - static_cast<RealType>(idx0_loc + k)) * inv_hw);
         }
         __syncwarp();
 
+        // Determine if grid is complex (ValueType might be real even if grid is complex)
+        using grid_element_type = std::remove_reference_t<decltype(field_view(0, 0, 0))>;
+        constexpr bool grid_is_complex = std::is_same_v<grid_element_type, Kokkos::complex<RealType>>;
+        constexpr bool value_is_complex = is_complex;
+
         // Each thread in warp accumulates its portion of the 3D grid
-        ValueType thread_sum(0);
+        // thread_sum should match grid type
+        grid_element_type thread_sum(0);
 
         for (int linear_idx = lane_id; linear_idx < w3; linear_idx += WARP_SIZE) {
             const int i = linear_idx % w;
@@ -105,7 +146,25 @@ namespace detail {
         }
 
         // Warp-level reduction using shuffle operations
-        if constexpr (is_complex) {
+
+        if constexpr (grid_is_complex && !value_is_complex) {
+            // Grid is complex but output is real - extract real part
+            RealType res_real = thread_sum.real();
+
+            for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+                res_real += __shfl_down_sync(0xffffffff, res_real, offset);
+            }
+
+            // First lane in warp writes result using permuted index
+            if (lane_id == 0) {
+                if (add_to_attribute) {
+                    output(particle_idx) += res_real;
+                } else {
+                    output(particle_idx) = res_real;
+                }
+            }
+        } else if constexpr (is_complex) {
+            // Both complex
             RealType res_real = thread_sum.real();
             RealType res_imag = thread_sum.imag();
 
@@ -114,18 +173,26 @@ namespace detail {
                 res_imag += __shfl_down_sync(0xffffffff, res_imag, offset);
             }
 
-            // First lane in warp writes result
             if (lane_id == 0) {
-                c_sorted(warp_id) = ValueType(res_real, res_imag);
+                if (add_to_attribute) {
+                    output(particle_idx) += ValueType(res_real, res_imag);
+                } else {
+                    output(particle_idx) = ValueType(res_real, res_imag);
+                }
             }
         } else {
+            // Both real
             RealType res = thread_sum;
             for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
                 res += __shfl_down_sync(0xffffffff, res, offset);
             }
 
             if (lane_id == 0) {
-                c_sorted(warp_id) = res;
+                if (add_to_attribute) {
+                    output(particle_idx) += res;
+                } else {
+                    output(particle_idx) = res;
+                }
             }
         }
     }
@@ -136,14 +203,16 @@ namespace detail {
      */
     template<int W, int MaxW>
     struct CudaGatherDispatcher {
-        template<typename RealType, typename FieldViewType, typename KernelType, typename ValueType>
+        template<typename RealType, typename PositionViewType, typename PermuteViewType, typename FieldViewType, typename KernelType, typename ValueType>
         static void dispatch_3d(
             int w, size_t n,
-            Kokkos::View<RealType*[3], Kokkos::CudaSpace> x_sorted,
+            PositionViewType x,
+            PermuteViewType permute,
             FieldViewType field_view,
-            Kokkos::View<ValueType*, Kokkos::CudaSpace> c_sorted,
+            Kokkos::View<ValueType*, Kokkos::CudaSpace> output,
             int hw, int nghost, int n0, int n1, int n2, RealType inv_hw,
-            const KernelType& kernel) {
+            const KernelType& kernel,
+            bool add_to_attribute) {
 
             if constexpr (W <= MaxW) {
                 if (w == W) {
@@ -153,14 +222,14 @@ namespace detail {
                     int num_warps = n;
                     int grid_size = (num_warps + warps_per_block - 1) / warps_per_block;
 
-                    tiled_gather_3d_cuda_kernel<W, RealType, FieldViewType, KernelType, ValueType>
+                    tiled_gather_3d_cuda_kernel<W, RealType, PositionViewType, PermuteViewType, FieldViewType, KernelType, ValueType>
                         <<<grid_size, block_size>>>(
-                            x_sorted, field_view, c_sorted,
-                            n, hw, nghost, n0, n1, n2, inv_hw, kernel);
+                            x, permute, field_view, output,
+                            n, hw, nghost, n0, n1, n2, inv_hw, kernel, add_to_attribute);
                 } else {
-                    CudaGatherDispatcher<W + 1, MaxW>::template dispatch_3d<RealType, FieldViewType, KernelType, ValueType>(
-                        w, n, x_sorted, field_view, c_sorted,
-                        hw, nghost, n0, n1, n2, inv_hw, kernel);
+                    CudaGatherDispatcher<W + 1, MaxW>::template dispatch_3d<RealType, PositionViewType, PermuteViewType, FieldViewType, KernelType, ValueType>(
+                        w, n, x, permute, field_view, output,
+                        hw, nghost, n0, n1, n2, inv_hw, kernel, add_to_attribute);
                 }
             } else {
                 throw std::runtime_error("Kernel width exceeds maximum supported width");

@@ -250,8 +250,7 @@ namespace ippl {
         const bool odd = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
-        // Compute scale factor: n_grid / (2*pi)
-        // This converts from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
+        // Scale from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
         Vector<PositionType, Dim> scale;
         Vector<int, Dim> ngrid;
         for (unsigned d = 0; d < Dim; ++d) {
@@ -264,7 +263,6 @@ namespace ippl {
 
         // Dispatch based on spread method
         if (config.method == Interpolation::ScatterMethod::Tiled && Dim == 3) {
-            // Tiled spread for 3D - use team policies and shared memory
             using size_type = typename execution_space::memory_space::size_type;
 
             // Prepare grid dimensions
@@ -285,16 +283,12 @@ namespace ippl {
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
                 pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
 
-            // Note: Field zeroing is the caller's responsibility (e.g., NativeNUFFT::type1)
-            // to avoid redundant kernel launches
-
             // Calculate number of tiles
             Kokkos::Array<size_type, 3> num_tiles;
             for (unsigned d = 0; d < 3; ++d) {
                 num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
 
-            // Create tiled spread functor - pass real values and position view directly
             Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> functor{
                 bin_offsets, permute, pp_view, dview_m, full_view,
                 n_grid_arr, num_tiles,
@@ -418,52 +412,15 @@ namespace ippl {
                     detail::sortParticles<3, execution_space, PositionType>(
                         x_view, permute, origin, invdx, ngrid_vec, nParticles);
 
-                    // Apply permutation to coordinates and scale to grid space
-                    Kokkos::View<PositionType*[3], memory_space> x_sorted("x_sorted", nParticles);
-
-                    // Simple permutation and scaling kernel
-                    Kokkos::parallel_for("apply_permutation",
-                        policy_type(0, nParticles),
-                        KOKKOS_CLASS_LAMBDA(size_t i) {
-                            const size_t j = permute(i);
-
-                            for (int d = 0; d < 3; ++d) {
-                                // Convert from [-pi, pi] to [0, n_grid)
-                                // Following kokkos_nufft: scale = L / (2*pi)
-                                const PositionType L = ngrid[d];
-                                const PositionType scale_factor = L / (PositionType(2.0) * std::numbers::pi_v<PositionType>);
-                                PositionType s = x_view(j)[d] * scale_factor;
-                                s -= L * Kokkos::floor(s / L);
-                                x_sorted(i, d) = s;
-                            }
-                        });
-                    Kokkos::fence();
-
-                    // Allocate sorted results
-                    Kokkos::View<complex_type*, memory_space> c_sorted("c_sorted", nParticles);
-
-                    // Dispatch to CUDA kernel based on kernel width - use generic implementation
+                    // Dispatch to CUDA kernel - permutation and coordinate transformation done on-the-fly
                     constexpr int MaxW = 20;
                     int n0 = ngrid[0], n1 = ngrid[1], n2 = ngrid[2];
-                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<PositionType, decltype(full_view), Kernel, complex_type>(
+                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<PositionType, decltype(x_view), decltype(permute), decltype(full_view), Kernel, T>(
                         w, nParticles,
-                        x_sorted, full_view, c_sorted,
-                        hw, nghost, n0, n1, n2, inv_hw, kernel);
+                        x_view, permute, full_view, dview_m,
+                        hw, nghost, n0, n1, n2, inv_hw, kernel, addToAttribute);
 
                     cudaDeviceSynchronize();
-
-                    // Apply inverse permutation and extract real part
-                    Kokkos::parallel_for("apply_inverse_permutation",
-                        policy_type(0, nParticles),
-                        KOKKOS_CLASS_LAMBDA(size_t i) {
-                            const size_t j = permute(i);
-                            if (addToAttribute) {
-                                dview_m(j) += c_sorted(i).real();
-                            } else {
-                                dview_m(j) = c_sorted(i).real();
-                            }
-                        });
-                    Kokkos::fence();
                 } else
 #endif
                 {

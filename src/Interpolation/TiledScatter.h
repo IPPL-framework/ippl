@@ -37,7 +37,7 @@ namespace detail {
         // Input data
         Kokkos::View<size_type*, memory_space> bin_offsets;
         Kokkos::View<size_type*, memory_space> permute;
-        PositionViewType x;  // Particle positions in PHYSICAL coordinates [-pi, pi]
+        PositionViewType x;  // Particle positions in coordinates [-pi, pi]
         Kokkos::View<value_type*, memory_space> values;  // Values to scatter
         GridViewType grid;  // Output grid
 
