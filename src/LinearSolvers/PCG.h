@@ -88,9 +88,7 @@ namespace ippl {
 
         virtual void operator()(lhs_type& lhs, rhs_type& rhs,
                                 const ParameterList& params) override {
-            constexpr unsigned Dim             = lhs_type::dim;
-            typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t layout = lhs.getLayout();
+            constexpr unsigned Dim = lhs_type::dim;
 
             static IpplTimings::TimerRef cg_ops = IpplTimings::getTimer("CG");
             static IpplTimings::TimerRef allocateFields = IpplTimings::getTimer("allocateFields");
@@ -105,9 +103,9 @@ namespace ippl {
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             IpplTimings::startTimer(allocateFields);
-            // TODO add a check if mesh and layout changed to update fields
-            //lhs_type r(mesh, layout);
-            //lhs_type d(mesh, layout);
+            if (!(lhs.getLayout() == r.getLayout())) {
+                initializeFields(lhs.get_mesh(), lhs.getLayout()); 
+            }
             IpplTimings::stopTimer(allocateFields);
 
             using bc_type  = BConds<lhs_type, Dim>;
@@ -135,6 +133,7 @@ namespace ippl {
             IpplTimings::startTimer(apply);
             r = rhs - op_m(lhs);
             IpplTimings::stopTimer(apply);
+
             d = r.deepCopy();
             d.setFieldBC(bc);
 
