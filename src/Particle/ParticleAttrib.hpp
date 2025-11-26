@@ -275,22 +275,15 @@ namespace ippl {
                 tile_size_arr[d] = config.tile_size_3d;
             }
 
-            // Copy positions directly (functor will do coordinate transformation)
-            Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+            // Get position view directly - no copy needed
             auto pp_view = pp.getView();
-            Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
-                KOKKOS_LAMBDA(const size_t i) {
-                    for (unsigned d = 0; d < 3; ++d) {
-                        x_view(i, d) = pp_view(i)[d];
-                    }
-                });
 
             // Sort particles by tile
             Kokkos::View<size_type*, typename execution_space::memory_space> permute;
             Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
 
-            Interpolation::detail::bin_sort_3d<PositionType, execution_space>(
-                x_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
+            Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
+                pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
 
             // Note: Field zeroing is the caller's responsibility (e.g., NativeNUFFT::type1)
             // to avoid redundant kernel launches
@@ -301,9 +294,9 @@ namespace ippl {
                 num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
 
-            // Create tiled spread functor - pass real values directly to complex grid
-            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, T, view_type> functor{
-                bin_offsets, permute, x_view, dview_m, full_view,
+            // Create tiled spread functor - pass real values and position view directly
+            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> functor{
+                bin_offsets, permute, pp_view, dview_m, full_view,
                 n_grid_arr, num_tiles,
                 w, config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
                 config.z_tiles, nghost, inv_hw, kernel
@@ -514,7 +507,6 @@ namespace ippl {
                 Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
             }
         } else {
-            // Original gather kernel for other dimensions
             // TODO: Implement for 1D/2D if needed
         }
 

@@ -31,14 +31,29 @@ namespace detail {
             return num_tiles[0] * num_tiles[1] * num_tiles[2] + 1;
         }
 
+        // Helper to access position component - works with both View<T*[3]> and View<Vector<T,3>*>
+        template<class ViewType>
+        KOKKOS_INLINE_FUNCTION
+        static auto get_component(const ViewType& keys, int i, int d)
+            -> decltype(keys(i, d)) {
+            return keys(i, d);  // For View<T*[3]>
+        }
+
+        template<class ViewType>
+        KOKKOS_INLINE_FUNCTION
+        static auto get_component(const ViewType& keys, int i, int d)
+            -> decltype(keys(i)[d]) {
+            return keys(i)[d];  // For View<Vector<T,3>*>
+        }
+
         template<class ViewType>
         KOKKOS_INLINE_FUNCTION
         int bin(ViewType& keys, int i) const {
             // Compute tile index for each dimension
-            // keys contains particle positions in grid coordinates [0, n_grid)
-            int tile_x = compute_bin(keys(i, 0), 0);
-            int tile_y = compute_bin(keys(i, 1), 1);
-            int tile_z = compute_bin(keys(i, 2), 2);
+            // keys contains particle positions in physical coordinates [-pi, pi]
+            int tile_x = compute_bin(get_component(keys, i, 0), 0);
+            int tile_y = compute_bin(get_component(keys, i, 1), 1);
+            int tile_z = compute_bin(get_component(keys, i, 2), 2);
 
             // Flatten to single bin index
             return tile_z * (num_tiles[0] * num_tiles[1]) + tile_y * num_tiles[0] + tile_x;
@@ -48,18 +63,18 @@ namespace detail {
         KOKKOS_INLINE_FUNCTION
         bool operator()(ViewType& keys, IndexType i1, IndexType i2) const {
             // Lexicographic comparison by tile indices
-            int bin1_x = compute_bin(keys(i1, 0), 0);
-            int bin2_x = compute_bin(keys(i2, 0), 0);
+            int bin1_x = compute_bin(get_component(keys, i1, 0), 0);
+            int bin2_x = compute_bin(get_component(keys, i2, 0), 0);
             if (bin1_x < bin2_x) return true;
             if (bin1_x > bin2_x) return false;
 
-            int bin1_y = compute_bin(keys(i1, 1), 1);
-            int bin2_y = compute_bin(keys(i2, 1), 1);
+            int bin1_y = compute_bin(get_component(keys, i1, 1), 1);
+            int bin2_y = compute_bin(get_component(keys, i2, 1), 1);
             if (bin1_y < bin2_y) return true;
             if (bin1_y > bin2_y) return false;
 
-            int bin1_z = compute_bin(keys(i1, 2), 2);
-            int bin2_z = compute_bin(keys(i2, 2), 2);
+            int bin1_z = compute_bin(get_component(keys, i1, 2), 2);
+            int bin2_z = compute_bin(get_component(keys, i2, 2), 2);
             return bin1_z < bin2_z;
         }
 
@@ -87,15 +102,16 @@ namespace detail {
     /**
      * @brief Sort particles by tile and compute bin offsets using Kokkos::BinSort
      *
-     * This is a generic implementation that works with any coordinate system.
-     * The input coordinates x must already be in grid coordinates [0, n_grid).
+     * This is a generic implementation that works with View<T*[3]> or View<Vector<T,3>*>.
+     * The input coordinates x are in physical coordinates [-pi, pi] and will be transformed internally.
      *
-     * @tparam RealType Floating point type
+     * @tparam RealType The floating point type
+     * @tparam PositionViewType The position view type (View<T*[3]> or View<Vector<T,3>*>)
      * @tparam ExecSpace Kokkos execution space
      */
-    template<typename RealType, typename ExecSpace>
+    template<typename RealType, typename PositionViewType, typename ExecSpace>
     void bin_sort_3d(
-        Kokkos::View<RealType*[3], typename ExecSpace::memory_space> x,  // Positions in GRID coordinates
+        PositionViewType x,  // Positions in PHYSICAL coordinates [-pi, pi]
         Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
         Kokkos::Array<int, 3> tile_size,
         int w,
@@ -104,6 +120,7 @@ namespace detail {
 
         using size_type = typename ExecSpace::memory_space::size_type;
         using memory_space = typename ExecSpace::memory_space;
+
         const size_type n_particles = x.extent(0);
 
         // Calculate number of tiles

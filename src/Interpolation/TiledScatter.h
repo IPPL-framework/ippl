@@ -20,8 +20,10 @@ namespace detail {
      * @tparam KernelType The kernel function type (must have operator()(RealType) and width())
      * @tparam ValueType The type of values being scattered (can be scalar or complex)
      * @tparam GridViewType The type of the grid view (can differ from ValueType, e.g. real values to complex grid)
+     * @tparam PositionViewType The type of the position view (View<T*[3]> or View<Vector<T,3>*>)
      */
-    template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType, typename GridViewType>
+    template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType, typename GridViewType,
+             typename PositionViewType = Kokkos::View<RealType*[3], typename ExecSpace::memory_space>>
     struct TiledScatterFunctor3D {
         using real_type = RealType;
         using value_type = ValueType;
@@ -35,7 +37,7 @@ namespace detail {
         // Input data
         Kokkos::View<size_type*, memory_space> bin_offsets;
         Kokkos::View<size_type*, memory_space> permute;
-        Kokkos::View<real_type*[3], memory_space> x;  // Particle positions in GRID coordinates [0, n_grid)
+        PositionViewType x;  // Particle positions in PHYSICAL coordinates [-pi, pi]
         Kokkos::View<value_type*, memory_space> values;  // Values to scatter
         GridViewType grid;  // Output grid
 
@@ -48,6 +50,21 @@ namespace detail {
         int nghost;  // ghost cell offset for field
         real_type inv_hw;  // 1 / half_width for kernel scaling
         KernelType kernel;
+
+        // Helper to access position component - works with both View<T*[3]> and View<Vector<T,3>*>
+        template<typename PosView>
+        KOKKOS_INLINE_FUNCTION
+        static auto get_component(const PosView& pos, size_type i, int d)
+            -> decltype(pos(i, d)) {
+            return pos(i, d);  // For View<T*[3]>
+        }
+
+        template<typename PosView>
+        KOKKOS_INLINE_FUNCTION
+        static auto get_component(const PosView& pos, size_type i, int d)
+            -> decltype(pos(i)[d]) {
+            return pos(i)[d];  // For View<Vector<T,3>*>
+        }
 
         // Compile-time derived constants
         KOKKOS_INLINE_FUNCTION
@@ -133,7 +150,7 @@ namespace detail {
                     constexpr real_type inv_two_pi = real_type(0.5) / real_type(3.14159265358979323846);  // 0.5 / pi
 
                     // X dimension - transform from [-pi, pi] to grid coordinates
-                    real_type kx = x(j, 0) * inv_two_pi;
+                    real_type kx = get_component(x, j, 0) * inv_two_pi;
                     kx = kx - Kokkos::floor(kx);
                     real_type sx = kx * n_grid[0];
                     int idx_x = (w & 1) ? static_cast<int>(sx + real_type{0.5}) : static_cast<int>(sx);
@@ -142,7 +159,7 @@ namespace detail {
                     idx_x = idx_x - tile_x0;
 
                     // Y dimension
-                    real_type ky = x(j, 1) * inv_two_pi;
+                    real_type ky = get_component(x, j, 1) * inv_two_pi;
                     ky = ky - Kokkos::floor(ky);
                     real_type sy = ky * n_grid[1];
                     int idx_y = (w & 1) ? static_cast<int>(sy + real_type{0.5}) : static_cast<int>(sy);
@@ -151,7 +168,7 @@ namespace detail {
                     idx_y = idx_y - tile_y0;
 
                     // Z dimension
-                    real_type kz = x(j, 2) * inv_two_pi;
+                    real_type kz = get_component(x, j, 2) * inv_two_pi;
                     kz = kz - Kokkos::floor(kz);
                     real_type sz = kz * n_grid[2];
                     int idx_z = (w & 1) ? static_cast<int>(sz + real_type{0.5}) : static_cast<int>(sz);
