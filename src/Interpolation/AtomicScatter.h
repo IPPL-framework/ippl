@@ -31,7 +31,7 @@ namespace detail {
         using size_type = typename memory_space::size_type;
 
         // Input data
-        Kokkos::View<real_type*[Dim], memory_space> x;  // Particle positions in GRID coordinates [0, n_grid)
+        Kokkos::View<real_type*[Dim], memory_space> x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
         Kokkos::View<value_type*, memory_space> values;  // Values to scatter
         GridViewType grid;  // Output grid
 
@@ -46,10 +46,14 @@ namespace detail {
         void operator()(const size_type j) const {
             const value_type& val = values(j);
 
-            // Particle position in grid coordinates
-            real_type pos[Dim];
+            // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
+            constexpr real_type inv_two_pi = real_type(0.5) / real_type(3.14159265358979323846);
+
+            real_type pos[Dim];  // Grid coordinates
             for (unsigned d = 0; d < Dim; ++d) {
-                pos[d] = x(j, d);
+                real_type k = x(j, d) * inv_two_pi;
+                k = k - Kokkos::floor(k);
+                pos[d] = k * n_grid[d];
             }
 
             // Starting index for kernel stencil
@@ -86,35 +90,49 @@ namespace detail {
                 }
 
                 // Atomic add to grid (with ghost offset)
-                constexpr bool is_complex = std::is_same_v<value_type, Kokkos::complex<real_type>>;
+                // Handle different combinations of value and grid types
+                constexpr bool val_is_complex = std::is_same_v<value_type, Kokkos::complex<real_type>>;
+                using grid_element_type = std::remove_reference_t<decltype(grid(0))>;
+                constexpr bool grid_is_complex = std::is_same_v<grid_element_type, Kokkos::complex<real_type>>;
 
                 if constexpr (Dim == 3) {
-                    if constexpr (is_complex) {
-                        // For complex types, add to real and imaginary parts separately
+                    if constexpr (val_is_complex && grid_is_complex) {
+                        // Complex values to complex grid
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost).real(),
                                           val.real() * kernel_val);
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost).imag(),
                                           val.imag() * kernel_val);
+                    } else if constexpr (!val_is_complex && grid_is_complex) {
+                        // Real values to complex grid (scatter to real part only)
+                        Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost).real(),
+                                          val * kernel_val);
                     } else {
+                        // Real values to real grid
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost),
                                           val * kernel_val);
                     }
                 } else if constexpr (Dim == 2) {
-                    if constexpr (is_complex) {
+                    if constexpr (val_is_complex && grid_is_complex) {
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost).real(),
                                           val.real() * kernel_val);
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost).imag(),
                                           val.imag() * kernel_val);
+                    } else if constexpr (!val_is_complex && grid_is_complex) {
+                        Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost).real(),
+                                          val * kernel_val);
                     } else {
                         Kokkos::atomic_add(&grid(idx[0] + nghost, idx[1] + nghost),
                                           val * kernel_val);
                     }
                 } else if constexpr (Dim == 1) {
-                    if constexpr (is_complex) {
+                    if constexpr (val_is_complex && grid_is_complex) {
                         Kokkos::atomic_add(&grid(idx[0] + nghost).real(),
                                           val.real() * kernel_val);
                         Kokkos::atomic_add(&grid(idx[0] + nghost).imag(),
                                           val.imag() * kernel_val);
+                    } else if constexpr (!val_is_complex && grid_is_complex) {
+                        Kokkos::atomic_add(&grid(idx[0] + nghost).real(),
+                                          val * kernel_val);
                     } else {
                         Kokkos::atomic_add(&grid(idx[0] + nghost),
                                           val * kernel_val);

@@ -343,58 +343,35 @@ namespace ippl {
             return;
         }
 
-        // Fall back to atomic implementation
-        // Match kokkos_nufft atomic spread exactly
-        Kokkos::parallel_for(
-            "ParticleAttrib::scatterES", policy_type(0, nParticles),
-            KOKKOS_CLASS_LAMBDA(const size_t j) {
-                const T& val = dview_m(j);
-                const Vector<PositionType, Dim>& pos = pp(j);
+        // Fall back to atomic implementation using generic functor
+        int n_grid_arr[Dim];
+        for (unsigned d = 0; d < Dim; ++d) {
+            n_grid_arr[d] = ngrid[d];
+        }
 
-                Vector<PositionType, Dim> sx;
-                Vector<int, Dim> idx0;
-
-                // Transform coordinates exactly like kokkos_nufft
+        // Copy positions into view for functor (functor expects physical coordinates)
+        Kokkos::View<PositionType*[Dim], typename execution_space::memory_space> x_view("x", nParticles);
+        auto pp_view = pp.getView();
+        Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
+            KOKKOS_LAMBDA(const size_t i) {
                 for (unsigned d = 0; d < Dim; ++d) {
-                    // Convert to grid coordinates [0, n_grid) in the GLOBAL grid
-                    sx[d] = pos[d] * scale[d];
-                    // Wrap to [0, n_grid) - handles periodicity
-                    sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
-
-                    // Compute starting index for kernel stencil
-                    idx0[d] = odd
-                        ? static_cast<int>(Kokkos::round(sx[d])) - hw
-                        : static_cast<int>(sx[d]) + 1 - hw;
-                }
-
-                // Spread to all w^Dim grid points in the stencil
-                int64_t total = 1;
-                for (unsigned d = 0; d < Dim; ++d) total *= w;
-
-                for (int64_t flat = 0; flat < total; ++flat) {
-                    Vector<int, Dim> idx;
-                    PositionType kernel_val = val;
-                    int64_t tmp = flat;
-
-                    // Decode flat index to Dim-dimensional index
-                    for (int d = Dim - 1; d >= 0; --d) {
-                        int k = tmp % w;
-                        tmp /= w;
-                        idx[d] = idx0[d] + k;
-
-                        // Periodic boundary conditions
-                        if (idx[d] < 0) idx[d] += ngrid[d];
-                        else if (idx[d] >= ngrid[d]) idx[d] -= ngrid[d];
-
-                        // Multiply by kernel value
-                        kernel_val *= kernel((sx[d] - static_cast<PositionType>(idx0[d] + k)) * inv_hw);
-                    }
-
-                    // Atomic add to grid (with ghost offset)
-                    // Add to real part only (imaginary part stays 0 for Type 1)
-                    Kokkos::atomic_add(&full_view(idx[0] + nghost, idx[1] + nghost, idx[2] + nghost).real(), kernel_val);
+                    x_view(i, d) = pp_view(i)[d];
                 }
             });
+
+        // Use AtomicScatterFunctor with T (real values) scattering to complex field
+        Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T, view_type> scatter_functor{
+            .x = x_view,
+            .values = dview_m,
+            .grid = full_view,
+            .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
+            .w = w,
+            .nghost = nghost,
+            .inv_hw = inv_hw,
+            .kernel = kernel
+        };
+
+        Kokkos::parallel_for("atomic_scatter", policy_type(0, nParticles), scatter_functor);
 
         IpplTimings::stopTimer(scatterKernelTimer);
     }
@@ -404,7 +381,7 @@ namespace ippl {
     template <typename Field, typename P2, typename Kernel>
     void ParticleAttrib<T, Properties...>::gather(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-        const Kernel& kernel, bool addToAttribute, const Interpolation::ScatterConfig& config) {
+        const Kernel& kernel, bool addToAttribute, const Interpolation::GatherConfig& config) {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
         using complex_type     = typename Field::value_type;
@@ -522,104 +499,60 @@ namespace ippl {
                 } else
 #endif
                 {
-                    // Fallback to atomic for non-CUDA
-                    Kokkos::parallel_for(
-                        "ParticleAttrib::gatherES", policy_type(0, nParticles),
-                        KOKKOS_CLASS_LAMBDA(const size_t j) {
-                            const Vector<PositionType, 3>& pos = pp(j);
+                    // Fallback to atomic for non-CUDA - use generic functor
+                    int n_grid_arr[3] = {ngrid[0], ngrid[1], ngrid[2]};
 
-                            Vector<PositionType, 3> sx;
-                            Vector<int, 3> idx0;
-
+                    // Copy positions into view for functor
+                    Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+                    auto pp_view = pp.getView();
+                    Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
+                        KOKKOS_LAMBDA(const size_t i) {
                             for (unsigned d = 0; d < 3; ++d) {
-                                sx[d] = pos[d] * scale[d];
-                                sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
-                                idx0[d] = odd
-                                    ? static_cast<int>(Kokkos::round(sx[d])) - hw
-                                    : static_cast<int>(sx[d]) + 1 - hw;
-                            }
-
-                            complex_type result(0.0, 0.0);
-                            for (int k = 0; k < w; ++k) {
-                                for (int jj = 0; jj < w; ++jj) {
-                                    for (int i = 0; i < w; ++i) {
-                                        int gi = idx0[0] + i;
-                                        int gj = idx0[1] + jj;
-                                        int gk = idx0[2] + k;
-
-                                        while (gi < 0) gi += ngrid[0];
-                                        while (gi >= ngrid[0]) gi -= ngrid[0];
-                                        while (gj < 0) gj += ngrid[1];
-                                        while (gj >= ngrid[1]) gj -= ngrid[1];
-                                        while (gk < 0) gk += ngrid[2];
-                                        while (gk >= ngrid[2]) gk -= ngrid[2];
-
-                                        PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
-                                        PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
-                                        PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
-                                        PositionType kernel_val = ker_i * ker_j * ker_k;
-
-                                        result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
-                                    }
-                                }
-                            }
-
-                            if (addToAttribute) {
-                                dview_m(j) += result.real();
-                            } else {
-                                dview_m(j) = result.real();
+                                x_view(i, d) = pp_view(i)[d];
                             }
                         });
+
+                    // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
+                    Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type> gather_functor{
+                        .x = x_view,
+                        .grid = full_view,
+                        .values = dview_m,
+                        .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
+                        .w = w,
+                        .nghost = nghost,
+                        .inv_hw = inv_hw,
+                        .add_to_attribute = addToAttribute,
+                        .kernel = kernel
+                    };
+
+                    Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
                 }
             } else {
-                // Atomic method (default)
-                Kokkos::parallel_for(
-                    "ParticleAttrib::gatherES", policy_type(0, nParticles),
-                    KOKKOS_CLASS_LAMBDA(const size_t j) {
-                        const Vector<PositionType, 3>& pos = pp(j);
-
-                        Vector<PositionType, 3> sx;
-                        Vector<int, 3> idx0;
-
+                // Atomic method (default) - use generic functor
+                // Copy positions into view for functor (functor expects physical coordinates)
+                Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+                auto pp_view = pp.getView();
+                Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
+                    KOKKOS_LAMBDA(const size_t i) {
                         for (unsigned d = 0; d < 3; ++d) {
-                            sx[d] = pos[d] * scale[d];
-                            sx[d] -= ngrid[d] * Kokkos::floor(sx[d] / ngrid[d]);
-                            idx0[d] = odd
-                                ? static_cast<int>(Kokkos::round(sx[d])) - hw
-                                : static_cast<int>(sx[d]) + 1 - hw;
-                        }
-
-                        complex_type result(0.0, 0.0);
-                        for (int k = 0; k < w; ++k) {
-                            for (int jj = 0; jj < w; ++jj) {
-                                for (int i = 0; i < w; ++i) {
-                                    int gi = idx0[0] + i;
-                                    int gj = idx0[1] + jj;
-                                    int gk = idx0[2] + k;
-
-                                    while (gi < 0) gi += ngrid[0];
-                                    while (gi >= ngrid[0]) gi -= ngrid[0];
-                                    while (gj < 0) gj += ngrid[1];
-                                    while (gj >= ngrid[1]) gj -= ngrid[1];
-                                    while (gk < 0) gk += ngrid[2];
-                                    while (gk >= ngrid[2]) gk -= ngrid[2];
-
-                                    PositionType ker_i = kernel((sx[0] - static_cast<PositionType>(idx0[0] + i)) * inv_hw);
-                                    PositionType ker_j = kernel((sx[1] - static_cast<PositionType>(idx0[1] + jj)) * inv_hw);
-                                    PositionType ker_k = kernel((sx[2] - static_cast<PositionType>(idx0[2] + k)) * inv_hw);
-                                    PositionType kernel_val = ker_i * ker_j * ker_k;
-
-                                    result += full_view(gi + nghost, gj + nghost, gk + nghost) * kernel_val;
-                                }
-                            }
-                        }
-
-                        if (addToAttribute) {
-                            dview_m(j) += result.real();
-                        } else {
-                            dview_m(j) = result.real();
+                            x_view(i, d) = pp_view(i)[d];
                         }
                     });
+
+                // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
+                Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type> gather_functor{
+                    .x = x_view,
+                    .grid = full_view,
+                    .values = dview_m,
+                    .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
+                    .w = w,
+                    .nghost = nghost,
+                    .inv_hw = inv_hw,
+                    .add_to_attribute = addToAttribute,
+                    .kernel = kernel
+                };
+
+                Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
             }
         } else {
             // Original gather kernel for other dimensions

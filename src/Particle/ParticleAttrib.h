@@ -22,6 +22,7 @@
 #include "Particle/ParticleAttribBase.h"
 #include "FFT/FFT.h"
 #include "Interpolation/ScatterConfig.h"
+#include "Interpolation/GatherConfig.h"
 
 
 namespace ippl {
@@ -213,7 +214,7 @@ namespace ippl {
         template <typename Field, typename P2, typename Kernel>
         void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
                    const Kernel& kernel, bool addToAttribute = false,
-                   const Interpolation::ScatterConfig& config = Interpolation::ScatterConfig());
+                   const Interpolation::GatherConfig& config = Interpolation::GatherConfig());
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void

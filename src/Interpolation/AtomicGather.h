@@ -31,7 +31,7 @@ namespace detail {
         using size_type = typename memory_space::size_type;
 
         // Input data
-        Kokkos::View<real_type*[Dim], memory_space> x;  // Particle positions in GRID coordinates [0, n_grid)
+        Kokkos::View<real_type*[Dim], memory_space> x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
         GridViewType grid;  // Input grid
         Kokkos::View<value_type*, memory_space> values;  // Output values
 
@@ -45,10 +45,14 @@ namespace detail {
 
         KOKKOS_INLINE_FUNCTION
         void operator()(const size_type j) const {
-            // Particle position in grid coordinates
-            real_type pos[Dim];
+            // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
+            constexpr real_type inv_two_pi = real_type(0.5) / real_type(3.14159265358979323846);
+
+            real_type pos[Dim];  // Grid coordinates
             for (unsigned d = 0; d < Dim; ++d) {
-                pos[d] = x(j, d);
+                real_type k = x(j, d) * inv_two_pi;
+                k = k - Kokkos::floor(k);
+                pos[d] = k * n_grid[d];
             }
 
             // Starting index for kernel stencil
@@ -62,7 +66,9 @@ namespace detail {
             }
 
             // Gather from all w^Dim grid points in the stencil
-            value_type result(0);
+            // Result type matches what we read from the grid
+            using grid_element_type = std::remove_reference_t<decltype(grid(0))>;
+            grid_element_type result(0);
 
             if constexpr (Dim == 3) {
                 for (int k = 0; k < w; ++k) {
@@ -120,10 +126,24 @@ namespace detail {
                 }
             }
 
-            if (add_to_attribute) {
-                values(j) += result;
+            // Write result to output, extracting real part if needed
+            constexpr bool val_is_complex = std::is_same_v<value_type, Kokkos::complex<real_type>>;
+            constexpr bool grid_is_complex = std::is_same_v<grid_element_type, Kokkos::complex<real_type>>;
+
+            if constexpr (grid_is_complex && !val_is_complex) {
+                // Grid is complex but output is real - extract real part
+                if (add_to_attribute) {
+                    values(j) += result.real();
+                } else {
+                    values(j) = result.real();
+                }
             } else {
-                values(j) = result;
+                // Types match (both real or both complex)
+                if (add_to_attribute) {
+                    values(j) += result;
+                } else {
+                    values(j) = result;
+                }
             }
         }
     };
