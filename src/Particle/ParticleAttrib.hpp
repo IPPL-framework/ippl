@@ -225,7 +225,7 @@ namespace ippl {
         IpplTimings::stopTimer(gatherTimer);
     }
 
-    // Kernel-based scatter (new generalized interface)
+    // Kernel-based scatter
     template <typename T, class... Properties>
     template <typename Field, typename P2, typename Kernel>
     void ParticleAttrib<T, Properties...>::scatter(
@@ -300,13 +300,8 @@ namespace ippl {
                     c_view(i) = complex_type(dview_m(i), PositionType(0));
                 });
 
-            // Initialize field interior to zero (spread will write with ghost offset)
-            Kokkos::parallel_for("zero_field",
-                Kokkos::MDRangePolicy<Kokkos::Rank<3>, execution_space>(
-                    {0, 0, 0}, {ngrid[0], ngrid[1], ngrid[2]}),
-                KOKKOS_LAMBDA(int i, int j, int k) {
-                    full_view(i + nghost, j + nghost, k + nghost) = complex_type(0, 0);
-                });
+            // Note: Field zeroing is the caller's responsibility (e.g., NativeNUFFT::type1)
+            // to avoid redundant kernel launches
 
             // Calculate number of tiles
             Kokkos::Array<size_type, 3> num_tiles;
@@ -344,24 +339,12 @@ namespace ippl {
         }
 
         // Fall back to atomic implementation using generic functor
-        int n_grid_arr[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            n_grid_arr[d] = ngrid[d];
-        }
-
-        // Copy positions into view for functor (functor expects physical coordinates)
-        Kokkos::View<PositionType*[Dim], typename execution_space::memory_space> x_view("x", nParticles);
+        // Pass position view directly - no copy needed
         auto pp_view = pp.getView();
-        Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
-            KOKKOS_LAMBDA(const size_t i) {
-                for (unsigned d = 0; d < Dim; ++d) {
-                    x_view(i, d) = pp_view(i)[d];
-                }
-            });
 
         // Use AtomicScatterFunctor with T (real values) scattering to complex field
-        Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T, view_type> scatter_functor{
-            .x = x_view,
+        Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> scatter_functor{
+            .x = pp_view,
             .values = dview_m,
             .grid = full_view,
             .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
@@ -500,21 +483,12 @@ namespace ippl {
 #endif
                 {
                     // Fallback to atomic for non-CUDA - use generic functor
-                    int n_grid_arr[3] = {ngrid[0], ngrid[1], ngrid[2]};
-
-                    // Copy positions into view for functor
-                    Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+                    // Pass position view directly - no copy needed
                     auto pp_view = pp.getView();
-                    Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
-                        KOKKOS_LAMBDA(const size_t i) {
-                            for (unsigned d = 0; d < 3; ++d) {
-                                x_view(i, d) = pp_view(i)[d];
-                            }
-                        });
 
                     // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
-                    Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type> gather_functor{
-                        .x = x_view,
+                    Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> gather_functor{
+                        .x = pp_view,
                         .grid = full_view,
                         .values = dview_m,
                         .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
@@ -529,19 +503,12 @@ namespace ippl {
                 }
             } else {
                 // Atomic method (default) - use generic functor
-                // Copy positions into view for functor (functor expects physical coordinates)
-                Kokkos::View<PositionType*[3], typename execution_space::memory_space> x_view("x", nParticles);
+                // Pass position view directly - no copy needed
                 auto pp_view = pp.getView();
-                Kokkos::parallel_for("copy_positions", policy_type(0, nParticles),
-                    KOKKOS_LAMBDA(const size_t i) {
-                        for (unsigned d = 0; d < 3; ++d) {
-                            x_view(i, d) = pp_view(i)[d];
-                        }
-                    });
 
                 // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
-                Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type> gather_functor{
-                    .x = x_view,
+                Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> gather_functor{
+                    .x = pp_view,
                     .grid = full_view,
                     .values = dview_m,
                     .n_grid = {ngrid[0], ngrid[1], ngrid[2]},

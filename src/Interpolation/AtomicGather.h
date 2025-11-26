@@ -21,9 +21,11 @@ namespace detail {
      * @tparam KernelType The kernel function type
      * @tparam ValueType The type of values being gathered
      * @tparam GridViewType The grid view type
+     * @tparam PositionViewType The type of the position view (default: View<Vector<RealType, Dim>*>)
      */
     template<unsigned Dim, typename RealType, typename ExecSpace, typename KernelType,
-             typename ValueType, typename GridViewType>
+             typename ValueType, typename GridViewType,
+             typename PositionViewType = Kokkos::View<ippl::Vector<RealType, Dim>*, typename ExecSpace::memory_space>>
     struct AtomicGatherFunctor {
         using real_type = RealType;
         using value_type = ValueType;
@@ -31,7 +33,7 @@ namespace detail {
         using size_type = typename memory_space::size_type;
 
         // Input data
-        Kokkos::View<real_type*[Dim], memory_space> x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
+        PositionViewType x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
         GridViewType grid;  // Input grid
         Kokkos::View<value_type*, memory_space> values;  // Output values
 
@@ -50,7 +52,7 @@ namespace detail {
 
             real_type pos[Dim];  // Grid coordinates
             for (unsigned d = 0; d < Dim; ++d) {
-                real_type k = x(j, d) * inv_two_pi;
+                real_type k = x(j)[d] * inv_two_pi;
                 k = k - Kokkos::floor(k);
                 pos[d] = k * n_grid[d];
             }
