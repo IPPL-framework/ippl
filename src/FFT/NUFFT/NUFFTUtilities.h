@@ -5,10 +5,7 @@
  * @file NUFFTUtilities.h
  * @brief NUFFT utility functions adapted from kokkos_nufft
  *
- * Contains:
- * - Type definitions (array, view_nd_t, make_view)
- * - apply_correction: unified correction for Type 1 and Type 2
- * - compute_deconvolution_factors: computes deconvolution factors using Gauss-Legendre quadrature
+ * //TODO(paul) this file can probably be deleted, need to check
  */
 
 #include <chrono>
