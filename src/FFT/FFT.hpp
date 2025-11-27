@@ -581,7 +581,7 @@ namespace ippl {
                 Interpolation::ScatterConfig::get_default<typename RealField::execution_space>();
 
             // Configure spread method
-            std::string spread_method = params.get<std::string>("spread_method", "atomic");
+            std::string spread_method = params.get<std::string>("spread_method", "none");
             if (spread_method == "atomic") {
                 cfg.spread.method = Interpolation::ScatterMethod::Atomic;
             }
