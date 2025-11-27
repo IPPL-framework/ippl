@@ -15,6 +15,7 @@ namespace detail {
      * Uses shared memory histogram per tile to reduce global memory atomics.
      *
      * Template parameters:
+     * @tparam W The kernel width (compile-time constant for optimization)
      * @tparam RealType The floating point type (float or double)
      * @tparam ExecSpace The Kokkos execution space
      * @tparam KernelType The kernel function type (must have operator()(RealType) and width())
@@ -22,7 +23,7 @@ namespace detail {
      * @tparam GridViewType The type of the grid view (can differ from ValueType, e.g. real values to complex grid)
      * @tparam PositionViewType The type of the position view (View<T*[3]> or View<Vector<T,3>*>)
      */
-    template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType, typename GridViewType,
+    template<int W, typename RealType, typename ExecSpace, typename KernelType, typename ValueType, typename GridViewType,
              typename PositionViewType = Kokkos::View<RealType*[3], typename ExecSpace::memory_space>>
     struct TiledScatterFunctor3D {
         using real_type = RealType;
@@ -44,12 +45,17 @@ namespace detail {
         // Parameters
         Kokkos::Array<size_type, 3> n_grid;
         Kokkos::Array<size_type, 3> num_tiles;
-        int w;  // kernel width
         int tile_size_x, tile_size_y, tile_size_z;
         int z_tiles;  // z-dimension splitting for parallelism
         int nghost;  // ghost cell offset for field
         real_type inv_hw;  // 1 / half_width for kernel scaling
         KernelType kernel;
+
+        // Compile-time constants
+        static constexpr int w = W;
+        static constexpr int hw = W / 2;
+        static constexpr bool odd = (W & 1);
+        static constexpr int half_left = (W - 1) / 2;
 
         // Helper to access position component - works with both View<T*[3]> and View<Vector<T,3>*>
         template<typename PosView>
@@ -66,21 +72,15 @@ namespace detail {
             return pos(i)[d];  // For View<Vector<T,3>*>
         }
 
-        // Compile-time derived constants
+        // Compile-time histogram size calculations
         KOKKOS_INLINE_FUNCTION
-        static constexpr int half_left(int W) { return (W - 1) / 2; }
+        constexpr int hist_size_x() const { return tile_size_x + W; }
 
         KOKKOS_INLINE_FUNCTION
-        static constexpr int half_right(int W) { return W / 2; }
+        constexpr int hist_size_y() const { return tile_size_y + W; }
 
         KOKKOS_INLINE_FUNCTION
-        int hist_size_x() const { return tile_size_x + w; }
-
-        KOKKOS_INLINE_FUNCTION
-        int hist_size_y() const { return tile_size_y + w; }
-
-        KOKKOS_INLINE_FUNCTION
-        int hist_size_z() const { return tile_size_z + z_tiles; }
+        constexpr int hist_size_z() const { return tile_size_z + z_tiles; }
 
         KOKKOS_INLINE_FUNCTION
         void operator()(const team_member& team) const {
@@ -139,9 +139,6 @@ namespace detail {
             const size_type pend = bin_offsets(tile_linear + 1);
 
             // Process particles
-            const bool odd = (w & 1);
-            const int half_left = (w - 1) / 2;
-
             Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pstart, pend),
                 [&](size_type ip) {
                     const size_type j = permute(ip);
@@ -155,7 +152,6 @@ namespace detail {
                     real_type sx = kx * n_grid[0];
                     int idx_x = (w & 1) ? static_cast<int>(sx + real_type{0.5}) : static_cast<int>(sx);
                     auto diff_x = (sx - idx_x + half_left) * inv_hw;
-                    if (idx_x >= static_cast<int>(n_grid[0])) idx_x -= n_grid[0];
                     idx_x = idx_x - tile_x0;
 
                     // Y dimension
@@ -164,7 +160,6 @@ namespace detail {
                     real_type sy = ky * n_grid[1];
                     int idx_y = (w & 1) ? static_cast<int>(sy + real_type{0.5}) : static_cast<int>(sy);
                     auto diff_y = (sy - idx_y + half_left) * inv_hw;
-                    if (idx_y >= static_cast<int>(n_grid[1])) idx_y -= n_grid[1];
                     idx_y = idx_y - tile_y0;
 
                     // Z dimension
@@ -173,24 +168,23 @@ namespace detail {
                     real_type sz = kz * n_grid[2];
                     int idx_z = (w & 1) ? static_cast<int>(sz + real_type{0.5}) : static_cast<int>(sz);
                     auto diff_z = (sz - idx_z + half_left) * inv_hw;
-                    if (idx_z >= static_cast<int>(n_grid[2])) idx_z -= n_grid[2];
                     idx_z = idx_z - tile_z0;
 
                     // Precompute kernel values
-                    real_type kernel_x[16];
-                    real_type kernel_y[16];
-                    real_type kernel_z[16];
+                    real_type kernel_x[W];
+                    real_type kernel_y[W];
+                    real_type kernel_z[W];
 
-                    for (int wx = 0; wx < w; ++wx) {
+                    for (int wx = 0; wx < W; ++wx) {
                         kernel_x[wx] = kernel(inv_hw * wx - diff_x);
                     }
-                    for (int wy = 0; wy < w; ++wy) {
+                    for (int wy = 0; wy < W; ++wy) {
                         kernel_y[wy] = kernel(inv_hw * wy - diff_y);
                     }
 
                     // Determine z range for this thread (match old code)
                     const int z_count = (tile_thread_idx == threads_per_tile - 1)
-                                      ? (w - (threads_per_tile - 1) * z_tiles)
+                                      ? (W - (threads_per_tile - 1) * z_tiles)
                                       : z_tiles;
 
                     for (int wz = 0; wz < z_count; ++wz) {
@@ -199,8 +193,8 @@ namespace detail {
 
                     // Spread to histogram
                     for (int wz = 0; wz < z_count; ++wz) {
-                        for (int wy = 0; wy < w; ++wy) {
-                            for (int wx = 0; wx < w; ++wx) {
+                        for (int wy = 0; wy < W; ++wy) {
+                            for (int wx = 0; wx < W; ++wx) {
                                 const real_type kernel_val = kernel_x[wx] * kernel_y[wy] * kernel_z[wz];
                                 const int hist_idx = ((idx_z + wz) * hy + (idx_y + wy)) * hx + (idx_x + wx);
 
@@ -222,7 +216,8 @@ namespace detail {
 
             team.team_barrier();
 
-            // Flush histogram to global grid (match old code exactly)
+            // Flush histogram to global grid
+            // No periodic wrapping - write to ghosts, will be accumulated with accumulateHalo()
             Kokkos::parallel_for(Kokkos::TeamThreadRange(team, hist_total),
                 [&](int hist_idx) {
                     int hist_x = hist_idx % hx;
@@ -232,13 +227,6 @@ namespace detail {
                     int global_x = tile_x0 + hist_x - half_left;
                     int global_y = tile_y0 + hist_y - half_left;
                     int global_z = tile_z0 + hist_z - half_left + z_offset;
-
-                    if (global_x < 0) global_x += n_grid[0];
-                    else if (global_x >= static_cast<int>(n_grid[0])) global_x -= n_grid[0];
-                    if (global_y < 0) global_y += n_grid[1];
-                    else if (global_y >= static_cast<int>(n_grid[1])) global_y -= n_grid[1];
-                    if (global_z < 0) global_z += n_grid[2];
-                    else if (global_z >= static_cast<int>(n_grid[2])) global_z -= n_grid[2];
 
                     if constexpr (grid_is_complex) {
 #ifdef KOKKOS_ENABLE_CUDA
@@ -258,6 +246,70 @@ namespace detail {
                                           hist_r(hist_idx));
                     }
                 });
+        }
+    };
+
+    /**
+     * @brief Dispatcher for scatter with different kernel widths
+     * Uses template recursion to dispatch to the correct kernel width at runtime
+     */
+    template<int W, int MaxW>
+    struct ScatterDispatcher {
+        template<typename RealType, typename ExecSpace, typename KernelType, typename ValueType,
+                 typename GridViewType, typename PositionViewType, typename PermuteViewType, typename BinOffsetsViewType>
+        static void dispatch_3d(
+            int w,
+            BinOffsetsViewType bin_offsets,
+            PermuteViewType permute,
+            PositionViewType x,
+            Kokkos::View<ValueType*, typename ExecSpace::memory_space> values,
+            GridViewType grid,
+            Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
+            Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> num_tiles,
+            int tile_size_x, int tile_size_y, int tile_size_z,
+            int z_tiles, int nghost, RealType inv_hw,
+            const KernelType& kernel,
+            int team_size) {
+
+            if constexpr (W <= MaxW) {
+                if (w == W) {
+                    using size_type = typename ExecSpace::memory_space::size_type;
+
+                    // Create functor with templated W
+                    TiledScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType, GridViewType, PositionViewType> functor{
+                        bin_offsets, permute, x, values, grid,
+                        n_grid, num_tiles,
+                        tile_size_x, tile_size_y, tile_size_z,
+                        z_tiles, nghost, inv_hw, kernel
+                    };
+
+                    // Calculate scratch memory size
+                    const size_t hist_size = functor.hist_size_x() * functor.hist_size_y() * functor.hist_size_z();
+                    using grid_element_type = std::remove_reference_t<decltype(grid(0, 0, 0))>;
+                    constexpr bool is_complex = std::is_same_v<grid_element_type, Kokkos::complex<RealType>>;
+                    const size_t scratch_size = is_complex ? 2 * hist_size : hist_size;
+                    const size_t scratch_bytes = scratch_size * sizeof(RealType);
+
+                    // Launch team policy
+                    const size_type n_tiles_total = num_tiles[0] * num_tiles[1] * num_tiles[2];
+                    const int threads_per_tile = (z_tiles + W - 1) / z_tiles;
+                    const size_type n_teams = n_tiles_total * threads_per_tile;
+
+                    using team_policy = Kokkos::TeamPolicy<ExecSpace>;
+                    team_policy policy(n_teams, team_size);
+                    policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
+
+                    Kokkos::parallel_for("tiled_spread", policy, functor);
+                } else {
+                    ScatterDispatcher<W + 1, MaxW>::template dispatch_3d<RealType, ExecSpace, KernelType, ValueType,
+                                                                           GridViewType, PositionViewType, PermuteViewType, BinOffsetsViewType>(
+                        w, bin_offsets, permute, x, values, grid,
+                        n_grid, num_tiles, tile_size_x, tile_size_y, tile_size_z,
+                        z_tiles, nghost, inv_hw, kernel, team_size);
+                }
+            } else {
+                throw std::runtime_error("Kernel width exceeds maximum supported width");
+            }
         }
     };
 

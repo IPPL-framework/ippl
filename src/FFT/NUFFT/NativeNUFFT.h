@@ -138,7 +138,8 @@ namespace ippl {
                 std::array<bool, Dim> isParallel;
                 isParallel.fill(false);
 
-                grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel);
+                // Enable periodic BCs for ghost cell exchange
+                grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel, true);
 
                 // Create mesh for upsampled grid
                 Vector<T, Dim> origin, hx;
@@ -217,6 +218,9 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
+                // Step 1.5: Accumulate ghost cells from scatter
+                grid_field_->accumulateHalo();
+
                 // Step 2: Inverse FFT
                 performFFT(-1);
 
@@ -278,6 +282,9 @@ namespace ippl {
                 timing_.fft =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
+
+                // Step 2.5: Fill ghost cells for gather
+                grid_field_->fillHalo();
 
                 // Step 3: Gather/interpolate at particle positions
                 t0 = std::chrono::high_resolution_clock::now();

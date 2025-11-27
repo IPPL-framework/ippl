@@ -289,29 +289,13 @@ namespace ippl {
                 num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
 
-            Interpolation::detail::TiledScatterFunctor3D<PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> functor{
-                bin_offsets, permute, pp_view, dview_m, full_view,
+            // Dispatch to templated scatter functor based on kernel width
+            constexpr int MaxW = 20;
+            Interpolation::detail::ScatterDispatcher<1, MaxW>::template dispatch_3d<PositionType, execution_space, Kernel, T, view_type, decltype(pp_view), decltype(permute), decltype(bin_offsets)>(
+                w, bin_offsets, permute, pp_view, dview_m, full_view,
                 n_grid_arr, num_tiles,
-                w, config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
-                config.z_tiles, nghost, inv_hw, kernel
-            };
-
-            // Calculate scratch memory size
-            const size_t hist_size = functor.hist_size_x() * functor.hist_size_y() * functor.hist_size_z();
-            constexpr bool is_complex = std::is_same_v<complex_type, Kokkos::complex<PositionType>>;
-            const size_t scratch_size = is_complex ? 2 * hist_size : hist_size;
-            const size_t scratch_bytes = scratch_size * sizeof(PositionType);
-
-            // Launch team policy
-            const size_type n_tiles_total = num_tiles[0] * num_tiles[1] * num_tiles[2];
-            const int threads_per_tile = (config.z_tiles + w - 1) / config.z_tiles;
-            const size_type n_teams = n_tiles_total * threads_per_tile;
-
-            using team_policy = Kokkos::TeamPolicy<execution_space>;
-            team_policy policy(n_teams, config.team_size);
-            policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
-
-            Kokkos::parallel_for("tiled_spread", policy, functor);
+                config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
+                config.z_tiles, nghost, inv_hw, kernel, config.team_size);
 
             IpplTimings::stopTimer(scatterKernelTimer);
             return;
@@ -419,6 +403,7 @@ namespace ippl {
                         w, nParticles,
                         x_view, permute, full_view, dview_m,
                         hw, nghost, n0, n1, n2, inv_hw, kernel, addToAttribute);
+
 
                     cudaDeviceSynchronize();
                 } else

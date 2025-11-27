@@ -126,17 +126,10 @@ namespace detail {
             const int j = (linear_idx / w) % w;
             const int k = linear_idx / (w * w);
 
-            // Compute grid indices with periodic wrapping
+            // Compute grid indices
             int gi = idx0_0 + i;
             int gj = idx0_1 + j;
             int gk = idx0_2 + k;
-
-            if (gi < 0) gi += n0;
-            else if (gi >= n0) gi -= n0;
-            if (gj < 0) gj += n1;
-            else if (gj >= n1) gj -= n1;
-            if (gk < 0) gk += n2;
-            else if (gk >= n2) gk -= n2;
 
             const RealType kernel_val = ker_shared[warp_in_block][i] *
                                        ker_shared[warp_in_block][w + j] *
@@ -150,7 +143,6 @@ namespace detail {
         if constexpr (grid_is_complex && !value_is_complex) {
             // Grid is complex but output is real - extract real part
             RealType res_real = thread_sum.real();
-
             for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
                 res_real += __shfl_down_sync(0xffffffff, res_real, offset);
             }

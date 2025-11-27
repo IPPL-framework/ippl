@@ -83,10 +83,6 @@ namespace detail {
                     tmp /= w;
                     idx[d] = idx0[d] + k;
 
-                    // Periodic boundary conditions
-                    if (idx[d] < 0) idx[d] += n_grid[d];
-                    else if (idx[d] >= n_grid[d]) idx[d] -= n_grid[d];
-
                     // Multiply by kernel value
                     kernel_val *= kernel((pos[d] - static_cast<real_type>(idx0[d] + k)) * inv_hw);
                 }

@@ -91,11 +91,18 @@ namespace detail {
                             ? static_cast<int>(sx + RealType{0.5})
                             : static_cast<int>(sx);
 
-            // Periodic boundary handling
-            if (idx_0 < 0) idx_0 += n_grid[dim];
-            else if (idx_0 >= static_cast<int>(n_grid[dim])) idx_0 -= n_grid[dim];
+            // // No periodic wrapping - particles at boundaries will write to ghost cells
+            // // which are accumulated with accumulateHalo()
+            //
+            // // Clamp to valid tile range
+            int tile_idx = idx_0 / tile_size[dim];
+            if (tile_idx < 0) tile_idx = 0;
+            if (tile_idx >= static_cast<int>(num_tiles[dim])) tile_idx = num_tiles[dim] - 1;
 
-            return idx_0 / tile_size[dim];
+            // if (idx_0 < 0) idx_0 += n_grid[dim];
+            // else if (idx_0 >= static_cast<int>(n_grid[dim])) idx_0 -= n_grid[dim];
+
+            return tile_idx;
         }
     };
 
