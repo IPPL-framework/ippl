@@ -19,8 +19,6 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<dim> owned(I, I, I);
 
-        const int iterations = std::stoi(argv[2]);
-
         std::array<bool, dim> isParallel;
         isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
 
