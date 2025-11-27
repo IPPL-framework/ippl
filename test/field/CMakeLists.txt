@@ -41,3 +41,5 @@ add_ippl_integration_test(
 if("${Kokkos_DEVICES}" MATCHES "CUDA" AND "${Kokkos_DEVICES}" MATCHES "OPENMP")
   add_ippl_integration_test(TestMixedExec LABELS integration field)
 endif()
+
+add_ippl_integration_test(TestInner LABELS integration field)
