@@ -5,13 +5,13 @@
 #include "Ippl.h"
 
 #include <Kokkos_Random.hpp>
-#include <chrono>
-#include <iostream>
-#include <fstream>
-#include <vector>
 #include <array>
+#include <chrono>
+#include <fstream>
+#include <iostream>
 #include <random>
 #include <sstream>
+#include <vector>
 
 #include "Utility/IpplTimings.h"
 
@@ -21,7 +21,7 @@
 #include "Particle/ParticleLayout.h"
 
 constexpr unsigned Dim = 3;
-using T = double;
+using T                = double;
 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -48,15 +48,14 @@ struct generate_random_particles_with_charges {
     Vec minU, maxU;
 
     generate_random_particles_with_charges(view_type x_, view_type_scalar Q_,
-                                          GeneratorPool rand_pool_, Vec& minU_, Vec& maxU_)
+                                           GeneratorPool rand_pool_, Vec& minU_, Vec& maxU_)
         : x(x_)
         , Q(Q_)
         , rand_pool(rand_pool_)
         , minU(minU_)
         , maxU(maxU_) {}
 
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const size_t i) const {
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
         for (unsigned d = 0; d < Dim; ++d) {
@@ -121,11 +120,13 @@ int main(int argc, char* argv[]) {
         bunch.create(Np);
 
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
-        Kokkos::parallel_for(Np,
+        Kokkos::parallel_for(
+            Np,
             generate_random_particles_with_charges<Vector_t, Kokkos::Random_XorShift64_Pool<>, Dim>(
                 bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
 
-        typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t, Centering_t>::uniform_type field_type;
+        typedef ippl::Field<Kokkos::complex<double>, Dim, Mesh_t, Centering_t>::uniform_type
+            field_type;
         field_type field(mesh, layout);
 
         msg << "Testing with 32^3 grid and 32^3 particles" << endl;
@@ -133,7 +134,7 @@ int main(int argc, char* argv[]) {
         // Parameter sweep configurations
         std::vector<int> tile_sizes = {8, 16, 24, 32};
         std::vector<int> team_sizes = {32, 64, 128, 256};
-        std::vector<int> z_tiles = {1, 2, 4, 8};
+        std::vector<int> z_tiles    = {1, 2, 4, 8};
 
         // Output file for results
         std::ofstream outfile("nufft_param_sweep.csv");
@@ -160,23 +161,24 @@ int main(int argc, char* argv[]) {
                     fftParams.add("team_size", team_size);
                     fftParams.add("sort", true);
 
-                    typedef ippl::Field<double, Dim, Mesh_t, Centering_t>::uniform_type real_field_type;
+                    typedef ippl::Field<double, Dim, Mesh_t, Centering_t>::uniform_type
+                        real_field_type;
                     typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
                     auto nufft = std::make_unique<FFT_type>(layout, Np, 1, fftParams);
 
-                    // Warm-up runs
-                    for (int i = 0; i < 2; ++i) {
-                        nufft->transform(bunch.R, bunch.Q, field);
-                        Kokkos::fence();
-                    }
                     double avg_time_ms;
                     double throughput;
 
                     try {
+                        // Warm-up runs
+                        for (int i = 0; i < 2; ++i) {
+                            nufft->transform(bunch.R, bunch.Q, field);
+                            Kokkos::fence();
+                        }
                         // Timed runs
                         constexpr int num_runs = 10;
-                        auto start = std::chrono::high_resolution_clock::now();
+                        auto start             = std::chrono::high_resolution_clock::now();
                         for (int run = 0; run < num_runs; ++run) {
                             nufft->transform(bunch.R, bunch.Q, field);
                         }
@@ -184,28 +186,27 @@ int main(int argc, char* argv[]) {
                         auto end = std::chrono::high_resolution_clock::now();
 
                         std::chrono::duration<double> elapsed = end - start;
-                        double total_time = elapsed.count();
+                        double total_time                     = elapsed.count();
 
                         double avg_time_s = total_time / num_runs;
-                        avg_time_ms = avg_time_s * 1000.0;
+                        avg_time_ms       = avg_time_s * 1000.0;
 
                         // Calculate throughput
                         throughput = (Np / 1e6) / avg_time_s;  // Mpts/s
                     } catch (std::runtime_error& e) {
                         // Catch kernel launch OOM
                         avg_time_ms = std::nan("");
-                        throughput = std::nan("");
+                        throughput  = std::nan("");
                     }
 
                     msg << "Config " << config_count << ": "
                         << "tile=" << tile_size << " "
                         << "team=" << team_size << " "
-                        << "z=" << z_tile << " -> "
-                        << avg_time_ms << " ms "
+                        << "z=" << z_tile << " -> " << avg_time_ms << " ms "
                         << "(" << throughput << " Mpts/s)" << endl;
 
-                    outfile << tile_size << "," << team_size << "," << z_tile << ","
-                            << avg_time_ms << "," << throughput << std::endl;
+                    outfile << tile_size << "," << team_size << "," << z_tile << "," << avg_time_ms
+                            << "," << throughput << std::endl;
                 }
             }
         }
@@ -216,7 +217,7 @@ int main(int argc, char* argv[]) {
         // Find and report best configuration
         std::ifstream infile("nufft_param_sweep.csv");
         std::string line;
-        std::getline(infile, line); // skip header
+        std::getline(infile, line);  // skip header
 
         double best_time = std::numeric_limits<double>::max();
         int best_tile = 0, best_team = 0, best_z = 0;
@@ -229,16 +230,16 @@ int main(int argc, char* argv[]) {
                 tokens.push_back(token);
             }
             if (tokens.size() >= 4) {
-                int tile = std::stoi(tokens[0]);
-                int team = std::stoi(tokens[1]);
-                int z = std::stoi(tokens[2]);
+                int tile    = std::stoi(tokens[0]);
+                int team    = std::stoi(tokens[1]);
+                int z       = std::stoi(tokens[2]);
                 double time = std::stod(tokens[3]);
 
                 if (time < best_time) {
                     best_time = time;
                     best_tile = tile;
                     best_team = team;
-                    best_z = z;
+                    best_z    = z;
                 }
             }
         }
