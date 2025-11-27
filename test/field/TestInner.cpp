@@ -19,6 +19,8 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt);
         ippl::NDIndex<dim> owned(I, I, I);
 
+        int iterations = std::stoi(argv[2]);
+
         std::array<bool, dim> isParallel;
         isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
 
@@ -65,11 +67,14 @@ int main(int argc, char* argv[]) {
             });
 
         static auto timer = IpplTimings::getTimer("innerProduct");
-        IpplTimings::startTimer(timer);
-        double field2 = innerProduct(field, field);
-        IpplTimings::stopTimer(timer);
+        for (int i = 0; i < iterations; ++i) {
 
-        m << "inner product = " << field2 << endl;
+            IpplTimings::startTimer(timer);
+            double field2 = innerProduct(field, field);
+            IpplTimings::stopTimer(timer);
+
+            m << "inner product = " << field2 << endl;
+        }
 
         IpplTimings::print("timing.dat");
     }
