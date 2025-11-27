@@ -34,7 +34,6 @@ int main(int argc, char* argv[]) {
         double pi = acos(-1.0);
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> Field_t;
-        typedef ippl::Field<ippl::Vector<double, dim>, dim, Mesh_t, Centering_t> vector_field_type;
 
         Field_t field(mesh, layout);
 
@@ -71,6 +70,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(timer);
 
         m << "inner product = " << field2 << endl;
+
+        IpplTimings::print("timing.dat");
     }
     ippl::finalize();
 
