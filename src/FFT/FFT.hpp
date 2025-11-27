@@ -585,6 +585,15 @@ namespace ippl {
             if (spread_method == "atomic") {
                 cfg.spread.method = Interpolation::ScatterMethod::Atomic;
             }
+            if (params.contains("tile_size_3d")) {
+                cfg.spread.tile_size_3d = params.get<int>("tile_size_3d");
+            }
+            if (params.contains("z_tiles")) {
+                cfg.spread.z_tiles = params.get<int>("z_tiles");
+            }
+            if (params.contains("team_size")) {
+                cfg.spread.team_size = params.get<int>("team_size");
+            }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
             nufft_ptr->initialize(MPI_COMM_WORLD);
