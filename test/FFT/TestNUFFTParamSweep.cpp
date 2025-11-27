@@ -170,24 +170,32 @@ int main(int argc, char* argv[]) {
                         nufft->transform(bunch.R, bunch.Q, field);
                         Kokkos::fence();
                     }
+                    double avg_time_ms;
+                    double throughput;
 
-                    // Timed runs
-                    constexpr int num_runs = 10;
-                    auto start = std::chrono::high_resolution_clock::now();
-                    for (int run = 0; run < num_runs; ++run) {
-                        nufft->transform(bunch.R, bunch.Q, field);
+                    try {
+                        // Timed runs
+                        constexpr int num_runs = 10;
+                        auto start = std::chrono::high_resolution_clock::now();
+                        for (int run = 0; run < num_runs; ++run) {
+                            nufft->transform(bunch.R, bunch.Q, field);
+                        }
+                        Kokkos::fence();
+                        auto end = std::chrono::high_resolution_clock::now();
+
+                        std::chrono::duration<double> elapsed = end - start;
+                        double total_time = elapsed.count();
+
+                        double avg_time_s = total_time / num_runs;
+                        avg_time_ms = avg_time_s * 1000.0;
+
+                        // Calculate throughput
+                        throughput = (Np / 1e6) / avg_time_s;  // Mpts/s
+                    } catch (std::runtime_error& e) {
+                        // Catch kernel launch OOM
+                        avg_time_ms = std::nan("");
+                        throughput = std::nan("");
                     }
-                    Kokkos::fence();
-                    auto end = std::chrono::high_resolution_clock::now();
-
-                    std::chrono::duration<double> elapsed = end - start;
-                    double total_time = elapsed.count();
-
-                    double avg_time_s = total_time / num_runs;
-                    double avg_time_ms = avg_time_s * 1000.0;
-
-                    // Calculate throughput
-                    double throughput = (Np / 1e6) / avg_time_s;  // Mpts/s
 
                     msg << "Config " << config_count << ": "
                         << "tile=" << tile_size << " "
