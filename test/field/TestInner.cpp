@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
         static auto timer = IpplTimings::getTimer("innerProduct");
         IpplTimings::startTimer(timer);
         double field2 = innerProduct(field, field);
-        IpplTimings::startTimer(timer);
+        IpplTimings::stopTimer(timer);
 
         m << "inner product = " << field2 << endl;
 
