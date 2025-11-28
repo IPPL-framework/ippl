@@ -353,7 +353,7 @@ if(IPPL_ENABLE_FFT AND IPPL_ENABLE_KOKKOS_NUFFT)
   message(STATUS "Fetching kokkos_nufft")
   FetchContent_Declare(
           kokkos_nufft
-          GIT_REPOSITORY git@github.com:PaulFisch/kokkos-nufft.git
+          GIT_REPOSITORY https://github.com/PaulFisch/kokkos-nufft.git
           GIT_SHALLOW TRUE
           GIT_TAG main
   )
