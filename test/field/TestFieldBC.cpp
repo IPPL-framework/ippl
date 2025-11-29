@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
     {
         constexpr unsigned int dim = 3;
 
+        sleep(10);
         int pt = 4;
         ippl::Index I(pt);
         ippl::NDIndex<dim> owned(I, I, I);

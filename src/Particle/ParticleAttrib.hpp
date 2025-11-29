@@ -20,13 +20,13 @@
 #include "Utility/IpplTimings.h"
 
 #include "FFT/FFT.h"
-#include "Interpolation/TiledScatter.h"
-#include "Interpolation/TiledGather.h"
-#include "Interpolation/AtomicScatter.h"
 #include "Interpolation/AtomicGather.h"
+#include "Interpolation/AtomicScatter.h"
 #include "Interpolation/Binning.h"
-#include "Particle/ParticleSort.h"
 #include "Interpolation/ScatterConfig.h"
+#include "Interpolation/TiledGather.h"
+#include "Interpolation/TiledScatter.h"
+#include "Particle/ParticleSort.h"
 
 namespace ippl {
 
@@ -228,7 +228,7 @@ namespace ippl {
     // Kernel-based scatter
     template <typename T, class... Properties>
     template <typename Field, typename P2, typename Kernel>
-    void ParticleAttrib<T, Properties...>::scatter(
+    void ParticleAttrib<T, Properties...>::scatter_kernel(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
         const Kernel& kernel, const Interpolation::ScatterConfig& config) const {
         constexpr unsigned Dim = Field::dim;
@@ -238,16 +238,16 @@ namespace ippl {
         static IpplTimings::TimerRef scatterKernelTimer = IpplTimings::getTimer("scatterKernel");
         IpplTimings::startTimer(scatterKernelTimer);
 
-        using view_type       = typename Field::view_type;
-        view_type full_view   = f.getView();
-        const int nghost      = f.getNghost();
+        using view_type     = typename Field::view_type;
+        view_type full_view = f.getView();
+        const int nghost    = f.getNghost();
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
 
-        const int w = kernel.width();
-        const int hw = w / 2;
-        const bool odd = (w & 1);
+        const int w               = kernel.width();
+        const int hw              = w / 2;
+        const bool odd            = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
         // Scale from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
@@ -258,7 +258,7 @@ namespace ippl {
             scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
         }
 
-        using policy_type = Kokkos::RangePolicy<execution_space>;
+        using policy_type       = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
         // Dispatch based on spread method
@@ -269,7 +269,7 @@ namespace ippl {
             Kokkos::Array<size_type, 3> n_grid_arr;
             Kokkos::Array<int, 3> tile_size_arr;
             for (unsigned d = 0; d < 3; ++d) {
-                n_grid_arr[d] = ngrid[d];
+                n_grid_arr[d]    = ngrid[d];
                 tile_size_arr[d] = config.tile_size_3d;
             }
 
@@ -291,11 +291,12 @@ namespace ippl {
 
             // Dispatch to templated scatter functor based on kernel width
             constexpr int MaxW = 20;
-            Interpolation::detail::ScatterDispatcher<1, MaxW>::template dispatch_3d<PositionType, execution_space, Kernel, T, view_type, decltype(pp_view), decltype(permute), decltype(bin_offsets)>(
-                w, bin_offsets, permute, pp_view, dview_m, full_view,
-                n_grid_arr, num_tiles,
-                config.tile_size_3d, config.tile_size_3d, config.tile_size_3d,
-                config.z_tiles, nghost, inv_hw, kernel, config.team_size);
+            Interpolation::detail::ScatterDispatcher<1, MaxW>::template dispatch_3d<
+                PositionType, execution_space, Kernel, T, view_type, decltype(pp_view),
+                decltype(permute), decltype(bin_offsets)>(
+                w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_arr, num_tiles,
+                config.tile_size_3d, config.tile_size_3d, config.tile_size_3d, config.z_tiles,
+                nghost, inv_hw, kernel, config.team_size);
 
             IpplTimings::stopTimer(scatterKernelTimer);
             return;
@@ -305,16 +306,16 @@ namespace ippl {
         auto pp_view = pp.getView();
 
         // Use AtomicScatterFunctor with T (real values) scattering to complex field
-        Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> scatter_functor{
-            .x = pp_view,
-            .values = dview_m,
-            .grid = full_view,
-            .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
-            .w = w,
-            .nghost = nghost,
-            .inv_hw = inv_hw,
-            .kernel = kernel
-        };
+        Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T,
+                                                    view_type, decltype(pp_view)>
+            scatter_functor{.x      = pp_view,
+                            .values = dview_m,
+                            .grid   = full_view,
+                            .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
+                            .w      = w,
+                            .nghost = nghost,
+                            .inv_hw = inv_hw,
+                            .kernel = kernel};
 
         Kokkos::parallel_for("atomic_scatter", policy_type(0, nParticles), scatter_functor);
 
@@ -339,16 +340,16 @@ namespace ippl {
         static IpplTimings::TimerRef gatherKernelTimer = IpplTimings::getTimer("gatherKernel");
         IpplTimings::startTimer(gatherKernelTimer);
 
-        using view_type       = typename Field::view_type;
-        view_type full_view   = f.getView();
-        const int nghost      = f.getNghost();
+        using view_type     = typename Field::view_type;
+        view_type full_view = f.getView();
+        const int nghost    = f.getNghost();
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
 
-        const int w = kernel.width();
-        const int hw = w / 2;
-        const bool odd = (w & 1);
+        const int w               = kernel.width();
+        const int hw              = w / 2;
+        const bool odd            = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
         // Compute scale factor: n_grid / (2*pi)
@@ -360,7 +361,7 @@ namespace ippl {
             scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
         }
 
-        using policy_type = Kokkos::RangePolicy<execution_space>;
+        using policy_type       = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
         // Dispatch based on method
@@ -372,9 +373,9 @@ namespace ippl {
                     // Verify field has sufficient ghost cells for kernel width
                     if (nghost < hw) {
                         throw std::runtime_error(
-                            "Field ghost cells (nghost=" + std::to_string(nghost) +
-                            ") insufficient for kernel width (" + std::to_string(w) +
-                            "). Need nghost >= " + std::to_string(hw));
+                            "Field ghost cells (nghost=" + std::to_string(nghost)
+                            + ") insufficient for kernel width (" + std::to_string(w)
+                            + "). Need nghost >= " + std::to_string(hw));
                     }
 
                     using memory_space = typename execution_space::memory_space;
@@ -387,22 +388,22 @@ namespace ippl {
                     Vector<PositionType, 3> invdx;
                     Vector<size_t, 3> ngrid_vec;
                     for (unsigned d = 0; d < 3; ++d) {
-                        origin[d] = -M_PI;
-                        invdx[d] = scale[d];
+                        origin[d]    = -M_PI;
+                        invdx[d]     = scale[d];
                         ngrid_vec[d] = ngrid[d];
                     }
 
                     detail::sortParticles<3, execution_space, PositionType>(
                         x_view, permute, origin, invdx, ngrid_vec, nParticles);
 
-                    // Dispatch to CUDA kernel - permutation and coordinate transformation done on-the-fly
+                    // Dispatch to CUDA kernel - permutation and coordinate transformation done
+                    // on-the-fly
                     constexpr int MaxW = 20;
                     int n0 = ngrid[0], n1 = ngrid[1], n2 = ngrid[2];
-                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<PositionType, decltype(x_view), decltype(permute), decltype(full_view), Kernel, T>(
-                        w, nParticles,
-                        x_view, permute, full_view, dview_m,
-                        hw, nghost, n0, n1, n2, inv_hw, kernel, addToAttribute);
-
+                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<
+                        PositionType, decltype(x_view), decltype(permute), decltype(full_view),
+                        Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, hw, nghost,
+                                   n0, n1, n2, inv_hw, kernel, addToAttribute);
 
                     cudaDeviceSynchronize();
                 } else
@@ -412,38 +413,41 @@ namespace ippl {
                     // Pass position view directly - no copy needed
                     auto pp_view = pp.getView();
 
-                    // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
-                    Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> gather_functor{
-                        .x = pp_view,
-                        .grid = full_view,
-                        .values = dview_m,
-                        .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
-                        .w = w,
-                        .nghost = nghost,
-                        .inv_hw = inv_hw,
-                        .add_to_attribute = addToAttribute,
-                        .kernel = kernel
-                    };
+                    // Use AtomicGatherFunctor - value_type is T (real), will extract real part from
+                    // complex grid
+                    Interpolation::detail::AtomicGatherFunctor<
+                        3, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)>
+                        gather_functor{.x                = pp_view,
+                                       .grid             = full_view,
+                                       .values           = dview_m,
+                                       .n_grid           = {ngrid[0], ngrid[1], ngrid[2]},
+                                       .w                = w,
+                                       .nghost           = nghost,
+                                       .inv_hw           = inv_hw,
+                                       .add_to_attribute = addToAttribute,
+                                       .kernel           = kernel};
 
-                    Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
+                    Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles),
+                                         gather_functor);
                 }
             } else {
                 // Atomic method (default) - use generic functor
                 // Pass position view directly - no copy needed
                 auto pp_view = pp.getView();
 
-                // Use AtomicGatherFunctor - value_type is T (real), will extract real part from complex grid
-                Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel, T, view_type, decltype(pp_view)> gather_functor{
-                    .x = pp_view,
-                    .grid = full_view,
-                    .values = dview_m,
-                    .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
-                    .w = w,
-                    .nghost = nghost,
-                    .inv_hw = inv_hw,
-                    .add_to_attribute = addToAttribute,
-                    .kernel = kernel
-                };
+                // Use AtomicGatherFunctor - value_type is T (real), will extract real part from
+                // complex grid
+                Interpolation::detail::AtomicGatherFunctor<3, PositionType, execution_space, Kernel,
+                                                           T, view_type, decltype(pp_view)>
+                    gather_functor{.x                = pp_view,
+                                   .grid             = full_view,
+                                   .values           = dview_m,
+                                   .n_grid           = {ngrid[0], ngrid[1], ngrid[2]},
+                                   .w                = w,
+                                   .nghost           = nghost,
+                                   .inv_hw           = inv_hw,
+                                   .add_to_attribute = addToAttribute,
+                                   .kernel           = kernel};
 
                 Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
             }

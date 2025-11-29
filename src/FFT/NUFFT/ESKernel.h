@@ -55,10 +55,6 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION T operator()(T x) const {
                 x = Kokkos::abs(x);
-                // assert(x < 1.0);
-                if (x >= 1.0) {
-                    printf("");
-                }
                 return x >= T(1.0) ? T(0.0)
                                    : Kokkos::exp(beta_ * (Kokkos::sqrt(T(1.0) - x * x) - T(1.0)));
             }

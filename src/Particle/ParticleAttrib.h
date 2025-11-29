@@ -18,12 +18,11 @@
 
 #include "Expression/IpplExpressions.h"
 
-#include "Interpolation/CIC.h"
-#include "Particle/ParticleAttribBase.h"
 #include "FFT/FFT.h"
-#include "Interpolation/ScatterConfig.h"
+#include "Interpolation/CIC.h"
 #include "Interpolation/GatherConfig.h"
-
+#include "Interpolation/ScatterConfig.h"
+#include "Particle/ParticleAttribBase.h"
 
 namespace ippl {
 
@@ -77,15 +76,15 @@ namespace ippl {
         }
 
         virtual ~ParticleAttrib() = default;
-        
+
         size_type size() const override { return dview_m.extent(0); }
-        
+
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
-        
+
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
-        
+
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
@@ -103,8 +102,8 @@ namespace ippl {
         const view_type& getView() const { return dview_m; }
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
-        
-        void  set_name(const std::string & name_) override { this->name_m = name_; }
+
+        void set_name(const std::string& name_) override { this->name_m = name_; }
 
         std::string get_name() const override { return this->name_m; }
 
@@ -193,8 +192,10 @@ namespace ippl {
          * @param config Spread configuration (method, sorting, etc.)
          */
         template <typename Field, typename P2, typename Kernel>
-        void scatter(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-                    const Kernel& kernel, const Interpolation::ScatterConfig& config = Interpolation::ScatterConfig()) const;
+        void scatter_kernel(
+            Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
+            const Kernel& kernel,
+            const Interpolation::ScatterConfig& config = Interpolation::ScatterConfig()) const;
 
         /**
          * @brief Gather field data using a higher-order kernel
@@ -213,22 +214,20 @@ namespace ippl {
          */
         template <typename Field, typename P2, typename Kernel>
         void gather(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-                   const Kernel& kernel, bool addToAttribute = false,
-                   const Interpolation::GatherConfig& config = Interpolation::GatherConfig());
+                    const Kernel& kernel, bool addToAttribute = false,
+                    const Interpolation::GatherConfig& config = Interpolation::GatherConfig());
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
-        void
-        scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
-                FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
-                const MPI_Comm& spaceComm) const;
+        void scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                             const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                             FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                             const MPI_Comm& spaceComm) const;
 
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
-        void
-        gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
-                const ParticleAttrib<Vector<P4, Dim>, Properties... >& pp,
-                FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
-                ParticleAttrib<P4, Properties... >& q);
+        void gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                            const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                            FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                            ParticleAttrib<P4, Properties...>& q);
 
         T sum();
         T max();

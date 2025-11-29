@@ -215,7 +215,8 @@ namespace ippl {
                 // Step 1: Spread particles to upsampled grid
                 auto t0      = std::chrono::high_resolution_clock::now();
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
-                Q.scatter(*grid_field_, R, kernel_, cfg_.spread);
+
+                Q.scatter_kernel(*grid_field_, R, kernel_, cfg_.spread);
                 Kokkos::fence();
 
                 timing_.spread =

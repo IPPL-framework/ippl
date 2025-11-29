@@ -3,6 +3,9 @@
 # ------------------------------------------------------------------------------
 cmake_minimum_required(VERSION 3.24)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-lto")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-lto")
+
 # ------------------------------------------------------------------------------
 # Policies - use the latest of everything
 # ------------------------------------------------------------------------------
@@ -33,7 +36,7 @@ include(ProjectSetup)
 # Primary IPPL options
 # ------------------------------------------------------------------------------
 set(IPPL_PLATFORMS "SERIAL" CACHE STRING "Platforms to build IPPL for")
-option(BUILD_SHARED_LIBS "Build IPPL as a shared library" OFF)
+option(BUILD_SHARED_LIBS "Build IPPL as a shared library" ON)
 option(IPPL_ENABLE_UNIT_TESTS "Enable unit tests using GoogleTest" OFF)
 option(IPPL_ENABLE_FFT "Enable FFT support" OFF)
 option(IPPL_ENABLE_SOLVERS "Enable IPPL solvers" OFF)

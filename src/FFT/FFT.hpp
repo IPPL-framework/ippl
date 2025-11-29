@@ -495,10 +495,11 @@ namespace ippl {
     void FFT<NUFFTransform, RealField>::setup(std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
         tol_m         = params.get<T>("tolerance", 1e-6);
-        this->n_modes = nmodes;
 
         if (use_kokkos_nufft) {
 #ifdef KOKKOS_NUFFT_AVAILABLE
+            this->n_modes = nmodes;
+
             // Setup kokkos_nufft
             nufft::array<typename RealField::memory_space::size_type, Dim> n_modes;
             for (int d = 0; d < Dim; ++d) {
@@ -682,8 +683,8 @@ namespace ippl {
                     const size_t kk_shift = (kk + nz / 2) % nz;
 
                     // Dummy captures for nvcc
-                    fview;
-                    f_nufft;
+                    (void)fview;
+                    (void)f_nufft;
 
                     // Just FFT-shift, no conjugation
                     if constexpr (Dim == 3) {
@@ -723,8 +724,8 @@ namespace ippl {
                     const size_t jj_shift = (jj + ny / 2) % ny;
                     const size_t kk_shift = (kk + nz / 2) % nz;
 
-                    fview;
-                    f_nufft;
+                    (void)fview;
+                    (void)f_nufft;
                     if constexpr (Dim == 3) {
                         fview(i, j, k) = Kokkos::conj(f_nufft(ii_shift, jj_shift, kk_shift));
                     } else if constexpr (Dim == 2) {

@@ -113,6 +113,8 @@ function(set_kokkos_options)
       set(Kokkos_ENABLE_LIBDL ON CACHE BOOL "Enable LIBDL" FORCE)
     endif()
   endif()
+
+  set(Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE ON)
 endfunction()
 
 # -----------------------------------------------------------------------------
