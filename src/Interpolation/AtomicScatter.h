@@ -49,12 +49,12 @@ namespace detail {
             const value_type& val = values(j);
 
             // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
-            constexpr real_type inv_two_pi = real_type(0.5) / real_type(3.14159265358979323846);
+            constexpr RealType inv_two_pi = RealType(0.5) / std::numbers::pi_v<RealType>;
 
             real_type pos[Dim];  // Grid coordinates
             for (unsigned d = 0; d < Dim; ++d) {
                 real_type k = x(j)[d] * inv_two_pi;
-                k = k - Kokkos::floor(k);
+                k -= Kokkos::floor(k);
                 pos[d] = k * n_grid[d];
             }
 
@@ -64,8 +64,8 @@ namespace detail {
 
             int idx0[Dim];
             for (unsigned d = 0; d < Dim; ++d) {
-                idx0[d] = odd ? static_cast<int>(Kokkos::round(pos[d])) - hw
-                              : static_cast<int>(pos[d]) + 1 - hw;
+                idx0[d] = odd ? static_cast<int>(std::llround(pos[d])) - (w-1)/2
+                              : static_cast<int>(pos[d]) - (w-1)/2;
             }
 
             // Spread to all w^Dim grid points in the stencil

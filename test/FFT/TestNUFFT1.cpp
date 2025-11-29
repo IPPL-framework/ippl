@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-12);
+        fftParams.add("tolerance", 1e-7);
 #ifdef ENABLE_GPU_NUFFT
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 #endif
 
         fftParams.add("use_finufft_defaults", false);
-        fftParams.add("use_kokkos_nufft", false);
+        fftParams.add("use_kokkos_nufft",  false);
 
         // Test tiled spread method with z-striding
         fftParams.add("spread_method", "tiled");
@@ -138,6 +138,7 @@ int main(int argc, char* argv[]) {
 
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
+        std::cout << "Width " << static_cast<int>(std::ceil(std::log10((1.0) / fftParams.get<double>("tolerance")))) + 1;
         std::unique_ptr<FFT_type> fft;
 
         int type = 1;

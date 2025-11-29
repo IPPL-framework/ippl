@@ -154,7 +154,11 @@ namespace ippl {
                 // Create upsampled grid field with sufficient ghost cells for kernel width
                 // Native NUFFT uses field ghosts directly instead of creating extended grid
                 const int hw = kernel_.width() / 2;
-                const int nghost = hw;  // Need nghost >= hw for kernel width w
+                // TODO(paul) we need here (W+1)/2 ghost layers, because for uneven W, in case the
+                //            point is in the upper half of the last segment, we need both the value
+                //            at the end, plus the kernel support extends w/2 into the halo. Theoretically
+                const int nghost = (kernel_.width() + 1)/2;  // Need nghost >= hw for kernel width w
+                // const int nghost = hw;
                 grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
 
                 // Initialize heFFTe FFT

@@ -302,7 +302,6 @@ namespace ippl {
         }
 
         // Fall back to atomic implementation using generic functor
-        // Pass position view directly - no copy needed
         auto pp_view = pp.getView();
 
         // Use AtomicScatterFunctor with T (real values) scattering to complex field
