@@ -62,8 +62,8 @@ namespace ippl {
             addAttribute(ID);
         }
         addAttribute(R);
-        ID.set_name("ID");
-        R.set_name("position");
+        // ID.set_name("ID");
+        // R.set_name("position");
     }
 
     template <class PLayout, typename... IP>

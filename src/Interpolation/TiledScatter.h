@@ -380,8 +380,8 @@ namespace ippl {
 
                 KOKKOS_INLINE_FUNCTION void operator()(const team_member& team) const {
                     const int team_id     = team.league_rank();
-                    const int num_threads = team.team_size();
-                    const int thread_id   = team.team_rank();
+                    // const int num_threads = team.team_size();
+                    // const int thread_id   = team.team_rank();
 
                     // Decode team_id to tile and z-slice
                     // We split the w loop into threads_per_tile loops in the z direction
@@ -392,7 +392,7 @@ namespace ippl {
                     const int tile_thread_idx   = team_id % threads_per_tile;
                     const int z_offset          = z_tiles * tile_thread_idx;
 
-                    const int tiles_per_xy = num_tiles[0] * num_tiles[1];
+                    // const int tiles_per_xy = num_tiles[0] * num_tiles[1];
 
                     const int tile_x = tile_linear % num_tiles[0];
                     const int tile_y = (tile_linear / num_tiles[0]) % num_tiles[1];

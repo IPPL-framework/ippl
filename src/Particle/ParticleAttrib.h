@@ -103,9 +103,9 @@ namespace ippl {
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
-        void set_name(const std::string& name_) override { this->name_m = name_; }
+        // void set_name(const std::string& name_) override { this->name_m = name_; }
 
-        std::string get_name() const override { return this->name_m; }
+        // std::string get_name() const override { return this->name_m; }
 
         /*!
          * Assign the same value to the whole attribute.

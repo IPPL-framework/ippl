@@ -247,8 +247,8 @@ namespace ippl {
         const NDIndex<Dim>& gDom       = layout.getDomain();
 
         const int w               = kernel.width();
-        const int hw              = w / 2;
-        const bool odd            = (w & 1);
+        // const int hw              = w / 2;
+        // const bool odd            = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
         // Use GLOBAL grid dimensions for coordinate scaling
