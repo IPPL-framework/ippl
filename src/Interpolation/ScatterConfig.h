@@ -68,7 +68,7 @@ namespace Interpolation {
 
 #ifdef KOKKOS_ENABLE_HIP
     template <>
-    inline ScatterConfig ScatterConfig::get_default<Kokkos::Tiled>() {
+    inline ScatterConfig ScatterConfig::get_default<Kokkos::HIP>() {
         ScatterConfig config;
         config.method = ScatterMethod::Tiled;
         config.sort = true;
