@@ -233,7 +233,11 @@ namespace ippl {
 
                 // Step 3: Deconvolution and truncation to output modes
                 t0 = std::chrono::high_resolution_clock::now();
-                applyDeconvolutionType1<ExecSpace, T>(*grid_field_, factors_, f, n_modes_, n_grid_);
+                // applyDeconvolutionType1<ExecSpace, T>(*grid_field_, factors_, f, n_modes_,
+                // n_grid_);
+                applyDeconvolutionType1<Dim, ExecSpace, T>(grid_field_->getView(), factors_,
+                                                           f.getView(), n_modes_, n_grid_,
+                                                           grid_field_->getNghost(), f.getNghost());
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
@@ -269,7 +273,11 @@ namespace ippl {
                 // Step 1: Apply pre-correction
                 auto t0 = std::chrono::high_resolution_clock::now();
 
-                applyPreCorrectionType2<ExecSpace, T>(f, factors_, *grid_field_, n_modes_, n_grid_);
+                // applyPreCorrectionType2<ExecSpace, T>(f, factors_, *grid_field_, n_modes_,
+                // n_grid_);
+                applyPreCorrectionType2<Dim, ExecSpace, T>(
+                    f.getView(), factors_, grid_field_->getView(), n_modes_, n_grid_, f.getNghost(),
+                    grid_field_->getNghost());
 
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
