@@ -135,7 +135,7 @@ namespace NUFFT {
                 {0, 0, 0},
                 {nx_local, ny_local, nz_local}),
             KOKKOS_LAMBDA(int64_t i, int64_t j, int64_t k) {
-                // Compute shifted indices for factor lookup (still global indexing convention)
+                // Compute shifted indices
                 const int ii_shift = (i + nx/2) % nx;
                 const int jj_shift = (j + ny/2) % ny;
                 const int kk_shift = (k + nz/2) % nz;
@@ -144,7 +144,6 @@ namespace NUFFT {
 
                 int64_t i_in, j_in, k_in;
 
-                // Single-rank: apply zero-padding mapping; multi-rank: direct mapping
                 if (single_rank_x) {
                     i_in = (i < nx/2) ? (gx - nx/2 + i) : (i - nx/2);
                 } else {
@@ -238,7 +237,7 @@ namespace NUFFT {
                 {0, 0, 0},
                 {nx_local, ny_local, nz_local}),
             KOKKOS_LAMBDA(int64_t i, int64_t j, int64_t k) {
-                // Compute shifted indices for factor lookup
+                // Compute shifted indices
                 const int ii_shift = (i + nx/2) % nx;
                 const int jj_shift = (j + ny/2) % ny;
                 const int kk_shift = (k + nz/2) % nz;

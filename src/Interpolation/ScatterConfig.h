@@ -66,6 +66,19 @@ namespace Interpolation {
 #endif
 
 
+#ifdef KOKKOS_ENABLE_OPENMP
+    template <>
+    inline ScatterConfig ScatterConfig::get_default<Kokkos::OpenMP>() {
+        ScatterConfig config;
+        config.method = ScatterMethod::Atomic;
+        config.sort = false;
+        config.tile_size_3d = 9;
+        config.team_size = 1;
+        return config;
+    }
+#endif
+
+
 #ifdef KOKKOS_ENABLE_HIP
     template <>
     inline ScatterConfig ScatterConfig::get_default<Kokkos::HIP>() {
