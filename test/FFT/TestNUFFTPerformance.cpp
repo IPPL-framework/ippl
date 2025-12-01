@@ -293,6 +293,7 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Atomic", time_ms, Np, grid_size, "1");
                     }
 
+#ifdef KOKKOS_NUFFT_AVAILABLE
                     // kokkos_nufft reference
                     {
                         ippl::ParameterList fftParams;
@@ -304,6 +305,7 @@ int main(int argc, char* argv[]) {
                         double time_ms = benchmarkType1(*fft, field, bunch, "kokkos_nufft");
                         printResult("kokkos_nufft", time_ms, Np, grid_size, "1");
                     }
+#endif
 
 #ifdef ENABLE_FINUFFT
                     // FINUFFT/cuFINUFFT reference
