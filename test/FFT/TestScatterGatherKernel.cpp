@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 
         // ---------------- NUFFT kernel / ghosts ----------
         ippl::NUFFT::ESKernel<real_type> kernel(1e-6);
-        const int nghost = (kernel.width() + 1) / 2;
+        const int nghost = (kernel.width()) / 2 + 1;
 
         Field_t grid_random(mesh, layout, nghost);
         Field_t grid_scattered_atomic(mesh, layout, nghost);
