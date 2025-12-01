@@ -23,8 +23,8 @@
 #include "FFT/NUFFT/Correction.h"
 #include "FFT/NUFFT/ESKernel.h"
 #include "FFT/NUFFT/NUFFTUtilities.h"
-#include "Particle/ParticleAttrib.h"
 #include "Interpolation/ScatterConfig.h"
+#include "Particle/ParticleAttrib.h"
 
 namespace ippl {
     namespace NUFFT {
@@ -62,9 +62,10 @@ namespace ippl {
             using Layout_t     = FieldLayout<Dim>;
 
             struct Config {
-                T tol     = T(1e-6);  // Error tolerance
-                T sigma   = T(2.0);   // Upsampling factor
-                Interpolation::ScatterConfig spread;  // Spread/gather configuration (chooses impl/tiling/..)
+                T tol   = T(1e-6);  // Error tolerance
+                T sigma = T(2.0);   // Upsampling factor
+                Interpolation::ScatterConfig
+                    spread;  // Spread/gather configuration (chooses impl/tiling/..)
             };
 
             struct TimingInfo {
@@ -121,12 +122,14 @@ namespace ippl {
              *
              * @param comm MPI communicator
              */
-            void initialize(const MPI_Comm& comm = MPI_COMM_WORLD) {
+            void initialize(const Layout_t& modes_layout, const MPI_Comm& comm = MPI_COMM_WORLD) {
                 if (initialized_)
                     return;
 
                 static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("NativeNUFFT::init");
                 IpplTimings::startTimer(initTimer);
+
+                using NDIndex_t = NDIndex<Dim>;
 
                 // Create index domain for upsampled grid
                 NDIndex<Dim> domain;
@@ -136,17 +139,16 @@ namespace ippl {
 
                 // Create decomposition
                 std::array<bool, Dim> isParallel;
-                isParallel.fill(false);
+                isParallel.fill(true);
 
-                // Enable periodic BCs for ghost cell exchange
                 grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel, true);
 
                 // Create mesh for upsampled grid
                 Vector<T, Dim> origin, hx;
                 for (unsigned d = 0; d < Dim; ++d) {
-                    origin[d] = -M_PI;
-                    T extent = T(2.0) * M_PI;
-                    hx[d] = extent / n_grid_[d];
+                    origin[d] = 0;
+                    T extent  = T(2.0) * M_PI;
+                    hx[d]     = extent / n_grid_[d];
                 }
 
                 grid_mesh_ = std::make_unique<Mesh_t>(domain, hx, origin);
@@ -156,8 +158,10 @@ namespace ippl {
                 const int hw = kernel_.width() / 2;
                 // TODO(paul) we need here (W+1)/2 ghost layers, because for uneven W, in case the
                 //            point is in the upper half of the last segment, we need both the value
-                //            at the end, plus the kernel support extends w/2 into the halo. Theoretically
-                const int nghost = (kernel_.width() + 1)/2;  // Need nghost >= hw for kernel width w
+                //            at the end, plus the kernel support extends w/2 into the halo.
+                //            Theoretically
+                const int nghost =
+                    (kernel_.width() + 1) / 2;  // Need nghost >= hw for kernel width w
                 // const int nghost = hw;
                 grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
 
@@ -175,10 +179,8 @@ namespace ippl {
                     factors_[d] = complex_view_1d("deconv_factors", n_modes_[d]);
 
                     ippl::nufft::compute_deconvolution_factors<ExecSpace, T>(
-                        factors_[d],
-                        static_cast<int64_t>(n_modes_[d]),
-                        static_cast<int64_t>(n_grid_[d]),
-                        nufft_kernel);
+                        factors_[d], static_cast<int64_t>(n_modes_[d]),
+                        static_cast<int64_t>(n_grid_[d]), nufft_kernel);
                 }
 
                 Kokkos::fence();
@@ -231,10 +233,7 @@ namespace ippl {
 
                 // Step 3: Deconvolution and truncation to output modes
                 t0 = std::chrono::high_resolution_clock::now();
-                applyDeconvolutionType1<Dim, ExecSpace, T>(
-                    grid_field_->getView(), factors_,
-                    f.getView(), n_modes_, n_grid_,
-                    grid_field_->getNghost(), f.getNghost());
+                applyDeconvolutionType1<ExecSpace, T>(*grid_field_, factors_, f, n_modes_, n_grid_);
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
@@ -270,11 +269,7 @@ namespace ippl {
                 // Step 1: Apply pre-correction
                 auto t0 = std::chrono::high_resolution_clock::now();
 
-                applyPreCorrectionType2<Dim, ExecSpace, T>(
-                    f.getView(), factors_,
-                    grid_field_->getView(),
-                    n_modes_, n_grid_,
-                    f.getNghost(), grid_field_->getNghost());
+                applyPreCorrectionType2<ExecSpace, T>(f, factors_, *grid_field_, n_modes_, n_grid_);
 
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)

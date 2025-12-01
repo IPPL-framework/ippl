@@ -485,14 +485,14 @@ namespace ippl {
         if (tempQ_m.size() < localNp) {
             Kokkos::realloc(tempQ_m, localNp);
         }
-        setup(nmodes, params);
+        setup(layout, nmodes, params);
     }
 
     /**
         setup performs the initialization necessary.
     */
     template <typename RealField>
-    void FFT<NUFFTransform, RealField>::setup(std::array<int64_t, 3>& nmodes,
+    void FFT<NUFFTransform, RealField>::setup(const Layout_t& layout, std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
         tol_m         = params.get<T>("tolerance", 1e-6);
 
@@ -597,7 +597,7 @@ namespace ippl {
             }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
-            nufft_ptr->initialize(MPI_COMM_WORLD);
+            nufft_ptr->initialize(layout, MPI_COMM_WORLD);
             native_nufft_ = static_cast<void*>(nufft_ptr);
         }
     }

@@ -58,7 +58,7 @@ namespace ippl {
 
             virtual size_type size() const = 0;
 
-            virtual ~ParticleAttribBase() = default;
+            KOKKOS_INLINE_FUNCTION virtual ~ParticleAttribBase() = default;
 
             void setParticleCount(size_type& num) { localNum_mp = &num; }
             size_type getParticleCount() const { return *localNum_mp; }

@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> owned(I, J, K);
 
         std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(false);
+        isParallel.fill(true);  // Enable parallel decomposition for multi-node
 
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 

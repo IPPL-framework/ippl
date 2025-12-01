@@ -339,7 +339,9 @@ namespace ippl {
                 GridViewType grid;                               // Output grid
 
                 // Parameters
-                Kokkos::Array<size_type, 3> n_grid;
+                Kokkos::Array<size_type, 3> n_grid;        // GLOBAL grid dimensions
+                Kokkos::Array<size_type, 3> n_grid_local;  // LOCAL grid dimensions
+                Kokkos::Array<int, 3> local_offset;        // First global index of local domain
                 Kokkos::Array<size_type, 3> num_tiles;
                 int tile_size_x, tile_size_y, tile_size_z;
                 int z_tiles;       // z-dimension splitting for parallelism
@@ -538,34 +540,42 @@ namespace ippl {
                             int hist_y = (hist_idx / hx) % hy;
                             int hist_z = hist_idx / (hx * hy);
 
+                            // Compute GLOBAL grid indices
                             int global_x = tile_x0 + hist_x - half_left;
                             int global_y = tile_y0 + hist_y - half_left;
                             int global_z = tile_z0 + hist_z - half_left + z_offset;
 
-                            if (global_x < -nghost || global_x >= static_cast<int>(n_grid[0]) + nghost
-                                || global_y < -nghost || global_y >= static_cast<int>(n_grid[1]) + nghost
-                                || global_z < -nghost || global_z >= static_cast<int>(n_grid[2]) + nghost) {
+                            // Convert to LOCAL indices
+                            int local_x = global_x - local_offset[0];
+                            int local_y = global_y - local_offset[1];
+                            int local_z = global_z - local_offset[2];
+
+                            // Check if within LOCAL domain (including ghosts)
+                            if (local_x < -nghost || local_x >= static_cast<int>(n_grid_local[0]) + nghost
+                                || local_y < -nghost || local_y >= static_cast<int>(n_grid_local[1]) + nghost
+                                || local_z < -nghost || local_z >= static_cast<int>(n_grid_local[2]) + nghost) {
                                 return;
                             }
 
+                            // Use LOCAL indices for grid access
                             if constexpr (grid_is_complex) {
 #ifdef KOKKOS_ENABLE_CUDA
                                 if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
                                     double* addr_as_double = reinterpret_cast<double*>(&grid(
-                                        global_x + nghost, global_y + nghost, global_z + nghost));
+                                        local_x + nghost, local_y + nghost, local_z + nghost));
                                     Kokkos::atomic_add(&addr_as_double[0], hist_r(hist_idx));
                                     Kokkos::atomic_add(&addr_as_double[1], hist_c(hist_idx));
                                 } else
 #endif
                                 {
-                                    Kokkos::atomic_add(&grid(global_x + nghost, global_y + nghost,
-                                                             global_z + nghost),
+                                    Kokkos::atomic_add(&grid(local_x + nghost, local_y + nghost,
+                                                             local_z + nghost),
                                                        Kokkos::complex<real_type>(
                                                            hist_r(hist_idx), hist_c(hist_idx)));
                                 }
                             } else {
                                 Kokkos::atomic_add(
-                                    &grid(global_x + nghost, global_y + nghost, global_z + nghost),
+                                    &grid(local_x + nghost, local_y + nghost, local_z + nghost),
                                     hist_r(hist_idx));
                             }
                         });
@@ -587,6 +597,8 @@ namespace ippl {
                     Kokkos::View<ValueType*, typename ExecSpace::memory_space> values,
                     GridViewType grid,
                     Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
+                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_local,
+                    Kokkos::Array<int, 3> local_offset,
                     Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> num_tiles,
                     int tile_size_x, int tile_size_y, int tile_size_z, int z_tiles, int nghost,
                     RealType inv_hw, const KernelType& kernel, int team_size) {
@@ -611,10 +623,10 @@ namespace ippl {
                                 // Create functor with templated W
                                 TiledScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
                                                       GridViewType, PositionViewType>
-                                    functor{bin_offsets, permute,     x,         values,
-                                            grid,        n_grid,      num_tiles, tile_size_x,
-                                            tile_size_y, tile_size_z, z_tiles,   nghost,
-                                            inv_hw,      kernel};
+                                    functor{bin_offsets, permute,      x,            values,
+                                            grid,        n_grid,       n_grid_local, local_offset,
+                                            num_tiles,   tile_size_x,  tile_size_y,  tile_size_z,
+                                            z_tiles,     nghost,       inv_hw,       kernel};
 
                                 // Calculate scratch memory size
                                 const size_t hist_size = functor.hist_size_x()
@@ -643,9 +655,9 @@ namespace ippl {
                             ScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
                                 RealType, ExecSpace, KernelType, ValueType, GridViewType,
                                 PositionViewType, PermuteViewType, BinOffsetsViewType>(
-                                w, bin_offsets, permute, x, values, grid, n_grid, num_tiles,
-                                tile_size_x, tile_size_y, tile_size_z, z_tiles, nghost, inv_hw,
-                                kernel, team_size);
+                                w, bin_offsets, permute, x, values, grid, n_grid, n_grid_local,
+                                local_offset, num_tiles, tile_size_x, tile_size_y, tile_size_z,
+                                z_tiles, nghost, inv_hw, kernel, team_size);
                         }
                     } else {
                         throw std::runtime_error("Kernel width exceeds maximum supported width");

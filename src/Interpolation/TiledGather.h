@@ -42,20 +42,19 @@ namespace detail {
 
         constexpr bool odd = w % 2 == 1;
         constexpr bool is_complex = std::is_same_v<ValueType, Kokkos::complex<RealType>>;
-        using size_type = typename PermuteViewType::value_type;
         constexpr int w3 = w * w * w;
         constexpr int WARP_SIZE = 32;
         constexpr RealType inv_two_pi = RealType(0.5) / RealType(3.14159265358979323846);
 
         // Determine which particle this warp is processing
-        const size_type warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
+        const int warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
         if (warp_id >= n_points) return;
 
         const int lane_id = threadIdx.x % WARP_SIZE;
         const int warp_in_block = threadIdx.x / WARP_SIZE;
 
         // Apply permutation to get actual particle index
-        const size_type particle_idx = permute(warp_id);
+        const int particle_idx = permute(warp_id);
 
         // Helper to access position component - works with both View<T*[3]> and View<Vector<T,3>*>
         auto get_pos = [&](int d) -> RealType {
@@ -79,13 +78,13 @@ namespace detail {
 
         // Particle positions in grid coordinates [0, n_grid)
         RealType sx = transform_coord(get_pos(0), n0);
-        size_type idx0_0 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
+        int idx0_0 = odd ? llround(sx) - hw : static_cast<int>(sx) + 1 - hw;
 
         sx = transform_coord(get_pos(1), n1);
-        size_type idx0_1 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
+        int idx0_1 = odd ? llround(sx) - hw : static_cast<int>(sx) + 1 - hw;
 
         sx = transform_coord(get_pos(2), n2);
-        size_type idx0_2 = odd ? llround(sx) - hw : static_cast<size_type>(sx) + 1 - hw;
+        int idx0_2 = odd ? llround(sx) - hw : static_cast<int>(sx) + 1 - hw;
 
         // Collaboratively compute kernel values within the warp
         for (int i = lane_id; i < 3 * w; i += WARP_SIZE) {
@@ -93,7 +92,7 @@ namespace detail {
             int k = i % w;
 
             RealType sx_loc;
-            size_type idx0_loc;
+            int idx0_loc;
             int grid_size_loc;
 
             if (d == 0) {

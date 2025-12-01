@@ -75,7 +75,7 @@ namespace ippl {
             ar.deserialize(buf_m, nrecvs);
         }
 
-        virtual ~ParticleAttrib() = default;
+        KOKKOS_INLINE_FUNCTION virtual ~ParticleAttrib() = default;
 
         size_type size() const override { return dview_m.extent(0); }
 

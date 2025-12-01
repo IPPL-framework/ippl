@@ -77,13 +77,13 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> owned(I, J, K);
 
         std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(false);
+        isParallel.fill(true);  // Enable parallel decomposition for multi-node
 
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         typedef ippl::Vector<double, 3> Vector_t;
-        Vector_t minU = {-pi, -pi, -pi};
-        Vector_t maxU = {pi, pi, pi};
+        Vector_t minU = {0, 0, 0}; //{-pi, -pi, -pi};
+        Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
         // Vector_t minU = {0.0, 0.0, 0.0};
         // Vector_t maxU = {25.0, 25.0, 25.0};
 
@@ -110,8 +110,8 @@ int main(int argc, char* argv[]) {
         typedef ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type real_field_type;
 
 
-        field_type field(mesh, layout);
-        field_type field_dft(mesh, layout);
+        field_type field(mesh, layout, 8);
+        field_type field_dft(mesh, layout, 8);
 
         ippl::ParameterList fftParams;
 
@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
                                  bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
 
+        bunch.update();
         fft->transform(bunch.R, bunch.Q, field);
 
         auto field_result =

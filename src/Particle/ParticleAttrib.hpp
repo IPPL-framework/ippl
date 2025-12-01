@@ -244,32 +244,36 @@ namespace ippl {
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+        const NDIndex<Dim>& gDom       = layout.getDomain();
 
         const int w               = kernel.width();
         const int hw              = w / 2;
         const bool odd            = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
-        // Scale from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
-        Vector<PositionType, Dim> scale;
-        Vector<int, Dim> ngrid;
+        // Use GLOBAL grid dimensions for coordinate scaling
+        Vector<int, Dim> ngrid_global;
+        Vector<int, Dim> ngrid_local;
+        Vector<int, Dim> local_offset;
         for (unsigned d = 0; d < Dim; ++d) {
-            ngrid[d] = lDom[d].length();
-            scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
+            ngrid_global[d]  = gDom[d].length();
+            ngrid_local[d]   = lDom[d].length();
+            local_offset[d]  = lDom[d].first();
         }
 
         using policy_type       = Kokkos::RangePolicy<execution_space>;
         const size_t nParticles = *(this->localNum_mp);
 
+
         // Dispatch based on spread method
         if (config.method == Interpolation::ScatterMethod::Tiled && Dim == 3) {
             using size_type = typename execution_space::memory_space::size_type;
 
-            // Prepare grid dimensions
+            // Prepare grid dimensions - use GLOBAL for binning
             Kokkos::Array<size_type, 3> n_grid_arr;
             Kokkos::Array<int, 3> tile_size_arr;
             for (unsigned d = 0; d < 3; ++d) {
-                n_grid_arr[d]    = ngrid[d];
+                n_grid_arr[d]    = ngrid_global[d];
                 tile_size_arr[d] = config.tile_size_3d;
             }
 
@@ -283,10 +287,18 @@ namespace ippl {
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
                 pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
 
-            // Calculate number of tiles
+            // Calculate number of tiles (based on global grid)
             Kokkos::Array<size_type, 3> num_tiles;
             for (unsigned d = 0; d < 3; ++d) {
-                num_tiles[d] = (ngrid[d] + config.tile_size_3d - 1) / config.tile_size_3d;
+                num_tiles[d] = (ngrid_global[d] + config.tile_size_3d - 1) / config.tile_size_3d;
+            }
+
+            // Prepare local grid arrays
+            Kokkos::Array<size_type, 3> n_grid_local_arr;
+            Kokkos::Array<int, 3> local_offset_arr;
+            for (unsigned d = 0; d < 3; ++d) {
+                n_grid_local_arr[d] = ngrid_local[d];
+                local_offset_arr[d] = local_offset[d];
             }
 
             // Dispatch to templated scatter functor based on kernel width
@@ -294,9 +306,10 @@ namespace ippl {
             Interpolation::detail::ScatterDispatcher<1, MaxW>::template dispatch_3d<
                 PositionType, execution_space, Kernel, T, view_type, decltype(pp_view),
                 decltype(permute), decltype(bin_offsets)>(
-                w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_arr, num_tiles,
-                config.tile_size_3d, config.tile_size_3d, config.tile_size_3d, config.z_tiles,
-                nghost, inv_hw, kernel, config.team_size);
+                w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_arr,
+                n_grid_local_arr, local_offset_arr, num_tiles, config.tile_size_3d,
+                config.tile_size_3d, config.tile_size_3d, config.z_tiles, nghost, inv_hw,
+                kernel, config.team_size);
 
             IpplTimings::stopTimer(scatterKernelTimer);
             return;
@@ -308,14 +321,16 @@ namespace ippl {
         // Use AtomicScatterFunctor with T (real values) scattering to complex field
         Interpolation::detail::AtomicScatterFunctor<Dim, PositionType, execution_space, Kernel, T,
                                                     view_type, decltype(pp_view)>
-            scatter_functor{.x      = pp_view,
-                            .values = dview_m,
-                            .grid   = full_view,
-                            .n_grid = {ngrid[0], ngrid[1], ngrid[2]},
-                            .w      = w,
-                            .nghost = nghost,
-                            .inv_hw = inv_hw,
-                            .kernel = kernel};
+            scatter_functor{.x            = pp_view,
+                            .values       = dview_m,
+                            .grid         = full_view,
+                            .n_grid       = {ngrid_global[0], ngrid_global[1], ngrid_global[2]},
+                            .n_grid_local = {ngrid_local[0], ngrid_local[1], ngrid_local[2]},
+                            .local_offset = {local_offset[0], local_offset[1], local_offset[2]},
+                            .w            = w,
+                            .nghost       = nghost,
+                            .inv_hw       = inv_hw,
+                            .kernel       = kernel};
 
         Kokkos::parallel_for("atomic_scatter", policy_type(0, nParticles), scatter_functor);
 
@@ -346,19 +361,21 @@ namespace ippl {
 
         const FieldLayout<Dim>& layout = f.getLayout();
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+        const NDIndex<Dim>& gDom       = layout.getDomain();
 
         const int w               = kernel.width();
         const int hw              = w / 2;
         const bool odd            = (w & 1);
         const PositionType inv_hw = PositionType(2.0) / w;
 
-        // Compute scale factor: n_grid / (2*pi)
-        // This converts from physical coordinates in [-pi, pi] to grid coordinates [0, n_grid)
-        Vector<PositionType, Dim> scale;
-        Vector<int, Dim> ngrid;
+        // Use GLOBAL grid dimensions for coordinate scaling
+        Vector<int, Dim> ngrid_global;
+        Vector<int, Dim> ngrid_local;
+        Vector<int, Dim> local_offset;
         for (unsigned d = 0; d < Dim; ++d) {
-            ngrid[d] = lDom[d].length();
-            scale[d] = ngrid[d] / (PositionType(2.0) * M_PI);
+            ngrid_global[d]  = gDom[d].length();
+            ngrid_local[d]   = lDom[d].length();
+            local_offset[d]  = lDom[d].first();
         }
 
         using policy_type       = Kokkos::RangePolicy<execution_space>;
@@ -389,8 +406,8 @@ namespace ippl {
                     Vector<size_t, 3> ngrid_vec;
                     for (unsigned d = 0; d < 3; ++d) {
                         origin[d]    = -M_PI;
-                        invdx[d]     = scale[d];
-                        ngrid_vec[d] = ngrid[d];
+                        invdx[d]     = ngrid_global[d] / (PositionType(2.0) * M_PI);
+                        ngrid_vec[d] = ngrid_global[d];
                     }
 
                     detail::sortParticles<3, execution_space, PositionType>(
@@ -399,7 +416,7 @@ namespace ippl {
                     // Dispatch to CUDA kernel - permutation and coordinate transformation done
                     // on-the-fly
                     constexpr int MaxW = 20;
-                    int n0 = ngrid[0], n1 = ngrid[1], n2 = ngrid[2];
+                    int n0 = ngrid_global[0], n1 = ngrid_global[1], n2 = ngrid_global[2];
                     Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<
                         PositionType, decltype(x_view), decltype(permute), decltype(full_view),
                         Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, hw, nghost,
@@ -420,7 +437,9 @@ namespace ippl {
                         gather_functor{.x                = pp_view,
                                        .grid             = full_view,
                                        .values           = dview_m,
-                                       .n_grid           = {ngrid[0], ngrid[1], ngrid[2]},
+                                       .n_grid           = {ngrid_global[0], ngrid_global[1], ngrid_global[2]},
+                                       .n_grid_local     = {ngrid_local[0], ngrid_local[1], ngrid_local[2]},
+                                       .local_offset     = {local_offset[0], local_offset[1], local_offset[2]},
                                        .w                = w,
                                        .nghost           = nghost,
                                        .inv_hw           = inv_hw,
@@ -442,7 +461,9 @@ namespace ippl {
                     gather_functor{.x                = pp_view,
                                    .grid             = full_view,
                                    .values           = dview_m,
-                                   .n_grid           = {ngrid[0], ngrid[1], ngrid[2]},
+                                   .n_grid           = {ngrid_global[0], ngrid_global[1], ngrid_global[2]},
+                                   .n_grid_local     = {ngrid_local[0], ngrid_local[1], ngrid_local[2]},
+                                   .local_offset     = {local_offset[0], local_offset[1], local_offset[2]},
                                    .w                = w,
                                    .nghost           = nghost,
                                    .inv_hw           = inv_hw,

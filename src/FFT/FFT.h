@@ -503,7 +503,7 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(std::array<int64_t, 3>& nmodes, const ParameterList& params);
+        void setup(const Layout_t& layout, std::array<int64_t, 3>& nmodes, const ParameterList& params);
 
 #ifdef ENABLE_FINUFFT
         detail::finufftType<T> nufft_m;
