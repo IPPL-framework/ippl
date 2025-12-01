@@ -105,11 +105,11 @@ namespace ippl {
                              Kokkos::View<typename ExecSpace::memory_space::size_type*,
                                           typename ExecSpace::memory_space>& permute,
                              Kokkos::View<typename ExecSpace::memory_space::size_type*,
-                                          typename ExecSpace::memory_space>& bin_offsets) {
+                                          typename ExecSpace::memory_space>& bin_offsets, const size_t n_particles) {
                 using size_type    = typename ExecSpace::memory_space::size_type;
                 using memory_space = typename ExecSpace::memory_space;
 
-                const size_type n_particles = x.extent(0);
+                // const size_type n_particles = x.extent(0);
 
                 // Calculate number of tiles
                 Kokkos::Array<size_type, 3> num_tiles;

@@ -285,7 +285,7 @@ namespace ippl {
             Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
 
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
-                pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets);
+                pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets, nParticles);
 
             // Calculate number of tiles (based on global grid)
             Kokkos::Array<size_type, 3> num_tiles;
