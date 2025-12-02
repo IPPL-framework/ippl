@@ -9,6 +9,9 @@
 #include "FFT/NUFFT/NUFFTUtilities.h"
 #include "Interpolation/ScatterConfig.h"
 
+// Kokkos random number generator
+#include <Kokkos_Random.hpp>
+
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     using base_type    = ippl::ParticleBase<PLayout>;
@@ -42,6 +45,7 @@ int main(int argc, char* argv[]) {
         using real_type        = double;
         using complex_type     = Kokkos::complex<real_type>;
         using ExecSpace        = Kokkos::DefaultExecutionSpace;
+        using MemSpace         = ExecSpace::memory_space;
 
         using Mesh_t      = ippl::UniformCartesian<real_type, Dim>;
         using Centering_t = Mesh_t::DefaultCentering;
@@ -50,7 +54,10 @@ int main(int argc, char* argv[]) {
         using PLayout_t = ippl::ParticleSpatialLayout<real_type, Dim>;
         using Bunch_t   = Bunch<PLayout_t>;
 
-        int rank  = ippl::Comm->rank();
+        // Kokkos random pool type
+        using RandPoolType = Kokkos::Random_XorShift64_Pool<ExecSpace>;
+
+        int rank   = ippl::Comm->rank();
         int nRanks = ippl::Comm->size();
 
         // ---------------- Grid / layout ------------------
@@ -74,7 +81,7 @@ int main(int argc, char* argv[]) {
         ippl::Vector<real_type, Dim> hx;
 
         for (unsigned d = 0; d < Dim; ++d) {
-            origin[d] = 0; //-M_PI;
+            origin[d] = 0;
             hx[d]     = 2.0 * M_PI / static_cast<real_type>(n_grid[d]);
         }
 
@@ -107,7 +114,7 @@ int main(int argc, char* argv[]) {
         const std::size_t nLoc = Ntotal / nRanks;
         bunch.create(nLoc);
 
-        // ---------------- Random positions & particle values ----------------
+        // ---------------- Random positions & particle values (GPU) ----------------
         // Get local spatial domain bounds
         const auto& lDom = layout.getLocalNDIndex();
         ippl::Vector<real_type, Dim> local_min, local_max;
@@ -116,81 +123,95 @@ int main(int argc, char* argv[]) {
             local_max[d] = origin[d] + (lDom[d].last() + 1) * hx[d];
         }
 
-        std::mt19937_64 eng(42);
-        eng.discard(nLoc * rank);
+        // Create random pool on device with rank-dependent seed
+        RandPoolType rand_pool(42 + rank * 12345);
 
-        std::uniform_real_distribution<real_type> unif_pos[Dim];
-        for (unsigned d = 0; d < Dim; ++d) {
-            unif_pos[d] = std::uniform_real_distribution<real_type>(local_min[d], local_max[d]);
-        }
-        std::normal_distribution<real_type> normal(0.0, 1.0);
+        // Get device views
+        auto R_view  = bunch.R.getView();
+        auto Qs_view = bunch.Q_scatter.getView();
+        auto Qg_view = bunch.Q_gather.getView();
+        auto Qgt_view = bunch.Q_gather_tiled.getView();
 
-        auto R_host   = bunch.R.getHostMirror();
-        auto Qs_host  = bunch.Q_scatter.getHostMirror();
-        auto Qg_host  = bunch.Q_gather.getHostMirror();
-        auto Qgt_host = bunch.Q_gather_tiled.getHostMirror();
+        // Copy bounds to device-accessible variables
+        const real_type lmin0 = local_min[0], lmax0 = local_max[0];
+        const real_type lmin1 = local_min[1], lmax1 = local_max[1];
+        const real_type lmin2 = local_min[2], lmax2 = local_max[2];
 
-        for (std::size_t i = 0; i < nLoc; ++i) {
-            ippl::Vector<real_type, Dim> r;
-            for (unsigned d = 0; d < Dim; ++d) {
-                r[d] = unif_pos[d](eng);
+        // Initialize particles on GPU
+        Kokkos::parallel_for("InitParticles",
+            Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+            KOKKOS_LAMBDA(const std::size_t i) {
+                // Get thread-local random generator
+                auto gen = rand_pool.get_state();
+
+                // Generate random position within local domain
+                ippl::Vector<real_type, Dim> r;
+                r[0] = gen.drand(lmin0, lmax0);
+                r[1] = gen.drand(lmin1, lmax1);
+                r[2] = gen.drand(lmin2, lmax2);
+                R_view(i) = r;
+
+                // Box-Muller transform
+                real_type u1 = gen.drand(1e-10, 1.0);
+                real_type u2 = gen.drand(0.0, 1.0);
+                real_type u3 = gen.drand(1e-10, 1.0);
+                real_type u4 = gen.drand(0.0, 1.0);
+
+                real_type re = Kokkos::sqrt(-2.0 * Kokkos::log(u1)) * Kokkos::cos(2.0 * M_PI * u2);
+                real_type im = Kokkos::sqrt(-2.0 * Kokkos::log(u3)) * Kokkos::cos(2.0 * M_PI * u4);
+                Qs_view(i) = complex_type(re, im);
+
+                // Initialize gather values to zero
+                Qg_view(i)  = complex_type(0.0, 0.0);
+                Qgt_view(i) = complex_type(0.0, 0.0);
+
+                // Return state to pool
+                rand_pool.free_state(gen);
             }
-            R_host(i) = r;
-
-            real_type re = normal(eng);
-            real_type im = normal(eng);
-            Qs_host(i)   = complex_type(re, im);
-
-            Qg_host(i)  = complex_type(0.0, 0.0);
-            Qgt_host(i) = complex_type(0.0, 0.0);
-        }
-
-        Kokkos::deep_copy(bunch.R.getView(), R_host);
-        Kokkos::deep_copy(bunch.Q_scatter.getView(), Qs_host);
-        Kokkos::deep_copy(bunch.Q_gather.getView(), Qg_host);
-        Kokkos::deep_copy(bunch.Q_gather_tiled.getView(), Qgt_host);
+        );
+        Kokkos::fence();
 
         // ---------------- Random grid for gather ----------------------------
         auto grid_view = grid_random.getView();
-        auto grid_host = Kokkos::create_mirror_view(grid_view);
 
-        // Get local domain bounds (in GLOBAL indices) - lDom already declared above
-        int i_start = lDom[0].first();
-        int j_start = lDom[1].first();
-        int k_start = lDom[2].first();
-        int i_end   = lDom[0].last() + 1;  // exclusive
-        int j_end   = lDom[1].last() + 1;
-        int k_end   = lDom[2].last() + 1;
+        // Get local domain bounds (in GLOBAL indices)
+        const int i_start = lDom[0].first();
+        const int j_start = lDom[1].first();
+        const int k_start = lDom[2].first();
+        const int i_end   = lDom[0].last() + 1;
+        const int j_end   = lDom[1].last() + 1;
+        const int k_end   = lDom[2].last() + 1;
 
-        std::uniform_real_distribution<real_type> unif_grid(-1.0, 1.0);
+        const std::size_t ng0 = n_grid[0];
+        const std::size_t ng1 = n_grid[1];
+        const int ng = nghost;
 
-        // Initialize local grid using GLOBAL indices for RNG seeding
-        for (int k_global = k_start; k_global < k_end; ++k_global) {
-            for (int j_global = j_start; j_global < j_end; ++j_global) {
-                for (int i_global = i_start; i_global < i_end; ++i_global) {
-                    std::mt19937_64 grid_eng(42);
-                    // Compute flat index in GLOBAL grid (without ghosts) for deterministic RNG
-                    std::size_t global_idx =
-                        k_global * n_grid[0] * n_grid[1] +
-                        j_global * n_grid[0] +
-                        i_global;
-                    grid_eng.discard(2 * global_idx);  // 2 calls per grid point (re, im)
+        // Initialize grid on GPU using MDRangePolicy
+        using mdrange_policy = Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>;
 
-                    real_type re = unif_grid(grid_eng);
-                    real_type im = unif_grid(grid_eng);
+        Kokkos::parallel_for("InitGrid",
+            mdrange_policy({k_start, j_start, i_start}, {k_end, j_end, i_end}),
+            KOKKOS_LAMBDA(const int k_global, const int j_global, const int i_global) {
+                // Compute flat index in global grid for deterministic RNG seed
+                std::size_t global_idx =
+                    k_global * ng0 * ng1 +
+                    j_global * ng0 +
+                    i_global;
 
-                    int i_local = i_global - i_start;
-                    int j_local = j_global - j_start;
-                    int k_local = k_global - k_start;
+                Kokkos::Random_XorShift64<ExecSpace> gen(42 + global_idx * 2);
 
-                    grid_host(i_local + nghost, j_local + nghost, k_local + nghost) =
-                        complex_type(re, im);
-                }
+                real_type re = gen.drand(-1.0, 1.0);
+                real_type im = gen.drand(-1.0, 1.0);
+
+                int i_local = i_global - i_start;
+                int j_local = j_global - j_start;
+                int k_local = k_global - k_start;
+
+                grid_view(i_local + ng, j_local + ng, k_local + ng) = complex_type(re, im);
             }
-        }
+        );
+        Kokkos::fence();
 
-
-        Kokkos::deep_copy(grid_view, grid_host);
         grid_random.fillHalo();
         bunch.update();
 
@@ -222,53 +243,59 @@ int main(int argc, char* argv[]) {
             bunch.Q_gather = complex_type(0.0, 0.0);
             bunch.Q_gather.gather(grid_random, bunch.R, kernel, false, cfg);
 
-            // Pull to host
+            // Compute inner products on GPU using parallel reductions
             auto grid_sc_view = grid_scattered.getView();
-            auto grid_sc_host = Kokkos::create_mirror_view(grid_sc_view);
-            Kokkos::deep_copy(grid_sc_host, grid_sc_view);
-
-            auto Qs_host_final = bunch.Q_scatter.getHostMirror();
-            auto Qg_host_final = bunch.Q_gather.getHostMirror();
-            Kokkos::deep_copy(Qs_host_final, bunch.Q_scatter.getView());
-            Kokkos::deep_copy(Qg_host_final, bunch.Q_gather.getView());
+            auto grid_rnd_view = grid_random.getView();
+            auto Qs_view_final = bunch.Q_scatter.getView();
+            auto Qg_view_final = bunch.Q_gather.getView();
 
             std::size_t n_local_i = lDom[0].length();
             std::size_t n_local_j = lDom[1].length();
             std::size_t n_local_k = lDom[2].length();
 
-            Kokkos::complex<real_type> inner_left(0.0, 0.0);
-            for (std::size_t kk = 0; kk < n_local_k; ++kk) {
-                for (std::size_t jj = 0; jj < n_local_j; ++jj) {
-                    for (std::size_t ii = 0; ii < n_local_i; ++ii) {
-                        const complex_type Scq =
-                            grid_sc_host(ii + nghost, jj + nghost, kk + nghost);
-                        const complex_type g =
-                            grid_host(ii + nghost, jj + nghost, kk + nghost);
-                        inner_left += Kokkos::conj(Scq) * g;
-                    }
-                }
-            }
+            // Left inner product: <S q, g> on grid
+            real_type inner_left_re = 0.0, inner_left_im = 0.0;
+            const int ng_local = nghost;
 
-            Kokkos::complex<real_type> inner_right(0.0, 0.0);
-            for (std::size_t i = 0; i < nLoc; ++i) {
-                const complex_type q  = Qs_host_final(i);
-                const complex_type Gg = Qg_host_final(i);
-                inner_right += Kokkos::conj(q) * Gg;
-            }
+            Kokkos::parallel_reduce("InnerLeft",
+                mdrange_policy({0, 0, 0},
+                              {static_cast<int>(n_local_k),
+                               static_cast<int>(n_local_j),
+                               static_cast<int>(n_local_i)}),
+                KOKKOS_LAMBDA(const int kk, const int jj, const int ii,
+                             real_type& sum_re, real_type& sum_im) {
+                    const complex_type Scq = grid_sc_view(ii + ng_local, jj + ng_local, kk + ng_local);
+                    const complex_type g   = grid_rnd_view(ii + ng_local, jj + ng_local, kk + ng_local);
+                    complex_type prod = Kokkos::conj(Scq) * g;
+                    sum_re += prod.real();
+                    sum_im += prod.imag();
+                },
+                inner_left_re, inner_left_im
+            );
 
-            // MPI reduce – only rank 0 will use the results
-            real_type left_re  = inner_left.real();
-            real_type left_im  = inner_left.imag();
-            real_type right_re = inner_right.real();
-            real_type right_im = inner_right.imag();
+            // Right inner product: <q, G g> on particles
+            real_type inner_right_re = 0.0, inner_right_im = 0.0;
 
+            Kokkos::parallel_reduce("InnerRight",
+                Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+                KOKKOS_LAMBDA(const std::size_t i, real_type& sum_re, real_type& sum_im) {
+                    const complex_type q  = Qs_view_final(i);
+                    const complex_type Gg = Qg_view_final(i);
+                    complex_type prod = Kokkos::conj(q) * Gg;
+                    sum_re += prod.real();
+                    sum_im += prod.imag();
+                },
+                inner_right_re, inner_right_im
+            );
+
+            // MPI reduce
             real_type global_left_re, global_left_im;
             real_type global_right_re, global_right_im;
 
-            ippl::Comm->reduce(left_re,  global_left_re,  1, std::plus<real_type>());
-            ippl::Comm->reduce(left_im,  global_left_im,  1, std::plus<real_type>());
-            ippl::Comm->reduce(right_re, global_right_re, 1, std::plus<real_type>());
-            ippl::Comm->reduce(right_im, global_right_im, 1, std::plus<real_type>());
+            ippl::Comm->reduce(inner_left_re,  global_left_re,  1, std::plus<real_type>());
+            ippl::Comm->reduce(inner_left_im,  global_left_im,  1, std::plus<real_type>());
+            ippl::Comm->reduce(inner_right_re, global_right_re, 1, std::plus<real_type>());
+            ippl::Comm->reduce(inner_right_im, global_right_im, 1, std::plus<real_type>());
 
             if (rank == 0) {
                 std::complex<real_type> L(global_left_re,  global_left_im);
@@ -304,33 +331,37 @@ int main(int argc, char* argv[]) {
 
         auto gA_view = grid_scattered_atomic.getView();
         auto gT_view = grid_scattered_tiled.getView();
-        auto gA_host = Kokkos::create_mirror_view(gA_view);
-        auto gT_host = Kokkos::create_mirror_view(gT_view);
-        Kokkos::deep_copy(gA_host, gA_view);
-        Kokkos::deep_copy(gT_host, gT_view);
 
         std::size_t n_local_i = lDom[0].length();
         std::size_t n_local_j = lDom[1].length();
         std::size_t n_local_k = lDom[2].length();
 
+        // Compute max diff and norm on GPU
         real_type max_diff_scatter_local = 0.0;
         real_type norm_scatter_local     = 0.0;
-        for (std::size_t kk = 0; kk < n_local_k; ++kk) {
-            for (std::size_t jj = 0; jj < n_local_j; ++jj) {
-                for (std::size_t ii = 0; ii < n_local_i; ++ii) {
-                    complex_type a = gA_host(ii + nghost, jj + nghost, kk + nghost);
-                    complex_type t = gT_host(ii + nghost, jj + nghost, kk + nghost);
+        const int ng_cmp = nghost;
 
-                    real_type diff = Kokkos::abs(a - t);
-                    max_diff_scatter_local = std::max(max_diff_scatter_local, diff);
-                    norm_scatter_local += a.real() * a.real() + a.imag() * a.imag();
-                }
-            }
-        }
+        Kokkos::parallel_reduce("ScatterCompare",
+            mdrange_policy({0, 0, 0},
+                          {static_cast<int>(n_local_k),
+                           static_cast<int>(n_local_j),
+                           static_cast<int>(n_local_i)}),
+            KOKKOS_LAMBDA(const int kk, const int jj, const int ii,
+                         real_type& max_diff, real_type& norm_sum) {
+                complex_type a = gA_view(ii + ng_cmp, jj + ng_cmp, kk + ng_cmp);
+                complex_type t = gT_view(ii + ng_cmp, jj + ng_cmp, kk + ng_cmp);
+
+                real_type diff = Kokkos::abs(a - t);
+                if (diff > max_diff) max_diff = diff;
+                norm_sum += a.real() * a.real() + a.imag() * a.imag();
+            },
+            Kokkos::Max<real_type>(max_diff_scatter_local),
+            Kokkos::Sum<real_type>(norm_scatter_local)
+        );
 
         real_type max_diff_scatter, norm_scatter;
         ippl::Comm->reduce(max_diff_scatter_local, max_diff_scatter, 1,
-                           std::greater<real_type>());        // <-- proper max op
+                           std::greater<real_type>());
         ippl::Comm->reduce(norm_scatter_local, norm_scatter, 1,
                            std::plus<real_type>());
 
@@ -353,25 +384,31 @@ int main(int argc, char* argv[]) {
         bunch.Q_gather.gather(grid_random, bunch.R, kernel, false, cfg_atomic);
         bunch.Q_gather_tiled.gather(grid_random, bunch.R, kernel, false, cfg_tiled);
 
-        auto Qa_host = bunch.Q_gather.getHostMirror();
-        auto Qt_host = bunch.Q_gather_tiled.getHostMirror();
-        Kokkos::deep_copy(Qa_host, bunch.Q_gather.getView());
-        Kokkos::deep_copy(Qt_host, bunch.Q_gather_tiled.getView());
+        auto Qa_view = bunch.Q_gather.getView();
+        auto Qt_view = bunch.Q_gather_tiled.getView();
 
+        // Compute max diff and norm on GPU
         real_type max_diff_gather_local = 0.0;
         real_type norm_gather_local     = 0.0;
-        for (std::size_t i = 0; i < nLoc; ++i) {
-            complex_type a = Qa_host(i);
-            complex_type t = Qt_host(i);
 
-            real_type diff = Kokkos::abs(a - t);
-            max_diff_gather_local = std::max(max_diff_gather_local, diff);
-            norm_gather_local += a.real() * a.real() + a.imag() * a.imag();
-        }
+        Kokkos::parallel_reduce("GatherCompare",
+            Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+            KOKKOS_LAMBDA(const std::size_t i,
+                         real_type& max_diff, real_type& norm_sum) {
+                complex_type a = Qa_view(i);
+                complex_type t = Qt_view(i);
+
+                real_type diff = Kokkos::abs(a - t);
+                if (diff > max_diff) max_diff = diff;
+                norm_sum += a.real() * a.real() + a.imag() * a.imag();
+            },
+            Kokkos::Max<real_type>(max_diff_gather_local),
+            Kokkos::Sum<real_type>(norm_gather_local)
+        );
 
         real_type max_diff_gather, norm_gather;
         ippl::Comm->reduce(max_diff_gather_local, max_diff_gather, 1,
-                           std::greater<real_type>());        // <-- proper max op
+                           std::greater<real_type>());
         ippl::Comm->reduce(norm_gather_local, norm_gather, 1,
                            std::plus<real_type>());
 
@@ -386,7 +423,7 @@ int main(int argc, char* argv[]) {
         }
 
         // ====================================================================
-        // Final checks / exit code (ONLY on rank 0)
+        // Final checks / exit code
         // ====================================================================
         const real_type adj_tol    = 1e-12;
         const real_type method_tol = 1e-12;
