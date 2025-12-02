@@ -160,9 +160,9 @@ int main(int argc, char* argv[]) {
 
         // Pick some mode to check. We choose it same as cuFINUFFT testcase cufinufft3d1_test.cu
         ippl::Vector<int, 3> kVec;
-        kVec[0] = (int)(0.37 * pt[0]);  // Positive frequency
-        kVec[1] = (int)(0.16 * pt[1]);
-        kVec[2] = (int)(0.23 * pt[2]);
+        kVec[0] = -(int)(0.37 * pt[0]);  // Positive frequency
+        kVec[1] = -(int)(0.16 * pt[1]);
+        kVec[2] = -(int)(0.23 * pt[2]);
 
         const int nghost = field.getNghost();
 

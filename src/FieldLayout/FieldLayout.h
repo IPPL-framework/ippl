@@ -201,7 +201,7 @@ namespace ippl {
         FieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
         FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-                    bool isAllPeriodic = false);
+                    bool isAllPeriodic = false, int nghost = 1);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -213,7 +213,7 @@ namespace ippl {
         // FieldLayout constructors:
 
         void initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-                        bool isAllPeriodic = false);
+                        bool isAllPeriodic = false, int nghost = 1);
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
@@ -330,7 +330,7 @@ namespace ippl {
          * Finds all neighboring ranks based on the field layout
          * @param nghost number of ghost cells (default 1)
          */
-        void findNeighbors(int nghost = 1);
+        void findNeighbors(int nghost);
 
         /*!
          * Adds a neighbor to the neighbor list

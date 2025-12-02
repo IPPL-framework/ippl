@@ -45,9 +45,9 @@ namespace ippl {
 
     template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator, const NDIndex<Dim>& domain,
-                                  std::array<bool, Dim> isParallel, bool isAllPeriodic)
+                                  std::array<bool, Dim> isParallel, bool isAllPeriodic, int nghost)
         : FieldLayout(communicator) {
-        initialize(domain, isParallel, isAllPeriodic);
+        initialize(domain, isParallel, isAllPeriodic, nghost);
     }
 
     template <unsigned Dim>
@@ -69,7 +69,7 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> isParallel,
-                                      bool isAllPeriodic) {
+                                      bool isAllPeriodic, int nghost) {
         int nRanks = comm.size();
 
         gDomain_m = domain;
@@ -95,8 +95,11 @@ namespace ippl {
         }
 
         if (totparelems < nRanks) {
-            throw std::runtime_error("FieldLayout:initialize: domain can only be partitioned in to "
-                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, decrease the number of ranks or increase the domain.");
+            throw std::runtime_error(
+                "FieldLayout:initialize: domain can only be partitioned in to "
+                + std::to_string(totparelems) + " local domains, but there are "
+                + std::to_string(nRanks)
+                + " ranks, decrease the number of ranks or increase the domain.");
         }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
@@ -105,7 +108,7 @@ namespace ippl {
         detail::Partitioner<Dim> partitioner;
         partitioner.split(domain, hLocalDomains_m, isParallel, nRanks);
 
-        findNeighbors();
+        findNeighbors(nghost);
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
@@ -288,7 +291,7 @@ namespace ippl {
             // 0 - touching the lower axis value
             // 1 - touching the upper axis value
             // 2 - parallel to the axis
-            if (intersect[d].length() == 1) {
+            if (intersect[d].length() == nghost) {
                 if (gnd[d].first() != intersect[d].first()) {
                     index += digit;
                 }

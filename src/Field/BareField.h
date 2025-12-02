@@ -72,7 +72,7 @@ namespace ippl {
          * @param l of field
          * @param nghost number of ghost layers
          */
-        BareField(Layout_t& l, int nghost = 1);
+        BareField(Layout_t& l, int nghost);
 
         /*!
          * Creates a new BareField with the same properties and contents
@@ -98,10 +98,10 @@ namespace ippl {
          * @param l of field
          * @param nghost number of ghost layers
          */
-        void initialize(Layout_t& l, int nghost = 1);
+        void initialize(Layout_t& l, int nghost);
 
         // ML
-        void updateLayout(Layout_t&, int nghost = 1);
+        void updateLayout(Layout_t&, int nghost);
 
         /*!
          * Local field size.
@@ -126,7 +126,7 @@ namespace ippl {
 
         void fillHalo();
         void accumulateHalo();
-        void accumulateHalo_noghost(int nghost = 1);
+        void accumulateHalo_noghost(int nghost = 2);
 
         auto& getCommunicator() const { return getLayout().comm; }
 

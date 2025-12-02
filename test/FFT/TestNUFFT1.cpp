@@ -8,6 +8,8 @@
 
 #include "Utility/ParameterList.h"
 
+#include "../../cmake-build-release-testing/_deps/kokkos-src/containers/src/Kokkos_OffsetView.hpp"
+
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
@@ -49,9 +51,9 @@ struct generate_random {
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
         for (unsigned d = 0; d < Dim; ++d) {
-            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = 0.2;// rand_gen.drand(minU[d], maxU[d]);
         }
-        Q(i) = rand_gen.drand(0.0, 1.0);
+        Q(i) = 0.5; // rand_gen.drand(0.0, 1.0);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
@@ -87,13 +89,13 @@ ippl::Vector<int, Dim> globalToLocal(const ippl::NDIndex<Dim>& lDom,
 
 template <unsigned Dim>
 ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
-                                           const ippl::Vector<int, Dim>& n_grid) {
+                                          const ippl::Vector<int, Dim>& n_modes) {
     ippl::Vector<int, Dim> cornerIdx;
     for (unsigned d = 0; d < Dim; ++d) {
         if (kVec[d] >= 0) {
             cornerIdx[d] = kVec[d];
         } else {
-            cornerIdx[d] = n_grid[d] + kVec[d];
+            cornerIdx[d] = 2 * n_modes[d] + kVec[d];
         }
     }
     return cornerIdx;
@@ -101,6 +103,7 @@ ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+    sleep(10);
     {
         constexpr unsigned int dim = 3;
         using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -115,9 +118,9 @@ int main(int argc, char* argv[]) {
         int nRanks = ippl::Comm->size();
 
         // Number of modes (output size before upsampling)
-        // ippl::Vector<int, dim> n_modes = {16, 16, 16};
+        ippl::Vector<int, dim> n_modes = {16, 16, 16};
 
-        ippl::Vector<int, dim> n_modes = {8, 8, 8};
+        // ippl::Vector<int, dim> n_modes = {8, 8, 8};
 
         ippl::Index I(n_modes[0]);
         ippl::Index J(n_modes[1]);
@@ -158,7 +161,7 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-7);
+        fftParams.add("tolerance", 1e-6);
 #ifdef ENABLE_GPU_NUFFT
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
@@ -189,7 +192,7 @@ int main(int argc, char* argv[]) {
                       << std::endl;
         }
 
-        int type = 1;
+        int type       = 1;
         size_type nloc = Np / nRanks;
 
         bunch.create(nloc);
@@ -198,7 +201,7 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<FFT_type> fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
 
         // Get the upsampled grid size from the NUFFT
-        double sigma = 2.0;  // Default upsampling factor
+        double sigma     = 2.0;  // Default upsampling factor
         double tolerance = fftParams.get<double>("tolerance");
         int kernel_width = static_cast<int>(std::ceil(std::log10(1.0 / tolerance))) + 1;
 
@@ -210,7 +213,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (myRank == 0) {
-            std::cout << "Upsampled grid size: " << n_grid[0] << " x " << n_grid[1] << " x " << n_grid[2] << std::endl;
+            std::cout << "Upsampled grid size: " << n_grid[0] << " x " << n_grid[1] << " x "
+                      << n_grid[2] << std::endl;
         }
 
         // Create upsampled grid layout and mesh
@@ -224,12 +228,12 @@ int main(int argc, char* argv[]) {
         Vector_t hx_up, origin_up;
         for (unsigned d = 0; d < dim; ++d) {
             origin_up[d] = 0;
-            hx_up[d] = (2.0 * pi) / n_grid[d];
+            hx_up[d]     = (2.0 * pi) / n_grid[d];
         }
         ippl::UniformCartesian<double, 3> mesh_upsampled(owned_upsampled, hx_up, origin_up);
 
         // Create output field on upsampled grid
-        const int nghost = kernel_width/2 + 1;
+        const int nghost = 1;
         field_type field_upsampled(mesh_upsampled, layout_upsampled, nghost);
 
         Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + myRank));
@@ -238,11 +242,13 @@ int main(int argc, char* argv[]) {
                                  bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
 
         bunch.update();
+        field_upsampled = Kokkos::complex(0.0);
+        // field_upsampled.fillHalo();
 
         fft->transform(bunch.R, bunch.Q, field_upsampled);
 
         // Get local domain info for upsampled grid
-        const auto& lDom_up = layout_upsampled.getLocalNDIndex();
+        const auto& lDom_up    = layout_upsampled.getLocalNDIndex();
         const int nghost_field = field_upsampled.getNghost();
 
         ippl::Vector<int, 3> kVec;
@@ -254,8 +260,10 @@ int main(int argc, char* argv[]) {
         ippl::Vector<int, 3> globalIdx = centeredToCornerDC<dim>(kVec, n_modes);
 
         if (myRank == 0) {
-            std::cout << "Testing frequency k = (" << kVec[0] << ", " << kVec[1] << ", " << kVec[2] << ")" << std::endl;
-            std::cout << "Corner-DC global index = (" << globalIdx[0] << ", " << globalIdx[1] << ", " << globalIdx[2] << ")" << std::endl;
+            std::cout << "Testing frequency k = (" << kVec[0] << ", " << kVec[1] << ", " << kVec[2]
+                      << ")" << std::endl;
+            std::cout << "Corner-DC global index = (" << globalIdx[0] << ", " << globalIdx[1]
+                      << ", " << globalIdx[2] << ")" << std::endl;
         }
 
         // Check if this rank owns the mode we want to check
@@ -271,17 +279,8 @@ int main(int argc, char* argv[]) {
             auto localIdx = globalToLocal<dim>(lDom_up, globalIdx, nghost_field);
             nufft_result  = field_host(localIdx[0], localIdx[1], localIdx[2]);
 
-            for (int i = 0; i < n_grid[0]; i++) {
-                for (int j = 0; j < n_grid[1]; j++) {
-                    for (int k = 0; k < n_grid[2]; k++) {
-                        auto res = field_host(i + nghost, j + nghost, k + nghost);
-                        std::cout << i << ", " << j << ", " << k << ", " <<  field_host(i + nghost, j + nghost, k + nghost) << std::endl;
-                    }
-                }
-            }
-
-            std::cout << "Rank " << myRank << " owns mode, local index = ("
-                      << localIdx[0] << ", " << localIdx[1] << ", " << localIdx[2] << ")" << std::endl;
+            std::cout << "Rank " << myRank << " owns mode, local index = (" << localIdx[0] << ", "
+                      << localIdx[1] << ", " << localIdx[2] << ")" << std::endl;
 
             std::cout << "Observes result " << nufft_result << std::endl;
         }

@@ -47,13 +47,13 @@ namespace ippl {
         virtual ~Field() = default;
 
         // Constructors including a Mesh object as argument:
-        Field(Mesh_t&, Layout_t&, int nghost = 1);
+        Field(Mesh_t&, Layout_t&, int nghost);
 
         // Initialize the Field, also specifying a mesh
-        void initialize(Mesh_t&, Layout_t&, int nghost = 1);
+        void initialize(Mesh_t&, Layout_t&, int nghost);
 
         // ML
-        void updateLayout(Layout_t&, int nghost = 1);
+        void updateLayout(Layout_t&, int nghost);
 
         void setFieldBC(BConds_t& bc) {
             bc_m = bc;

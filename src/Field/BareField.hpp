@@ -142,7 +142,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::fillHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.fillHalo(dview_m, layout_m);
+            halo_m.fillHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::assign;
@@ -153,7 +153,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.accumulateHalo(dview_m, layout_m);
+            halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::rhs_plus_assign;

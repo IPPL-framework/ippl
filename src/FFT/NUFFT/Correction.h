@@ -149,6 +149,10 @@ namespace ippl {
                             }
                         };
 
+                        if (gi == 5 && gj == 2 && gk == 3) {
+                            std::cout << "Before multiplying: " << input_view(li_in, lj_in, lk_in) << std::endl;
+                        }
+
                         // Compute factor using shifted indices
                         complex_type factor     = f0(rescale(gi, n_modes[0])) * f1(rescale(gj, n_modes[1])) * f2(rescale(gk, n_modes[2]));
                         output_view(li_out, lj_out, lk_out) = Kokkos::conj(input_view(li_in, lj_in, lk_in) * factor);
