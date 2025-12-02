@@ -19,8 +19,8 @@
 
 #include "Field/Field.h"
 
+#include "Correction.h"
 #include "FFT/FFT.h"
-#include "FFT/NUFFT/Correction.h"
 #include "FFT/NUFFT/ESKernel.h"
 #include "FFT/NUFFT/NUFFTUtilities.h"
 #include "Interpolation/ScatterConfig.h"
@@ -161,7 +161,7 @@ namespace ippl {
                 //            at the end, plus the kernel support extends w/2 into the halo.
                 //            Theoretically
                 const int nghost =
-                    (kernel_.width() + 1) / 2;  // Need nghost >= hw for kernel width w
+                    (kernel_.width()) / 2 + 1;  // Need nghost >= hw for kernel width w
                 // const int nghost = hw;
                 grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
 
@@ -202,10 +202,13 @@ namespace ippl {
              * @param R Particle positions in [0, 2*pi)^Dim
              * @param Q Particle values (input)
              * @param f Output Fourier modes field
+             * @param upsampled_output Whether the output field is the usampeld grid. Required on
+             * distributed for now
              */
             template <class... Properties, typename OutField>
             void type1(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
-                       const ParticleAttrib<T, Properties...>& Q, OutField& f) {
+                       const ParticleAttrib<T, Properties...>& Q, OutField& f,
+                       bool upsampled_output = false) {
                 if (!initialized_) {
                     throw IpplException("NativeNUFFT::type1",
                                         "NUFFT not initialized. Call initialize() first.");
@@ -233,11 +236,14 @@ namespace ippl {
 
                 // Step 3: Deconvolution and truncation to output modes
                 t0 = std::chrono::high_resolution_clock::now();
-                // applyDeconvolutionType1<ExecSpace, T>(*grid_field_, factors_, f, n_modes_,
-                // n_grid_);
-                applyDeconvolutionType1<Dim, ExecSpace, T>(grid_field_->getView(), factors_,
-                                                           f.getView(), n_modes_, n_grid_,
-                                                           grid_field_->getNghost(), f.getNghost());
+                if (upsampled_output) {
+                    applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T>(*grid_field_, factors_, f, n_modes_, n_grid_);
+                } else {
+                    applyDeconvolutionType1<Dim, ExecSpace, T>(
+                        grid_field_->getView(), factors_, f.getView(), n_modes_, n_grid_,
+                        grid_field_->getNghost(), f.getNghost());
+                }
+
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
@@ -261,7 +267,7 @@ namespace ippl {
              */
             template <typename InField, class... Properties>
             void type2(const InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
-                       ParticleAttrib<T, Properties...>& Q) {
+                       ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
                 if (!initialized_) {
                     throw IpplException("NativeNUFFT::type2",
                                         "NUFFT not initialized. Call initialize() first.");
@@ -273,11 +279,14 @@ namespace ippl {
                 // Step 1: Apply pre-correction
                 auto t0 = std::chrono::high_resolution_clock::now();
 
-                // applyPreCorrectionType2<ExecSpace, T>(f, factors_, *grid_field_, n_modes_,
-                // n_grid_);
-                applyPreCorrectionType2<Dim, ExecSpace, T>(
-                    f.getView(), factors_, grid_field_->getView(), n_modes_, n_grid_, f.getNghost(),
-                    grid_field_->getNghost());
+                if (upsampled_output) {
+                    applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(f, factors_, *grid_field_, n_modes_,
+                                                               n_grid_);
+                } else {
+                    applyPreCorrectionType2<Dim, ExecSpace, T>(
+                        f.getView(), factors_, grid_field_->getView(), n_modes_, n_grid_,
+                        f.getNghost(), grid_field_->getNghost());
+                }
 
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)

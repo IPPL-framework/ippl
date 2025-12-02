@@ -474,6 +474,9 @@ namespace ippl {
         use_finufft      = params.get<bool>("use_finufft_defaults", false);
 
         type_m = type;
+
+        use_upsampled_inputs_m = params.get<bool>("use_upsampled_inputs", false);
+
         if (tempField_m.size() < lDom.size()) {
             Kokkos::realloc(tempField_m, lDom[0].length(), lDom[1].length(), lDom[2].length());
         }
@@ -492,9 +495,10 @@ namespace ippl {
         setup performs the initialization necessary.
     */
     template <typename RealField>
-    void FFT<NUFFTransform, RealField>::setup(const Layout_t& layout, std::array<int64_t, 3>& nmodes,
+    void FFT<NUFFTransform, RealField>::setup(const Layout_t& layout,
+                                              std::array<int64_t, 3>& nmodes,
                                               const ParameterList& params) {
-        tol_m         = params.get<T>("tolerance", 1e-6);
+        tol_m = params.get<T>("tolerance", 1e-6);
 
         if (use_kokkos_nufft) {
 #ifdef KOKKOS_NUFFT_AVAILABLE
@@ -864,9 +868,9 @@ namespace ippl {
             auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
 
             if (type_m == 1) {
-                nufft->type1(R, Q, f);
+                nufft->type1(R, Q, f, use_upsampled_inputs_m);
             } else if (type_m == 2) {
-                nufft->type2(f, R, Q);  // Note: argument order is different for type2
+                nufft->type2(f, R, Q, use_upsampled_inputs_m);  // Note: argument order is different for type2
             }
         }
     }

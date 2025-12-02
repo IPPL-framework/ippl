@@ -1,0 +1,293 @@
+#include "Ippl.h"
+
+#include <Kokkos_Random.hpp>
+#include <array>
+#include <iostream>
+#include <random>
+#include <typeinfo>
+
+#include "Utility/ParameterList.h"
+
+template <class PLayout>
+struct Bunch : public ippl::ParticleBase<PLayout> {
+    Bunch(PLayout& playout)
+        : ippl::ParticleBase<PLayout>(playout) {
+        this->addAttribute(Q);
+    }
+
+    ~Bunch() {}
+
+    typedef ippl::ParticleAttrib<double> charge_container_type;
+    charge_container_type Q;
+};
+
+template <typename T, class GeneratorPool, unsigned Dim>
+struct generate_random {
+    using view_type        = typename ippl::detail::ViewType<T, 1>::view_type;
+    using value_type       = typename T::value_type;
+    using view_type_scalar = typename ippl::detail::ViewType<value_type, 1>::view_type;
+    // Output View for the random numbers
+    view_type x;
+
+    view_type_scalar Q;
+
+    // The GeneratorPool
+    GeneratorPool rand_pool;
+
+    T minU, maxU;
+
+    // Initialize all members
+    generate_random(view_type x_, view_type_scalar Q_, GeneratorPool rand_pool_, T& minU_, T& maxU_)
+        : x(x_)
+        , Q(Q_)
+        , rand_pool(rand_pool_)
+        , minU(minU_)
+        , maxU(maxU_) {}
+
+    KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+        // Get a random number state from the pool for the active thread
+        typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
+        }
+        Q(i) = rand_gen.drand(0.0, 1.0);
+
+        // Give the state back, which will allow another thread to acquire it
+        rand_pool.free_state(rand_gen);
+    }
+};
+
+int main(int argc, char* argv[]) {
+    ippl::initialize(argc, argv);
+    {
+        constexpr unsigned int dim = 3;
+        using Mesh_t               = ippl::UniformCartesian<double, dim>;
+        using Centering_t          = Mesh_t::DefaultCentering;
+
+        const double pi            = std::acos(-1.0);
+
+        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
+        typedef Bunch<playout_type> bunch_type;
+
+        ippl::Vector<int, dim> pt = {8, 8, 8};
+        ippl::Index I(pt[0]);
+        ippl::Index J(pt[1]);
+        ippl::Index K(pt[2]);
+        ippl::NDIndex<dim> owned(I, J, K);
+
+        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
+        isParallel.fill(true);  // Enable parallel decomposition for multi-node
+
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+
+        typedef ippl::Vector<double, 3> Vector_t;
+        Vector_t minU = {0, 0, 0}; //{-pi, -pi, -pi};
+        Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
+        // Vector_t minU = {0.0, 0.0, 0.0};
+        // Vector_t maxU = {25.0, 25.0, 25.0};
+
+        std::array<double, dim> dx = {
+            (maxU[0] - minU[0]) / double(pt[0]),
+            (maxU[1] - minU[1]) / double(pt[1]),
+            (maxU[2] - minU[2]) / double(pt[2]),
+        };
+
+        Vector_t hx     = {dx[0], dx[1], dx[2]};
+        Vector_t origin = {minU[0], minU[1], minU[2]};
+        ippl::UniformCartesian<double, 3> mesh(owned, hx, origin);
+
+        playout_type pl(layout, mesh);
+
+        bunch_type bunch(pl);
+        bunch.setParticleBC(ippl::BC::PERIODIC);
+
+        using size_type = ippl::detail::size_type;
+
+        size_type Np = std::pow(16, 3);
+
+        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type field_type;
+        typedef ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type real_field_type;
+
+
+        field_type field(mesh, layout, 8);
+        field_type field_dft(mesh, layout, 8);
+
+        ippl::ParameterList fftParams;
+
+        fftParams.add("tolerance", 1e-7);
+#ifdef ENABLE_GPU_NUFFT
+        fftParams.add("gpu_method", 1);
+        fftParams.add("gpu_sort", 0);
+        fftParams.add("gpu_kerevalmeth", 1);
+#else
+        fftParams.add("spread_kerevalmeth", 1);
+        fftParams.add("spread_sort", 2);
+        fftParams.add("nthreads", 0);
+#endif
+
+        fftParams.add("use_finufft_defaults", false);
+        fftParams.add("use_kokkos_nufft",  false);
+
+        // Test tiled spread method with z-striding
+        fftParams.add("spread_method", "tiled");
+        fftParams.add("tile_size_3d", 6);
+        fftParams.add("z_tiles", 1);
+        fftParams.add("team_size", 32);  // Must be multiple of warp size (32) for CUDA
+        fftParams.add("sort", true);
+
+        typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
+
+        std::cout << "Width " << static_cast<int>(std::ceil(std::log10((1.0) / fftParams.get<double>("tolerance")))) + 1;
+        std::unique_ptr<FFT_type> fft;
+
+        int type = 1;
+
+        size_type nloc = Np / ippl::Comm->size();
+
+        bunch.create(nloc);
+        fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
+        Kokkos::parallel_for(nloc,
+                             generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
+                                 bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
+
+        bunch.update();
+        fft->transform(bunch.R, bunch.Q, field);
+
+        auto field_result =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+
+        // Pick some mode to check. We choose it same as cuFINUFFT testcase cufinufft3d1_test.cu
+        ippl::Vector<int, 3> kVec;
+        kVec[0] = (int)(0.37 * pt[0]);  // Positive frequency
+        kVec[1] = (int)(0.16 * pt[1]);
+        kVec[2] = (int)(0.23 * pt[2]);
+
+        const int nghost = field.getNghost();
+
+        int iInd = (pt[0] / 2 + kVec[0] + nghost);
+        int jInd = (pt[1] / 2 + kVec[1] + nghost);
+        int kInd = (pt[2] / 2 + kVec[2] + nghost);
+
+        Kokkos::complex<double> reducedValue(0.0, 0.0);
+
+        auto Rview = bunch.R.getView();
+        auto Qview = bunch.Q.getView();
+
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        size_t flatN                 = pt[0] * pt[1] * pt[2];
+        auto fview                   = field_dft.getView();
+
+        typedef Kokkos::TeamPolicy<> team_policy;
+        typedef Kokkos::TeamPolicy<>::member_type member_type;
+
+        Kokkos::parallel_for(
+            "NUDFT type 1", team_policy(flatN, Kokkos::AUTO),
+            KOKKOS_LAMBDA(const member_type& teamMember) {
+                const size_t flatIndex = teamMember.league_rank();
+
+                const int k           = (int)(flatIndex / (pt[0] * pt[1]));
+                const int flatIndex2D = flatIndex - (k * pt[0] * pt[1]);
+                const int i           = flatIndex2D % pt[0];
+                const int j           = (int)(flatIndex2D / pt[0]);
+
+                Kokkos::complex<double> reducedValue = 0.0;
+                ippl::Vector<int, 3> iVec            = {i, j, k};
+                ippl::Vector<double, 3> kVec;
+                for (size_t d = 0; d < 3; ++d) {
+                    kVec[d] = (2.0 * pi / (maxU[d] - minU[d])) * (iVec[d] - (pt[d] / 2));
+                }
+                Kokkos::parallel_reduce(
+                    Kokkos::TeamThreadRange(teamMember, nloc),
+                    [=](const size_t idx, Kokkos::complex<double>& innerReduce) {
+                        double arg = 0.0;
+                        for (size_t d = 0; d < 3; ++d) {
+                            arg += kVec[d] * Rview(idx)[d];
+                        }
+                        const double& val = Qview(idx);
+
+                        innerReduce += (Kokkos::cos(arg) - imag * Kokkos::sin(arg)) * val;
+                    },
+                    Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
+
+                if (teamMember.team_rank() == 0) {
+                    fview(i + nghost, j + nghost, k + nghost) = reducedValue;
+                }
+            });
+
+        typename field_type::HostMirror rhoNUDFT_host = field_dft.getHostMirror();
+        Kokkos::deep_copy(rhoNUDFT_host, field_dft.getView());
+        std::stringstream pname;
+        pname << "data/FieldFFT_";
+        pname << ippl::Comm->rank();
+        pname << ".csv";
+        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
+        pcsvout.precision(10);
+        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
+        pcsvout << "rho" << endl;
+        for (int i = 0; i < pt[0]; i++) {
+            for (int j = 0; j < pt[1]; j++) {
+                for (int k = 0; k < pt[2]; k++) {
+                    pcsvout << field_result(i + nghost, j + nghost, k + nghost) << endl;
+                }
+            }
+        }
+        std::stringstream pname2;
+        pname2 << "data/FieldDFT_";
+        pname2 << ippl::Comm->rank();
+        pname2 << ".csv";
+        Inform pcsvout2(NULL, pname2.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
+        pcsvout2.precision(10);
+        pcsvout2.setf(std::ios::scientific, std::ios::floatfield);
+        pcsvout2 << "rho" << endl;
+        for (int i = 0; i < pt[0]; i++) {
+            for (int j = 0; j < pt[1]; j++) {
+                for (int k = 0; k < pt[2]; k++) {
+                    pcsvout2 << rhoNUDFT_host(i + nghost, j + nghost, k + nghost) << endl;
+                }
+            }
+        }
+        ippl::Comm->barrier();
+
+        Kokkos::parallel_reduce(
+            "NUDFT type1", nloc,
+            KOKKOS_LAMBDA(const size_t idx, Kokkos::complex<double>& valL) {
+                double arg = 0.0;
+                for (size_t d = 0; d < dim; ++d) {
+                    arg += (2 * pi / (hx[d] * pt[d])) * kVec[d] * Rview(idx)[d];
+                }
+
+                valL += (Kokkos::cos(arg) - imag * Kokkos::sin(arg)) * Qview(idx);
+            },
+            Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
+
+        double abs_error_real =
+            std::fabs(reducedValue.real() - field_result(iInd, jInd, kInd).real());
+        double rel_error_real =
+            std::fabs(reducedValue.real() - field_result(iInd, jInd, kInd).real())
+            / std::fabs(reducedValue.real());
+        double abs_error_imag =
+            std::fabs(reducedValue.imag() - field_result(iInd, jInd, kInd).imag());
+        double rel_error_imag =
+            std::fabs(reducedValue.imag() - field_result(iInd, jInd, kInd).imag())
+            / std::fabs(reducedValue.imag());
+
+        std::cout << "Abs Error in real part: " << std::setprecision(16) << abs_error_real
+                  << " Rel. error in real part: " << std::setprecision(16) << rel_error_real
+                  << std::endl;
+        std::cout << "Abs Error in imag part: " << std::setprecision(16) << abs_error_imag
+                  << " Rel. error in imag part: " << std::setprecision(16) << rel_error_imag
+                  << std::endl;
+        std::cout << "Field result: " << std::setprecision(16)
+                  << field_result(iInd, jInd, kInd).real() << " " << std::setprecision(16)
+                  << field_result(iInd, jInd, kInd).imag() << "index: " << iInd << "," << jInd
+                  << "," << kInd << std::endl;
+
+        // Kokkos::complex<double> max_error(0.0, 0.0);
+        // MPI_Reduce(&max_error_local, &max_error, 1,
+        //            MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+    }
+    ippl::finalize();
+    return 0;
+}
