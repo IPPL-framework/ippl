@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
         Vector_t hx_up, origin_up;
         for (unsigned d = 0; d < dim; ++d) {
             origin_up[d] = 0;
-            hx_up[d]     = (2.0 * pi) / n_grid[d];
+            hx_up[d]     = (maxU[d] - minU[d]) / n_grid[d];
         }
         ippl::UniformCartesian<double, 3> mesh_upsampled(owned_upsampled, hx_up, origin_up);
 
