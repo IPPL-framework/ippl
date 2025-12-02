@@ -467,8 +467,7 @@ namespace ippl {
         nmodes.fill(1);
 
         for (size_t d = 0; d < Dim; ++d) {
-            nmodes[d] = lDom[d].length();
-            ;
+            nmodes[d] = layout.getDomain()[d].length();
         }
         use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
         use_finufft      = params.get<bool>("use_finufft_defaults", false);

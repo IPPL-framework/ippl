@@ -98,7 +98,9 @@ namespace ippl {
             // Get layout information
             const auto& layout = input.getLayout();
             const auto& lDom   = layout.getLocalNDIndex();
-            const int nghost   = input.getNghost();
+
+            const int nghost_in  = input.getNghost();
+            const int nghost_out = output.getNghost();
 
             // Local domain bounds (global indices)
             Vector<int, Dim> local_first, local_last;
@@ -123,26 +125,35 @@ namespace ippl {
                     {local_first[0], local_first[1], local_first[2]},
                     {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
                 KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    auto in_bounds = [&](double g, double n_modes) {
-                        return (g >= 0 && g < n_modes / 2)
-                               || (g >= n_modes && g < n_modes + n_modes / 2);
+                    auto in_bounds = [&](double g, double n) {
+                        return (g >= 0 && g < n / 2)
+                               || (g >= n + n/2 && g < 2 * n);
                     };
 
-                    int li = gi - local_first[0] + nghost;
-                    int lj = gj - local_first[1] + nghost;
-                    int lk = gk - local_first[2] + nghost;
+                    int li_in = gi - local_first[0] + nghost_in;
+                    int lj_in = gj - local_first[1] + nghost_in;
+                    int lk_in = gk - local_first[2] + nghost_in;
+
+                    int li_out = gi - local_first[0] + nghost_out;
+                    int lj_out = gj - local_first[1] + nghost_out;
+                    int lk_out= gk - local_first[2] + nghost_out;
 
                     if (in_bounds(gi, nx) && in_bounds(gj, ny) && in_bounds(gk, nz)) {
                         // Apply FFT-shift to get the shifted index for factor lookup
-                        const int ii_shift = (gi + nx / 2) % nx;
-                        const int jj_shift = (gj + ny / 2) % ny;
-                        const int kk_shift = (gk + nz / 2) % nz;
+
+                        auto rescale = [&](int in, int n_modes) {
+                            if (in < n_modes) {
+                                return in;
+                            } else {
+                                return in - n_modes;
+                            }
+                        };
 
                         // Compute factor using shifted indices
-                        complex_type factor     = f0(ii_shift) * f1(jj_shift) * f2(kk_shift);
-                        output_view(li, lj, lk) = Kokkos::conj(input_view(li, lj, lk) * factor);
+                        complex_type factor     = f0(rescale(gi, n_modes[0])) * f1(rescale(gj, n_modes[1])) * f2(rescale(gk, n_modes[2]));
+                        output_view(li_out, lj_out, lk_out) = Kokkos::conj(input_view(li_in, lj_in, lk_in) * factor);
                     } else {
-                        output_view(li, lj, lk) = 0.0;
+                        output_view(li_out, lj_out, lk_out) = 0.0;
                     }
                 });
 
@@ -183,7 +194,9 @@ namespace ippl {
             // Get layout information
             const auto& layout = input.getLayout();
             const auto& lDom   = layout.getLocalNDIndex();
-            const int nghost   = input.getNghost();
+
+            const int nghost_in  = input.getNghost();
+            const int nghost_out = output.getNghost();
 
             // Local domain bounds (global indices)
             Vector<int, Dim> local_first, local_last;
@@ -215,9 +228,14 @@ namespace ippl {
                         return (g >= 0 && g < n_modes / 2)
                                || (g >= n_modes && g < n_modes + n_modes / 2);
                     };
-                    int li = gi - local_first[0] + nghost;
-                    int lj = gj - local_first[1] + nghost;
-                    int lk = gk - local_first[2] + nghost;
+                int li_in = gi - local_first[0] + nghost_in;
+                int lj_in = gj - local_first[1] + nghost_in;
+                int lk_in = gk - local_first[2] + nghost_in;
+
+                int li_out = gi - local_first[0] + nghost_out;
+                int lj_out = gj - local_first[1] + nghost_out;
+                int lk_out= gk - local_first[2] + nghost_out;
+
 
                     if (in_bounds(gi, nx) && in_bounds(gj, ny) && in_bounds(gk, nz)) {
                         const int ii_shift = (gi + nx / 2) % nx;
@@ -226,10 +244,9 @@ namespace ippl {
 
                         // Compute factor using shifted indices
                         complex_type factor = f0(ii_shift) * f1(jj_shift) * f2(kk_shift);
-
-                        output_view(li, lj, lk) = input_view(li, lj, lk) * factor;
+                        output_view(li_out, lj_out, lk_out) = input_view(li_in, lj_in, lk_in) * factor;
                     } else {
-                        output_view(li, lj, lk) = 0.0;
+                        output_view(li_out, lj_out, lk_out) = 0.0;
                     }
                 });
 
