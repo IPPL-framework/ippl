@@ -322,6 +322,8 @@ rm -rf ./select_gpu
 
 ## rocprof
 
+Analysis with: https://ui.perfetto.dev/
+
 ```
 #!/bin/bash -l
 #
@@ -360,6 +362,8 @@ rm -rf ./select_gpu
 
 
 ## omniperf
+
+doc url: https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html
 
 ```
 #!/bin/bash -l
