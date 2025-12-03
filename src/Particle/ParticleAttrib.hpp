@@ -524,20 +524,20 @@ namespace ippl {
 
         auto q = *this;
 
-        //typename Field<FT, Dim, M, C>::uniform_type tempField;
+        typename Field<FT, Dim, M, C>::uniform_type tempField;
 
-        //FieldLayout<Dim>& layout = f.getLayout();
-        //M& mesh                  = f.get_mesh();
+        FieldLayout<Dim>& layout = f.getLayout();
+        M& mesh                  = f.get_mesh();
 
-        //tempField.initialize(mesh, layout);
+        tempField.initialize(mesh, layout);
 
-        //tempField = 0.0;
+        tempField = 0.0;
 
-        nufft->transform(pp, q, f);
+        nufft->transform(pp, q, tempField);
 
         using view_type                                 = typename Field<FT, Dim, M, C>::view_type;
         view_type fview                                 = f.getView();
-        //view_type viewLocal                             = tempField.getView();
+        view_type viewLocal                             = tempField.getView();
         typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost                                = f.getNghost();
 
@@ -561,7 +561,7 @@ namespace ippl {
         //                  spaceComm);
 
         //} else {
-        //    Kokkos::deep_copy(fview, viewLocal);
+            Kokkos::deep_copy(fview, viewLocal);
         //}
         //IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
@@ -636,7 +636,7 @@ namespace ippl {
                     double Dr = 0.0;
                     for (size_t d = 0; d < Dim; ++d) {
                     	bool shift            = (iVec[d] > (N[d] / 2));
-                    	kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                    	kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                         //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                         Dr += kVec[d] * kVec[d];
                     }

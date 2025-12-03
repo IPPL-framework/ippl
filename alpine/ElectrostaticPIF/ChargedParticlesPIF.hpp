@@ -258,7 +258,7 @@ public:
                 for (size_t d = 0; d < Dim; ++d) {
                     //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                     bool shift            = (iVec[d] > (N[d] / 2));
-                    kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                    kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                     Dr += kVec[d] * kVec[d];
                 }
 
@@ -337,7 +337,7 @@ public:
                 for (size_t d = 0; d < Dim; ++d) {
                     //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                     bool shift            = (iVec[d] > (N[d] / 2));
-                    kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                    kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                     Dr += kVec[d] * kVec[d];
                 }
 
@@ -420,7 +420,7 @@ public:
                 for (size_t d = 0; d < Dim; ++d) {
                     //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                     bool shift            = (iVec[d] > (N[d] / 2));
-                    kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                    kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                     Dr += kVec[d] * kVec[d];
                 }
 
@@ -614,7 +614,7 @@ public:
                     for (size_t d = 0; d < Dim; ++d) {
                         //kVec[d]        = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                         bool shift            = (iVec[d] > (N[d] / 2));
-                        kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                        kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                         //Actual mesh spacing is twice the upsampled one
 			double khbytwo = (kVec[d] * dx[d] / 2) * 2;
                         bool isNotZero = (khbytwo != 0.0);
