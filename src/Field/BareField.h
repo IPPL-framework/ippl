@@ -126,7 +126,7 @@ namespace ippl {
 
         void fillHalo();
         void accumulateHalo();
-        void accumulateHalo_noghost(int nghost = 2);
+        void accumulateHalo_noghost(int nghost = 1);
 
         auto& getCommunicator() const { return getLayout().comm; }
 
