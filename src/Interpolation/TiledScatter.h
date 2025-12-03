@@ -405,6 +405,7 @@ namespace ippl {
 
                     const int hx = hist_size_x();
                     const int hy = hist_size_y();
+
                     const int hz = hist_size_z();
 
                     // Allocate shared memory histogram (separate real/complex parts)

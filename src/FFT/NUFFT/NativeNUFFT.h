@@ -146,8 +146,8 @@ namespace ippl {
                 //            point is in the upper half of the last segment, we need both the value
                 //            at the end, plus the kernel support extends w/2 into the halo.
                 //            Theoretically
-                const int nghost = (kernel_.width()) / 2 + 1;  // Need nghost >= hw for kernel width w
-
+                const int nghost =
+                    (kernel_.width()) / 2 + 1;  // Need nghost >= hw for kernel width w
 
                 grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel, true, nghost);
 
@@ -225,44 +225,12 @@ namespace ippl {
                 Q.scatter_kernel(*grid_field_, R, kernel_, cfg_.spread);
                 Kokkos::fence();
 
-                // if (ippl::Comm->rank() == 0) {
-                //     grid_field_->getView()(1, 1, 1)    = 1.0;
-                //     grid_field_->getView()(18, 18, 18) = 2.0;
-                //     // std::cout << "Rank 0 observes" << grid_field_->getView()(0, 0, 0) << std::endl;
-                // }
-
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
                 // Step 1.5: Accumulate ghost cells from scatter
                 grid_field_->accumulateHalo();
-
-                // const auto& lDom = grid_layout_->getLocalNDIndex();
-                // const int nghost = grid_field_->getNghost();
-                // Vector<int, Dim> local_first, local_last;
-                // for (unsigned d = 0; d < Dim; ++d) {
-                //     local_first[d] = lDom[d].first();
-                //     local_last[d]  = lDom[d].last();
-                // }
-                // Kokkos::parallel_for(
-                //     "deconv_type1_3d_local",
-                //     Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                //         {local_first[0], local_first[1], local_first[2]},
-                //         {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
-                //     KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                //         int li_in = gi - local_first[0] + nghost;
-                //         int lj_in = gj - local_first[1] + nghost;
-                //         int lk_in = gk - local_first[2] + nghost;
-                //         if (gi == 31 && gj == 31 && gk == 31) {
-                //             std::cout << "Rank " << Comm->rank() <<  ": Wrapped Before FFT: "
-                //                       << grid_field_->getView()(li_in, lj_in, lk_in) << std::endl;
-                //         }
-                //         if (gi == 16 && gj == 16 && gk == 16) {
-                //             std::cout << "Rank " << Comm->rank() << ": Sent before FFT: "
-                //                       << grid_field_->getView()(li_in, lj_in, lk_in) << std::endl;
-                //         }
-                //     });
 
                 // Step 2: Inverse FFT
                 performFFT(-1);

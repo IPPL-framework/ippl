@@ -207,7 +207,7 @@ int main(int argc, char* argv[]) {
         for (unsigned d = 0; d < dim; ++d) {
             size_t upsampled = std::max<size_t>(sigma * n_modes[d], 2 * kernel_width);
             // Round up to next power of 2
-            n_grid[d] = std::bit_ceil(upsampled);
+            n_grid[d] = (upsampled);
         }
 
         if (myRank == 0) {

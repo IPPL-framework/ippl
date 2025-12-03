@@ -276,7 +276,6 @@ namespace ippl {
                 tile_size_arr[d] = config.tile_size_3d;
             }
 
-            // Get position view directly - no copy needed
             auto pp_view = pp.getView();
 
             // Sort particles by tile
