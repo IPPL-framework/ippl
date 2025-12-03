@@ -102,7 +102,7 @@ cd build
 #### CMakeUserPresets
 In the root IPPL source folder, there is a cmake user presets file which can be used to set some default cmake settings, they may be used in the following way
 ```
-cmake --prefix=release-testing ...
+cmake --preset=release-testing ...
 ```
 This will set the following variables automatically (exact values may change over time)
 ```
