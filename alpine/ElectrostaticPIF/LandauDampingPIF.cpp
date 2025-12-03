@@ -147,6 +147,7 @@ int main(int argc, char* argv[]) {
         Inform msg2all("LandauDampingPIF", INFORM_ALL_NODES);
 
         ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+        ippl::Vector<int, Dim> nrOrig;
 
         static IpplTimings::TimerRef mainTimer        = IpplTimings::getTimer("mainTimer");
         static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
@@ -177,10 +178,13 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<bunch_type> P;
 
         ippl::NDIndex<Dim> domain;
+        ippl::NDIndex<Dim> domainOrig;
         for (unsigned i = 0; i < Dim; i++) {
-	    //For upsampling the grid 
+	    //For upsampling the grid
+	    nrOrig[i] = nr[i];
 	    nr[i] = 2 * nr[i]; 
             domain[i] = ippl::Index(nr[i]);
+            domainOrig[i] = ippl::Index(nrOrig[i]);
         }
 
         std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
@@ -197,14 +201,17 @@ int main(int argc, char* argv[]) {
         double dz       = length[2] / nr[2];
 
         Vector_t hr     = {dx, dy, dz};
+        Vector_t hrOrig     = 2.0 *  hr;
         Vector_t origin = {rmin[0], rmin[1], rmin[2]};
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
+        Mesh_t meshOrig(domainOrig, hrOrig, origin);
 
-        FieldLayout_t FL(*ippl::Comm, domain, isParallel);
+        FieldLayout_t FL(*ippl::Comm, domain, isParallel, isAllPeriodic);
+        FieldLayout_t FLOrig(*ippl::Comm, domainOrig, isParallel, isAllPeriodic);
 
-        PLayout_t PL(FL, mesh);
+        PLayout_t PL(FLOrig, meshOrig);
 
         // Q = -\int\int f dx dv
         double Q = -length[0] * length[1] * length[2];
@@ -220,40 +227,40 @@ int main(int argc, char* argv[]) {
         // Initialize an FFT object for getting rho in real space and
         // doing charge conservation check
 
-        ippl::ParameterList fftParams;
-        fftParams.add("use_heffte_defaults", false);
-        fftParams.add("use_pencils", true);
-        fftParams.add("use_reorder", false);
-        fftParams.add("use_gpu_aware", true);
-        fftParams.add("comm", ippl::p2p_pl);
-        fftParams.add("r2c_direction", 0);
+        //ippl::ParameterList fftParams;
+        //fftParams.add("use_heffte_defaults", false);
+        //fftParams.add("use_pencils", true);
+        //fftParams.add("use_reorder", false);
+        //fftParams.add("use_gpu_aware", true);
+        //fftParams.add("comm", ippl::p2p_pl);
+        //fftParams.add("r2c_direction", 0);
 
-        ippl::NDIndex<Dim> domainPIFhalf;
+        //ippl::NDIndex<Dim> domainPIFhalf;
 
-        for (unsigned d = 0; d < Dim; ++d) {
-            // if(fftParams.template get<int>("r2c_direction") == (int)d)
-            //     domainPIFhalf[d] = ippl::Index(domain[d].length()/2 + 1);
-            // else
-            domainPIFhalf[d] = ippl::Index(domain[d].length());
-        }
+        //for (unsigned d = 0; d < Dim; ++d) {
+        //    // if(fftParams.template get<int>("r2c_direction") == (int)d)
+        //    //     domainPIFhalf[d] = ippl::Index(domain[d].length()/2 + 1);
+        //    // else
+        //    domainPIFhalf[d] = ippl::Index(domain[d].length());
+        //}
 
-        FieldLayout_t FLPIFhalf(*ippl::Comm, domainPIFhalf, isParallel);
+        //FieldLayout_t FLPIFhalf(*ippl::Comm, domainPIFhalf, isParallel);
 
-        ippl::Vector<double, 3> hDummy      = {1.0, 1.0, 1.0};
-        ippl::Vector<double, 3> originDummy = {0.0, 0.0, 0.0};
-        Mesh_t meshPIFhalf(domainPIFhalf, hDummy, originDummy);
+        //ippl::Vector<double, 3> hDummy      = {1.0, 1.0, 1.0};
+        //ippl::Vector<double, 3> originDummy = {0.0, 0.0, 0.0};
+        //Mesh_t meshPIFhalf(domainPIFhalf, hDummy, originDummy);
 
-        ippl::Vector<double, 3> hFourier      = {2 * pi / length[0], 2 * pi / length[1],
-                                                 2 * pi / length[2]};
-        ippl::Vector<double, 3> originFourier = {-pi / hr[0], -pi / hr[1], -pi / hr[2]};
-        Mesh_t meshFourier(domain, hFourier, originFourier);
+        //ippl::Vector<double, 3> hFourier      = {2 * pi / length[0], 2 * pi / length[1],
+        //                                         2 * pi / length[2]};
+        //ippl::Vector<double, 3> originFourier = {-pi / hr[0], -pi / hr[1], -pi / hr[2]};
+        //Mesh_t meshFourier(domain, hFourier, originFourier);
 
-        P->rhoPIFreal_m.initialize(mesh, FL);
-        P->rhoPIFhalf_m.initialize(meshPIFhalf, FLPIFhalf);
-        P->rhoPIFFourierMag_m.initialize(meshFourier, FL);
+        //P->rhoPIFreal_m.initialize(mesh, FL);
+        //P->rhoPIFhalf_m.initialize(meshPIFhalf, FLPIFhalf);
+        //P->rhoPIFFourierMag_m.initialize(meshFourier, FL);
 
-        // P->fft_mp = std::make_shared<FFT_t>(FL, FLPIFhalf, fftParams);
-        P->fft_mp = std::make_shared<FFT_t>(FLPIFhalf, fftParams);
+        //// P->fft_mp = std::make_shared<FFT_t>(FL, FLPIFhalf, fftParams);
+        //P->fft_mp = std::make_shared<FFT_t>(FLPIFhalf, fftParams);
 
         ////////////////////////////////////////////////////////////
 
@@ -291,14 +298,19 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(initializeShapeFunctionPIF);
         P->initializeShapeFunctionPIF();
         IpplTimings::stopTimer(initializeShapeFunctionPIF);
+        msg << "After init shape function " << endl;
 
         double tol = std::atof(argv[9]);
-        P->initNUFFT(FL, tol);
+        P->initNUFFT(FLOrig, tol);
+        msg << "After init NUFFT " << endl;
 
 	P->update();
+        msg << "After update " << endl;
         P->scatter();
+        msg << "After scatter " << endl;
 
         P->gather();
+        msg << "After gather " << endl;
 
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpBumponTail();

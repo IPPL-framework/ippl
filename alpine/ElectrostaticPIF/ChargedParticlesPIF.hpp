@@ -116,7 +116,7 @@ public:
     std::string shapetype_m;
 
     int shapedegree_m;
-    std::shared_ptr<FFT_t> fft_mp;
+    //std::shared_ptr<FFT_t> fft_mp;
 
     std::shared_ptr<ippl::FFT<ippl::NUFFTransform, Field_t>> nufftType1_mp, nufftType2_mp;
 
