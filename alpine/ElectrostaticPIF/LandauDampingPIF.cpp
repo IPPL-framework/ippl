@@ -295,6 +295,7 @@ int main(int argc, char* argv[]) {
         double tol = std::atof(argv[9]);
         P->initNUFFT(FL, tol);
 
+	P->update();
         P->scatter();
 
         P->gather();
@@ -323,10 +324,11 @@ int main(int argc, char* argv[]) {
             IpplTimings::stopTimer(RTimer);
 
             // Apply particle BC
-            IpplTimings::startTimer(BCTimer);
-            PL.applyBC(P->R, PL.getRegionLayout().getDomain());
-            IpplTimings::stopTimer(BCTimer);
+            //IpplTimings::startTimer(BCTimer);
+            //PL.applyBC(P->R, PL.getRegionLayout().getDomain());
+            //IpplTimings::stopTimer(BCTimer);
 
+	    P->update();
             // scatter the charge onto the underlying grid
             P->scatter();
 
