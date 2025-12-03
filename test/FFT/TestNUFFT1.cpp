@@ -8,6 +8,8 @@
 
 #include "Utility/ParameterList.h"
 
+//#include "../../cmake-build-release-testing/_deps/kokkos-src/containers/src/Kokkos_OffsetView.hpp"
+
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
@@ -101,7 +103,6 @@ ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
-    sleep(10);
     {
         constexpr unsigned int dim = 3;
         using Mesh_t               = ippl::UniformCartesian<double, dim>;
@@ -131,8 +132,10 @@ int main(int argc, char* argv[]) {
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         typedef ippl::Vector<double, 3> Vector_t;
-        Vector_t minU = {0, 0, 0};
-        Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
+        Vector_t minU = {0, 0, 0}; //{-pi, -pi, -pi};
+        Vector_t maxU = {4 * pi, 4 * pi, 4 * pi};
+        // Vector_t minU = {0.0, 0.0, 0.0};
+        // Vector_t maxU = {25.0, 25.0, 25.0};
 
         std::array<double, dim> dx = {
             (maxU[0] - minU[0]) / double(n_modes[0]),
@@ -159,8 +162,8 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-6);
-#ifdef ENABLE_GPU_NUFFT
+        fftParams.add("tolerance", 1e-7);
+#ifdef FINUFFT_USE_CUDA
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
         fftParams.add("gpu_kerevalmeth", 1);

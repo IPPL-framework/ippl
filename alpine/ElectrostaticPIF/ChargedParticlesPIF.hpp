@@ -193,6 +193,8 @@ public:
 
         fftParams1.add("use_finufft_defaults", false);
         fftParams2.add("use_finufft_defaults", false);
+        fftParams1.add("use_kokkos_nufft", false);
+        fftParams2.add("use_kokkos_nufft", false);
         // fftParams.add("use_cufinufft_defaults", true);
 
         nufftType1_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, Field_t>>(

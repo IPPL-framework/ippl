@@ -755,6 +755,23 @@ namespace ippl {
     void FFT<NUFFTransform, RealField>::transform(
         const ParticleAttrib<Vector<T, Dim>, Properties...>& R, ParticleAttrib<T, Properties...>& Q,
         typename FFT<NUFFTransform, RealField>::ComplexField& f) {
+        auto localNp = R.getParticleCount();
+
+        const Layout_t& layout               = f.getLayout();
+        const UniformCartesian<T, Dim>& mesh = f.get_mesh();
+        const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
+        const Vector<T, Dim>& origin         = mesh.getOrigin();
+        const auto& domain                   = layout.getDomain();
+        Vector<T, Dim> Len;
+        Vector<int, Dim> N;
+        const int nghost = f.getNghost();
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            N[d]   = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+        const double pi = std::acos(-1.0);
         if (use_kokkos_nufft) {
 #ifdef KOKKOS_NUFFT_AVAILABLE
             transform_kokkos_nufft(R, Q, f);
@@ -764,24 +781,7 @@ namespace ippl {
             auto fview       = f.getView();
             auto Rview       = R.getView();
             auto Qview       = Q.getView();
-            const int nghost = f.getNghost();
 
-            auto localNp = R.getParticleCount();
-
-            const Layout_t& layout               = f.getLayout();
-            const UniformCartesian<T, Dim>& mesh = f.get_mesh();
-            const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
-            const Vector<T, Dim>& origin         = mesh.getOrigin();
-            const auto& domain                   = layout.getDomain();
-            Vector<T, Dim> Len;
-            Vector<int, Dim> N;
-
-            for (unsigned d = 0; d < Dim; ++d) {
-                N[d]   = domain[d].length();
-                Len[d] = dx[d] * N[d];
-            }
-
-            const double pi = std::acos(-1.0);
 
             auto tempField                                = tempField_m;
             auto tempQ                                    = tempQ_m;
@@ -880,8 +880,8 @@ namespace ippl {
             // Use native NUFFT implementation (default path)
             using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
             auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
-            auto Rview          = R.getView();
-            auto fview          = f.getView();
+            auto Rview       = R.getView();
+            auto fview       = f.getView();
             Kokkos::parallel_for(
                 "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
                     for (size_t d = 0; d < Dim; ++d) {
@@ -896,14 +896,13 @@ namespace ippl {
                     f, R, Q,
                     use_upsampled_inputs_m);  // Note: argument order is different for type2
             }
-
             Kokkos::parallel_for(
                 "Roll back the scaling", localNp, KOKKOS_LAMBDA(const size_t i) {
                     for (size_t d = 0; d < Dim; ++d) {
                         Rview(i)[d] *= (Len[d] / (2.0 * pi));
                     }
                 });
-        }
+    }
     }
 
     template <typename RealField>
