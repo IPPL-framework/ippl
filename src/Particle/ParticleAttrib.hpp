@@ -524,46 +524,46 @@ namespace ippl {
 
         auto q = *this;
 
-        typename Field<FT, Dim, M, C>::uniform_type tempField;
+        //typename Field<FT, Dim, M, C>::uniform_type tempField;
 
-        FieldLayout<Dim>& layout = f.getLayout();
-        M& mesh                  = f.get_mesh();
+        //FieldLayout<Dim>& layout = f.getLayout();
+        //M& mesh                  = f.get_mesh();
 
-        tempField.initialize(mesh, layout);
+        //tempField.initialize(mesh, layout);
 
-        tempField = 0.0;
+        //tempField = 0.0;
 
-        nufft->transform(pp, q, tempField);
+        nufft->transform(pp, q, f);
 
         using view_type                                 = typename Field<FT, Dim, M, C>::view_type;
         view_type fview                                 = f.getView();
-        view_type viewLocal                             = tempField.getView();
+        //view_type viewLocal                             = tempField.getView();
         typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
         const int nghost                                = f.getNghost();
 
         IpplTimings::stopTimer(scatterPIFNUFFTTimer);
 
-        int nRanksSpace;
-        MPI_Comm_size(spaceComm, &nRanksSpace);
+        //int nRanksSpace;
+        //MPI_Comm_size(spaceComm, &nRanksSpace);
 
-        static IpplTimings::TimerRef scatterAllReducePIFTimer =
-            IpplTimings::getTimer("scatterAllReducePIF");
-        IpplTimings::startTimer(scatterAllReducePIFTimer);
-        if (nRanksSpace > 1) {
-            // Cray MPI has problems reducing complex data type GPU-aware so do this trick to
-            // speed up
-            double* raw_ptr_viewLocal = reinterpret_cast<double*>(viewLocal.data());
-            double* raw_ptr_fview     = reinterpret_cast<double*>(fview.data());
-            int viewSize              = fview.extent(0) * fview.extent(1) * fview.extent(2);
-            // MPI_Allreduce(viewLocal.data(), fview.data(), viewSize,
-            //               MPI_C_DOUBLE_COMPLEX, MPI_SUM, spaceComm);
-            MPI_Allreduce(raw_ptr_viewLocal, raw_ptr_fview, 2 * viewSize, MPI_DOUBLE, MPI_SUM,
-                          spaceComm);
+        //static IpplTimings::TimerRef scatterAllReducePIFTimer =
+        //    IpplTimings::getTimer("scatterAllReducePIF");
+        //IpplTimings::startTimer(scatterAllReducePIFTimer);
+        //if (nRanksSpace > 1) {
+        //    // Cray MPI has problems reducing complex data type GPU-aware so do this trick to
+        //    // speed up
+        //    double* raw_ptr_viewLocal = reinterpret_cast<double*>(viewLocal.data());
+        //    double* raw_ptr_fview     = reinterpret_cast<double*>(fview.data());
+        //    int viewSize              = fview.extent(0) * fview.extent(1) * fview.extent(2);
+        //    // MPI_Allreduce(viewLocal.data(), fview.data(), viewSize,
+        //    //               MPI_C_DOUBLE_COMPLEX, MPI_SUM, spaceComm);
+        //    MPI_Allreduce(raw_ptr_viewLocal, raw_ptr_fview, 2 * viewSize, MPI_DOUBLE, MPI_SUM,
+        //                  spaceComm);
 
-        } else {
-            Kokkos::deep_copy(fview, viewLocal);
-        }
-        IpplTimings::stopTimer(scatterAllReducePIFTimer);
+        //} else {
+        //    Kokkos::deep_copy(fview, viewLocal);
+        //}
+        //IpplTimings::stopTimer(scatterAllReducePIFTimer);
 
         IpplTimings::startTimer(scatterPIFNUFFTTimer);
 
@@ -593,6 +593,7 @@ namespace ippl {
 
         FieldLayout<Dim>& layout = f.getLayout();
         M& mesh                  = f.get_mesh();
+        const auto& lDom   = layout.getLocalNDIndex();
 
         tempField.initialize(mesh, layout);
 
@@ -626,12 +627,17 @@ namespace ippl {
                     {nghost, nghost, nghost},
                     {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    Vector<int, 3> iVec = {i - nghost, j - nghost, k - nghost};
+                    Vector<int, 3> iVec = {i, j, k};
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        iVec[d] = iVec[d] - nghost + lDom[d].first();
+                    }
                     Vector<double, 3> kVec;
 
                     double Dr = 0.0;
                     for (size_t d = 0; d < Dim; ++d) {
-                        kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
+                    	bool shift            = (iVec[d] > (N[d] / 2));
+                    	kVec[d]               = 2 * pi / Len * (iVec[d] - shift * N[d]);
+                        //kVec[d] = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                         Dr += kVec[d] * kVec[d];
                     }
 

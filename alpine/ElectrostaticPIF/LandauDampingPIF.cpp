@@ -178,11 +178,13 @@ int main(int argc, char* argv[]) {
 
         ippl::NDIndex<Dim> domain;
         for (unsigned i = 0; i < Dim; i++) {
+	    //For upsampling the grid 
+	    nr[i] = 2 * nr[i]; 
             domain[i] = ippl::Index(nr[i]);
         }
 
         std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(false);
+        isParallel.fill(true);
 
         // create mesh and layout objects for this problem domain
         Vector_t kw  = {0.5, 0.5, 0.5};

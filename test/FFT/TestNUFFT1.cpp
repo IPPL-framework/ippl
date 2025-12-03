@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
         int nRanks = ippl::Comm->size();
 
         // Number of modes (output size before upsampling)
-        ippl::Vector<int, dim> n_modes = {32, 32, 32};
+        ippl::Vector<int, dim> n_modes = {1024, 1024, 1024};
 
         // ippl::Vector<int, dim> n_modes = {8, 8, 8};
 
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
 
         using size_type = ippl::detail::size_type;
 
-        size_type Np = std::pow(32, 3);
+        size_type Np = std::pow(1024, 3)*20;
 
         typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type
             field_type;
