@@ -862,15 +862,47 @@ namespace ippl {
                                 "FINUFFT requested but not available");
 #endif
         } else {
+            auto localNp                         = R.getParticleCount();
+            const Layout_t& layout               = f.getLayout();
+            const UniformCartesian<T, Dim>& mesh = f.get_mesh();
+            const Vector<T, Dim>& dx             = mesh.getMeshSpacing();
+            const Vector<T, Dim>& origin         = mesh.getOrigin();
+            const auto& domain                   = layout.getDomain();
+            Vector<T, Dim> Len;
+            Vector<int, Dim> N;
+            const int nghost = f.getNghost();
+            for (unsigned d = 0; d < Dim; ++d) {
+                N[d]   = domain[d].length();
+                Len[d] = dx[d] * N[d];
+            }
+            const double pi = std::acos(-1.0);
+
             // Use native NUFFT implementation (default path)
             using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
             auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
+            auto Rview          = R.getView();
+            auto fview          = f.getView();
+            Kokkos::parallel_for(
+                "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
+                    for (size_t d = 0; d < Dim; ++d) {
+                        Rview(i)[d] *= (2.0 * pi / Len[d]);
+                    }
+                });
 
             if (type_m == 1) {
                 nufft->type1(R, Q, f, use_upsampled_inputs_m);
             } else if (type_m == 2) {
-                nufft->type2(f, R, Q, use_upsampled_inputs_m);  // Note: argument order is different for type2
+                nufft->type2(
+                    f, R, Q,
+                    use_upsampled_inputs_m);  // Note: argument order is different for type2
             }
+
+            Kokkos::parallel_for(
+                "Roll back the scaling", localNp, KOKKOS_LAMBDA(const size_t i) {
+                    for (size_t d = 0; d < Dim; ++d) {
+                        Rview(i)[d] *= (Len[d] / (2.0 * pi));
+                    }
+                });
         }
     }
 
