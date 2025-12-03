@@ -49,9 +49,9 @@ struct generate_random {
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
         for (unsigned d = 0; d < Dim; ++d) {
-            x(i)[d] = 0.2;// rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
         }
-        Q(i) = 0.5; // rand_gen.drand(0.0, 1.0);
+        Q(i) = rand_gen.drand(0.0, 1.0);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
