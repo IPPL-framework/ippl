@@ -8,8 +8,6 @@
 
 #include "Utility/ParameterList.h"
 
-#include "../../cmake-build-release-testing/_deps/kokkos-src/containers/src/Kokkos_OffsetView.hpp"
-
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
