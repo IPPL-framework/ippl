@@ -389,6 +389,9 @@ namespace ippl {
         // Minimum width of all the local domains for each dimension
         unsigned int minWidth_m[Dim];
 
+        // Nghost needed for computing send/receive ranges
+        int nghost_m;
+
         void calcWidths();
     };
 

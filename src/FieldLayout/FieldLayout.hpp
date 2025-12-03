@@ -60,7 +60,7 @@ namespace ippl {
             hLocalDomains_m(i) = domains[i];
         }
 
-        findNeighbors();
+        findNeighbors(nghost_m);
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
@@ -77,6 +77,8 @@ namespace ippl {
         isAllPeriodic_m = isAllPeriodic;
 
         isParallelDim_m = isParallel;
+
+        nghost_m = nghost;
 
         if (nRanks < 2) {
             Kokkos::resize(dLocalDomains_m, nRanks);

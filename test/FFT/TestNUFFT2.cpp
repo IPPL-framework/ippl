@@ -45,7 +45,7 @@ struct generate_random_particles {
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
         for (unsigned d = 0; d < Dim; ++d) {
-            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = 0.5; //rand_gen.drand(minU[d], maxU[d]);
         }
 
         // Give the state back, which will allow another thread to acquire it
@@ -62,6 +62,7 @@ ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
             cornerIdx[d] = kVec[d];
         } else {
             cornerIdx[d] = 2 * n_modes[d] + kVec[d];
+            // cornerIdx[d] = n_modes[d] + n_modes[d]/2 - kVec[d];
         }
     }
     return cornerIdx;
@@ -91,12 +92,12 @@ struct generate_random_field {
         // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-        ippl::Vector<int, 3> kVec{i, j, k};
+        ippl::Vector<int, 3> kVec{i - n_modes[0] / 2, j - n_modes[1] / 2, k - n_modes[2] / 2};
 
         auto i_rescaled = centeredToCornerDC(kVec, n_modes);
 
-        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).real() = rand_gen.drand(0.0, 1.0);
-        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).imag() = rand_gen.drand(0.0, 1.0);
+        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).real() = 0.5; //rand_gen.drand(0.0, 1.0);
+        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).imag() = 0.5;// rand_gen.drand(0.0, 1.0);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
@@ -160,7 +161,7 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-6);
+        fftParams.add("tolerance", 1e-10);
 #ifdef ENABLE_GPU_NUFFT
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
@@ -251,9 +252,10 @@ int main(int argc, char* argv[]) {
             tile_start[d] = lDom_up[d].first();
         }
 
+        field_upsampled = Kokkos::complex<double>(0.0);
+
         Kokkos::parallel_for(
-            mdrange_type({-n_modes[0] / 2, -n_modes[1] / 2, -n_modes[2] / 2},
-                         {n_modes[0] / 2, n_modes[1] / 2, n_modes[2] / 2}),
+            mdrange_type({0, 0, 0}, {n_modes[0], n_modes[1], n_modes[2]}),
             generate_random_field<Kokkos::complex<double>, Kokkos::Random_XorShift64_Pool<>, dim>(
                 field_upsampled.getView(), n_modes, rand_pool64, nghost, tile_start));
 
