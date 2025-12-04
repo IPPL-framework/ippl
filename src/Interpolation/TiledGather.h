@@ -10,7 +10,7 @@ namespace ippl {
 namespace Interpolation {
 namespace detail {
 
-#ifdef KOKKOS_ENABLE_CUDA
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
     /**
      * @brief Generic CUDA kernel for 3D tiled gather (interpolation) with warp-level parallelism
      *

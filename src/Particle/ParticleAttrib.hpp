@@ -382,8 +382,15 @@ namespace ippl {
         if constexpr (Dim == 3) {
             if (config.method == Interpolation::ScatterMethod::Tiled) {
                 // Use optimized tiled interpolation with warp-level parallelism
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+                if constexpr (
 #ifdef KOKKOS_ENABLE_CUDA
-                if constexpr (std::is_same_v<execution_space, Kokkos::Cuda>) {
+                    std::is_same_v<execution_space, Kokkos::Cuda>
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+                    || std::is_same_v<execution_space, Kokkos::HIP>
+#endif
+                    ) {
                     // Verify field has sufficient ghost cells for kernel width
                     if (nghost < hw) {
                         throw std::runtime_error(
@@ -410,7 +417,7 @@ namespace ippl {
                     detail::sortParticles<3, execution_space, PositionType>(
                         x_view, permute, origin, invdx, ngrid_vec, nParticles);
 
-                    // Dispatch to CUDA kernel
+                    // Dispatch to specialized kernel
                     constexpr int MaxW = 20;
                     int n0 = ngrid_global[0], n1 = ngrid_global[1], n2 = ngrid_global[2];
                     Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<
@@ -472,7 +479,7 @@ namespace ippl {
                 Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles), gather_functor);
             }
         } else {
-            // TODO: Implement for 1D/2D if needed
+            // Currently not implemented
         }
 
         IpplTimings::stopTimer(gatherKernelTimer);
