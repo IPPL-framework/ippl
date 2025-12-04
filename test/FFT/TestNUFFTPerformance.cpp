@@ -266,6 +266,7 @@ int main(int argc, char* argv[]) {
                         fftParams.add("team_size", 32);
                         fftParams.add("sort", true);
 
+
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
                         double time_ms = benchmarkType1(*fft, field, bunch, "OutputFocused");
                         printResult("IPPL OutputFocused", time_ms, Np, grid_size, "1");
