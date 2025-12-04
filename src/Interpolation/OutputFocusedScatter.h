@@ -171,7 +171,7 @@ namespace ippl {
 
                                 kernel_vals[W * d + k] = kernel(
                                     (s[d]
-                                     - static_cast<real_type>(idx[d] + k + (d == 3) * z_offset))
+                                     - static_cast<real_type>(idx[d] + k + (d == 2) * z_offset))
                                     * inv_hw);
                             });
 
