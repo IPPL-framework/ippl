@@ -95,7 +95,9 @@ namespace ippl {
                     ker_shared[warp_in_block][i] =
                         kernel((pos[d] - static_cast<RealType>(idx0_global[d] + k)) * inv_hw);
                 }
+#ifdef KOKKOS_ENABLE_CUDA
                 __syncwarp();
+#endif
 
                 // Determine grid element type
                 using grid_element_type = std::remove_reference_t<decltype(field_view(0, 0, 0))>;
