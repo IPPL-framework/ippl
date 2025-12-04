@@ -1,5 +1,5 @@
-#ifndef IPPL_TILED_SCATTER_H
-#define IPPL_TILED_SCATTER_H
+#ifndef IPPL_OUTPUTFOCUSED_SCATTER_H
+#define IPPL_OUTPUTFOCUSED_SCATTER_H
 
 #include <Kokkos_Core.hpp>
 
@@ -11,10 +11,7 @@ namespace ippl {
     namespace Interpolation {
         namespace detail {
             /**
-             * @brief Generic tiled scatter functor for 3D particle-to-grid operations
-             *
-             * This is a generic implementation that works with any kernel function.
-             * Uses shared memory histogram per tile to reduce global memory atomics.
+             * @brief Generic scatter functor with the julia-like algorithm
              *
              * Template parameters:
              * @tparam W The kernel width (compile-time constant for optimization)
@@ -32,7 +29,7 @@ namespace ippl {
                       typename ValueType, typename GridViewType,
                       typename PositionViewType =
                           Kokkos::View<RealType* [3], typename ExecSpace::memory_space>>
-            struct TiledScatterFunctor3D {
+            struct OutputFocusedScatterFunctor3D {
                 using real_type        = RealType;
                 using value_type       = ValueType;
                 using memory_space     = typename ExecSpace::memory_space;
@@ -153,7 +150,7 @@ namespace ippl {
                     const size_type pend   = bin_offsets(tile_linear + 1);
 
                     for (int i = pstart; i < pend; ++i) {
-                        const size_type j    = permute(ip);
+                        const size_type j    = permute(i);
                         const value_type val = values(j);
 
                         real_type s[3];
@@ -164,17 +161,18 @@ namespace ippl {
                             idx[d] = grid_point_to_grid_idx(s[d], n_grid[d], w) - half_left;
                         }
 
+                        printf("t");
                         Kokkos::parallel_for(
-                            Kokkos::TeamThreadMDRange(team, 3 * W), [=](int flat_w) {
-                                int d = i / w;
-                                int k = i % w;
+                            Kokkos::TeamThreadRange(team, 3 * W), [&](int flat_w) {
+                                int d = flat_w / w;
+                                int k = flat_w % w;
 
                                 kernel_vals[W * d + k] =
                                     kernel((s[d] - static_cast<real_type>(idx[d] + k)) * inv_hw);
                             });
 
                         Kokkos::parallel_for(
-                            Kokkos::TeamThreadMDRange(team, W, W, W), [=](int wx, int wy, int wz) {
+                            Kokkos::TeamThreadMDRange(team, W, W, W), [&](int wx, int wy, int wz) {
                                 const real_type kernel_val =
                                     kernel_vals[wx] * kernel_vals[W + wy] * kernel_vals[2 * W + wz];
 
@@ -256,7 +254,7 @@ namespace ippl {
              * Uses template recursion to dispatch to the correct kernel width at runtime
              */
             template <int W, int MaxW>
-            struct ScatterDispatcher {
+            struct OutputFocusedScatterDispatcher {
                 template <typename RealType, typename ExecSpace, typename KernelType,
                           typename ValueType, typename GridViewType, typename PositionViewType,
                           typename PermuteViewType, typename BinOffsetsViewType>
@@ -273,24 +271,11 @@ namespace ippl {
                     RealType inv_hw, const KernelType& kernel, int team_size) {
                     if constexpr (W <= MaxW) {
                         if (w == W) {
-#ifdef KOKKOS_ENABLE_CUDA
-                            // Use native CUDA kernel for CUDA execution space
-                            if constexpr (false && std::is_same_v<ExecSpace, Kokkos::Cuda>) {
-                                CudaScatterDispatcher<W, W>::template dispatch_3d<
-                                    RealType, PositionViewType, PermuteViewType, BinOffsetsViewType,
-                                    Kokkos::View<ValueType*, typename ExecSpace::memory_space>,
-                                    GridViewType, KernelType>(w, bin_offsets, permute, x, values,
-                                                              grid, n_grid, num_tiles, tile_size_x,
-                                                              tile_size_y, tile_size_z, z_tiles,
-                                                              nghost, inv_hw, kernel);
-                            } else
-#endif
-                            {
                                 // Use generic Kokkos functor for other execution spaces
                                 using size_type = typename ExecSpace::memory_space::size_type;
 
                                 // Create functor with templated W
-                                TiledScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
+                                OutputFocusedScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
                                                       GridViewType, PositionViewType>
                                     functor{bin_offsets,  permute,      x,
                                             values,       grid,         n_grid,
@@ -320,10 +305,9 @@ namespace ippl {
                                 team_policy policy(n_teams, team_size);
                                 policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
 
-                                Kokkos::parallel_for("tiled_spread", policy, functor);
-                            }
+                                Kokkos::parallel_for("output_focused_spread", policy, functor);
                         } else {
-                            ScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
+                            OutputFocusedScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
                                 RealType, ExecSpace, KernelType, ValueType, GridViewType,
                                 PositionViewType, PermuteViewType, BinOffsetsViewType>(
                                 w, bin_offsets, permute, x, values, grid, n_grid, n_grid_local,

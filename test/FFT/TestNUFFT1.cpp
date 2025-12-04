@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
         fftParams.add("use_finufft_defaults", false);
         fftParams.add("use_kokkos_nufft", false);
 
-        fftParams.add("spread_method", "tiled");
+        fftParams.add("spread_method", "output_focused");
         fftParams.add("tile_size_3d", 6);
         fftParams.add("z_tiles", 1);
         fftParams.add("team_size", 32);

@@ -245,6 +245,32 @@ int main(int argc, char* argv[]) {
                         generate_random_particles_with_charges<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
                             bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
 
+                    // OutputFocused method
+                    {
+                        ippl::ParameterList fftParams;
+                        fftParams.add("tolerance", 1e-10);
+#ifdef ENABLE_GPU_NUFFT
+                        fftParams.add("gpu_method", 1);
+                        fftParams.add("gpu_sort", 0);
+                        fftParams.add("gpu_kerevalmeth", 1);
+#else
+                        fftParams.add("spread_kerevalmeth", 1);
+                        fftParams.add("spread_sort", 2);
+                        fftParams.add("nthreads", 0);
+#endif
+                        fftParams.add("use_finufft_defaults", false);
+                        fftParams.add("use_kokkos_nufft", false);
+                        fftParams.add("spread_method", "outputfocused");
+                        fftParams.add("tile_size_3d", 6);
+                        fftParams.add("z_tiles", 1);
+                        fftParams.add("team_size", 32);
+                        fftParams.add("sort", true);
+
+                        auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
+                        double time_ms = benchmarkType1(*fft, field, bunch, "OutputFocused");
+                        printResult("IPPL OutputFocused", time_ms, Np, grid_size, "1");
+                    }
+
                     // Tiled method
                     {
                         ippl::ParameterList fftParams;

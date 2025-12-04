@@ -589,6 +589,12 @@ namespace ippl {
             if (spread_method == "atomic") {
                 cfg.spread.method = Interpolation::ScatterMethod::Atomic;
             }
+            if (spread_method == "output_focused") {
+                cfg.spread.method = Interpolation::ScatterMethod::OutputFocused;
+            }
+            if (spread_method == "tiled") {
+                cfg.spread.method == Interpolation::ScatterMethod::Tiled;
+            }
             if (params.contains("tile_size_3d")) {
                 cfg.spread.tile_size_3d = params.get<int>("tile_size_3d");
             }
