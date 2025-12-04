@@ -118,7 +118,6 @@ int main(int argc, char* argv[]) {
 
         // Number of modes (output size before upsampling)
         ippl::Vector<int, dim> n_modes = {64, 64, 64};
-
         // ippl::Vector<int, dim> n_modes = {8, 8, 8};
 
         ippl::Index I(n_modes[0]);

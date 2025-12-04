@@ -54,7 +54,7 @@ struct generate_random_particles {
 };
 
 template <unsigned Dim>
-ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
+KOKKOS_INLINE_FUNCTION ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
                                           const ippl::Vector<int, Dim>& n_modes) {
     ippl::Vector<int, Dim> cornerIdx;
     for (unsigned d = 0; d < Dim; ++d) {
