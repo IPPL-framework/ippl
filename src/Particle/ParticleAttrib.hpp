@@ -388,7 +388,7 @@ namespace ippl {
                     std::is_same_v<execution_space, Kokkos::Cuda>
 #endif
 #ifdef KOKKOS_ENABLE_HIP
-                    || std::is_same_v<execution_space, Kokkos::HIP>
+                    std::is_same_v<execution_space, Kokkos::HIP>
 #endif
                     ) {
                     // Verify field has sufficient ghost cells for kernel width
@@ -426,7 +426,7 @@ namespace ippl {
                                    ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
                                    addToAttribute);
 
-                    cudaDeviceSynchronize();
+                    Kokkos::fence();
                 } else
 #endif
                 {
