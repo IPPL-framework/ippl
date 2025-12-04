@@ -146,7 +146,7 @@ namespace ippl {
                     const int z_count = (tile_thread_idx == threads_per_tile - 1)
                                             ? (W - (threads_per_tile - 1) * z_tiles)
                                             : z_tiles;
-                    shared_real_view kernel_vals(team.team_scratch(0), 2 * W + z_count);
+                    shared_real_view kernel_vals(team.team_scratch(0), 2 * W + z_tiles);
 
                     // Get particles in this tile
                     const size_type pstart = bin_offsets(tile_linear);
@@ -184,6 +184,10 @@ namespace ippl {
                                 const int point_tile_x = idx[0] + half_left - tile_x0;
                                 const int point_tile_y = idx[1] + half_left - tile_y0;
                                 const int point_tile_z = idx[2] + half_left - tile_z0;
+
+                                assert(point_tile_x >= 0 && point_tile_x < tile_size_x);
+                                assert(point_tile_y >= 0 && point_tile_y < tile_size_y);
+                                assert(point_tile_z >= 0 && point_tile_z < tile_size_z);
 
                                 const int hist_idx =
                                     (((point_tile_z + wz) * hy + (point_tile_y + wy)) * hx

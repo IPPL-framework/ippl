@@ -57,10 +57,10 @@ namespace ippl::Interpolation::detail {
         const bool odd_w = w & 1;
         int idx_0        = odd_w ? static_cast<local_index_type>(Kokkos::round(sx))
                                  : static_cast<local_index_type>(sx);
-        // // // idx_0 might now be exactly n_grid. We return a value [0, n_grid)
-        // if (idx_0 == static_cast<local_index_type>(n_grid)) {
-        //     idx_0 -= static_cast<local_index_type>(n_grid);
-        // }
+        // idx_0 might now be exactly n_grid. We return a value [0, n_grid)
+        if (idx_0 == static_cast<local_index_type>(n_grid)) {
+            idx_0 -= static_cast<local_index_type>(n_grid);
+        }
 
         return idx_0;
     }
