@@ -57,11 +57,11 @@ namespace Interpolation {
     template <>
     inline ScatterConfig ScatterConfig::get_default<Kokkos::Cuda>() {
         ScatterConfig config;
-        config.method = ScatterMethod::Tiled;
+        config.method = ScatterMethod::OutputFocused;
         config.sort = true;
-        config.tile_size_3d = 6;
-        config.z_tiles = 2;
-        config.team_size = 64;
+        config.tile_size_3d = 3;
+        config.z_tiles = 6;
+        config.team_size = 32;
         return config;
     }
 #endif
