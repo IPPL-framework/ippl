@@ -143,7 +143,10 @@ namespace ippl {
                     team.team_barrier();
 
                     // Allocate shared memory for kernel values
-                    shared_real_view kernel_vals(team.team_scratch(0), 3 * W);
+                    const int z_count = (tile_thread_idx == threads_per_tile - 1)
+                                            ? (W - (threads_per_tile - 1) * z_tiles)
+                                            : z_tiles;
+                    shared_real_view kernel_vals(team.team_scratch(0), 2 * W + z_count);
 
                     // Get particles in this tile
                     const size_type pstart = bin_offsets(tile_linear);
@@ -161,18 +164,17 @@ namespace ippl {
                             idx[d] = grid_point_to_grid_idx(s[d], n_grid[d], w) - half_left;
                         }
 
-                        printf("t");
                         Kokkos::parallel_for(
-                            Kokkos::TeamThreadRange(team, 3 * W), [&](int flat_w) {
+                            Kokkos::TeamThreadRange(team, 2 * W + z_count), [&](int flat_w) {
                                 int d = flat_w / w;
                                 int k = flat_w % w;
 
                                 kernel_vals[W * d + k] =
-                                    kernel((s[d] - static_cast<real_type>(idx[d] + k)) * inv_hw);
+                                    kernel((s[d] - static_cast<real_type>(idx[d] + k + (d == 3) * z_offset)) * inv_hw);
                             });
 
                         Kokkos::parallel_for(
-                            Kokkos::TeamThreadMDRange(team, W, W, W), [&](int wx, int wy, int wz) {
+                            Kokkos::TeamThreadMDRange(team, W, W, z_count), [&](int wx, int wy, int wz) {
                                 const real_type kernel_val =
                                     kernel_vals[wx] * kernel_vals[W + wy] * kernel_vals[2 * W + wz];
 
@@ -271,41 +273,40 @@ namespace ippl {
                     RealType inv_hw, const KernelType& kernel, int team_size) {
                     if constexpr (W <= MaxW) {
                         if (w == W) {
-                                // Use generic Kokkos functor for other execution spaces
-                                using size_type = typename ExecSpace::memory_space::size_type;
+                            // Use generic Kokkos functor for other execution spaces
+                            using size_type = typename ExecSpace::memory_space::size_type;
 
-                                // Create functor with templated W
-                                OutputFocusedScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
-                                                      GridViewType, PositionViewType>
-                                    functor{bin_offsets,  permute,      x,
-                                            values,       grid,         n_grid,
-                                            n_grid_local, local_offset, num_tiles,
-                                            tile_size_x,  tile_size_y,  tile_size_z,
-                                            z_tiles,      nghost,       inv_hw,
-                                            kernel};
+                            // Create functor with templated W
+                            OutputFocusedScatterFunctor3D<W, RealType, ExecSpace, KernelType,
+                                                          ValueType, GridViewType, PositionViewType>
+                                functor{bin_offsets,  permute,      x,
+                                        values,       grid,         n_grid,
+                                        n_grid_local, local_offset, num_tiles,
+                                        tile_size_x,  tile_size_y,  tile_size_z,
+                                        z_tiles,      nghost,       inv_hw,
+                                        kernel};
 
-                                // Calculate scratch memory size
-                                const size_t hist_size = functor.hist_size_x()
-                                                         * functor.hist_size_y()
-                                                         * functor.hist_size_z();
-                                using grid_element_type =
-                                    std::remove_reference_t<decltype(grid(0, 0, 0))>;
-                                constexpr bool is_complex =
-                                    std::is_same_v<grid_element_type, Kokkos::complex<RealType>>;
-                                const size_t scratch_size  = is_complex ? 2 * hist_size : hist_size;
-                                const size_t scratch_bytes = scratch_size * sizeof(RealType);
+                            // Calculate scratch memory size
+                            const size_t hist_size = functor.hist_size_x() * functor.hist_size_y()
+                                                     * functor.hist_size_z();
+                            using grid_element_type =
+                                std::remove_reference_t<decltype(grid(0, 0, 0))>;
+                            constexpr bool is_complex =
+                                std::is_same_v<grid_element_type, Kokkos::complex<RealType>>;
+                            const size_t scratch_size  = is_complex ? 2 * hist_size : hist_size;
+                            const size_t scratch_bytes = scratch_size * sizeof(RealType);
 
-                                // Launch team policy
-                                const size_type n_tiles_total =
-                                    num_tiles[0] * num_tiles[1] * num_tiles[2];
-                                const int threads_per_tile = (z_tiles + W - 1) / z_tiles;
-                                const size_type n_teams    = n_tiles_total * threads_per_tile;
+                            // Launch team policy
+                            const size_type n_tiles_total =
+                                num_tiles[0] * num_tiles[1] * num_tiles[2];
+                            const int threads_per_tile = (z_tiles + W - 1) / z_tiles;
+                            const size_type n_teams    = n_tiles_total * threads_per_tile;
 
-                                using team_policy = Kokkos::TeamPolicy<ExecSpace>;
-                                team_policy policy(n_teams, team_size);
-                                policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
+                            using team_policy = Kokkos::TeamPolicy<ExecSpace>;
+                            team_policy policy(n_teams, team_size);
+                            policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
 
-                                Kokkos::parallel_for("output_focused_spread", policy, functor);
+                            Kokkos::parallel_for("output_focused_spread", policy, functor);
                         } else {
                             OutputFocusedScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
                                 RealType, ExecSpace, KernelType, ValueType, GridViewType,
