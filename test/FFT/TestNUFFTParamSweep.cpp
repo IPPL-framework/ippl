@@ -94,8 +94,8 @@ int main(int argc, char* argv[]) {
         ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         typedef ippl::Vector<double, 3> Vector_t;
-        Vector_t minU = {-pi, -pi, -pi};
-        Vector_t maxU = {pi, pi, pi};
+        Vector_t minU = {0, 0, 0};
+        Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
 
         std::array<double, Dim> dx = {
             (maxU[0] - minU[0]) / double(pt[0]),
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
         msg << "Testing with 32^3 grid and 32^3 particles" << endl;
 
         // Parameter sweep configurations
-        std::vector<int> tile_sizes = {8, 16, 24, 32};
+        std::vector<int> tile_sizes = {1,2,3,4,5,6};
         std::vector<int> team_sizes = {32, 64, 128, 256};
         std::vector<int> z_tiles    = {1, 2, 4, 8};
 
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
                     fftParams.add("tolerance", 1e-10);
                     fftParams.add("use_finufft_defaults", false);
                     fftParams.add("use_kokkos_nufft", false);
-                    fftParams.add("spread_method", "tiled");
+                    fftParams.add("spread_method", "output_focused");
                     fftParams.add("tile_size_3d", tile_size);
                     fftParams.add("z_tiles", z_tile);
                     fftParams.add("team_size", team_size);

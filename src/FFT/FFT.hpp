@@ -581,28 +581,30 @@ namespace ippl {
             typename NativeNUFFT_t::Config cfg;
             cfg.tol   = tol_m;
             cfg.sigma = params.get<T>("sigma", T(2.0));
-            cfg.spread =
+            cfg.scatter_config =
                 Interpolation::ScatterConfig::get_default<typename RealField::execution_space>();
+            cfg.gather_config =
+                Interpolation::GatherConfig::get_default<typename RealField::execution_space>();
 
             // Configure spread method
             std::string spread_method = params.get<std::string>("spread_method", "none");
             if (spread_method == "atomic") {
-                cfg.spread.method = Interpolation::ScatterMethod::Atomic;
+                cfg.scatter_config.method = Interpolation::ScatterMethod::Atomic;
             }
             if (spread_method == "output_focused") {
-                cfg.spread.method = Interpolation::ScatterMethod::OutputFocused;
+                cfg.scatter_config.method = Interpolation::ScatterMethod::OutputFocused;
             }
             if (spread_method == "tiled") {
-                cfg.spread.method == Interpolation::ScatterMethod::Tiled;
+                cfg.scatter_config.method == Interpolation::ScatterMethod::Tiled;
             }
             if (params.contains("tile_size_3d")) {
-                cfg.spread.tile_size_3d = params.get<int>("tile_size_3d");
+                cfg.scatter_config.tile_size_3d = params.get<int>("tile_size_3d");
             }
             if (params.contains("z_tiles")) {
-                cfg.spread.z_tiles = params.get<int>("z_tiles");
+                cfg.scatter_config.z_tiles = params.get<int>("z_tiles");
             }
             if (params.contains("team_size")) {
-                cfg.spread.team_size = params.get<int>("team_size");
+                cfg.scatter_config.team_size = params.get<int>("team_size");
             }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
@@ -784,10 +786,9 @@ namespace ippl {
 #endif
         } else if (use_finufft) {
 #ifdef ENABLE_FINUFFT
-            auto fview       = f.getView();
-            auto Rview       = R.getView();
-            auto Qview       = Q.getView();
-
+            auto fview = f.getView();
+            auto Rview = R.getView();
+            auto Qview = Q.getView();
 
             auto tempField                                = tempField_m;
             auto tempQ                                    = tempQ_m;
@@ -886,8 +887,8 @@ namespace ippl {
             // Use native NUFFT implementation (default path)
             using NativeNUFFT_t = NUFFT::NativeNUFFT<Dim, T, typename RealField::execution_space>;
             auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
-            auto Rview       = R.getView();
-            auto fview       = f.getView();
+            auto Rview          = R.getView();
+            auto fview          = f.getView();
             Kokkos::parallel_for(
                 "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
                     for (size_t d = 0; d < Dim; ++d) {
@@ -908,7 +909,7 @@ namespace ippl {
                         Rview(i)[d] *= (Len[d] / (2.0 * pi));
                     }
                 });
-    }
+        }
     }
 
     template <typename RealField>

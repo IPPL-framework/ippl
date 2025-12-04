@@ -64,8 +64,8 @@ namespace ippl {
             struct Config {
                 T tol   = T(1e-6);  // Error tolerance
                 T sigma = T(2.0);   // Upsampling factor
-                Interpolation::ScatterConfig
-                    spread;  // Spread/gather configuration (chooses impl/tiling/..)
+                Interpolation::ScatterConfig scatter_config;
+                Interpolation::GatherConfig gather_config;
             };
 
             struct TimingInfo {
@@ -222,7 +222,7 @@ namespace ippl {
                 auto t0      = std::chrono::high_resolution_clock::now();
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
 
-                Q.scatter_kernel(*grid_field_, R, kernel_, cfg_.spread);
+                Q.scatter_kernel(*grid_field_, R, kernel_, cfg_.scatter_config);
                 Kokkos::fence();
 
                 timing_.spread =
@@ -307,7 +307,7 @@ namespace ippl {
 
                 // Step 3: Gather/interpolate at particle positions
                 t0 = std::chrono::high_resolution_clock::now();
-                Q.gather(*grid_field_, R, kernel_, false, cfg_.spread);
+                Q.gather(*grid_field_, R, kernel_, false, cfg_.gather_config);
                 Kokkos::fence();
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
