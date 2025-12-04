@@ -225,7 +225,6 @@ namespace ippl {
                             int num_warps                 = n;
                             int grid_size = (num_warps + warps_per_block - 1) / warps_per_block;
 
-                            std::cout << "Dispatching to tiled kernel" << std::endl;
 
                             tiled_gather_3d_cuda_kernel<W, RealType, PositionViewType,
                                                         PermuteViewType, FieldViewType, KernelType,

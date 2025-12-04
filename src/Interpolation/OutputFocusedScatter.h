@@ -169,12 +169,15 @@ namespace ippl {
                                 int d = flat_w / w;
                                 int k = flat_w % w;
 
-                                kernel_vals[W * d + k] =
-                                    kernel((s[d] - static_cast<real_type>(idx[d] + k + (d == 3) * z_offset)) * inv_hw);
+                                kernel_vals[W * d + k] = kernel(
+                                    (s[d]
+                                     - static_cast<real_type>(idx[d] + k + (d == 3) * z_offset))
+                                    * inv_hw);
                             });
 
                         Kokkos::parallel_for(
-                            Kokkos::TeamThreadMDRange(team, W, W, z_count), [&](int wx, int wy, int wz) {
+                            Kokkos::TeamThreadMDRange(team, W, W, z_count),
+                            [&](int wx, int wy, int wz) {
                                 const real_type kernel_val =
                                     kernel_vals[wx] * kernel_vals[W + wy] * kernel_vals[2 * W + wz];
 
@@ -293,7 +296,7 @@ namespace ippl {
                                 std::remove_reference_t<decltype(grid(0, 0, 0))>;
                             constexpr bool is_complex =
                                 std::is_same_v<grid_element_type, Kokkos::complex<RealType>>;
-                            const size_t scratch_size  = is_complex ? 2 * hist_size : hist_size;
+                            const size_t scratch_size  = is_complex ? (2 * hist_size + (2 * W + z_tiles)) : (hist_size + (2 * W + z_tiles));
                             const size_t scratch_bytes = scratch_size * sizeof(RealType);
 
                             // Launch team policy
