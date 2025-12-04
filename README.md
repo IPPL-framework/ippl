@@ -360,7 +360,7 @@ rm -rf ./select_gpu
 ```
 
 
-## omniperf
+## omniperf (do not use omnitrace)
 
 doc url: https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html
 
