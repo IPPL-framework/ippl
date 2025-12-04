@@ -17,7 +17,7 @@ namespace ippl {
                 return __shfl_down_sync(0xffffffff, val, offs);
 #endif
 #ifdef KOKKOS_ENABLE_HIP
-                retrun __shfl_down(val, offs);
+                return __shfl_down(val, offs);
 #endif
             }
 #ifdef KOKKOS_ENABLE_CUDA

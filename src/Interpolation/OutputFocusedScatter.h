@@ -91,7 +91,7 @@ namespace ippl {
                 }
 
                 KOKKOS_INLINE_FUNCTION void operator()(const team_member& team) const {
-                    const int team_id     = team.league_rank();
+                    const int team_id = team.league_rank();
                     // const int num_threads = team.team_size();
                     // const int thread_id   = team.team_rank();
 
@@ -148,7 +148,6 @@ namespace ippl {
                     // Allocate shared memory for kernel values
                     shared_real_view kernel_vals(team.team_scratch(0), 3 * W);
 
-
                     // Get particles in this tile
                     const size_type pstart = bin_offsets(tile_linear);
                     const size_type pend   = bin_offsets(tile_linear + 1);
@@ -157,129 +156,50 @@ namespace ippl {
                         const size_type j    = permute(ip);
                         const value_type val = values(j);
 
-                        // X dimension
-                        real_type sx = scale_to_grid_indices(get_component(x, j, 0), n_grid[0]);
-                        // The indices are chosen so that there are non-zero contributions from
-                        // sx in the range [idx_x, idx_x + w)
-                        int idx_x = grid_point_to_grid_idx(sx, n_grid[0], w) - half_left;
+                        real_type s[3];
+                        int idx[3];
 
-                        // Y dimension
-                        real_type sy = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
-                        int idx_y    = grid_point_to_grid_idx(sy, n_grid[1], w) - half_left;
+                        for (int d = 0; d < 3; ++d) {
+                            s[d]   = scale_to_grid_indices(get_component(x, j, d), n_grid[d]);
+                            idx[d] = grid_point_to_grid_idx(s[d], n_grid[d], w) - half_left;
+                        }
 
-                        // Z dimension
-                        real_type sz = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
-                        int idx_z    = grid_point_to_grid_idx(sz, n_grid[2], w) - half_left;
+                        Kokkos::parallel_for(
+                            Kokkos::TeamThreadMDRange(team, 3 * W), [=](int flat_w) {
+                                int d = i / w;
+                                int k = i % w;
 
-                        Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 3 * W), [=](int flat_w) {
-                            int d = i / w;
-                            int k = i % w;
+                                kernel_vals[W * d + k] =
+                                    kernel((s[d] - static_cast<real_type>(idx[d] + k)) * inv_hw);
+                            });
 
-                            kernel_vals[W*d + k] = kernel((sx - static_cast<real_type>(idx_x + wx)) * inv_hw);
+                        Kokkos::parallel_for(
+                            Kokkos::TeamThreadMDRange(team, W, W, W), [=](int wx, int wy, int wz) {
+                                const real_type kernel_val =
+                                    kernel_vals[wx] * kernel_vals[W + wy] * kernel_vals[2 * W + wz];
 
-                        });
+                                const int point_tile_x = idx[0] + half_left - tile_x0;
+                                const int point_tile_y = idx[1] + half_left - tile_y0;
+                                const int point_tile_z = idx[2] + half_left - tile_z0;
 
-                        Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, W, W, W), [=](int wx, int wy, int wz) {
+                                const int hist_idx =
+                                    (((point_tile_z + wz) * hy + (point_tile_y + wy)) * hx
+                                     + (point_tile_x + wx));
 
-                        });
-                    }
-
-                    Kokkos::parallel_for(
-                        Kokkos::TeamThreadRange(team, pstart, pend), [&](size_type ip) {
-                            const size_type j    = permute(ip);
-                            const value_type val = values(j);
-
-                            // X dimension
-                            real_type sx = scale_to_grid_indices(get_component(x, j, 0), n_grid[0]);
-                            // The indices are chosen so that there are non-zero contributions from
-                            // sx in the range [idx_x, idx_x + w)
-                            int idx_x = grid_point_to_grid_idx(sx, n_grid[0], w) - half_left;
-                            assert((idx_x + half_left) / tile_size_x == tile_x);
-
-                            // Y dimension
-                            real_type sy = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
-                            int idx_y    = grid_point_to_grid_idx(sy, n_grid[1], w) - half_left;
-                            assert((idx_y + half_left) / tile_size_y == tile_y);
-
-                            // Z dimension
-                            real_type sz = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
-                            int idx_z    = grid_point_to_grid_idx(sz, n_grid[2], w) - half_left;
-                            assert((idx_z + half_left) / tile_size_z == tile_z);
-
-                            // Precompute kernel values
-                            real_type kernel_x[W];
-                            real_type kernel_y[W];
-                            real_type kernel_z[W];
-
-                            for (int wx = 0; wx < W; ++wx) {
-                                assert((sx - static_cast<real_type>(idx_x + wx)) <= w / 2.0);
-                                kernel_x[wx] =
-                                    kernel((sx - static_cast<real_type>(idx_x + wx)) * inv_hw);
-                            }
-                            for (int wy = 0; wy < W; ++wy) {
-                                assert((sy - static_cast<real_type>(idx_y + wy)) <= w / 2.0);
-                                kernel_y[wy] =
-                                    kernel((sy - static_cast<real_type>(idx_y + wy)) * inv_hw);
-                            }
-
-                            // Determine z range for this thread (match old code)
-                            const int z_count = (tile_thread_idx == threads_per_tile - 1)
-                                                    ? (W - (threads_per_tile - 1) * z_tiles)
-                                                    : z_tiles;
-
-                            for (int wz = 0; wz < z_count; ++wz) {
-                                assert((sz - static_cast<real_type>(idx_z + wz + z_offset))
-                                       <= w / 2.0);
-                                kernel_z[wz] = kernel(
-                                    (sz - static_cast<real_type>(idx_z + wz + z_offset)) * inv_hw);
-                            }
-
-                            // Spread to histogram
-                            for (int wz = 0; wz < z_count; ++wz) {
-                                for (int wy = 0; wy < W; ++wy) {
-                                    for (int wx = 0; wx < W; ++wx) {
-                                        const real_type kernel_val =
-                                            kernel_x[wx] * kernel_y[wy] * kernel_z[wz];
-
-                                        const int point_tile_x = idx_x + half_left - tile_x0;
-                                        const int point_tile_y = idx_y + half_left - tile_y0;
-                                        const int point_tile_z = idx_z + half_left - tile_z0;
-
-                                        const int hist_idx =
-                                            (((point_tile_z + wz) * hy + (point_tile_y + wy)) * hx
-                                             + (point_tile_x + wx));
-
-                                        assert(point_tile_x >= 0);
-                                        assert(point_tile_y >= 0);
-                                        assert(point_tile_z >= 0);
-                                        assert(point_tile_x < tile_size_x);
-                                        assert(point_tile_y < tile_size_y);
-                                        assert(point_tile_z < tile_size_z);
-
-                                        if constexpr (value_is_complex && grid_is_complex) {
-                                            // Complex values to complex grid
-                                            Kokkos::atomic_add(&hist_r(hist_idx),
-                                                               val.real() * kernel_val);
-                                            Kokkos::atomic_add(&hist_c(hist_idx),
-                                                               val.imag() * kernel_val);
-                                        } else if constexpr (!value_is_complex && grid_is_complex) {
-                                            // Real values to complex grid (scatter to real part
-                                            // only)
-                                            Kokkos::atomic_add(&hist_r(hist_idx), val * kernel_val);
-                                        } else {
-                                            // Real values to real grid
-                                            Kokkos::atomic_add(&hist_r(hist_idx), val * kernel_val);
-                                        }
-                                    }
+                                if constexpr (value_is_complex && grid_is_complex) {
+                                    // Complex values to complex grid
+                                    hist_r(hist_idx) += val.real() * kernel_val;
+                                    hist_c(hist_idx) += val.imag() * kernel_val;
+                                } else if constexpr (!value_is_complex && grid_is_complex) {
+                                    hist_r(hist_idx) += val * kernel_val;
+                                } else {
+                                    // Real values to real grid
+                                    hist_r(hist_idx) += val * kernel_val;
                                 }
-                            }
-                        });
-
+                            });
+                    }
                     team.team_barrier();
 
-                    // Flush histogram to global grid
-                    // No periodic wrapping - write to ghosts, will be accumulated with
-                    // accumulateHalo()
                     Kokkos::parallel_for(
                         Kokkos::TeamThreadRange(team, hist_total), [&](int hist_idx) {
                             int hist_x = hist_idx % hx;
@@ -297,13 +217,16 @@ namespace ippl {
                             int local_z = global_z - local_offset[2];
 
                             // Check if within LOCAL domain (including ghosts)
-                            if (local_x < -nghost || local_x >= static_cast<int>(n_grid_local[0]) + nghost
-                                || local_y < -nghost || local_y >= static_cast<int>(n_grid_local[1]) + nghost
-                                || local_z < -nghost || local_z >= static_cast<int>(n_grid_local[2]) + nghost) {
+                            if (local_x < -nghost
+                                || local_x >= static_cast<int>(n_grid_local[0]) + nghost
+                                || local_y < -nghost
+                                || local_y >= static_cast<int>(n_grid_local[1]) + nghost
+                                || local_z < -nghost
+                                || local_z >= static_cast<int>(n_grid_local[2]) + nghost) {
                                 return;
                             }
 
-                            // Use LOCAL indices for grid access
+                            // Use local indices for grid access
                             if constexpr (grid_is_complex) {
 #ifdef KOKKOS_ENABLE_CUDA
                                 if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
@@ -314,10 +237,10 @@ namespace ippl {
                                 } else
 #endif
                                 {
-                                    Kokkos::atomic_add(&grid(local_x + nghost, local_y + nghost,
-                                                             local_z + nghost),
-                                                       Kokkos::complex<real_type>(
-                                                           hist_r(hist_idx), hist_c(hist_idx)));
+                                    Kokkos::atomic_add(
+                                        &grid(local_x + nghost, local_y + nghost, local_z + nghost),
+                                        Kokkos::complex<real_type>(hist_r(hist_idx),
+                                                                   hist_c(hist_idx)));
                                 }
                             } else {
                                 Kokkos::atomic_add(
@@ -369,10 +292,12 @@ namespace ippl {
                                 // Create functor with templated W
                                 TiledScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
                                                       GridViewType, PositionViewType>
-                                    functor{bin_offsets, permute,      x,            values,
-                                            grid,        n_grid,       n_grid_local, local_offset,
-                                            num_tiles,   tile_size_x,  tile_size_y,  tile_size_z,
-                                            z_tiles,     nghost,       inv_hw,       kernel};
+                                    functor{bin_offsets,  permute,      x,
+                                            values,       grid,         n_grid,
+                                            n_grid_local, local_offset, num_tiles,
+                                            tile_size_x,  tile_size_y,  tile_size_z,
+                                            z_tiles,      nghost,       inv_hw,
+                                            kernel};
 
                                 // Calculate scratch memory size
                                 const size_t hist_size = functor.hist_size_x()
