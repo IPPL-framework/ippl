@@ -12,7 +12,14 @@ namespace ippl {
         namespace detail {
 
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-
+            __device__ inline double shfl_down(double val, int offs) {
+#ifdef KOKKOS_ENABLE_CUDA
+                return __shfl_down_sync(0xffffffff, val, offs);
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+                retrun __shfl_down(val, offs);
+#endif
+            }
 #ifdef KOKKOS_ENABLE_CUDA
             using device_exec     = Kokkos::Cuda;
             using device_memspace = Kokkos::CudaSpace;
@@ -50,7 +57,11 @@ namespace ippl {
                 KernelType kernel, bool add_to_attribute) {
                 constexpr bool is_complex = std::is_same_v<ValueType, Kokkos::complex<RealType>>;
                 constexpr int w3          = w * w * w;
-                constexpr int WARP_SIZE   = 32;
+#ifdef KOKKOS_ENABLE_CUDA
+                constexpr int WARP_SIZE = 32;
+#elif defined(KOKKOS_ENABLE_HIP)
+                constexpr int WARP_SIZE = 64;
+#endif
 
                 // Determine which particle this warp is processing
                 const int warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
@@ -144,7 +155,8 @@ namespace ippl {
                     // Grid is complex but output is real - extract real part
                     RealType res_real = thread_sum.real();
                     for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-                        res_real += __shfl_down_sync(0xffffffff, res_real, offset);
+                        // res_real += __shfl_down_sync(0xffffffff, res_real, offset);
+                        res_real += shfl_down(res_real, offset);
                     }
 
                     if (lane_id == 0) {
@@ -160,8 +172,10 @@ namespace ippl {
                     RealType res_imag = thread_sum.imag();
 
                     for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-                        res_real += __shfl_down_sync(0xffffffff, res_real, offset);
-                        res_imag += __shfl_down_sync(0xffffffff, res_imag, offset);
+                        // res_real += __shfl_down_sync(0xffffffff, res_real, offset);
+                        // res_imag += __shfl_down_sync(0xffffffff, res_imag, offset);
+                        res_real += shfl_down(res_real, offset);
+                        res_imag += shfl_down(res_imag, offset);
                     }
 
                     if (lane_id == 0) {
@@ -175,7 +189,8 @@ namespace ippl {
                     // Both real
                     RealType res = thread_sum;
                     for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-                        res += __shfl_down_sync(0xffffffff, res, offset);
+                        // res += __shfl_down_sync(0xffffffff, res, offset);
+                        res += shfl_down(res, offset);
                     }
 
                     if (lane_id == 0) {

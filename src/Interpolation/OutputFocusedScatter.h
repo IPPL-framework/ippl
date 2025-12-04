@@ -10,294 +10,6 @@
 namespace ippl {
     namespace Interpolation {
         namespace detail {
-
-#ifdef KOKKOS_ENABLE_CUDA
-            /**
-             * @brief Optimized CUDA kernel for tiled scatter operation
-             *
-             * This kernel uses block-level parallelism where each block processes one tile.
-             * All threads in a block collaborate to:
-             * 1. Build a shared memory histogram for the tile
-             * 2. Process all particles that belong to the tile
-             * 3. Flush the histogram to global memory with atomic operations
-             *
-             * @tparam w Kernel width (compile-time constant)
-             * @tparam RealType Floating point type (float or double)
-             * @tparam PositionViewType Type of position view
-             * @tparam PermuteViewType Type of permutation view
-             * @tparam BinOffsetsViewType Type of bin offsets view
-             * @tparam ValueViewType Type of values view
-             * @tparam GridViewType Type of grid view
-             * @tparam KernelType Type of kernel functor
-             */
-            template <int w, typename RealType, typename PositionViewType, typename PermuteViewType,
-                      typename BinOffsetsViewType, typename ValueViewType, typename GridViewType,
-                      typename KernelType>
-            __global__ void tiled_scatter_3d_cuda_kernel(
-                PositionViewType x,       // Particle positions in PHYSICAL coordinates [-pi, pi]
-                PermuteViewType permute,  // Permutation array
-                BinOffsetsViewType bin_offsets,  // Offsets for each tile in permutation array
-                ValueViewType values,            // Input values to scatter
-                GridViewType grid,               // Output grid with ghosts
-                int tile_size_x, int tile_size_y, int tile_size_z,
-                int z_tiles,             // z-dimension splitting
-                int n0, int n1, int n2,  // Grid dimensions
-                int nghost,
-                RealType inv_hw,  // 1 / half_width for kernel scaling
-                KernelType kernel) {
-                constexpr bool odd            = w % 2 == 1;
-                constexpr int hw              = w / 2;
-                constexpr int half_left       = (w - 1) / 2;
-                constexpr RealType inv_two_pi = RealType(0.5) / RealType(3.14159265358979323846);
-                using size_type               = typename PermuteViewType::value_type;
-                using value_type              = typename ValueViewType::value_type;
-                using grid_element_type       = std::remove_reference_t<decltype(grid(0, 0, 0))>;
-
-                // Each block processes one tile
-                const int threads_per_tile = (z_tiles + w - 1) / z_tiles;
-                const int tile_linear      = blockIdx.x / threads_per_tile;
-                const int tile_thread_idx  = blockIdx.x % threads_per_tile;
-                const int num_tiles_x      = (n0 + tile_size_x - 1) / tile_size_x;
-                const int num_tiles_y      = (n1 + tile_size_y - 1) / tile_size_y;
-                const int num_tiles_z      = (n2 + tile_size_z - 1) / tile_size_z;
-
-                const int tile_x = tile_linear % num_tiles_x;
-                const int tile_y = (tile_linear / num_tiles_x) % num_tiles_y;
-                const int tile_z = tile_linear / (num_tiles_x * num_tiles_y);
-
-                // Shared memory histogram for this tile
-                const int hist_size_x = tile_size_x + w;
-                const int hist_size_y = tile_size_y + w;
-                const int hist_size_z = tile_size_z + z_tiles;
-                const int hist_size   = hist_size_x * hist_size_y * hist_size_z;
-
-                const int z_offset = z_tiles * tile_thread_idx;
-
-                extern __shared__ char shared_mem[];
-                grid_element_type* hist = reinterpret_cast<grid_element_type*>(shared_mem);
-
-                // Initialize histogram to zero collaboratively
-                for (int idx = threadIdx.x; idx < hist_size; idx += blockDim.x) {
-                    hist[idx] = grid_element_type(0);
-                }
-                __syncthreads();
-
-                // Helper to access position component
-                auto get_pos = [&](size_type particle_idx, int d) -> RealType {
-                    if constexpr (std::is_same_v<PositionViewType,
-                                                 Kokkos::View<RealType* [3], Kokkos::CudaSpace>>) {
-                        return x(particle_idx, d);
-                    } else {
-                        return x(particle_idx)[d];
-                    }
-                };
-
-                // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
-                auto transform_coord = [&](RealType pos_phys, int grid_size) -> RealType {
-                    RealType k = pos_phys * inv_two_pi;
-                    k          = k - Kokkos::floor(k);
-                    return k * grid_size;
-                };
-
-                // Get range of particles for this tile
-                const size_type tile_idx_1d =
-                    tile_x + tile_y * num_tiles_x + tile_z * num_tiles_x * num_tiles_y;
-                const size_type particle_start        = bin_offsets(tile_idx_1d);
-                const size_type particle_end          = bin_offsets(tile_idx_1d + 1);
-                const size_type num_particles_in_tile = particle_end - particle_start;
-
-                // Tile origin in global grid
-                const int tile_origin_x = tile_x * tile_size_x;
-                const int tile_origin_y = tile_y * tile_size_y;
-                const int tile_origin_z = tile_z * tile_size_z;
-
-                // Each thread processes particles in strided fashion
-                for (size_type p_idx = threadIdx.x; p_idx < num_particles_in_tile;
-                     p_idx += blockDim.x) {
-                    const size_type sorted_idx   = particle_start + p_idx;
-                    const size_type particle_idx = permute(sorted_idx);
-
-                    // Transform from physical coordinates [-pi, pi] to grid coordinates [0, n_grid)
-                    RealType kx = get_pos(particle_idx, 0) * inv_two_pi;
-                    kx          = kx - ::floor(kx);
-                    RealType sx = kx * n0;
-
-                    RealType ky = get_pos(particle_idx, 1) * inv_two_pi;
-                    ky          = ky - ::floor(ky);
-                    RealType sy = ky * n1;
-
-                    RealType kz = get_pos(particle_idx, 2) * inv_two_pi;
-                    kz          = kz - ::floor(kz);
-                    RealType sz = kz * n2;
-
-                    // Compute grid indices (matching Kokkos functor)
-                    int idx_x = odd ? static_cast<int>(sx + RealType{0.5}) : static_cast<int>(sx);
-                    int idx_y = odd ? static_cast<int>(sy + RealType{0.5}) : static_cast<int>(sy);
-                    int idx_z = odd ? static_cast<int>(sz + RealType{0.5}) : static_cast<int>(sz);
-
-                    // Compute kernel differences
-                    RealType diff_x = (sx - idx_x + half_left) * inv_hw;
-                    RealType diff_y = (sy - idx_y + half_left) * inv_hw;
-                    RealType diff_z = (sz - idx_z + half_left) * inv_hw;
-
-                    // Convert to tile-local coordinates
-                    idx_x = idx_x - tile_origin_x;
-                    idx_y = idx_y - tile_origin_y;
-                    idx_z = idx_z - tile_origin_z;
-
-                    // Compute kernel values (matching Kokkos functor formula)
-                    RealType kernel_x[w];
-                    RealType kernel_y[w];
-                    RealType kernel_z[w];
-
-                    // #pragma unroll
-                    for (int wx = 0; wx < w; ++wx) {
-                        kernel_x[wx] = kernel(inv_hw * wx - diff_x);
-                    }
-                    // #pragma unroll
-                    for (int wy = 0; wy < w; ++wy) {
-                        kernel_y[wy] = kernel(inv_hw * wy - diff_y);
-                    }
-                    const int z_count = (tile_thread_idx == threads_per_tile - 1)
-                                            ? (w - (threads_per_tile - 1) * z_tiles)
-                                            : z_tiles;
-                    // #pragma unroll
-                    for (int wz = 0; wz < z_count; ++wz) {
-                        kernel_z[wz] = kernel(inv_hw * (wz + z_offset) - diff_z);
-                    }
-
-                    // Get particle value
-                    value_type val = values(particle_idx);
-
-                    // Scatter to local histogram with atomic operations
-                    // #pragma unroll
-                    for (int wz = 0; wz < z_count; ++wz) {
-                        // #pragma unroll
-                        for (int wy = 0; wy < w; ++wy) {
-                            // #pragma unroll
-                            for (int wx = 0; wx < w; ++wx) {
-                                const int hist_idx =
-                                    ((idx_z + wz) * hist_size_y + (idx_y + wy)) * hist_size_x
-                                    + (idx_x + wx);
-                                const RealType kernel_val =
-                                    kernel_x[wx] * kernel_y[wy] * kernel_z[wz];
-
-                                if constexpr (std::is_same_v<grid_element_type,
-                                                             Kokkos::complex<RealType>>) {
-                                    if constexpr (std::is_same_v<value_type,
-                                                                 Kokkos::complex<RealType>>) {
-                                        // Complex value to complex grid
-                                        RealType contrib_real = val.real() * kernel_val;
-                                        RealType contrib_imag = val.imag() * kernel_val;
-                                        atomicAdd(&hist[hist_idx].real(), contrib_real);
-                                        atomicAdd(&hist[hist_idx].imag(), contrib_imag);
-                                    } else {
-                                        // Real value to complex grid
-                                        RealType contrib = val * kernel_val;
-                                        atomicAdd(&hist[hist_idx].real(), contrib);
-                                    }
-                                } else {
-                                    // Real value to real grid
-                                    RealType contrib = val * kernel_val;
-                                    atomicAdd(&hist[hist_idx], contrib);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                __syncthreads();
-
-                // Flush histogram to global grid with atomic operations
-                // Match Kokkos functor logic: tile_x0 + hist_x - half_left
-                for (int idx = threadIdx.x; idx < hist_size; idx += blockDim.x) {
-                    const int hist_x = idx % hist_size_x;
-                    const int hist_y = (idx / hist_size_x) % hist_size_y;
-                    const int hist_z = idx / (hist_size_x * hist_size_y);
-
-                    const int global_x = tile_origin_x + hist_x - half_left;
-                    const int global_y = tile_origin_y + hist_y - half_left;
-                    const int global_z = tile_origin_z + hist_z - half_left + z_offset;
-
-                    grid_element_type hist_val = hist[idx];
-
-                    if constexpr (std::is_same_v<grid_element_type, Kokkos::complex<RealType>>) {
-                        atomicAdd(
-                            &grid(global_x + nghost, global_y + nghost, global_z + nghost).real(),
-                            hist_val.real());
-                        atomicAdd(
-                            &grid(global_x + nghost, global_y + nghost, global_z + nghost).imag(),
-                            hist_val.imag());
-                    } else {
-                        atomicAdd(&grid(global_x + nghost, global_y + nghost, global_z + nghost),
-                                  hist_val);
-                    }
-                }
-            }
-
-            /**
-             * @brief CUDA-specific dispatcher for scatter kernel
-             * Uses template recursion to dispatch to the correct kernel width at runtime
-             */
-            template <int W, int MaxW>
-            struct CudaScatterDispatcher {
-                template <typename RealType, typename PositionViewType, typename PermuteViewType,
-                          typename BinOffsetsViewType, typename ValueViewType,
-                          typename GridViewType, typename KernelType>
-                static void dispatch_3d(
-                    int w, BinOffsetsViewType bin_offsets, PermuteViewType permute,
-                    PositionViewType x, ValueViewType values, GridViewType grid,
-                    Kokkos::Array<typename Kokkos::CudaSpace::size_type, 3> n_grid,
-                    Kokkos::Array<typename Kokkos::CudaSpace::size_type, 3> num_tiles,
-                    int tile_size_x, int tile_size_y, int tile_size_z, int z_tiles, int nghost,
-                    RealType inv_hw, const KernelType& kernel) {
-                    if constexpr (W <= MaxW) {
-                        if (w == W) {
-                            const int threads_per_tile = (z_tiles + w - 1) / z_tiles;
-
-                            // Launch one block per tile
-                            const int num_tiles_total = num_tiles[0] * num_tiles[1] * num_tiles[2];
-                            const int threads_per_block = 256;
-
-                            // Calculate shared memory size for histogram
-                            const int hist_size_x = tile_size_x + W;
-                            const int hist_size_y = tile_size_y + W;
-                            const int hist_size_z = tile_size_z + z_tiles;
-                            const int hist_size   = hist_size_x * hist_size_y * hist_size_z;
-
-                            using grid_element_type =
-                                std::remove_reference_t<decltype(grid(0, 0, 0))>;
-                            size_t shared_mem_bytes = hist_size * sizeof(grid_element_type);
-
-                            tiled_scatter_3d_cuda_kernel<W, RealType, PositionViewType,
-                                                         PermuteViewType, BinOffsetsViewType,
-                                                         ValueViewType, GridViewType, KernelType>
-                                <<<threads_per_tile * num_tiles_total, threads_per_block,
-                                   shared_mem_bytes>>>(x, permute, bin_offsets, values, grid,
-                                                       tile_size_x, tile_size_y, tile_size_z,
-                                                       z_tiles, n_grid[0], n_grid[1], n_grid[2],
-                                                       nghost, inv_hw, kernel);
-
-                            cudaError_t err = cudaGetLastError();
-                            if (err != cudaSuccess) {
-                                throw std::runtime_error(std::string("CUDA kernel launch failed: ")
-                                                         + cudaGetErrorString(err));
-                            }
-                        } else {
-                            CudaScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
-                                RealType, PositionViewType, PermuteViewType, BinOffsetsViewType,
-                                ValueViewType, GridViewType, KernelType>(
-                                w, bin_offsets, permute, x, values, grid, n_grid, num_tiles,
-                                tile_size_x, tile_size_y, tile_size_z, z_tiles, nghost, inv_hw,
-                                kernel);
-                        }
-                    } else {
-                        throw std::runtime_error("Kernel width exceeds maximum supported width");
-                    }
-                }
-            };
-#endif  // KOKKOS_ENABLE_CUDA
-
             /**
              * @brief Generic tiled scatter functor for 3D particle-to-grid operations
              *
@@ -433,11 +145,45 @@ namespace ippl {
                     });
                     team.team_barrier();
 
+                    // Allocate shared memory for kernel values
+                    shared_real_view kernel_vals(team.team_scratch(0), 3 * W);
+
+
                     // Get particles in this tile
                     const size_type pstart = bin_offsets(tile_linear);
                     const size_type pend   = bin_offsets(tile_linear + 1);
 
-                    // Process particles
+                    for (int i = pstart; i < pend; ++i) {
+                        const size_type j    = permute(ip);
+                        const value_type val = values(j);
+
+                        // X dimension
+                        real_type sx = scale_to_grid_indices(get_component(x, j, 0), n_grid[0]);
+                        // The indices are chosen so that there are non-zero contributions from
+                        // sx in the range [idx_x, idx_x + w)
+                        int idx_x = grid_point_to_grid_idx(sx, n_grid[0], w) - half_left;
+
+                        // Y dimension
+                        real_type sy = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
+                        int idx_y    = grid_point_to_grid_idx(sy, n_grid[1], w) - half_left;
+
+                        // Z dimension
+                        real_type sz = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
+                        int idx_z    = grid_point_to_grid_idx(sz, n_grid[2], w) - half_left;
+
+                        Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, 3 * W), [=](int flat_w) {
+                            int d = i / w;
+                            int k = i % w;
+
+                            kernel_vals[W*d + k] = kernel((sx - static_cast<real_type>(idx_x + wx)) * inv_hw);
+
+                        });
+
+                        Kokkos::parallel_for(Kokkos::TeamThreadMDRange(team, W, W, W), [=](int wx, int wy, int wz) {
+
+                        });
+                    }
+
                     Kokkos::parallel_for(
                         Kokkos::TeamThreadRange(team, pstart, pend), [&](size_type ip) {
                             const size_type j    = permute(ip);
@@ -448,14 +194,17 @@ namespace ippl {
                             // The indices are chosen so that there are non-zero contributions from
                             // sx in the range [idx_x, idx_x + w)
                             int idx_x = grid_point_to_grid_idx(sx, n_grid[0], w) - half_left;
+                            assert((idx_x + half_left) / tile_size_x == tile_x);
 
                             // Y dimension
                             real_type sy = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
                             int idx_y    = grid_point_to_grid_idx(sy, n_grid[1], w) - half_left;
+                            assert((idx_y + half_left) / tile_size_y == tile_y);
 
                             // Z dimension
                             real_type sz = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
                             int idx_z    = grid_point_to_grid_idx(sz, n_grid[2], w) - half_left;
+                            assert((idx_z + half_left) / tile_size_z == tile_z);
 
                             // Precompute kernel values
                             real_type kernel_x[W];
@@ -463,10 +212,12 @@ namespace ippl {
                             real_type kernel_z[W];
 
                             for (int wx = 0; wx < W; ++wx) {
+                                assert((sx - static_cast<real_type>(idx_x + wx)) <= w / 2.0);
                                 kernel_x[wx] =
                                     kernel((sx - static_cast<real_type>(idx_x + wx)) * inv_hw);
                             }
                             for (int wy = 0; wy < W; ++wy) {
+                                assert((sy - static_cast<real_type>(idx_y + wy)) <= w / 2.0);
                                 kernel_y[wy] =
                                     kernel((sy - static_cast<real_type>(idx_y + wy)) * inv_hw);
                             }
@@ -477,6 +228,8 @@ namespace ippl {
                                                     : z_tiles;
 
                             for (int wz = 0; wz < z_count; ++wz) {
+                                assert((sz - static_cast<real_type>(idx_z + wz + z_offset))
+                                       <= w / 2.0);
                                 kernel_z[wz] = kernel(
                                     (sz - static_cast<real_type>(idx_z + wz + z_offset)) * inv_hw);
                             }
@@ -496,6 +249,12 @@ namespace ippl {
                                             (((point_tile_z + wz) * hy + (point_tile_y + wy)) * hx
                                              + (point_tile_x + wx));
 
+                                        assert(point_tile_x >= 0);
+                                        assert(point_tile_y >= 0);
+                                        assert(point_tile_z >= 0);
+                                        assert(point_tile_x < tile_size_x);
+                                        assert(point_tile_y < tile_size_y);
+                                        assert(point_tile_z < tile_size_z);
 
                                         if constexpr (value_is_complex && grid_is_complex) {
                                             // Complex values to complex grid
