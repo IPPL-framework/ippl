@@ -595,7 +595,7 @@ namespace ippl {
                 cfg.scatter_config.method = Interpolation::ScatterMethod::OutputFocused;
             }
             if (spread_method == "tiled") {
-                cfg.scatter_config.method == Interpolation::ScatterMethod::Tiled;
+                cfg.scatter_config.method = Interpolation::ScatterMethod::Tiled;
             }
             if (params.contains("tile_size_3d")) {
                 cfg.scatter_config.tile_size_3d = params.get<int>("tile_size_3d");
