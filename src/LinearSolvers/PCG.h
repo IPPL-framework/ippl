@@ -254,8 +254,8 @@ namespace ippl {
                                 const ParameterList& params) override {
             
             //constexpr unsigned Dim             = lhs_type::dim;
-            //typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            //typename lhs_type::Layout_t layout = lhs.getLayout();
+            //typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
+            //typename lhs_type::Layout_t& layout = lhs.getLayout();
 
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
@@ -422,8 +422,8 @@ namespace ippl {
                                     "Preconditioner has not been set for PCG solver");
             }
 
-            typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t layout = lhs.getLayout();
+            typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
+            typename lhs_type::Layout_t& layout = lhs.getLayout();
 
             this->iterations_m      = 0;
             const int maxIterations = params.get<int>("max_iterations");
