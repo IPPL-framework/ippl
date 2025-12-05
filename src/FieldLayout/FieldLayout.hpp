@@ -293,7 +293,7 @@ namespace ippl {
             // 0 - touching the lower axis value
             // 1 - touching the upper axis value
             // 2 - parallel to the axis
-            if (intersect[d].length() == nghost) {
+            if (intersect[d].length() == static_cast<size_t>(nghost)) {
                 if (gnd[d].first() != intersect[d].first()) {
                     index += digit;
                 }

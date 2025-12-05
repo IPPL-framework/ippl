@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
         P->rhoPIFFourierMag_m.initialize(meshFourier, FL);
 
         // P->fft_mp = std::make_shared<FFT_t>(FL, FLPIFhalf, fftParams);
-        P->fft_mp = std::make_shared<FFT_t>(FLPIFhalf, fftParams);
+        // P->fft_mp = std::make_shared<FFT_t>(FLPIFhalf, fftParams);
 
         ////////////////////////////////////////////////////////////
 

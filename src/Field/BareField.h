@@ -72,7 +72,7 @@ namespace ippl {
          * @param l of field
          * @param nghost number of ghost layers
          */
-        BareField(Layout_t& l, int nghost);
+        BareField(Layout_t& l, int nghost = 1);
 
         /*!
          * Creates a new BareField with the same properties and contents

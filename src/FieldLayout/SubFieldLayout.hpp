@@ -102,7 +102,8 @@ namespace ippl {
             }
         }
 
-        this->findNeighbors();
+        //(paul) Should add nghosts here
+        this->findNeighbors(1);
 
         Kokkos::deep_copy(this->dLocalDomains_m, this->hLocalDomains_m);
 
