@@ -135,7 +135,7 @@ namespace ippl {
 
         private:
             template <typename MemorySpace>
-            using buffer_container_type = LoggingBufferHandler<MemorySpace>;
+            using buffer_container_type = DefaultBufferHandler<MemorySpace>;
 
             using buffer_handler_type =
                 typename detail::ContainerForAllSpaces<buffer_container_type>::type;
