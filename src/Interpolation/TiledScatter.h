@@ -110,7 +110,7 @@ namespace ippl {
                     const int tile_y = (tile_linear / num_tiles[0]) % num_tiles[1];
                     const int tile_z = tile_linear / (num_tiles[0] * num_tiles[1]);
 
-                    // Tile bounds in grid coordinates
+                    // Tile bounds in LOCAL grid coordinates (binning is now local)
                     const int tile_x0 = tile_x * tile_size_x;
                     const int tile_y0 = tile_y * tile_size_y;
                     const int tile_z0 = tile_z * tile_size_z;
@@ -155,19 +155,21 @@ namespace ippl {
                             const size_type j    = permute(ip);
                             const value_type val = values(j);
 
-                            // X dimension
-                            real_type sx = scale_to_grid_indices(get_component(x, j, 0), n_grid[0]);
-                            // The indices are chosen so that there are non-zero contributions from
-                            // sx in the range [idx_x, idx_x + w)
-                            int idx_x = grid_point_to_grid_idx(sx, n_grid[0], w) - half_left;
+                            // Convert physical positions to global grid coordinates, then to local
+                            real_type sx_global = scale_to_grid_indices(get_component(x, j, 0), n_grid[0]);
+                            int idx_x_global = grid_point_to_grid_idx(sx_global, n_grid[0], w);
+                            real_type sx = sx_global - static_cast<real_type>(local_offset[0]);
+                            int idx_x = idx_x_global - local_offset[0] - half_left;
 
-                            // Y dimension
-                            real_type sy = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
-                            int idx_y    = grid_point_to_grid_idx(sy, n_grid[1], w) - half_left;
+                            real_type sy_global = scale_to_grid_indices(get_component(x, j, 1), n_grid[1]);
+                            int idx_y_global = grid_point_to_grid_idx(sy_global, n_grid[1], w);
+                            real_type sy = sy_global - static_cast<real_type>(local_offset[1]);
+                            int idx_y = idx_y_global - local_offset[1] - half_left;
 
-                            // Z dimension
-                            real_type sz = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
-                            int idx_z    = grid_point_to_grid_idx(sz, n_grid[2], w) - half_left;
+                            real_type sz_global = scale_to_grid_indices(get_component(x, j, 2), n_grid[2]);
+                            int idx_z_global = grid_point_to_grid_idx(sz_global, n_grid[2], w);
+                            real_type sz = sz_global - static_cast<real_type>(local_offset[2]);
+                            int idx_z = idx_z_global - local_offset[2] - half_left;
 
                             // Precompute kernel values
                             real_type kernel_x[W];
@@ -239,15 +241,10 @@ namespace ippl {
                             int hist_y = (hist_idx / hx) % hy;
                             int hist_z = hist_idx / (hx * hy);
 
-                            // Compute GLOBAL grid indices
-                            int global_x = tile_x0 + hist_x - half_left;
-                            int global_y = tile_y0 + hist_y - half_left;
-                            int global_z = tile_z0 + hist_z - half_left + z_offset;
-
-                            // Convert to LOCAL indices
-                            int local_x = global_x - local_offset[0];
-                            int local_y = global_y - local_offset[1];
-                            int local_z = global_z - local_offset[2];
+                            // Compute LOCAL grid indices (tiles are already in local coordinates)
+                            int local_x = tile_x0 + hist_x - half_left;
+                            int local_y = tile_y0 + hist_y - half_left;
+                            int local_z = tile_z0 + hist_z - half_left + z_offset;
 
                             // Check if within LOCAL domain (including ghosts)
                             if (local_x < -nghost || local_x >= static_cast<int>(n_grid_local[0]) + nghost

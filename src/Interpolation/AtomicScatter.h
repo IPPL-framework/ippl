@@ -86,6 +86,10 @@ namespace ippl {
                             // Convert to local index
                             idx_local[d] = idx_global[d] - local_offset[d];
 
+                            if (!(idx_local[d] >= -nghost
+                                   && idx_local[d] < n_grid_local[d] + nghost)) {
+                                std::cout << "Idx_local " << idx_local[d] << ", nghost " << nghost << ", n_grid_local " << n_grid_local[d] << std::endl;
+                            }
                             assert(idx_local[d] >= -nghost
                                    && idx_local[d] < n_grid_local[d] + nghost);
 

@@ -95,7 +95,7 @@ namespace ippl {
                     const int tile_y = (tile_linear / num_tiles[0]) % num_tiles[1];
                     const int tile_z = tile_linear / (num_tiles[0] * num_tiles[1]);
 
-                    // Tile bounds in grid coordinates
+                    // Tile bounds in local grid coordinates
                     const int tile_x0 = tile_x * tile_size_x;
                     const int tile_y0 = tile_y * tile_size_y;
                     const int tile_z0 = tile_z * tile_size_z;
@@ -145,8 +145,13 @@ namespace ippl {
                         int idx[3];
 
                         for (int d = 0; d < 3; ++d) {
-                            s[d]   = scale_to_grid_indices(get_component(x, j, d), n_grid[d]);
-                            idx[d] = grid_point_to_grid_idx(s[d], n_grid[d], w) - half_left;
+                            // Convert physical position to global grid coordinates
+                            real_type s_global = scale_to_grid_indices(get_component(x, j, d), n_grid[d]);
+                            int global_idx = grid_point_to_grid_idx(s_global, n_grid[d], w);
+
+                            // Convert to local coordinates (preserving fractional part for kernel evaluation)
+                            s[d] = s_global - static_cast<real_type>(local_offset[d]);
+                            idx[d] = global_idx - local_offset[d] - half_left;
                         }
 
                         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, 3 * W), [&](int flat_w) {
@@ -190,15 +195,10 @@ namespace ippl {
                             int hist_y = (hist_idx / hx) % hy;
                             int hist_z = hist_idx / (hx * hy);
 
-                            // Compute GLOBAL grid indices
-                            int global_x = tile_x0 + hist_x - half_left;
-                            int global_y = tile_y0 + hist_y - half_left;
-                            int global_z = tile_z0 + hist_z - half_left;
-
-                            // Convert to LOCAL indices
-                            int local_x = global_x - local_offset[0];
-                            int local_y = global_y - local_offset[1];
-                            int local_z = global_z - local_offset[2];
+                            // Compute LOCAL grid indices (tiles are already in local coordinates)
+                            int local_x = tile_x0 + hist_x - half_left;
+                            int local_y = tile_y0 + hist_y - half_left;
+                            int local_z = tile_z0 + hist_z - half_left;
 
                             // Check if within LOCAL domain (including ghosts)
                             if (local_x < -nghost

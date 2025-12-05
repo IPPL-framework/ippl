@@ -24,13 +24,15 @@ namespace ippl {
             struct BinOp3D {
                 using size_type = typename ExecSpace::memory_space::size_type;
 
-                Kokkos::Array<size_type, 3> n_grid;     // Grid dimensions
-                Kokkos::Array<int, 3> tile_size;        // Tile size per dimension
-                Kokkos::Array<size_type, 3> num_tiles;  // Number of tiles per dimension
-                int w;                                  // kernel width
+                Kokkos::Array<size_type, 3> n_grid_global;  // GLOBAL grid dimensions (for coord transform)
+                Kokkos::Array<size_type, 3> n_grid_local;   // LOCAL grid dimensions
+                Kokkos::Array<int, 3> local_offset;         // First global index of local domain
+                Kokkos::Array<int, 3> tile_size;            // Tile size per dimension
+                Kokkos::Array<size_type, 3> num_tiles;      // Number of tiles per dimension (in local domain)
+                int w;                                       // kernel width
 
                 KOKKOS_INLINE_FUNCTION int max_bins() const {
-                    return num_tiles[0] * num_tiles[1] * num_tiles[2] + 1;
+                    return (num_tiles[0] + 1) * (num_tiles[1] + 1) * (num_tiles[2] + 1) + 1;
                 }
 
                 // Helper to access position component - works with both View<T*[3]> and
@@ -51,9 +53,19 @@ namespace ippl {
                 KOKKOS_INLINE_FUNCTION int bin(ViewType& keys, int i) const {
                     // Compute tile index for each dimension
                     // keys contains particle positions in physical coordinates [-pi, pi]
+                    // Returns -1 if particle is outside local domain
                     int tile_x = compute_bin(get_component(keys, i, 0), 0);
                     int tile_y = compute_bin(get_component(keys, i, 1), 1);
                     int tile_z = compute_bin(get_component(keys, i, 2), 2);
+
+                    // Check if particle is outside local domain
+                    if (tile_x < 0 || tile_x >= static_cast<int>(num_tiles[0]) ||
+                        tile_y < 0 || tile_y >= static_cast<int>(num_tiles[1]) ||
+                        tile_z < 0 || tile_z >= static_cast<int>(num_tiles[2])) {
+                        // This should not happen - particles should be on correct rank
+                        assert(false && "Particle outside local domain during binning");
+                        return max_bins() - 1;  // Put out-of-domain particles in last bin
+                    }
 
                     // Flatten to single bin index
                     return tile_z * (num_tiles[0] * num_tiles[1]) + tile_y * num_tiles[0] + tile_x;
@@ -83,7 +95,12 @@ namespace ippl {
                 }
 
                 KOKKOS_INLINE_FUNCTION int compute_bin(RealType val, int dim) const {
-                    return detail::fourier_point_to_grid_idx(val, n_grid[dim], w) / tile_size[dim];
+                    // Convert physical position to global grid index
+                    int global_idx = detail::fourier_point_to_grid_idx(val, n_grid_global[dim], w);
+                    // Convert to local grid index
+                    int local_idx = global_idx - local_offset[dim];
+                    // Compute local tile index
+                    return local_idx / tile_size[dim];
                 }
             };
 
@@ -92,7 +109,7 @@ namespace ippl {
              *
              * This is a generic implementation that works with View<T*[3]> or View<Vector<T,3>*>.
              * The input coordinates x are in physical coordinates [-pi, pi] and will be transformed
-             * internally.
+             * internally. Binning is performed in LOCAL grid coordinates.
              *
              * @tparam RealType The floating point type
              * @tparam PositionViewType The position view type (View<T*[3]> or View<Vector<T,3>*>)
@@ -100,7 +117,9 @@ namespace ippl {
              */
             template <typename RealType, typename PositionViewType, typename ExecSpace>
             void bin_sort_3d(PositionViewType x,  // Positions in PHYSICAL coordinates [-pi, pi]
-                             Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
+                             Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_global,  // GLOBAL grid dimensions
+                             Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_local,   // LOCAL grid dimensions
+                             Kokkos::Array<int, 3> local_offset,  // First global index of local domain
                              Kokkos::Array<int, 3> tile_size, int w,
                              Kokkos::View<typename ExecSpace::memory_space::size_type*,
                                           typename ExecSpace::memory_space>& permute,
@@ -111,11 +130,11 @@ namespace ippl {
 
                 // const size_type n_particles = x.extent(0);
 
-                // Calculate number of tiles
+                // Calculate number of tiles based on LOCAL grid
                 Kokkos::Array<size_type, 3> num_tiles;
-                num_tiles[0]      = (n_grid[0] + tile_size[0] - 1) / tile_size[0];
-                num_tiles[1]      = (n_grid[1] + tile_size[1] - 1) / tile_size[1];
-                num_tiles[2]      = (n_grid[2] + tile_size[2] - 1) / tile_size[2];
+                num_tiles[0]      = (n_grid_local[0] + tile_size[0] - 1) / tile_size[0];
+                num_tiles[1]      = (n_grid_local[1] + tile_size[1] - 1) / tile_size[1];
+                num_tiles[2]      = (n_grid_local[2] + tile_size[2] - 1) / tile_size[2];
                 size_type n_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
                 // Allocate outputs
@@ -123,7 +142,8 @@ namespace ippl {
                 Kokkos::realloc(bin_offsets, n_tiles + 1);
 
                 // Create BinOp
-                BinOp3D<RealType, ExecSpace> bin_op{n_grid, tile_size, num_tiles, w};
+                BinOp3D<RealType, ExecSpace> bin_op{n_grid_global, n_grid_local, local_offset,
+                                                     tile_size, num_tiles, w};
 
                 // Use Kokkos::BinSort
                 Kokkos::BinSort<decltype(x), BinOp3D<RealType, ExecSpace>> sorter(x, 0, n_particles,

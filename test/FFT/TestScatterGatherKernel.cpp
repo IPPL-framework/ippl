@@ -221,6 +221,11 @@ int main(int argc, char* argv[]) {
         cfg_tiled.method = ippl::Interpolation::ScatterMethod::Tiled;
         cfg_tiled.sort   = true;
 
+        ippl::Interpolation::ScatterConfig cfg_outputfocused =
+            ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
+        cfg_tiled.method = ippl::Interpolation::ScatterMethod::OutputFocused;
+        cfg_tiled.sort   = true;
+
         ippl::Interpolation::GatherConfig cfg_atomic_gather =
             ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
         cfg_atomic_gather.method = ippl::Interpolation::ScatterMethod::Atomic;
@@ -320,6 +325,7 @@ int main(int argc, char* argv[]) {
         real_type rel_tiled  = 0.0;
         run_adjointness(cfg_atomic, cfg_atomic_gather, "Atomic", rel_atomic);
         run_adjointness(cfg_tiled, cfg_tiled_gather, "Tiled", rel_tiled);
+        run_adjointness(cfg_outputfocused, cfg_atomic_gather, "OutputFocused", rel_atomic);
 
         // ====================================================================
         // 2) Consistency test: Atomic vs Tiled scatter

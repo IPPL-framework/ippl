@@ -271,36 +271,34 @@ namespace ippl {
             && Dim == 3) {
             using size_type = typename execution_space::memory_space::size_type;
 
-            // Prepare grid dimensions - use GLOBAL for binning
-            Kokkos::Array<size_type, 3> n_grid_arr;
+            // Prepare grid dimensions - use GLOBAL for coordinate transform, LOCAL for binning
+            Kokkos::Array<size_type, 3> n_grid_global_arr;
+            Kokkos::Array<size_type, 3> n_grid_local_arr;
+            Kokkos::Array<int, 3> local_offset_arr;
             Kokkos::Array<int, 3> tile_size_arr;
             for (unsigned d = 0; d < 3; ++d) {
-                n_grid_arr[d]    = ngrid_global[d];
-                tile_size_arr[d] = config.tile_size_3d;
+                n_grid_global_arr[d] = ngrid_global[d];
+                n_grid_local_arr[d]  = ngrid_local[d];
+                local_offset_arr[d]  = local_offset[d];
+                tile_size_arr[d]     = config.tile_size_3d;
             }
 
             auto pp_view = pp.getView();
 
-            // Sort particles by tile
+            // Sort particles by tile (using local binning)
             Kokkos::View<size_type*, typename execution_space::memory_space> permute;
             Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
 
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
-                pp_view, n_grid_arr, tile_size_arr, w, permute, bin_offsets, nParticles);
+                pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr,
+                tile_size_arr, w, permute, bin_offsets, nParticles);
 
-            // Calculate number of tiles (based on global grid)
+            // Calculate number of tiles (based on LOCAL grid)
             Kokkos::Array<size_type, 3> num_tiles;
             for (unsigned d = 0; d < 3; ++d) {
-                num_tiles[d] = (ngrid_global[d] + config.tile_size_3d - 1) / config.tile_size_3d;
+                num_tiles[d] = (ngrid_local[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
 
-            // Prepare local grid arrays
-            Kokkos::Array<size_type, 3> n_grid_local_arr;
-            Kokkos::Array<int, 3> local_offset_arr;
-            for (unsigned d = 0; d < 3; ++d) {
-                n_grid_local_arr[d] = ngrid_local[d];
-                local_offset_arr[d] = local_offset[d];
-            }
 
             // Dispatch to templated scatter functor based on kernel width
             constexpr int MaxW = 20;
@@ -308,7 +306,7 @@ namespace ippl {
                 Interpolation::detail::ScatterDispatcher<1, MaxW>::template dispatch_3d<
                     PositionType, execution_space, Kernel, T, view_type, decltype(pp_view),
                     decltype(permute), decltype(bin_offsets)>(
-                    w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_arr,
+                    w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_global_arr,
                     n_grid_local_arr, local_offset_arr, num_tiles, config.tile_size_3d,
                     config.tile_size_3d, config.tile_size_3d, config.z_tiles, nghost, inv_hw,
                     kernel, config.team_size);
@@ -317,7 +315,7 @@ namespace ippl {
                     1, MaxW>::template dispatch_3d<PositionType, execution_space, Kernel, T,
                                                    view_type, decltype(pp_view), decltype(permute),
                                                    decltype(bin_offsets)>(
-                    w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_arr,
+                    w, bin_offsets, permute, pp_view, dview_m, full_view, n_grid_global_arr,
                     n_grid_local_arr, local_offset_arr, num_tiles, config.tile_size_3d,
                     config.tile_size_3d, config.tile_size_3d, config.z_tiles, nghost, inv_hw,
                     kernel, config.team_size);

@@ -8,7 +8,6 @@
 
 #include "Utility/ParameterList.h"
 
-//#include "../../cmake-build-release-testing/_deps/kokkos-src/containers/src/Kokkos_OffsetView.hpp"
 
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
@@ -178,7 +177,7 @@ int main(int argc, char* argv[]) {
         fftParams.add("spread_method", "output_focused");
         fftParams.add("tile_size_3d", 6);
         fftParams.add("z_tiles", 1);
-        fftParams.add("team_size", 32);
+        // fftParams.add("team_size", 4);
         fftParams.add("sort", true);
         fftParams.add("use_upsampled_inputs", true);
 
