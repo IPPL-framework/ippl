@@ -28,7 +28,7 @@ namespace ippl {
         std::vector<LogEntry> Communicator::gatherLocalLogs() {
             std::vector<LogEntry> localLogs;
 
-            buffer_handlers_m.forAll([&](auto& loggingHandler) {
+            buffer_handlers_m->forAll([&](auto& loggingHandler) {
                 const auto& logs = loggingHandler.getLogs();
                 localLogs.insert(localLogs.end(), logs.begin(), logs.end());
             });

@@ -201,8 +201,7 @@ namespace ippl {
             std::vector<LogEntry> gatherLogsFromAllRanks(const std::vector<LogEntry>& localLogs);
             void writeLogsToFile(const std::vector<LogEntry>& allLogs, const std::string& filename);
 
-            buffer_handler_type buffer_handlers_m;
-
+            std::shared_ptr<buffer_handler_type> buffer_handlers_m;
             double defaultOveralloc_m = 1.0;
 
             /////////////////////////////////////////////////////////////////////////////////////
@@ -211,7 +210,11 @@ namespace ippl {
             std::shared_ptr<MPI_Comm> comm_m;
             int size_m;
             int rank_m;
+
+        public:
+            std::shared_ptr<buffer_handler_type> get_buffer_handler_instance();
         };
+
     }  // namespace mpi
 }  // namespace ippl
 
