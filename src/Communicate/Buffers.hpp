@@ -20,6 +20,9 @@
 //   exchanging particle data between ranks.
 //
 
+#include "Utility/Logging.h"
+#include "Utility/TypeUtils.h"
+
 namespace ippl {
     namespace mpi {
 
@@ -27,9 +30,12 @@ namespace ippl {
         Communicator::buffer_type<MemorySpace> Communicator::getBuffer(size_type size,
                                                                        double overallocation) {
             auto& buffer_handler = buffer_handlers_m->get<MemorySpace>();
-
-            return buffer_handler.getBuffer(size * sizeof(T),
-                                            std::max(overallocation, defaultOveralloc_m));
+            auto b               = buffer_handler.getBuffer(size * sizeof(T),
+                                                            std::max(overallocation, defaultOveralloc_m));
+            SPDLOG_INFO("{}, getBuffer {}, buf, {}, size {}", (void*)this,
+                        ippl::debug::print_type<MemorySpace>(), (void*)(b->getBuffer()),
+                        size * sizeof(T));
+            return b;
         }
 
         template <typename MemorySpace>

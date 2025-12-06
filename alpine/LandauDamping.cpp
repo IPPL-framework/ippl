@@ -37,17 +37,22 @@ const char* TestName   = "LandauDamping";
 #include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
+#include "Utility/Logging.h"
 
 #include "LandauDampingManager.h"
 #include "Manager/PicManager.h"
 
 int main(int argc, char* argv[]) {
+#if defined(SPDLOG_ACTIVE_LEVEL) && (SPDLOG_ACTIVE_LEVEL != SPDLOG_LEVEL_OFF)
+    spdlog::set_pattern("[%^%-8l%$]%t| %v");
+    spdlog::set_level(spdlog::level::trace);
+#endif
     ippl::initialize(argc, argv);
     {
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
-        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        static IpplTimings::TimerRef mainTimer       = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
         IpplTimings::startTimer(mainTimer);
         IpplTimings::startTimer(initializeTimer);
@@ -82,7 +87,7 @@ int main(int argc, char* argv[]) {
         manager.pre_run();
 
         IpplTimings::stopTimer(initializeTimer);
-        
+
         manager.setTime(0.0);
 
         msg << "Starting iterations ..." << endl;

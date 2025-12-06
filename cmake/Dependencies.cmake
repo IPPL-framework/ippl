@@ -45,6 +45,23 @@ if("OPENMP" IN_LIST IPPL_PLATFORMS)
 endif()
 
 # ------------------------------------------------------------------------------
+# spdlog logging library
+# ------------------------------------------------------------------------------
+string(TOUPPER ${IPPL_LOG_LEVEL} IPPL_LOG_LEVEL_UPPERCASE)
+if(NOT "${IPPL_LOG_LEVEL_UPPERCASE}" MATCHES "OFF")
+  find_package(spdlog REQUIRED)
+  colour_message(STATUS ${Green} "✅ spdlog found ${spdlog_VERSION}")
+endif()
+
+# ------------------------------------------------------------------------------
+# fmt library (for formatting nice log messages)
+# ------------------------------------------------------------------------------
+if(NOT "${IPPL_LOG_LEVEL_UPPERCASE}" MATCHES "OFF")
+  find_package(fmt REQUIRED)
+  colour_message(STATUS ${Green} "✅ fmt found ${fmt_VERSION}")
+endif()
+
+# ------------------------------------------------------------------------------
 # Utility function to clear a list of vars one by one
 # ------------------------------------------------------------------------------
 function(unset_vars)
