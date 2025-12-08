@@ -8,6 +8,8 @@
 #include <random>
 #include <vector>
 
+#include <Kokkos_Random.hpp>
+
 #include "Utility/ParameterList.h"
 
 void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
@@ -80,31 +82,41 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
         std::cout << std::endl;
     }
 
-    // Initialize with random data
-    const int nghost                           = field_input.getNghost();
-    auto& view_full                            = field_input.getView();
-    typename field_type::HostMirror field_host = field_input.getHostMirror();
+    // Initialize with random data directly on GPU
+    using exec_space = typename field_type::execution_space;
+    using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
-    std::mt19937_64 eng(42 + ippl::Comm->rank());
-    std::uniform_real_distribution<double> unif(-1.0, 1.0);
+    const int nghost = field_input.getNghost();
+    auto view_input  = field_input.getView();
 
-    for (size_t i = nghost; i < view_full.extent(0) - nghost; ++i) {
-        for (size_t j = nghost; j < view_full.extent(1) - nghost; ++j) {
-            for (size_t k = nghost; k < view_full.extent(2) - nghost; ++k) {
-                field_host(i, j, k) = Kokkos::complex<double>(unif(eng), unif(eng));
-            }
-        }
-    }
-    Kokkos::deep_copy(field_input.getView(), field_host);
+    // Create random pool with seed based on rank
+    RandPool rand_pool(42 + ippl::Comm->rank());
+
+    // Fill field with random data directly on GPU
+    Kokkos::parallel_for(
+        "InitRandomData",
+        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>(
+            {nghost, nghost, nghost},
+            {view_input.extent(0) - nghost,
+             view_input.extent(1) - nghost,
+             view_input.extent(2) - nghost}),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            auto rand_gen = rand_pool.get_state();
+            double real_part = rand_gen.drand(-1.0, 1.0);
+            double imag_part = rand_gen.drand(-1.0, 1.0);
+            view_input(i, j, k) = Kokkos::complex<double>(real_part, imag_part);
+            rand_pool.free_state(rand_gen);
+        });
+    Kokkos::fence();
 
     // Prepare index mapping for manual pruning
     const int N0 = pt_full[0], K0 = pt_pruned[0];
     const int N1 = pt_full[1], K1 = pt_pruned[1];
     const int N2 = pt_full[2], K2 = pt_pruned[2];
 
-    const auto& lDom_pruned     = layout_pruned.getLocalNDIndex();
-    const auto& lDom_full       = layout_full.getLocalNDIndex();
-    const int nghost_pruned     = field_pruned_result.getNghost();
+    const auto& lDom_pruned = layout_pruned.getLocalNDIndex();
+    const auto& lDom_full   = layout_full.getLocalNDIndex();
+    const int nghost_pruned = field_pruned_result.getNghost();
 
     const int p0_first = lDom_pruned[0].first();
     const int p1_first = lDom_pruned[1].first();
@@ -142,7 +154,7 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
 
     for (int run = 0; run < benchmark_runs; ++run) {
         field_full_result = field_input;
-        
+
         MPI_Barrier(ippl::Comm->getCommunicator());
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -151,36 +163,13 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
         Kokkos::fence();
 
         // Manual pruning: extract modes from full result to pruned field
-        auto &view_full_result = field_full_result.getView();
-        auto &view_pruned_out  = field_pruned_result.getView();
+        auto& view_full_result = field_full_result.getView();
+        auto& view_pruned_out  = field_pruned_result.getView();
 
         const int ng   = nghost;
         const int ng_p = nghost_pruned;
 
-        using exec_space = typename field_type::execution_space;
-        using mdrange_t  = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
-
-        // Just compare without pruning the runtime
-        // Kokkos::parallel_for(
-        //     "ManualPrune",
-        //     mdrange_t({ng_p, ng_p, ng_p},
-        //               {view_pruned_out.extent(0) - ng_p, view_pruned_out.extent(1) - ng_p,
-        //                view_pruned_out.extent(2) - ng_p}),
-        //     KOKKOS_LAMBDA(const int li_p, const int lj_p, const int lk_p) {
-        //         int gi_p = li_p - ng_p + p0_first;
-        //         int gj_p = lj_p - ng_p + p1_first;
-        //         int gk_p = lk_p - ng_p + p2_first;
-        //
-        //         int gi_f = (gi_p < K0 / 2) ? gi_p : (N0 - K0 + gi_p);
-        //         int gj_f = (gj_p < K1 / 2) ? gj_p : (N1 - K1 + gj_p);
-        //         int gk_f = (gk_p < K2 / 2) ? gk_p : (N2 - K2 + gk_p);
-        //
-        //         int li_f = gi_f - f0_first + ng;
-        //         int lj_f = gj_f - f1_first + ng;
-        //         int lk_f = gk_f - f2_first + ng;
-        //
-        //         view_pruned_out(li_p, lj_p, lk_p) = view_full_result(li_f, lj_f, lk_f);
-        //     });
+        using mdrange_t = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
 
         Kokkos::fence();
         MPI_Barrier(ippl::Comm->getCommunicator());
