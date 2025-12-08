@@ -48,6 +48,8 @@ namespace ippl::mpi {
         static std::shared_ptr<Communicator::buffer_handler_type> comm_buff_handler_ptr{nullptr};
         if (comm_buff_handler_ptr == nullptr) {
             comm_buff_handler_ptr = std::make_shared<Communicator::buffer_handler_type>();
+            SPDLOG_DEBUG("BufferHandler new: {}",
+                         ippl::debug::print_type<Communicator::buffer_handler_type>());
         }
         return comm_buff_handler_ptr;
     }

@@ -12,25 +12,26 @@
 
 #include "Communicate/Archive.h"
 
+#ifdef IPPL_ALIGNED_COMMS_BUFFERS
+#include "Communicate/AlignedBuffer.h"
+#endif
+
 namespace ippl::comms {
 
+#ifdef IPPL_ALIGNED_COMMS_BUFFERS
+    // alignment provided by AlignedBuffer wrapper
+    template <typename... Properties>
+    using archive_buffer = detail::Archive<aligned_storage_wrapper<Properties...>>;
+#else
+    // default kokkos alignment
     template <typename... Properties>
     using communicator_storage =
         ippl::detail::ViewType<char, 1, Properties...,
                                Kokkos::MemoryTraits<Kokkos::Aligned>>::view_type;
 
-    // ---------------------------------------------
-    // archive wrapper around some arbitrary buffer
-    template <typename BufferType>
-    struct rma_archive {
-        using type = detail::Archive<BufferType>;
-    };
-
-    template <typename BufferType>
-    using rma_archive_type = rma_archive<BufferType>::type;
-
     template <typename... Properties>
-    using archive_buffer = rma_archive_type<communicator_storage<Properties...>>;
+    using archive_buffer = detail::Archive<communicator_storage<Properties...>>;
+#endif
 
     /**
      * @brief Interface for memory buffer handling.
