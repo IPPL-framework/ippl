@@ -11,7 +11,12 @@ namespace ippl {
         Environment::Environment(int& argc, char**& argv, const MPI_Comm& comm)
             : comm_m(comm) {
             if (!initialized()) {
-                MPI_Init(&argc, &argv);
+                int provided;
+                MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+                if (provided < MPI_THREAD_MULTIPLE) {
+                    std::cerr << "MPI doesn't support MPI_THREAD_MULTIPLE!" << std::endl;
+                }
+                // MPI_Init(&argc, &argv);
             }
         }
 
