@@ -4,11 +4,11 @@
 #include <iostream>
 #include <mpi.h>
 
-namespace ippl {
+namespace ippl::comms {
 
     template <typename MemorySpace>
     LoggingBufferHandler<MemorySpace>::LoggingBufferHandler(
-        std::shared_ptr<BufferHandler<MemorySpace>> handler, int rank)
+        std::shared_ptr<BufferHandler<archive_buffer<MemorySpace>, MemorySpace>> handler, int rank)
         : handler_m(std::move(handler))
         , rank_m(rank) {}
 
@@ -70,6 +70,6 @@ namespace ippl {
                                 std::chrono::high_resolution_clock::now()});
     }
 
-}  // namespace ippl
+}  // namespace ippl::comms
 
 #endif
