@@ -104,7 +104,7 @@ namespace ippl {
             }
             //
             constexpr size_t size         = sizeof(T);
-            char* src_ptr                 = (char*)(buffer_m.data()) + readpos_m;
+            char* src_ptr                 = (char*)(buffer_m.data());
             ippl::Vector<T, Dim>* dst_ptr = view.data();
             auto rp                       = readpos_m;
             using exec_space              = typename Kokkos::View<T*, ViewArgs...>::execution_space;
