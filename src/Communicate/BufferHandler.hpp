@@ -1,7 +1,7 @@
 #ifndef IPPL_BUFFER_HANDLER_HPP
 #define IPPL_BUFFER_HANDLER_HPP
 
-namespace ippl {
+namespace ippl::comms {
 
     template <typename MemorySpace>
     DefaultBufferHandler<MemorySpace>::~DefaultBufferHandler() {}
@@ -143,6 +143,6 @@ namespace ippl {
         return newBuffer;
     }
 
-}  // namespace ippl
+}  // namespace ippl::comms
 
 #endif

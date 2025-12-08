@@ -4,9 +4,33 @@
 #include <memory>
 #include <set>
 
+#include "Types/IpplTypes.h"
+#include "Types/ViewTypes.h"
+
+#include "Utility/TypeUtils.h"
+#include "Utility/Logging.h"
+
 #include "Communicate/Archive.h"
 
-namespace ippl {
+namespace ippl::comms {
+
+    template <typename... Properties>
+    using communicator_storage =
+        ippl::detail::ViewType<char, 1, Properties...,
+                               Kokkos::MemoryTraits<Kokkos::Aligned>>::view_type;
+
+    // ---------------------------------------------
+    // archive wrapper around some arbitrary buffer
+    template <typename BufferType>
+    struct rma_archive {
+        using type = detail::Archive<BufferType>;
+    };
+
+    template <typename BufferType>
+    using rma_archive_type = rma_archive<BufferType>::type;
+
+    template <typename... Properties>
+    using archive_buffer = rma_archive_type<communicator_storage<Properties...>>;
 
     /**
      * @brief Interface for memory buffer handling.
@@ -17,11 +41,11 @@ namespace ippl {
      *
      * @tparam MemorySpace The memory space type used for buffer allocation.
      */
-    template <typename MemorySpace>
+    template <typename Buffer, typename MemorySpace>
     class BufferHandler {
     public:
-        using archive_type = ippl::detail::Archive<MemorySpace>;
-        using buffer_type  = std::shared_ptr<archive_type>;
+        using archive_type = Buffer;
+        using buffer_type  = std::shared_ptr<Buffer>;
         using size_type    = ippl::detail::size_type;
 
         virtual ~BufferHandler() {}
@@ -92,11 +116,12 @@ namespace ippl {
      * @tparam MemorySpace The memory space type for the buffer (e.g., `Kokkos::HostSpace`).
      */
     template <typename MemorySpace>
-    class DefaultBufferHandler : public BufferHandler<MemorySpace> {
+    class DefaultBufferHandler : public BufferHandler<archive_buffer<MemorySpace>, MemorySpace> {
     public:
-        using typename BufferHandler<MemorySpace>::archive_type;
-        using typename BufferHandler<MemorySpace>::buffer_type;
-        using typename BufferHandler<MemorySpace>::size_type;
+        using buffer_type =
+            typename BufferHandler<archive_buffer<MemorySpace>, MemorySpace>::buffer_type;
+        using typename BufferHandler<archive_buffer<MemorySpace>, MemorySpace>::archive_type;
+        using typename BufferHandler<archive_buffer<MemorySpace>, MemorySpace>::size_type;
 
         ~DefaultBufferHandler() override;
 
@@ -106,8 +131,8 @@ namespace ippl {
          * Requests a memory buffer of the specified size, with the option
          * to request a buffer larger than the base size by an overallocation
          * multiplier. If a sufficiently large buffer is available, it is returned. If not, the
-         * largest free buffer is reallocated. If there are no free buffers available, only then a
-         * new buffer is allocated.
+         * largest free buffer is reallocated. If there are no free buffers available, only then
+         * a new buffer is allocated.
          *
          * @param size The required buffer size.
          * @param overallocation A multiplier to allocate additional buffer space.
@@ -163,7 +188,7 @@ namespace ippl {
         buffer_set_type free_buffers{
             &DefaultBufferHandler::bufferSizeComparator};  ///< Set of free buffers
     };
-}  // namespace ippl
+}  // namespace ippl::comms
 
 #include "Communicate/BufferHandler.hpp"
 

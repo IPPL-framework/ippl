@@ -21,14 +21,14 @@ namespace ippl {
     namespace detail {
         /*!
          * @file Archive.h
-         * Serialize and desesrialize particle attributes.
+         * Serialize and deserialize particle attributes.
          * @tparam Properties variadic template for Kokkos::View
          */
 
-        template <class... Properties>
+        template <typename BufferType>
         class Archive {
         public:
-            using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
+            using buffer_type  = BufferType;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);
@@ -84,7 +84,9 @@ namespace ippl {
 
             void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
 
-            void reallocBuffer(size_type size) { Kokkos::realloc(buffer_m, size); }
+            void reallocBuffer(size_type size) {
+                Kokkos::realloc(buffer_m, size); /*buffer_m.reallocBuffer(size);*/
+            }
 
             void resetWritePos() { writepos_m = 0; }
             void resetReadPos() { readpos_m = 0; }
@@ -97,7 +99,7 @@ namespace ippl {
             //! read position for deserialization
             size_type readpos_m;
             //! serialized data
-            buffer_type buffer_m;
+            BufferType buffer_m;
         };
     }  // namespace detail
 }  // namespace ippl
