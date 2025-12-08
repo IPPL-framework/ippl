@@ -6,7 +6,7 @@
 #include "Utility/Inform.h"
 
 #include "Communicate/Communicator.h"
-#include "Communicate/LogEntry.h"
+#include "Communicate/LoggingBufferHandler.h"
 
 namespace ippl::mpi {
     void Communicator::printLogs(const std::string& filename) {
@@ -28,7 +28,7 @@ namespace ippl::mpi {
     struct is_a_logger : std::false_type {};
 
     template <class MemorySpace>
-    struct is_a_logger<LoggingBufferHandler<MemorySpace> > : std::true_type {};
+    struct is_a_logger<comms::LoggingBufferHandler<MemorySpace> > : std::true_type {};
 
     std::vector<LogEntry> Communicator::gatherLocalLogs() {
         std::vector<LogEntry> localLogs;

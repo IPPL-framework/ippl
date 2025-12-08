@@ -26,22 +26,27 @@
 namespace ippl {
     namespace mpi {
 
-        template <typename MemorySpace, typename T>
-        Communicator::buffer_type<MemorySpace> Communicator::getBuffer(size_type size,
-                                                                       double overallocation) {
-            auto& buffer_handler = buffer_handlers_m->get<MemorySpace>();
-            auto b               = buffer_handler.getBuffer(size * sizeof(T),
-                                                            std::max(overallocation, defaultOveralloc_m));
-            SPDLOG_INFO("{}, getBuffer {}, buf, {}, size {}", (void*)this,
-                        ippl::debug::print_type<MemorySpace>(), (void*)(b->getBuffer()),
-                        size * sizeof(T));
+        // -----------------------------------
+        template <typename BufferType, typename T>
+        Communicator::buffer_type<BufferType> Communicator::getBuffer(size_type size,
+                                                                      double overallocation) {
+            using memory_space = BufferType::memory_space;
+
+            auto& buffer_handler = buffer_handlers_m->get<memory_space>();
+
+            auto b = buffer_handler.getBuffer(size * sizeof(T),
+                                              std::max(overallocation, defaultOveralloc_m));
+            SPDLOG_TRACE("{}, getBuffer {}, buf, {}, size {}", (void*)this,
+                         ippl::debug::print_type<memory_space>(), (void*)(b->getBuffer()),
+                         size * sizeof(T));
             return b;
         }
 
-        template <typename MemorySpace>
-        void Communicator::freeBuffer(Communicator::buffer_type<MemorySpace> buffer) {
-            auto& buffer_handler = buffer_handlers_m->get<MemorySpace>();
-
+        template <typename BufferType>
+        void Communicator::freeBuffer(Communicator::buffer_type<BufferType> buffer) {
+            using memory_space   = BufferType::memory_space;
+            auto& buffer_handler = buffer_handlers_m->get<memory_space>();
+            SPDLOG_TRACE("freeBuffer buf, {}", (void*)(buffer->getBuffer()));
             buffer_handler.freeBuffer(buffer);
         }
 

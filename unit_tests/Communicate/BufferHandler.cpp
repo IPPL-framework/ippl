@@ -14,10 +14,10 @@ class TypedBufferHandlerTest : public ::testing::Test {
 protected:
     using memory_space = MemorySpace;
 
-    class TestableBufferHandler : public ippl::DefaultBufferHandler<memory_space> {
+    class TestableBufferHandler : public ippl::comms::DefaultBufferHandler<memory_space> {
     public:
-        using ippl::DefaultBufferHandler<memory_space>::deleteAllBuffers;
-        using ippl::DefaultBufferHandler<memory_space>::freeAllBuffers;
+        using ippl::comms::DefaultBufferHandler<memory_space>::deleteAllBuffers;
+        using ippl::comms::DefaultBufferHandler<memory_space>::freeAllBuffers;
 
         size_t usedBuffersSize() const { return this->used_buffers.size(); }
 
@@ -109,9 +109,9 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ExactSizeMatch) {
 
 // Test: Freeing a buffer that does not exist in the used pool has no effect
 TYPED_TEST(TypedBufferHandlerTest, FreeNonExistentBuffer) {
-    auto buffer = this->handler->getBuffer(100, 1.0);
-    auto newBuffer =
-        std::make_shared<ippl::detail::Archive<typename TestFixture::memory_space>>(200);
+    using archive_type = ippl::comms::archive_buffer<typename TestFixture::memory_space>;
+    auto buffer        = this->handler->getBuffer(100, 1.0);
+    auto newBuffer     = std::make_shared<archive_type>(200);
 
     this->handler->freeBuffer(newBuffer);
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
@@ -182,7 +182,8 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
-// Test: Buffer size is correctly accounted for if a free buffer is available but we request a larger one, thus reallocating this one
+// Test: Buffer size is correctly accounted for if a free buffer is available but we request a
+// larger one, thus reallocating this one
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerThanAvailable) {
     auto smallBuffer = this->handler->getBuffer(50, 1.0);
     this->handler->freeBuffer(smallBuffer);
