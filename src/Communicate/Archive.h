@@ -82,10 +82,12 @@ namespace ippl {
 
             size_type getBufferSize() const { return buffer_m.size(); }
 
-            void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
-
             void reallocBuffer(size_type size) {
-                Kokkos::realloc(buffer_m, size); /*buffer_m.reallocBuffer(size);*/
+#ifdef IPPL_ALIGNED_COMMS_BUFFERS
+                buffer_m.reallocBuffer(size);
+#else
+                Kokkos::realloc(buffer_m, size);
+#endif
             }
 
             void resetReadWritePos() {
