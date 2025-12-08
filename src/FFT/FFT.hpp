@@ -229,6 +229,7 @@ namespace ippl {
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
         static IpplTimings::TimerRef StridedCP  = IpplTimings::getTimer("stridedCP");
+        static IpplTimings::TimerRef CPOp  = IpplTimings::getTimer("CPOp");
         static IpplTimings::TimerRef TwiddleAdd = IpplTimings::getTimer("TwiddleAdd");
         static IpplTimings::TimerRef PrunedFFT  = IpplTimings::getTimer("prunedFFT");
         static IpplTimings::TimerRef SubFFT     = IpplTimings::getTimer("subFFT");
@@ -273,6 +274,8 @@ namespace ippl {
 
         Kokkos::deep_copy(output_view, Complex_t(0, 0));
 
+        auto tempFieldInputView = tempFieldInput.getView();
+
         auto scaling_factor = 1.0;
         for (int d = 0; d < Dim; ++d) {
             scaling_factor *= static_cast<double>(pruning_.n_modes[d])
@@ -289,19 +292,19 @@ namespace ippl {
                 offs[d] = (k >> d) & 1;
             }
             IpplTimings::stopTimer(OffsComp);
-
+            IpplTimings::startTimer(CPOp);
             // Strided copy into tempFieldInput
             ippl::parallel_for(
                 "strided input copy PrunedFFT", getRangePolicy(output_view, nghost_out),
                 KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
                     auto strided_in = (args - nghost_out) * 2 + offs + nghost_in;
 
-                    apply(tempFieldInput, args - nghost_out)
+                    apply(tempFieldInputView, args - nghost_out)
                         .real(apply(input_view, strided_in).real());
-                    apply(tempFieldInput, args - nghost_out)
+                    apply(tempFieldInputView, args - nghost_out)
                         .imag(apply(input_view, strided_in).imag());
                 });
-
+            IpplTimings::stopTimer(CPOp);
             IpplTimings::stopTimer(StridedCP);
 
             // Perform sub-FFT in-place
@@ -342,7 +345,7 @@ namespace ippl {
                         w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
                                             : Complex_t(std::cos(ang), std::sin(ang));
                     }
-                    auto fft_input = apply(tempFieldInput, args - nghost_out);
+                    auto fft_input = apply(tempFieldInputView, args - nghost_out);
                     apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
                     apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
                 });
