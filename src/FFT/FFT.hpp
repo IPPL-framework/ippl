@@ -228,6 +228,8 @@ namespace ippl {
     void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+        static IpplTimings::TimerRef StridedCP       = IpplTimings::getTimer("stridedCP");
+        static IpplTimings::TimerRef TwiddleAdd       = IpplTimings::getTimer("TwiddleAdd");
         static IpplTimings::TimerRef PrunedFFT       = IpplTimings::getTimer("prunedFFT");
         static IpplTimings::TimerRef SubFFT = IpplTimings::getTimer("subFFT");
         IpplTimings::startTimer(PrunedFFT);
@@ -280,6 +282,7 @@ namespace ippl {
         // Perform sub-FFTS
         for (int k = 0; k < std::pow(2, Dim); ++k) {
             // Convert input k to mask (b_2, b_1, b_0) (3D) of offsets in the strided input
+            IpplTimings::startTimer(StridedCP);
             Vector<long, Dim> offs;
             for (int d = 0; d < Dim; ++d) {
                 offs[d] = (k >> d) & 1;
@@ -297,12 +300,15 @@ namespace ippl {
                         .imag(apply(input_view, strided_in).imag());
                 });
 
+            IpplTimings::stopTimer(StridedCP);
+
             // Perform sub-FFT in-place
             IpplTimings::startTimer(SubFFT);
             this->pruned_heffte_m->forward(tempFieldInput.data(), tempFieldInput.data(),
                                            this->workspace_m.data(), heffte::scale::full);
             IpplTimings::stopTimer(SubFFT);
 
+            IpplTimings::startTimer(TwiddleAdd);
             // Add to outputField with twiddle factors
             Vector<int, Dim> localFirst;
             for (unsigned d = 0; d < Dim; ++d) {
@@ -338,6 +344,7 @@ namespace ippl {
                     apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
                     apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
                 });
+            IpplTimings::stopTimer(TwiddleAdd);
         }
         IpplTimings::stopTimer(PrunedFFT);
     }
