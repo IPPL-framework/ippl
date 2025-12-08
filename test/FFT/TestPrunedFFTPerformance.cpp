@@ -17,8 +17,8 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
 
-    std::array<int, dim> pt_full   = {128, 128, 128};
-    std::array<int, dim> pt_pruned = {64, 64, 64};
+    std::array<int, dim> pt_full   = {1024, 1024, 512};
+    std::array<int, dim> pt_pruned = {512, 512, 256};
 
     // Create layouts
     ippl::Index I_full(pt_full[0]);
@@ -61,7 +61,11 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
                                                 static_cast<size_t>(pt_pruned[2])};
 
     ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", true);
+    fftParams.add("use_heffte_defaults", false);
+    fftParams.add("use_pencils", true);
+    fftParams.add("use_reorder", false);
+    fftParams.add("use_gpu_aware", true);
+    fftParams.add("comm", 2);
 
     // Create FFTs
     typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
