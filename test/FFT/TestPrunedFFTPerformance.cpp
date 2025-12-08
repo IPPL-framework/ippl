@@ -11,7 +11,31 @@
 
 #include "Utility/ParameterList.h"
 
-void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
+struct BenchmarkResult {
+    double mean_full;
+    double min_full;
+    double max_full;
+    double mean_pruned;
+    double min_pruned;
+    double max_pruned;
+    double speedup;
+};
+
+auto compute_stats(const std::vector<double>& times) {
+    double sum = 0.0, sum_sq = 0.0;
+    double min_t = times[0], max_t = times[0];
+    for (double t : times) {
+        sum += t;
+        sum_sq += t * t;
+        min_t = std::min(min_t, t);
+        max_t = std::max(max_t, t);
+    }
+    double mean   = sum / times.size();
+    double stddev = std::sqrt(sum_sq / times.size() - mean * mean);
+    return std::make_tuple(mean, stddev, min_t, max_t);
+}
+
+BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
@@ -54,6 +78,215 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
     field_type field_full_result(mesh_full, layout_full);
     field_type field_pruned_result(mesh_pruned, layout_pruned);
 
+    // Setup pruning parameters
+    ippl::PruningParams<dim> pruning;
+    pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
+                                                static_cast<size_t>(pt_pruned[1]),
+                                                static_cast<size_t>(pt_pruned[2])};
+
+    ippl::ParameterList fftParams;
+    fftParams.add("use_heffte_defaults", false);
+    fftParams.add("use_pencils", true);
+    fftParams.add("use_reorder", false);
+    fftParams.add("use_gpu_aware", true);
+    fftParams.add("comm", 2);
+
+    // Create FFTs
+    typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
+    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
+
+    auto pruned_fft =
+        std::make_unique<PrunedFFT_type>(layout_full, layout_pruned, pruning, fftParams);
+    auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
+
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "\n=== Benchmarking Forward FFT ===" << std::endl;
+        std::cout << "Full grid: " << pt_full[0] << "x" << pt_full[1] << "x" << pt_full[2]
+                  << std::endl;
+        std::cout << "Pruned to: " << pt_pruned[0] << "x" << pt_pruned[1] << "x" << pt_pruned[2]
+                  << std::endl;
+        std::cout << "Warmup runs: " << warmup_runs << std::endl;
+        std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
+    }
+
+    // Initialize with random data directly on GPU
+    using exec_space = typename field_type::execution_space;
+    using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
+
+    const int nghost = field_input.getNghost();
+    auto view_input  = field_input.getView();
+
+    // Create random pool with seed based on rank
+    RandPool rand_pool(42 + ippl::Comm->rank());
+
+    // Fill field with random data directly on GPU
+    Kokkos::parallel_for(
+        "InitRandomData",
+        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>(
+            {nghost, nghost, nghost}, {view_input.extent(0) - nghost, view_input.extent(1) - nghost,
+                                       view_input.extent(2) - nghost}),
+        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            auto rand_gen       = rand_pool.get_state();
+            double real_part    = rand_gen.drand(-1.0, 1.0);
+            double imag_part    = rand_gen.drand(-1.0, 1.0);
+            view_input(i, j, k) = Kokkos::complex<double>(real_part, imag_part);
+            rand_pool.free_state(rand_gen);
+        });
+    Kokkos::fence();
+
+    // ========== Warmup ==========
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "Running warmup..." << std::endl;
+    }
+
+    for (int i = 0; i < warmup_runs; ++i) {
+        // Warmup forward: full FFT
+        field_full_result = field_input;
+        regular_fft->transform(ippl::FORWARD, field_full_result);
+        Kokkos::fence();
+
+        // Warmup forward: pruned FFT
+        field_input_copy = field_input;
+        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
+        Kokkos::fence();
+    }
+
+    MPI_Barrier(ippl::Comm->getCommunicator());
+
+    // ========== Benchmark Forward: Full FFT ==========
+    std::vector<double> times_fwd_full(benchmark_runs);
+
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "Benchmarking forward full FFT..." << std::endl;
+    }
+
+    for (int run = 0; run < benchmark_runs; ++run) {
+        field_full_result = field_input;
+
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        Kokkos::fence();
+        auto start = std::chrono::high_resolution_clock::now();
+
+        regular_fft->transform(ippl::FORWARD, field_full_result);
+        Kokkos::fence();
+
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        auto end = std::chrono::high_resolution_clock::now();
+
+        times_fwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
+    }
+
+    // ========== Benchmark Forward: Pruned FFT ==========
+    std::vector<double> times_fwd_pruned(benchmark_runs);
+
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "Benchmarking forward pruned FFT..." << std::endl;
+    }
+
+    for (int run = 0; run < benchmark_runs; ++run) {
+        field_input_copy = field_input;
+
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        Kokkos::fence();
+        auto start = std::chrono::high_resolution_clock::now();
+
+        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
+        Kokkos::fence();
+
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        auto end = std::chrono::high_resolution_clock::now();
+
+        times_fwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
+    }
+
+    // ========== Compute Statistics ==========
+    auto [mean_fwd_full, std_fwd_full, min_fwd_full, max_fwd_full] = compute_stats(times_fwd_full);
+    auto [mean_fwd_pruned, std_fwd_pruned, min_fwd_pruned, max_fwd_pruned] =
+        compute_stats(times_fwd_pruned);
+
+    // Reduce across MPI ranks (use max time as the overall time)
+    double global_mean_fwd_full, global_mean_fwd_pruned;
+    double global_min_fwd_full, global_min_fwd_pruned;
+    double global_max_fwd_full, global_max_fwd_pruned;
+
+    MPI_Allreduce(&mean_fwd_full, &global_mean_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&mean_fwd_pruned, &global_mean_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&min_fwd_full, &global_min_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&min_fwd_pruned, &global_min_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&max_fwd_full, &global_max_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&max_fwd_pruned, &global_max_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+
+    // ========== Print Results ==========
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "\n--- FORWARD TRANSFORM RESULTS ---" << std::endl;
+        std::cout << std::fixed << std::setprecision(3);
+
+        std::cout << "\nFull FFT:" << std::endl;
+        std::cout << "  Mean time:  " << global_mean_fwd_full << " ms" << std::endl;
+        std::cout << "  Min time:   " << global_min_fwd_full << " ms" << std::endl;
+        std::cout << "  Max time:   " << global_max_fwd_full << " ms" << std::endl;
+
+        std::cout << "\nPruned FFT:" << std::endl;
+        std::cout << "  Mean time:  " << global_mean_fwd_pruned << " ms" << std::endl;
+        std::cout << "  Min time:   " << global_min_fwd_pruned << " ms" << std::endl;
+        std::cout << "  Max time:   " << global_max_fwd_pruned << " ms" << std::endl;
+
+        std::cout << "\nForward Speedup (Full / Pruned): " << std::setprecision(2)
+                  << global_mean_fwd_full / global_mean_fwd_pruned << "x" << std::endl;
+    }
+
+    return BenchmarkResult{global_mean_fwd_full,
+                           global_min_fwd_full,
+                           global_max_fwd_full,
+                           global_mean_fwd_pruned,
+                           global_min_fwd_pruned,
+                           global_max_fwd_pruned,
+                           global_mean_fwd_full / global_mean_fwd_pruned};
+}
+
+BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
+    constexpr unsigned int dim = 3;
+    using Mesh_t               = ippl::UniformCartesian<double, dim>;
+    using Centering_t          = Mesh_t::DefaultCentering;
+
+    std::array<int, dim> pt_full   = {1024, 1024, 512};
+    std::array<int, dim> pt_pruned = {512, 512, 256};
+
+    // Create layouts
+    ippl::Index I_full(pt_full[0]);
+    ippl::Index J_full(pt_full[1]);
+    ippl::Index K_full(pt_full[2]);
+    ippl::NDIndex<dim> owned_full(I_full, J_full, K_full);
+
+    ippl::Index I_pruned(pt_pruned[0]);
+    ippl::Index J_pruned(pt_pruned[1]);
+    ippl::Index K_pruned(pt_pruned[2]);
+    ippl::NDIndex<dim> owned_pruned(I_pruned, J_pruned, K_pruned);
+
+    std::array<bool, dim> isParallel;
+    isParallel.fill(true);
+
+    ippl::FieldLayout<dim> layout_full(MPI_COMM_WORLD, owned_full, isParallel);
+    ippl::FieldLayout<dim> layout_pruned(MPI_COMM_WORLD, owned_pruned, isParallel);
+
+    std::array<double, dim> dx = {
+        1.0 / double(pt_full[0]),
+        1.0 / double(pt_full[1]),
+        1.0 / double(pt_full[2]),
+    };
+    ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
+    ippl::Vector<double, 3> origin = {0, 0, 0};
+    Mesh_t mesh_full(owned_full, hx, origin);
+    Mesh_t mesh_pruned(owned_pruned, hx, origin);
+
+    typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t> field_type;
+
     // Fields for backward transform
     field_type field_freq_input_pruned(mesh_pruned, layout_pruned);
     field_type field_freq_input_pruned_copy(mesh_pruned, layout_pruned);
@@ -83,45 +316,25 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
     auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
 
     if (ippl::Comm->rank() == 0) {
-        std::cout << "\n=== Benchmarking Pruned C2C FFT ===" << std::endl;
+        std::cout << "\n=== Benchmarking Backward FFT ===" << std::endl;
         std::cout << "Full grid: " << pt_full[0] << "x" << pt_full[1] << "x" << pt_full[2]
                   << std::endl;
         std::cout << "Pruned to: " << pt_pruned[0] << "x" << pt_pruned[1] << "x" << pt_pruned[2]
                   << std::endl;
         std::cout << "Warmup runs: " << warmup_runs << std::endl;
         std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
-        std::cout << std::endl;
     }
 
     // Initialize with random data directly on GPU
     using exec_space = typename field_type::execution_space;
     using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
-    const int nghost        = field_input.getNghost();
-    const int nghost_pruned = field_pruned_result.getNghost();
-    auto view_input         = field_input.getView();
-
-    // Create random pool with seed based on rank
-    RandPool rand_pool(42 + ippl::Comm->rank());
-
-    // Fill field with random data directly on GPU
-    Kokkos::parallel_for(
-        "InitRandomData",
-        Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>(
-            {nghost, nghost, nghost}, {view_input.extent(0) - nghost, view_input.extent(1) - nghost,
-                                       view_input.extent(2) - nghost}),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-            auto rand_gen       = rand_pool.get_state();
-            double real_part    = rand_gen.drand(-1.0, 1.0);
-            double imag_part    = rand_gen.drand(-1.0, 1.0);
-            view_input(i, j, k) = Kokkos::complex<double>(real_part, imag_part);
-            rand_pool.free_state(rand_gen);
-        });
-    Kokkos::fence();
+    const int nghost        = field_freq_input_full.getNghost();
+    const int nghost_pruned = field_freq_input_pruned.getNghost();
 
     // Initialize pruned frequency input with random data
     auto view_freq_pruned = field_freq_input_pruned.getView();
-    RandPool rand_pool2(123 + ippl::Comm->rank());
+    RandPool rand_pool(123 + ippl::Comm->rank());
 
     Kokkos::parallel_for(
         "InitRandomFreqData",
@@ -130,11 +343,11 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
             {view_freq_pruned.extent(0) - nghost_pruned, view_freq_pruned.extent(1) - nghost_pruned,
              view_freq_pruned.extent(2) - nghost_pruned}),
         KOKKOS_LAMBDA(const int i, const int j, const int k) {
-            auto rand_gen             = rand_pool2.get_state();
+            auto rand_gen             = rand_pool.get_state();
             double real_part          = rand_gen.drand(-1.0, 1.0);
             double imag_part          = rand_gen.drand(-1.0, 1.0);
             view_freq_pruned(i, j, k) = Kokkos::complex<double>(real_part, imag_part);
-            rand_pool2.free_state(rand_gen);
+            rand_pool.free_state(rand_gen);
         });
     Kokkos::fence();
 
@@ -196,16 +409,6 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
     }
 
     for (int i = 0; i < warmup_runs; ++i) {
-        // Warmup forward: full FFT
-        field_full_result = field_input;
-        regular_fft->transform(ippl::FORWARD, field_full_result);
-        Kokkos::fence();
-
-        // Warmup forward: pruned FFT
-        field_input_copy = field_input;
-        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
-        Kokkos::fence();
-
         // Warmup backward: full IFFT
         field_spatial_output_ref = field_freq_input_full;
         regular_fft->transform(ippl::BACKWARD, field_spatial_output_ref);
@@ -219,53 +422,7 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
 
     MPI_Barrier(ippl::Comm->getCommunicator());
 
-    // ========== Benchmark Forward: Full FFT ==========
-    std::vector<double> times_fwd_full(benchmark_runs);
-
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking forward full FFT..." << std::endl;
-    }
-
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_full_result = field_input;
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
-
-        regular_fft->transform(ippl::FORWARD, field_full_result);
-        Kokkos::fence();
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
-
-        times_fwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
-    }
-
-    // ========== Benchmark Forward: Pruned FFT ==========
-    std::vector<double> times_fwd_pruned(benchmark_runs);
-
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking forward pruned FFT..." << std::endl;
-    }
-
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_input_copy = field_input;
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
-
-        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
-        Kokkos::fence();
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
-
-        times_fwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
-    }
-
-    // ========== Benchmark Backward: Full IFFT (with zero-padded input) ==========
+    // ========== Benchmark Backward: Full IFFT ==========
     std::vector<double> times_bwd_full(benchmark_runs);
 
     if (ippl::Comm->rank() == 0) {
@@ -312,47 +469,14 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
     }
 
     // ========== Compute Statistics ==========
-    auto compute_stats = [](const std::vector<double>& times) {
-        double sum = 0.0, sum_sq = 0.0;
-        double min_t = times[0], max_t = times[0];
-        for (double t : times) {
-            sum += t;
-            sum_sq += t * t;
-            min_t = std::min(min_t, t);
-            max_t = std::max(max_t, t);
-        }
-        double mean   = sum / times.size();
-        double stddev = std::sqrt(sum_sq / times.size() - mean * mean);
-        return std::make_tuple(mean, stddev, min_t, max_t);
-    };
-
-    auto [mean_fwd_full, std_fwd_full, min_fwd_full, max_fwd_full] = compute_stats(times_fwd_full);
-    auto [mean_fwd_pruned, std_fwd_pruned, min_fwd_pruned, max_fwd_pruned] =
-        compute_stats(times_fwd_pruned);
     auto [mean_bwd_full, std_bwd_full, min_bwd_full, max_bwd_full] = compute_stats(times_bwd_full);
     auto [mean_bwd_pruned, std_bwd_pruned, min_bwd_pruned, max_bwd_pruned] =
         compute_stats(times_bwd_pruned);
 
     // Reduce across MPI ranks (use max time as the overall time)
-    double global_mean_fwd_full, global_mean_fwd_pruned;
-    double global_min_fwd_full, global_min_fwd_pruned;
-    double global_max_fwd_full, global_max_fwd_pruned;
     double global_mean_bwd_full, global_mean_bwd_pruned;
     double global_min_bwd_full, global_min_bwd_pruned;
     double global_max_bwd_full, global_max_bwd_pruned;
-
-    MPI_Allreduce(&mean_fwd_full, &global_mean_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
-    MPI_Allreduce(&mean_fwd_pruned, &global_mean_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
-    MPI_Allreduce(&min_fwd_full, &global_min_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
-    MPI_Allreduce(&min_fwd_pruned, &global_min_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
-    MPI_Allreduce(&max_fwd_full, &global_max_fwd_full, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
-    MPI_Allreduce(&max_fwd_pruned, &global_max_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
-                  ippl::Comm->getCommunicator());
 
     MPI_Allreduce(&mean_bwd_full, &global_mean_bwd_full, 1, MPI_DOUBLE, MPI_MAX,
                   ippl::Comm->getCommunicator());
@@ -369,25 +493,8 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
 
     // ========== Print Results ==========
     if (ippl::Comm->rank() == 0) {
-        std::cout << "\n=== Benchmark Results ===" << std::endl;
+        std::cout << "\n--- BACKWARD TRANSFORM RESULTS ---" << std::endl;
         std::cout << std::fixed << std::setprecision(3);
-
-        std::cout << "\n--- FORWARD TRANSFORM ---" << std::endl;
-
-        std::cout << "\nFull FFT:" << std::endl;
-        std::cout << "  Mean time:  " << global_mean_fwd_full << " ms" << std::endl;
-        std::cout << "  Min time:   " << global_min_fwd_full << " ms" << std::endl;
-        std::cout << "  Max time:   " << global_max_fwd_full << " ms" << std::endl;
-
-        std::cout << "\nPruned FFT:" << std::endl;
-        std::cout << "  Mean time:  " << global_mean_fwd_pruned << " ms" << std::endl;
-        std::cout << "  Min time:   " << global_min_fwd_pruned << " ms" << std::endl;
-        std::cout << "  Max time:   " << global_max_fwd_pruned << " ms" << std::endl;
-
-        std::cout << "\nForward Speedup (Full / Pruned): " << std::setprecision(2)
-                  << global_mean_fwd_full / global_mean_fwd_pruned << "x" << std::endl;
-
-        std::cout << "\n--- BACKWARD TRANSFORM ---" << std::endl;
 
         std::cout << "\nFull IFFT:" << std::endl;
         std::cout << "  Mean time:  " << global_mean_bwd_full << " ms" << std::endl;
@@ -401,18 +508,15 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
 
         std::cout << "\nBackward Speedup (Full / Pruned): " << std::setprecision(2)
                   << global_mean_bwd_full / global_mean_bwd_pruned << "x" << std::endl;
-
-        std::cout << "\n--- ROUND-TRIP (Forward + Backward) ---" << std::endl;
-        double total_full   = global_mean_fwd_full + global_mean_bwd_full;
-        double total_pruned = global_mean_fwd_pruned + global_mean_bwd_pruned;
-        std::cout << "Full (FFT + IFFT):   " << std::setprecision(3) << total_full << " ms"
-                  << std::endl;
-        std::cout << "Pruned (FFT + IFFT): " << total_pruned << " ms" << std::endl;
-        std::cout << "Round-trip Speedup:  " << std::setprecision(2) << total_full / total_pruned
-                  << "x" << std::endl;
-
-        std::cout << "\n=== End Benchmark ===" << std::endl;
     }
+
+    return BenchmarkResult{global_mean_bwd_full,
+                           global_min_bwd_full,
+                           global_max_bwd_full,
+                           global_mean_bwd_pruned,
+                           global_min_bwd_pruned,
+                           global_max_bwd_pruned,
+                           global_mean_bwd_full / global_mean_bwd_pruned};
 }
 
 int main(int argc, char* argv[]) {
@@ -431,7 +535,27 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    benchmarkPrunedCC(warmup_runs, benchmark_runs);
+    // Run forward benchmark
+    BenchmarkResult fwd_result = benchmarkForwardFFT(warmup_runs, benchmark_runs);
+
+    // Run backward benchmark
+    BenchmarkResult bwd_result = benchmarkBackwardFFT(warmup_runs, benchmark_runs);
+
+    // Print combined round-trip results
+    if (ippl::Comm->rank() == 0) {
+        std::cout << "\n=== COMBINED RESULTS ===" << std::endl;
+        std::cout << std::fixed << std::setprecision(3);
+
+        std::cout << "\n--- ROUND-TRIP (Forward + Backward) ---" << std::endl;
+        double total_full   = fwd_result.mean_full + bwd_result.mean_full;
+        double total_pruned = fwd_result.mean_pruned + bwd_result.mean_pruned;
+        std::cout << "Full (FFT + IFFT):   " << total_full << " ms" << std::endl;
+        std::cout << "Pruned (FFT + IFFT): " << total_pruned << " ms" << std::endl;
+        std::cout << "Round-trip Speedup:  " << std::setprecision(2) << total_full / total_pruned
+                  << "x" << std::endl;
+
+        std::cout << "\n=== End Benchmark ===" << std::endl;
+    }
 
     ippl::finalize();
     return 0;
