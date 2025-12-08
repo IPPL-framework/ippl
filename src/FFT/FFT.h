@@ -403,6 +403,7 @@ namespace ippl {
         std::array<std::shared_ptr<BaseFFTType<heffteBackend, long long>>, numSubFFTs> pruned_heffte_m;
         std::array<typename Base::template temp_view_type<ComplexField>, numSubFFTs> tempFieldInputs;
         std::array<workspace_t, numSubFFTs> workspaces_m;
+        std::array<MPI_Comm, numSubFFTs> mpicomms_m;
 
 #ifdef KOKKOS_ENABLE_CUDA
         std::array<cudaStream_t, numSubFFTs> streams_m;

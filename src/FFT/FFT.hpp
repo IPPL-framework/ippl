@@ -120,6 +120,9 @@ namespace ippl {
             hipStreamDestroy(streams_m[k]);
         }
 #endif
+        for (int k = 0; k < numSubFFTs; ++k) {
+            MPI_Comm_free(&mpicomms_m[k]);
+        }
     }
 
     template <typename ComplexField>
@@ -216,6 +219,8 @@ namespace ippl {
 
         // Create streams and heFFTe instances for each sub-FFT
         for (int k = 0; k < numSubFFTs; ++k) {
+            MPI_Comm_dup(MPI_COMM_WORLD, &mpicomms_m[k]);
+
 #ifdef Heffte_ENABLE_CUDA
             cudaStreamCreate(&streams_m[k]);
 #elif defined(Heffte_ENABLE_ROCM)
@@ -252,16 +257,15 @@ namespace ippl {
             // Create heFFTe instance with specific stream
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
             pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                streams_m[k], inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
+                streams_m[k], inboxPruned, outboxPruned, mpicomms_m[k], heffteOptions);
 #else
             // CPU backend
             pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
+                inboxPruned, outboxPruned, mpicomms_m[k], heffteOptions);
 #endif
 
             // Allocate workspace for each instance
-            workspaces_m[k] =
-                workspace_t(pruned_heffte_m[k]->size_workspace());
+            workspaces_m[k] = workspace_t(pruned_heffte_m[k]->size_workspace());
         }
     }
 
