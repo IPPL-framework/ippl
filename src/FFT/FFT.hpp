@@ -161,6 +161,462 @@ namespace ippl {
     }
 
     //========================================================================
+    // FFT PrunedCCTransform Constructor and Methods
+    //========================================================================
+
+    template <typename ComplexField>
+    FFT<PrunedCCTransform, ComplexField>::FFT(const Layout_t& layoutInput,
+                                              const Layout_t& layoutOutput,
+                                              const PruningParams<Dim>& pruning,
+                                              const ParameterList& params)
+        : pruning_(pruning) {
+        // Setup heFFTe with the full (input) grid domain
+        // HeFFTe requires same global domain for input and output,
+        // so we do full FFT and then manually prune/pad
+        std::array<long long, 3> lowInput, highInput;
+
+        const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
+
+        this->domainToBounds(lDomInput, lowInput, highInput);
+
+        heffte::box3d<long long> inbox  = {lowInput, highInput};
+        heffte::box3d<long long> outbox = {lowInput, highInput};  // Same as input for heFFTe
+
+        this->setup(inbox, outbox, params);
+
+        // TODO(paul) make this better
+        const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
+
+        std::array<long long, 3> lowInputPruned, highInputPruned;
+        this->domainToBounds(lDomOutput, lowInputPruned, highInputPruned);
+
+        heffte::box3d<long long> inboxPruned  = {lowInputPruned, highInputPruned};
+        heffte::box3d<long long> outboxPruned = {lowInputPruned,
+                                                 highInputPruned};  // Same as input for heFFTe
+
+        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+
+        if (!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
+
+            switch (params.get<int>("comm")) {
+                case a2a:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                    break;
+                case a2av:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                    break;
+                case p2p:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                    break;
+                case p2p_pl:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                    break;
+                default:
+                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
+            }
+        }
+        pruned_heffte_m = std::make_shared<BaseFFTType<heffteBackend, long long>>(
+            inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
+    }
+
+    template <typename ComplexField>
+    void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
+                                                                         ComplexField& output) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+        auto input_view      = input.getView();
+        auto output_view     = output.getView();
+        const int nghost_in  = input.getNghost();
+        const int nghost_out = output.getNghost();
+
+        const auto& lDomFull   = input.getLayout().getLocalNDIndex();
+        const auto& lDomPruned = output.getLayout().getLocalNDIndex();
+        const auto& gDomFull   = input.getLayout().getDomain();
+
+        const size_t N0 = gDomFull[0].length();
+        const size_t N1 = gDomFull[1].length();
+        const size_t N2 = gDomFull[2].length();
+
+        const size_t K0 = pruning_.n_modes[0];
+        const size_t K1 = pruning_.n_modes[1];
+        const size_t K2 = pruning_.n_modes[2];
+
+        // (paul) I now hardcoded this to a factor of two. If you want to change the
+        //        upsampling factor or extract less modes, this is not fundamentally
+        //        difficult (i.e. the same algorithm still works, increase striding in the
+        //                   sub-FFTs), but the code needs to change a bit.
+        assert(K0 * 2 == N0 && K1 * 2 == N1 && K2 * 2 == N2);
+        assert((N0 % 2) == 0 && (N1 % 2) == 0 && (N2 % 2) == 0);
+
+        // Both tempField should be of output size
+        if (tempFieldInput.size() != output.getOwned().size()) {
+            tempFieldInput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
+        }
+        if (tempFieldOutput.size() != output.getOwned().size()) {
+            tempFieldOutput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
+        }
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+
+        Kokkos::deep_copy(output_view, Complex_t(0, 0));
+
+        auto scaling_factor = 1.0;
+        for (int d = 0; d < Dim; ++d) {
+            scaling_factor *= static_cast<double>(pruning_.n_modes[d])
+                              / static_cast<double>(gDomFull[d].length());
+        }
+
+        // Perform sub-FFTS
+        for (int k = 0; k < std::pow(2, Dim); ++k) {
+            // Convert input k to mask (b_2, b_1, b_0) (3D) of offsets in the strided input
+            Vector<long, Dim> offs;
+            for (int d = 0; d < Dim; ++d) {
+                offs[d] = (k >> d) & 1;
+            }
+
+            // Strided copy into tempFieldInput
+            ippl::parallel_for(
+                "strided input copy PrunedFFT", getRangePolicy(output_view, nghost_out),
+                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                    auto strided_in = (args - nghost_out) * 2 + offs + nghost_in;
+
+                    apply(tempFieldInput, args - nghost_out)
+                        .real(apply(input_view, strided_in).real());
+                    apply(tempFieldInput, args - nghost_out)
+                        .imag(apply(input_view, strided_in).imag());
+                });
+
+            // Perform sub-FFT in-place
+            this->pruned_heffte_m->forward(tempFieldInput.data(), tempFieldInput.data(),
+                                           this->workspace_m.data(), heffte::scale::full);
+
+            // Add to outputField with twiddle factors
+            Vector<int, Dim> localFirst;
+            for (unsigned d = 0; d < Dim; ++d) {
+                localFirst[d] = lDomPruned[d].first();
+            }
+
+            ippl::parallel_for(
+                "PrunedFFT sub-FFT twiddle factor addition",
+                getRangePolicy(output_view, nghost_out),
+                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                    // global pruned index
+                    auto g = (args - nghost_out) + localFirst;
+                    Vector<int64_t, Dim> freq{};
+                    for (int d = 0; d < Dim; ++d) {
+                        if (g[d] < static_cast<int64_t>(pruning_.n_modes[d]) / 2) {
+                            freq[d] = g[d];
+                        } else {
+                            freq[d] = static_cast<int64_t>(gDomFull[d].length())
+                                      - static_cast<int64_t>(pruning_.n_modes[d]) + g[d];
+                        }
+                    }
+
+                    auto output_loc = args - nghost_out;
+                    auto input_loc  = (args - nghost_out) * 2 + offs + nghost_in;
+                    Complex_t w     = 1.0;
+                    for (int d = 0; d < Dim; ++d) {
+                        double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
+                                     / static_cast<double>(gDomFull[d].length());
+                        w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
+                                            : Complex_t(std::cos(ang), std::sin(ang));
+                    }
+                    auto fft_input = apply(tempFieldInput, args - nghost_out);
+                    apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
+                    apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
+                });
+        }
+    }
+
+    template <typename ComplexField>
+    void FFT<PrunedCCTransform, ComplexField>::backward_stride2_pruned_3d(ComplexField& input,
+                                                                         ComplexField& output) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+        auto input_view      = input.getView();
+        auto output_view     = output.getView();
+        const int nghost_in  = input.getNghost();
+        const int nghost_out = output.getNghost();
+
+        const auto& lDomFull   = input.getLayout().getLocalNDIndex();
+        const auto& lDomPruned = output.getLayout().getLocalNDIndex();
+        const auto& gDomFull   = input.getLayout().getDomain();
+
+        const size_t N0 = gDomFull[0].length();
+        const size_t N1 = gDomFull[1].length();
+        const size_t N2 = gDomFull[2].length();
+
+        const size_t K0 = pruning_.n_modes[0];
+        const size_t K1 = pruning_.n_modes[1];
+        const size_t K2 = pruning_.n_modes[2];
+
+        // (paul) I now hardcoded this to a factor of two. If you want to change the
+        //        upsampling factor or extract less modes, this is not fundamentally
+        //        difficult (i.e. the same algorithm still works, increase striding in the
+        //                   sub-FFTs), but the code needs to change a bit.
+        assert(K0 * 2 == N0 && K1 * 2 == N1 && K2 * 2 == N2);
+        assert((N0 % 2) == 0 && (N1 % 2) == 0 && (N2 % 2) == 0);
+
+        // Both tempField should be of output size
+        if (tempFieldInput.size() != output.getOwned().size()) {
+            tempFieldInput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
+        }
+        if (tempFieldOutput.size() != output.getOwned().size()) {
+            tempFieldOutput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
+        }
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+
+        Kokkos::deep_copy(output_view, Complex_t(0, 0));
+
+        auto scaling_factor = 1.0;
+        for (int d = 0; d < Dim; ++d) {
+            scaling_factor *= static_cast<double>(pruning_.n_modes[d])
+                              / static_cast<double>(gDomFull[d].length());
+        }
+
+        // Perform sub-FFTS
+        for (int k = 0; k < std::pow(2, Dim); ++k) {
+            // Convert input k to mask (b_2, b_1, b_0) (3D) of offsets in the strided input
+            Vector<long, Dim> offs;
+            for (int d = 0; d < Dim; ++d) {
+                offs[d] = (k >> d) & 1;
+            }
+
+            // Strided copy into tempFieldInput
+            ippl::parallel_for(
+                "strided input copy PrunedFFT", getRangePolicy(output_view, nghost_out),
+                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                    auto strided_in = (args - nghost_out) * 2 + offs + nghost_in;
+
+                    apply(tempFieldInput, args - nghost_out)
+                        .real(apply(input_view, strided_in).real());
+                    apply(tempFieldInput, args - nghost_out)
+                        .imag(apply(input_view, strided_in).imag());
+                });
+
+            // Perform sub-FFT in-place
+            this->pruned_heffte_m->forward(tempFieldInput.data(), tempFieldInput.data(),
+                                           this->workspace_m.data(), heffte::scale::full);
+
+            // Add to outputField with twiddle factors
+            Vector<int, Dim> localFirst;
+            for (unsigned d = 0; d < Dim; ++d) {
+                localFirst[d] = lDomPruned[d].first();
+            }
+
+            ippl::parallel_for(
+                "PrunedFFT sub-FFT twiddle factor addition",
+                getRangePolicy(output_view, nghost_out),
+                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                    // global pruned index
+                    auto g = (args - nghost_out) + localFirst;
+                    Vector<int64_t, Dim> freq{};
+                    for (int d = 0; d < Dim; ++d) {
+                        if (g[d] < static_cast<int64_t>(pruning_.n_modes[d]) / 2) {
+                            freq[d] = g[d];
+                        } else {
+                            freq[d] = static_cast<int64_t>(gDomFull[d].length())
+                                      - static_cast<int64_t>(pruning_.n_modes[d]) + g[d];
+                        }
+                    }
+
+                    auto output_loc = args - nghost_out;
+                    auto input_loc  = (args - nghost_out) * 2 + offs + nghost_in;
+                    Complex_t w     = 1.0;
+                    for (int d = 0; d < Dim; ++d) {
+                        double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
+                                     / static_cast<double>(gDomFull[d].length());
+                        w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
+                                            : Complex_t(std::cos(ang), std::sin(ang));
+                    }
+                    auto fft_input = apply(tempFieldInput, args - nghost_out);
+                    apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
+                    apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
+                });
+        }
+    }
+
+    template <typename ComplexField>
+    void FFT<PrunedCCTransform, ComplexField>::transform(TransformDirection direction,
+                                                         ComplexField& input,
+                                                         ComplexField& output) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+        auto input_view      = input.getView();
+        auto output_view     = output.getView();
+        const int nghost_in  = input.getNghost();
+        const int nghost_out = output.getNghost();
+
+        // Allocate temp view for full grid (heFFTe works on full grid)
+        auto& tempField = this->tempField;
+        if (direction == FORWARD && tempField.size() != input.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", input_view, nghost_in);
+        } else if (direction == BACKWARD && tempField.size() != output.getOwned().size()) {
+            tempField = detail::shrinkView("tempField", output_view, nghost_out);
+        }
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+
+        if (direction == FORWARD) {
+            if (Dim == 3) {
+                forward_stride2_pruned_3d(input, output);
+                return;
+            }
+            // Forward: full grid -> full FFT -> extract first K/2 and last K/2 modes
+            // Copy full input to temp
+            ippl::parallel_for(
+                "copy input pruned FFT", getRangePolicy(input_view, nghost_in),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    apply(tempField, args - nghost_in).real(apply(input_view, args).real());
+                    apply(tempField, args - nghost_in).imag(apply(input_view, args).imag());
+                });
+
+            // Perform full FFT in-place
+            this->heffte_m->forward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+
+            // Extract modes: first K/2 positive and last K/2 negative frequencies
+            // FFT ordering: [0, 1, ..., N/2-1, -N/2, ..., -1]
+            // Pruned: [0, ..., K/2-1] and [-K/2, ..., -1]
+            const auto& lDomFull   = input.getLayout().getLocalNDIndex();
+            const auto& lDomPruned = output.getLayout().getLocalNDIndex();
+
+            const size_t N0 = lDomFull[0].length();
+            const size_t N1 = lDomFull[1].length();
+            const size_t N2 = lDomFull[2].length();
+
+            const size_t K0 = pruning_.n_modes[0];
+            const size_t K1 = pruning_.n_modes[1];
+            const size_t K2 = pruning_.n_modes[2];
+
+            ippl::parallel_for(
+                "extract pruned modes",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                    {lDomPruned[0].first(), lDomPruned[1].first(), lDomPruned[2].first()},
+                    {lDomPruned[0].last() + 1, lDomPruned[1].last() + 1, lDomPruned[2].last() + 1}),
+                KOKKOS_LAMBDA(const ippl::Vector<int64_t, 3>& idx) {
+                    int64_t gi = idx[0];  // Global index in pruned grid
+                    int64_t gj = idx[1];
+                    int64_t gk = idx[2];
+
+                    // Map pruned index to full grid index
+                    // Positive freqs [0, K/2-1] map to [0, K/2-1]
+                    // Negative freqs [K/2, K-1] map to [N-K/2, N-1]
+                    auto map_index = [](int64_t pruned_idx, size_t K, size_t N) -> int64_t {
+                        if (pruned_idx < K / 2) {
+                            return pruned_idx;  // Positive frequencies
+                        } else {
+                            return N - K + pruned_idx;  // Negative frequencies
+                        }
+                    };
+
+                    int64_t fi = map_index(gi, K0, N0);
+                    int64_t fj = map_index(gj, K1, N1);
+                    int64_t fk = map_index(gk, K2, N2);
+
+                    // Check if this mode exists in local full domain
+                    if (fi >= lDomFull[0].first() && fi <= lDomFull[0].last()
+                        && fj >= lDomFull[1].first() && fj <= lDomFull[1].last()
+                        && fk >= lDomFull[2].first() && fk <= lDomFull[2].last()) {
+                        int li_full = fi - lDomFull[0].first();
+                        int lj_full = fj - lDomFull[1].first();
+                        int lk_full = fk - lDomFull[2].first();
+
+                        int li_pruned = gi - lDomPruned[0].first() + nghost_out;
+                        int lj_pruned = gj - lDomPruned[1].first() + nghost_out;
+                        int lk_pruned = gk - lDomPruned[2].first() + nghost_out;
+
+                        output_view(li_pruned, lj_pruned, lk_pruned) =
+                            tempField(li_full, lj_full, lk_full);
+                    } else {
+                        assert(false);
+                        int li_pruned = gi - lDomPruned[0].first() + nghost_out;
+                        int lj_pruned = gj - lDomPruned[1].first() + nghost_out;
+                        int lk_pruned = gk - lDomPruned[2].first() + nghost_out;
+
+                        output_view(li_pruned, lj_pruned, lk_pruned) = Complex_t(0, 0);
+                    }
+                });
+
+        } else if (direction == BACKWARD) {
+            // Backward: pruned modes -> zero-pad to full -> full IFFT
+            // Zero-initialize temp for full grid
+            Kokkos::deep_copy(tempField, Complex_t(0, 0));
+
+            const auto& lDomFull   = output.getLayout().getLocalNDIndex();
+            const auto& lDomPruned = input.getLayout().getLocalNDIndex();
+
+            const size_t N0 = lDomFull[0].length();
+            const size_t N1 = lDomFull[1].length();
+            const size_t N2 = lDomFull[2].length();
+
+            const size_t K0 = pruning_.n_modes[0];
+            const size_t K1 = pruning_.n_modes[1];
+            const size_t K2 = pruning_.n_modes[2];
+
+            // Place pruned modes at correct positions in full grid
+            ippl::parallel_for(
+                "zeropad pruned modes",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                    {lDomPruned[0].first(), lDomPruned[1].first(), lDomPruned[2].first()},
+                    {lDomPruned[0].last() + 1, lDomPruned[1].last() + 1, lDomPruned[2].last() + 1}),
+                KOKKOS_LAMBDA(const ippl::Vector<int64_t, 3>& idx) {
+                    int64_t gi = idx[0];  // Global index in pruned grid
+                    int64_t gj = idx[1];
+                    int64_t gk = idx[2];
+
+                    // Map pruned index to full grid index
+                    auto map_index = [](int64_t pruned_idx, size_t K, size_t N) -> int64_t {
+                        if (pruned_idx < K / 2) {
+                            return pruned_idx;  // Positive frequencies
+                        } else {
+                            return N - K + pruned_idx;  // Negative frequencies
+                        }
+                    };
+
+                    int64_t fi = map_index(gi, K0, N0);
+                    int64_t fj = map_index(gj, K1, N1);
+                    int64_t fk = map_index(gk, K2, N2);
+
+                    // Check if this mode should be placed in local full domain
+                    if (fi >= lDomFull[0].first() && fi <= lDomFull[0].last()
+                        && fj >= lDomFull[1].first() && fj <= lDomFull[1].last()
+                        && fk >= lDomFull[2].first() && fk <= lDomFull[2].last()) {
+                        int li_full = fi - lDomFull[0].first();
+                        int lj_full = fj - lDomFull[1].first();
+                        int lk_full = fk - lDomFull[2].first();
+
+                        int li_pruned = gi - lDomPruned[0].first() + nghost_in;
+                        int lj_pruned = gj - lDomPruned[1].first() + nghost_in;
+                        int lk_pruned = gk - lDomPruned[2].first() + nghost_in;
+
+                        // auto &val_tmpfield = tempField(li_full, lj_full, lk_full);
+                        auto val_input = input_view(li_pruned, lj_pruned, lk_pruned);
+                        tempField(li_full, lj_full, lk_full) = val_input;
+                    }
+                });
+
+            // Perform full IFFT in-place
+            this->heffte_m->backward(tempField.data(), tempField.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
+
+            // Copy result to output
+            ippl::parallel_for(
+                "copy output pruned FFT backward", getRangePolicy(output_view, nghost_out),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    apply(output_view, args).real() = apply(tempField, args - nghost_out).real();
+                    apply(output_view, args).imag() = apply(tempField, args - nghost_out).imag();
+                });
+        } else {
+            throw std::logic_error("Only FORWARD and BACKWARD are allowed as directions");
+        }
+    }
+
+    //========================================================================
     // FFT RCTransform Constructors
     //========================================================================
 
@@ -261,6 +717,198 @@ namespace ippl {
                 apply(gview, args).real() = apply(tempFieldg, args - nghostg).real();
                 apply(gview, args).imag() = apply(tempFieldg, args - nghostg).imag();
             });
+    }
+    //========================================================================
+    // FFT PrunedRCTransform Constructor and Methods
+    //========================================================================
+
+    template <typename RealField>
+    FFT<PrunedRCTransform, RealField>::FFT(const Layout_t& layoutReal,
+                                           const Layout_t& layoutComplexFull,
+                                           const Layout_t& layoutComplexPruned,
+                                           const PruningParams<Dim>& pruning,
+                                           const ParameterList& params)
+        : pruning_(pruning) {
+        // Setup heFFTe with real input and full complex output
+        std::array<long long, 3> lowReal, highReal, lowComplexFull, highComplexFull;
+
+        const NDIndex<Dim>& lDomReal        = layoutReal.getLocalNDIndex();
+        const NDIndex<Dim>& lDomComplexFull = layoutComplexFull.getLocalNDIndex();
+
+        this->domainToBounds(lDomReal, lowReal, highReal);
+        this->domainToBounds(lDomComplexFull, lowComplexFull, highComplexFull);
+
+        heffte::box3d<long long> inbox  = {lowReal, highReal};
+        heffte::box3d<long long> outbox = {lowComplexFull, highComplexFull};
+
+        this->setup(inbox, outbox, params);
+    }
+
+    template <typename RealField>
+    void FFT<PrunedRCTransform, RealField>::transform(TransformDirection direction, RealField& f,
+                                                      ComplexField& g) {
+        static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+
+        auto fview        = f.getView();
+        auto gview        = g.getView();
+        const int nghostf = f.getNghost();
+        const int nghostg = g.getNghost();
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+
+        if (direction == FORWARD) {
+            // Forward: real (full) -> full complex FFT -> extract pruned modes
+
+            // Prepare temp views (no ghost layers)
+            auto& tempFieldf = this->tempField;
+            auto& tempFieldg = this->tempFieldComplex;
+            if (tempFieldf.size() != f.getOwned().size()) {
+                tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
+            }
+
+            // We need a temp field for FULL complex output
+            const auto& lDomReal = f.getLayout().getLocalNDIndex();
+            // Full complex size: (N0/2+1) x N1 x N2 for r2c in dimension 0
+            size_t fullComplexSize =
+                (lDomReal[0].length() / 2 + 1) * lDomReal[1].length() * lDomReal[2].length();
+            if (tempFieldg.size() != fullComplexSize) {
+                tempFieldg = Kokkos::View<Complex_t***, Kokkos::LayoutLeft,
+                                          typename RealField::memory_space>(
+                    "tempFieldg", lDomReal[0].length() / 2 + 1, lDomReal[1].length(),
+                    lDomReal[2].length());
+            }
+
+            // Copy real field to temp (no ghosts)
+            ippl::parallel_for(
+                "copy real field pruned R2C", getRangePolicy(fview, nghostf),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    apply(tempFieldf, args - nghostf) = apply(fview, args);
+                });
+
+            // R2C FFT: real -> full complex
+            this->heffte_m->forward(tempFieldf.data(), tempFieldg.data(), this->workspace_m.data(),
+                                    heffte::scale::full);
+
+            // Extract pruned modes from full complex to output
+            // R2C layout: dimension 0 has [0, N/2] (only positive freqs)
+            //             dimensions 1,2 have [0, ..., N/2-1, -N/2, ..., -1]
+            const auto& lDomPruned = g.getLayout().getLocalNDIndex();
+
+            const size_t N0 = lDomReal[0].length();
+            const size_t N1 = lDomReal[1].length();
+            const size_t N2 = lDomReal[2].length();
+
+            const size_t K0 = pruning_.n_modes[0];  // For R2C dim, just first K0 modes
+            const size_t K1 = pruning_.n_modes[1];
+            const size_t K2 = pruning_.n_modes[2];
+
+            ippl::parallel_for(
+                "extract pruned modes R2C",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                    {lDomPruned[0].first(), lDomPruned[1].first(), lDomPruned[2].first()},
+                    {lDomPruned[0].last() + 1, lDomPruned[1].last() + 1, lDomPruned[2].last() + 1}),
+                KOKKOS_LAMBDA(const ippl::Vector<int64_t, 3>& idx) {
+                    int64_t gi = idx[0];  // Global index in pruned grid
+                    int64_t gj = idx[1];
+                    int64_t gk = idx[2];
+
+                    // Map pruned index to full grid index
+                    // Dimension 0 (R2C): only positive freqs, direct mapping
+                    // Dimensions 1,2: positive [0, K/2) -> [0, K/2), negative [K/2, K) -> [N-K/2,
+                    // N)
+                    int64_t fi = gi;  // R2C dimension - direct mapping
+                    int64_t fj = (gj < static_cast<int64_t>(K1 / 2)) ? gj : (N1 - K1 + gj);
+                    int64_t fk = (gk < static_cast<int64_t>(K2 / 2)) ? gk : (N2 - K2 + gk);
+
+                    // tempFieldg has no ghosts, indexed from 0
+                    int li_full = fi;
+                    int lj_full = fj;
+                    int lk_full = fk;
+
+                    // gview has ghosts
+                    int li_pruned = gi - lDomPruned[0].first() + nghostg;
+                    int lj_pruned = gj - lDomPruned[1].first() + nghostg;
+                    int lk_pruned = gk - lDomPruned[2].first() + nghostg;
+
+                    gview(li_pruned, lj_pruned, lk_pruned) = tempFieldg(li_full, lj_full, lk_full);
+                });
+
+        } else if (direction == BACKWARD) {
+            // Backward: pruned complex -> zero-pad to full complex -> C2R IFFT
+
+            // Prepare temp views
+            auto& tempFieldf = this->tempField;
+            auto& tempFieldg = this->tempFieldComplex;
+            if (tempFieldf.size() != f.getOwned().size()) {
+                tempFieldf = detail::shrinkView("tempFieldf", fview, nghostf);
+            }
+
+            const auto& lDomReal = f.getLayout().getLocalNDIndex();
+            size_t fullComplexSize =
+                (lDomReal[0].length() / 2 + 1) * lDomReal[1].length() * lDomReal[2].length();
+            if (tempFieldg.size() != fullComplexSize) {
+                tempFieldg = Kokkos::View<Complex_t***, Kokkos::LayoutLeft,
+                                          typename RealField::memory_space>(
+                    "tempFieldg", lDomReal[0].length() / 2 + 1, lDomReal[1].length(),
+                    lDomReal[2].length());
+            }
+
+            // Zero-initialize full complex temp
+            Kokkos::deep_copy(tempFieldg, Complex_t(0, 0));
+
+            // Copy pruned modes to correct positions in full complex
+            const auto& lDomPruned = g.getLayout().getLocalNDIndex();
+
+            const size_t N0 = lDomReal[0].length();
+            const size_t N1 = lDomReal[1].length();
+            const size_t N2 = lDomReal[2].length();
+
+            const size_t K0 = pruning_.n_modes[0];
+            const size_t K1 = pruning_.n_modes[1];
+            const size_t K2 = pruning_.n_modes[2];
+
+            ippl::parallel_for(
+                "zeropad pruned modes R2C",
+                Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                    {lDomPruned[0].first(), lDomPruned[1].first(), lDomPruned[2].first()},
+                    {lDomPruned[0].last() + 1, lDomPruned[1].last() + 1, lDomPruned[2].last() + 1}),
+                KOKKOS_LAMBDA(const ippl::Vector<int64_t, 3>& idx) {
+                    int64_t gi = idx[0];
+                    int64_t gj = idx[1];
+                    int64_t gk = idx[2];
+
+                    // Map pruned index to full grid index
+                    int64_t fi = gi;  // R2C dimension - direct mapping
+                    int64_t fj = (gj < static_cast<int64_t>(K1 / 2)) ? gj : (N1 - K1 + gj);
+                    int64_t fk = (gk < static_cast<int64_t>(K2 / 2)) ? gk : (N2 - K2 + gk);
+
+                    // tempFieldg has no ghosts
+                    int li_full = fi;
+                    int lj_full = fj;
+                    int lk_full = fk;
+
+                    // gview has ghosts
+                    int li_pruned = gi - lDomPruned[0].first() + nghostg;
+                    int lj_pruned = gj - lDomPruned[1].first() + nghostg;
+                    int lk_pruned = gk - lDomPruned[2].first() + nghostg;
+
+                    tempFieldg(li_full, lj_full, lk_full) = gview(li_pruned, lj_pruned, lk_pruned);
+                });
+
+            // C2R IFFT: full complex -> real
+            this->heffte_m->backward(tempFieldg.data(), tempFieldf.data(), this->workspace_m.data(),
+                                     heffte::scale::none);
+
+            // Copy real result to output (with ghosts)
+            ippl::parallel_for(
+                "copy real field from temp", getRangePolicy(fview, nghostf),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    apply(fview, args) = apply(tempFieldf, args - nghostf);
+                });
+
+        } else {
+            throw std::logic_error("Only FORWARD and BACKWARD are allowed as directions");
+        }
     }
 
     template <typename Field>

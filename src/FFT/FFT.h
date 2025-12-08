@@ -34,7 +34,6 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Index/NDIndex.h"
 
-
 #ifdef ENABLE_FINUFFT
 #include <finufft.h>
 #ifdef KOKKOS_ENABLE_CUDA
@@ -69,6 +68,12 @@ namespace ippl {
      */
     class NUFFTransform {};
 
+    /**
+     * Tag classes for pruned Fourier transforms
+     */
+    class PrunedCCTransform {};
+    class PrunedRCTransform {};
+
     enum FFTComm {
         a2av   = 0,
         a2a    = 1,
@@ -79,6 +84,27 @@ namespace ippl {
     enum TransformDirection {
         FORWARD,
         BACKWARD
+    };
+
+    /**
+     * Parameters for pruned FFT transforms
+     * Specifies how many modes to extract/keep in each dimension
+     */
+    template <unsigned Dim>
+    struct PruningParams {
+        // Number of modes to extract in each dimension
+        // For pruned output: extract first K modes from full FFT
+        // For pruned input: zero-pad to full size before FFT
+        Vector<size_t, Dim> n_modes;
+
+        PruningParams() {
+            for (unsigned d = 0; d < Dim; ++d) {
+                n_modes[d] = 0;
+            }
+        }
+
+        PruningParams(const Vector<size_t, Dim>& modes)
+            : n_modes(modes) {}
     };
 
     namespace detail {
@@ -224,7 +250,6 @@ namespace ippl {
         };
 #endif
 
-
 #endif
     }  // namespace detail
 
@@ -237,6 +262,8 @@ namespace ippl {
         using heffteBackend = Backend;
         using workspace_t   = typename FFT<heffteBackend>::template buffer_container<BufferType>;
         using Layout_t      = FieldLayout<Dim>;
+        template <typename... Ts>
+        using BaseFFTType = FFT<Ts...>;
 
         FFTBase(const Layout_t& layout, const ParameterList& params);
         ~FFTBase() = default;
@@ -302,6 +329,65 @@ namespace ippl {
     };
 
     /**
+       Pruned complex-to-complex FFT class
+       Forward: full grid -> pruned modes (extracts first K modes)
+       Backward: pruned modes -> full grid (zero-pads)
+    */
+    template <typename ComplexField>
+    class FFT<PrunedCCTransform, ComplexField>
+        : public IN_PLACE_FFT_BASE_CLASS(ComplexField, backend) {
+        constexpr static unsigned Dim = ComplexField::dim;
+        using Base                    = IN_PLACE_FFT_BASE_CLASS(ComplexField, backend);
+
+    public:
+        using Complex_t = typename ComplexField::value_type;
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
+
+        template <typename... Ts>
+        using BaseFFTType = Base::template BaseFFTType<Ts...>;
+
+        /**
+         * Create a new pruned FFT with different input/output layouts
+         * @param layoutInput Layout for full-size field
+         * @param layoutOutput Layout for pruned field
+         * @param pruning Pruning parameters specifying n_modes
+         * @param params heFFTe parameters
+         */
+        FFT(const Layout_t& layoutInput, const Layout_t& layoutOutput,
+            const PruningParams<Dim>& pruning, const ParameterList& params);
+
+        /*!
+         * Perform pruned FFT
+         * @param direction Forward (full->pruned) or backward (pruned->full) transformation
+         * @param input Input field
+         * @param output Output field
+         */
+        void transform(TransformDirection direction, ComplexField& input, ComplexField& output);
+
+        /**
+         * Performs pruned forward FFT for pruning factor 2 by a manual last Cooley-Tukey step in
+         * only one direction
+         * @param input Input field
+         * @param output Output field
+         */
+        void forward_stride2_pruned_3d(ComplexField& input, ComplexField& output);
+
+        /**
+         * Performs pruned backward FFT for pruning factor 2 by a manual last Cooley-Tukey step in
+         * only one direction
+         * @param input Input field
+         * @param output Output field
+         */
+        void backward_stride2_pruned_3d(ComplexField& input, ComplexField& output);
+
+    private:
+        PruningParams<Dim> pruning_;
+        std::shared_ptr<BaseFFTType<heffteBackend, long long>> pruned_heffte_m;
+        typename Base::template temp_view_type<ComplexField> tempFieldInput;
+        typename Base::template temp_view_type<ComplexField> tempFieldOutput;
+    };
+
+    /**
        real-to-complex FFT class
     */
     template <typename RealField>
@@ -342,6 +428,69 @@ namespace ippl {
         void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
     private:
+        typename Base::template temp_view_type<ComplexField> tempFieldComplex;
+    };
+
+    /**
+       Pruned real-to-complex FFT class
+       Forward: full real grid -> pruned complex modes (extracts first K modes)
+       Backward: pruned complex modes -> full real grid (zero-pads in frequency domain)
+    */
+    /**
+       Pruned real-to-complex FFT class
+       Forward: full real grid -> pruned complex modes (extracts first K modes in dim 0,
+                first K/2 positive and last K/2 negative modes in dims 1,2)
+       Backward: pruned complex modes -> full real grid (zero-pads in frequency domain)
+    */
+    template <typename RealField>
+    class FFT<PrunedRCTransform, RealField>
+        : public EXT_FFT_BASE_CLASS(RealField, backend,
+                                    Kokkos::complex<typename RealField::value_type>) {
+        constexpr static unsigned Dim = RealField::dim;
+        using Real_t                  = typename RealField::value_type;
+        using Base                    = EXT_FFT_BASE_CLASS(RealField, backend,
+                                                           Kokkos::complex<typename RealField::value_type>);
+
+    public:
+        using Complex_t    = Kokkos::complex<Real_t>;
+        using ComplexField = typename Field<Complex_t, Dim, typename RealField::Mesh_t,
+                                            typename RealField::Centering_t,
+                                            typename RealField::execution_space>::uniform_type;
+
+        using typename Base::heffteBackend, typename Base::workspace_t, typename Base::Layout_t;
+
+        /**
+         * Create a new pruned R2C FFT object
+         * @param layoutReal Layout for real field (N x N x N)
+         * @param layoutComplexFull Layout for full complex field ((N/2+1) x N x N for
+         * r2c_direction=0)
+         * @param layoutComplexPruned Layout for pruned complex field
+         * @param pruning Pruning parameters specifying n_modes
+         * @param params heFFTe parameters (must include r2c_direction)
+         */
+        FFT(const Layout_t& layoutReal, const Layout_t& layoutComplexFull,
+            const Layout_t& layoutComplexPruned, const PruningParams<Dim>& pruning,
+            const ParameterList& params);
+
+        /*!
+         * Perform pruned R2C FFT
+         * Forward: Computes full R2C FFT, then extracts:
+         *   - First K0 modes in dimension 0 (r2c direction, only positive freqs)
+         *   - First K/2 and last K/2 modes in dimensions 1,2 (positive and negative freqs)
+         * Backward: Zero-pads pruned modes to full complex grid, then computes C2R IFFT
+         *
+         * @param direction Forward (real->pruned complex) or backward (pruned complex->real)
+         * @param f Real field (full size)
+         * @param g Pruned complex field
+         */
+        void transform(TransformDirection direction, RealField& f, ComplexField& g);
+
+    private:
+        PruningParams<Dim> pruning_;
+
+        // Dimensions of full complex grid
+        std::array<size_t, Dim> fullComplexDims_;
+
         typename Base::template temp_view_type<ComplexField> tempFieldComplex;
     };
 
@@ -437,8 +586,8 @@ namespace ippl {
                                             typename RealField::Centering_t,
                                             typename RealField::execution_space>::uniform_type;
 #ifdef ENABLE_FINUFFT
-        using complexType  = typename detail::finufftType<T>::complexType;
-        using plan_t       = typename detail::finufftType<T>::plan_t;
+        using complexType = typename detail::finufftType<T>::complexType;
+        using plan_t      = typename detail::finufftType<T>::plan_t;
 #else
         using complexType = Kokkos::complex<T>;
 #endif
@@ -472,7 +621,7 @@ namespace ippl {
 #ifdef KOKKOS_NUFFT_AVAILABLE
         struct KokkosNUFFTSpreadConfig {
             KOKKOS_INLINE_FUNCTION constexpr static nufft::SpreadType get_spread_type() {
-                //return nufft::SpreadType::Atomic;
+                // return nufft::SpreadType::Atomic;
                 return nufft::SpreadType::Tiled;
             }
 
@@ -504,7 +653,8 @@ namespace ippl {
         /**
            setup performs the initialization necessary.
         */
-        void setup(const Layout_t& layout, std::array<int64_t, 3>& nmodes, const ParameterList& params);
+        void setup(const Layout_t& layout, std::array<int64_t, 3>& nmodes,
+                   const ParameterList& params);
 
 #ifdef ENABLE_FINUFFT
         detail::finufftType<T> nufft_m;

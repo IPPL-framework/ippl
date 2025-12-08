@@ -234,7 +234,6 @@ namespace ippl {
         const Kernel& kernel, const Interpolation::ScatterConfig& config) const {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
-        using complex_type     = typename Field::value_type;
 
         static IpplTimings::TimerRef scatterKernelTimer = IpplTimings::getTimer("scatterKernel");
         IpplTimings::startTimer(scatterKernelTimer);
