@@ -160,26 +160,27 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
         using exec_space = typename field_type::execution_space;
         using mdrange_t  = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
 
-        Kokkos::parallel_for(
-            "ManualPrune",
-            mdrange_t({ng_p, ng_p, ng_p},
-                      {view_pruned_out.extent(0) - ng_p, view_pruned_out.extent(1) - ng_p,
-                       view_pruned_out.extent(2) - ng_p}),
-            KOKKOS_LAMBDA(const int li_p, const int lj_p, const int lk_p) {
-                int gi_p = li_p - ng_p + p0_first;
-                int gj_p = lj_p - ng_p + p1_first;
-                int gk_p = lk_p - ng_p + p2_first;
-
-                int gi_f = (gi_p < K0 / 2) ? gi_p : (N0 - K0 + gi_p);
-                int gj_f = (gj_p < K1 / 2) ? gj_p : (N1 - K1 + gj_p);
-                int gk_f = (gk_p < K2 / 2) ? gk_p : (N2 - K2 + gk_p);
-
-                int li_f = gi_f - f0_first + ng;
-                int lj_f = gj_f - f1_first + ng;
-                int lk_f = gk_f - f2_first + ng;
-
-                view_pruned_out(li_p, lj_p, lk_p) = view_full_result(li_f, lj_f, lk_f);
-            });
+        // Just compare without pruning the runtime
+        // Kokkos::parallel_for(
+        //     "ManualPrune",
+        //     mdrange_t({ng_p, ng_p, ng_p},
+        //               {view_pruned_out.extent(0) - ng_p, view_pruned_out.extent(1) - ng_p,
+        //                view_pruned_out.extent(2) - ng_p}),
+        //     KOKKOS_LAMBDA(const int li_p, const int lj_p, const int lk_p) {
+        //         int gi_p = li_p - ng_p + p0_first;
+        //         int gj_p = lj_p - ng_p + p1_first;
+        //         int gk_p = lk_p - ng_p + p2_first;
+        //
+        //         int gi_f = (gi_p < K0 / 2) ? gi_p : (N0 - K0 + gi_p);
+        //         int gj_f = (gj_p < K1 / 2) ? gj_p : (N1 - K1 + gj_p);
+        //         int gk_f = (gk_p < K2 / 2) ? gk_p : (N2 - K2 + gk_p);
+        //
+        //         int li_f = gi_f - f0_first + ng;
+        //         int lj_f = gj_f - f1_first + ng;
+        //         int lk_f = gk_f - f2_first + ng;
+        //
+        //         view_pruned_out(li_p, lj_p, lk_p) = view_full_result(li_f, lj_f, lk_f);
+        //     });
 
         Kokkos::fence();
         MPI_Barrier(ippl::Comm->getCommunicator());
