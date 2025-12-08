@@ -151,8 +151,8 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
         Kokkos::fence();
 
         // Manual pruning: extract modes from full result to pruned field
-        auto view_full_result = field_full_result.getView();
-        auto view_pruned_out  = field_pruned_result.getView();
+        auto &view_full_result = field_full_result.getView();
+        auto &view_pruned_out  = field_pruned_result.getView();
 
         const int ng   = nghost;
         const int ng_p = nghost_pruned;

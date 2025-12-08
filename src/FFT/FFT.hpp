@@ -261,6 +261,9 @@ namespace ippl {
         assert(K0 * 2 == N0 && K1 * 2 == N1 && K2 * 2 == N2);
         assert((N0 % 2) == 0 && (N1 % 2) == 0 && (N2 % 2) == 0);
 
+        auto& tempFieldInputView = tempFieldInput;
+        auto& pruned_modes = pruning_.n_modes;
+
         // Both tempField should be of output size
         if (tempFieldInput.size() != output.getOwned().size()) {
             std::cout << "allocating" << std::endl;
@@ -273,8 +276,6 @@ namespace ippl {
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
         Kokkos::deep_copy(output_view, Complex_t(0, 0));
-
-        auto tempFieldInputView = tempFieldInput.getView();
 
         auto scaling_factor = 1.0;
         for (int d = 0; d < Dim; ++d) {
@@ -296,7 +297,7 @@ namespace ippl {
             // Strided copy into tempFieldInput
             ippl::parallel_for(
                 "strided input copy PrunedFFT", getRangePolicy(output_view, nghost_out),
-                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
                     auto strided_in = (args - nghost_out) * 2 + offs + nghost_in;
 
                     apply(tempFieldInputView, args - nghost_out)
@@ -323,16 +324,16 @@ namespace ippl {
             ippl::parallel_for(
                 "PrunedFFT sub-FFT twiddle factor addition",
                 getRangePolicy(output_view, nghost_out),
-                KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
                     // global pruned index
                     auto g = (args - nghost_out) + localFirst;
                     Vector<int64_t, Dim> freq{};
                     for (int d = 0; d < Dim; ++d) {
-                        if (g[d] < static_cast<int64_t>(pruning_.n_modes[d]) / 2) {
+                        if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
                             freq[d] = g[d];
                         } else {
                             freq[d] = static_cast<int64_t>(gDomFull[d].length())
-                                      - static_cast<int64_t>(pruning_.n_modes[d]) + g[d];
+                                      - static_cast<int64_t>(pruned_modes[d]) + g[d];
                         }
                     }
 
