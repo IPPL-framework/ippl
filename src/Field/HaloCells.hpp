@@ -159,8 +159,8 @@ namespace ippl {
             MPI_Waitall(reqID_send, sendRequests.data(), MPI_STATUSES_IGNORE);
 
             for (size_t k = 0; k < recvRangesSaved.size(); k++) {
-                recvBuffers[k]->resetReadPos();
                 haloData_m.deserialize(*recvBuffers[k], recvRangesSaved[k].size());
+                recvBuffers[k]->resetReadPos();
                 unpack<Op>(recvRangesSaved[k], view, haloData_m);
             }
 
