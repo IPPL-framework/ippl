@@ -346,6 +346,19 @@ namespace ippl {
         template <typename... Ts>
         using BaseFFTType = Base::template BaseFFTType<Ts...>;
 
+        static constexpr int numSubFFTs = (1 << Dim);
+
+#if defined(KOKKOS_ENABLE_CUDA)
+        using stream_type = cudaStream_t;
+        using device_exec_space = Kokkos::Cuda;
+#elif defined(KOKKOS_ENABLE_HIP)
+        using stream_type = hipStream_t;
+        using device_exec_space = Kokkos::HIP;
+#else
+        using stream_type = void*;
+        using device_exec_space = Kokkos::DefaultExecutionSpace;
+#endif
+
         /**
          * Create a new pruned FFT with different input/output layouts
          * @param layoutInput Layout for full-size field
@@ -380,11 +393,24 @@ namespace ippl {
          */
         void backward_stride2_pruned_3d(ComplexField& input, ComplexField& output);
 
+        ~FFT();
     private:
         PruningParams<Dim> pruning_;
-        std::shared_ptr<BaseFFTType<heffteBackend, long long>> pruned_heffte_m;
+        // std::shared_ptr<BaseFFTType<heffteBackend, long long>> pruned_heffte_m;
         typename Base::template temp_view_type<ComplexField> tempFieldInput;
         typename Base::template temp_view_type<ComplexField> tempFieldOutput;
+        // Arrays for parallel execution - one per sub-FFT
+        std::array<std::shared_ptr<BaseFFTType<heffteBackend, long long>>, numSubFFTs> pruned_heffte_m;
+        std::array<typename Base::template temp_view_type<ComplexField>, numSubFFTs> tempFieldInputs;
+        std::array<workspace_t, numSubFFTs> workspaces_m;
+
+#ifdef KOKKOS_ENABLE_CUDA
+        std::array<cudaStream_t, numSubFFTs> streams_m;
+#elif defined(KOKKOS_ENABLE_HIP)
+        std::array<hipStream_t, numSubFFTs> streams_m;
+#endif
+
+        device_exec_space get_exec_instance(int k) const;
     };
 
     /**
