@@ -200,6 +200,7 @@ void benchmarkPrunedCC(int warmup_runs, int benchmark_runs) {
         field_input_copy = field_input;
 
         MPI_Barrier(ippl::Comm->getCommunicator());
+        Kokkos::fence();
         auto start = std::chrono::high_resolution_clock::now();
 
         pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);

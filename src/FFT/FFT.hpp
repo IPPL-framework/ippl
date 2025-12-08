@@ -228,9 +228,14 @@ namespace ippl {
     void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+        static IpplTimings::TimerRef PrunedFFT       = IpplTimings::getTimer("prunedFFT");
+        static IpplTimings::TimerRef SubFFT = IpplTimings::getTimer("subFFT");
+        IpplTimings::startTimer(PrunedFFT);
 
-        auto input_view      = input.getView();
-        auto output_view     = output.getView();
+
+
+        auto &input_view      = input.getView();
+        auto &output_view     = output.getView();
         const int nghost_in  = input.getNghost();
         const int nghost_out = output.getNghost();
 
@@ -255,9 +260,11 @@ namespace ippl {
 
         // Both tempField should be of output size
         if (tempFieldInput.size() != output.getOwned().size()) {
+            std::cout << "allocating" << std::endl;
             tempFieldInput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
         }
         if (tempFieldOutput.size() != output.getOwned().size()) {
+            std::cout << "allocating" << std::endl;
             tempFieldOutput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
         }
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
@@ -291,8 +298,10 @@ namespace ippl {
                 });
 
             // Perform sub-FFT in-place
+            IpplTimings::startTimer(SubFFT);
             this->pruned_heffte_m->forward(tempFieldInput.data(), tempFieldInput.data(),
                                            this->workspace_m.data(), heffte::scale::full);
+            IpplTimings::stopTimer(SubFFT);
 
             // Add to outputField with twiddle factors
             Vector<int, Dim> localFirst;
@@ -330,11 +339,12 @@ namespace ippl {
                     apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
                 });
         }
+        IpplTimings::stopTimer(PrunedFFT);
     }
 
     template <typename ComplexField>
     void FFT<PrunedCCTransform, ComplexField>::backward_stride2_pruned_3d(ComplexField& input,
-                                                                         ComplexField& output) {
+                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
         auto input_view      = input.getView();
@@ -445,27 +455,25 @@ namespace ippl {
                                                          ComplexField& input,
                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+        if (direction == FORWARD && Dim == 3) {
+            forward_stride2_pruned_3d(input, output);
+            return;
+        }
 
-        auto input_view      = input.getView();
-        auto output_view     = output.getView();
+        auto& input_view     = input.getView();
+        auto& output_view    = output.getView();
         const int nghost_in  = input.getNghost();
         const int nghost_out = output.getNghost();
 
         // Allocate temp view for full grid (heFFTe works on full grid)
-        auto& tempField = this->tempField;
-        if (direction == FORWARD && tempField.size() != input.getOwned().size()) {
-            tempField = detail::shrinkView("tempField", input_view, nghost_in);
-        } else if (direction == BACKWARD && tempField.size() != output.getOwned().size()) {
-            tempField = detail::shrinkView("tempField", output_view, nghost_out);
-        }
-
+        auto& tempField        = this->tempField;
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
         if (direction == FORWARD) {
-            if (Dim == 3) {
-                forward_stride2_pruned_3d(input, output);
-                return;
+            if (tempField.size() != input.getOwned().size()) {
+                tempField = detail::shrinkView("tempField", input_view, nghost_in);
             }
+
             // Forward: full grid -> full FFT -> extract first K/2 and last K/2 modes
             // Copy full input to temp
             ippl::parallel_for(
@@ -543,6 +551,10 @@ namespace ippl {
                 });
 
         } else if (direction == BACKWARD) {
+            if (tempField.size() != output.getOwned().size()) {
+                tempField = detail::shrinkView("tempField", output_view, nghost_in);
+            }
+
             // Backward: pruned modes -> zero-pad to full -> full IFFT
             // Zero-initialize temp for full grid
             Kokkos::deep_copy(tempField, Complex_t(0, 0));
