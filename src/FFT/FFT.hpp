@@ -110,19 +110,6 @@ namespace ippl {
     }
 
     template <typename ComplexField>
-    FFT<PrunedCCTransform, ComplexField>::~FFT() {
-#ifdef Heffte_ENABLE_CUDA
-        for (int k = 0; k < numSubFFTs; ++k) {
-            cudaStreamDestroy(streams_m[k]);
-        }
-#elif defined(Heffte_ENABLE_ROCM)
-        for (int k = 0; k < numSubFFTs; ++k) {
-            hipStreamDestroy(streams_m[k]);
-        }
-#endif
-    }
-
-    template <typename ComplexField>
     void FFT<CCTransform, ComplexField>::warmup(ComplexField& f) {
         this->transform(FORWARD, f);
         this->transform(BACKWARD, f);
@@ -178,100 +165,75 @@ namespace ippl {
     //========================================================================
 
     template <typename ComplexField>
-    typename FFT<PrunedCCTransform, ComplexField>::device_exec_space
-    FFT<PrunedCCTransform, ComplexField>::get_exec_instance(int k) const {
-#if defined(KOKKOS_ENABLE_CUDA)
-        return device_exec_space(streams_m[k]);
-#elif defined(KOKKOS_ENABLE_HIP)
-        return device_exec_space(streams_m[k]);
-#else
-        return device_exec_space();
-#endif
-    }
-
-    template <typename ComplexField>
     FFT<PrunedCCTransform, ComplexField>::FFT(const Layout_t& layoutInput,
                                               const Layout_t& layoutOutput,
                                               const PruningParams<Dim>& pruning,
                                               const ParameterList& params)
         : pruning_(pruning) {
-        static_assert(Dim == 3, "Parallel pruned FFT currently only supports 3D");
-
         // Setup heFFTe with the full (input) grid domain
+        // HeFFTe requires same global domain for input and output,
+        // so we do full FFT and then manually prune/pad
         std::array<long long, 3> lowInput, highInput;
+
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
+
         this->domainToBounds(lDomInput, lowInput, highInput);
 
         heffte::box3d<long long> inbox  = {lowInput, highInput};
-        heffte::box3d<long long> outbox = {lowInput, highInput};
+        heffte::box3d<long long> outbox = {lowInput, highInput};  // Same as input for heFFTe
+
         this->setup(inbox, outbox, params);
 
-        // Setup pruned domain
+        // TODO(paul) make this better
         const NDIndex<Dim>& lDomOutput = layoutOutput.getLocalNDIndex();
+
         std::array<long long, 3> lowInputPruned, highInputPruned;
         this->domainToBounds(lDomOutput, lowInputPruned, highInputPruned);
 
         heffte::box3d<long long> inboxPruned  = {lowInputPruned, highInputPruned};
-        heffte::box3d<long long> outboxPruned = {lowInputPruned, highInputPruned};
+        heffte::box3d<long long> outboxPruned = {lowInputPruned,
+                                                 highInputPruned};  // Same as input for heFFTe
 
-        // Create streams and heFFTe instances for each sub-FFT
-        for (int k = 0; k < numSubFFTs; ++k) {
-#ifdef Heffte_ENABLE_CUDA
-            cudaStreamCreate(&streams_m[k]);
-#elif defined(Heffte_ENABLE_ROCM)
-            hipStreamCreate(&streams_m[k]);
-#endif
+        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
 
-            heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
-
-            if (!params.get<bool>("use_heffte_defaults")) {
-                heffteOptions.use_pencils = params.get<bool>("use_pencils");
-                heffteOptions.use_reorder = params.get<bool>("use_reorder");
+        if (!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
 #ifdef Heffte_ENABLE_GPU
-                heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
 #endif
 
-                switch (params.get<int>("comm")) {
-                    case a2a:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                        break;
-                    case a2av:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                        break;
-                    case p2p:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                        break;
-                    case p2p_pl:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                        break;
-                    default:
-                        throw IpplException("FFT::setup", "Unrecognized heffte communication type");
-                }
+            switch (params.get<int>("comm")) {
+                case a2a:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                    break;
+                case a2av:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                    break;
+                case p2p:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                    break;
+                case p2p_pl:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                    break;
+                default:
+                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
             }
-
-            // Create heFFTe instance with specific stream
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-            pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                streams_m[k], inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
-#else
-            // CPU backend
-            pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
-#endif
-
-            // Allocate workspace for each instance
-            workspaces_m[k] =
-                workspace_t(pruned_heffte_m[k]->size_workspace());
         }
+        pruned_heffte_m = std::make_shared<BaseFFTType<heffteBackend, long long>>(
+            inboxPruned, outboxPruned, Comm->getCommunicator(), heffteOptions);
     }
 
     template <typename ComplexField>
     void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
+        static IpplTimings::TimerRef StridedCP  = IpplTimings::getTimer("stridedCP");
+        static IpplTimings::TimerRef CPOp  = IpplTimings::getTimer("CPOp");
         static IpplTimings::TimerRef TwiddleAdd = IpplTimings::getTimer("TwiddleAdd");
         static IpplTimings::TimerRef PrunedFFT  = IpplTimings::getTimer("prunedFFT");
-        static IpplTimings::TimerRef SubFFTs    = IpplTimings::getTimer("subFFTs");
+        static IpplTimings::TimerRef SubFFT     = IpplTimings::getTimer("subFFT");
+        static IpplTimings::TimerRef OffsComp     = IpplTimings::getTimer("OffsComp");
 
         IpplTimings::startTimer(PrunedFFT);
 
@@ -280,104 +242,90 @@ namespace ippl {
         const int nghost_in  = input.getNghost();
         const int nghost_out = output.getNghost();
 
+        const auto& lDomFull   = input.getLayout().getLocalNDIndex();
         const auto& lDomPruned = output.getLayout().getLocalNDIndex();
         const auto& gDomFull   = input.getLayout().getDomain();
+
+        const size_t N0 = gDomFull[0].length();
+        const size_t N1 = gDomFull[1].length();
+        const size_t N2 = gDomFull[2].length();
 
         const size_t K0 = pruning_.n_modes[0];
         const size_t K1 = pruning_.n_modes[1];
         const size_t K2 = pruning_.n_modes[2];
 
-        assert(K0 * 2 == gDomFull[0].length() && K1 * 2 == gDomFull[1].length()
-               && K2 * 2 == gDomFull[2].length());
+        // (paul) I now hardcoded this to a factor of two. If you want to change the
+        //        upsampling factor or extract less modes, this is not fundamentally
+        //        difficult (i.e. the same algorithm still works, increase striding in the
+        //                   sub-FFTs), but the code needs to change a bit.
+        assert(K0 * 2 == N0 && K1 * 2 == N1 && K2 * 2 == N2);
+        assert((N0 % 2) == 0 && (N1 % 2) == 0 && (N2 % 2) == 0);
 
+        auto& tempFieldInputView = tempFieldInput;
         auto& pruned_modes = pruning_.n_modes;
 
-        // Allocate temp buffers for each sub-FFT if needed
-        for (int k = 0; k < numSubFFTs; ++k) {
-            if (tempFieldInputs[k].size() != output.getOwned().size()) {
-                tempFieldInputs[k] = detail::shrinkView("tempFieldPrunedFFT_" + std::to_string(k),
-                                                        output_view, nghost_out);
-            }
+        // Both tempField should be of output size
+        if (tempFieldInput.size() != output.getOwned().size()) {
+            std::cout << "allocating" << std::endl;
+            tempFieldInput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
         }
+        if (tempFieldOutput.size() != output.getOwned().size()) {
+            std::cout << "allocating" << std::endl;
+            tempFieldOutput = detail::shrinkView("tempFieldPrunedFFT", output_view, nghost_out);
+        }
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
         Kokkos::deep_copy(output_view, Complex_t(0, 0));
 
-        double scaling_factor = 1.0;
+        auto scaling_factor = 1.0;
         for (int d = 0; d < Dim; ++d) {
             scaling_factor *= static_cast<double>(pruning_.n_modes[d])
                               / static_cast<double>(gDomFull[d].length());
         }
 
-        using index_array_type = typename RangePolicy<Dim>::index_array_type;
-
-        // Compute all offsets upfront
-        std::array<Vector<long, Dim>, numSubFFTs> offsets;
-        for (int k = 0; k < numSubFFTs; ++k) {
+        // Perform sub-FFTS
+        for (int k = 0; k < std::pow(2, Dim); ++k) {
+            // Convert input k to mask (b_2, b_1, b_0) (3D) of offsets in the strided input
+            IpplTimings::startTimer(StridedCP);
+            IpplTimings::startTimer(OffsComp);
+            Vector<long, Dim> offs;
             for (int d = 0; d < Dim; ++d) {
-                offsets[k][d] = (k >> d) & 1;
+                offs[d] = (k >> d) & 1;
             }
-        }
+            IpplTimings::stopTimer(OffsComp);
+            IpplTimings::startTimer(CPOp);
+            // Strided copy into tempFieldInput
+            ippl::parallel_for(
+                "strided input copy PrunedFFT", getRangePolicy(output_view, nghost_out),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    auto strided_in = (args - nghost_out) * 2 + offs + nghost_in;
 
-        // Get output extents for MDRangePolicy
-        auto owned = output.getOwned();
-        Kokkos::Array<long, Dim> lo, hi;
-        for (unsigned d = 0; d < Dim; ++d) {
-            lo[d] = 0;
-            hi[d] = owned[d].length();
-        }
+                    apply(tempFieldInputView, args - nghost_out)
+                        .real(apply(input_view, strided_in).real());
+                    apply(tempFieldInputView, args - nghost_out)
+                        .imag(apply(input_view, strided_in).imag());
+                });
+            IpplTimings::stopTimer(CPOp);
+            IpplTimings::stopTimer(StridedCP);
 
-        // Phase 1: Submit strided copies + FFTs to separate streams
-        IpplTimings::startTimer(SubFFTs);
+            // Perform sub-FFT in-place
+            IpplTimings::startTimer(SubFFT);
+            this->pruned_heffte_m->forward(tempFieldInput.data(), tempFieldInput.data(),
+                                           this->workspace_m.data(), heffte::scale::full);
+            IpplTimings::stopTimer(SubFFT);
 
-        Kokkos::parallel_for(
-            "PrunedFFT parallel sub-FFTs",
-            Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, numSubFFTs),
-            [&](const int k) {
-                auto offs                = offsets[k];
-                auto& tempFieldInputView = tempFieldInputs[k];
-                auto exec_instance       = get_exec_instance(k);
-
-                // Strided copy on stream k
-                using mdrange_policy_t =
-                    Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
-                mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
-                                        {hi[0], hi[1], hi[2]});
-
-                Kokkos::parallel_for(
-                    "strided input copy PrunedFFT", policy,
-                    KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
-                        index_array_type args = {i0, i1, i2};
-                        auto strided_in       = args * 2 + offs + nghost_in;
-
-                        apply(tempFieldInputView, args).real(apply(input_view, strided_in).real());
-                        apply(tempFieldInputView, args).imag(apply(input_view, strided_in).imag());
-                    });
-
-                // FFT on same stream k - will wait for copy to complete automatically
-                pruned_heffte_m[k]->forward(tempFieldInputs[k].data(), tempFieldInputs[k].data(),
-                                            workspaces_m[k].data(), heffte::scale::full);
-            });
-
-        // Wait for all streams to complete
-        Kokkos::fence();
-        IpplTimings::stopTimer(SubFFTs);
-
-        // Phase 2: Accumulate results with twiddle factors (sequential to avoid races)
-        IpplTimings::startTimer(TwiddleAdd);
-
-        Vector<int, Dim> localFirst;
-        for (unsigned d = 0; d < Dim; ++d) {
-            localFirst[d] = lDomPruned[d].first();
-        }
-
-        for (int k = 0; k < numSubFFTs; ++k) {
-            auto offs                = offsets[k];
-            auto& tempFieldInputView = tempFieldInputs[k];
+            IpplTimings::startTimer(TwiddleAdd);
+            // Add to outputField with twiddle factors
+            Vector<int, Dim> localFirst;
+            for (unsigned d = 0; d < Dim; ++d) {
+                localFirst[d] = lDomPruned[d].first();
+            }
 
             ippl::parallel_for(
                 "PrunedFFT sub-FFT twiddle factor addition",
                 getRangePolicy(output_view, nghost_out),
                 KOKKOS_LAMBDA(const index_array_type& args) {
+                    // global pruned index
                     auto g = (args - nghost_out) + localFirst;
                     Vector<int64_t, Dim> freq{};
                     for (int d = 0; d < Dim; ++d) {
@@ -389,7 +337,9 @@ namespace ippl {
                         }
                     }
 
-                    Complex_t w = 1.0;
+                    auto output_loc = args - nghost_out;
+                    auto input_loc  = (args - nghost_out) * 2 + offs + nghost_in;
+                    Complex_t w     = 1.0;
                     for (int d = 0; d < Dim; ++d) {
                         double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
                                      / static_cast<double>(gDomFull[d].length());
@@ -400,8 +350,8 @@ namespace ippl {
                     apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
                     apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
                 });
+            IpplTimings::stopTimer(TwiddleAdd);
         }
-        IpplTimings::stopTimer(TwiddleAdd);
         IpplTimings::stopTimer(PrunedFFT);
     }
 
