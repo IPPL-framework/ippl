@@ -228,16 +228,16 @@ namespace ippl {
     void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
-        static IpplTimings::TimerRef StridedCP       = IpplTimings::getTimer("stridedCP");
-        static IpplTimings::TimerRef TwiddleAdd       = IpplTimings::getTimer("TwiddleAdd");
-        static IpplTimings::TimerRef PrunedFFT       = IpplTimings::getTimer("prunedFFT");
-        static IpplTimings::TimerRef SubFFT = IpplTimings::getTimer("subFFT");
+        static IpplTimings::TimerRef StridedCP  = IpplTimings::getTimer("stridedCP");
+        static IpplTimings::TimerRef TwiddleAdd = IpplTimings::getTimer("TwiddleAdd");
+        static IpplTimings::TimerRef PrunedFFT  = IpplTimings::getTimer("prunedFFT");
+        static IpplTimings::TimerRef SubFFT     = IpplTimings::getTimer("subFFT");
+        static IpplTimings::TimerRef OffsComp     = IpplTimings::getTimer("OffsComp");
+
         IpplTimings::startTimer(PrunedFFT);
 
-
-
-        auto &input_view      = input.getView();
-        auto &output_view     = output.getView();
+        auto& input_view     = input.getView();
+        auto& output_view    = output.getView();
         const int nghost_in  = input.getNghost();
         const int nghost_out = output.getNghost();
 
@@ -283,10 +283,12 @@ namespace ippl {
         for (int k = 0; k < std::pow(2, Dim); ++k) {
             // Convert input k to mask (b_2, b_1, b_0) (3D) of offsets in the strided input
             IpplTimings::startTimer(StridedCP);
+            IpplTimings::startTimer(OffsComp);
             Vector<long, Dim> offs;
             for (int d = 0; d < Dim; ++d) {
                 offs[d] = (k >> d) & 1;
             }
+            IpplTimings::stopTimer(OffsComp);
 
             // Strided copy into tempFieldInput
             ippl::parallel_for(
