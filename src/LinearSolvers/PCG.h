@@ -20,12 +20,12 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
-        using DiagF        = std::function<DiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
+        using DiagF        = std::function<DiagRet(lhs_type&)>;
         using mesh_type    = typename lhs_type::Mesh_t;
         using layout_type  = typename lhs_type::Layout_t;
 
@@ -203,11 +203,11 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
 
         virtual ~CG() = default;
 
@@ -327,12 +327,12 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
-        using DiagF        = std::function<DiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
+        using DiagF        = std::function<DiagRet(lhs_type&)>;
 
         PCG()
             : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,

@@ -109,7 +109,7 @@ namespace ippl {
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
             FieldBC bcType = bcField[0]->getBCType();
 
-            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
+            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -120,7 +120,7 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorL = [poissonEquationEval, &bcField, this](lhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -131,7 +131,7 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorU = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorU = [poissonEquationEval, &bcField, this](lhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -142,7 +142,7 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorUL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorUL = [poissonEquationEval, &bcField, this](lhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -153,7 +153,7 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorInvD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorInvD = [poissonEquationEval, &bcField, this](lhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -164,7 +164,7 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorD = [poissonEquationEval, &bcField, this](lhs_type& field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
