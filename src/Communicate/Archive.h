@@ -16,6 +16,7 @@
 #include "Types/ViewTypes.h"
 
 #include "Types/Vector.h"
+#undef IPPL_SIMPLE_VIEW_STORAGE
 
 namespace ippl {
     namespace detail {
@@ -82,10 +83,12 @@ namespace ippl {
 
             size_type getBufferSize() const { return buffer_m.size(); }
 
-            void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
-
             void reallocBuffer(size_type size) {
-                Kokkos::realloc(buffer_m, size); /*buffer_m.reallocBuffer(size);*/
+#ifdef IPPL_SIMPLE_VIEW_STORAGE
+                Kokkos::realloc(buffer_m, size);
+#else
+                buffer_m.reallocBuffer(size);
+#endif
             }
 
             void resetReadWritePos() {

@@ -14,10 +14,99 @@
 
 namespace ippl::comms {
 
+#ifdef IPPL_SIMPLE_VIEW_STORAGE
     template <typename... Properties>
     using communicator_storage =
         ippl::detail::ViewType<char, 1, Properties...,
                                Kokkos::MemoryTraits<Kokkos::Aligned>>::view_type;
+#else
+    template <typename... Properties>
+    using communicator_storage = ippl::detail::ViewType<
+        char, 1, Properties...,
+        Kokkos::MemoryTraits<Kokkos::Unmanaged>>::view_type;
+#endif
+
+#define ALIGMNEMT 1024
+
+    // make number a multiple of the alignment
+    inline std::int64_t to_multiple(std::int64_t num) {
+        return ((2 * num + (ALIGMNEMT - 1)) & (-ALIGMNEMT));
+    }
+
+    struct AlignedCudaBuffer {
+        void* ptrOriginal;
+        void* ptrAligned;
+        detail::size_type space;
+        //
+        AlignedCudaBuffer()
+            : ptrOriginal{nullptr}
+            , ptrAligned{nullptr}
+            , space{0} {}
+        //
+        AlignedCudaBuffer(std::size_t size) {
+            void* original;
+            space = to_multiple(size);
+            cudaMalloc(&original, space);
+            ptrOriginal = original;
+            ptrAligned  = std::align(ALIGMNEMT, size, original, space);
+            SPDLOG_TRACE("AlignedCudaBuffer: original {}, aligned {}, size {}, space {}",
+                         (void*)(ptrOriginal), (void*)(ptrAligned), size, space);
+            // sanity check should always be true when std::align used
+            assert(space >= size);
+        }
+        // don't delete internal memory until explicitly told to
+        ~AlignedCudaBuffer() {
+            if (ptrOriginal) {
+                ptrOriginal = 0;
+            }
+        }
+        // the function that really releases memory
+        void destroy_buffer() {
+            if (ptrOriginal) {
+                cudaFree(ptrOriginal);
+            } else {
+                throw std::runtime_error("Destroying cuda buffer after reset");
+            }
+        }
+    };
+
+    template <typename MemorySpace, typename... Properties>
+    struct comm_storage_wrapper {
+        using memory_space = MemorySpace;
+        using buffer_type  = communicator_storage<MemorySpace, Properties...>;
+        using pointer_type = typename buffer_type::pointer_type;
+        using size_type    = detail::size_type;
+        //
+        comm_storage_wrapper(const std::string& /*name*/, size_type size)
+            : view()    // we will construct the view manually
+            , buffer()  //
+        {
+            reallocBuffer(size);
+            SPDLOG_TRACE("Construct: view  origin {}, aligned {}", (void*)(view.data()),
+                         (void*)(buffer.ptrAligned));
+            auto aligned_ptr_check = std::align(ALIGMNEMT, size, buffer.ptrAligned, buffer.space);
+            SPDLOG_TRACE("Construct: view    data {}, align_check {}", (void*)(view.data()),
+                         (void*)(aligned_ptr_check));
+            assert(view.data() == buffer.ptrAligned);
+        }
+        //
+        size_type size() const { return buffer.space; }
+        //
+        pointer_type data() { return view.data(); }
+        //
+        void reallocBuffer(size_type newsize) {
+            auto old_pointer = buffer.ptrOriginal;
+            buffer           = AlignedCudaBuffer(newsize);
+            view             = buffer_type((pointer_type)buffer.ptrAligned, newsize);
+            SPDLOG_DEBUG("Realloc  : view {}, aligned {}, size {}, space {}", (void*)(view.data()),
+                         (void*)(buffer.ptrAligned), newsize, buffer.space);
+            if (old_pointer)
+                cudaFree(old_pointer);
+        }
+        //
+        AlignedCudaBuffer buffer;
+        buffer_type view;
+    };
 
     // ---------------------------------------------
     // archive wrapper around some arbitrary buffer
@@ -29,8 +118,13 @@ namespace ippl::comms {
     template <typename BufferType>
     using rma_archive_type = rma_archive<BufferType>::type;
 
+#ifdef IPPL_SIMPLE_VIEW_STORAGE
     template <typename... Properties>
     using archive_buffer = rma_archive_type<communicator_storage<Properties...>>;
+#else
+    template <typename... Properties>
+    using archive_buffer = rma_archive_type<comm_storage_wrapper<Properties...>>;
+#endif
 
     /**
      * @brief Interface for memory buffer handling.
