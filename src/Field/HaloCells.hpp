@@ -67,8 +67,10 @@ namespace ippl {
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
 
-            std::vector<MPI_Request> requests(totalRequests * 2);
-            size_t reqID = 0;
+            std::vector<MPI_Request> sendRequests(totalRequests);
+            std::vector<MPI_Request> recvRequests(totalRequests);
+            size_t reqID_send = 0;
+            size_t reqID_recv = 0;
 
             // pre-post receives
             std::vector<bound_type> recvRangesSaved;
@@ -104,7 +106,7 @@ namespace ippl {
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
 
-                    comm.irecv(sourceRank, tag, *buf, requests[reqID++], nrecvs);
+                    comm.irecv(sourceRank, tag, *buf, recvRequests[reqID_recv++], nrecvs * sizeof(T));
 
                     recvRangesSaved.push_back(range);
                     recvBuffers.push_back(buf);
@@ -147,15 +149,18 @@ namespace ippl {
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
 
-                    comm.isend(targetRank, tag, haloData_m, *buf, requests[reqID++], nsends);
+                    comm.isend(targetRank, tag, haloData_m, *buf, sendRequests[reqID_send++], nsends);
+
                     buf->resetWritePos();
                 }
             }
 
-            MPI_Waitall(reqID, requests.data(), MPI_STATUSES_IGNORE);
+            MPI_Waitall(reqID_recv, recvRequests.data(), MPI_STATUSES_IGNORE);
+            MPI_Waitall(reqID_send, sendRequests.data(), MPI_STATUSES_IGNORE);
 
             for (size_t k = 0; k < recvRangesSaved.size(); k++) {
                 recvBuffers[k]->resetReadPos();
+                haloData_m.deserialize(*recvBuffers[k], recvRangesSaved[k].size());
                 unpack<Op>(recvRangesSaved[k], view, haloData_m);
             }
 
