@@ -9,6 +9,10 @@
 #include <random>
 #include <vector>
 
+#ifdef KOKKOS_ENABLE_CUDA
+#include <cuda_runtime.h>
+#endif
+
 #include "Utility/ParameterList.h"
 
 struct BenchmarkResult {
@@ -19,7 +23,35 @@ struct BenchmarkResult {
     double min_pruned;
     double max_pruned;
     double speedup;
+    size_t memory_full_fft_bytes;
+    size_t memory_pruned_fft_bytes;
 };
+
+struct MemoryInfo {
+    size_t free_bytes;
+    size_t total_bytes;
+    size_t used_bytes;
+};
+
+MemoryInfo getCudaMemoryInfo() {
+    MemoryInfo info = {0, 0, 0};
+#ifdef KOKKOS_ENABLE_CUDA
+    cudaMemGetInfo(&info.free_bytes, &info.total_bytes);
+    info.used_bytes = info.total_bytes - info.free_bytes;
+#endif
+    return info;
+}
+
+void printMemoryUsage(const std::string& label) {
+    if (ippl::Comm->rank() == 0) {
+#ifdef KOKKOS_ENABLE_CUDA
+        MemoryInfo info = getCudaMemoryInfo();
+        std::cout << "[Memory] " << label << ": "
+                  << "Used: " << (info.used_bytes / (1024.0 * 1024.0)) << " MB, "
+                  << "Free: " << (info.free_bytes / (1024.0 * 1024.0)) << " MB" << std::endl;
+#endif
+    }
+}
 
 auto compute_stats(const std::vector<double>& times) {
     double sum = 0.0, sum_sq = 0.0;
@@ -39,9 +71,13 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
+    //
+    // std::array<int, dim> pt_full   = {1024, 1024, 512};
+    // std::array<int, dim> pt_pruned = {512, 512, 256};
 
-    std::array<int, dim> pt_full   = {1024, 1024, 512};
-    std::array<int, dim> pt_pruned = {512, 512, 256};
+
+    std::array<int, dim> pt_full   = {64, 128, 32};
+    std::array<int, dim> pt_pruned = {32, 64, 16};
 
     // Create layouts
     ippl::Index I_full(pt_full[0]);
@@ -72,33 +108,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
 
     typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t> field_type;
 
-    // Fields for forward transform
-    field_type field_input(mesh_full, layout_full);
-    field_type field_input_copy(mesh_full, layout_full);
-    field_type field_full_result(mesh_full, layout_full);
-    field_type field_pruned_result(mesh_pruned, layout_pruned);
-
-    // Setup pruning parameters
-    ippl::PruningParams<dim> pruning;
-    pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
-                                                static_cast<size_t>(pt_pruned[1]),
-                                                static_cast<size_t>(pt_pruned[2])};
-
-    ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", false);
-    fftParams.add("use_pencils", true);
-    fftParams.add("use_reorder", false);
-    fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 2);
-
-    // Create FFTs
-    typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
-    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
-
-    auto pruned_fft =
-        std::make_unique<PrunedFFT_type>(layout_full, layout_pruned, pruning, fftParams);
-    auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
-
     if (ippl::Comm->rank() == 0) {
         std::cout << "\n=== Benchmarking Forward FFT ===" << std::endl;
         std::cout << "Full grid: " << pt_full[0] << "x" << pt_full[1] << "x" << pt_full[2]
@@ -109,17 +118,27 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
         std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
     }
 
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("Before field allocation");
+
+    // Minimal fields: one input field, one output field (reused for both FFT types)
+    field_type field_input(mesh_full, layout_full);
+    field_type field_output_full(mesh_full, layout_full);
+    field_type field_output_pruned(mesh_pruned, layout_pruned);
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After field allocation");
+
     // Initialize with random data directly on GPU
     using exec_space = typename field_type::execution_space;
     using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
-    const int nghost = field_input.getNghost();
-    auto view_input  = field_input.getView();
-
-    // Create random pool with seed based on rank
+    const int nghost    = field_input.getNghost();
+    auto view_input     = field_input.getView();
     RandPool rand_pool(42 + ippl::Comm->rank());
 
-    // Fill field with random data directly on GPU
     Kokkos::parallel_for(
         "InitRandomData",
         Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>(
@@ -134,77 +153,161 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
         });
     Kokkos::fence();
 
-    // ========== Warmup ==========
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Running warmup..." << std::endl;
-    }
+    // Setup pruning parameters
+    ippl::PruningParams<dim> pruning;
+    pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
+                                                static_cast<size_t>(pt_pruned[1]),
+                                                static_cast<size_t>(pt_pruned[2])};
 
-    for (int i = 0; i < warmup_runs; ++i) {
-        // Warmup forward: full FFT
-        field_full_result = field_input;
-        regular_fft->transform(ippl::FORWARD, field_full_result);
-        Kokkos::fence();
+    ippl::ParameterList fftParams;
+    fftParams.add("use_heffte_defaults", false);
+    fftParams.add("use_pencils", true);
+    fftParams.add("use_reorder", false);
+    fftParams.add("use_gpu_aware", true);
+    fftParams.add("comm", 2);
 
-        // Warmup forward: pruned FFT
-        field_input_copy = field_input;
-        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
-        Kokkos::fence();
-    }
+    typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
+    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
 
-    MPI_Barrier(ippl::Comm->getCommunicator());
-
-    // ========== Benchmark Forward: Full FFT ==========
+    size_t memory_full_fft    = 0;
+    size_t memory_pruned_fft  = 0;
     std::vector<double> times_fwd_full(benchmark_runs);
-
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking forward full FFT..." << std::endl;
-    }
-
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_full_result = field_input;
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
-
-        regular_fft->transform(ippl::FORWARD, field_full_result);
-        Kokkos::fence();
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
-
-        times_fwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
-    }
-
-    // ========== Benchmark Forward: Pruned FFT ==========
     std::vector<double> times_fwd_pruned(benchmark_runs);
 
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking forward pruned FFT..." << std::endl;
-    }
+    // ========== Benchmark Full FFT ==========
+    {
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_before = getCudaMemoryInfo();
+        printMemoryUsage("Before regular FFT allocation");
 
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_input_copy = field_input;
+        auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
+
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_after = getCudaMemoryInfo();
+        printMemoryUsage("After regular FFT allocation");
+
+        memory_full_fft = (mem_after.used_bytes > mem_before.used_bytes)
+                              ? (mem_after.used_bytes - mem_before.used_bytes)
+                              : 0;
+
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "[Memory] Regular FFT plan size: " << (memory_full_fft / (1024.0 * 1024.0))
+                      << " MB" << std::endl;
+        }
+
+        // Warmup
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Running warmup for full FFT..." << std::endl;
+        }
+
+        for (int i = 0; i < warmup_runs; ++i) {
+            field_output_full = field_input;
+            regular_fft->transform(ippl::FORWARD, field_output_full);
+            Kokkos::fence();
+        }
 
         MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
 
-        pruned_fft->transform(ippl::FORWARD, field_input_copy, field_pruned_result);
+        // Benchmark
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Benchmarking forward full FFT..." << std::endl;
+        }
+
+        for (int run = 0; run < benchmark_runs; ++run) {
+            field_output_full = field_input;
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            Kokkos::fence();
+            auto start = std::chrono::high_resolution_clock::now();
+
+            regular_fft->transform(ippl::FORWARD, field_output_full);
+            Kokkos::fence();
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            auto end = std::chrono::high_resolution_clock::now();
+
+            times_fwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        }
+
+        // FFT destroyed here, memory released
+    }
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After regular FFT destroyed");
+
+    // ========== Benchmark Pruned FFT ==========
+    {
         Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_before = getCudaMemoryInfo();
+        printMemoryUsage("Before pruned FFT allocation");
+
+        auto pruned_fft =
+            std::make_unique<PrunedFFT_type>(layout_full, layout_pruned, pruning, fftParams);
+
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_after = getCudaMemoryInfo();
+        printMemoryUsage("After pruned FFT allocation");
+
+        memory_pruned_fft = (mem_after.used_bytes > mem_before.used_bytes)
+                                ? (mem_after.used_bytes - mem_before.used_bytes)
+                                : 0;
+
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "[Memory] Pruned FFT plan size: " << (memory_pruned_fft / (1024.0 * 1024.0))
+                      << " MB" << std::endl;
+        }
+
+        // Warmup
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Running warmup for pruned FFT..." << std::endl;
+        }
+
+        for (int i = 0; i < warmup_runs; ++i) {
+            field_output_full = field_input;  // Reuse as temp input (will be overwritten)
+            pruned_fft->transform(ippl::FORWARD, field_output_full, field_output_pruned);
+            Kokkos::fence();
+        }
 
         MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
 
-        times_fwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        // Benchmark
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Benchmarking forward pruned FFT..." << std::endl;
+        }
+
+        for (int run = 0; run < benchmark_runs; ++run) {
+            field_output_full = field_input;  // Reuse as temp input
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            Kokkos::fence();
+            auto start = std::chrono::high_resolution_clock::now();
+
+            pruned_fft->transform(ippl::FORWARD, field_output_full, field_output_pruned);
+            Kokkos::fence();
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            auto end = std::chrono::high_resolution_clock::now();
+
+            times_fwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        }
+
+        // FFT destroyed here
     }
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After pruned FFT destroyed");
 
     // ========== Compute Statistics ==========
     auto [mean_fwd_full, std_fwd_full, min_fwd_full, max_fwd_full] = compute_stats(times_fwd_full);
     auto [mean_fwd_pruned, std_fwd_pruned, min_fwd_pruned, max_fwd_pruned] =
         compute_stats(times_fwd_pruned);
 
-    // Reduce across MPI ranks (use max time as the overall time)
     double global_mean_fwd_full, global_mean_fwd_pruned;
     double global_min_fwd_full, global_min_fwd_pruned;
     double global_max_fwd_full, global_max_fwd_pruned;
@@ -222,6 +325,13 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
     MPI_Allreduce(&max_fwd_pruned, &global_max_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
                   ippl::Comm->getCommunicator());
 
+    // Get max memory usage across ranks
+    size_t global_memory_full_fft, global_memory_pruned_fft;
+    MPI_Allreduce(&memory_full_fft, &global_memory_full_fft, 1, MPI_UNSIGNED_LONG, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&memory_pruned_fft, &global_memory_pruned_fft, 1, MPI_UNSIGNED_LONG, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+
     // ========== Print Results ==========
     if (ippl::Comm->rank() == 0) {
         std::cout << "\n--- FORWARD TRANSFORM RESULTS ---" << std::endl;
@@ -231,11 +341,15 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
         std::cout << "  Mean time:  " << global_mean_fwd_full << " ms" << std::endl;
         std::cout << "  Min time:   " << global_min_fwd_full << " ms" << std::endl;
         std::cout << "  Max time:   " << global_max_fwd_full << " ms" << std::endl;
+        std::cout << "  FFT Memory: " << (global_memory_full_fft / (1024.0 * 1024.0)) << " MB"
+                  << std::endl;
 
         std::cout << "\nPruned FFT:" << std::endl;
         std::cout << "  Mean time:  " << global_mean_fwd_pruned << " ms" << std::endl;
         std::cout << "  Min time:   " << global_min_fwd_pruned << " ms" << std::endl;
         std::cout << "  Max time:   " << global_max_fwd_pruned << " ms" << std::endl;
+        std::cout << "  FFT Memory: " << (global_memory_pruned_fft / (1024.0 * 1024.0)) << " MB"
+                  << std::endl;
 
         std::cout << "\nForward Speedup (Full / Pruned): " << std::setprecision(2)
                   << global_mean_fwd_full / global_mean_fwd_pruned << "x" << std::endl;
@@ -247,7 +361,9 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
                            global_mean_fwd_pruned,
                            global_min_fwd_pruned,
                            global_max_fwd_pruned,
-                           global_mean_fwd_full / global_mean_fwd_pruned};
+                           global_mean_fwd_full / global_mean_fwd_pruned,
+                           global_memory_full_fft,
+                           global_memory_pruned_fft};
 }
 
 BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
@@ -255,8 +371,11 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
 
-    std::array<int, dim> pt_full   = {1024, 1024, 512};
-    std::array<int, dim> pt_pruned = {512, 512, 256};
+    // std::array<int, dim> pt_full   = {1024, 1024, 512};
+    // std::array<int, dim> pt_pruned = {512, 512, 256};
+    //
+    std::array<int, dim> pt_full   = {64, 128, 32};
+    std::array<int, dim> pt_pruned = {32, 64, 16};
 
     // Create layouts
     ippl::Index I_full(pt_full[0]);
@@ -287,34 +406,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
 
     typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t> field_type;
 
-    // Fields for backward transform
-    field_type field_freq_input_pruned(mesh_pruned, layout_pruned);
-    field_type field_freq_input_pruned_copy(mesh_pruned, layout_pruned);
-    field_type field_freq_input_full(mesh_full, layout_full);
-    field_type field_spatial_output(mesh_full, layout_full);
-    field_type field_spatial_output_ref(mesh_full, layout_full);
-
-    // Setup pruning parameters
-    ippl::PruningParams<dim> pruning;
-    pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
-                                                static_cast<size_t>(pt_pruned[1]),
-                                                static_cast<size_t>(pt_pruned[2])};
-
-    ippl::ParameterList fftParams;
-    fftParams.add("use_heffte_defaults", false);
-    fftParams.add("use_pencils", true);
-    fftParams.add("use_reorder", false);
-    fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 2);
-
-    // Create FFTs
-    typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
-    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
-
-    auto pruned_fft =
-        std::make_unique<PrunedFFT_type>(layout_full, layout_pruned, pruning, fftParams);
-    auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
-
     if (ippl::Comm->rank() == 0) {
         std::cout << "\n=== Benchmarking Backward FFT ===" << std::endl;
         std::cout << "Full grid: " << pt_full[0] << "x" << pt_full[1] << "x" << pt_full[2]
@@ -325,15 +416,27 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
         std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
     }
 
-    // Initialize with random data directly on GPU
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("Before field allocation");
+
+    // Minimal fields for backward: pruned input, full output
+    field_type field_freq_pruned(mesh_pruned, layout_pruned);
+    field_type field_freq_full(mesh_full, layout_full);  // For reference full IFFT
+    field_type field_output(mesh_full, layout_full);     // Shared output
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After field allocation");
+
     using exec_space = typename field_type::execution_space;
     using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
-    const int nghost        = field_freq_input_full.getNghost();
-    const int nghost_pruned = field_freq_input_pruned.getNghost();
+    const int nghost        = field_output.getNghost();
+    const int nghost_pruned = field_freq_pruned.getNghost();
 
     // Initialize pruned frequency input with random data
-    auto view_freq_pruned = field_freq_input_pruned.getView();
+    auto view_freq_pruned = field_freq_pruned.getView();
     RandPool rand_pool(123 + ippl::Comm->rank());
 
     Kokkos::parallel_for(
@@ -351,7 +454,7 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
         });
     Kokkos::fence();
 
-    // Prepare index mapping for zero-padding (backward reference)
+    // Zero-pad pruned frequency to full frequency for reference backward transform
     const int N0 = pt_full[0], K0 = pt_pruned[0];
     const int N1 = pt_full[1], K1 = pt_pruned[1];
     const int N2 = pt_full[2], K2 = pt_pruned[2];
@@ -367,13 +470,11 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
     const int f1_first = lDom_full[1].first(), f1_last = lDom_full[1].last();
     const int f2_first = lDom_full[2].first(), f2_last = lDom_full[2].last();
 
-    // Zero-pad pruned frequency to full frequency for reference backward transform
-    auto view_freq_full = field_freq_input_full.getView();
+    auto view_freq_full = field_freq_full.getView();
     Kokkos::deep_copy(view_freq_full, Kokkos::complex<double>(0.0, 0.0));
 
     using mdrange_t = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
 
-    // Copy pruned modes to correct positions in full frequency field
     Kokkos::parallel_for(
         "ZeroPadFrequency",
         mdrange_t(
@@ -381,17 +482,14 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
             {view_freq_pruned.extent(0) - nghost_pruned, view_freq_pruned.extent(1) - nghost_pruned,
              view_freq_pruned.extent(2) - nghost_pruned}),
         KOKKOS_LAMBDA(const int li_p, const int lj_p, const int lk_p) {
-            // Global pruned indices
             int gi_p = li_p - nghost_pruned + p0_first;
             int gj_p = lj_p - nghost_pruned + p1_first;
             int gk_p = lk_p - nghost_pruned + p2_first;
 
-            // Map to global full indices
             int gi_f = (gi_p < K0 / 2) ? gi_p : (N0 - K0 + gi_p);
             int gj_f = (gj_p < K1 / 2) ? gj_p : (N1 - K1 + gj_p);
             int gk_f = (gk_p < K2 / 2) ? gk_p : (N2 - K2 + gk_p);
 
-            // Check if this full index is owned by this rank
             if (gi_f >= f0_first && gi_f <= f0_last && gj_f >= f1_first && gj_f <= f1_last
                 && gk_f >= f2_first && gk_f <= f2_last) {
                 int li_f = gi_f - f0_first + nghost;
@@ -403,77 +501,162 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
         });
     Kokkos::fence();
 
-    // ========== Warmup ==========
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Running warmup..." << std::endl;
-    }
+    // Store original data for reuse (since transforms are in-place for full FFT)
+    field_type field_freq_full_orig(mesh_full, layout_full);
+    field_type field_freq_pruned_orig(mesh_pruned, layout_pruned);
+    field_freq_full_orig   = field_freq_full;
+    field_freq_pruned_orig = field_freq_pruned;
 
-    for (int i = 0; i < warmup_runs; ++i) {
-        // Warmup backward: full IFFT
-        field_spatial_output_ref = field_freq_input_full;
-        regular_fft->transform(ippl::BACKWARD, field_spatial_output_ref);
-        Kokkos::fence();
+    ippl::PruningParams<dim> pruning;
+    pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
+                                                static_cast<size_t>(pt_pruned[1]),
+                                                static_cast<size_t>(pt_pruned[2])};
 
-        // Warmup backward: pruned IFFT
-        field_freq_input_pruned_copy = field_freq_input_pruned;
-        pruned_fft->transform(ippl::BACKWARD, field_freq_input_pruned_copy, field_spatial_output);
-        Kokkos::fence();
-    }
+    ippl::ParameterList fftParams;
+    fftParams.add("use_heffte_defaults", false);
+    fftParams.add("use_pencils", true);
+    fftParams.add("use_reorder", false);
+    fftParams.add("use_gpu_aware", true);
+    fftParams.add("comm", 2);
 
-    MPI_Barrier(ippl::Comm->getCommunicator());
+    typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
+    typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
 
-    // ========== Benchmark Backward: Full IFFT ==========
+    size_t memory_full_fft   = 0;
+    size_t memory_pruned_fft = 0;
     std::vector<double> times_bwd_full(benchmark_runs);
-
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking backward full IFFT..." << std::endl;
-    }
-
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_spatial_output_ref = field_freq_input_full;
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
-
-        regular_fft->transform(ippl::BACKWARD, field_spatial_output_ref);
-        Kokkos::fence();
-
-        MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
-
-        times_bwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
-    }
-
-    // ========== Benchmark Backward: Pruned IFFT ==========
     std::vector<double> times_bwd_pruned(benchmark_runs);
 
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "Benchmarking backward pruned IFFT..." << std::endl;
-    }
+    // ========== Benchmark Full IFFT ==========
+    {
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_before = getCudaMemoryInfo();
+        printMemoryUsage("Before regular FFT allocation");
 
-    for (int run = 0; run < benchmark_runs; ++run) {
-        field_freq_input_pruned_copy = field_freq_input_pruned;
+        auto regular_fft = std::make_unique<FFT_type>(layout_full, fftParams);
+
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_after = getCudaMemoryInfo();
+        printMemoryUsage("After regular FFT allocation");
+
+        memory_full_fft = (mem_after.used_bytes > mem_before.used_bytes)
+                              ? (mem_after.used_bytes - mem_before.used_bytes)
+                              : 0;
+
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "[Memory] Regular FFT plan size: " << (memory_full_fft / (1024.0 * 1024.0))
+                      << " MB" << std::endl;
+        }
+
+        // Warmup
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Running warmup for full IFFT..." << std::endl;
+        }
+
+        for (int i = 0; i < warmup_runs; ++i) {
+            field_freq_full = field_freq_full_orig;
+            regular_fft->transform(ippl::BACKWARD, field_freq_full);
+            Kokkos::fence();
+        }
 
         MPI_Barrier(ippl::Comm->getCommunicator());
-        Kokkos::fence();
-        auto start = std::chrono::high_resolution_clock::now();
 
-        pruned_fft->transform(ippl::BACKWARD, field_freq_input_pruned_copy, field_spatial_output);
+        // Benchmark
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Benchmarking backward full IFFT..." << std::endl;
+        }
+
+        for (int run = 0; run < benchmark_runs; ++run) {
+            field_freq_full = field_freq_full_orig;
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            Kokkos::fence();
+            auto start = std::chrono::high_resolution_clock::now();
+
+            regular_fft->transform(ippl::BACKWARD, field_freq_full);
+            Kokkos::fence();
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            auto end = std::chrono::high_resolution_clock::now();
+
+            times_bwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        }
+    }
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After regular FFT destroyed");
+
+    // ========== Benchmark Pruned IFFT ==========
+    {
         Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_before = getCudaMemoryInfo();
+        printMemoryUsage("Before pruned FFT allocation");
+
+        auto pruned_fft =
+            std::make_unique<PrunedFFT_type>(layout_full, layout_pruned, pruning, fftParams);
+
+        Kokkos::fence();
+        MPI_Barrier(ippl::Comm->getCommunicator());
+        MemoryInfo mem_after = getCudaMemoryInfo();
+        printMemoryUsage("After pruned FFT allocation");
+
+        memory_pruned_fft = (mem_after.used_bytes > mem_before.used_bytes)
+                                ? (mem_after.used_bytes - mem_before.used_bytes)
+                                : 0;
+
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "[Memory] Pruned FFT plan size: " << (memory_pruned_fft / (1024.0 * 1024.0))
+                      << " MB" << std::endl;
+        }
+
+        // Warmup
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Running warmup for pruned IFFT..." << std::endl;
+        }
+
+        for (int i = 0; i < warmup_runs; ++i) {
+            field_freq_pruned = field_freq_pruned_orig;
+            pruned_fft->transform(ippl::BACKWARD, field_freq_pruned, field_output);
+            Kokkos::fence();
+        }
 
         MPI_Barrier(ippl::Comm->getCommunicator());
-        auto end = std::chrono::high_resolution_clock::now();
 
-        times_bwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        // Benchmark
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Benchmarking backward pruned IFFT..." << std::endl;
+        }
+
+        for (int run = 0; run < benchmark_runs; ++run) {
+            field_freq_pruned = field_freq_pruned_orig;
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            Kokkos::fence();
+            auto start = std::chrono::high_resolution_clock::now();
+
+            pruned_fft->transform(ippl::BACKWARD, field_freq_pruned, field_output);
+            Kokkos::fence();
+
+            MPI_Barrier(ippl::Comm->getCommunicator());
+            auto end = std::chrono::high_resolution_clock::now();
+
+            times_bwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
+        }
     }
+
+    Kokkos::fence();
+    MPI_Barrier(ippl::Comm->getCommunicator());
+    printMemoryUsage("After pruned FFT destroyed");
 
     // ========== Compute Statistics ==========
     auto [mean_bwd_full, std_bwd_full, min_bwd_full, max_bwd_full] = compute_stats(times_bwd_full);
     auto [mean_bwd_pruned, std_bwd_pruned, min_bwd_pruned, max_bwd_pruned] =
         compute_stats(times_bwd_pruned);
 
-    // Reduce across MPI ranks (use max time as the overall time)
     double global_mean_bwd_full, global_mean_bwd_pruned;
     double global_min_bwd_full, global_min_bwd_pruned;
     double global_max_bwd_full, global_max_bwd_pruned;
@@ -491,6 +674,12 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
     MPI_Allreduce(&max_bwd_pruned, &global_max_bwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
                   ippl::Comm->getCommunicator());
 
+    size_t global_memory_full_fft, global_memory_pruned_fft;
+    MPI_Allreduce(&memory_full_fft, &global_memory_full_fft, 1, MPI_UNSIGNED_LONG, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+    MPI_Allreduce(&memory_pruned_fft, &global_memory_pruned_fft, 1, MPI_UNSIGNED_LONG, MPI_MAX,
+                  ippl::Comm->getCommunicator());
+
     // ========== Print Results ==========
     if (ippl::Comm->rank() == 0) {
         std::cout << "\n--- BACKWARD TRANSFORM RESULTS ---" << std::endl;
@@ -500,11 +689,15 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
         std::cout << "  Mean time:  " << global_mean_bwd_full << " ms" << std::endl;
         std::cout << "  Min time:   " << global_min_bwd_full << " ms" << std::endl;
         std::cout << "  Max time:   " << global_max_bwd_full << " ms" << std::endl;
+        std::cout << "  FFT Memory: " << (global_memory_full_fft / (1024.0 * 1024.0)) << " MB"
+                  << std::endl;
 
         std::cout << "\nPruned IFFT:" << std::endl;
         std::cout << "  Mean time:  " << global_mean_bwd_pruned << " ms" << std::endl;
         std::cout << "  Min time:   " << global_min_bwd_pruned << " ms" << std::endl;
         std::cout << "  Max time:   " << global_max_bwd_pruned << " ms" << std::endl;
+        std::cout << "  FFT Memory: " << (global_memory_pruned_fft / (1024.0 * 1024.0)) << " MB"
+                  << std::endl;
 
         std::cout << "\nBackward Speedup (Full / Pruned): " << std::setprecision(2)
                   << global_mean_bwd_full / global_mean_bwd_pruned << "x" << std::endl;
@@ -516,7 +709,9 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
                            global_mean_bwd_pruned,
                            global_min_bwd_pruned,
                            global_max_bwd_pruned,
-                           global_mean_bwd_full / global_mean_bwd_pruned};
+                           global_mean_bwd_full / global_mean_bwd_pruned,
+                           global_memory_full_fft,
+                           global_memory_pruned_fft};
 }
 
 int main(int argc, char* argv[]) {
@@ -525,7 +720,6 @@ int main(int argc, char* argv[]) {
     int warmup_runs    = 5;
     int benchmark_runs = 20;
 
-    // Parse command line arguments
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--warmup" && i + 1 < argc) {
@@ -535,15 +729,17 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Run forward benchmark
-    BenchmarkResult fwd_result = benchmarkForwardFFT(warmup_runs, benchmark_runs);
+    if (ippl::Comm->rank() == 0) {
+        printMemoryUsage("Initial state");
+    }
 
-    // Run backward benchmark
+    BenchmarkResult fwd_result = benchmarkForwardFFT(warmup_runs, benchmark_runs);
     BenchmarkResult bwd_result = benchmarkBackwardFFT(warmup_runs, benchmark_runs);
 
-    // Print combined round-trip results
     if (ippl::Comm->rank() == 0) {
-        std::cout << "\n=== COMBINED RESULTS ===" << std::endl;
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "=== COMBINED RESULTS ===" << std::endl;
+        std::cout << "========================================" << std::endl;
         std::cout << std::fixed << std::setprecision(3);
 
         std::cout << "\n--- ROUND-TRIP (Forward + Backward) ---" << std::endl;
@@ -553,6 +749,17 @@ int main(int argc, char* argv[]) {
         std::cout << "Pruned (FFT + IFFT): " << total_pruned << " ms" << std::endl;
         std::cout << "Round-trip Speedup:  " << std::setprecision(2) << total_full / total_pruned
                   << "x" << std::endl;
+
+        std::cout << "\n--- MEMORY SUMMARY ---" << std::endl;
+        std::cout << std::fixed << std::setprecision(2);
+        std::cout << "Forward Full FFT:   " << (fwd_result.memory_full_fft_bytes / (1024.0 * 1024.0))
+                  << " MB" << std::endl;
+        std::cout << "Forward Pruned FFT: "
+                  << (fwd_result.memory_pruned_fft_bytes / (1024.0 * 1024.0)) << " MB" << std::endl;
+        std::cout << "Backward Full FFT:  " << (bwd_result.memory_full_fft_bytes / (1024.0 * 1024.0))
+                  << " MB" << std::endl;
+        std::cout << "Backward Pruned FFT: "
+                  << (bwd_result.memory_pruned_fft_bytes / (1024.0 * 1024.0)) << " MB" << std::endl;
 
         std::cout << "\n=== End Benchmark ===" << std::endl;
     }

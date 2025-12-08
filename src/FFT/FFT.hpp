@@ -487,6 +487,7 @@ namespace ippl {
                 auto& tempFieldInputView = tempFieldInputs[k];
                 auto exec_instance       = get_exec_instance(k);
 
+
                 using mdrange_policy_t =
                     Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
                 mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
