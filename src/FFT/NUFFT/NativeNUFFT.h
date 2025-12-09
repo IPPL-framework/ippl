@@ -363,15 +363,15 @@ namespace ippl {
                 resetTimings();
                 auto ttot = std::chrono::high_resolution_clock::now();
 
-                // DEBUG: before pre_correctio
-                if (ippl::Comm->rank() == 0) {
-                    auto f_host = f.getHostMirror();
-                    Kokkos::deep_copy(f_host, f.getView());
-                    int ng = f.getNghost();
-                    std::cout << "[DEBUG type2] Before Pre-correction: "
-                              << "grid_field_[" << ng << "," << ng << "," << ng
-                              << "] = " << f_host(ng, ng, ng) << std::endl;
-                }
+                // // DEBUG: before pre_correctio
+                // if (ippl::Comm->rank() == 0) {
+                //     auto f_host = f.getHostMirror();
+                //     Kokkos::deep_copy(f_host, f.getView());
+                //     int ng = f.getNghost();
+                //     std::cout << "[DEBUG type2] Before Pre-correction: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << f_host(ng, ng, ng) << std::endl;
+                // }
 
                 // ============================================================
                 // Step 1: Apply pre-correction
@@ -390,24 +390,24 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // DEBUG: after pre-correction
-                if (ippl::Comm->rank() == 0) {
-                    if (upsampled_output) {
-                        auto grid_host = grid_field_->getHostMirror();
-                        Kokkos::deep_copy(grid_host, grid_field_->getView());
-                        int ng = grid_field_->getNghost();
-                        std::cout << "[DEBUG type2] after pre-correction (upsampled): "
-                                  << "grid_field_[" << ng << "," << ng << "," << ng
-                                  << "] = " << grid_host(ng, ng, ng) << std::endl;
-                    } else {
-                        auto f_host = f.getHostMirror();
-                        Kokkos::deep_copy(f_host, f.getView());
-                        int ng = f.getNghost();
-                        std::cout << "[DEBUG type2] after pre-correction (pruned): "
-                                  << "f[" << ng << "," << ng << "," << ng
-                                  << "] = " << f_host(ng, ng, ng) << std::endl;
-                    }
-                }
+                // // DEBUG: after pre-correction
+                // if (ippl::Comm->rank() == 0) {
+                //     if (upsampled_output) {
+                //         auto grid_host = grid_field_->getHostMirror();
+                //         Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //         int ng = grid_field_->getNghost();
+                //         std::cout << "[DEBUG type2] after pre-correction (upsampled): "
+                //                   << "grid_field_[" << ng << "," << ng << "," << ng
+                //                   << "] = " << grid_host(ng, ng, ng) << std::endl;
+                //     } else {
+                //         auto f_host = f.getHostMirror();
+                //         Kokkos::deep_copy(f_host, f.getView());
+                //         int ng = f.getNghost();
+                //         std::cout << "[DEBUG type2] after pre-correction (pruned): "
+                //                   << "f[" << ng << "," << ng << "," << ng
+                //                   << "] = " << f_host(ng, ng, ng) << std::endl;
+                //     }
+                // }
 
                 // ============================================================
                 // Step 2: Inverse FFT
@@ -424,15 +424,15 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // DEBUG: after inverse FFT (always in grid_field_)
-                if (ippl::Comm->rank() == 0) {
-                    auto grid_host = grid_field_->getHostMirror();
-                    Kokkos::deep_copy(grid_host, grid_field_->getView());
-                    int ng = grid_field_->getNghost();
-                    std::cout << "[DEBUG type2] after inverse FFT: "
-                              << "grid_field_[" << ng << "," << ng << "," << ng
-                              << "] = " << grid_host(ng, ng, ng) << std::endl;
-                }
+                // // DEBUG: after inverse FFT (always in grid_field_)
+                // if (ippl::Comm->rank() == 0) {
+                //     auto grid_host = grid_field_->getHostMirror();
+                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //     int ng = grid_field_->getNghost();
+                //     std::cout << "[DEBUG type2] after inverse FFT: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
+                // }
 
                 // ============================================================
                 // Step 2.5: Fill ghost cells for gather
@@ -440,15 +440,15 @@ namespace ippl {
                 grid_field_->fillHalo();
                 Kokkos::fence();
 
-                // DEBUG: after fillHalo
-                if (ippl::Comm->rank() == 0) {
-                    auto grid_host = grid_field_->getHostMirror();
-                    Kokkos::deep_copy(grid_host, grid_field_->getView());
-                    int ng = grid_field_->getNghost();
-                    std::cout << "[DEBUG type2] after fillHalo: "
-                              << "grid_field_[" << ng << "," << ng << "," << ng
-                              << "] = " << grid_host(ng, ng, ng) << std::endl;
-                }
+                // // DEBUG: after fillHalo
+                // if (ippl::Comm->rank() == 0) {
+                //     auto grid_host = grid_field_->getHostMirror();
+                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //     int ng = grid_field_->getNghost();
+                //     std::cout << "[DEBUG type2] after fillHalo: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
+                // }
 
                 // ============================================================
                 // Step 3: Gather/interpolate at particle positions
@@ -460,15 +460,15 @@ namespace ippl {
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // DEBUG: after gather, inspect one particle value
-                if (ippl::Comm->rank() == 0) {
-                    auto Q_host =
-                        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
-                    size_type nloc = Q_host.extent(0);
-                    size_type idx  = (nloc > 0 ? nloc / 2 : 0);
-                    std::cout << "[DEBUG type2] after gather: "
-                              << "Q[" << idx << "] = " << Q_host(idx) << std::endl;
-                }
+                // // DEBUG: after gather, inspect one particle value
+                // if (ippl::Comm->rank() == 0) {
+                //     auto Q_host =
+                //         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
+                //     size_type nloc = Q_host.extent(0);
+                //     size_type idx  = (nloc > 0 ? nloc / 2 : 0);
+                //     std::cout << "[DEBUG type2] after gather: "
+                //               << "Q[" << idx << "] = " << Q_host(idx) << std::endl;
+                // }
 
                 timing_.total =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)

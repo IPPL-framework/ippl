@@ -26,6 +26,9 @@ target_link_libraries (BumponTailInstabilityPIF ${IPPL_LIBS})
 add_executable (PenningTrapPIF PenningTrapPIF.cpp)
 target_link_libraries (PenningTrapPIF ${IPPL_LIBS})
 
+add_executable (LandauDampingPIFPruned LandauDampingPIFPruned.cpp)
+target_link_libraries (LandauDampingPIFPruned PRIVATE ${IPPL_LIBS})
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

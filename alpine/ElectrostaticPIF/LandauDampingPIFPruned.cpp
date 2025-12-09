@@ -178,8 +178,13 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<bunch_type> P;
 
         ippl::NDIndex<Dim> domain;
+        ippl::NDIndex<Dim> domainOrig;
         for (unsigned i = 0; i < Dim; i++) {
+	    //For upsampling the grid
+	    nrOrig[i] = nr[i];
+	    nr[i] = 2 * nr[i];
             domain[i] = ippl::Index(nr[i]);
+            domainOrig[i] = ippl::Index(nrOrig[i]);
         }
 
         std::array<bool, Dim> isParallel;  // Specifies SERIAL, PARALLEL dims
@@ -196,14 +201,17 @@ int main(int argc, char* argv[]) {
         double dz       = length[2] / nr[2];
 
         Vector_t hr     = {dx, dy, dz};
+        Vector_t hrOrig     = 2.0 *  hr;
         Vector_t origin = {rmin[0], rmin[1], rmin[2]};
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
+        Mesh_t meshOrig(domainOrig, hrOrig, origin);
 
         FieldLayout_t FL(*ippl::Comm, domain, isParallel, isAllPeriodic);
+        FieldLayout_t FLOrig(*ippl::Comm, domainOrig, isParallel, isAllPeriodic);
 
-        PLayout_t PL(FL, mesh);
+        PLayout_t PL(FLOrig, meshOrig);
 
         // Q = -\int\int f dx dv
         double Q = -length[0] * length[1] * length[2];
@@ -293,7 +301,7 @@ int main(int argc, char* argv[]) {
         msg << "After init shape function " << endl;
 
         double tol = std::atof(argv[9]);
-        P->initNUFFT(FL, tol);
+        P->initNUFFT(FLOrig, tol);
         msg << "After init NUFFT " << endl;
 
 	P->update();
