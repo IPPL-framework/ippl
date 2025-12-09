@@ -91,6 +91,9 @@ int main(int argc, char* argv[]) {
         using playout_type = ippl::ParticleSpatialLayout<double, 3>;
         using bunch_type   = Bunch<playout_type>;
 
+        int myRank = ippl::Comm->rank();
+        int nRanks = ippl::Comm->size();
+
         // Mode grid (Fourier mode counts)
         ippl::Vector<int, dim> pt = {16, 16, 16};
         ippl::Index I(pt[0]);
@@ -160,105 +163,195 @@ int main(int argc, char* argv[]) {
 
         using FFT_type = ippl::FFT<ippl::NUFFTransform, real_field_type>;
 
-        std::cout << "Width "
-                  << static_cast<int>(std::ceil(
-                         std::log10((1.0) / fftParams.get<double>("tolerance"))))
-                         + 1
-                  << std::endl;
+        double tolerance = fftParams.get<double>("tolerance");
+
+        if (myRank == 0) {
+            std::cout << "Testing Type-2 NUFFT (use_upsampled_inputs = false)" << std::endl;
+            std::cout << "Grid size: " << pt[0] << " x " << pt[1] << " x " << pt[2] << std::endl;
+            std::cout << "Number of ranks: " << nRanks << std::endl;
+            std::cout << "Kernel width: "
+                      << static_cast<int>(std::ceil(std::log10(1.0 / tolerance))) + 1
+                      << std::endl;
+        }
 
         std::unique_ptr<FFT_type> fft;
 
         int type = 2;  // Type-2 NUFFT
 
-        size_type nloc = Np / ippl::Comm->size();
+        size_type nloc = Np / nRanks;
 
         bunch.create(nloc);
         fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
 
-        // RNG
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
+        // RNG - use rank-specific seed for particles
+        Kokkos::Random_XorShift64_Pool<> rand_pool_particles((size_type)(42 + myRank));
+        // Use same seed across ranks for field to ensure consistent global field
+        Kokkos::Random_XorShift64_Pool<> rand_pool_field((size_type)(123));
 
         // Random particles and charges
         Kokkos::parallel_for(
             nloc,
             generate_random_particles<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
-                bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
+                bunch.R.getView(), bunch.Q.getView(), rand_pool_particles, minU, maxU));
 
-        // Random Fourier modes on the base grid (interior only)
+        // Get local domain info for the field
+        const auto& lDom = layout.getLocalNDIndex();
+        int local_i_start = lDom[0].first();
+        int local_j_start = lDom[1].first();
+        int local_k_start = lDom[2].first();
+        int local_i_end = lDom[0].last() + 1;
+        int local_j_end = lDom[1].last() + 1;
+        int local_k_end = lDom[2].last() + 1;
+
+        // Random Fourier modes on the local portion of the grid
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-        auto fview         = field.getView();
+        auto fview = field.getView();
+
+        int local_ni = local_i_end - local_i_start;
+        int local_nj = local_j_end - local_j_start;
+        int local_nk = local_k_end - local_k_start;
 
         Kokkos::parallel_for(
             "fill_modes",
-            mdrange_type({0, 0, 0}, {pt[0], pt[1], pt[2]}),
+            mdrange_type({0, 0, 0}, {local_ni, local_nj, local_nk}),
             generate_random_field<Kokkos::complex<double>,
                                   Kokkos::Random_XorShift64_Pool<>, dim>(
-                field.getView(), rand_pool64, nghost));
+                field.getView(), rand_pool_field, nghost));
 
         bunch.update();
         field.fillHalo();
 
-        // Pick one particle to check (e.g. middle local particle)
+        // Get local particle count after update
         size_type nloc_actual = bunch.getLocalNum();
-        size_type idx         = nloc_actual / 2;
 
-        auto Rview = bunch.R.getView();
-        Kokkos::complex<double> imag = {0.0, 1.0};
+        if (myRank == 0) {
+            std::cout << "Total particles: " << Np << std::endl;
+        }
+
+        // We'll test with a specific particle. Pick the first particle on rank 0.
+        // We need to broadcast this particle's position to all ranks for the reference calculation.
+
+        // Get test particle position from rank 0
+        Vector_t test_pos;
+        if (nloc_actual > 0) {
+            auto R_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bunch.R.getView());
+            test_pos[0] = R_host(0)[0];
+            test_pos[1] = R_host(0)[1];
+            test_pos[2] = R_host(0)[2];
+        }
+
+        // Find which rank has particles and use the first particle from that rank
+        int rank_with_particles = -1;
+        int has_particles = (nloc_actual > 0) ? 1 : 0;
+
+        // Allgather to find first rank with particles
+        std::vector<int> all_has_particles(nRanks);
+        MPI_Allgather(&has_particles, 1, MPI_INT, all_has_particles.data(), 1, MPI_INT,
+                      ippl::Comm->getCommunicator());
+
+        for (int r = 0; r < nRanks; ++r) {
+            if (all_has_particles[r]) {
+                rank_with_particles = r;
+                break;
+            }
+        }
+
+        // Broadcast test particle position from the rank that has it
+        double pos_buf[3] = {test_pos[0], test_pos[1], test_pos[2]};
+        MPI_Bcast(pos_buf, 3, MPI_DOUBLE, rank_with_particles, ippl::Comm->getCommunicator());
+        test_pos[0] = pos_buf[0];
+        test_pos[1] = pos_buf[1];
+        test_pos[2] = pos_buf[2];
+
+        if (myRank == 0) {
+            std::cout << "Test particle position: (" << test_pos[0] << ", "
+                      << test_pos[1] << ", " << test_pos[2] << ")" << std::endl;
+        }
 
         // Reference NUDFT type-2:
         // q(x_j) = sum_k f_k * exp(+i k · x_j)
-        Kokkos::complex<double> dft_value(0.0, 0.0);
+        // Each rank computes partial sum over its local modes, then reduce
+        Kokkos::complex<double> dft_local(0.0, 0.0);
+        Kokkos::complex<double> imag = {0.0, 1.0};
+
+        // Create device copies of test position and grid info
+        auto test_pos_d = test_pos;
+        auto pt_d = pt;
+        auto local_i_start_d = local_i_start;
+        auto local_j_start_d = local_j_start;
+        auto local_k_start_d = local_k_start;
 
         Kokkos::parallel_reduce(
-            "NUDFT type2",
-            mdrange_type({0, 0, 0}, {pt[0], pt[1], pt[2]}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k,
+            "NUDFT type2 local",
+            mdrange_type({0, 0, 0}, {local_ni, local_nj, local_nk}),
+            KOKKOS_LAMBDA(const int li, const int lj, const int lk,
                           Kokkos::complex<double>& valL) {
+                // Convert local index to global index
+                int i = li + local_i_start_d;
+                int j = lj + local_j_start_d;
+                int k = lk + local_k_start_d;
+
                 // Corner indexing -> centered integer frequency k_c
-                // Using same convention as type-1:
-                // index in [0, N-1] maps to integer k_c in
-                // [0, N/2] ∪ [-N/2+1, -1]
-                int kc0 = (i < pt[0] / 2 ? i : i - pt[0]);
-                int kc1 = (j < pt[1] / 2 ? j : j - pt[1]);
-                int kc2 = (k < pt[2] / 2 ? k : k - pt[2]);
+                int kc0 = (i < pt_d[0] / 2 ? i : i - pt_d[0]);
+                int kc1 = (j < pt_d[1] / 2 ? j : j - pt_d[1]);
+                int kc2 = (k < pt_d[2] / 2 ? k : k - pt_d[2]);
 
                 // Domain length is 2*pi, so factor 2*pi/L = 1
                 double arg = 0.0;
-                arg += kc0 * Rview(idx)[0];
-                arg += kc1 * Rview(idx)[1];
-                arg += kc2 * Rview(idx)[2];
+                arg += kc0 * test_pos_d[0];
+                arg += kc1 * test_pos_d[1];
+                arg += kc2 * test_pos_d[2];
 
-                auto fk = fview(i + nghost, j + nghost, k + nghost);
+                auto fk = fview(li + nghost, lj + nghost, lk + nghost);
 
                 valL += (Kokkos::cos(arg) + imag * Kokkos::sin(arg)) * fk;
             },
-            Kokkos::Sum<Kokkos::complex<double>>(dft_value));
-        double ref_real  = dft_value.real();
+            Kokkos::Sum<Kokkos::complex<double>>(dft_local));
+
+        // Global reduce of DFT result
+        Kokkos::complex<double> dft_global(0.0, 0.0);
+        double dft_send[2] = {dft_local.real(), dft_local.imag()};
+        double dft_recv[2] = {0.0, 0.0};
+        MPI_Allreduce(dft_send, dft_recv, 2, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+        dft_global = Kokkos::complex<double>(dft_recv[0], dft_recv[1]);
+
+        double ref_real = dft_global.real();
 
         // Type-2 NUFFT: grid (field) -> values at particle positions (bunch.Q)
         fft->transform(bunch.R, bunch.Q, field);
 
-        // Copy NUFFT result (real-valued Q) to host
-        auto Q_result = Kokkos::create_mirror_view_and_copy(
-            Kokkos::HostSpace(), bunch.Q.getView());
+        // Get the NUFFT result from the rank that has the test particle
+        double nufft_val = 0.0;
+        if (myRank == rank_with_particles && nloc_actual > 0) {
+            auto Q_result = Kokkos::create_mirror_view_and_copy(
+                Kokkos::HostSpace(), bunch.Q.getView());
+            nufft_val = Q_result(0);
+        }
 
+        // Broadcast the NUFFT result to all ranks (for comparison)
+        MPI_Bcast(&nufft_val, 1, MPI_DOUBLE, rank_with_particles, ippl::Comm->getCommunicator());
 
-
-        // Compare real parts: NUFFT stores result in real Q
-        double nufft_val = Q_result(idx);
-
+        // Compare real parts
         double abs_error_real = std::fabs(ref_real - nufft_val);
         double rel_error_real = abs_error_real / std::fabs(ref_real);
 
-        std::cout << "NUFFT (type-2) value at particle " << idx << " : "
-                  << std::setprecision(16) << nufft_val << std::endl;
-        std::cout << "Reference NUDFT value (real part): "
-                  << std::setprecision(16) << ref_real << std::endl;
+        if (myRank == 0) {
+            std::cout << "\n=== Results (Type-2 NUFFT, use_upsampled_inputs = false) ===" << std::endl;
+            std::cout << "NUFFT (type-2) value at test particle: "
+                      << std::setprecision(16) << nufft_val << std::endl;
+            std::cout << "Reference NUDFT value (real part): "
+                      << std::setprecision(16) << ref_real << std::endl;
+            std::cout << "Abs Error in real part: " << std::setprecision(16)
+                      << abs_error_real
+                      << "  Rel. error in real part: " << std::setprecision(16)
+                      << rel_error_real << std::endl;
 
-        std::cout << "Abs Error in real part: " << std::setprecision(16)
-                  << abs_error_real
-                  << "  Rel. error in real part: " << std::setprecision(16)
-                  << rel_error_real << std::endl;
+            // Check if error is within tolerance
+            bool passed = (rel_error_real < tolerance * 100);
+            std::cout << "Test " << (passed ? "PASSED" : "FAILED") << std::endl;
+        }
+
+        ippl::Comm->barrier();
     }
     ippl::finalize();
     return 0;

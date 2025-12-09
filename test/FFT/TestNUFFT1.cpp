@@ -8,6 +8,7 @@
 
 #include "Utility/ParameterList.h"
 
+
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
@@ -58,6 +59,46 @@ struct generate_random {
     }
 };
 
+/**
+ * @brief Check if a global index is owned by this rank's local domain
+ */
+template <unsigned Dim>
+bool isOwnedLocally(const ippl::NDIndex<Dim>& lDom, const ippl::Vector<int, Dim>& globalIdx) {
+    for (unsigned d = 0; d < Dim; ++d) {
+        if (globalIdx[d] < lDom[d].first() || globalIdx[d] > lDom[d].last()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Convert global index to local index (with ghost offset)
+ */
+template <unsigned Dim>
+ippl::Vector<int, Dim> globalToLocal(const ippl::NDIndex<Dim>& lDom,
+                                     const ippl::Vector<int, Dim>& globalIdx, int nghost) {
+    ippl::Vector<int, Dim> localIdx;
+    for (unsigned d = 0; d < Dim; ++d) {
+        localIdx[d] = globalIdx[d] - lDom[d].first() + nghost;
+    }
+    return localIdx;
+}
+
+template <unsigned Dim>
+ippl::Vector<int, Dim> centeredToCornerDC(const ippl::Vector<int, Dim>& kVec,
+                                          const ippl::Vector<int, Dim>& n_modes) {
+    ippl::Vector<int, Dim> cornerIdx;
+    for (unsigned d = 0; d < Dim; ++d) {
+        if (kVec[d] >= 0) {
+            cornerIdx[d] = kVec[d];
+        } else {
+            cornerIdx[d] = n_modes[d] + kVec[d];
+        }
+    }
+    return cornerIdx;
+}
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -65,32 +106,35 @@ int main(int argc, char* argv[]) {
         using Mesh_t               = ippl::UniformCartesian<double, dim>;
         using Centering_t          = Mesh_t::DefaultCentering;
 
-        const double pi            = std::acos(-1.0);
+        const double pi = std::acos(-1.0);
 
         typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
         typedef Bunch<playout_type> bunch_type;
 
-        ippl::Vector<int, dim> pt = {16, 16, 16};
-        ippl::Index I(pt[0]);
-        ippl::Index J(pt[1]);
-        ippl::Index K(pt[2]);
+        int myRank = ippl::Comm->rank();
+        int nRanks = ippl::Comm->size();
+
+        // Number of modes (output size - no upsampling)
+        ippl::Vector<int, dim> n_modes = {16, 16, 16};
+
+        ippl::Index I(n_modes[0]);
+        ippl::Index J(n_modes[1]);
+        ippl::Index K(n_modes[2]);
         ippl::NDIndex<dim> owned(I, J, K);
 
-        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(true);  // Enable parallel decomposition for multi-node
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
         typedef ippl::Vector<double, 3> Vector_t;
-        Vector_t minU = {0, 0, 0}; //{-pi, -pi, -pi};
+        Vector_t minU = {0, 0, 0};
         Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
-        // Vector_t minU = {0.0, 0.0, 0.0};
-        // Vector_t maxU = {25.0, 25.0, 25.0};
 
         std::array<double, dim> dx = {
-            (maxU[0] - minU[0]) / double(pt[0]),
-            (maxU[1] - minU[1]) / double(pt[1]),
-            (maxU[2] - minU[2]) / double(pt[2]),
+            (maxU[0] - minU[0]) / double(n_modes[0]),
+            (maxU[1] - minU[1]) / double(n_modes[1]),
+            (maxU[2] - minU[2]) / double(n_modes[2]),
         };
 
         Vector_t hx     = {dx[0], dx[1], dx[2]};
@@ -104,19 +148,16 @@ int main(int argc, char* argv[]) {
 
         using size_type = ippl::detail::size_type;
 
-        size_type Np = std::pow(4, 3);
+        size_type Np = std::pow(16, 3);
 
-        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type field_type;
+        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type
+            field_type;
         typedef ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type real_field_type;
-
-
-        field_type field(mesh, layout, 1);
-        field_type field_dft(mesh, layout, 1);
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-10);
-#ifdef ENABLE_GPU_NUFFT
+        fftParams.add("tolerance", 1e-7);
+#ifdef FINUFFT_USE_CUDA
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
         fftParams.add("gpu_kerevalmeth", 1);
@@ -127,175 +168,157 @@ int main(int argc, char* argv[]) {
 #endif
 
         fftParams.add("use_finufft_defaults", false);
-        fftParams.add("use_upsampled_inputs", false);
-        fftParams.add("use_kokkos_nufft",  false);
+        fftParams.add("use_kokkos_nufft", false);
 
-        // Test tiled spread method with z-striding
         fftParams.add("spread_method", "tiled");
         fftParams.add("tile_size_3d", 6);
         fftParams.add("z_tiles", 1);
-        fftParams.add("team_size", 32);  // Must be multiple of warp size (32) for CUDA
         fftParams.add("sort", true);
+
+        // Key difference: use_upsampled_inputs = false
+        fftParams.add("use_upsampled_inputs", false);
 
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
-        std::cout << "Width " << static_cast<int>(std::ceil(std::log10((1.0) / fftParams.get<double>("tolerance")))) + 1;
-        std::unique_ptr<FFT_type> fft;
+        double tolerance = fftParams.get<double>("tolerance");
 
-        int type = 1;
+        if (myRank == 0) {
+            std::cout << "Testing with use_upsampled_inputs = false" << std::endl;
+            std::cout << "Grid size: " << n_modes[0] << " x " << n_modes[1] << " x "
+                      << n_modes[2] << std::endl;
+            std::cout << "Kernel width: "
+                      << static_cast<int>(std::ceil(std::log10(1.0 / tolerance))) + 1
+                      << std::endl;
+        }
 
-        size_type nloc = Np / ippl::Comm->size();
+        int type       = 1;
+        size_type nloc = Np / nRanks;
 
         bunch.create(nloc);
-        fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
+
+        // Create FFT object
+        std::unique_ptr<FFT_type> fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
+
+        // Create output field on the original (non-upsampled) grid
+        const int nghost = 1;
+        field_type field_output(mesh, layout, nghost);
+
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42 + myRank));
         Kokkos::parallel_for(nloc,
                              generate_random<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
                                  bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
 
         bunch.update();
-        fft->transform(bunch.R, bunch.Q, field);
+        field_output = Kokkos::complex(0.0);
 
-        auto field_result =
-            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), field.getView());
+        fft->transform(bunch.R, bunch.Q, field_output);
 
-        // Pick some mode to check. We choose it same as cuFINUFFT testcase cufinufft3d1_test.cu
+        // Get local domain info
+        const auto& lDom           = layout.getLocalNDIndex();
+        const int nghost_field     = field_output.getNghost();
+
         ippl::Vector<int, 3> kVec;
-        kVec[0] = (int)(0.37 * pt[0]);  // Positive frequency
-        kVec[1] = (int)(0.16 * pt[1]);
-        kVec[2] = (int)(0.23 * pt[2]);
+        kVec[0] = (int)(0.37 * n_modes[0]);  // Positive frequency
+        kVec[1] = (int)(0.16 * n_modes[1]);
+        kVec[2] = (int)(0.23 * n_modes[2]);
 
-        const int nghost = field.getNghost();
+        // Convert frequency indices to corner-DC format (for non-upsampled grid)
+        ippl::Vector<int, 3> globalIdx = centeredToCornerDC<dim>(kVec, n_modes);
 
-        auto map_index = [](auto k, auto n) {
-            if (k>=0) {
-                return k;
-            } else {
-                return n+k;
-            }
-        };
+        if (myRank == 0) {
+            std::cout << "Testing frequency k = (" << kVec[0] << ", " << kVec[1] << ", " << kVec[2]
+                      << ")" << std::endl;
+            std::cout << "Corner-DC global index = (" << globalIdx[0] << ", " << globalIdx[1]
+                      << ", " << globalIdx[2] << ")" << std::endl;
+        }
 
-        int iInd = map_index(kVec[0], pt[0]) + nghost;
-        int jInd = map_index(kVec[1], pt[1]) + nghost;
-        int kInd = map_index(kVec[2], pt[2]) + nghost;
+        // Check if this rank owns the mode we want to check
+        bool iOwnMode = isOwnedLocally<dim>(lDom, globalIdx);
 
-        Kokkos::complex<double> reducedValue(0.0, 0.0);
+        // Extract the NUFFT result from the rank that owns it
+        Kokkos::complex<double> nufft_result(0.0, 0.0);
+
+        if (iOwnMode) {
+            auto field_host = field_output.getHostMirror();
+            Kokkos::deep_copy(field_host, field_output.getView());
+
+            auto localIdx = globalToLocal<dim>(lDom, globalIdx, nghost_field);
+            nufft_result  = field_host(localIdx[0], localIdx[1], localIdx[2]);
+
+            std::cout << "Rank " << myRank << " owns mode, local index = (" << localIdx[0] << ", "
+                      << localIdx[1] << ", " << localIdx[2] << ")" << std::endl;
+
+            std::cout << "Observes result " << nufft_result << std::endl;
+        }
+
+        // Reduce to rank 0 (only one rank has non-zero value)
+        Kokkos::complex<double> nufft_result_global(0.0, 0.0);
+        double send_buf[2] = {nufft_result.real(), nufft_result.imag()};
+        double recv_buf[2] = {0.0, 0.0};
+        MPI_Reduce(send_buf, recv_buf, 2, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        nufft_result_global = Kokkos::complex<double>(recv_buf[0], recv_buf[1]);
+
+        if (myRank == 0) {
+            std::cout << "NUFFT result " << nufft_result_global << std::endl;
+        }
+
+        // Compute DFT reference on all particles
+        // DFT: f_k = sum_j c_j * exp(-i * k * x_j)
+        Kokkos::complex<double> dft_local(0.0, 0.0);
+        Kokkos::complex<double> imag = {0.0, 1.0};
 
         auto Rview = bunch.R.getView();
         auto Qview = bunch.Q.getView();
 
-        Kokkos::complex<double> imag = {0.0, 1.0};
-        size_t flatN                 = pt[0] * pt[1] * pt[2];
-        auto fview                   = field_dft.getView();
+        // Get local particle count after update
+        size_type nloc_actual = bunch.getLocalNum();
 
-        typedef Kokkos::TeamPolicy<> team_policy;
-        typedef Kokkos::TeamPolicy<>::member_type member_type;
-
-        Kokkos::parallel_for(
-            "NUDFT type 1", team_policy(flatN, Kokkos::AUTO),
-            KOKKOS_LAMBDA(const member_type& teamMember) {
-                const size_t flatIndex = teamMember.league_rank();
-
-                const int k           = (int)(flatIndex / (pt[0] * pt[1]));
-                const int flatIndex2D = flatIndex - (k * pt[0] * pt[1]);
-                const int i           = flatIndex2D % pt[0];
-                const int j           = (int)(flatIndex2D / pt[0]);
-
-                Kokkos::complex<double> reducedValue = 0.0;
-                ippl::Vector<int, 3> iVec            = {i, j, k};
-                ippl::Vector<double, 3> kVec;
-                for (size_t d = 0; d < 3; ++d) {
-                    kVec[d] = (2.0 * pi / (maxU[d] - minU[d])) * (iVec[d] - (pt[d] / 2));
-                }
-                Kokkos::parallel_reduce(
-                    Kokkos::TeamThreadRange(teamMember, nloc),
-                    [=](const size_t idx, Kokkos::complex<double>& innerReduce) {
-                        double arg = 0.0;
-                        for (size_t d = 0; d < 3; ++d) {
-                            arg += kVec[d] * Rview(idx)[d];
-                        }
-                        const double& val = Qview(idx);
-
-                        innerReduce += (Kokkos::cos(arg) - imag * Kokkos::sin(arg)) * val;
-                    },
-                    Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
-
-                if (teamMember.team_rank() == 0) {
-                    fview(i + nghost, j + nghost, k + nghost) = reducedValue;
-                }
-            });
-
-        typename field_type::HostMirror rhoNUDFT_host = field_dft.getHostMirror();
-        Kokkos::deep_copy(rhoNUDFT_host, field_dft.getView());
-        std::stringstream pname;
-        pname << "data/FieldFFT_";
-        pname << ippl::Comm->rank();
-        pname << ".csv";
-        Inform pcsvout(NULL, pname.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
-        pcsvout.precision(10);
-        pcsvout.setf(std::ios::scientific, std::ios::floatfield);
-        pcsvout << "rho" << endl;
-        for (int i = 0; i < pt[0]; i++) {
-            for (int j = 0; j < pt[1]; j++) {
-                for (int k = 0; k < pt[2]; k++) {
-                    pcsvout << field_result(i + nghost, j + nghost, k + nghost) << endl;
-                }
-            }
-        }
-        std::stringstream pname2;
-        pname2 << "data/FieldDFT_";
-        pname2 << ippl::Comm->rank();
-        pname2 << ".csv";
-        Inform pcsvout2(NULL, pname2.str().c_str(), Inform::OVERWRITE, ippl::Comm->rank());
-        pcsvout2.precision(10);
-        pcsvout2.setf(std::ios::scientific, std::ios::floatfield);
-        pcsvout2 << "rho" << endl;
-        for (int i = 0; i < pt[0]; i++) {
-            for (int j = 0; j < pt[1]; j++) {
-                for (int k = 0; k < pt[2]; k++) {
-                    pcsvout2 << rhoNUDFT_host(i + nghost, j + nghost, k + nghost) << endl;
-                }
-            }
-        }
-        ippl::Comm->barrier();
-
+        // The frequency in physical units
         Kokkos::parallel_reduce(
-            "NUDFT type1", nloc,
+            "NUDFT type1 local", nloc_actual,
             KOKKOS_LAMBDA(const size_t idx, Kokkos::complex<double>& valL) {
                 double arg = 0.0;
                 for (size_t d = 0; d < dim; ++d) {
-                    arg += (2 * pi / (hx[d] * pt[d])) * kVec[d] * Rview(idx)[d];
+                    arg += (2 * pi / (hx[d] * n_modes[d])) * kVec[d] * Rview(idx)[d];
                 }
-
+                // Type 1 NUFFT: sum of c_j * exp(-i * k * x_j)
                 valL += (Kokkos::cos(arg) - imag * Kokkos::sin(arg)) * Qview(idx);
             },
-            Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
+            Kokkos::Sum<Kokkos::complex<double>>(dft_local));
 
-        double abs_error_real =
-            std::fabs(reducedValue.real() - field_result(iInd, jInd, kInd).real());
-        double rel_error_real =
-            std::fabs(reducedValue.real() - field_result(iInd, jInd, kInd).real())
-            / std::fabs(reducedValue.real());
-        double abs_error_imag =
-            std::fabs(reducedValue.imag() - field_result(iInd, jInd, kInd).imag());
-        double rel_error_imag =
-            std::fabs(reducedValue.imag() - field_result(iInd, jInd, kInd).imag())
-            / std::fabs(reducedValue.imag());
+        // Global reduce of DFT result
+        Kokkos::complex<double> dft_global(0.0, 0.0);
+        double dft_send[2] = {dft_local.real(), dft_local.imag()};
+        double dft_recv[2] = {0.0, 0.0};
+        MPI_Reduce(dft_send, dft_recv, 2, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+        dft_global = Kokkos::complex<double>(dft_recv[0], dft_recv[1]);
 
-        std::cout << "Abs Error in real part: " << std::setprecision(16) << abs_error_real
-                  << " Rel. error in real part: " << std::setprecision(16) << rel_error_real
-                  << std::endl;
-        std::cout << "Abs Error in imag part: " << std::setprecision(16) << abs_error_imag
-                  << " Rel. error in imag part: " << std::setprecision(16) << rel_error_imag
-                  << std::endl;
-        std::cout << "Field result: " << std::setprecision(16)
-                  << field_result(iInd, jInd, kInd).real() << " " << std::setprecision(16)
-                  << field_result(iInd, jInd, kInd).imag() << "index: " << iInd << "," << jInd
-                  << "," << kInd << std::endl;
+        // Compute and print errors on rank 0
+        if (myRank == 0) {
+            double abs_error_real = std::fabs(dft_global.real() - nufft_result_global.real());
+            double rel_error_real = std::fabs(dft_global.real() - nufft_result_global.real())
+                                    / std::fabs(dft_global.real());
+            double abs_error_imag = std::fabs(dft_global.imag() - nufft_result_global.imag());
+            double rel_error_imag = std::fabs(dft_global.imag() - nufft_result_global.imag())
+                                    / std::fabs(dft_global.imag());
 
-        // Kokkos::complex<double> max_error(0.0, 0.0);
-        // MPI_Reduce(&max_error_local, &max_error, 1,
-        //            MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+            std::cout << "\n=== Results (use_upsampled_inputs = false) ===" << std::endl;
+            std::cout << "DFT reference: " << std::setprecision(16) << dft_global.real() << " + "
+                      << dft_global.imag() << "i" << std::endl;
+            std::cout << "NUFFT result:  " << std::setprecision(16) << nufft_result_global.real()
+                      << " + " << nufft_result_global.imag() << "i" << std::endl;
+            std::cout << "Abs Error in real part: " << std::setprecision(16) << abs_error_real
+                      << " Rel. error in real part: " << std::setprecision(16) << rel_error_real
+                      << std::endl;
+            std::cout << "Abs Error in imag part: " << std::setprecision(16) << abs_error_imag
+                      << " Rel. error in imag part: " << std::setprecision(16) << rel_error_imag
+                      << std::endl;
+
+            // Check if error is within tolerance
+            bool passed = (rel_error_real < tolerance * 100) && (rel_error_imag < tolerance * 100);
+            std::cout << "Test " << (passed ? "PASSED" : "FAILED") << std::endl;
+        }
+        ippl::Comm->barrier();
     }
     ippl::finalize();
     return 0;
